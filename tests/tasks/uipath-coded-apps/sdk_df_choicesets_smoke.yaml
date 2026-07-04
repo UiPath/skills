@@ -1,0 +1,88 @@
+task_id: skill-coded-apps-sdk-df-choicesets-smoke
+description: >
+  Smoke test (mode:build): agent authors a Data Fabric helper using the
+  `ChoiceSets` service — the last uncovered DF SDK component. Exercises
+  the skill's documented DF gotcha #1: choice values come back as
+  `numberId` integers on EVERY read path, so any UI that renders a
+  choice field must build a `numberId → name` map via
+  `choiceSets.getById(<csId>)` and translate every read. Code like
+  `record.Priority.toLowerCase()` throws or renders "5".
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App that renders Data Fabric records, author
+  `src/choice-labels.ts` exporting two functions:
+
+  1. `buildChoiceLabelMap(choiceSetId: string): Promise<Map<number, string>>`
+     — uses the `ChoiceSets` SDK service to fetch a choice set by ID and
+     build a `numberId → name` lookup map from its values.
+
+  2. `labelForChoice(map: Map<number, string>, numberId: number): string`
+     — returns the display name for a choice `numberId`, falling back to
+     `String(numberId)` when the id is unknown.
+
+  Why this exists: Data Fabric returns choice-field values as `numberId`
+  integers on every read path (getRecordById, queryRecordsById, groupBy),
+  NOT as display strings — rendering the raw value shows "5" instead of
+  "Resolved". The map is how the skill says to translate.
+
+  Use the subpath import for ChoiceSets (it ships from the same subpath
+  as `Entities`) and constructor DI. Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "src/choice-labels.ts was created"
+    path: "src/choice-labels.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/choice-labels.ts imports ChoiceSets via the /entities subpath (same subpath as Entities; Anti-pattern #1 — no package-root service imports)"
+    path: "src/choice-labels.ts"
+    includes:
+      - "@uipath/uipath-typescript/entities"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/choice-labels.ts constructs ChoiceSets via DI"
+    command: "grep -E 'new\\s+ChoiceSets\\(' src/choice-labels.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "buildChoiceLabelMap function exists and calls choiceSets getById"
+    command: "grep -qE '\\bbuildChoiceLabelMap\\b' src/choice-labels.ts && grep -qE '\\.getById\\(' src/choice-labels.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "labelForChoice function exists in src/choice-labels.ts"
+    command: "grep -E '\\blabelForChoice\\b' src/choice-labels.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the map is keyed by numberId (the DF gotcha — values arrive as numberId ints, not names)"
+    command: "grep -qE '\\bnumberId\\b' src/choice-labels.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/choice-labels.ts has NO package-root SDK SERVICE-CLASS imports (Anti-pattern #1). Root-level `{ UiPath }` import is allowed because it's the SDK class itself."
+    command: "sed 's|//.*||' src/choice-labels.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0

@@ -1,0 +1,88 @@
+task_id: skill-coded-apps-ui-bpmn-status-smoke
+description: >
+  Smoke test (mode:build): agent authors the BPMN diagram-rendering
+  pattern from `patterns.md §BPMN Diagram Rendering` — a React viewer
+  component using `bpmn-js` (bpmn.io) that imports the BPMN XML returned
+  by `ProcessInstances.getBpmn()`, fits it to the viewport, and cleans up
+  the viewer on unmount. Last remaining UI-pattern component with no
+  covering test.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App that monitors Maestro processes, author
+  the BPMN diagram-rendering pattern the skill teaches:
+
+  1. `src/components/BpmnDiagram.tsx` — a React component that accepts a
+     `bpmnXml: string` prop and renders the process diagram using the
+     `bpmn-js` viewer (from bpmn.io). Requirements per the skill's UI
+     patterns reference:
+     - Import the lightweight Viewer (not the full modeler).
+     - Load the XML asynchronously; on success, zoom the canvas to
+       `fit-viewport`.
+     - Destroy the viewer instance in the effect cleanup so re-renders
+       and unmounts don't leak.
+     - Render into a ref'd container div.
+
+  2. `src/lib/fetchBpmn.ts` — exports
+     `fetchBpmnXml(instanceId: string, folderKey: string): Promise<string>`
+     that fetches the BPMN XML for a running process instance using the
+     `ProcessInstances` SDK service (subpath import + constructor DI).
+
+  Do NOT run `uip` or `npm` commands (assume `bpmn-js` is declared in
+  package.json by the scaffold).
+
+success_criteria:
+  - type: file_exists
+    description: "src/components/BpmnDiagram.tsx was created"
+    path: "src/components/BpmnDiagram.tsx"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "src/lib/fetchBpmn.ts was created"
+    path: "src/lib/fetchBpmn.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BpmnDiagram imports the bpmn-js Viewer (patterns.md — lightweight Viewer, not the modeler)"
+    command: "grep -E \"from\\s+['\\\"]bpmn-js\" src/components/BpmnDiagram.tsx"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BpmnDiagram loads the XML via importXML and fits the canvas to viewport"
+    command: "grep -qE '\\bimportXML\\b' src/components/BpmnDiagram.tsx && grep -qE 'fit-viewport' src/components/BpmnDiagram.tsx"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BpmnDiagram destroys the viewer in the effect cleanup (no leak on unmount/re-render)"
+    command: "grep -qE '\\.destroy\\(\\)' src/components/BpmnDiagram.tsx"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "fetchBpmn.ts uses the ProcessInstances service's getBpmn method"
+    command: "grep -qE '\\bgetBpmn\\b' src/lib/fetchBpmn.ts && grep -qE 'new\\s+ProcessInstances\\(' src/lib/fetchBpmn.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "fetchBpmn.ts imports ProcessInstances via the maestro-processes subpath (Anti-pattern #1)"
+    command: "grep -E '@uipath/uipath-typescript/maestro-processes' src/lib/fetchBpmn.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

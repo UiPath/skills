@@ -1,0 +1,111 @@
+task_id: skill-coded-apps-sdk-conversational-feedback-smoke
+description: >
+  Smoke test (mode:build): agent authors a service module using two SDK
+  services documented in the skill but with no other test coverage —
+  `ConversationalAgent` (from the `conversational-agent` subpath, starts
+  chat sessions with a deployed conversational agent) and `Feedback`
+  (from the `feedback` subpath, submits ratings/comments on AI agent
+  responses). Each via subpath import + constructor DI, with
+  `.env.example` scope coverage.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, author `src/agent-support.ts` exporting
+  two functions covering the conversational + feedback SDK surface:
+
+  1. `startConversation(agentId: string): Promise<{ conversationId: string }>`
+     — uses the `ConversationalAgent` service to start a chat session
+     with a deployed conversational agent (returns the conversation ID).
+
+  2. `submitFeedback(agentResponseId: string, rating: 'positive' | 'negative',
+     comment?: string): Promise<void>` — uses the `Feedback` service to
+     submit a rating (and optional comment) on an AI agent response.
+
+  Also write `.env.example` with the standard `VITE_UIPATH_*` env vars.
+  Look up the required scopes for these services in the skill's
+  conversational-agent and feedback references.
+
+  Use subpath imports (`@uipath/uipath-typescript/conversational-agent`
+  and `@uipath/uipath-typescript/feedback`). Use constructor DI
+  (`new ConversationalAgent(sdk)`, `new Feedback(sdk)`). Do NOT run `uip`
+  or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "src/agent-support.ts was created"
+    path: "src/agent-support.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: ".env.example was created"
+    path: ".env.example"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/agent-support.ts imports ConversationalAgent via the /conversational-agent subpath (Anti-pattern #1)"
+    path: "src/agent-support.ts"
+    includes:
+      - "@uipath/uipath-typescript/conversational-agent"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/agent-support.ts imports Feedback via the /feedback subpath"
+    path: "src/agent-support.ts"
+    includes:
+      - "@uipath/uipath-typescript/feedback"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/agent-support.ts constructs both services via DI: new ConversationalAgent, new Feedback"
+    command: "grep -E 'new\\s+ConversationalAgent\\(' src/agent-support.ts && grep -E 'new\\s+Feedback\\(' src/agent-support.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "startConversation function exists in src/agent-support.ts"
+    command: "grep -E '\\bstartConversation\\b' src/agent-support.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "submitFeedback function exists in src/agent-support.ts"
+    command: "grep -E '\\bsubmitFeedback\\b' src/agent-support.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/agent-support.ts has NO package-root SDK SERVICE-CLASS imports (Anti-pattern #1). Root-level `{ UiPath }` import is allowed because it's the SDK class itself."
+    command: "sed 's|//.*||' src/agent-support.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_SCOPE references Traces.Api (Rule #16 — Feedback needs Traces.Api on every method)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=.*Traces\\.Api' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_SCOPE references ConversationalAgents (Rule #16 — required for startSession)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=.*ConversationalAgents' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

@@ -1,0 +1,131 @@
+task_id: skill-coded-apps-sdk-maestro-bundle-smoke
+description: >
+  Smoke test (mode:build): agent authors a service module using the Maestro
+  SDK surface — `MaestroProcesses`, `ProcessInstances`, `ProcessIncidents`
+  (all from the `maestro-processes` subpath) plus `Cases` and
+  `CaseInstances` (from the `cases` subpath). Each via subpath import +
+  constructor DI, with `.env.example` scope coverage. Closes the Maestro-
+  breadth SDK coverage gap (4 of 5 Maestro services were `None` per the
+  coverage report).
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 10
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, author `src/maestro.ts` exporting five
+  functions covering the Maestro SDK breadth:
+
+  1. `listMaestroProcesses(): Promise<...>` — uses `MaestroProcesses`
+     (list all deployed Maestro processes on the tenant).
+
+  2. `getProcessInstance(instanceId: string): Promise<...>` — uses
+     `ProcessInstances` (fetch a single running process instance by ID).
+
+  3. `listOpenIncidents(): Promise<...>` — uses `ProcessIncidents` (list
+     open incidents raised across process runs).
+
+  4. `listCases(): Promise<...>` — uses the `Cases` service (list Case
+     Management case types).
+
+  5. `listCaseInstances(caseId: string): Promise<...>` — uses the
+     `CaseInstances` service (list running instances of one case type).
+
+  Also write `.env.example` with the standard `VITE_UIPATH_*` env vars.
+  Fill `VITE_UIPATH_SCOPE` with the ACTUAL scope value these Maestro
+  operations require (look it up in the skill's Maestro reference —
+  every Maestro operation needs the same base scope). Do not leave the
+  scope empty or as a placeholder; the scope string is part of what
+  this exercise verifies.
+
+  Use subpath imports for every service class:
+  `MaestroProcesses`, `ProcessInstances`, `ProcessIncidents` all come from
+  `@uipath/uipath-typescript/maestro-processes`; `Cases` and
+  `CaseInstances` come from `@uipath/uipath-typescript/cases`. Use
+  constructor DI (`new MaestroProcesses(sdk)`, etc.). Do NOT run `uip`
+  or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "src/maestro.ts was created"
+    path: "src/maestro.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: ".env.example was created"
+    path: ".env.example"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/maestro.ts imports from the `maestro-processes` subpath (MaestroProcesses / ProcessInstances / ProcessIncidents)"
+    path: "src/maestro.ts"
+    includes:
+      - "@uipath/uipath-typescript/maestro-processes"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/maestro.ts imports from the `cases` subpath (Cases + CaseInstances)"
+    path: "src/maestro.ts"
+    includes:
+      - "@uipath/uipath-typescript/cases"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/maestro.ts constructs all 5 services via DI: new MaestroProcesses, new ProcessInstances, new ProcessIncidents, new Cases, new CaseInstances"
+    command: "grep -E 'new\\s+MaestroProcesses\\(' src/maestro.ts && grep -E 'new\\s+ProcessInstances\\(' src/maestro.ts && grep -E 'new\\s+ProcessIncidents\\(' src/maestro.ts && grep -E 'new\\s+Cases\\(' src/maestro.ts && grep -E 'new\\s+CaseInstances\\(' src/maestro.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "listMaestroProcesses function exists in src/maestro.ts"
+    command: "grep -E '\\blistMaestroProcesses\\b' src/maestro.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "getProcessInstance function exists in src/maestro.ts"
+    command: "grep -E '\\bgetProcessInstance\\b' src/maestro.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "listOpenIncidents function exists in src/maestro.ts"
+    command: "grep -E '\\blistOpenIncidents\\b' src/maestro.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "listCases function exists in src/maestro.ts"
+    command: "grep -E '\\blistCases\\b' src/maestro.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/maestro.ts has NO package-root SDK SERVICE-CLASS imports (Anti-pattern #1). Root-level `{ UiPath }` import is allowed because it's the SDK class itself, not a service."
+    command: "sed 's|//.*||' src/maestro.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_SCOPE references PIMS (Rule #16 — every Maestro operation needs PIMS)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=.*PIMS' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
