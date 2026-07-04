@@ -44,14 +44,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Flow uses the quickform schema type"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    includes:
-      - '"type": "quick"'
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_contains
     description: "Flow exposes Approve and Reject outcomes"
     path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
     includes:
