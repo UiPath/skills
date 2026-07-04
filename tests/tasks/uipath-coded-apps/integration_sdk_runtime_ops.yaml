@@ -99,8 +99,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "src/ops.ts does NOT import service classes from the package root (Anti-pattern #1)"
-    command: "sed 's|//.*||' src/ops.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\""
+    description: "src/ops.ts does NOT import SERVICE CLASSES from the package root (Anti-pattern #1). Root-level `{ UiPath }` import is allowed — it's the SDK class itself."
+    command: "sed 's|//.*||' src/ops.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
     timeout: 10
     expected_exit_code: 1
     weight: 2.0

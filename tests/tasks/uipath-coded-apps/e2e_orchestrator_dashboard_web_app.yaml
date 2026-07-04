@@ -180,8 +180,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "No source file imports service classes from the package root (Anti-pattern #1)"
-    command: "find . \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec sed 's|//.*||' {} \\; | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\""
+    description: "No source file imports SERVICE CLASSES from the package root (Anti-pattern #1). Root-level `{ UiPath }` / `getAppBase` imports are allowed — the SDK class + app-base helper live at the package root and a Web app's OAuth hook legitimately imports them; only service classes are subpath-only."
+    command: "find . \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec sed 's|//.*||' {} \\; | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b|\\bgetAppBase\\b'"
     timeout: 15
     expected_exit_code: 1
     weight: 1.5

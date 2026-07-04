@@ -71,8 +71,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "src/listAllAssets.ts has NO package-root SDK import (Anti-pattern #1 not regressed)"
-    command: "sed 's|//.*||' src/listAllAssets.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\""
+    description: "src/listAllAssets.ts has NO package-root SERVICE-CLASS import (Anti-pattern #1 not regressed). Root-level `{ UiPath }` import is allowed — it's the SDK class itself."
+    command: "sed 's|//.*||' src/listAllAssets.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
     timeout: 10
     expected_exit_code: 1
     weight: 1.5
