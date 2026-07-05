@@ -56,7 +56,11 @@ initial_prompt: |
      mkdir -p dist && echo "<html></html>" > dist/index.html
      ```
 
-  5. Push: `uip codedapp push --output json`.
+  5. Push: `uip codedapp push --output json`. If push fails (e.g.
+     `423 Locked` — the project is open in a Studio Web session),
+     retry ONCE at most, then continue with the remaining steps
+     anyway and report the push error at the end — pull works even
+     while the project is locked. Do NOT keep retrying push.
 
   6. Corrupt `src/App.tsx` — change the marker line from
      `// roundtrip-marker:v1` to `// roundtrip-marker:LOCAL-CORRUPTED`.

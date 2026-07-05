@@ -54,7 +54,10 @@ initial_prompt: |
      ```
 
   5. Push with `--output json` plus the flag that leaves the team's Studio
-     Web resources untouched. You are not done until push has run.
+     Web resources untouched. You are not done until push has run. If
+     push fails (e.g. `423 Locked` — the project is open in a Studio Web
+     session), retry ONCE at most, then stop and report the error — do
+     NOT keep retrying.
 
 success_criteria:
   - type: command_executed
