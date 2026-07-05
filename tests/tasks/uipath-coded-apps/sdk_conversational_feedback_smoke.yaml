@@ -25,8 +25,12 @@ initial_prompt: |
      submit a rating (and optional comment) on an AI agent response.
 
   Also write `.env.example` with the standard `VITE_UIPATH_*` env vars.
-  Look up the required scopes for these services in the skill's
-  conversational-agent and feedback references.
+  Fill `VITE_UIPATH_SCOPE` with the ACTUAL scope values these two services
+  require (look them up in the skill's conversational-agent and feedback
+  references — Feedback needs one scope on every method; starting a
+  conversational session needs its own scope family). Do not leave the
+  scope empty or as a placeholder; the scope string is part of what this
+  exercise verifies.
 
   Use subpath imports (`@uipath/uipath-typescript/conversational-agent`
   and `@uipath/uipath-typescript/feedback`). Use constructor DI
