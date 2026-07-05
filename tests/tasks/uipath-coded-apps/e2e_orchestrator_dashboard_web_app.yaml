@@ -50,7 +50,7 @@ initial_prompt: |
   When you finish, write `report.json` at the sandbox root with:
     {
       "app_name": "<the exact app name you used>",
-      "deployment_id": "<the deploymentId from .uipath/app.config.json>",
+      "deployment_id": "<the deploymentId from .uipath/app.config.json (or its systemName if deploymentId is absent)>",
       "app_url": "<the appUrl from .uipath/app.config.json>",
       "folder": "<the codedapp-e2e-dash-<EPOCH> folder name you created>"
     }
@@ -132,8 +132,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "app.config.json contains a non-empty deploymentId (publish reached the tenant)"
-    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if d.get('deploymentId') else 1)\""
+    description: "app.config.json proves a tenant round-trip: deploymentId (fresh deploy) OR systemName (deploy retried after a transient 5xx lands on the CLI upgrade branch, which never writes deploymentId)"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if (d.get('deploymentId') or d.get('systemName')) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.5
