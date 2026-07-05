@@ -1,0 +1,100 @@
+task_id: skill-coded-apps-integration-push-ignore-resources
+description: >
+  Integration test (mode:operate, cloud-auth required): agent pushes a Coded
+  App to Studio Web in a scenario where the Studio Web project already has
+  resources (env vars, connectors) configured by the team. The agent must
+  recall the right CLI flag to skip re-importing those resources. Tests the
+  `--ignore-resources` push flag (the last untested `uip codedapp push` flag
+  surface) WITHOUT naming the flag in the prompt — agent must recall it
+  from the skill.
+tags: [uipath-coded-apps, integration, mode:operate, lifecycle:setup]
+run_limits:
+  expected_turns: 15
+  turn_timeout: 1200
+
+initial_prompt: |
+  Push an existing Coded App to its Studio Web project. The team's Studio
+  Web side already has environment variables and third-party connector
+  configs set up — your push must NOT overwrite or re-import those
+  resources. Pick the right push flag from the skill's documented `push`
+  surface.
+
+  Do NOT run `npm install`, `npm run build`, or
+  `uip codedapp pack/publish/deploy`.
+
+  Steps (all five required):
+
+  1. `uip login status --output json` — verify login, do NOT re-login.
+
+  2. Write `.env` at the sandbox root with the project ID from the
+     `CODED_APPS_TEST_PROJECT_ID` env var (this makes push non-interactive):
+     ```
+     echo "UIPATH_PROJECT_ID=$CODED_APPS_TEST_PROJECT_ID" > .env
+     ```
+     If `$CODED_APPS_TEST_PROJECT_ID` is empty, STOP — do not retry.
+
+  3. Write these two files at the sandbox root exactly as shown (the seed
+     content is shared with a sibling test so parallel pushes are
+     byte-identical no-ops):
+
+     `package.json`:
+     ```
+     { "name": "test-webapp", "version": "0.1.0", "type": "module" }
+     ```
+
+     `src/App.tsx`:
+     ```
+     // roundtrip-marker:v1
+     export default function App() { return null; }
+     ```
+
+  4. Stub `dist/` (push needs a build-output folder):
+     ```
+     mkdir -p dist && echo "<html></html>" > dist/index.html
+     ```
+
+  5. Push with `--output json` plus the flag that leaves the team's Studio
+     Web resources untouched. You are not done until push has run. If
+     push fails (e.g. `423 Locked` — the project is open in a Studio Web
+     session), retry ONCE at most, then stop and report the error — do
+     NOT keep retrying.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran `uip login status` (Rule #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp push` (the operation under test)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+push\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Push command included the `--ignore-resources` flag — the agent recalled the right flag for the scenario (skill knowledge check; flag NOT named in the prompt)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+push\b.*--ignore-resources'
+    min_count: 1
+    weight: 3.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Push command used --output json"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+push\b.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT run pack/publish/deploy (out of scope for this push-only test)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+(pack|publish|deploy)\b'
+    weight: 1.0
+    pass_threshold: 1.0
