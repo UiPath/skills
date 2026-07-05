@@ -116,7 +116,7 @@ success_criteria:
 
   - type: run_command
     description: "src/insights-rtm.ts has NO package-root SDK SERVICE-CLASS imports (Anti-pattern #1). Root-level `{ UiPath }` / `import type { UiPath }` is allowed — it's the SDK class itself."
-    command: "sed 's|//.*||' src/insights-rtm.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
+    command: "sed 's|//.*||' src/insights-rtm.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
     timeout: 10
     expected_exit_code: 1
     weight: 2.0

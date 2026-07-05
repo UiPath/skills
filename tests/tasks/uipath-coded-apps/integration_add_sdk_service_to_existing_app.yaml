@@ -148,7 +148,7 @@ success_criteria:
 
   - type: run_command
     description: "src/api.ts has NO package-root SDK imports introduced (Anti-pattern #1 not regressed)"
-    command: "sed 's|//.*||' src/api.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\{\\s*UiPath\\s*\\}'"
+    command: "sed 's|//.*||' src/api.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\{\\s*UiPath\\s*\\}'"
     timeout: 10
     expected_exit_code: 1
     weight: 2.0

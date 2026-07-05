@@ -62,7 +62,7 @@ success_criteria:
 
   - type: run_command
     description: "src/api.ts does NOT import SERVICE CLASSES from the package root (Anti-pattern #1: `from '@uipath/uipath-typescript'` with no subpath). Root-level `{ UiPath }` / `import type { UiPath }` is allowed — the SDK class itself lives at the package root; only service classes are subpath-only."
-    command: "sed 's|//.*||' src/api.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
+    command: "sed 's|//.*||' src/api.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
     timeout: 10
     expected_exit_code: 1
     weight: 2.5
@@ -77,8 +77,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "src/api.ts does NOT use the deprecated dot-chain `sdk.assets.<method>()` form (Anti-pattern #2)"
-    command: "sed 's|//.*||' src/api.ts | grep -E \"\\bsdk\\.(assets|queues|tasks)\\.\""
+    description: "src/api.ts does NOT use the deprecated dot-chain `sdk.assets.<method>()` form (Anti-pattern #2). Strips // line comments AND /* */ block-comment lines first — agents legitimately mention the dot-chain in JSDoc headers when documenting that they avoided it."
+    command: "sed 's|//.*||' src/api.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"\\bsdk\\.(assets|queues|tasks)\\.\""
     timeout: 10
     expected_exit_code: 1
     weight: 2.0

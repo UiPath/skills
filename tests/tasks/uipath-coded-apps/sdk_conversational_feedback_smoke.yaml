@@ -92,7 +92,7 @@ success_criteria:
 
   - type: run_command
     description: "src/agent-support.ts has NO package-root SDK SERVICE-CLASS imports (Anti-pattern #1). Root-level `{ UiPath }` import is allowed because it's the SDK class itself."
-    command: "sed 's|//.*||' src/agent-support.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
+    command: "sed 's|//.*||' src/agent-support.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
     timeout: 10
     expected_exit_code: 1
     weight: 2.0

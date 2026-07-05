@@ -35,7 +35,7 @@ success_criteria:
 
   - type: run_command
     description: "src/Logo.tsx has NO hard-coded /-rooted asset path in executable code (Rule #10 — these 404 after deploy; comments are allowed)"
-    command: "sed 's|//.*||' src/Logo.tsx | grep -E \"src=['\\\"]/[a-zA-Z]\""
+    command: "sed 's|//.*||' src/Logo.tsx | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"src=['\\\"]/[a-zA-Z]\""
     timeout: 10
     expected_exit_code: 1
     weight: 2.0

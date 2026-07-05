@@ -43,7 +43,7 @@ success_criteria:
 
   - type: run_command
     description: "vite.config.ts does NOT use an absolute root base like '/myapp/' (Rule #9 — only './' is correct)"
-    command: "sed 's|//.*||' vite.config.ts | grep -E \"base:[[:space:]]*['\\\"]/[a-zA-Z]\""
+    command: "sed 's|//.*||' vite.config.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"base:[[:space:]]*['\\\"]/[a-zA-Z]\""
     timeout: 10
     expected_exit_code: 1
     weight: 1.5
