@@ -229,6 +229,8 @@ jobs:
           TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
           E2E_PROCESS_KEY:          ${{ secrets.E2E_PROCESS_KEY }}
           E2E_LONG_PROCESS_KEY:     ${{ secrets.E2E_LONG_PROCESS_KEY }}
+          CODED_APPS_TEST_PROJECT_ID:  ${{ secrets.CODED_APPS_TEST_PROJECT_ID }}
+          CODED_APPS_TEST_SOLUTION_ID: ${{ secrets.CODED_APPS_TEST_SOLUTION_ID }}
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
           TASK_COUNT:               ${{ needs.partition.outputs.linux_count }}
           TASK_PARALLELISM:         ${{ inputs.parallelism }}
