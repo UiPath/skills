@@ -1,6 +1,6 @@
 ---
 name: uipath-connector-builder
-description: "UiPath Integration Service connector authoring (REST+JSON) on disk via `uip is connectors builder`. Triggers on `element.json`, `element-metadata.json`, `standard-resources/*.json`, a `periodic-uipath-*`/`periodic-design-*` connector repo, or any request to build/edit an IS connector: init the connector shell, configure auth (14 types via `auth set`), add activities with fields/params/methods/hooks, wire polling/webhook triggers, add auth-system resources, inspect, validate, and surgically read/write files via state. Import + publish live on the parent `uip is connectors` (need `uip login`). NOT for operating a published connector — connections, ping, run an activity→uipath-platform; NOT for `.flow` connector nodes→uipath-maestro-flow."
+description: "UiPath Integration Service connector authoring (REST+JSON) on disk via `uip is connectors builder`. Triggers on `element.json`, `element-metadata.json`, `standard-resources/*.json`, a `periodic-uipath-*`/`periodic-design-*` connector repo, or any request to build/edit an IS connector: init the connector shell, configure auth (19 types via `auth set`, incl. jwtOauth claims, FPS, none), add activities with fields/params/methods/hooks, wire polling/webhook triggers, add auth-system resources, inspect, validate, and surgically read/write files via state. Import + publish live on the parent `uip is connectors` (need `uip login`). NOT for operating a published connector — connections, ping, run an activity→uipath-platform; NOT for `.flow` connector nodes→uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -39,6 +39,7 @@ Decide how each per-connection value reaches the request BEFORE scaffolding — 
 - **One config drives the host — not three URLs.** When the base, token, and authorize hosts share a per-connection part (an instance name, region, datacenter, or workspace), surface ONE config and template it into every URL: `init --base-url 'https://{instance}.../api'` + `auth set --token-url 'https://{instance}.../token' --authorization-url 'https://{instance}.../authorize'`. The CLI auto-seeds a single fillable `{instance}` field that resolves all three ([references/configuration.md](references/configuration.md) §Templated hosts). Do NOT expose `base.url`/`oauth.token.url`/`oauth.authorization.url` as separate connection fields.
 - **Open value → TEXTFIELD; fixed set → COMBO.** A free-form instance/workspace/account name is the auto-seeded templated TEXTFIELD — that is a legitimate, common shape, not a smell. Only a genuinely fixed datacenter/environment list becomes a COMBO (`state patch` the seeded entry to `type:COMBO` with `options`, whose `value` can be the host fragment itself).
 - **Derive or discover before you ask.** If a per-connection value (the API host, an org/account id) is returned in the token response or is discoverable via an authenticated call, capture it instead of adding a manual field — but ONLY when it is genuinely needed AND obtainable; a single templated config is the simpler default, so don't over-engineer discovery where a plain field suffices. Token-response host → a `postRequest` hook that validates (https + allowlisted host, never log the token) and persists via `done({configuration})` — recipe: [references/hooks.md](references/hooks.md) §"Pattern: base URL …". Discoverable id → an `onProvision` system resource that calls the lookup at connection time ([references/system-resources.md](references/system-resources.md)).
+- **User-facing configs need guidance.** Every `configScreenType:"pre"` or `"pre-optional"` field should have `hintText` with an example or where to find the value. give every visible connection-form field a hint (`validate` does not currently check this) for instance/workspace IDs, tenant hosts, and token-type-specific credentials.
 - **Multi-datacenter OAuth:** the accounts/token host itself varies by region — template the region config into `--token-url`/`--authorization-url` too, not just the base URL.
 
 ## Workflows
@@ -117,6 +118,7 @@ uip is connectors builder validate
 
 ### Customize a curated activity
 `activity create` auto-curates every method into a standalone Studio activity by default (opt out with `--no-curate`). Use `method curate` only to override the generated name/displayName, or to curate a `--no-curate` method.
+Generic CRUD activities are always present separately from curated activities: List/Get/Create/Update/Delete Records let the user choose any object that supports that method. Do not remove them or report them as pollution when you add a curated/list-capable object; author the curated service action alongside the generic object picker.
 ```bash
 uip is connectors builder activity method curate --resource cases --method GET \
   --display-name 'Get Support Request'
@@ -134,7 +136,7 @@ uip is connectors builder state patch element.json/configuration/oauth.token.url
   --value '<full entry from the query above, with defaultValue corrected>'
 uip is connectors builder validate
 ```
-For a derived base URL (e.g. Salesforce `instance_url` from the token response): a `postRequest` hook VALIDATES the URL (https + allowlisted host) and persists it with `done({configuration})` — NOT `state patch`, which baking-time-edits one org's URL into every connection. Full recipe: [references/hooks.md](references/hooks.md) §"Pattern: base URL …"; investigation checklists: [references/debugging.md](references/debugging.md).
+For a base URL or id derived at connection time: use a token-response `postRequest` hook when the value is returned by the token call, or an `onProvision` system resource when it must be discovered after auth. Validate the value, then persist it with `done({configuration})` — NOT `state patch`, which baking-time-edits one connection's value into every connection. Full recipe: [references/hooks.md](references/hooks.md) §"Pattern: base URL …"; investigation checklists: [references/debugging.md](references/debugging.md).
 
 ## Command Map
 
@@ -171,7 +173,7 @@ Depth lives in `references/` — each self-contained. SKILL.md owns the workflow
 | element.json internals: top-level fields, resources[], parameters[], value interpolation, hook order | [references/element-json.md](references/element-json.md) |
 | Standard-resource files: linking, metadata.method, curated, fields (visibility/design/searchable) | [references/standard-resources.md](references/standard-resources.md) |
 | configuration[] entries: widget types, screen types, per-auth key sets, pagination + event keys | [references/configuration.md](references/configuration.md) |
-| Authentication setup: all 14 auth types and the OAuth/JWT scope surface | [references/auth.md](references/auth.md) |
+| Authentication setup: all 19 auth types (incl. JWT Bearer claims, FPS, none) and the OAuth/JWT scope surface | [references/auth.md](references/auth.md) |
 | Auth-system resources: auth-validation, onProvision/onDelete, OAuth token overrides | [references/system-resources.md](references/system-resources.md) |
 | When to write a hook vs use a built-in (decision table + good/avoidable patterns), execution order, context vars, done(), naming | [references/hooks.md](references/hooks.md) |
 | Polling and webhook triggers: config keys, event.poller.configuration schema | [references/events.md](references/events.md) |
