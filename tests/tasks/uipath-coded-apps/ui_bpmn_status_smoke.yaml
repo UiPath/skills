@@ -30,6 +30,9 @@ initial_prompt: |
      `fetchBpmnXml(instanceId: string, folderKey: string): Promise<string>`
      that fetches the BPMN XML for a running process instance using the
      `ProcessInstances` SDK service (subpath import + constructor DI).
+     Construct the SDK and the `ProcessInstances` instance INSIDE
+     `src/lib/fetchBpmn.ts` — the exported function takes ONLY the two
+     arguments shown; do NOT accept a service instance as a parameter.
 
   Do NOT run `uip` or `npm` commands (assume `bpmn-js` is declared in
   package.json by the scaffold).

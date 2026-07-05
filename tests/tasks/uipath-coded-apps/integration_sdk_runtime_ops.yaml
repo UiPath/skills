@@ -40,6 +40,10 @@ initial_prompt: |
   call `sdk.initialize()` in this file (it belongs in the app entry
   point, not in a service module).
 
+  Construct the SDK and every service instance INSIDE the module —
+  exported functions take ONLY the data arguments shown above; do NOT
+  accept service instances as parameters.
+
   Do NOT run `uip` or `npm` commands — this environment is not
   authenticated; the test grades the code shape, not runtime execution.
 

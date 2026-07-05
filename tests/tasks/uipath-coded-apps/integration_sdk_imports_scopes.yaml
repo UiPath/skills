@@ -35,6 +35,10 @@ initial_prompt: |
      three services above (read-level is fine for assets/queues; tasks
      needs whatever scope the skill documents for listing).
 
+  Construct the SDK and every service instance INSIDE the module —
+  exported functions take ONLY the data arguments shown above; do NOT
+  accept service instances as parameters.
+
   Do NOT run `uip` or `npm` commands — this environment is not authenticated.
 
 success_criteria:

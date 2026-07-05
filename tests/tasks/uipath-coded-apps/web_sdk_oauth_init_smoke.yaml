@@ -25,9 +25,10 @@ initial_prompt: |
      authenticated SDK instance.
 
   2. `uipath.json` at the sandbox root — declares `clientId` (or
-     `externalApplicationId`) and `scope` so the CLI picks them up at
-     pack/publish time. Use placeholder values like `<YOUR_CLIENT_ID>` and
-     `OR.Assets.Read`.
+     `externalApplicationId`) and `scope` as TOP-LEVEL keys (flat JSON —
+     the CLI reads them from the root; do not nest them under any other
+     object) so the CLI picks them up at pack/publish time. Use
+     placeholder values like `<YOUR_CLIENT_ID>` and `OR.Assets.Read`.
 
   3. `.env.example` — declares the standard `VITE_UIPATH_*` env vars
      (`VITE_UIPATH_CLIENT_ID`, `VITE_UIPATH_SCOPE`, `VITE_UIPATH_ORG_NAME`,

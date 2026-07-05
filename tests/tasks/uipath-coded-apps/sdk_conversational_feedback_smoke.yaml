@@ -37,6 +37,10 @@ initial_prompt: |
   (`new ConversationalAgent(sdk)`, `new Feedback(sdk)`). Do NOT run `uip`
   or `npm` commands.
 
+  Construct the SDK and every service instance INSIDE the module —
+  exported functions take ONLY the data arguments shown above; do NOT
+  accept service instances as parameters.
+
 success_criteria:
   - type: file_exists
     description: "src/agent-support.ts was created"

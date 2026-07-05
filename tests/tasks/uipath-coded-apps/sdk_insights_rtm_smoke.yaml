@@ -53,6 +53,10 @@ initial_prompt: |
   Use subpath imports for each service and constructor DI. Do NOT run
   `uip` or `npm` commands.
 
+  Construct the SDK and every service instance INSIDE the module —
+  exported functions take ONLY the data arguments shown above; do NOT
+  accept service instances as parameters.
+
 success_criteria:
   - type: file_exists
     description: "src/insights-rtm.ts was created"

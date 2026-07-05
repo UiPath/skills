@@ -30,7 +30,8 @@ initial_prompt: |
   "Resolved". The map is how the skill says to translate.
 
   Use the subpath import for ChoiceSets (it ships from the same subpath
-  as `Entities`) and constructor DI. Do NOT run `uip` or `npm` commands.
+  as `Entities`) and constructor DI. Construct the SDK and every service instance INSIDE the module — exported functions take ONLY the data arguments shown above; do NOT accept service instances as parameters.
+  Do NOT run `uip` or `npm` commands.
 
 success_criteria:
   - type: file_exists
