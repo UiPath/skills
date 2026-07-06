@@ -68,7 +68,7 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 
 **Field format rules:**
 - **Input fields**: `binding: "vars.<nodeId>.output.<field>"` (raw path, no `=js:$` prefix). No `variable` property on input fields.
-- **Output fields**: `variable: "<globalName>"` (plain name, **no** `vars.` prefix). No `binding`.
+- **Output fields**: `variable: "vars.<globalName>"` (`vars.` prefix required). No `binding`.
 - **InOut fields**: both `binding` and `variable`, same formats as above.
 - `schemaId` (not `id`) at the schema level — generate a fresh UUID.
 - `typeVersion` — always `"1.0"` for `uipath.human-in-the-loop.quick-form`. **Do not run `registry get` to derive this value; do not use `"1.1"` or any other version.** The OOTB HITL node version is stable at `1.0`.

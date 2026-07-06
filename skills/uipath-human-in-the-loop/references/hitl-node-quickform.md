@@ -69,7 +69,7 @@ Also read `workflow.variables.globals`. Each entry has an `id` that maps directl
 | Node output | `vars.<nodeId>.output.<field>` | `=js:$vars.<nodeId>.output.<field>` |
 | Flow global (`direction: "in"`) | `vars.<globalId>` | `=js:$vars.<globalId>` |
 
-> **`binding` vs `variable` prefix rule:** `binding` (input/inOut fields) uses the full path starting with `vars.` because it references an existing variable path. `variable` (output/inOut fields) is just a **name** with no prefix — it declares a new global variable, not a reference to an existing one.
+> **`binding` vs `variable` prefix rule:** `binding` (input/inOut fields) uses the full path starting with `vars.` because it references an existing variable path. `variable` (output/inOut fields) uses `vars.<name>` — the `vars.` prefix is required; it declares the global variable name.
 
 For the full variable system, see → [How $vars paths are constructed in Flow](../../uipath-maestro-flow/references/shared/variables-and-expressions.md)
 
@@ -135,7 +135,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
           "label": "Notes",
           "type": "string",
           "direction": "output",
-          "variable": "notes",
+          "variable": "vars.notes",
           "required": false
         },
         {
@@ -143,7 +143,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
           "label": "Decision",
           "type": "string",
           "direction": "output",
-          "variable": "decision",
+          "variable": "vars.decision",
           "required": true
         }
       ],
@@ -307,14 +307,14 @@ This is the exact JSON a correctly authored QuickForm `fields[]` entry looks lik
       "type": "date",
       "label": "Approved Date",
       "direction": "output",
-      "variable": "approvedDate"
+      "variable": "vars.approvedDate"
     },
     {
       "id": "approved",
       "type": "boolean",
       "label": "Approved",
       "direction": "output",
-      "variable": "approved"
+      "variable": "vars.approved"
     }
   ],
   "outcomes": [
@@ -377,7 +377,7 @@ Business description: *"Human sees the AI-drafted email, can edit it, then click
 ```json
 "fields": [
   { "id": "recipient",  "label": "Recipient",  "type": "string", "direction": "input", "binding": "vars.draft1.output.recipient" },
-  { "id": "emailbody",  "label": "Email Body", "type": "string", "direction": "inOut", "binding": "vars.draft1.output.body", "variable": "emailBody" }
+  { "id": "emailbody",  "label": "Email Body", "type": "string", "direction": "inOut", "binding": "vars.draft1.output.body", "variable": "vars.emailBody" }
 ],
 "outcomes": [
   { "id": "send",    "name": "Send",    "type": "string", "isPrimary": true,  "action": "Continue" },
@@ -392,8 +392,8 @@ Business description: *"Agent couldn't extract vendor name or cost center. Human
 ```json
 "fields": [
   { "id": "rawextract",  "label": "Raw Extract",  "type": "string", "direction": "input",  "binding": "vars.extract1.output.rawText" },
-  { "id": "vendorname",  "label": "Vendor Name",  "type": "string", "direction": "output", "variable": "vendorName",  "required": true },
-  { "id": "costcenter",  "label": "Cost Center",  "type": "string", "direction": "output", "variable": "costCenter", "required": true }
+  { "id": "vendorname",  "label": "Vendor Name",  "type": "string", "direction": "output", "variable": "vars.vendorName",  "required": true },
+  { "id": "costcenter",  "label": "Cost Center",  "type": "string", "direction": "output", "variable": "vars.costCenter", "required": true }
 ],
 "outcomes": [
   { "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }
@@ -408,7 +408,7 @@ Business description: *"If agent confidence is low, escalate. Human sees reasoni
 "fields": [
   { "id": "reasoning",       "label": "Agent Reasoning",  "type": "string",   "direction": "input",  "binding": "vars.classify1.output.reasoning" },
   { "id": "confidencescore", "label": "Confidence Score", "type": "number", "direction": "input",  "binding": "vars.classify1.output.score" },
-  { "id": "notes",           "label": "Notes",            "type": "string",   "direction": "output", "variable": "notes" }
+  { "id": "notes",           "label": "Notes",            "type": "string",   "direction": "output", "variable": "vars.notes" }
 ],
 "outcomes": [
   { "id": "retry",    "name": "Retry",    "type": "string", "isPrimary": true,  "action": "Continue" },
@@ -432,9 +432,9 @@ After the HITL node, downstream nodes can reference:
 | `$vars.<nodeId>.status` | string | Selected outcome name (e.g. `"Approve"`, `"Reject"`) |
 | `$vars.<globalId>` | varies | Workflow-global variable for output/inOut fields — accessible without node prefix. The `globalId` equals `field.variable` directly (e.g. `variable: "notes"` → `$vars.notes`) |
 
-> **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `"decision"`), not by the `variable` property. The `variable` property (`"approvalResult"`) creates a separate workflow-global variable (`$vars.approvalResult`) — it does not change the key used in the output object. If a field has `"id": "dec1"` and `"variable": "approvalResult"`, access it via the object as `$vars.nodeId.output.dec1`, or directly as `$vars.approvalResult`.
+> **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `"decision"`), not by the `variable` property. The `variable` property (`"approvalResult"`) creates a separate workflow-global variable (`$vars.approvalResult`) — it does not change the key used in the output object. If a field has `"id": "dec1"` and `"variable": "vars.approvalResult"`, access it via the object as `$vars.nodeId.output.dec1`, or directly as `$vars.approvalResult`.
 >
-> **Common mistake:** A field with `"id": "approved"` and `"variable": "legalApproval"` must be read as `$vars.<nodeId>.output.approved` — **not** `$vars.<nodeId>.output.legalApproval`. Using the `variable` name as the key produces `undefined` at runtime; `flow validate` does not catch it.
+> **Common mistake:** A field with `"id": "approved"` and `"variable": "vars.legalApproval"` must be read as `$vars.<nodeId>.output.approved` — **not** `$vars.<nodeId>.output.legalApproval`. Using the `variable` name as the key produces `undefined` at runtime; `flow validate` does not catch it.
 
 **In a downstream script node:**
 ```javascript
