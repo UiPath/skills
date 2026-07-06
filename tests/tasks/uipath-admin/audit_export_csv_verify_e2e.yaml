@@ -22,18 +22,22 @@ description: >
   the live `events` endpoint. We pin the window to dates at least 48h in
   the past so LTS has caught up.
 
-  Blocker: this task requires the base-directory + generated-name export
-  behavior in the published `@uipath/cli` (UiPath/cli#2585 must ship +
-  publish, on top of #2438 (--file-format) + #1372 (adds `uip admin
-  audit`)). Until then `--output-path` is the exact file path (no
-  generated `.csv` inside it) and the `audit_*.csv` glob finds nothing.
+  Determinism note: the prompt names the `uip admin audit` surface (and
+  rules out Orchestrator's `uip or audit-logs`) so the agent doesn't
+  route to the wrong audit tool. This task is especially prone to it —
+  "export as a single merged CSV" maps almost perfectly onto
+  `uip or audit-logs list --export --destination`, the exact wrong-turn
+  observed flaking this task (0/3, wrong surface + hand-crafted `.csv`
+  name) despite passing on the prior run.
 tags: [uipath-admin, e2e, mode:operate, audit, export, real-artifact]
 
 initial_prompt: |
-  Export tenant audit events for the 3-day window from 5 days ago
-  through 2 days ago (UTC, whole days) into the ./audit-window base
-  directory in the current working directory, as a single merged CSV
-  (not the default per-day JSON folder). Resolve the dates with
+  Using the tenant admin audit trail — the `uip admin audit` command
+  family, NOT Orchestrator's `uip or audit-logs` — export tenant audit
+  events for the 3-day window from 5 days ago through 2 days ago (UTC,
+  whole days) into the ./audit-window base directory in the current
+  working directory, as a single merged CSV (not the default per-day
+  JSON folder). Resolve the dates with
   `date -u -d '5 days ago' +%Y-%m-%d` and
   `date -u -d '2 days ago' +%Y-%m-%d` so the window slides with the
   run date.

@@ -28,15 +28,16 @@ description: >
   and should not fail the test — the assertion is structural correctness
   of the per-day JSON files, not a minimum event count.
 
-  Blocker: this task requires the base-directory + generated-name export
-  behavior in the published `@uipath/cli` (UiPath/cli#2585 must ship +
-  publish, on top of #2534 (json folder) + #1372 (adds `uip admin audit`)).
-  Until then `--output-path` is treated as the exact output folder (no
-  generated subfolder) and the `audit_*` glob finds nothing.
+  Determinism note: the prompt names the `uip admin audit org` surface
+  (and rules out Orchestrator's `uip or audit-logs`) so the agent
+  doesn't route to the wrong audit tool — the same failure mode fixed
+  in audit_export_e2e.yaml.
 tags: [uipath-admin, e2e, mode:operate, audit, export, scope-org, real-artifact]
 
 initial_prompt: |
-  Export organization-level audit events (memberships, license changes,
+  Using the organization admin audit trail — the `uip admin audit org`
+  command family, NOT Orchestrator's `uip or audit-logs` — export
+  organization-level audit events (memberships, license changes,
   tenant lifecycle) for the single UTC day 2 days ago as day-wise JSON
   files under the ./audit-org-window base directory in the current
   working directory. Resolve the date with
