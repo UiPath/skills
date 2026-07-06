@@ -94,7 +94,7 @@ Edit the scaffolded `main.py`'s `Input` / `Output` models and `async def main` t
 ```
 
 **Key fields:**
-- **`runtimeOptions.isConversational`** - Set `true` for conversational/chat agents
+- **`runtimeOptions.isConversational`** - scaffold defaults to `false` (single-shot). Building a chat/conversational agent? Flip to `true` BEFORE `uip codedagent init` so `entry-points.json` gets the chat shape. See [conversational-agents](../capabilities/conversational-agents.md).
 - **`packOptions`** - Control which files are included when packaging for deployment
 - **`functions`** - Entrypoint mappings (format: `"file_path:function_name"`)
 
