@@ -23,7 +23,7 @@ run_limits:
 sandbox:
   template_sources:
   - type: template_dir
-    path: ../../../_shared/mock_template
+    path: ../../_shared/mock_template
   - type: template_dir
     path: ../invokevba-method-name/process
   - type: template_dir
