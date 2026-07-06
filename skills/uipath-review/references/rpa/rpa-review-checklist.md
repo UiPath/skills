@@ -32,7 +32,7 @@ Comprehensive quality checklist for UiPath RPA projects — coded workflows (C#)
 | Logical folder structure used (Framework/, BusinessLogic/, Utilities/, Data/) | Info | `ls` project root — check for meaningful subdirectories |
 | Main.xaml acts as orchestrator only (no direct UI or business logic) | Warning | Grep Main.xaml for UI activities (`NClick`, `NTypeInto`, `NGetText`, `Click`, `TypeInto`, `GetText`, `SendHotkey`, `NCheckAppState`). If any are found, Main.xaml is doing work it should delegate. Should contain mostly `InvokeWorkflowFile` calls, <30 activities total. |
 | No leftover breakpoints in production code | Warning | Grep `.xaml` for breakpoint metadata |
-| No workflow exceeds 80 activities OR 30 root-scope variables OR 10 nesting levels | Warning | Count activities, Variables elements, and max indentation depth per .xaml. Report these counts in the review (never "lines") |
+| No workflow exceeds 50 activities OR 30 root-scope variables OR 7 nesting levels (ST-MRD-009 default) | Warning | Count activities, Variables elements, and max indentation depth per .xaml. Report these counts in the review (never "lines") |
 
 ### Workflow Dependency Graph
 
@@ -55,7 +55,7 @@ Comprehensive quality checklist for UiPath RPA projects — coded workflows (C#)
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| All referenced packages are installable | Critical | `uip rpa packages install` |
+| All referenced packages resolvable | Critical | `uip rpa build "<PROJECT_DIR>" --output json` fails on unresolvable packages. Do NOT run `uip rpa packages install` — review is read-only |
 | No unused packages | Warning | Workflow Analyzer rule ST-USG-010 |
 | Version constraints use proper syntax (`[1.0.0]`, `[1.0.0, 2.0.0)`) | Warning | Read project.json dependencies |
 | No package version conflicts | Critical | Check for multiple versions of same package family |
@@ -99,11 +99,11 @@ Comprehensive quality checklist for UiPath RPA projects — coded workflows (C#)
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| All `.xaml` files pass validation | Critical | `uip rpa validate --file-path "<FILE>" --project-dir "<DIR>" --output json` |
+| All `.xaml` files pass validation | Critical | `uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` |
 | Expression language in all XAML files matches `project.json` setting | Critical | Check `expressionLanguage` consistency |
 | No C# syntax in VB.NET projects | Warning | If `expressionLanguage` is `VisualBasic`, grep all `.xaml` for C# patterns: `!=`, `&&`, `\|\|`, `null` (VB uses `Nothing`), `$"` (interpolated strings), `=>` (lambda), `//` (comments), `typeof()` (VB uses `GetType()`). These compile-fail or silently misbehave. |
 | No activities with default display names ("Sequence", "Assign", "If") | Warning | Workflow Analyzer rule ST-MRD-002 |
-| No deeply nested activities (>5 levels) | Warning | Workflow Analyzer rule ST-MRD-009 |
+| No deeply nested activities (>7 levels, ST-MRD-009 default) | Warning | Workflow Analyzer rule ST-MRD-009 |
 | No empty Catch blocks | Warning | Workflow Analyzer rule ST-DBP-003 |
 | No empty Sequences | Info | Workflow Analyzer rule ST-MRD-008 |
 | No unreachable activities | Warning | Workflow Analyzer rule ST-MRD-004 |
@@ -113,7 +113,7 @@ Comprehensive quality checklist for UiPath RPA projects — coded workflows (C#)
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Variables follow PascalCase/camelCase | Warning | Workflow Analyzer rule ST-NMG-001 (regex: `^(dt_)?([A-Z]\|[a-z])+([0-9])*$`) |
+| Variables follow PascalCase/camelCase | Warning | Workflow Analyzer rule ST-NMG-001 (default regex: `^([A-Z]\|[a-z])+([0-9])*$`; the `dt_` prefix convention is ST-NMG-009, not part of ST-NMG-001) |
 | DataTable variables prefixed with `dt_` | Info | Workflow Analyzer rule ST-NMG-009 |
 | Arguments use directional prefixes (`in_`, `out_`, `io_`) | Warning | Workflow Analyzer rule ST-NMG-002 |
 | No variable-argument name conflicts (shadowing) | Warning | Workflow Analyzer rules ST-NMG-005, ST-NMG-006 |
@@ -195,7 +195,7 @@ Selectors are ranked by attribute stability. When reviewing, assess which tier t
 
 ## 5. REFramework Compliance (Queue-Based Projects)
 
-> **Transaction Granularity:** REFramework correctness requires that the queue item's declared unit of work matches the unit of work `ProcessTransaction.xaml` actually performs. Run Step 3a (Unit of Work Discovery) in SKILL.md before this section — any mismatch is a Granularity Mismatch finding. Strong signal that a mismatch exists: presence of `CheckIf<X>Exists.xaml` or `Verify<X>Exists.xaml` in the project (homegrown idempotency guards compensating for bulk-in-transaction). See [rpa-common-issues.md](rpa-common-issues.md) → "Granularity Mismatch" for the full signals, severity matrix, and fixes.
+> **Transaction Granularity:** REFramework correctness requires that the queue item's declared unit of work matches the unit of work `ProcessTransaction.xaml` actually performs. Run Step 3a (Unit of Work Discovery) in SKILL.md before this section — classify the shape as one-to-one / one-to-many / unclear. Strong signal of a one-to-many shape: presence of `CheckIf<X>Exists.xaml` or `Verify<X>Exists.xaml` in the project (homegrown idempotency guards compensating for bulk-in-transaction). See [rpa-common-issues.md](rpa-common-issues.md) → "Transaction Shape: One-to-Many" for the full signals, severity matrix, fixes, and the "When it cannot be split — hardening checklist" subsection.
 
 
 If the project uses or should use the REFramework pattern:
@@ -205,9 +205,9 @@ If the project uses or should use the REFramework pattern:
 | Check | Severity | How to Verify |
 |---|---|---|
 | State Machine with 4 states: Init, GetTransactionData, ProcessTransaction, EndProcess | Warning | Read Main.xaml structure |
-| All 7 transitions present (Init→GetTx, Init→End, GetTx→ProcessTx, GetTx→End, ProcessTx→GetTx, ProcessTx→Init, Init→Init retry) | Warning | Check transitions |
-| Init state has SystemException → Init self-retry transition (not just Init → End) | Warning | Transient login/app failures should retry, not terminate the process |
-| Init state does NOT fetch transaction data (data fetched in GetTransactionData) | Warning | Check InitAllApplications / InitAllSettings — no Read Range / Get Queue Items / Data Scraping |
+| All 7 stock transitions present (Init→GetTx, Init→End, GetTx→ProcessTx, GetTx→End, ProcessTx→GetTx on Success, ProcessTx→GetTx on BusinessRuleException, ProcessTx→Init on SystemException) | Warning | Check transitions |
+| Init state has SystemException → Init self-retry transition (enhancement — the stock template goes Init → End on failure) | Warning | Transient login/app failures should retry, not terminate the process |
+| Queue-based projects: Init state does NOT fetch transaction data (fetched per-item in GetTransactionData). Non-queue projects load bulk data in Init — see "Non-Queue REFramework" below | Warning | Check InitAllApplications / InitAllSettings — no Read Range / Get Queue Items / Data Scraping in queue-based projects |
 | REFramework not forced onto single-shot / stateless processes | Info | If no real transaction iteration (one execution per run), REFramework is overkill — use a linear workflow |
 | If using non-queue data source: `QueueRetry` flag in SetTransactionStatus properly handled (not left at queue default) | Critical | Grep SetTransactionStatus for `QueueRetry` or `in_TransactionItem.RetryNo` logic that only applies to QueueItems |
 | If using DataTable: `GetTransactionData` uses `dt.Rows(in_TransactionNumber - 1)` (DataTable is 0-indexed; transaction counter is 1-indexed) | Warning | Off-by-one skips first row, errors on last |
@@ -345,8 +345,9 @@ Run Workflow Analyzer and verify no Error-level violations. Key rules to check:
 | No hardcoded environment-specific values (URLs, paths) | Warning | Grep for hardcoded values |
 | No debug artifacts or test data included | Info | Check for leftover files |
 | Global Exception Handler configured | Info | Check project settings |
-| Project builds and validates clean | Critical | `uip rpa validate` returns 0 errors |
-| Smoke test passes | Warning | `uip rpa run` completes successfully |
+| Project validates clean | Critical | `uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json` returns 0 errors for every entry point |
+| Project builds clean | Critical | `uip rpa build "<PROJECT_DIR>" --output json` — catches unknown member names and invalid enum values that `validate` misses (SKILL.md Critical Rule 2) |
+| Recent successful run evidence (job history, test results) | Info | Do NOT run the automation during review — `uip rpa run` executes UI actions and writes. Check existing evidence; runtime verification routes to `uipath-rpa` |
 
 ## 10. Windows-Legacy Compatibility
 
@@ -375,11 +376,11 @@ Ordered by developer-impact for a real production RPA team. **When recommending 
 | 2 | UI Automation resilience | **Unified Target Method** (Strict + Fuzzy + Image + Anchor) — modern multi-strategy targeting. Legacy uses only classic single-strategy selectors, which break on minor UI changes. |
 | 3 | Reusable UI management | **Object Repository + UI Libraries** — centralized, hierarchical, versioned UI descriptors. Legacy has limited Object Repository support and no shared UI Library consumption. |
 | 4 | Testing quality | **Coded test cases (C#)** + **Test Manager integration** — write real unit/integration tests for workflows. Legacy testing is Studio Test Activity only — limited assertions, no mocking framework. |
-| 5 | Development velocity | **Autopilot™** — AI-assisted Studio (generate activities from description, fix workflows, explain code). Legacy projects cannot use Autopilot. |
+| 5 | Development velocity | **Autopilot** — AI-assisted Studio (generate activities from description, fix workflows, explain code). Legacy projects cannot use Autopilot. |
 | 6 | ScreenPlay / modern UI orchestration | **ScreenPlay** — modern scripted UI interaction / recording experience. Available only for Modern projects. |
 | 7 | Platform capabilities | **AI Agents + Maestro orchestration + Agentic Automation** — participate as actors in multi-agent/multi-robot BPMN processes. Legacy processes cannot be invoked from / cannot invoke these. |
 | 8 | Code-based logic | **Coded workflows (C#)** alongside XAML — type safety, unit testability, IDE refactoring for complex business logic. |
-| 9 | Performance and security | **JIT-compiled .NET 6+** — faster execution, modern GC, modern encryption/TLS. Legacy runs on .NET Framework 4.6.1 with incremental performance and EOL security libraries. |
+| 9 | Performance and security | **Modern .NET (6+)** — faster execution, modern GC, current TLS/crypto stack. Legacy runs on .NET Framework 4.6.1 with aging security libraries. |
 | 10 | Platform reach | **Cross-platform execution** (Linux robots) — deployment flexibility for cloud-native environments. |
 | 11 | Studio cadence | **Studio STS** (2-month release cycle) — access to new activities and features as they ship. Legacy locks the team to Studio LTS (annual). |
 | 12 | Developer ergonomics | New design experience, Data Manager globals/constants, customizable library activity layouts. |
@@ -451,10 +452,10 @@ When Legacy is detected and migration is on the table, scan for **activities tha
 
 | Check | Severity |
 |---|---|
-| If planning migration: `UiPath.UIAutomation.Activities` target >= 25.10.21 | Warning |
-| If planning migration: `UiPath.MicrosoftOffice365.Activities` target >= 3.6.10 (if Mail migration needed) | Warning |
+| If planning migration: `UiPath.UIAutomation.Activities` at an Activity-Migrator-supported version (check current UiPath docs) | Warning |
+| If planning migration: `UiPath.MicrosoftOffice365.Activities` at a Migrator-supported version (if Mail migration needed) | Warning |
 | Studio 2024.10+ available to open migrated project | Warning |
-| For ST-AMG-001 post-migration rule: Studio 2025.10.8 LTS or 2026.0.189+ STS | Info |
+| Studio version supports the ST-AMG-001 post-migration rule (recent LTS/STS — check current docs) | Info |
 
 ### Migration Pre-Flight Checklist
 

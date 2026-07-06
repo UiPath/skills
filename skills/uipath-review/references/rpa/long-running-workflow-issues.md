@@ -20,7 +20,7 @@ Antipatterns specific to UiPath Orchestration Processes (long-running workflows 
 
 **Symptom:** `Delay` or `Retry Scope` activities placed directly in Main.xaml of an Orchestration Process, NOT wrapped in a `No Persist Scope`.
 
-**Impact:** `Delay` causes the workflow to suspend but Orchestrator cannot resume it (no persistence bookmark). `Retry Scope` behaves unpredictably — the workflow suspends instead of retrying, requiring manual resumption per attempt. Long-standing bug (~5 years).
+**Impact:** `Delay` causes the workflow to suspend but Orchestrator cannot resume it (no persistence bookmark). `Retry Scope` behaves unpredictably — the workflow suspends instead of retrying, requiring manual resumption per attempt. Long-standing platform behavior.
 
 **Detection:** If `project.json` has `"projectType": "Orchestration"`, grep Main.xaml for `RetryScope` or `Delay` that are not inside a `NoPersistScope`.
 
@@ -46,7 +46,7 @@ Antipatterns specific to UiPath Orchestration Processes (long-running workflows 
 
 **Impact:** Runtime crash during suspend: the workflow state cannot be serialized to storage.
 
-**Detection:** Run Workflow Analyzer rules `ST-DBP-025` (variables) and `ST-DBP-028` (arguments). For coded workflows, check variables in scope of `WaitFor*` calls for serializable types. Serializable-safe types: Text, Boolean, Number, Array of primitives, DateTime, DataTable loaded via Read Range (not `new DataTable()`), GenericValue.
+**Detection:** Run Workflow Analyzer rules `ST-DBP-025` (variables) and `ST-DBP-028` (arguments). For coded workflows, check variables in scope of `WaitFor*` calls for serializable types. Serializable-safe types: Text, Boolean, Number, Array of primitives, DateTime, named DataTable (`TableName` set — Read Range sets it automatically; a bare `new DataTable()` without a name fails serialization), GenericValue.
 
 **Fix:** Replace non-serializable types with serializable alternatives or marshal data to strings/JSON before suspend. Close browser/file handles before suspend; re-open after resume.
 
