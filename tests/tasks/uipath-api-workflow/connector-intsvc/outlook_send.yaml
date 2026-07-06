@@ -62,7 +62,7 @@ success_criteria:
 
   - type: run_command
     description: "Workflow passes offline validation"
-    command: 'uip api-workflow validate ./OutlookSend/Workflow.json --output json | grep -q ''"Status": "Valid"'''
+    command: 'uip api-workflow validate OutlookSend/Workflow.json --output json | grep -q ''"Status": "Valid"'''
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
