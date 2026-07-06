@@ -1,7 +1,7 @@
 ---
 name: uipath-review
 description: "UiPath read-only reviewer — audit structure, quality, best practices for RPA (.xaml/.cs), agents (.py/agent.json), flows (.flow), BPMN (.bpmn), coded apps, solutions (.uipx). Does NOT edit files. For building/editing→domain skills."
-allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion
+allowed-tools: Bash, Read, Glob, Grep, WebFetch, AskUserQuestion
 user-invocable: true
 ---
 
@@ -266,7 +266,7 @@ The CLI runs every deterministic static check — structural/schema, placeholder
 | `.uipath/` or `app.config.json` | Coded App | *(phase 2)* |
 
 2. **Read each catalog file in full.** Every rule is judgment-form.
-3. **Guardrails — apply the structured guardrail workflow** (project-type specific; Step 0 fetches the live `uip agent guardrails catalog` + `list`, 30-min cache → **Audit Mode** for existing guardrails + **Recommend Mode** for missing ones):
+3. **Guardrails — apply the structured guardrail workflow** (project-type specific; Step 0 fetches the authored `uip agent guardrails catalog` — 30-min cache — plus the never-cached tenant-availability `uip agent guardrails list` → **Audit Mode** for existing guardrails + **Recommend Mode** for missing ones):
    - **Low-code** (`agent.json`): when `guardrails[]` is non-empty or the agent matches a guardrail use case, apply [`references/agents/guardrails/guardrails-review.md`](references/agents/guardrails/guardrails-review.md). Emits `LC_GUARDRAIL_ACTION_INEFFECTIVE` / `LC_GUARDRAIL_MISAPPLIED` (defects, `judgment` band) and `LC_GUARDRAIL_RECOMMENDED` (Info, one per missing guardrail).
    - **Coded** (SDK middleware / `@guardrail` decorators wired in the entry `.py`): when the entry source wires guardrails or the agent matches a use case, apply [`references/agents/guardrails/coded-guardrails-review.md`](references/agents/guardrails/coded-guardrails-review.md) (its Step 0 also fetches the public Python SDK docs that map a `validator_id` to its Python class/scope/enums). Emits `CODED_GUARDRAIL_ACTION_INEFFECTIVE` / `CODED_GUARDRAIL_MISAPPLIED` (defects, `judgment` band) and `CODED_GUARDRAIL_RECOMMENDED` (Info). The CLI's deterministic `CODED_GUARDRAIL_WRONG_IMPORT` / `CODED_GUARDRAIL_TOOL_SCOPE_NO_TOOLS` / `CODED_GUARDRAIL_INVALID_CONTRACT` (Step 2.5a) are carried verbatim and **not** re-flagged here.
    - Either way, if the guardrail catalog is unavailable, record the Audit-Mode rules under "Rules Skipped" and keep Recommend Mode's source-only detection.
@@ -546,7 +546,6 @@ Output a structured report in chat (do NOT create a file):
 
 **Rules Skipped (and why):**
 - `uip codedagent review` — CLI not available in environment (deterministic checks not run)
-- `LC_GUARDRAIL_EVALS_CONSISTENCY` — no eval set present to assess against
 
 > The Rule Findings section is required for every agent project (low-code or coded). It is omitted for project types whose catalog has not yet been authored (RPA, flows, coded apps as of phase 1).
 
