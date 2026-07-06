@@ -6,7 +6,7 @@ description: >
   review` returns it guardrail-clean, so the reviewer must fetch the live catalog
   (Audit Mode → Relevance), read `pii_detection`'s `when_not_to_use`, and cite
   `CODED_GUARDRAIL_MISAPPLIED`. Non-gating (integration tag). Needs the authed CLI.
-tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover, guardrail]
 
 run_limits:
   turn_timeout: 1200

@@ -8,7 +8,7 @@ description: >
   (guardrails category), then carry it into the report. Exercises the
   catalog-backed built-in format path; needs the authed CLI (the smoke runner
   passes UIPATH_CLI_* auth).
-tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover, guardrail]
 
 run_limits:
   turn_timeout: 1200
