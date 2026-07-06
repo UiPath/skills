@@ -300,6 +300,8 @@ uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<D
 
 **On validate failure:** one `Edit` turn to fix, then re-chain `validate && format` in one Bash. Do not validate after every individual Edit during T2 — intermediate states are expected to be invalid.
 
+> **A passing exit code with warnings is NOT done.** `flow validate` returns 0 even when `Data.Warnings` is non-empty — read the warnings, don't just check the exit code. The connector-keyword warning (`node "…" mentions the "<connector>" connector keyword but uses the generic Managed HTTP type core.action.http.v2 with no connection binding`) means the flow took the brand-name shortcut and will run against an undefined endpoint at debug time — resolve it by switching to the connector before reporting the flow complete (see [SKILL.md rule #3](../../../SKILL.md#critical-rules-universal) and the anti-pattern list). Treat this class of warning as a build failure for your own definition of "done."
+
 ### Common error categories
 
 - **Missing targetPort** — every edge needs a `targetPort` string
