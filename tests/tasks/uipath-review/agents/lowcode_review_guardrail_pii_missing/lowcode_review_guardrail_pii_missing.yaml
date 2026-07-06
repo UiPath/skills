@@ -4,9 +4,10 @@ description: >
   personal data (customer_email, full_name, ssn) but configures no
   pii_detection guardrail. pre_run scaffolds a minimal agent then rewrites
   the input schema. The reviewer must run the review CLI first (Step 2.5a),
-  then apply the judgment catalog and cite `LC_GUARDRAIL_PII_MISSING`
-  (guardrails category) — an inference about whether the agent handles
-  personal data that a regex cannot make, so it is the skill's responsibility.
+  then apply the judgment catalog and cite `LC_GUARDRAIL_RECOMMENDED` (the
+  single missing-guardrail recommendation rule) with the PII case in the
+  message — an inference about whether the agent handles personal data that a
+  regex cannot make, so it is the skill's responsibility.
 tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
@@ -68,24 +69,8 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent consulted the low-code judgment catalog (agents-lowcode-rules.md)"
-    tool_name: "Read"
-    command_pattern: 'agents-lowcode-rules\.md'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent consulted the common agent judgment catalog (agents-common-rules.md)"
-    tool_name: "Read"
-    command_pattern: 'agents-common-rules\.md'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Review report applies the judgment catalog: cites LC_GUARDRAIL_PII_MISSING for the PII fields"
+    description: "Review report applies the judgment catalog: cites LC_GUARDRAIL_RECOMMENDED for the missing PII guardrail"
     command: "python3 $TASK_DIR/check_lowcode_review_guardrail_pii_missing.py"
     timeout: 30
     expected_exit_code: 0

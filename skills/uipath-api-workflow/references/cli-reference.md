@@ -2,6 +2,88 @@
 
 All `uip` commands relevant to authoring, running, packaging, and publishing API workflows. The api-workflow-tool ships with `@uipath/cli` (no separate install).
 
+## `uip api-workflow init`
+
+Scaffold a new API workflow project in the **correct Studio Web editable shape**. This is the canonical way to create a project — do NOT hand-assemble the files.
+
+```bash
+uip api-workflow init <name> \
+  [--force] \
+  [--skip-solution-registration] \
+  [--output json]
+```
+
+| Argument / Flag | Required | Description |
+|-----------------|----------|-------------|
+| `<name>` | yes | Project name (and folder created under the cwd). Letters, numbers, spaces, `_`, `-` only. |
+| `--force` | no | Write files even if the target directory is non-empty (does not clear existing contents). |
+| `--skip-solution-registration` | no | Do NOT auto-register the project in the surrounding solution `.uipx`. Use for standalone (CLI-only) projects. |
+
+Run it from inside the solution directory (the folder containing the `.uipx`) so it auto-registers the project. It writes four files into `<name>/`:
+
+| File | Content |
+|------|---------|
+| `project.uiproj` | `{ "ProjectType": "Api", "Name": "<name>", "Description": null, "MainFile": "Workflow.json" }` |
+| `Workflow.json` | The `WorkflowStart` skeleton (same as the empty template) |
+| `entry-points.json` | `$schema`/`$id`, one entry: `filePath: "content/Workflow.json"`, fresh `uniqueId`, `type: "Api"`, `input`/`output` null |
+| `bindings_v2.json` | `{ "version": "2.0", "resources": [] }` |
+
+When run inside a solution, it also appends the project to the `.uipx` `Projects` array (`ProjectRelativePath: "<name>/project.uiproj"`, a fresh `Id`, `Type: "Api"`). It does NOT write `.local/ProjectSettings.json` — Studio Web creates that on first open; do not author it by hand.
+
+### Success output
+
+```json
+{
+  "Result": "Success",
+  "Code": "ApiWorkflowInit",
+  "Data": {
+    "Status": "Created successfully",
+    "Path": "<projectDir>",
+    "SolutionRegistration": { /* registration result; NextSteps when applicable */ }
+  }
+}
+```
+
+Failure (`Result: "Failure"`, exit 1) on an invalid name or a non-empty directory without `--force` (`Message: "Failed to create API Workflow project"`, details in `Instructions`).
+
+## `uip api-workflow build`
+
+Build (compile) a single API workflow project — a fast project-scoped check that does not touch unrelated projects in a solution.
+
+```bash
+uip api-workflow build <project-path> [--output json]
+```
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `<project-path>` | yes | Path to the API workflow project directory or `.uip` file. |
+
+Output: `{ "Result": "Success", "Code": "ApiWorkflowBuild", "Data": { "Success": true } }`. Exit 1 on failure.
+
+## `uip api-workflow pack`
+
+Pack a single API workflow project into a `.nupkg`. Use to verify one project in isolation; full solution packaging still goes through `uip solution pack`.
+
+```bash
+uip api-workflow pack <project-path> <destinationPath> \
+  [--package-id <id>] \
+  [--package-version <version>] \
+  [--signing-certificate-path <path>] \
+  [--signing-certificate-password <password>] \
+  [--signing-timestamp-server <url>] \
+  [--output json]
+```
+
+| Argument / Flag | Required | Description |
+|-----------------|----------|-------------|
+| `<project-path>` | yes | API workflow project directory or `.uip` file. |
+| `<destinationPath>` | yes | Directory where the `.nupkg` is written. |
+| `--package-id <id>` | no | NuGet package ID. |
+| `--package-version <version>` | no | NuGet package version. |
+| `--signing-*` | no | Optional package signing (certificate path/password, timestamp server). |
+
+Output: `{ "Result": "Success", "Code": "ApiWorkflowPack", "Data": { "Success": true, "Packages": ["<path>.nupkg"] } }`. Exit 1 on failure.
+
 ## `uip api-workflow run`
 
 Execute an API workflow JSON file locally using the Serverless Workflow executor.
@@ -132,6 +214,7 @@ uip api-workflow registry stub <activity-type-id> \
 | `--instance <n>` | no | Suffix for slot/export bucket key. Default `1`. `--instance 2` produces `<Name>_2` keys. |
 | `--slot-key <PascalCase>` | no | Override the auto-derived PascalCase slot key. The export bucket key always derives from `objectName + "_<n>"` (both Curated and Generic) and is not affected by this flag. |
 | `-i, --inputs <json>` | no | JSON object mapping field names to values. Field names match the IS schema (flat dotted keys — `"message.subject"`, not `{message:{subject:…}}`). Pass bare strings for literals; `${...}` for expression references. |
+| `--resource-key <field>=<key>` | no (repeatable) | Bind a Solution-resource picker field (listed in `Data.SolutionResourceFields`) to a solution resource **key**, so StudioWeb's picker renders the selection. The key is the `key` field of the matching file under the solution's `resources/` tree (e.g. `resources/solution_folder/process/process/<Name>.json`). The field's *value* (the resource name) still goes via `--inputs`. Requires a StudioWeb build with `savedResourceSelections` support; older builds ignore the entry (runtime unaffected). |
 
 Success output:
 ```json
@@ -152,7 +235,7 @@ Success output:
 }
 ```
 
-`Data.Activity` drops directly into the root sequence's `do` array. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.Parameters` (query/path/multipart) and `Data.RequestFields` (body) list the operation's inputs with `required` flags; `Data.ResponseFields` lists the fields the IS schema says will be present on the activity output (under `.content.<field>` for IntSvc kind).
+`Data.Activity` drops directly into the root sequence's `do` array. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.Parameters` (query/path/multipart) and `Data.RequestFields` (body) list the operation's inputs with `required` flags; `Data.ResponseFields` lists the fields the IS schema says will be present on the activity output (under `.content.<field>` for IntSvc kind). `Data.SolutionResourceFields` (when present) lists fields StudioWeb renders as Solution-resource pickers — see [Solution resources as activity fields](connector-activity-discovery.md#solution-resources-as-activity-fields-run-job-add-queue-item-) for the authoring recipe.
 
 `Data.Warnings` (when present):
 - `"IS Elements metadata could not be fetched…"` → IS schema lookup failed; stub uses fallback path `/<objectName>` and ships no `requestFields`. Endpoint may be wrong (no hub prefix, no multipart declaration).
@@ -207,7 +290,7 @@ See [connector-activity-discovery.md](connector-activity-discovery.md) for the f
 
 ## `uip api-workflow bindings sync`
 
-Walk a `Workflow.json`, extract IntSvc-kind connector activities, and emit the canonical `bindings_v2.json` file next to it. Pure-local transformation — no auth, no API calls. This mirrors what StudioWeb computes in-memory via `computeBindings$` when a workflow is opened in the designer, and what `solution pack` writes at pack time. The output is the **required input** to `uip solution resources refresh`, which is what actually writes the Solution catalogue file AND per-user debug overwrites (the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click).
+Walk a `Workflow.json`, extract IntSvc-kind connector activities, and emit the canonical `bindings_v2.json` file next to it. Connection bindings are derived locally; **Solution-resource bindings** (process/queue/asset fields like Run Job's `ReleaseName`) are derived by querying IS metadata for each activity's object — when IS is unreachable, generation is skipped and any pre-existing entries of those kinds are preserved rather than dropped. This mirrors what StudioWeb computes in-memory via `computeBindings$` when a workflow is opened in the designer, and what `solution pack` writes at pack time. The output is the **required input** to `uip solution resources refresh`, which is what actually writes the Solution catalogue file AND per-user debug overwrites (the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click).
 
 **When to run.** After every `registry stub --connection-id <uuid>` that adds an IntSvc activity to a workflow inside a `Solution/` tree. Always paired with `uip solution resources refresh` (the next step in the typical sequence).
 
@@ -232,15 +315,17 @@ Success output:
   "Code": "BindingsSync",
   "Data": {
     "BindingsPath": "<dir>/bindings_v2.json",
-    "ResourceCount": 1,
+    "ResourceCount": 2,
     "ActivitiesVisited": 1,
     "IntSvcActivities": 1,
-    "DuplicatesCollapsed": 0
+    "DuplicatesCollapsed": 0,
+    "ResourceBindings": 1,
+    "PreservedResources": 0
   }
 }
 ```
 
-`ResourceCount` is the number of unique connections in the output (one binding per unique UUID). `DuplicatesCollapsed` reports activities that shared a connection — two Outlook activities reading the same mailbox count as 1 binding, with `DuplicatesCollapsed: 1`.
+`ResourceCount` is the total entries written (connections + resource bindings + preserved). `DuplicatesCollapsed` reports activities that shared a connection — two Outlook activities reading the same mailbox count as 1 binding, with `DuplicatesCollapsed: 1`. `ResourceBindings` counts Solution-resource entries generated from IS metadata (e.g. `process | RPA Workflow` for a Run Job activity); `PreservedResources` counts pre-existing non-connection entries carried over because this run did not regenerate them.
 
 Failure modes:
 - `"Workflow file not found: <path>"` — `--workflow` does not exist. Pass an existing path.
@@ -311,23 +396,23 @@ Sample output (Outlook `getNewestEmail`, `--operation List`):
 
 For every entry with `required: true`, confirm the stub's emitted activity has a value at `with.<location>Parameters.<name>`. Re-stub with `--inputs '{"<name>":"<value>"}'` or hand-edit. See [connector-activity-discovery.md — Required-field cross-check](connector-activity-discovery.md#required-field-cross-check--the-stub-drops-required-true-request-fields) and [troubleshooting.md](troubleshooting.md#required-request-field-dropped-by-registry-stub).
 
-## `uip solution new`
+## `uip solution init`
 
-Create an empty solution file. Required before adding API workflow projects.
+Initialize a new empty solution. Required before adding API workflow projects. (Formerly `uip solution new` — that verb was retired; `new` now errors `unknown command 'new'`.)
 
 ```bash
-uip solution new <solutionName> [--output json]
+uip solution init <solutionName> [--output json]
 ```
 
 | Argument | Description |
 |----------|-------------|
-| `<solutionName>` | Solution name or path. Appends `.uipx` if no extension. Creates a folder with the same base name. |
+| `<solutionName>` | Solution name or path. Creates a directory with this name containing a `.uipx` manifest (empty `Projects` array) plus `AGENTS.md`/`CLAUDE.md` briefing files. |
 
-Output: `{ "Result": "Success", "Code": "SolutionNew", "Data": { "Path": "<file>" } }`.
+Output: `{ "Result": "Success", "Code": "SolutionInit", "Data": { "Status": "Created successfully", ... } }`.
 
 ## `uip solution project add` *(scope: solution-tool)*
 
-Add an API workflow project (folder containing `project.json` with `Type: "Api"`) to a solution. See `uip solution project add --help` for current flags.
+For **new** API workflow projects, prefer `uip api-workflow init <name>` run inside the solution directory — it scaffolds the correct `project.uiproj` shape AND auto-registers the project in the `.uipx`. `uip solution project add` errors (`Project name already exists`) on an already-registered project, and `remove`+`add` destroys the project `Id`. Reserve direct `.uipx` edits for converting a legacy `project.json` project in place (change only `ProjectRelativePath` → `<folder>/project.uiproj`, preserve `Id`/`Type`). A registerable project folder must contain `project.uiproj` (`ProjectType: "Api"`) + `Workflow.json` + `entry-points.json` — see [workflow-file-format.md](workflow-file-format.md#project-structure-studio-web-editable-contract) and SKILL.md rule 19a. See `uip solution project add --help` for current flags.
 
 ## `uip solution pack`
 
@@ -353,7 +438,7 @@ uip solution pack <solutionPath> <outputPath> \
 
 For each `Type: "Api"` project:
 
-1. Validates project structure (must contain `project.json`)
+1. Reads the project file — `project.uiproj` (`ProjectType: "Api"`) for the Studio Web editable shape — and the entry point from `entry-points.json`
 2. Copies workflow JSON files to a clean output directory
 3. Generates `operate.json` — runtime configuration consumed by the executor
 4. Generates `package-descriptor.json` — manifest for the Cloud platform
@@ -398,22 +483,26 @@ Activate / configure / inspect a published solution. Subcommands: `deploy run`, 
 ## End-to-End Example
 
 ```bash
-# 1. Author the workflow
-cp ./.claude/plugins/uipath/skills/uipath-api-workflow/assets/templates/api-workflow-template.json \
-   ./MyApiProject/main.json
-# ... edit main.json to add tasks ...
+# 0. (once) create the solution if you don't have one
+uip solution init MySolution --output json
+
+# 1. Scaffold the project in the correct Studio Web shape + register it in the .uipx (rule 19a).
+#    init's <name> takes no slashes — cd into the solution dir so it finds the parent .uipx.
+cd ./MySolution
+uip api-workflow init MyApiProject --output json
+# ... edit MyApiProject/Workflow.json to add tasks ...
 
 # 2. Local smoke test
-uip api-workflow run ./MyApiProject/main.json --no-auth --output json
+uip api-workflow run ./MyApiProject/Workflow.json --no-auth --output json
 
 # 3. Authenticate (only needed for publish / deploy)
 uip login
 
 # 4. Authenticated run
-uip api-workflow run ./MyApiProject/main.json --output json
+uip api-workflow run ./MyApiProject/Workflow.json --output json
 
 # 5. Pack the solution
-uip solution pack ./MySolution ./build \
+uip solution pack . ./build \
   --name MyApiSolution \
   --version 1.0.0 \
   --output json
@@ -428,8 +517,7 @@ uip solution publish ./build/MyApiSolution.zip \
 
 The agent should not invent these — they are NOT part of the api-workflow-tool surface:
 
-- `uip api-workflow publish` <!-- uip-check-skip -->
-- `uip api-workflow init` <!-- uip-check-skip -->
+- `uip api-workflow publish` <!-- uip-check-skip --> (publish goes through `uip solution publish`)
 - `uip apw <anything>` (no alias) <!-- uip-check-skip -->
 
-Build / publish go through `uip solution pack` / `uip solution publish`. Validation is done by running with `--no-auth`.
+These DO exist (don't route around them): `uip api-workflow init` (scaffold), `uip api-workflow build` (compile one project), `uip api-workflow pack` (one-project `.nupkg`). Solution-level packaging/publishing go through `uip solution pack` / `uip solution publish`. Offline validation is `uip api-workflow validate` (or running with `--no-auth`).

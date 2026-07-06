@@ -57,7 +57,7 @@
       },
       "last_synced": null
     },
-    "uipath-data-fabric": {
+    "uipath-connector-builder": {
       "status": "in-development",
       "confluence": {
         "page_id": null,
@@ -71,6 +71,11 @@
         "page_id": null,
         "url": null
       },
+      "last_synced": null
+    },
+    "uipath-functions": {
+      "status": "preview",
+      "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-governance": {

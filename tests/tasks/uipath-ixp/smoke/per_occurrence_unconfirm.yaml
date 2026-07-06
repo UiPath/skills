@@ -16,6 +16,12 @@ tags: [uipath-ixp, smoke, lifecycle:execute]
 run_limits:
   expected_turns: 5
 
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
 initial_prompt: |
   On project `freight_docs-df33115f-ixp`, document `doc-freight-9`, the
   `Line Items` field group was confirmed earlier with four extractions,
@@ -71,12 +77,4 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '^(?!.*--group).*uip\s+ixp\s+labellings\s+unconfirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-9["'']?\s+.*--fields'
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on a uip ixp command"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0

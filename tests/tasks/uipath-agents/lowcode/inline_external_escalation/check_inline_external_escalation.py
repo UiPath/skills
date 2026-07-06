@@ -5,9 +5,10 @@ Validates:
   1. Flow has a `uipath.agent.autonomous` node whose `inputs.source`
      matches the sub-folder UUID of the inline agent under the flow
      project.
-  2. Flow has a `uipath.agent.resource.escalation` node whose
-     `inputs.source` matches the sub-folder UUID of the inline agent's
-     resource (under `<inline-agent-uuid>/resources/`).
+  2. Flow has an escalation node (type starting with
+     `uipath.agent.resource.escalation`, e.g. the `.coded-action-app`
+     variant) whose `inputs.source` matches the sub-folder UUID of the
+     inline agent's resource (under `<inline-agent-uuid>/resources/`).
   3. Edge wires agent.escalation -> escalation.input.
   4. Inline agent dir has an escalation resource.json under its
      resources/ tree with:
@@ -45,7 +46,11 @@ from _shared.inline_wiring import (  # noqa: E402
 )
 
 FLOW_PATH = Path(os.getcwd()) / "FraudFlowSol" / "FraudFlow" / "FraudFlow.flow"
-ESCALATION_NODE_TYPE = "uipath.agent.resource.escalation"
+# Escalation nodes are registered as concrete variants (e.g.
+# `uipath.agent.resource.escalation.coded-action-app`,
+# `...escalation.quick-form`); there is no bare `...escalation` node. Match by
+# prefix so any escalation variant the agent wires from the registry counts.
+ESCALATION_NODE_TYPE_PREFIX = "uipath.agent.resource.escalation."
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
 EXPECTED_APP_NAME = "FraudEscalation"
@@ -55,7 +60,7 @@ EXPECTED_FOLDER_NAME = "Shared/uipath-agents/FraudEscalation"
 def main() -> None:
     flow = load_json(FLOW_PATH)
     agent_node = find_autonomous_agent_node(flow)
-    escalation_node = find_resource_node(flow, node_type=ESCALATION_NODE_TYPE)
+    escalation_node = find_resource_node(flow, node_type_prefix=ESCALATION_NODE_TYPE_PREFIX)
     print(f"OK: flow has {agent_node['type']} and {escalation_node['type']} nodes")
 
     agent_source = (agent_node.get("inputs") or {}).get("source")

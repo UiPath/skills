@@ -25,7 +25,7 @@ initial_prompt: |
 
   Wire: Trigger -> HITL ->|completed| Script -> End
 
-  Use the inline quickform node (uipath.human-in-the-loop).
+  Use the inline quickform node (uipath.human-in-the-loop.quick-form).
   Validate the flow after building.
 
 success_criteria:
@@ -41,7 +41,7 @@ success_criteria:
     description: "Flow contains inline HITL node"
     path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
     includes:
-      - '"uipath.human-in-the-loop"'
+      - '"uipath.human-in-the-loop.quick-form"'
     weight: 2.0
     pass_threshold: 1.0
 

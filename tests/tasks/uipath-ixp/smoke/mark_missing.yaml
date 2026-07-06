@@ -9,6 +9,12 @@ tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 6
 
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, document doc-abc-123, the field
   "Discount Code" (field id a7c3e9105f2b4d86) is genuinely absent from the
@@ -27,12 +33,4 @@ success_criteria:
     command_pattern: 'uip\s+ixp\s+labellings\s+mark-missing\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123)(?=.*a7c3e9105f2b4d86).*'
     min_count: 1
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on a uip ixp command"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0

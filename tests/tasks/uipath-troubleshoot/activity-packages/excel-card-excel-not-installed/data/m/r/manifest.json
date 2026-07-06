@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Excel-not-installed (branch 1) of the excel-activities/excel-application-card-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (BusinessException 'Error opening workbook. Make sure Excel is installed.' on ExcelApplicationScope_1) → jobs logs (host scope acquisition Trace lines: COM CLSID lookup for Excel.Application returns CO_E_CLASSSTRING / no excel.exe found on host) → workflow source. The Classic Excel Application Scope on a headless Robot host (no Excel install) is the smoking gun.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "89d2086078.json"},
+    {"match": "or folders list --output json", "file": "89d2086078.json"},
+    {"match": "or jobs list --folder-key \"f00bbbbb-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "9243450e08.json"},
+    {"match": "or jobs list --folder-key f00bbbbb-3333-4444-5555-666677778888 --state Faulted --output json", "file": "9243450e08.json"},
+    {"match": "or jobs get \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "2d646a7df9.json"},
+    {"match": "or jobs get aa111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "2d646a7df9.json"},
+    {"match": "or jobs history \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "61f4570ec9.json"},
+    {"match": "or jobs history aa111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "61f4570ec9.json"},
+    {"match": "or jobs logs \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "47d6a74a1d.json"},
+    {"match": "or jobs logs aa111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "47d6a74a1d.json"}
+  ]
+}

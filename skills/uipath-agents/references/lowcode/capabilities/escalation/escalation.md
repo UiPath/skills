@@ -11,7 +11,7 @@ The only channel type currently supported end-to-end by `uip solution resources 
 
 **Key pattern:** the skill writes only the agent-level `resources/{EscalationName}/resource.json`. `uip solution resources refresh` emits an App binding into `bindings_v2.json` and then hand-writes the four solution-level files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus two `debug_overwrites.json` entries (`kind: "app"`, `kind: "process"`) automatically. No manual solution-level authoring is required for `actionCenter` channels.
 
-**Inline agents (escalation inside a flow):** still run the full discovery below (including `uip solution resources list --kind App`) and author the `resource.json` the same way — then **also** wire a `uipath.agent.resource.escalation` flow node (see Step 6b). Without the node the escalation is never reached at runtime.
+**Inline agents (escalation inside a flow):** still run the full discovery below (including `uip solution resources list --kind App`) and author the `resource.json` the same way — then **also** wire an escalation flow node, type `uipath.agent.resource.escalation.<variant>` (see Step 6b). Without the node the escalation is never reached at runtime.
 
 ## Discovery
 
@@ -48,41 +48,31 @@ Filter the result for entries whose `Type` is `"Workflow Action"` (Coded / Coded
 | `Folder` | `channel.properties.folderName` — literal value from `uip solution resources list`. External apps return the Orchestrator folder (e.g., `"Shared/Approvals"`); solution-internal apps return `"solution_folder"`. `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. |
 | `FolderKey` | folder GUID — used in `debug_overwrites.json` |
 
-`Key` gives you everything you need to identify the backing app, but `resource list` does not return `systemName` or `deployVersion` — both are required to fetch the action schema in Step 3. Query the Apps API once, filtered client-side by `id == <KEY>`, to extract them:
-
-```bash
-# SECURITY: Never read the auth file directly. Keep the token inside the shell.
-# Auth lives at $HOME/.uipath/.auth normally; fall back to /.uipath/.auth (root) for some sandboxes.
-bash -c 'A="$HOME/.uipath/.auth"; [ -f "$A" ] || A="/.uipath/.auth"; set -a; source "$A"; set +a; curl -s \
-  "${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/apps_/default/api/v1/default/action-apps?state=deployed&pageNumber=0&limit=100" \
-  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
-  -H "X-Uipath-Tenantid: $UIPATH_TENANT_ID" \
-  -H "Accept: application/json"'
-```
-
-From the matching entry in `.deployed[]`, extract:
-
-| Field | Use as |
-|-------|--------|
-| `systemName` | `appSystemName` query parameter for action-schema (Step 3) |
-| `deployVersion` | `channel.properties.appVersion` (integer) AND `version` query parameter for action-schema |
+`Key` identifies the backing app. `resource list` does not return `systemName`, `deployVersion`, or the action schema — fetch those in Step 3 with `uip solution resources get`.
 
 ### Step 3 — Fetch the app's action schema
 
-Use `systemName` and `deployVersion` from Step 2.
+Pass the `Key` from Step 2 to `uip solution resources get` — one CLI-native call returns the app spec, including the action schema. Works for both external (`Source: "Remote"`) and solution-internal (`Source: "Local"`) apps, even before the app is imported into the solution. Run from the solution directory (or pass `--solution-folder <path>`).
 
 ```bash
-bash -c 'A="$HOME/.uipath/.auth"; [ -f "$A" ] || A="/.uipath/.auth"; set -a; source "$A"; set +a; curl -s \
-  "${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/apps_/default/api/v1/default/action-schema?appSystemName=<SYSTEM_NAME>&version=<DEPLOY_VERSION>" \
-  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
-  -H "X-Uipath-Tenantid: $UIPATH_TENANT_ID" \
-  -H "Accept: application/json"'
+uip solution resources get <APP_KEY> --output json
 ```
 
-Response shape:
+The `Data.Spec` object carries everything needed to build the channel:
+
+| `Spec` field | Use as |
+|--------------|--------|
+| `AppSystemName` | the app `systemName` |
+| `Name` | `channel.properties.appName` (matches the `Name` from `resources list`) |
+| `ActionSchema` | a JSON **string** — `json.loads` it to get `inputs` / `inOuts` / `outputs` / `outcomes` (Step 4) |
+
+`channel.properties.appVersion` (the integer deploy version) is the `version` field of the parsed `ActionSchema` — not `Spec.Version`, which is the package semver (e.g. `"1.0.0"`).
+
+Parsed `ActionSchema` shape:
 
 ```jsonc
 {
+  "version": 1,
   "inputs":   [{ "name": "Content", "type": "System.String", ... }],
   "outputs":  [],
   "inOuts":   [{ "name": "Comment", "type": "System.String", "description": "..." }],
@@ -92,7 +82,7 @@ Response shape:
 
 ### Step 4 — Build the channel schemas
 
-From the action-schema response, construct the channel fields:
+From the parsed `ActionSchema` (Step 3), construct the channel fields:
 
 - `channel.inputSchema` — object whose `properties` combine every `inputs[]` entry + every `inOuts[]` entry. Map each dotnet `type` to a JSON Schema type using the same rules as external RPA tools (`System.String` → `"string"`, `System.Int32`/`Int64`/`Decimal`/`Double` → `"number"`, `System.Boolean` → `"boolean"`, other → `"string"`). Preserve `description` when present.
 - `channel.outputSchema` — object whose `properties` combine every `inOuts[]` entry + every `outputs[]` entry. Same mapping rules.
@@ -178,10 +168,10 @@ Escalations hand off agent control to a human via a channel. Generate fresh UUID
         "<outcomeName>": "continue"                 // "continue" (agent resumes) | "end" (agent stops)
       },
       "properties": {
-        "resourceKey": "<appId-guid>",              // from `action-apps?state=deployed` → `id`
-        "appName": "<deploymentTitle>",             // from the same response → `deploymentTitle`
+        "resourceKey": "<appId-guid>",              // the `Key` from `uip solution resources list` (== the key passed to `resources get`)
+        "appName": "<appName>",                     // `Name` from `uip solution resources list` (== `Spec.Name` from `resources get`)
         "folderName": "Shared/Approvals",           // literal Folder from `uip solution resources list`. External: Orchestrator folder (e.g., "Shared/Approvals"). Solution-internal: "solution_folder". uip agent refresh translates this to folderPath in the App binding inside bindings_v2.json.
-        "appVersion": 1,                            // from the same response → `deployVersion` (integer)
+        "appVersion": 1,                            // integer — the `version` field of the parsed `Spec.ActionSchema` (NOT `Spec.Version`, the package semver)
         "isActionableMessageEnabled": false,
         "actionableMessageMetaData": null
       },
@@ -211,7 +201,7 @@ Escalations hand off agent control to a human via a channel. Generate fresh UUID
 - Each value is `"continue"` (agent processes the outcome and continues) or `"end"` (agent stops when the outcome fires).
 - Default every outcome to `"continue"` unless the user has specified otherwise.
 
-**`inputSchema` / `outputSchema` derivation from the action schema response:**
+**`inputSchema` / `outputSchema` derivation from the parsed `ActionSchema`:**
 - `channel.inputSchema.properties` = union of `action-schema.inputs[].name` and `action-schema.inOuts[].name` — these are what the human sees in the task form.
 - `channel.outputSchema.properties` = union of `action-schema.inOuts[].name` and `action-schema.outputs[].name` — these are what the agent receives back.
 - For each property, set `type` by mapping the dotnet type string in the same way as external RPA process tools (`System.String` → `"string"`, `System.Int32`/`Int64`/`Decimal`/`Double` → `"number"`, `System.Boolean` → `"boolean"`, everything else → `"string"`).
@@ -239,7 +229,7 @@ Use the full shape from § Agent-Level Resource Shape above. Generate fresh UUID
 
 ### Step 6b — Inline agents only: wire the escalation flow node
 
-**Skip if the agent is standalone.** If the escalation is on an **inline** agent (embedded in a flow), the `resource.json` alone is never reached at runtime — you MUST also add a `uipath.agent.resource.escalation` flow node connected to the autonomous node's `escalation` handle. Fetch its manifest with `uip maestro flow registry get <…uipath.agent.resource.escalation…> --output json`, then hand the node + edge authoring to the `uipath-maestro-flow` skill (Critical Rule 16 — this skill does not author `.flow` graphs directly). Run Step 7's refresh/validate with `--inline-in-flow` plus `--bindings-target <FlowProjectDir>/bindings_v2.json`. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
+**Skip if the agent is standalone.** If the escalation is on an **inline** agent (embedded in a flow), the `resource.json` alone is never reached at runtime — you MUST also add an escalation flow node connected to the autonomous node's `escalation` handle. The registry exposes the escalation node as concrete variants (e.g. `uipath.agent.resource.escalation.coded-action-app` for an Action Center / Workflow Action app) — there is no bare `uipath.agent.resource.escalation` node. Discover the available variant with `uip maestro flow registry search "escalation" --output json` (pick the one with `AvailableOnTenant: true`), fetch its manifest with `uip maestro flow registry get <NodeType> --output json`, then hand the node + edge authoring to the `uipath-maestro-flow` skill (Critical Rule 16 — this skill does not author `.flow` graphs directly). Run Step 7's refresh/validate with `--inline-in-flow` plus `--bindings-target <FlowProjectDir>/bindings_v2.json`. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
 
 ### Step 7 — Refresh, validate, and refresh solution resources
 

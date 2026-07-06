@@ -339,12 +339,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip commands"
+    description: "Agent used --output json (advisory — convention only, non-gating)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0   # advisory: the flag is outcome-invisible — never gate on it
 
   - type: command_executed
     description: "Agent linked flow project to solution"
@@ -420,7 +420,7 @@ Validate JSON file structure and values using JMESPath assertions. Supported ope
 
 ### `run_command`
 
-Execute an arbitrary shell command and check the exit code. Use it for direct verification of state the agent created. From `uipath-data-fabric/integration_csv_import.yaml`:
+Execute an arbitrary shell command and check the exit code. Use it for direct verification of state the agent created. From `uipath-platform/data-fabric/integration_csv_import.yaml`:
 
 ```yaml
 - type: run_command
@@ -478,7 +478,7 @@ Score is binary: 1.0 when matches ≤ `max_count` (default `0`), else 0.0. Empty
 
 | Weight | When to use | Example from existing tests |
 |--------|-------------|---------------------------|
-| `1.0` | Supporting checks | `--output json` flag used, presence of an auxiliary file |
+| `1.0` | Supporting checks | presence of an auxiliary file, an advisory (`pass_threshold: 0`) convention check such as `--output json` used |
 | `1.5` | Core behavior | `uip solution new` executed, `.flow` file created |
 | `2.0` | Important artifact content | `.flow` file contains the expected node type or handle wiring |
 | `3.0` | Primary artifact validity | `uip maestro flow validate` passes on the generated flow file |

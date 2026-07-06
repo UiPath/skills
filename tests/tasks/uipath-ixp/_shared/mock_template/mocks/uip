@@ -1,0 +1,17 @@
+#!/bin/sh
+# Offline `uip` mock for the uipath-ixp SHAPE-ONLY smoke tasks.
+#
+# These smoke tasks are graded purely on command shape (command_executed /
+# command_not_executed) and must NOT authenticate or reach a live tenant.
+# Without this mock the smoke harness (tests/experiments/smoke.yaml +
+# .github/workflows/smoke-skills.yml) injects a live alpha bot token, so a bare
+# `uip ixp ...` would hit designtime-api on alpha — 404-ing on fixture ids like
+# `doc-abc-123` — i.e. real traffic with no test value. `mock_path_dirs: [mocks]`
+# PATH-prepends this script so `uip` resolves here instead of the real CLI.
+#
+# It records each invocation and fails like an unauthenticated CLI WITHOUT any
+# network call, matching each task's "commands will fail with auth errors —
+# expected" prompt framing.
+printf '%s\n' "$*" >> "$(dirname "$0")/.calls.log" 2>/dev/null || true
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1

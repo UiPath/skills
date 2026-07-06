@@ -1,0 +1,61 @@
+task_id: skill-agent-guardrail-custom-boolean-filter
+description: >
+  Custom guardrail with a boolean rule and a filter (redact) action (low-code).
+  A pre-built Web Research Briefing Agent is seeded with no guardrails. Its
+  "Send message to channel" (Slack) tool returns a boolean `ok` and a string
+  `ts` (message timestamp). Add a custom (deterministic) guardrail that, when a
+  send succeeds (`ok` == true), redacts the `ts` field from the tool output
+  instead of blocking. Verifies a Tool-scoped custom guardrail with $ruleType
+  "boolean" (operator "equals", boolean value) and a filter action with a
+  non-empty fields array. Covers the boolean-rule and filter-action gaps —
+  filter is only legal on custom rules, never on built-in validators.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
+max_iterations: 1
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/WebResearchBriefingSolution
+
+initial_prompt: |
+  I have a web research agent at WebResearchBriefingSolution/WebResearchBriefingAgent.
+  It posts briefings to Slack with the "Send message to channel" tool. That tool
+  returns a boolean `ok` flag and a `ts` message-timestamp string in its output.
+  When a post succeeds (`ok` is true), I want the `ts` timestamp redacted from the
+  tool output so it does not leak downstream — don't block the run, just filter
+  that field out. Add a guardrail on the "Send message to channel" tool that does
+  this, and validate when you are done.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the agent"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Custom boolean-rule guardrail with filter action on Send message to channel"
+    command: "python3 $TASK_DIR/check_custom_boolean_filter.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 16
+  max_turns: 40
+  turn_timeout: 1200

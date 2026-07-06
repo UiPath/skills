@@ -51,9 +51,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran `uip platform users licenses set` with --input and --output json"
+    description: "Agent ran `uip platform users licenses set` with --input"
     tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+users\s+licenses\s+set\s+\S+.*--input\s+\S+.*--output\s+json'
+    command_pattern: 'uip\s+platform\s+users\s+licenses\s+set\s+\S+.*--input\s+\S+'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

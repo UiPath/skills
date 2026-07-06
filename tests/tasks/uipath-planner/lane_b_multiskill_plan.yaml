@@ -1,0 +1,51 @@
+task_id: skill-planner-integration-lane-b-multiskill-plan
+description: >
+  Lane B (non-PDD) plan-emission coverage: a doc-less request spanning several
+  separately-built projects must engage the planner, route to Lane B, and emit
+  an implementation plan that routes work to the correct specialists
+  (uipath-maestro-flow + uipath-rpa + uipath-agents). Lane B plan emission was
+  previously untested. Criteria kept to high-confidence routing/structure
+  tokens (not prose) to stay low-flake.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 16
+  task_timeout: 1800
+  turn_timeout: 1500
+
+initial_prompt: |
+  I want to build a UiPath solution from scratch — I have NO design document.
+  The solution is one Maestro Flow that orchestrates a brand-new RPA process
+  (reads invoices, types them into SAP) and a brand-new agent (classifies the
+  invoice type). All three are separate projects I still need to build.
+
+  Load the appropriate UiPath skill. Work autonomously — don't ask me
+  questions, and don't redesign, build, or scaffold anything yet. Produce the
+  implementation plan only: break the work into tasks routed to the right
+  specialist skills, and save it as `solution-plan.md` in the current
+  directory.
+
+success_criteria:
+  - type: file_exists
+    description: "Lane B wrote the implementation plan file"
+    path: "solution-plan.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Tasks route to the correct specialist for each separate project"
+    path: "solution-plan.md"
+    includes:
+      - "uipath-maestro-flow"
+      - "uipath-rpa"
+      - "uipath-agents"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Stayed in planning — did not start building (no .xaml/.flow/agent.json authored)"
+    command: "! find . \\( -name '*.xaml' -o -name '*.flow' -o -name 'agent.json' \\) -not -path '*/.venv/*' -not -path '*/node_modules/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

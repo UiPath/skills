@@ -1,0 +1,133 @@
+task_id: skill-datafabric-integration-folder-records
+description: >
+  Integration test: agent creates a folder-scoped entity, seeds records into it,
+  and verifies entity-level folder isolation — the entity is visible in its
+  home folder's `entities list` and NOT visible from a different folder.
+  Exercises `--folder-key` across entity create, records insert, and entities
+  list. Grading is via command-shape + an llm_judge on the agent's final
+  walk-through — no self-report file. Complements integration_entity_scope,
+  which covers scope-visibility more broadly.
+tags: [uipath-platform, data-fabric, integration, entity-scope, records, mode:operate, lifecycle:setup]
+run_limits:
+  expected_turns: 25
+  max_turns: 45
+  turn_timeout: 600
+
+initial_prompt: |
+  We're setting up a small folder-scoped list for a regional-reports test.
+
+  First, take a look at the folders on the tenant. If there are at least
+  two, call the first one folder A and the second folder B. If there's
+  only one, note that and stop — this test needs two folders.
+
+  Create a list called `CE_FolderRecordsTest` scoped to folder A, with
+  two columns:
+    - Name — required text, up to 100 characters
+    - Value — required whole number, 0 to 1000
+
+  Add three rows to it in folder A:
+    - "R1", 10
+    - "R2", 20
+    - "R3", 30
+
+  Now check the folder-scope behavior:
+    - Query the list from folder A — expect all 3 rows.
+    - Look at the folder-list output from folder B's context (list the
+      entities scoped to folder B). `CE_FolderRecordsTest` should NOT
+      show up there — folder A is where it lives.
+    - Look at the folder-list output from folder A's context. The list
+      SHOULD show up there.
+
+  When you're done, walk me through what you observed for each of those
+  three checks — did the row count / visibility match what we expected?
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed folders to pick folder A and folder B"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+folders\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the entity with --folder-key (folder-scoped placement)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_FolderRecordsTest)(?=.*--folder-key)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --folder-key when inserting records into folder A"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*--folder-key'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed entities with --folder-key at least twice (folder A and folder B contexts, to compare visibility)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+list.*--folder-key'
+    min_count: 2
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent correctly observed row count in folder A + entity-visibility contrast between folder A and folder B"
+    include_agent_output: true
+    prompt: |
+      The agent seeded 3 rows into an entity `CE_FolderRecordsTest` scoped to
+      folder A, then checked two folder-listing outputs (`entities list
+      --folder-key <A>` and `--folder-key <B>`).
+
+      Read the agent's final walk-through. Did the agent correctly report:
+
+      1. Folder A's records query returned exactly 3 rows (R1, R2, R3).
+      2. `CE_FolderRecordsTest` was visible in folder A's entity list.
+      3. `CE_FolderRecordsTest` was NOT visible in folder B's entity list.
+
+      Score 1.0 if the agent correctly reported ALL THREE observations.
+      Score 0.5 if 2 out of 3 are correct.
+      Score 0.0 if the agent claimed the wrong outcome on 2+ observations
+      (e.g., "folder B also showed the list") OR skipped observations.
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: run_command
+    description: "End state (deterministic): CE_FolderRecordsTest has exactly 3 records — the R1/R2/R3 seeds landed"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_FolderRecordsTest --expected 3"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — cleanup runs post_run"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  # Sweep any leftover folder-scoped entities from prior runs.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderRecordsTest --include-folders"
+    timeout: 120
+    fail_on_error: false
+
+post_run:
+  # Cleanup the folder-scoped entity + any siblings created during the run.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderRecordsTest --include-folders"
+    timeout: 120

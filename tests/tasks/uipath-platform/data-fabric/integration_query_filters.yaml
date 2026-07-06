@@ -1,0 +1,232 @@
+task_id: skill-datafabric-integration-query-filters
+description: >
+  Integration test: agent constructs advanced records queries against a live
+  tenant — AND filterGroup, OR filterGroup, nested filterGroups, sortOptions
+  with isDescending, selectedFields projection, and cursor-based pagination
+  using records query (no body). Creates test records first, runs 5 query
+  scenarios, then deletes the test records. Tests the full query body schema
+  and the no-body pagination path end-to-end.
+tags: [uipath-platform, data-fabric, integration, records, mode:operate, lifecycle:discover]
+run_limits:
+  expected_turns: 25
+  turn_timeout: 600
+
+initial_prompt: |
+  We have an Orders list called `CE_IntegrationOrders` already loaded
+  up with a small set of orders. Each order has a code, a value, and
+  a status. Please don't change anything — I just need a handful of
+  searches run over it.
+
+  Run each of these and tell me the result:
+
+    - Active orders worth more than $300 — how many, and which codes?
+    - Orders that are Pending OR Closed — how many, and which codes?
+    - Either (Active AND worth more than $200) OR Pending — how many?
+    - Sort everything by value, highest first — top row's value?
+    - Return just the code column for every row. Are value and status
+      absent from the response?
+    - Page through everything two at a time, no filter, until no more
+      pages. Any duplicate IDs across pages? How many unique IDs total?
+    - Orders whose status is one of {Pending, Active} — how many?
+    - Count of orders grouped by status — one count per status.
+
+  Paging should stay on the command line — never put page-size or
+  page-cursor stuff inside the search body itself.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran filter queries with --body (AND, OR, nested, sort, projection)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query\s+.*--body'
+    min_count: 4
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent paginated with records query --limit (no body)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query\s+.*--limit'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: CE_IntegrationOrders has exactly 4 records (agent did not mutate the seed)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_IntegrationOrders --expected 4"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used filterGroup key in records query body"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup'
+    min_count: 3
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # ---------------------------------------------------------------------
+  # Filter body shape — enforces the supported keys and operator strings
+  # documented in SKILL.md Critical Rule 16 and
+  # references/records-query.md#filter-body-reference.
+  # ---------------------------------------------------------------------
+
+  - type: command_executed
+    description: "Filter body uses the supported keys `queryFilters` and `fieldName`"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*"queryFilters")(?=.*"fieldName")'
+    min_count: 3
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Filter body uses `queryFilters` (not `filters`) as the array key on filterGroup"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"filters"\s*:'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Filter body uses `fieldName` (not `field`) as the per-filter field key"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"field"\s*:\s*"[^"]*"\s*,\s*"operator"'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Operator uses the `=` symbol (not the JS/SQL alias `==`)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"operator"\s*:\s*"=="'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Operator uses the `=` symbol (not the named aliases `Equals` / `equals` / `eq`)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"operator"\s*:\s*"([Ee]quals?|eq)"'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used logicalOperator in filterGroup body (AND=0 / OR=1)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*logicalOperator'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used sortOptions with isDescending in query body"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*sortOptions'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used selectedFields projection in query body"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*selectedFields'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used `in` operator with valueList (step 9)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"operator"\s*:\s*"in".*valueList'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran an aggregate query with groupBy + aggregates (step 10)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:aggregates.*groupBy|groupBy.*aggregates)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used COUNT aggregate function with an alias"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"function"\s*:\s*"COUNT".*"alias"'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent's reported answers match the expected counts / values for each of the 8 query scenarios"
+    include_agent_output: true
+    prompt: |
+      The agent ran 8 queries against a seeded 4-row `CE_IntegrationOrders`
+      entity (records ORD-001..ORD-004, statuses: 1x Pending, 2x Active,
+      1x Closed; values 100, 500, 200, 750). Expected answers:
+
+        Q1. AND(status=Active, value>300) → 1 row (ORD-002)
+        Q2. OR(status=Pending, status=Closed) → 2 rows (ORD-001, ORD-004)
+        Q3. Nested: (Active AND value>200) OR Pending → 3 rows
+             (ORD-001, ORD-002, ORD-003)
+        Q4. Sort by value desc — top value = 750.0
+        Q5. Project just Code column — value / status absent from response
+        Q6. Full pagination walk, page size 2 — 4 unique IDs, no duplicates
+        Q7. IN filter {Pending, Active} → 3 rows
+        Q8. Aggregate count by status → { Pending: 1, Active: 2, Closed: 1 }
+
+      Read the agent's final response. Score 1.0 if the agent reported
+      correct answers for at LEAST 6 of the 8 questions (allowing minor
+      phrasing variance). Score 0.5 if 4-5 are correct. Score 0.0 if 3+
+      are wrong OR queries were skipped.
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
+      --entity-name CE_IntegrationOrders
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_orders.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_orders.records.json
+    timeout: 60
+    fail_on_error: false
+
+post_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_IntegrationOrders
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_orders.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_orders.records.json
+    timeout: 120

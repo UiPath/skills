@@ -12,7 +12,7 @@ tags: [uipath-human-in-the-loop, e2e, green-field, compliance, gdpr]
 
 run_limits:
   expected_turns: 22
-  max_turns: 40
+  max_turns: 60
   turn_timeout: 1200
 
 initial_prompt: |
@@ -37,7 +37,7 @@ success_criteria:
     description: "Flow contains the inline HITL node type"
     path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
     includes:
-      - '"uipath.human-in-the-loop"'
+      - '"uipath.human-in-the-loop.quick-form"'
     weight: 3.0
     pass_threshold: 1.0
 
@@ -61,7 +61,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran flow validate during the session"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

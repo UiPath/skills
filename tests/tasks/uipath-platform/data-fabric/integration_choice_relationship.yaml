@@ -1,0 +1,296 @@
+task_id: skill-datafabric-integration-complex-fields
+description: >
+  Integration: two-entity Customer/Order schema with STRING/MULTILINE_TEXT
+  lengthLimit, DECIMAL precision + min/max, a RELATIONSHIP + optional
+  CHOICE_SET_SINGLE + FILE field. Exercises the resolve-by-Email pattern
+  before the relational write and the reserved-keyword rename (Rule 4).
+  Grading via assert_record_count + verify_field_binding + inline schema-
+  echo constraint reads + llm_judge on the walk-through.
+tags: [uipath-platform, data-fabric, integration, complex-fields, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 45
+  max_turns: 90
+  turn_timeout: 900
+
+initial_prompt: |
+  Build two linked lists — customers and their orders.
+
+  `CE_IntegrationCustomer`:
+    - name — required, up to 200 chars
+    - email — required, unique, up to 255 chars
+    - notes — long text, up to 2000 chars
+
+  `CE_IntegrationOrder` (each order belongs to a customer):
+    - amount in dollars — required, cents allowed, $0 to $1,000,000
+    - customer link — required (call this column `customerId`)
+    - a receipt attachment slot — call this column `Receipt`
+    - status — pick from a dropdown if the tenant already has one. Skip
+      this column entirely if none exist. Don't author new dropdowns.
+
+  Seed: two customers (`alice@integration.test`, `bravo@integration.test`)
+  and three orders (2 for alice, 1 for bravo).
+
+  Sanity checks — walk me through what you saw:
+    - How many orders does alice have?
+    - Open one order and describe what you see for the customer
+      link + status (if status was set).
+    - If status was set, how many orders come back when you filter
+      by that status?
+    - Read both lists' settings back and tell me what Data Fabric
+      echoed for the constraints on customer name / notes, order
+      amount, and the Receipt column.
+
+  We'll wire receipt uploads up later — just get the column in place.
+  Don't author any new dropdowns either.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed choice sets with choice-sets list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+choice-sets\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the parent entity CE_IntegrationCustomer"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*CE_IntegrationCustomer'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the child entity CE_IntegrationOrder with a RELATIONSHIP field"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_IntegrationOrder)(?=.*RELATIONSHIP)(?=.*referenceEntityId)(?=.*referenceFieldId)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied lengthLimit on STRING / MULTILINE_TEXT fields"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*lengthLimit'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied decimalPrecision on the DECIMAL amount field"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*decimalPrecision'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied minValue / maxValue on the DECIMAL amount field"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*(minValue|maxValue)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a FILE field on CE_IntegrationOrder with referenceEntityId/referenceFieldId (EntityAttachment binding)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_IntegrationOrder)(?=.*\"type\"\s*:\s*\"FILE\")(?=.*referenceEntityId)(?=.*referenceFieldId)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT define a field literally named `Status` (Rule 4 reserved keyword — use orderStatus)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*\"fieldName\"\s*:\s*\"Status\"'
+    min_count: 0
+    max_count: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT attempt `uip df files upload` — the Receipt FILE field was newly created via CLI, so its referenceEntity is unwired and upload would fail with Relationship violation (see Not Supported)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+files\s+upload'
+    min_count: 0
+    max_count: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inserted parent records (any reasonable name/email field name)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"(?:[Nn]ame|[Ee]mail)\"\s*:'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inserted child records writing customerId as a UUID (not an email or name)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"customerId\"\s*:\s*\"[0-9a-fA-F-]{8,}'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT write an email / non-UUID into a relationship field"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+(insert|update).*\"customerId\"\s*:\s*\"[^\"]*@'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran a query / list against the parent Customer entity to resolve a UUID before the relational write"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+(query|list)\s+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent filtered child records by the RELATIONSHIP field"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*filterGroup)(?=.*\"fieldName\"\s*:\s*\"customerId\")'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read a record back (records get or records query) to verify stored shape"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+(get|query)\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT attempt to create / update / delete a choice set via the CLI"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+choice-sets\s+(create|update|delete)'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state (deterministic): 2 Customer records landed"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_IntegrationCustomer --expected 2"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state (deterministic): 3 Order records landed"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_IntegrationOrder --expected 3"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema (deterministic): `customerId` RELATIONSHIP field on CE_IntegrationOrder is correctly bound to CE_IntegrationCustomer"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_binding.py --entity-name CE_IntegrationOrder --field-name customerId --target-entity-name CE_IntegrationCustomer"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Stored form (deterministic): a live Order record's `customerId` value is a UUID (not an email / name)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_record_field.py --entity-name CE_IntegrationOrder --field-name customerId --value-regex '^[0-9a-fA-F-]{8,}'"
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema echo (deterministic): CE_IntegrationOrder amount field has decimalPrecision=2, minValue=0, maxValue=1000000 as authored"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_IntegrationOrder --assertions 'amount.decimalPrecision=2,amount.minValue=0,amount.maxValue=1000000'"
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema echo (deterministic): CE_IntegrationCustomer Name/Notes lengthLimit values match the authored constraints"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_IntegrationCustomer --assertions 'name.lengthLimit=200,notes.lengthLimit=2000'"
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent walked through Alice's order count (2), stored-form observations, and choice-status filter — accurately if status was used"
+    include_agent_output: true
+    prompt: |
+      The agent built CE_IntegrationCustomer (2 customers) and
+      CE_IntegrationOrder (3 orders: 2 for alice, 1 for bravo), then
+      was asked for a walk-through of four observations:
+
+        1. Alice's order count (should be 2 when filtering by her ID).
+        2. What one open order shows: customerId stored as her UUID
+           (not email/name), and — IF a status choice was set — status
+           stored as a number.
+        3. If status was set, filtering all orders by that status
+           should return 3.
+        4. Schema constraint values echoed back by entities get:
+           customer name lengthLimit=200, notes lengthLimit=2000,
+           order amount decimalPrecision=2 + min=0 + max=1000000,
+           Receipt column of type FILE.
+
+      Read the agent's final walk-through. Score 1.0 if all 4 are
+      reported clearly and correctly (allowing "status wasn't used"
+      as valid for #3 if the tenant had no dropdown). Score 0.5 if
+      2-3 are correct. Score 0.0 if 2+ are wrong or skipped.
+    weight: 2.5
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  # Sweep leftover state from any prior crashed run. Child first, then
+  # parent — the FK constraint blocks parent deletion while children exist.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_IntegrationOrder"
+    timeout: 60
+    fail_on_error: false
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_IntegrationCustomer"
+    timeout: 60
+    fail_on_error: false
+
+post_run:
+  # Cleanup order matters: child entity must be deleted BEFORE parent
+  # because Order has a RELATIONSHIP FK pointing at Customer. The CLI
+  # delete on Customer would otherwise fail with an FK constraint.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_IntegrationOrder"
+    timeout: 60
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_IntegrationCustomer"
+    timeout: 60

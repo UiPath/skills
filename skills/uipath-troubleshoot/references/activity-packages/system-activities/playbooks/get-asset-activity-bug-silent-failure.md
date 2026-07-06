@@ -32,4 +32,4 @@ What to look for:
 ## Resolution
 
 - **If copy-paste issue:** delete the activity and re-drag a fresh one from the Activities panel.
-- **If `Ctrl+K` variable bug (System.Activities 22.10.x):** update the package to ≥22.10.4, or pre-create the variable in the Variables panel before wiring it to the activity.
+- **If `Ctrl+K` variable bug (System.Activities 22.10.x):** update the package to a release after the 22.10.x line (current LTS or newer), or pre-create the variable in the Variables panel before wiring it to the activity. The whole 22.10.x range is affected — do NOT treat a later 22.10.x patch as fixed.

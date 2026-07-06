@@ -1,0 +1,49 @@
+task_id: skill-gov-access-policy-evaluate-smoke
+description: >
+  Smoke test: agent uses the access-policy evaluate (PDP dry-run)
+  command to check whether a resource invocation would be allowed.
+  Tests the taught-but-untested `evaluate` verb and verifies it is
+  NOT auto-run after create (Rule #12 — user-initiated only).
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command shape.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, access-policy]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  Evaluate whether a specific resource invocation would be allowed
+  by access policies. Run a PDP dry-run evaluation for:
+  - Resource type: Agent
+  - Resource ID: `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa`
+  - Executable type: Maestro
+  - Executable ID: `bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb`
+
+  Save the command output to ./output.txt.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live governance
+    tenant in this environment. Commands will fail with auth errors — that
+    is expected. Run each command once, capture both stdout and stderr to
+    ./output.txt (use `> output.txt 2>&1` for the first command and
+    `>> output.txt 2>&1` for subsequent ones), and move on. Do NOT retry
+    or attempt to login.
+  - Use --output json on every uip gov access-policy command.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked access-policy evaluate"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+access-policy\s+evaluate'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to ./output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

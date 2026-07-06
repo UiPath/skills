@@ -1,0 +1,101 @@
+task_id: skill-datafabric-smoke-csv-complex-drop
+description: >
+  Smoke test: agent uses the uipath-platform skill to seed an entity whose
+  schema includes complex field types (CHOICE_SET_SINGLE, CHOICE_SET_MULTIPLE,
+  RELATIONSHIP). `records import` silently drops complex-field columns —
+  verified server behavior in BulkUploadCSVHelper. The agent must use
+  `records insert --file <json>` instead and must NOT put complex-field
+  columns in a CSV file.
+tags: [uipath-platform, data-fabric, smoke, complex-fields, bulk-import, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 25
+
+
+initial_prompt: |
+  We have an Expense list (its ID is `exp-ent-001`). Each expense
+  holds:
+    - amount — dollars
+    - description — text
+    - category — pick one from a category dropdown
+    - tags — pick one or more from a tags dropdown
+    - customerId — links to a customer
+
+  Please bulk-load these three rows in one go, using whichever
+  bulk-loading path is right for a list with these kinds of columns.
+  Pick the file format that path needs.
+
+    R1 — $100, "taxi",   category travel, tags travel + lodging, customer `c-uuid-A`
+    R2 — $250, "dinner", category meals,  tags meals,            customer `c-uuid-A`
+    R3 — $400, "hotel",  category lodging, tags lodging,         customer `c-uuid-B`
+
+  When you're done, write a short note (one paragraph) in `decision.md`
+  telling me which loading command you picked and why that's the
+  right one for a list shaped like this. Please be specific about
+  what would go wrong with the other option.
+
+  Important:
+  - The `uip` CLI is available but not connected to a live tenant. Commands
+    will fail — that is expected. Run each command exactly once regardless
+    of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,
+    do NOT troubleshoot.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent used `records insert --file <json>` for the entity with complex fields"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+insert\s+exp-ent-001\s+.*--file\s+\S+\.json'
+    min_count: 1
+    weight: 3.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT call `records import` on an entity with complex fields"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+import\s+exp-ent-001'
+    min_count: 0
+    max_count: 0
+    weight: 3.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT produce a .csv file or call records import with one (would silently drop complex fields)"
+    tool_name: "Bash"
+    command_pattern: '(uip\s+df\s+records\s+import\b.*\.csv|>\s*\S*\.csv\b|tee\s+\S*\.csv\b)'
+    min_count: 0
+    max_count: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "decision.md was written"
+    path: "decision.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "decision.md cites the silent-drop reason and the `records insert` choice"
+    path: "decision.md"
+    includes:
+      - "silent"
+      - "records insert"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

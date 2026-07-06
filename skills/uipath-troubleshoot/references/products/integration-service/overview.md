@@ -34,6 +34,13 @@ Organization (cloud.uipath.com)
 - **Triggers** — event-based subscriptions that can start Orchestrator jobs or Maestro instances
 - **OAuth Management** — create, re-authenticate, and ping connections via OAuth flows
 
+## Runtime Execution Model
+
+Connector activities (`ConnectorActivity`, `ConnectorTriggerActivity`, `ConnectorHttpActivity`, `ConnectorPersistenceActivity`) execute **out-of-process** in the connector executor and communicate over IPC. Two consequences for diagnosis:
+
+- The runtime wraps failures in its own exceptions with structured codes — `GeneralException` (`DAP-GE-*`, connection resolution) and `RuntimeException` (`DAP-RT-*`, binding/input/operation).
+- An unhandled fault in the executor process crosses the IPC boundary as `UiPath.Ipc.RemoteException` / `UiPath.CoreIpc.RemoteException` (no DAP code) — the real error is the inner message.
+
 ## Connection Resource File
 
 Projects and solutions store connection references as JSON files. The location depends on whether the project is standalone or part of a solution — **always check both layouts**:

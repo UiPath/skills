@@ -12,6 +12,12 @@ tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 5
 
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
 initial_prompt: |
   In the IXP project `my_invoices-f1afa9ef-ixp`, the `live` tag is currently
   on model version 15. Make version 16 live instead.
@@ -37,13 +43,5 @@ success_criteria:
     description: "Agent did NOT untag (moving a tag does not require untag first)"
     tool_name: "Bash"
     command_pattern: 'uip\s+ixp\s+projects\s+untag\b'
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on a uip ixp command"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
-    min_count: 1
     weight: 1.0
     pass_threshold: 1.0

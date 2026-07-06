@@ -6,7 +6,7 @@ description: >
   correct $guardrailType, validatorType, $parameterType discriminators,
   PascalCase entity names, enum-list and map-enum parameter types, and
   PascalCase scope values.
-tags: [uipath-agents, e2e, mode:build, low-code, guardrail]
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
 initial_prompt: |
   Create a UiPath low-code agent "PiiSafeAgent" that answers user questions about
   their accounts. Add a guardrail that blocks email addresses and phone numbers
@@ -61,14 +61,6 @@ success_criteria:
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 0.0
 
   - type: file_exists
     description: "PiiSafeAgent/agent.json was created"

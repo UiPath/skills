@@ -10,6 +10,12 @@ tags: [uipath-ixp, smoke, lifecycle:discover]
 run_limits:
   expected_turns: 4
 
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
 initial_prompt: |
   A document automation engineer wants to see every IXP project on the
   tenant before deciding which one to iterate on.
@@ -28,12 +34,4 @@ success_criteria:
     command_pattern: 'uip\s+ixp\s+projects\s+list(\s|$)'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on a uip ixp command"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0

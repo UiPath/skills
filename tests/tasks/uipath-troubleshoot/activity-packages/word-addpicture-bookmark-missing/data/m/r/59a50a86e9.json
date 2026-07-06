@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "cc335555-9999-aaaa-bbbb-ccccddddeeee",
+      "StartTime": "2026-05-23T14:20:02.140Z",
+      "EndTime": "2026-05-23T14:20:04.318Z",
+      "State": "Faulted",
+      "ReleaseName": "WordTemplateFill",
+      "Source": "Manual",
+      "Reference": "TemplateFillRun",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0033344-2222-3333-4444-555566667777",
+      "Info": "UiPath.Word.BusinessException: The bookmark 'LogoAnchor' was not found in the document.",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

@@ -247,7 +247,7 @@ Sample for Outlook `getNewestEmail`:
 
 **Heuristic:** when the stub returns empty `queryParameters`, `pathParameters`, or `bodyParameters` for a non-trivial vendor operation, it's almost certainly the bug — verified-real endpoints (CRUD operations on real objects) very rarely have zero required inputs.
 
-Well-known folder-name shortcuts (e.g. MS Graph's `"inbox"`, `"sentitems"`, `"drafts"`) work for `parentFolderId`-style fields at runtime, but the StudioWeb FolderPicker only displays the friendly name if the value matches a real folder ID from the lookup cache. For exact UI fidelity, fetch the real ID once via `uip is resources execute <connector-key> list <object-name> --connection-id <uuid>` against the `lookup.path` (e.g. `/MailFolders`).
+Well-known folder-name shortcuts (e.g. MS Graph's `"inbox"`, `"sentitems"`, `"drafts"`) work for `parentFolderId`-style fields at runtime, but the StudioWeb FolderPicker only displays the friendly name if the value matches a real folder ID from the lookup cache. For exact UI fidelity, fetch the real ID once via `uip is resources run list <connector-key> <object-name> --connection-id <uuid>` against the `lookup.path` (e.g. `/MailFolders`).
 
 ### Step 4 — Drop into the workflow, replace placeholders, validate
 
@@ -289,7 +289,7 @@ uip api-workflow bindings sync --workflow Solution/<ProjectName>/Workflow.json -
 uip solution resources refresh --solution-folder Solution --output json
 ```
 
-`bindings sync` is pure-local (no auth, no API calls) — it walks `Workflow.json`, extracts IntSvc connector activities, and writes the canonical `bindings_v2.json` next to the workflow (one binding per unique connection UUID — two activities sharing a connection collapse to one entry). This file is what StudioWeb computes in-memory on workflow open; emitting it offline avoids the "open in StudioWeb once first" detour.
+`bindings sync` walks `Workflow.json` and extracts IntSvc connector activities into the canonical `bindings_v2.json` next to the workflow. **Connection** bindings are derived locally (one binding per unique connection UUID — two activities sharing a connection collapse to one entry). **Solution-resource** bindings (process/queue/asset picker fields like Run Job's `ReleaseName`) are derived by querying IS metadata for each activity's object, so this step reaches the network when such fields are present; when IS is unreachable, resource-binding generation is skipped and any pre-existing entries of those kinds are preserved rather than dropped. This mirrors what StudioWeb computes in-memory on workflow open; emitting it offline avoids the "open in StudioWeb once first" detour.
 
 `solution resources refresh` then reads every project's `bindings_v2.json`, calls `@uipath/resource-builder-sdk`'s `addOrUpdateResourceToSolutionAsync` to write the catalogue files, and `editOverwritesAsync` to write the per-user debug overwrites. Requires `uip login` (the SDK looks up folder keys via Resource Catalog Service). Idempotent — re-runs only import new resources.
 
@@ -435,6 +435,35 @@ Generic-specific behavior to know:
 - **Slot key carries the operation; export bucket does not**: slot `ListUserRepos_1`, export bucket `user_repos_1` (objectName-based, like every Curated example). The bucket intentionally matches the platform's own derivation — solution reconcile (`resource refresh`) regenerates `Workflow.json` and recomputes export buckets from the object name, so a divergent bucket would be renamed on regeneration. As always, copy `Data.ExportBucketKey` verbatim; and after ANY external rewrite of `Workflow.json` (reconcile, designer save), re-check that downstream `$context.outputs.<X>` reads still match the on-disk `export.as` keys — `validate` cannot catch dangling output references; they surface only at run time as `undefined`.
 - **Path-parameter value formats are connector-specific.** `Retrieve`/`Update`/`Delete` endpoints take an id path param (e.g. `/repos/{repo}`) and the expected value format (name vs full name vs numeric id) varies and is sometimes wrong in the connector's own metadata — `uip is resources describe` shows the parameter's description and lookup hints. If the run 404s, cross-check by executing the same operation via `uip is resources run get <connector-key> <object-name> --connection-id <uuid> --query <param>=<value>`; if that also 404s, the connector's auto-generated metadata is broken upstream — pick a Curated activity or the Http kind instead.
 - **Quality varies by connector.** Generic operations are auto-generated from vendor API specs and are not hand-verified the way Curated ones are. Prefer a Curated activity when one exists for the job.
+
+### Solution resources as activity fields (Run Job, Add Queue Item, …)
+
+Some activity fields don't take free text — their value names another **Solution resource** (a process, queue, asset…). Orchestrator's Run Job is the canonical case: its `ReleaseName` field is the process to start. The stub flags these in `Data.SolutionResourceFields` (`{ name, kind, location }`). Authoring recipe:
+
+```bash
+# 1. Get the resource's NAME and KEY from the solution tree (no API call):
+#    resources/solution_folder/process/process/<Name>.json → spec.name + key
+# 2. Stub: name as the value, key as the picker binding
+uip api-workflow registry stub <run-job-guid> \
+  --connection-id <orchestrator-conn-uuid> \
+  --inputs '{"ReleaseName":"RPA Workflow"}' \
+  --resource-key 'ReleaseName=87ec3255-8ea6-446e-8237-8ff429d86032' \
+  --output json
+```
+
+What each layer gets, and from where:
+
+| Layer | Carried by | Authored via |
+|--|--|--|
+| Runtime (which process starts) | `bodyParameters.ReleaseName` = resource **name** | `--inputs` |
+| Job-result waiting | `with.executionType: "async"` + callback header | automatic (mirrored from IS metadata) |
+| Deployment rewiring | `bindings_v2.json` process entry (`NameFieldPath`) | automatic (`bindings sync`) |
+| StudioWeb picker display | `savedResourceSelections` in `metadata.configuration` | `--resource-key` |
+
+Notes:
+- The activity only starts successfully once a process with that name is deployed and visible to the connection (pack/publish/deploy first, or pre-existing).
+- The picker display requires a StudioWeb build with `savedResourceSelections` support; on older builds the entry is ignored — the picker shows empty until selected once manually, while runtime and deployment remain correct.
+- Do NOT put the resource **key** in `--inputs` (runtime would send a GUID where the API expects a name) and do NOT put the **name** in `--resource-key` (the picker resolves by key).
 
 ## Vendor curated activity response shape — `content.X`, not `X`
 

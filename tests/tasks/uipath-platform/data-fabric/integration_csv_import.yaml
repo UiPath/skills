@@ -1,0 +1,141 @@
+task_id: skill-datafabric-integration-csv-import
+description: >
+  Integration test: agent performs a full CSV bulk import workflow against a
+  live tenant — checks login, discovers or creates an entity, retrieves the
+  schema to confirm exact field names (case-sensitive), creates a correctly
+  formatted CSV (no system fields), runs the bulk import, then verifies results
+  with records list. Tests the Discover → Act → Verify pattern for bulk data loading.
+tags:
+  [
+    uipath-platform,
+    data-fabric,
+    integration,
+    records,
+    import,
+    mode:build,
+    lifecycle:setup,
+  ]
+run_limits:
+  expected_turns: 25
+  turn_timeout: 600
+
+initial_prompt: |
+  We have an Inventory list called `CE_IntegrationInventory` set up
+  and empty. Each row holds a SKU, a Quantity, a UnitCost, an
+  Available flag, and a LastRestocked date.
+
+  Could you load 4 rows of realistic inventory into it from a
+  spreadsheet? Save the spreadsheet as `inventory.csv`, load it in,
+  and then pull the list back to confirm everything came through —
+  tell me how many rows got inserted and how many are now in the
+  list.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved entity schema before creating CSV"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+get\s+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran records import with --file"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+import\s+.*--file'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified import results with records list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+list\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "inventory.csv was created"
+    path: "inventory.csv"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "CSV uses exact case-sensitive field names as headers"
+    path: "inventory.csv"
+    includes:
+      - "SKU"
+      - "Quantity"
+      - "UnitCost"
+      - "Available"
+      - "LastRestocked"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "inventory.csv has at least 4 data rows (header + 4)"
+    command: "awk 'END { exit (NR >= 5 ? 0 : 1) }' inventory.csv"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "inventory.csv header row excludes system fields"
+    command: "awk 'NR==1 && /(^|,)(Id|CreatedBy|CreateTime|UpdatedBy|UpdateTime)(,|$)/ { exit 1 }' inventory.csv"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state (deterministic): 4 records landed in CE_IntegrationInventory after the CSV import"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_IntegrationInventory --expected 4"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  # Schema-only seed: entity is created if missing, no records inserted.
+  # The agent's job is to populate records via `records import` (CSV).
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
+      --entity-name CE_IntegrationInventory
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_inventory.schema.json
+    timeout: 180
+    fail_on_error: false
+
+post_run:
+  # Schema-only revert: wipes whatever the agent imported. No records to re-insert.
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_IntegrationInventory
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_inventory.schema.json
+    timeout: 180

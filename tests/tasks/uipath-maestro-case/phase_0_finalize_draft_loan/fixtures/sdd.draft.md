@@ -23,10 +23,10 @@ Rejected).
    - [Stage 4: QA/QC](#stage-4-qaqc) — 7 tasks
    - [Stage 5: Closing](#stage-5-closing) — 9 tasks
    - [Stage 6: Resolved](#stage-6-resolved) — 5 tasks
-   - [Exception Stage: Customer Comms](#exception-stage-customer-comms) — 2 tasks
-   - [Exception Stage: Escalation](#exception-stage-escalation) — 1 task
-   - [Exception Stage: Withdrawn](#exception-stage-withdrawn) — 2 tasks
-   - [Exception Stage: Rejected](#exception-stage-rejected) — 2 tasks
+   - [Secondary Stage: Customer Comms](#secondary-stage-customer-comms) — 2 tasks
+   - [Secondary Stage: Escalation](#secondary-stage-escalation) — 1 task
+   - [Secondary Stage: Withdrawn](#secondary-stage-withdrawn) — 2 tasks
+   - [Secondary Stage: Rejected](#secondary-stage-rejected) — 2 tasks
 3. [Personas & App Views](#section-3-personas--app-views) — 5 Personas, Process App Views
 4. [Integrations](#section-4-integrations) — External API Integrations
 
@@ -909,8 +909,8 @@ Rejected).
 |--------|---------|----------|
 | Approve | underwriterDecision = "Approve" | Loan approved; sets finalDecision and routes to QA/QC |
 | Conditional Approval | underwriterDecision = "Conditional" | Approved with conditions; routes to document conditions task |
-| Decline | underwriterDecision = "Decline" | Loan declined; routes to Rejected exception stage |
-| Escalate | escalationRequired = true | Escalates to management; routes to Escalation exception stage |
+| Decline | underwriterDecision = "Decline" | Loan declined; routes to Rejected secondary stage |
+| Escalate | escalationRequired = true | Escalates to management; routes to Escalation secondary stage |
 
 ---
 
@@ -1757,9 +1757,10 @@ Rejected).
 
 ---
 
-### Exception Stage: Customer Comms (`stage-customer-comms`)
+### Secondary Stage: Customer Comms (`stage-customer-comms`)
 
-**Type:** ExceptionStage
+**Type:** Stage
+**Stage Kind:** secondary
 **Description:** Handles outbound communication to the borrower when the Loan Officer flags a communication need during the origination process.
 **Required for Case Completion:** No
 **Interrupting:** No
@@ -1851,9 +1852,10 @@ Rejected).
 
 ---
 
-### Exception Stage: Escalation (`stage-escalation`)
+### Secondary Stage: Escalation (`stage-escalation`)
 
-**Type:** ExceptionStage
+**Type:** Stage
+**Stage Kind:** secondary
 **Description:** Handles management escalation when a loan requires senior review due to credit complexity, SLA risk, or compliance flags.
 **Required for Case Completion:** No
 **Interrupting:** No
@@ -1917,9 +1919,10 @@ Rejected).
 
 ---
 
-### Exception Stage: Withdrawn (`stage-withdrawn`)
+### Secondary Stage: Withdrawn (`stage-withdrawn`)
 
-**Type:** ExceptionStage
+**Type:** Stage
+**Stage Kind:** secondary
 **Description:** Manages the loan withdrawal process when the borrower opts to withdraw the application at any point during origination.
 **Required for Case Completion:** No
 **Interrupting:** No
@@ -2010,9 +2013,10 @@ Rejected).
 
 ---
 
-### Exception Stage: Rejected (`stage-rejected`)
+### Secondary Stage: Rejected (`stage-rejected`)
 
-**Type:** ExceptionStage
+**Type:** Stage
+**Stage Kind:** secondary
 **Description:** Manages the loan rejection process including the ECOA-mandated Adverse Action Notice when a loan is declined by the Underwriter or QA/QC officer.
 **Required for Case Completion:** No
 **Interrupting:** No

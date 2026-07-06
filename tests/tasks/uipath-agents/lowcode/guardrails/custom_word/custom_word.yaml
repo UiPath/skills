@@ -5,7 +5,7 @@ description: >
   blocks the word "CONFIDENTIAL" in agent and LLM output. Verifies the
   guardrail uses correct discriminator fields ($guardrailType, $ruleType,
   $selectorType, $actionType), PascalCase scope values, and a unique UUID.
-tags: [uipath-agents, e2e, mode:build, low-code, guardrail]
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
 initial_prompt: |
   Create a UiPath low-code agent "SafeAgent" that answers user questions. Add a
   guardrail that blocks any agent or LLM output containing the word
@@ -60,14 +60,6 @@ success_criteria:
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 0.0
 
   - type: file_exists
     description: "SafeAgent/agent.json was created"

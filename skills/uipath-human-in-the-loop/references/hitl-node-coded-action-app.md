@@ -273,12 +273,11 @@ All values below come directly from the `ParsedActionSchema` assembled in Step 4
 ```json
 {
   "id": "<NODE_ID>",
-  "type": "uipath.human-in-the-loop",
+  "type": "uipath.human-in-the-loop.coded-action-app",
   "typeVersion": "1.0.0",
   "display": { "label": "<LABEL>" },
   "ui": { "position": { "x": 474, "y": 144 } },
   "inputs": {
-    "type": "custom",
     "channels": [],
     "recipient": {
       "channels": ["ActionCenter"],

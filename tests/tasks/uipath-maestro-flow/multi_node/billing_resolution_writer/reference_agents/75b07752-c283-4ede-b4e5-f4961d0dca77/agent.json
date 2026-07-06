@@ -10,7 +10,20 @@
   },
   "inputSchema": {
     "type": "object",
-    "properties": {}
+    "properties": {
+      "customerName": {
+        "type": "string",
+        "description": "Customer/account name"
+      },
+      "invoiceNumber": {
+        "type": "string",
+        "description": "Disputed invoice number"
+      },
+      "creditAmount": {
+        "type": "number",
+        "description": "Approved credit amount"
+      }
+    }
   },
   "outputSchema": {
     "type": "object",
@@ -45,7 +58,7 @@
     },
     {
       "role": "user",
-      "content": "Customer: {{ $vars.start.output.customerName }}\nInvoice number: {{ $vars.start.output.invoiceNumber }}\nApproved credit amount (USD): {{ $vars.start.output.creditAmount }}\n\nWrite the resolution email now.",
+      "content": "Customer: {{input.customerName}}\nInvoice number: {{input.invoiceNumber}}\nApproved credit amount (USD): {{input.creditAmount}}\n\nWrite the resolution email now.",
       "contentTokens": [
         {
           "type": "simpleText",
@@ -53,7 +66,7 @@
         },
         {
           "type": "variable",
-          "rawString": " $vars.start.output.customerName "
+          "rawString": "input.customerName"
         },
         {
           "type": "simpleText",
@@ -61,7 +74,7 @@
         },
         {
           "type": "variable",
-          "rawString": " $vars.start.output.invoiceNumber "
+          "rawString": "input.invoiceNumber"
         },
         {
           "type": "simpleText",
@@ -69,7 +82,7 @@
         },
         {
           "type": "variable",
-          "rawString": " $vars.start.output.creditAmount "
+          "rawString": "input.creditAmount"
         },
         {
           "type": "simpleText",

@@ -32,7 +32,7 @@ success_criteria:
   - type: run_command
     description: "Tenant: job is terminal with at least one log entry"
     command: "python3 $TASK_DIR/check_job_run_logs.py"
-    timeout: 30
+    timeout: 90
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

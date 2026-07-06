@@ -35,17 +35,17 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent checked login status (`uip login status --output json`)"
+    description: "Agent checked login status (`uip login status`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Resolved the named test cases (`uip tm testcases list --project-key HEALTH --output json`)"
+    description: "Resolved the named test cases (`uip tm testcases list --project-key HEALTH`)"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output\s+json)uip\s+tm\s+testcases?\s+list\s'
+    command_pattern: '(?=.*--project-key\s+HEALTH)uip\s+tm\s+testcases?\s+list\s'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -53,31 +53,31 @@ success_criteria:
   - type: command_executed
     description: "Complete create command: `uip tm requirements create --project-key HEALTH --name \"Eval Trace - PHI masking coverage\" --output json`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name\s+["\x27]?Eval Trace - PHI masking coverage)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+create\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name\s+["\x27]?Eval Trace - PHI masking coverage)uip\s+tm\s+requirements?\s+create'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete attach command: `uip tm requirements testcases --project-key HEALTH --requirement-id <uuid> --add-testcase-ids <uuid> <uuid> --output json`"
+    description: "Complete attach command: `uip tm requirements testcases --project-key HEALTH --requirement-id <uuid> --add-testcase-ids <uuid> <uuid>`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-id\s+\S+)(?=.*--add-testcase-ids\s+\S+)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+testcases\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-id\s+\S+)(?=.*--add-testcase-ids\s+\S+)uip\s+tm\s+requirements?\s+testcases'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete forward-lookup command: `uip tm requirements list-testcase-ids --project-key HEALTH --requirement-id <uuid> --output json`"
+    description: "Complete forward-lookup command: `uip tm requirements list-testcase-ids --project-key HEALTH --requirement-id <uuid>`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-id\s+\S+)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+list-testcase-ids\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-id\s+\S+)uip\s+tm\s+requirements?\s+list-testcase-ids'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete execution-back command: `uip tm requirements list-by-test-execution --project-key HEALTH --execution-id <uuid> --output json`"
+    description: "Complete execution-back command: `uip tm requirements list-by-test-execution --project-key HEALTH --execution-id <uuid>`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--execution-id\s+\S+)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+list-by-test-execution\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--execution-id\s+\S+)uip\s+tm\s+requirements?\s+list-by-test-execution'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

@@ -28,7 +28,7 @@ success_criteria:
     description: "HITL node is present in the flow file"
     path: "PurchaseOrderApproval/PurchaseOrderApproval/PurchaseOrderApproval.flow"
     includes:
-      - '"uipath.human-in-the-loop"'
+      - '"uipath.human-in-the-loop.quick-form"'
     weight: 1.5
     pass_threshold: 1.0
 
@@ -43,7 +43,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated after wiring"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

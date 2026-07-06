@@ -1,0 +1,77 @@
+task_id: skill-datafabric-smoke-files
+description: >
+  Smoke test: agent uses the uipath-platform skill to manage file attachments
+  offline — create a local test file, upload it to a FILE-type field on a record
+  using files upload, download it back using files download with --destination,
+  and delete the attachment using files delete. Tests correct files command
+  syntax: positional args (entity-id record-id field-name), --file flag for
+  upload, --destination flag for download, and --output json on all commands.
+tags: [uipath-platform, data-fabric, smoke, files, mode:build, lifecycle:setup]
+run_limits:
+  expected_turns: 10
+  max_turns: 30
+
+initial_prompt: |
+  We have a Documents list. One of the rows already has a spot for an
+  Attachment.
+
+  Could you:
+    - Make a tiny text file locally, `test_upload.txt`, with anything
+      in it.
+    - Attach it to that row's Attachment slot.
+    - Pull it back down, saving it as `downloaded.txt`.
+    - Then remove the attachment.
+
+  Important:
+  - The `uip` CLI is available but not connected to a live tenant. Commands
+    will fail — that is expected. Run each command exactly once regardless
+    of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,
+    do NOT troubleshoot.
+
+success_criteria:
+  - type: file_exists
+    description: "test_upload.txt was created locally"
+    path: "test_upload.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uploaded file using files upload with --file flag"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+files\s+upload\s+.*--file'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent downloaded file using files download with --destination flag"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+files\s+download\s+.*--destination'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted file attachment using files delete"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+files\s+delete\s+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

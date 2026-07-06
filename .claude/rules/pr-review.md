@@ -11,7 +11,7 @@ When reviewing or creating pull requests for this repository, enforce these rule
 - [ ] `name` field matches the folder name exactly
 - [ ] `description` has under 1024 characters and is concise
 - [ ] Critical Rules section exists with numbered rules
-- [ ] No cross-skill references (skill is fully self-contained)
+- [ ] No structural cross-skill dependencies (does not import or read another skill's files; runtime delegation to a same-plugin sibling that degrades gracefully is allowed)
 - [ ] Reference files use kebab-case naming
 - [ ] All relative links resolve to existing files
 - [ ] CODEOWNERS has been updated with the new skill path
@@ -21,7 +21,7 @@ When reviewing or creating pull requests for this repository, enforce these rule
 
 - [ ] SKILL.md frontmatter is still valid after changes
 - [ ] Critical Rules have not been removed without justification in the PR description
-- [ ] No new cross-skill dependencies introduced
+- [ ] No new structural cross-skill dependencies (runtime delegation to a same-plugin sibling that degrades gracefully is allowed)
 - [ ] Reference file naming conventions preserved
 - [ ] Changes are scoped to the skill being modified (no unrelated changes)
 

@@ -1,0 +1,103 @@
+task_id: skill-troubleshoot-logon-failure-password-mismatch
+description: >
+  UiPath diagnostic agent must diagnose a faulted unattended job
+  whose Robot Service log shows
+  "Could not start executor. Logon failed for user UIPATH\USER1. The
+   user name or password is incorrect. (0x0000052E)".
+  The fault is caused by an AD password rotation that was not
+  mirrored in the Orchestrator-stored credential for the unattended
+  Robot user (playbook branch 3 — password mismatch / stale
+  credential). The agent must match the
+  orchestrator/job-faulted-logon-failure playbook AND select
+  branch 3 specifically — not branch 1 (session-config), branch 2
+  (account locked — log explicitly says it is NOT locked), branch 4
+  (lockout loop — not yet realised), branch 5 (MFA), or branch 6
+  (RDP slot — sibling user succeeded on same machine).
+
+tags: [uipath-troubleshoot, orchestrator, e2e, faulted-jobs, logon-failure, credentials, mode:diagnose]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 300
+  task_timeout: 4500
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: data
+  mock_path_dirs: ["m"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My InvoiceIngestor process has been faulting in Orchestrator
+  every time it runs since this morning — each job dies within a
+  second of starting. The project source is in the current working
+  directory. One thing that might be relevant: my AD admin rotated
+  the password for the UIPATH\USER1 service account yesterday
+  (2026-05-11). Can you investigate?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing
+    process. You are waiting for the diagnostic agent to finish
+    its investigation and trust its expertise. You only have the
+    information you wrote in your initial report — no extra data.
+    The only AD fact you know is that an AD admin rotated the
+    password for UIPATH\USER1 yesterday (2026-05-11). You do not
+    know the new password, you do not have AD console access, and
+    you cannot run PowerShell on a domain controller.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification
+    the agent requests so the investigation reaches the final
+    resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, identity, ad, system-activities, activity-packages, ui-automation), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "If the agent asks for the AD PasswordLastSet timestamp, repeat: the AD admin rotated the password yesterday (2026-05-11) — that is all you know."
+    - "If the agent asks whether the account is locked, say you cannot check AD directly — point them at the Robot service logs and Orchestrator data."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

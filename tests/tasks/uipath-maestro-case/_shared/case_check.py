@@ -44,7 +44,11 @@ def read_caseplan(path: str | None = None) -> dict:
 
 
 def iter_tasks(plan: dict):
-    """Yield every task dict from every Stage / ExceptionStage node.
+    """Yield every task dict from every Stage node (and legacy ExceptionStage).
+
+    Secondary stages are now ``case-management:Stage`` nodes with
+    ``data.stageType == "secondary"``; the legacy ``case-management:ExceptionStage``
+    node type is still yielded for back-compat with un-migrated fixtures.
 
     Tolerates a mis-nested FLAT ``data.tasks`` (``Task[]`` instead of the schema's
     ``Task[][]`` lanes) so callers don't crash on it — use ``assert_tasks_nested``
@@ -157,10 +161,31 @@ def iter_nodes_of_type(plan: dict, node_type: str):
 
 
 def find_stages(plan: dict, *, include_exception: bool = False) -> list[dict]:
-    types = {"case-management:Stage"}
+    """Return stage nodes from a caseplan.
+
+    All stages are now ``case-management:Stage`` nodes; a secondary (formerly
+    "exception") stage is marked by ``data.stageType == "secondary"`` rather than a
+    distinct node type. BACK-COMPAT: a legacy ``case-management:ExceptionStage`` node
+    is also treated as a secondary stage.
+
+    - ``include_exception=False`` (default): primary-only — stage nodes whose
+      ``data.stageType != "secondary"`` and which are not legacy ExceptionStage nodes.
+    - ``include_exception=True``: all stage nodes — ``case-management:Stage`` OR legacy
+      ``case-management:ExceptionStage``.
+    """
+    def _is_stage_node(n: dict) -> bool:
+        return n.get("type") in {"case-management:Stage", "case-management:ExceptionStage"}
+
+    def _is_secondary(n: dict) -> bool:
+        return (
+            (n.get("data") or {}).get("stageType") == "secondary"
+            or n.get("type") == "case-management:ExceptionStage"
+        )
+
+    nodes = plan.get("nodes") or []
     if include_exception:
-        types.add("case-management:ExceptionStage")
-    return [n for n in plan.get("nodes") or [] if n.get("type") in types]
+        return [n for n in nodes if _is_stage_node(n)]
+    return [n for n in nodes if _is_stage_node(n) and not _is_secondary(n)]
 
 
 def find_triggers(plan: dict) -> list[dict]:
@@ -191,6 +216,9 @@ def stage_transitions(plan: dict) -> list[dict]:
     which convention an SDD used to wire a given hop. Mirrors the connector
     graph the frontend now derives from conditions.
     """
+    # Secondary stages are now `case-management:Stage` nodes carrying
+    # `data.stageType == "secondary"`; the legacy `case-management:ExceptionStage`
+    # type is kept here so this works pre/post v22 migration.
     stage_types = {"case-management:Stage", "case-management:ExceptionStage"}
     pairs: set[tuple[str, str]] = set()
     for node in plan.get("nodes") or []:

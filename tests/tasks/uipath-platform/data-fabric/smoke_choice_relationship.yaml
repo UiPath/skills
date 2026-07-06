@@ -1,0 +1,198 @@
+task_id: skill-datafabric-smoke-complex-fields
+description: >
+  Smoke test: agent uses the uipath-platform skill to add complex field
+  types (CHOICE_SET_SINGLE, CHOICE_SET_MULTIPLE, RELATIONSHIP) to an entity,
+  insert records writing the correct value tokens (NumberId integer / integer
+  array for choice; target UUID for relationship), filter records on those
+  fields, and refuse to author / modify a choice set from the CLI (read-only).
+  Exercises the same entity / record / query commands as the other smoke
+  tests, but on fields whose value form requires lookup tokens.
+tags: [uipath-platform, data-fabric, smoke, complex-fields, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 45
+  max_turns: 120
+  turn_timeout: 1500
+  task_timeout: 2400
+
+
+initial_prompt: |
+  Tenant-scoped setup already exists:
+    - `CE_SmokeCategories` dropdown with travel, meals, lodging
+    - `CE_SmokeTags` dropdown with urgent, reimbursable, client
+    - Employees list at tenant level with an employee `emp-rec-500`
+    - Projects list at tenant level
+
+  Could you walk me through this:
+
+    - Show me what tenant-level lists and dropdowns are set up. Then
+      pull up the options on `CE_SmokeCategories`.
+
+    - Add a new tenant-level list called `CE_SmokeExpense` with these
+      columns:
+        - amount — dollars and cents, required
+        - category — pick one from `CE_SmokeCategories`, required
+        - tags — pick one or more from `CE_SmokeTags`
+        - submitter — links to the tenant-level Employees list, required
+        - project — links to the tenant-level Projects list
+
+    - On Employees, add a status column that lets you pick one from
+      `CE_SmokeTags`.
+
+    - Add one expense to `CE_SmokeExpense` — $250, category is travel,
+      tags are urgent and reimbursable, submitter is employee
+      `emp-rec-500`.
+
+    - Show me the expenses in the travel category.
+
+    - Show me the expenses submitted by employee `emp-rec-500`.
+
+    - Add a brand-new tenant-level dropdown called `CE_SmokePaymentStatus`
+      with values "paid", "unpaid", "refunded". I'd like to use it on
+      the `CE_SmokeExpense` list.
+
+  Important:
+  - The `uip` CLI is available but not connected to a live tenant. Commands
+    will fail — that is expected. Run each command exactly once regardless
+    of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,
+    do NOT troubleshoot.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed native-only entities"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+list\s+.*--native-only'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent browsed choice sets with choice-sets list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+choice-sets\s+list'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected choice-set values with choice-sets list-values"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+choice-sets\s+list-values\s+'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent declared a CHOICE_SET_SINGLE field with choiceSetId in entities create"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update)(?=.*CHOICE_SET_SINGLE)(?=.*choiceSetId)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent declared a CHOICE_SET_MULTIPLE field with choiceSetId in entities create"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update)(?=.*CHOICE_SET_MULTIPLE)(?=.*choiceSetId)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent declared a RELATIONSHIP field with referenceEntityId + referenceFieldId (UUIDs per SKILL.md Rule 12)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update)(?=.*RELATIONSHIP)(?=.*referenceEntityId)(?=.*referenceFieldId)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a CHOICE_SET field via addFields on entities update"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update(?=.*addFields)(?=.*CHOICE_SET_SINGLE)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inserted a record writing NumberId integer for CHOICE_SET_SINGLE (no display label)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"category\"\s*:\s*\d+'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inserted a record writing NumberId array for CHOICE_SET_MULTIPLE"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"tags\"\s*:\s*\[\s*\d+'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inserted a record writing a target record ID (any string, quoted) for the RELATIONSHIP field submitter"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+insert[\s\S]*?\\?\"[Ss]ubmitter\\?\"\s*:\s*\\?\"[^\"\\]+'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT pass a display label (any string starting with a letter) for a choice-set field"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+(insert|update).*\"category\"\s*:\s*\"[A-Za-z]'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent filtered records on a CHOICE_SET field via filterGroup"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*filterGroup)(?=.*\"fieldName\"\s*:\s*\"category\")'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent filtered records on a RELATIONSHIP field via filterGroup"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*filterGroup)(?=.*\"fieldName\"\s*:\s*\"submitter\")'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent authored the PaymentStatus choice set via choice-sets create (CLI-supported per the skill)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip\s+df\s+choice-sets\s+create[\s\S]*?CE_SmokePaymentStatus'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked choice-set-values create for at least one of paid/unpaid/refunded (agents often chain all three in one Bash call)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip\s+df\s+choice-set-values\s+create[\s\S]*?(paid|unpaid|refunded)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+

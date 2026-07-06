@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the invalid-range-syntax (branch 2) of the excel-activities/delete-range-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (ArgumentException 'The range is invalid' from DeleteRangeX) → jobs logs (resolved Range expression 'A1:B' + lastRow.ToString() evaluated to 'A1:B0' with lastRow=0) → workflow source (Range is an expression dependent on dtCleanup.Rows.Count). The resolved-range Trace line + the expression in the XAML are the smoking gun.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "683e47118b.json"},
+    {"match": "or folders list --output json", "file": "683e47118b.json"},
+    {"match": "or jobs list --folder-key \"f0022222-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "b0f683e76c.json"},
+    {"match": "or jobs list --folder-key f0022222-3333-4444-5555-666677778888 --state Faulted --output json", "file": "b0f683e76c.json"},
+    {"match": "or jobs get \"dd111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "6847a787a0.json"},
+    {"match": "or jobs get dd111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "6847a787a0.json"},
+    {"match": "or jobs history \"dd111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "9d2f4acf36.json"},
+    {"match": "or jobs history dd111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "9d2f4acf36.json"},
+    {"match": "or jobs logs \"dd111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "7e405fc6d4.json"},
+    {"match": "or jobs logs dd111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "7e405fc6d4.json"}
+  ]
+}

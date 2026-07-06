@@ -100,6 +100,8 @@ The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top
 
 Roles group permissions and are scoped to either the tenant or a folder. Create the role first (it starts with zero permissions), then add permissions to it.
 
+> **⚠️ `uip or roles` is the Orchestrator RBAC catalog — a different store from Identity/organization authorization roles (`uip admin authorization roles`, see [uipath-admin](/uipath:uipath-admin)). The two are disjoint: a role created with `admin authorization roles` does NOT appear in `uip or roles list`, and vice versa.** Both have Tenant-scoped roles, so "a tenant-level role" alone doesn't tell you which one. For any Orchestrator role/permission lifecycle — create, add/remove permissions, assign to users/folders — use `uip or roles`. Reach for `admin authorization roles` only for org-level Identity roles that span services.
+
 ```bash
 # Create a folder-scoped role
 uip or roles create --name "FinanceOperator" --type Folder --output json

@@ -16,6 +16,8 @@ max_iterations: 1
 pre_run:
   - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/eval_mocking_mockito/_fixtures/asset-retriever ."
     timeout: 10
+  - command: "bash -c 'cd asset-retriever && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
+    timeout: 180
 
 initial_prompt: |
   I have an existing coded agent project at `asset-retriever/`
