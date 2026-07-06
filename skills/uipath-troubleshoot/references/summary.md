@@ -36,6 +36,7 @@ Namespaces: `UiPath.IntegrationService.Activities`, `UiPath.IntegrationService.A
 CLI: `uip is --help`
 
 - [products/integration-service/overview.md](./products/integration-service/overview.md) — Product overview, connectors, connections, and CLI commands
+- [products/integration-service/dap-error-codes-reference.md](./products/integration-service/dap-error-codes-reference.md) — DAP runtime error-code catalog, telemetry customEvent fields, retry semantics, code → playbook map
 - [products/integration-service/summary.md](./products/integration-service/summary.md) — All playbooks for Integration Service issues
 
 ## Agents
