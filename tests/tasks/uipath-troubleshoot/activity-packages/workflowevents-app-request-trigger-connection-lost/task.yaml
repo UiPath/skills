@@ -1,19 +1,19 @@
-task_id: skill-troubleshoot-workflowevents-initialize-hub-connection-aggregate-failure
+task_id: skill-troubleshoot-workflowevents-app-request-trigger-connection-lost
 description: >
   Faithful replay of a UiPath troubleshooting investigation. The agent runs
-  the uipath-troubleshoot skill against a uip CLI mock. A Studio Web
-  app-workflow run faulted at the internal InitializeHubConnection activity
-  (UiPath.WorkflowEvents.Activities) with System.AggregateException wrapping
-  a WorkflowApplicationException — "SignalR: Invalid SessionId:  OR
-  Orchestrator Url: ". The SignalR hub-connection bootstrap failed in its
-  SYNCHRONOUS phase: the Studio Web app-preview session context did not
-  provide a session id / resolvable resource URL, so the activity threw
-  before the SignalR connection was attempted (the background
-  StartConnectionAsync swallows transport errors, so this is not a socket
-  failure). The agent must unwrap the AggregateException to the inner
-  invalid-session/URL cause. NOT an in-workflow error, NOT a HandleAppRequest
-  null reference, NOT an AppRequestTrigger connection timeout. Success = the
-  agent reaches the same root cause as RESOLUTION.md.
+  the uipath-troubleshoot skill against a uip CLI mock. A workflow invoked by
+  a UiPath App (SignalR connection mode) faulted at the internal
+  AppRequestTrigger activity (UiPath.WorkflowEvents.Activities) with
+  System.TimeoutException — "SignalR connection did not establish within 60
+  seconds. Current state: Connecting." The App↔robot SignalR channel never
+  came up while the trigger waited for an invoke-workflow request, so the
+  request-listener leg rethrew the timeout through the trigger's bookmark.
+  This is a connection/transport ESTABLISHMENT failure (the App instance was
+  not connected, or the robot host could not reach the SignalR hub), NOT an
+  in-workflow error, NOT a HandleAppRequest null reference, NOT an
+  InitializeHubConnection bootstrap failure. A missed heartbeat is handled
+  gracefully (no fault); this is the establish path. Success = the agent
+  reaches the same root cause as RESOLUTION.md.
 tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, mode:diagnose, workflowevents-activities]
 
 agent:
@@ -28,7 +28,7 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../_shared/mock_template
+      path: ../../_shared/mock_template
     - type: template_dir
       path: fixtures
   mock_path_dirs:

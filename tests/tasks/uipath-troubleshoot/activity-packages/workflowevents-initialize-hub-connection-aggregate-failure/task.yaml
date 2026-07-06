@@ -1,20 +1,19 @@
-task_id: skill-troubleshoot-workflowevents-handle-app-request-null-reference
+task_id: skill-troubleshoot-workflowevents-initialize-hub-connection-aggregate-failure
 description: >
   Faithful replay of a UiPath troubleshooting investigation. The agent runs
-  the uipath-troubleshoot skill against a uip CLI mock whose responses are
-  verbatim-shaped CLI outputs. A workflow invoked by a UiPath App faulted at
-  the internal HandleAppRequest activity (UiPath.WorkflowEvents.Activities)
-  with System.NullReferenceException — "Object reference not set to an
-  instance of an object." The fault is a null dereference INSIDE the
-  App-invoked workflow (ProcessRequest.xaml): the io_Records DataTable input
-  the App did not bind was Nothing when .Rows was accessed. HandleAppRequest
-  is internal Apps machinery that runs the invoked workflow and returns its
-  result, so the NRE originates in the workflow / a missing input argument,
-  NOT in the WorkflowEvents package and NOT in the SignalR channel (no
-  transport phrase). Span attributes (HandleAppRequest running
-  ProcessRequest.xaml; the faulting Assign frame) pin the cause to the
-  invoked workflow. Success = the agent reaches the same root cause as
-  RESOLUTION.md.
+  the uipath-troubleshoot skill against a uip CLI mock. A Studio Web
+  app-workflow run faulted at the internal InitializeHubConnection activity
+  (UiPath.WorkflowEvents.Activities) with System.AggregateException wrapping
+  a WorkflowApplicationException — "SignalR: Invalid SessionId:  OR
+  Orchestrator Url: ". The SignalR hub-connection bootstrap failed in its
+  SYNCHRONOUS phase: the Studio Web app-preview session context did not
+  provide a session id / resolvable resource URL, so the activity threw
+  before the SignalR connection was attempted (the background
+  StartConnectionAsync swallows transport errors, so this is not a socket
+  failure). The agent must unwrap the AggregateException to the inner
+  invalid-session/URL cause. NOT an in-workflow error, NOT a HandleAppRequest
+  null reference, NOT an AppRequestTrigger connection timeout. Success = the
+  agent reaches the same root cause as RESOLUTION.md.
 tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, mode:diagnose, workflowevents-activities]
 
 agent:
@@ -29,7 +28,7 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../_shared/mock_template
+      path: ../../_shared/mock_template
     - type: template_dir
       path: fixtures
   mock_path_dirs:
