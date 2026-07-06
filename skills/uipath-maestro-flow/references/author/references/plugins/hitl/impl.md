@@ -33,7 +33,7 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
       "fields": [
         { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input", "binding": "vars.fetchInvoice.output.invoiceId" },
         { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "vars.fetchInvoice.output.amount" },
-        { "id": "decision",  "label": "Decision",   "type": "text",   "direction": "output", "variable": "decision" }
+        { "id": "decision",  "label": "Decision",   "type": "text",   "direction": "output", "variable": "vars.decision" }
       ],
       "outcomes": [
         { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true,  "action": "Continue" },
@@ -82,13 +82,13 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 - `$vars.{nodeId}.output` — object with all `output` / `inOut` field values, keyed by **field `id`**
 - `$vars.{nodeId}.output.{fieldId}` — individual field value (e.g. `$vars.hitlReview1.output.decision`)
 - `$vars.{nodeId}.status` — selected outcome name (e.g. `"Approve"`, `"Reject"`)
-- `$vars.{globalId}` — workflow-global variable for output/inOut fields; `globalId` is derived from `field.variable` (strip `vars.` prefix)
+- `$vars.{globalId}` — workflow-global alias; `globalId` is `field.variable` with `vars.` stripped. **Do not use this in scripts — always use `$vars.{nodeId}.output.{fieldId}` instead.**
 
 ---
 
-## Option 2 — App-Based HITL (`uipath.human-in-the-loop` with `inputs.type = "custom"`)
+## Option 2 — App-Based HITL (`uipath.human-in-the-loop.coded-action-app`)
 
-Use when there is an existing deployed Action Center app that should serve as the task form. Same node type as Option 1 — only `inputs.type`, `inputs.app`, and `inputs.appInputBindings` differ.
+Use when there is an existing deployed Action Center app that should serve as the task form.
 
 ### Discovery
 
