@@ -1,46 +1,46 @@
 {
   "version": 2,
-  "_doc": "Faithful-replay fixtures for a captured InvoiceIntake faulted job (Extract/Unzip Files — corrupt archive). Names/paths/keys/timestamps scrubbed; exception text + activity class preserved verbatim.",
+  "_doc": "Faithful-replay fixtures for a captured InvoiceIntake faulted job (Extract/Unzip Files \u2014 corrupt archive). Names/paths/keys/timestamps scrubbed; exception text + activity class preserved verbatim.",
   "rules": [
     {
       "match": "or folders list --output json",
-      "file": "folders-list.json"
+      "file": "e282487c93.json"
     },
     {
       "match": "or jobs list --folder-key \"4b1c7e90-2a3d-4f5e-9c8b-1a2b3c4d5e6f\" --state Faulted --output json",
-      "file": "jobs-list.json"
+      "file": "bd6f752385.json"
     },
     {
       "match": "or jobs list --folder-key 4b1c7e90-2a3d-4f5e-9c8b-1a2b3c4d5e6f --state Faulted --output json",
-      "file": "jobs-list.json"
+      "file": "bd6f752385.json"
     },
     {
       "match": "or jobs list --process-name InvoiceIntake",
-      "file": "jobs-list.json"
+      "file": "bd6f752385.json"
     },
     {
       "match": "or jobs list --folder-path Finance",
-      "file": "jobs-list.json"
+      "file": "bd6f752385.json"
     },
     {
       "match": "or jobs list --folder-path \"Finance\"",
-      "file": "jobs-list.json"
+      "file": "bd6f752385.json"
     },
     {
       "match": "or jobs get \"3e9a1c74-5b2d-4e8f-a1c6-7d9e0f2a3b4c\" --output json",
-      "file": "jobs-get.json"
+      "file": "8dc1b36d84.json"
     },
     {
       "match": "or jobs get 3e9a1c74-5b2d-4e8f-a1c6-7d9e0f2a3b4c --output json",
-      "file": "jobs-get.json"
+      "file": "8dc1b36d84.json"
     },
     {
       "match": "or jobs logs \"3e9a1c74-5b2d-4e8f-a1c6-7d9e0f2a3b4c\" --level Error --output json",
-      "file": "jobs-logs.json"
+      "file": "29cb52f76a.json"
     },
     {
       "match": "or jobs logs 3e9a1c74-5b2d-4e8f-a1c6-7d9e0f2a3b4c --level Error --output json",
-      "file": "jobs-logs.json"
+      "file": "29cb52f76a.json"
     },
     {
       "match": "docsai ask",
