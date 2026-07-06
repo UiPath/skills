@@ -1,0 +1,98 @@
+task_id: skill-troubleshoot-move-outlook-mail-com-session-loss
+description: >
+  UiPath troubleshooting agent must diagnose a Move Outlook Mail Message
+  failure that faults 100% on an unattended robot with "The operation
+  failed" (COMException, RPC server unavailable 0x800706BA). Root cause is
+  Branch 1 of the move-outlook-mail-failures playbook: there is no live
+  local Outlook COM session on the unattended Windows profile (Classic
+  Outlook installed but not running/synced), so the folder tree cannot be
+  indexed. The destination path 'Inbox\Processed' is VALID - the problem
+  is the COM session, not a folder-path typo, type mismatch, or New
+  Outlook. Fix is host-side: keep Outlook running (foreground window /
+  Startup apps), wrap in a Retry Scope, or move to Graph for unattended.
+  Success = agent matches Branch 1 AND hands a host-side check list without
+  fabricating host actions.
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+  - type: template_dir
+    path: ../../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: data
+  mock_path_dirs:
+  - m
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My MailboxTriageMover process runs unattended every night and is
+  faulting in Orchestrator on every run. The folder is "RPA Production".
+
+  I'm not on the Robot host (MOCK-HOST), only Orchestrator. Diagnose what
+  you can; if the fix needs the host, hand me the exact things to check
+  next time I'm there and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are away from the Robot host (MOCK-HOST) and only have Orchestrator
+    access. You trust the agent's expertise and are waiting for either a
+    diagnosis or a list of host-side things to check the next time you are
+    in front of the machine.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered and to hand you the host check list at the end."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

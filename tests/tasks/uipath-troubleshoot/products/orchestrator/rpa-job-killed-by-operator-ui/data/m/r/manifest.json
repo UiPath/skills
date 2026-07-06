@@ -1,0 +1,93 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the operator-UI-kill variant of the 0x40010004 playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs history → admin audit tenant events --search <job-key>. The audit event surfaces the actor (jane.doe@acme.com) as the operator who killed the job from Orchestrator UI.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "63044a0ebf.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "63044a0ebf.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\" --state Faulted --output json",
+      "file": "0dac23d736.json"
+    },
+    {
+      "match": "or jobs list --folder-key f1e2d3c4-b5a6-7890-1234-56789abcdef0 --state Faulted --output json",
+      "file": "0dac23d736.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\" --output json",
+      "file": "ea44e4b8c4.json"
+    },
+    {
+      "match": "or jobs list --folder-key f1e2d3c4-b5a6-7890-1234-56789abcdef0 --output json",
+      "file": "ea44e4b8c4.json"
+    },
+    {
+      "match": "or jobs get \"a1c0b2c3-d4e5-4678-9012-3456789aaaaa\" --output json",
+      "file": "847a2b86cb.json"
+    },
+    {
+      "match": "or jobs get a1c0b2c3-d4e5-4678-9012-3456789aaaaa --output json",
+      "file": "847a2b86cb.json"
+    },
+    {
+      "match": "or jobs history \"a1c0b2c3-d4e5-4678-9012-3456789aaaaa\" --output json",
+      "file": "7cb37c3120.json"
+    },
+    {
+      "match": "or jobs history a1c0b2c3-d4e5-4678-9012-3456789aaaaa --output json",
+      "file": "7cb37c3120.json"
+    },
+    {
+      "match": "or jobs logs \"a1c0b2c3-d4e5-4678-9012-3456789aaaaa\" --level Error --output json",
+      "file": "f1f8f2e0f9.json"
+    },
+    {
+      "match": "or jobs logs a1c0b2c3-d4e5-4678-9012-3456789aaaaa --level Error --output json",
+      "file": "f1f8f2e0f9.json"
+    },
+    {
+      "match": "or jobs logs \"a1c0b2c3-d4e5-4678-9012-3456789aaaaa\" --output json",
+      "file": "f1f8f2e0f9.json"
+    },
+    {
+      "match": "or jobs logs a1c0b2c3-d4e5-4678-9012-3456789aaaaa --output json",
+      "file": "f1f8f2e0f9.json"
+    },
+    {
+      "match": "admin audit tenant events",
+      "file": "34e5b0c520.json"
+    },
+    {
+      "match": "admin audit org events",
+      "file": "34e5b0c520.json"
+    },
+    {
+      "match": "admin audit tenant sources",
+      "file": "be1ccc7600.json"
+    },
+    {
+      "match": "admin audit org sources",
+      "file": "be1ccc7600.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy any docsai query to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    { "pattern": "or jobs get a1c0b2c3", "min": 1, "description": "Agent must inspect the failing job to confirm the exit code" },
+    { "pattern": "or jobs history a1c0b2c3", "min": 1, "description": "Agent must inspect state history to distinguish operator-initiated Stop from host-side termination" },
+    { "pattern": "admin audit", "min": 1, "description": "Agent must query the audit log to identify the actor" }
+  ]
+}

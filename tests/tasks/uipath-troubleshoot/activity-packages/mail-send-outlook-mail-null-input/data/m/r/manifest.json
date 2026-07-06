@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the send-outlook-mail-failures playbook (Branch 3 - Uninitialized input / NullReferenceException) signature.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "0a0d3d14cb.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"c5e6f7a8-9012-4d1e-8f2a-4b5c6d7e8f90\" --state Faulted --output json",
+      "file": "a60eaa5274.json"
+    },
+    {
+      "match": "or jobs list --folder-key c5e6f7a8-9012-4d1e-8f2a-4b5c6d7e8f90 --state Faulted --output json",
+      "file": "a60eaa5274.json"
+    },
+    {
+      "match": "or jobs get \"d6f7a8b9-0123-4e2f-9a3b-5c6d7e8f9012\" --output json",
+      "file": "128200d21e.json"
+    },
+    {
+      "match": "or jobs get d6f7a8b9-0123-4e2f-9a3b-5c6d7e8f9012 --output json",
+      "file": "128200d21e.json"
+    },
+    {
+      "match": "or jobs logs \"d6f7a8b9-0123-4e2f-9a3b-5c6d7e8f9012\" --level Error --output json",
+      "file": "fff4e04cb0.json"
+    },
+    {
+      "match": "or jobs logs d6f7a8b9-0123-4e2f-9a3b-5c6d7e8f9012 --level Error --output json",
+      "file": "fff4e04cb0.json"
+    },
+    {
+      "match": "or jobs logs \"d6f7a8b9-0123-4e2f-9a3b-5c6d7e8f9012\" --output json",
+      "file": "dc9d2ece7c.json"
+    },
+    {
+      "match": "or jobs logs d6f7a8b9-0123-4e2f-9a3b-5c6d7e8f9012 --output json",
+      "file": "dc9d2ece7c.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}
