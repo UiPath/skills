@@ -12,6 +12,8 @@ Both workflows are driven by live data — the catalog (`uip agent guardrails ca
 
 ## Step 0 — Fetch Catalog, Available Validators, and SDK Docs (MANDATORY — do this before any analysis)
 
+> Full three-fetch mandate applies to **Recommend mode**. In **Validate mode** of an existing guardrail the SDK docs are the authoritative, sufficient source for a validator's scope/stage — `catalog` (relevance metadata) and `list` (tenant entitlement) are recommended cross-checks, not a hard prerequisite for a scope/placement fix. See [Validate Mode](#validate-mode).
+
 ### Catalog (cacheable — 30-minute TTL)
 
 The catalog is the same for all tenants (authored metadata, rarely changes). Cache it locally for 30 minutes to avoid redundant calls.
@@ -219,7 +221,7 @@ Report to the user:
 
 Use when the agent already has guardrails and the user asks whether they are correctly configured or appropriate.
 
-**Before any validation, run all three Step 0 fetches** (catalog with cache, guardrails list without cache, SDK docs via WebFetch). The SDK docs are the authoritative source for which Python class corresponds to which `validator_id` and which scopes/stages each class supports.
+**Fetch the SDK docs first (WebFetch) — they are the authoritative source** for which Python class corresponds to which `validator_id` and which scopes/stages each class supports; a scope/placement diagnosis is grounded there. Also run the `catalog` and `list` fetches to support the Relevance (`when_not_to_use`) and entitlement checks below — recommended, but not a hard prerequisite once the SDK docs settle the scope question.
 
 For each existing guardrail discovered in the Python file (Step 1 from Recommend Mode):
 
@@ -238,7 +240,7 @@ From the SDK docs and the catalog, look up the validator class referenced in the
 
 ### Actionability Check
 
-1. From the catalog entry, read `allowed_scopes` and the per-scope allowed stages.
+1. Read the validator's allowed scopes and per-scope stages from the **SDK docs** (authoritative for coded); cross-check against the `catalog` entry's `allowed_scopes` when it was fetched.
 2. Confirm the in-code scope is permitted:
    - Middleware — every `GuardrailScope` in the `scopes=[...]` argument is in `allowed_scopes`.
    - Decorator — the function the `@guardrail` decorates matches the implied scope: `@tool` for Tool scope, LLM factory for LLM scope, agent factory for Agent scope.
@@ -270,7 +272,7 @@ python3 -c "import ast; ast.parse(open('graph.py').read())"
 
 ## Critical Rules
 
-1. **Always fetch catalog first** (use cache if fresh); **always fetch guardrails list second** (no cache); **always fetch the two SDK doc pages via WebFetch third** (no cache). All three are required before any analysis or code edit.
+1. **Recommend mode / net-new adds:** fetch catalog first (use cache if fresh), guardrails list second (no cache), and the two SDK doc pages via WebFetch third (no cache) — all three required before any analysis or code edit. **Validate mode of an existing guardrail:** the SDK docs are the authoritative, sufficient grounding for a scope/placement fix; still fetch catalog + list for the Relevance and entitlement checks, but they are not a hard prerequisite.
 2. **If `GuardrailCatalogUnavailable`** → surface the message and stop. Do not fall back to guessing or hardcoded recommendations.
 3. **Only recommend `Available` validators**. Mention `Unauthorised` ones to the user so they can contact their administrator.
 4. **Every recommendation must cite** the catalog entry's `when_to_use` or a specific `use_cases` item that matched the agent's context. Do not recommend a guardrail without explaining why it applies.

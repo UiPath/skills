@@ -8,11 +8,11 @@ Two types exist:
 - **`custom`** — deterministic rules you define (word matching, number comparison, boolean checks, universal triggers)
 - **`builtInValidator`** — UiPath Guardrails API validators (PII detection, harmful content, prompt injection, IP protection, user prompt attacks)
 
-> **Autonomous agents:** All guardrails are configured at the `agent.json` root `guardrails` array. **Conversational agents:** see § Conversational Support below — the runtime-effective location is each tool's `resources/<Tool>/resource.json` → `guardrail.policies[]`.
+> **Autonomous agents:** All guardrails are configured at the `agent.json` root `guardrails` array. **Conversational agents:** the `agent.json` root `guardrails[]` is **authoritative** (source for the Studio Web UI and both runtimes); each Tool-scoped guardrail is also mirrored into the tool's `resources/<Tool>/resource.json` → `guardrail.policies[]` — see § Conversational Support below.
 
 ## Conversational Support
 
-**Status: Tool-scoped only, per-tool resource files are authoritative.** Conversational agents support guardrails with `selector.scopes: ["Tool"]` only — DO NOT use `"Agent"` or `"Llm"`.
+**Status: Custom (deterministic) `Tool`-scoped guardrails ONLY. No built-in validators.** Built-in validators (any `$guardrailType: "builtInValidator"` — the validators returned by `uip agent guardrails list`; see the [Validators Quick Reference](#validators-quick-reference)) are autonomous-only — the conversational runtime never runs them, at any scope. The only guardrails that run are `$guardrailType: "custom"` deterministic rules (word/number/boolean/always) with `selector.scopes: ["Tool"]`. Write each as the **same object (same `id`) in two places** — the `agent.json` root `guardrails[]` is **authoritative** (source for the Studio Web UI and both runtimes); the tool's `resources/<Tool>/resource.json` → `guardrail.policies[]` is its **mirror**. Write both (the CLI doesn't auto-sync), but a guardrail present only in the tool resource is invisible in Studio Web and does not run on the Unified (Python) runtime. `"Agent"` and `"Llm"` scopes are not available. If asked for PII / harmful-content / injection detection, explain built-in validators are autonomous-only and offer a Custom Tool guardrail or an autonomous agent instead.
 
 This restriction is enforced as [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1.
 
@@ -34,7 +34,7 @@ Every guardrail object in the `guardrails` array shares these base fields:
 
 The `selector` field controls where the guardrail applies.
 
-> **Conversational agents — use `["Tool"]` ONLY. `"Agent"` and `"Llm"` are NOT available; DO NOT use them.** (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Rule 1).
+> **Conversational agents — Custom (deterministic) `Tool` guardrails ONLY; no `builtInValidator` at all. `"Agent"`/`"Llm"` scopes are NOT available.** (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Rule 1).
 
 ```json
 "selector": {
@@ -102,7 +102,7 @@ Each entry in the `Data` array contains:
 
 Do not hardcode assumptions about scope/stage support or availability.
 
-> **Conversational override** (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1)**.** `AllowedScopes` describes what the validator's schema accepts — it is **not** the set of scopes valid for the runtime you're targeting. For low-code conversational agents, **intersect `AllowedScopes` with `["Tool"]`** before writing `selector.scopes`. If the validator does not list `"Tool"` in `AllowedScopes`, it cannot be used in a conversational agent — do not substitute `"Agent"` or `"Llm"` as a workaround — those scopes are not available for conversational agents.
+> **Conversational override** (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1)**.** `AllowedScopes` describes what a **built-in validator's** schema accepts — but built-in validators are **not usable at all** on conversational agents (they are autonomous-only). Do NOT author any `builtInValidator` guardrail for a conversational agent, at any scope. The only guardrails the conversational runtime runs are `$guardrailType: "custom"` deterministic rules scoped to `Tool`.
 
 ## Actions
 
@@ -569,24 +569,24 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 
 ### Validators Quick Reference
 
-> **For conversational agents (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1): use `"Tool"` only — DO NOT use the `Agent` and `Llm` entries below.** The Scopes column is the validator's schema-level support, not the conversational runtime's support: `Agent`/`Llm` are not available for conversational agents.
+> **These are all `builtInValidator` guardrails — autonomous-only. NONE are usable on conversational agents** (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1); the conversational runtime runs only Custom deterministic `Tool` guardrails. The table below describes autonomous support.
 
 | Validator | Scopes (autonomous) | Conversational | Stages | Supported Actions |
 |-----------|---------------------|----------------|--------|-------------------|
-| `pii_detection` | Agent, Llm, Tool | **Tool only** | Pre + Post | Block, Log, Escalate |
-| `prompt_injection` | Llm | **Not usable** (no Tool scope) | Pre only | Block, Log, Escalate |
-| `harmful_content` | Agent, Llm, Tool | **Tool only** | Pre + Post | Block, Log, Escalate |
-| `intellectual_property` | Llm, Agent | **Not usable** (no Tool scope) | Post only | Block, Log, Escalate |
-| `user_prompt_attacks` | Llm | **Not usable** (no Tool scope) | Pre only | Block, Log, Escalate |
+| `pii_detection` | Agent, Llm, Tool | **Not usable** (autonomous-only) | Pre + Post | Block, Log, Escalate |
+| `prompt_injection` | Llm | **Not usable** (autonomous-only) | Pre only | Block, Log, Escalate |
+| `harmful_content` | Agent, Llm, Tool | **Not usable** (autonomous-only) | Pre + Post | Block, Log, Escalate |
+| `intellectual_property` | Llm, Agent | **Not usable** (autonomous-only) | Post only | Block, Log, Escalate |
+| `user_prompt_attacks` | Llm | **Not usable** (autonomous-only) | Pre only | Block, Log, Escalate |
 
-Run `uip agent guardrails list --output json` to get the authoritative list. Only use validators where `Status` is `"Available"`. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields. **For conversational agents, intersect `AllowedScopes` with `["Tool"]` — if `"Tool"` is not in the validator's `AllowedScopes`, the validator cannot be used in a conversational agent.**
+Run `uip agent guardrails list --output json` to get the authoritative list. Only use validators where `Status` is `"Available"`. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields. **These built-in validators are autonomous-only — do NOT author any of them on a conversational agent (they will not run at any scope). Conversational agents use Custom deterministic `Tool` guardrails only.**
 **How to map `uip agent guardrails list` output to guardrail JSON:**
 
 | CLI field | Maps to |
 |-----------|---------|
 | `Status` | Gate check — only proceed if `"Available"` |
 | `Validator` | `validatorType` value |
-| `AllowedScopes` | Valid values for `selector.scopes` (autonomous). **Conversational: intersect with `["Tool"]`** — see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1. |
+| `AllowedScopes` | Valid values for `selector.scopes` (autonomous only — built-in validators are not usable on conversational agents; see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1). |
 | `GuardrailStages[scope]` | Valid execution stages for that scope |
 | `Parameters[].Id` | `validatorParameters[].id` |
 | `Parameters[].Type` | `validatorParameters[].$parameterType` |
@@ -981,7 +981,7 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 4. **Do not add `intellectual_property` to Tool scope** — only `"Llm"` and `"Agent"` scopes are supported.
 5. **Do not add `intellectual_property` to PreExecution stage** — PostExecution only.
 6. **Do not omit `matchNames` when `Tool` is in `scopes`** — always explicitly list the target tool names. See [matchNames — "All Tools" Behavior](#matchnames--all-tools-behavior).
-7. **Do not use `filter` action on built-in validators** — `"$actionType": "filter"` is only supported on deterministic rules. All built-in validators (`pii_detection`, `intellectual_property`, `prompt_injection`, `user_prompt_attacks`, `harmful_content`) support only `block`, `log`, and `escalate`.
+7. **Do not use `filter` action on built-in validators** — `"$actionType": "filter"` is only supported on deterministic (`custom`) rules. Every built-in validator (`$guardrailType: "builtInValidator"`) supports only `block`, `log`, and `escalate` (see the [Validators Quick Reference](#validators-quick-reference) § Supported Actions).
 8. **Do not use odd numbers or floats for `harmfulContentEntityThresholds`** — only `0`, `2`, `4`, `6` are valid severity values. Values like `3` or `2.5` cause validation errors.
 9. **Do not add a built-in validator without first running `uip agent guardrails list --output json`** — always fetch the list, verify the validator exists, and confirm `Status` is `"Available"`. Adding an `Unauthorised` or non-existent validator causes runtime failures.
 10. **Do not use Action Center apps with `Type: "VB Action"` or `Type: "Coded"` as escalation targets** — only entries with `Type: "Workflow Action"` can back a guardrail escalation. Always filter `uip solution resources list --kind App` results by this type.
@@ -1002,15 +1002,15 @@ Use when adding input/output safeguards (PII detection, harmful content blocking
 
 > **MANDATORY: Read this file BEFORE writing any guardrail JSON.** The guardrail schema uses discriminator fields (`$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. PII detection uses `$guardrailType: "builtInValidator"` with `validatorType: "pii_detection"` — NOT `$guardrailType: "pii"`. Parameters use `id` (not `name`) and require `$parameterType`. Actions use `$actionType` (not `type`). PII entities are PascalCase (`"Email"`, not `"email_address"`). There is no `pattern`, `target`, or `message` field.
 >
-> **MANDATORY: Run `uip agent guardrails list --output json` before writing any guardrail**, regardless of type. The command gives you the exact `$parameterType` values, parameter `id` names, and allowed scopes — values you cannot safely derive from the type name alone. Skipping it leads to invalid parameter shapes that fail schema validation.
+> **MANDATORY for `builtInValidator` guardrails: run `uip agent guardrails list --output json` before writing one.** The command gives you the exact `$parameterType` values, parameter `id` names, and allowed scopes — values you cannot safely derive from the type name alone. Skipping it leads to invalid parameter shapes that fail schema validation. **Custom guardrails (`$guardrailType: "custom"`) do NOT need this step** — their rules (word/number/boolean/always), operators, and actions are fully specified here in this reference and use no validator catalog. Only run `guardrails list` for a custom guardrail if you are unsure whether the request should instead use a built-in validator.
 
-### Step 0 — Fetch available validators (mandatory for ALL guardrail types)
+### Step 0 — Fetch available validators (mandatory for `builtInValidator` guardrails; skip for custom-only)
 
 ```bash
 uip agent guardrails list --output json
 ```
 
-Build a lookup of `{ validatorId: status }` from `Data`. Required for both custom and built-in guardrails — confirms the correct parameter shapes and scope/stage constraints for the guardrail you are about to write.
+Build a lookup of `{ validatorId: status }` from `Data`. Required before adding any built-in validator — confirms the correct parameter shapes and scope/stage constraints. Skip this step when the guardrail is purely custom (deterministic rules); the validator catalog does not apply to custom rules.
 
 ### Step 1 — Verify existing agent
 

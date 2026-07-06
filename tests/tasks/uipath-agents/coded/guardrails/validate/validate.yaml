@@ -20,32 +20,41 @@ sandbox:
       path: ../_fixtures/MisplacedPromptAttacksAgent
 
 initial_prompt: |
-  I have a coded UiPath LangGraph customer-support agent in graph.py. I added a
-  guardrail to block prompt-injection / adversarial user inputs, but I'm not
-  confident I attached it in the right place. Can you check whether it's
-  configured correctly and fix it if it isn't? Make sure graph.py still parses
-  when you're done.
+  I've got a UiPath coded agent in graph.py and I added a UiPath guardrail to
+  it recently. I'm not confident it's set up the way UiPath expects. I might
+  have attached it to the wrong thing. Can you check it against how UiPath
+  guardrails are actually meant to be configured and fix it if it's wrong?
 
-  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or
-  feedback. Do NOT pause between planning and implementation. Complete the
-  entire task end-to-end in a single pass.
+  Do NOT publish, upload, or deploy. Complete the task end-to-end. Only stop
+  if there is a critical blocker you cannot resolve.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill (not claude-api or another skill)"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Advisory (non-gating): for a coded scope/placement fix of an EXISTING validator,
+  # the SDK docs (fetched below) are the authoritative source for allowed scopes —
+  # `catalog` (tenant-invariant metadata) and `list` (tenant entitlement) add nothing
+  # load-bearing here. Kept for signal, not scored. Matches the low-code validate task.
   - type: command_executed
-    description: "Agent fetched the guardrail catalog"
+    description: "Advisory: agent fetched the guardrail catalog (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Agent fetched the guardrails list"
+    description: "Advisory: agent fetched the guardrails list (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+guardrails\s+list'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent fetched the UiPath Python SDK guardrail docs"
