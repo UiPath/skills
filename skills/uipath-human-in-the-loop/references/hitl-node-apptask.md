@@ -1,6 +1,6 @@
 # HITL AppTask Node — Direct JSON Reference
 
-The AppTask variant uses a deployed coded app (Studio Web) as the task form. Same node type as QuickForm (`uipath.human-in-the-loop`), same three output handles. Difference: `inputs.type = "custom"` and `inputs.app` points to the deployed app.
+The AppTask variant uses a deployed coded app (Studio Web) as the task form. Node type: `uipath.human-in-the-loop.coded-action-app`. Same three handles (`input`, `completed`) as QuickForm. Difference from QuickForm: `inputs.app` points to the deployed app (no inline schema).
 
 ---
 
@@ -285,7 +285,6 @@ Merge rules:
   "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {
-    "type": "custom",
     "recipient": {
       "channels": ["ActionCenter"],
       "connections": {},

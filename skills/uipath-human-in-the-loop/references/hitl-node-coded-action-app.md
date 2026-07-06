@@ -278,7 +278,6 @@ All values below come directly from the `ParsedActionSchema` assembled in Step 4
   "display": { "label": "<LABEL>" },
   "ui": { "position": { "x": 474, "y": 144 } },
   "inputs": {
-    "type": "custom",
     "channels": [],
     "recipient": {
       "channels": ["ActionCenter"],

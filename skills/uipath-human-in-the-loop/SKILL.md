@@ -107,7 +107,7 @@ Read the existing `.flow` file to understand current nodes and edges. Use the Re
 2. **What the human needs to see** — data produced by upstream nodes
 3. **What the human must provide back** — data needed by downstream nodes
 4. **What actions they can take** — the named outcome buttons
-5. **Form type**: QuickForm (`inputs.type = "quick"`, inline schema) or AppTask (`inputs.type = "custom"`, deployed coded app)?
+5. **Form type**: QuickForm (inline schema, node type `uipath.human-in-the-loop.quick-form`) or AppTask (deployed coded app, node type `uipath.human-in-the-loop.coded-action-app`)?
 
 ---
 
@@ -140,11 +140,11 @@ Wait for confirmation. Do not proceed to schema design until the user confirms.
 
 Present the user with three options. Do not choose on their behalf or perform any registry search.
 
-| # | Option | `inputs.type` value | Description |
+| # | Option | Node type | Description |
 |---|---|---|---|
-| 1 | **QuickForm** | `"quick"` | Inline typed form — fields rendered by Action Center from the schema you design here |
-| 2 | **New Coded Action App** | `"custom"` | Scaffold a new React + TypeScript app inside the solution — full UI control |
-| 3 | **Existing Deployed App** | `"custom"` | Reference an app already deployed to Orchestrator |
+| 1 | **QuickForm** | `uipath.human-in-the-loop.quick-form` | Inline typed form — fields rendered by Action Center from the schema you design here |
+| 2 | **New Coded Action App** | `uipath.human-in-the-loop.coded-action-app` | Scaffold a new React + TypeScript app inside the solution — full UI control |
+| 3 | **Existing Deployed App** | `uipath.human-in-the-loop.coded-action-app` | Reference an app already deployed to Orchestrator |
 
 > **If the user's request is purely business-oriented** (no mention of a deployed app, coded action app, or custom UI): skip the question and proceed directly with QuickForm. Do not ask. Say: "I'll use QuickForm — it's inline, no deployment step needed, and works for most approval and review tasks."
 
@@ -238,7 +238,7 @@ uip maestro flow validate <file> --output json
 
 Step 4c must be completed first — app name confirmed, solution directory located, SDK tarball identified, schema designed and confirmed.
 
-Scaffold the project directory and all source files, add the project to the solution, write the solution resource files, then write the HITL node with `inputs.type = "custom"` and `inputs.app` referencing the new app (`appSystemName: null` since the app has not been deployed yet).
+Scaffold the project directory and all source files, add the project to the solution, write the solution resource files, then write the HITL node (type `uipath.human-in-the-loop.coded-action-app`) with `inputs.app` referencing the new app (`appSystemName: null` since the app has not been deployed yet).
 
 Full project template, UUID generation, solution CLI commands, resource file templates, node JSON, and post-creation build steps: **[How to scaffold a new Coded Action App](references/hitl-node-coded-action-app.md)**
 
@@ -252,7 +252,7 @@ uip maestro flow validate <file> --output json
 
 Step 4b must be completed first — app resolved, configuration retrieved. Then:
 
-Resolve the solution context (`.uipx` file), write solution resource files, register the app reference, merge `debug_overwrites.json`, then write the node JSON with `inputs.type = "custom"` and `inputs.app` populated from the Step 3b configuration.
+Resolve the solution context (`.uipx` file), write solution resource files, register the app reference, merge `debug_overwrites.json`, then write the node JSON (type `uipath.human-in-the-loop.coded-action-app`) with `inputs.app` populated from the Step 3b configuration.
 
 App search/selection, retrieve-configuration, resource file writing, complete node JSON with `appInputBindings`: **[How to wire an existing deployed Action App](references/hitl-node-apptask.md)**
 

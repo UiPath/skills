@@ -106,7 +106,6 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
   "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {
-    "type": "quick",
     "title": "Invoice Review",
     "recipient": {
       "channels": ["Email", "ActionCenter"],
@@ -222,7 +221,6 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.
   ],
   "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" },
   "inputDefaults": {
-    "type": "quick",
     "schema": {
       "fields": [],
       "outcomes": [{ "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }]
