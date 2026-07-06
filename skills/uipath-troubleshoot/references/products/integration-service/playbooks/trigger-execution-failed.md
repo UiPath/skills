@@ -17,11 +17,11 @@ What this looks like — trigger (polling/webhook) runtime codes:
 | `DAP-RT-1053` | TriggerInvalidConfiguration | Trigger object name or operation is null/empty — set by connector configuration, not customer-settable | 🛠 B1 |
 | `DAP-RT-1052` | TriggerNoMatches | Zero events matched — **debug-mode-only signal; never emitted in runtime telemetry** | — |
 
-What can cause it:
-- Connection used by the trigger is inactive or expired (`1051`)
-- Connector trigger endpoint changed, errored, or returned an unexpected shape (`1051`)
-- Webhook/poll payload from the provider is malformed or missing the event ID (`1050`)
-- Connector configuration produced a null/empty trigger object name or operation — a connector-metadata defect, not a user-settable field (`1053`)
+What can cause it (cause IDs map to Resolution steps below):
+- **CA001** — Connection used by the trigger is inactive or expired (`1051`)
+- **CA002** — Connector trigger endpoint changed, errored, or returned an unexpected shape (`1051`)
+- **CA003** — Webhook/poll payload from the provider is malformed or missing the event ID (`1050`)
+- **CA004** — Connector configuration produced a null/empty trigger object name or operation — a connector-metadata defect, not a user-settable field (`1053`)
 
 What to look for:
 - `ConnectionId` and `RequestId` in the customEvent
@@ -40,8 +40,8 @@ What to look for:
 
 ## Resolution
 
-- **`DAP-RT-1051` — connection inactive:** re-authenticate via `uip is connections edit <connection-id>` (see [connection-auth-expired.md](./connection-auth-expired.md) for auth-expiry).
-- **`DAP-RT-1051` — endpoint issue:** verify the trigger object/operation is still supported by the connector; reconfigure if the connector changed.
-- **`DAP-RT-1050`:** verify the subscription in the external service emits the expected event shape; recreate the trigger subscription if the payload contract drifted.
-- **`DAP-RT-1053` (escalate — not customer-fixable):** the trigger object name or operation is null/empty, set by connector configuration. The customer cannot fix this from their workflow. Escalate to the Integration Service owner team with the `DAP-RT-1053` code, `RequestId`, and connector key.
+- **`CA001` — `DAP-RT-1051`, connection inactive:** re-authenticate via `uip is connections edit <connection-id>` (see [connection-auth-expired.md](./connection-auth-expired.md) for auth-expiry).
+- **`CA002` — `DAP-RT-1051`, endpoint issue:** verify the trigger object/operation is still supported by the connector; reconfigure if the connector changed.
+- **`CA003` — `DAP-RT-1050`:** verify the subscription in the external service emits the expected event shape; recreate the trigger subscription if the payload contract drifted.
+- **`CA004` — `DAP-RT-1053` (escalate — not customer-fixable):** the trigger object name or operation is null/empty, set by connector configuration. The customer cannot fix this from their workflow. Escalate to the Integration Service owner team with the `DAP-RT-1053` code, `RequestId`, and connector key.
 - **`DAP-RT-1052`:** debug-mode-only signal — never emitted in runtime telemetry. If seen during a debug run, it just means the trigger filter matched zero events; it is not a runtime fault and needs no action.
