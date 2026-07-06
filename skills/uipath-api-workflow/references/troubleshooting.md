@@ -569,7 +569,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### `Failed to parse <solution>.uipx`
 - **Cause:** Solution file is malformed JSON
-- **Fix:** Re-create with `uip solution new <name>` and re-add projects via `uip solution project add`
+- **Fix:** Re-create with `uip solution init <name>` and re-add projects via `uip solution project add`
 
 ### Generated `operate.json` or `package-descriptor.json` mismatch
 - **Cause:** Stale files committed by hand or from an older CLI version
@@ -577,7 +577,18 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### `.nupkg` produced but missing workflow files
 - **Cause:** Workflow JSON not located in the project directory the packager scanned
-- **Fix:** Verify workflow files are in the project folder declared in the solution `.uipx`, alongside `project.json`
+- **Fix:** Verify `Workflow.json` is in the project folder whose `project.uiproj` is declared in the solution `.uipx`
+
+### API workflow runs/deploys fine but does NOT appear or open in Studio Web
+- **Symptom:** The workflow runs under `uip api-workflow run`, the solution packs, publishes, and deploys as an API process — but after uploading the solution to Studio Web the API project is invisible / not editable. Importing it directly fails with `Failed to import new projects at the overwrite operations`.
+- **Cause:** The project uses the **runtime-only** shape — `project.json` + `workflows/WF_*.json`, no `.uiproj`. Studio Web's import (`isProjectFolder`) only recognizes a folder as a project when it contains a `.uiproj` file; a `project.json`-only folder is rejected as `invalid_project_folder`. Every runtime gate (validate / run / pack / publish / deploy) passes on this shape, so the defect surfaces only when a human opens Studio Web. This was the Woolworths private-preview RCA root cause. Root reason it happened: the project was hand-assembled instead of scaffolded with `uip api-workflow init`, which always produces the correct shape.
+- **Fix (preferred — re-scaffold):** For each broken `Type: "Api"` project, run `uip api-workflow init <newName>` inside the solution directory and copy the old main workflow's `document`/`do` content into the new `Workflow.json`. `init` writes the correct `project.uiproj` / `entry-points.json` / `bindings_v2.json` and registers the project in the `.uipx`. Then delete the old `project.json` folder (and its `.uipx` entry).
+- **Fix (in-place conversion)** when you must keep the existing folder/`Id` (SKILL.md rule 19a, [workflow-file-format.md](workflow-file-format.md#project-structure-studio-web-editable-contract)):
+  - Add `project.uiproj` (`ProjectType: "Api"`, `MainFile: "Workflow.json"`) and `entry-points.json` (`filePath: "content/Workflow.json"`, no leading slash, `type: "Api"`). Copy `bindings_v2.json` if present.
+  - Rename the main workflow to `Workflow.json` at the project root.
+  - Edit the `.uipx` `ProjectRelativePath` from `<folder>/project.json` → `<folder>/project.uiproj`, **preserving the project `Id` and `Type`**. Do NOT use `uip solution project remove`+`add` — it mints a new `Id`.
+  - Remove the stray `project.json` / `workflows/` (a mismatched `project.json` triggers `ProjectMetadataMismatchError`).
+  - Re-pack, then confirm the project opens in Studio Web (runtime/pack success alone does not prove it).
 
 ---
 
@@ -599,10 +610,10 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ## Validation Pitfalls
 
-### Not re-running after a fix
+### Not re-validating after a fix
 - **Symptom:** Reported "fixed" but errors remain
-- **Cause:** Skipped re-running `uip api-workflow run --no-auth` after applying a fix
-- **Fix:** ALWAYS re-run after every edit. The CLI is the only validator — there is no `uip api-workflow validate` command.
+- **Cause:** Skipped re-running the validators after applying a fix
+- **Fix:** ALWAYS re-run after every edit. Two validators: `uip api-workflow validate <Workflow.json>` (offline static — schema + semantic checks, autonomous) then `uip api-workflow run --no-auth` (runtime — catches expression/connection errors static analysis can't). See SKILL.md rules 20–21.
 
 ### Fixing in wrong order
 - **Symptom:** Fixing one error creates more errors; thrashing
