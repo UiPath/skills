@@ -16,6 +16,7 @@ tags:
   - feature:stages
   - feature:case-exit
   - feature:conditions
+  - feature:trigger
 
 agent:
   type: claude-code
@@ -75,6 +76,14 @@ success_criteria:
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "sdd.md preserves the expense_requests record-created trigger, companion data objects, and trigger-sourced intake field mappings"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/phase_0_to_case/expense_reimbursement/check_expense_trigger_sdd.py sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command

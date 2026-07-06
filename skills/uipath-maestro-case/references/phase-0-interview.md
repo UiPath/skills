@@ -190,6 +190,7 @@ Use sparingly — at most one batched prompt in the whole interview. Each row de
 | Field | Why never default |
 |---|---|
 | Trigger type when ANY external system, portal, form, schedule, signup, or inbound event is mentioned | `Timer` / `Connector Event` change generation path. "Vendor signs up" → portal/event, NOT Manual. |
+| Trigger type when a tenant case-entity / data-object record-created start is mentioned | This is an event trigger with the named object as Source. Missing tenant provisioning is handled later as an unresolved placeholder, not by downgrading to Manual. |
 | Task type on ambiguous verbs (`review`, `approve`, `check`, `validate`, `process`, `assess`, `sign off`, `decide`) | `action` (HITL) vs `agent` (LLM) generate different shapes. The verb alone is not enough. |
 | Task type when a **compliance trigger phrase** is in the transcript (ECOA, NCQA, HIPAA, SOC 2, FCRA, FINRA, "licensed X", "fiduciary review", etc.) AND user proposed non-`action` | Tier 2 of the authority hierarchy forces `action`; do not silently accept user's stated type. See [sdd-generation-rules.md § Task-type override priority](sdd-generation-rules.md#task-type-override-priority). |
 | Case exit condition | Wrong exit traps the case open or closes prematurely. |
@@ -207,6 +208,7 @@ These thoughts mean STOP and use AskUserQuestion before continuing:
 | Thought | Reality |
 |---|---|
 | "I'm confident enough about the trigger." | Trigger ≠ Manual the moment a portal, form, schedule, or external system is mentioned. Always-Ask. |
+| "The named data object might not exist in this tenant, so Manual is safer." | Preserve the object as an event trigger. Unresolved resources become placeholders during planning/build. |
 | "The user said 'review' — probably an `action` task." | `review` is on the Always-Ask list. Ask. |
 | "User said 'I'll fix it later' — defaulting is sanctioned." | User-permission to default ≠ permission to skip Ask. Rule 2 locks the file post-Approve. Wrong defaults survive. |
 | "User is in a hurry, don't burn turns." | One Ask costs 30s. One wrong default costs a Phase 4 retry loop. Ask. |

@@ -51,7 +51,7 @@
 
 | T# | Trigger Type | Source | Configuration |
 |----|-------------|--------|---------------|
-| T02 | Manual | Manual | N/A |
+| T02 | Intsvc.EventTrigger | expense_requests | Record created |
 
 ### Case Exit Conditions
 
@@ -65,15 +65,17 @@
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
-| employeeName | In | string | | | | Employee's full name |
-| employeeEmail | In | string | | | | Employee's email address |
-| department | In | string | | | | Employee's department |
-| expenseType | In | string | | | | Category of expense (e.g., Travel, Meals, Equipment) |
-| amount | In | float | | | | Expense amount |
-| currency | In | string | | | "USD" | Currency code |
-| description | In | string | | | | Expense description |
-| receiptUrl | In | string | | | | URL to uploaded receipt |
-| submittedDate | In | datetime | | | | Date the expense was submitted |
+| employeeName | Variable | string | T02 | response.employee_name | | Employee's full name from the expense_requests record-created payload |
+| employeeEmail | Variable | string | T02 | response.employee_email | | Employee's email address from the expense_requests record-created payload |
+| department | Variable | string | T02 | response.department | | Employee's department from the expense_requests record-created payload |
+| expenseType | Variable | string | T02 | response.expense_type | | Category of expense from the expense_requests record-created payload |
+| amount | Variable | float | T02 | response.amount | | Expense amount from the expense_requests record-created payload |
+| currency | Variable | string | T02 | response.currency | "USD" | Currency code from the expense_requests record-created payload |
+| description | Variable | string | T02 | response.description | | Expense description from the expense_requests record-created payload |
+| receiptUrl | Variable | string | T02 | response.receipt_url | | URL to uploaded receipt from the expense_requests record-created payload |
+| submittedDate | Variable | datetime | T02 | response.submitted_date | | Date the expense was submitted from the expense_requests record-created payload |
+| expenseDocuments | Variable | jsonSchema | | | | Companion case entity expense_documents for receipts and supporting files |
+| expenseComments | Variable | jsonSchema | | | | Companion case entity expense_comments for participant notes |
 | caseStatus | Variable | string | | | "Open" | Current case lifecycle status |
 | validationResult | Variable | string | | | | Result of expense validation API workflow |
 | enrichedEmployeeData | Variable | jsonSchema | | | | Employee details enriched from Workday |

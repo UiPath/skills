@@ -11,6 +11,7 @@ reimbursement process, not just a structurally valid case:
     stages
   - Payment is gated by an approved Finance Approval decision and consumes the
     finance-selected payment method
+  - the case starts from an expense_requests event trigger, not Manual
   - terminal lanes do not route back into the happy path
   - case-exit conditions cover happy-path completion and terminal dispositions
   - required task-type mix is present, including Payment Tracking as a child case
@@ -30,6 +31,7 @@ from _shared.case_check import (  # noqa: E402
     assert_tasks_nested,
     find_stages,
     find_transitions,
+    find_triggers,
     first_rule_of_condition,
     get_case_exit_conditions,
     iter_tasks,
@@ -180,6 +182,27 @@ def _has_incoming_from_any(plan: dict, target_id: str, source_ids: set[str]) -> 
     )
 
 
+def _assert_expense_event_trigger(plan: dict) -> None:
+    triggers = find_triggers(plan)
+    if len(triggers) != 1:
+        _fail(f"expected exactly 1 expense_requests trigger; got {len(triggers)}")
+
+    trigger = triggers[0]
+    uipath = ((trigger.get("data") or {}).get("uipath")) or {}
+    service_type = uipath.get("serviceType")
+    if service_type != "Intsvc.EventTrigger":
+        _fail(
+            "ExpenseReimbursement must start from an Intsvc.EventTrigger, "
+            f"not {service_type or 'Manual'}"
+        )
+
+    trigger_text = repr(trigger).lower()
+    if "expense_requests" not in trigger_text:
+        _fail("event trigger must preserve source object expense_requests")
+    if "record" not in trigger_text or "created" not in trigger_text:
+        _fail("event trigger must preserve record-created intent")
+
+
 def _fail(msg: str):
     sys.exit(f"FAIL: {msg}")
 
@@ -187,6 +210,7 @@ def _fail(msg: str):
 def main():
     plan = _read_expense_caseplan()
     assert_tasks_nested(plan)
+    _assert_expense_event_trigger(plan)
 
     all_stages = find_stages(plan, include_exception=True)
     if not all_stages:
@@ -351,6 +375,9 @@ def main():
     required_terms = [
         "selectedpaymentmethod",
         "financedecision",
+        "expense_requests",
+        "expense_documents",
+        "expense_comments",
         "workday",
         "outlook",
         "slack",
@@ -366,7 +393,8 @@ def main():
 
     print(
         "OK: ExpenseReimbursement caseplan preserves 5-stage happy path, "
-        "Rejected/Withdrawn terminal lanes, happy + terminal case-exits, "
+        "expense_requests event trigger, Rejected/Withdrawn terminal lanes, "
+        "happy + terminal case-exits, "
         f"{len(tasks)} tasks across required types, and Payment Tracking child case"
     )
 

@@ -197,7 +197,7 @@ The generated SDD must start with:
 
 | Trigger type | What to write |
 |---|---|
-| Event trigger | The operation in business terms (e.g., `Calendar created`, `Email received`). Append a filter expression if the user wants filtering (e.g., `Email received in Inbox; filter: subject contains "URGENT"`). Append a required event-param value only when the user supplies it explicitly (e.g., `Email received in folder "<folder name>"`). |
+| Event trigger | The operation in business terms (e.g., `Calendar created`, `Email received`, `Record created`). For tenant case-entity / business data-object starts, preserve the object name in Source (e.g., `expense_requests`) and write the business event in Configuration (e.g., `Record created`). Append a filter expression if the user wants filtering (e.g., `Email received in Inbox; filter: subject contains "URGENT"`). Append a required event-param value only when the user supplies it explicitly (e.g., `Email received in folder "<folder name>"`). |
 | Timer trigger | Cycle or duration (e.g., `every 24 hours`, `daily at 09:00 UTC`). |
 | Manual | `N/A` or omit. |
 
@@ -206,6 +206,13 @@ DO NOT include in Configuration:
 - Default modes like `polling` vs `webhook` (the skill defaults; the user only overrides when they care).
 - Meta notes like `No required event parameters` or `No user filter` (absence is the default; the skill discovers required params at `case spec` time).
 - Connector activity slug, HTTP method, or any spec-discovered detail.
+
+> **Tenant object starts are still event triggers.** If the user says a case starts
+> when a tenant case-entity / data-object record is created, author
+> `Intsvc.EventTrigger` with that object name as Source. Do NOT downgrade to
+> `Manual` just because the eval sandbox or current tenant may not have the
+> object provisioned. Planning/implementation preserve unresolved event triggers
+> as placeholders.
 
 ### Case Exit Conditions
 
