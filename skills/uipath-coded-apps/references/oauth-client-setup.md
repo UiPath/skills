@@ -507,7 +507,7 @@ cd ~/.uipath-skills/playwright && node ./uipath-oauth.mjs \
 
 > **Use the shortest substring that matches both the dropdown label and the attached-list label** as the key (e.g. `"Orchestrator"`, not `"Orchestrator API Access"`). See the [mapping reference](#scope--resource-mapping-reference) for the safe key per resource.
 
-On success, stdout: `{"status":"ok","op":"create","clientId":"<uuid>"}` — write this `clientId` into `.env` as `VITE_UIPATH_CLIENT_ID` (and into `uipath.json`).
+On success, stdout: `{"status":"ok","op":"create","clientId":"<uuid>"}` — write this `clientId` into `uipath.json` as the `clientId` field.
 
 ### Operation: add-redirects
 
@@ -539,7 +539,7 @@ cd ~/.uipath-skills/playwright && node ./uipath-oauth.mjs \
 
 > Use the shortest substring key (e.g. `"Orchestrator"`) — see the [mapping reference](#scope--resource-mapping-reference). Passing the long dropdown label (`"Orchestrator API Access"`) only works when the resource is *not yet attached*; if it's already on the app, the substring won't match the attached-list label (`UiPath.Orchestrator`) and the script will take the wrong code path.
 
-On success, stdout: `{"status":"ok","op":"add-scopes","added":{...}}`. After this, also update `VITE_UIPATH_SCOPE` in `.env` to include the new scopes — both the External App and the env config must list them.
+On success, stdout: `{"status":"ok","op":"add-scopes","added":{...}}`. After this, also update the `scope` field in `uipath.json` to include the new scopes — both the External App and `uipath.json` must list them.
 
 > **Resource label vs scope name:** The keys in `--scopes-by-resource` must match the portal's dropdown labels exactly (e.g. `"Orchestrator API Access"`, `"Maestro API Access"`), not the scope names. The values are the scope names. See the [Scope → Resource Mapping Reference](#scope--resource-mapping-reference) below.
 
@@ -633,7 +633,7 @@ If Playwright automation is not possible (Chrome missing, portal UI changed, scr
 ### Adding Redirect URIs to an Existing App
 
 1. Go to `https://{cloudHost}/{orgName}/portal_/admin/external-apps/oauth`
-2. Paste the first 8 characters of your Client ID (from `.env` → `VITE_UIPATH_CLIENT_ID`) into the search box to filter the list. Use a **prefix**, not the full UUID — the Application ID column is truncated, so full-UUID matching fails. Filtering by Client-ID prefix is also the only reliable disambiguator when multiple apps share the same display name.
+2. Paste the first 8 characters of your Client ID (from `uipath.json` → `clientId`) into the search box to filter the list. Use a **prefix**, not the full UUID — the Application ID column is truncated, so full-UUID matching fails. Filtering by Client-ID prefix is also the only reliable disambiguator when multiple apps share the same display name.
 3. Click the **pencil Edit icon** at the right of the row (clicking the row text itself does not open the edit form)
 4. In the **Redirect URL** field, enter each new URI (with and without trailing slash) and press Enter after each
 5. Click **"Save"**
@@ -649,7 +649,7 @@ If Playwright automation is not possible (Chrome missing, portal UI changed, scr
    - **If the resource is not yet listed**: click **"Add scopes"**, select the resource from the dropdown (see mapping table below), check the required scopes, click the confirm button.
 5. Repeat for each resource category
 6. Click **"Save"** on the app form
-7. **Also update `VITE_UIPATH_SCOPE` in `.env`** to include the new scopes — both sides must match
+7. **Also update the `scope` field in `uipath.json`** to include the new scopes — both sides must match
 8. Clear browser storage and re-test
 
 ### Scope → Resource Mapping Reference
@@ -663,7 +663,7 @@ If Playwright automation is not possible (Chrome missing, portal UI changed, scr
 | `Traces.Api` | **Traces API Access** | varies | `Traces` |
 
 > **Three different label spaces — pick the right one for the right place:**
-> - The **scope** (column 1) is what goes into `VITE_UIPATH_SCOPE` in `.env`.
+> - The **scope** (column 1) is what goes into the `scope` field of `uipath.json`.
 > - The **dropdown label** (column 2) is what you click in the portal's "Add scopes" resource selector.
 > - The **attached-list label** (column 3) is what the portal shows on the row of an *already-attached* resource inside the app's edit view.
 > - The **`--scopes-by-resource` key** (column 4) is what you pass to the script. Use the **shortest substring that matches both the dropdown label and the attached-list label** — that way the script can locate the row whether the resource is being added fresh (matches the dropdown) or already attached (matches the attached-list label). The script also has a first-word fallback if the literal key doesn't match.
