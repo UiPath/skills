@@ -8,7 +8,7 @@ description: >
   single missing-guardrail recommendation rule) with the PII case in the
   message — an inference about whether the agent handles personal data that a
   regex cannot make, so it is the skill's responsibility.
-tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover, guardrail]
 
 run_limits:
   turn_timeout: 1200

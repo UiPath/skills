@@ -8,7 +8,7 @@ description: >
   LLM never receives raw PII from the user") and cite `LC_GUARDRAIL_MISAPPLIED`.
   Non-gating (integration tag): softer single-shot judgment than the gating
   action-ineffective task. Needs the authed CLI.
-tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover, guardrail]
 
 run_limits:
   turn_timeout: 1200
