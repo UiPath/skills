@@ -72,7 +72,7 @@ Headers/auth on `remote` and `swagger` are payload fields, not scalar flags. Rea
 
 | Kind | Discovery | Validation | When to use |
 |------|-----------|------------|-------------|
-| `is-activity` | `mcp-tools candidates --category is-activity` + `is resources describe` | Connector schema | Wrap an Integration Service connector activity as an MCP tool. **Load [references/is-activity-workflow.md](references/is-activity-workflow.md) end-to-end** — extra Critical Rules, Pre-flight, `ActivityMetadata` schema, and IS-specific troubleshooting apply. |
+| `is-activity` | `mcp-tools candidates --category is-activity` + `is resources describe` | Connector schema | Wrap an Integration Service connector activity as an MCP tool. **Load [references/is-activity-workflow.md](references/is-activity-workflow.md) end-to-end** — extra Critical Rules, Pre-flight, `ActivityMetadata` schema, and IS-specific troubleshooting apply. Rolling out: unavailable environments fail with `Reason: IsActivityNotAvailable` — follow the reference's §Availability (stop; offer `resource` / `raw`). |
 | `resource`    | `mcp-tools candidates --category <kind>` (kind ∈ `automation` / `agent` / `agentic-process` / `api-workflow`) | Resource schema | Bind an Orchestrator resource. Pass `--target-identifier <resource-id>`. Read metadata shape from `mcp-tools template resource --output json`. |
 | `raw`         | None | None | Free-form JSON tool — caller owns correctness end-to-end. No discovery, no schema validation, no reference-value labeling. Read the skeleton from `mcp-tools template raw --output json`. |
 

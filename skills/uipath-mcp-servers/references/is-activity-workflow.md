@@ -4,6 +4,10 @@ Wrap an Integration Service connector activity as an MCP tool via `uip agenthub 
 
 **Division of labor.** The metadata-*discovery* workflow — `describe`, reference resolution, cascade (`-f`), scope filtering, static-value labeling — lives in the platform IS references below; this file does not restate it. This file owns the MCP-tool layer: turning discovered metadata into the `create-is-activity` payload (`ActivityMetadata`, `inputSchema`, `outputSchema`). **Do not author IS metadata from memory** — a `designTimeLookups` / `-f` / `reference` shape that "looks right from a rule" still gets the wrong shape per connector and fails at runtime after passing `--dry-run`. Read the platform section at the action-trigger below even when confident.
 
+## Availability (rollout gate)
+
+IS-activity MCP tools are rolling out: live on alpha/staging; NOT yet on `cloud.uipath.com` (prod — server-side feature flag per tenant). CLI enforces this: `candidates --category is-activity` and `create-is-activity` fail fast with `Reason: IsActivityNotAvailable` on unavailable hosts. On that error: STOP — do not retry or work around. Tell the user the feature is not yet available on this environment; offer `resource` / `raw` tools instead. Re-run with `--force` ONLY when the user confirms the tenant is enrolled in the rollout. CLI versions without the gate: the create succeeds but yields a dead tool (hidden in UI, not invocable) — apply the same rule manually before authoring: base URL is `cloud.uipath.com` → stop and ask.
+
 ## Platform IS references — read by action
 
 In `../../uipath-platform/references/integration-service/`. Each is small. Do NOT read all upfront — before performing each action, read the named section first. The blind spots are unknown-unknowns, so the trigger is the action, not your sense of certainty.
@@ -147,6 +151,7 @@ Skeleton for `--file`: `uip agenthub mcp-tools template is-activity --output jso
 
 ## IS-Activity Troubleshooting
 
+- **`Reason: IsActivityNotAvailable`** — environment not in the is-activity rollout (see §Availability). Stop; offer `resource` / `raw`; `--force` only for rollout-enrolled tenants.
 - **HTTP 400, no detail** — re-run `--dry-run`; CLI surfaces ASP.NET ProblemDetails as an `Errors` field of per-field failures.
 - **404 at runtime** — `metadata.mapping.path` missing a `{token}` from `object.path`. List every placeholder and retry.
 - **`Reason: CrossFolderConnection`** — connection in a different folder than the server. Pass `--target-folder-path <name>` / `--target-folder-key <guid>` for the connection's folder (guard allows an explicit target folder), or pick a `Data.candidates` entry via `--target-identifier <guid>`, or move the connection / server.
