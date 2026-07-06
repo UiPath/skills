@@ -56,7 +56,7 @@ Manage folders, jobs, processes, machines, users, packages, and more. See [`uipa
 | **Settings** | `list`, `get`, `update`, `execution`, `timezones` | [Tenant Admin](orchestrator/tenant-admin.md) |
 | **Calendars** | `list`, `get`, `create`, `update`, `delete` | [Tenant Admin](orchestrator/tenant-admin.md) |
 | **Licenses** | `list --type`, `toggle`, `info` | [Setup Environment](orchestrator/setup-environment.md) |
-| **Audit Logs** | `list [--export]` | [Tenant Admin](orchestrator/tenant-admin.md) |
+| **Audit Logs** (Orchestrator operational) | `list [--export]` | [Tenant Admin](orchestrator/tenant-admin.md) — org/tenant audit trail → **uipath-admin** (`uip admin audit`) |
 | **Credential Stores** | `list`, `get` | [Tenant Admin](orchestrator/tenant-admin.md) |
 | **Feeds** | `list` | [Tenant Admin](orchestrator/tenant-admin.md) |
 | **Attachments** | `list --job-key`, `download` | [Tenant Admin](orchestrator/tenant-admin.md) |

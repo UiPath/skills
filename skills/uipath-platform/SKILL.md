@@ -146,7 +146,7 @@ Choose the appropriate operation from the Task Navigation table below. For `uip 
 | **Set up folders, users, machines** | [references/orchestrator/setup-environment.md](references/orchestrator/setup-environment.md) |
 | **Run and monitor jobs** | [references/orchestrator/run-jobs.md](references/orchestrator/run-jobs.md) |
 | **Manage sessions and runtimes** | [references/orchestrator/manage-sessions.md](references/orchestrator/manage-sessions.md) |
-| **Tenant settings, calendars, audit logs** | [references/orchestrator/tenant-admin.md](references/orchestrator/tenant-admin.md) |
+| **Tenant settings, calendars, Orchestrator audit-logs** | [references/orchestrator/tenant-admin.md](references/orchestrator/tenant-admin.md) — Orchestrator *operational* audit only; for the org/tenant **audit trail** (audit events/history, login history, compliance export) use **uipath-admin** (`uip admin audit`) |
 | **Understand Orchestrator concepts** | [references/orchestrator/orchestrator.md](references/orchestrator/orchestrator.md) |
 | **Manage assets** | [references/orchestrator/manage-assets.md](references/orchestrator/manage-assets.md) |
 | **Work with queues and queue items** | [references/orchestrator/process-queues.md](references/orchestrator/process-queues.md) |
