@@ -223,7 +223,7 @@ directly.
 ```yaml
 pre_run:
   - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
-    timeout: 30
+    timeout: 60
 ```
 
 A single helper script (`tests/tasks/uipath-platform/seed.py`) writes
