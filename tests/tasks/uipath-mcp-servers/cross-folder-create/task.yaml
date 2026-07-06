@@ -1,0 +1,56 @@
+task_id: skill-mcp-servers-cross-folder-create
+description: |
+  Wrap Jira `curated_create_issue` Create as an MCP tool on the `test-mcp-skill` AgentHub server when the IS connection lives in a DIFFERENT folder (Finance) than the server (Shared). Exercises the cross-folder path: folder-scoped `is connections list`, explicit `--target-folder-path`/`--target-folder-key` on create (or recovery from `Reason: CrossFolderConnection`). Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-mcp-servers, smoke, 'mode:build']
+agent:
+  type: claude-code
+  allowed_tools: [Bash, Read, Write]
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+initial_prompt: |
+  For an IS-activity tool, read references/is-activity-workflow.md and use the exact `uip agenthub mcp-tools create-is-activity` flags it specifies (`--mcp`, `--target-identifier`, `--description`, `--metadata`, `--input-schema`, `--output-schema`); for a resource tool, read the resource guidance and run `mcp-tools candidates`/`template` as it directs. Use the exact CLI commands and flags the skill documents — do not invent flag names.
+
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Add a Jira Create Issue tool to my `test-mcp-skill` MCP server (in
+  the Shared folder). Bake project=MOCKPROJ and issue type id=10 into the
+  tool — the LLM should provide the summary (required) and optional
+  description. The Jira connection lives in the Finance folder, not in the
+  server's folder. Use --dry-run on the final create call.
+
+  Refs available:
+    - connector key: uipath-atlassian-jira
+    - MCP server slug: test-mcp-skill, in Shared folder (key: folder-mock-shared)
+    - Jira connection id: conn-mock-jira-02 (in folder Finance, key: folder-mock-finance)
+
+  Save to the sandbox cwd:
+    - metadata.json — the ActivityMetadata object (pretty JSON, not stringified)
+    - input-schema.json — JSON Schema for LLM inputs
+    - output-schema.json — JSON Schema for responseFields ({} acceptable)
+    - create-command.sh — the exact `uip agenthub mcp-tools create-is-activity ... --dry-run` invocation
+    - trajectory.md — every uip call you ran, one line each
+    - summary.txt — one or two lines on what you produced
+success_criteria:
+- {type: file_exists, path: metadata.json, description: '`metadata.json` was produced'}
+- {type: file_exists, path: create-command.sh, description: '`create-command.sh` was produced'}
+- type: file_contains
+  description: create-command targets the Jira connection on the test-mcp-skill server
+  path: create-command.sh
+  includes: [mcp-tools create-is-activity, test-mcp-skill, conn-mock-jira-02]
+- type: file_contains
+  description: create-command resolves the connection's folder explicitly via a target-folder flag
+  path: create-command.sh
+  includes: [--target-folder]
+- {type: command_executed, description: Agent looked the connection up folder-scoped (--folder), per
+    the skill's folder-scoping rule, tool_name: Bash, command_pattern: uip\s+is\s+connections\s+list\s+uipath-atlassian-jira.*--folder,
+  min_count: 1}
+- {type: command_executed, description: Agent ran create-is-activity with an explicit --target-folder-path/--target-folder-key
+    for the cross-folder connection, tool_name: Bash, command_pattern: uip\s+agenthub\s+mcp-tools\s+create-is-activity.*--target-folder-(path|key),
+  min_count: 1}
+run_limits: {max_turns: 40}
