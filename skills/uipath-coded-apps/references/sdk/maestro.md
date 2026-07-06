@@ -1,4 +1,6 @@
-# Maestro Reference
+# Maestro Reference — Scopes, Conventions, Traps
+
+Method signatures, parameters, return types, and usage examples: read the installed types — `node_modules/@uipath/uipath-typescript/dist/maestro-processes/index.d.ts` and `dist/cases/index.d.ts` (full JSDoc; matches your installed SDK version). This file covers ONLY what the `.d.ts` cannot tell you.
 
 ## Imports
 
@@ -7,411 +9,65 @@ import { MaestroProcesses, ProcessInstances, ProcessIncidents } from '@uipath/ui
 import { Cases, CaseInstances } from '@uipath/uipath-typescript/cases';
 ```
 
+Types, options, and enums export from the same subpath as their service class.
+
 ## Scopes
 
 - All Maestro operations: `PIMS`
 - ProcessInstances.getBpmn: also requires `OR.Execution.Read`
 - CaseInstances.getActionTasks: also requires `OR.Tasks` or `OR.Tasks.Read`
+- Analytics / Insights methods (timelines, top-N, SLA): `Insights.RealTimeData Insights OR.Folders.Read` — a **separate bundle from `PIMS`**; SLA summaries additionally need `PIMS`. A 403 here means the External App lacks these scopes — surface it as a permissions message.
 
-## Types to Import
+## Traps
 
-```typescript
-// Maestro Processes
-import type {
-  MaestroProcessGetAllResponse,
-  RawMaestroProcessGetAllResponse,
-  ProcessMethods,
-} from '@uipath/uipath-typescript/maestro-processes';
+### `folderKey` is a GUID, not a `folderId`
 
-// Process Instances
-import type {
-  ProcessInstanceGetResponse,
-  RawProcessInstanceGetResponse,
-  ProcessInstanceMethods,
-  ProcessInstanceGetAllWithPaginationOptions,
-  ProcessInstanceGetAllOptions,
-  ProcessInstanceOperationOptions,
-  ProcessInstanceOperationResponse,
-  ProcessInstanceExecutionHistoryResponse,
-  BpmnXmlString,
-  ProcessInstanceGetVariablesResponse,
-  ProcessInstanceGetVariablesOptions,
-  ProcessInstanceRun,
-} from '@uipath/uipath-typescript/maestro-processes';
+Maestro responses include `folderKey` (GUID string) but NOT `folderId` (number). If you need an Orchestrator method that requires `folderId` (e.g., `Processes.start()`), bridge via `Processes.getAll()` — see "Bridging folderKey ↔ folderId" in [orchestrator.md](orchestrator.md). **NEVER use `parseInt(folderKey)`** — it returns `NaN`.
 
-// Process Incidents
-import type {
-  ProcessIncidentGetResponse,
-  ProcessIncidentGetAllResponse,
-} from '@uipath/uipath-typescript/maestro-processes';
+### `name` is NOT `processKey`
 
-// Analytics / Insights (MaestroProcesses + Cases)
-import type {
-  TimelineOptions,
-  TopQueryOptions,
-  InstanceStatusTimelineResponse,
-  ProcessGetTopRunCountResponse,
-  ProcessGetTopFaultedCountResponse,
-  ProcessGetTopDurationResponse,
-} from '@uipath/uipath-typescript/maestro-processes';
-
-// Cases
-import type {
-  CaseGetAllResponse,
-  CaseGetTopRunCountResponse,
-  CaseGetTopFaultedCountResponse,
-  CaseGetTopDurationResponse,
-} from '@uipath/uipath-typescript/cases';
-
-// Case Instances
-import type {
-  CaseInstanceGetResponse,
-  RawCaseInstanceGetResponse,
-  CaseInstanceMethods,
-  CaseInstanceGetAllWithPaginationOptions,
-  CaseInstanceGetAllOptions,
-  CaseInstanceOperationOptions,
-  CaseInstanceOperationResponse,
-  CaseInstanceReopenOptions,
-  CaseGetStageResponse,
-  CaseInstanceExecutionHistoryResponse,
-  StageTask,
-  SlaSummaryResponse,
-  CaseInstanceStageSLAOptions,
-  CaseInstanceStageSLAResponse,
-} from '@uipath/uipath-typescript/cases';
-```
-
-## Enums
+The human-readable process name (e.g., `"Loan.Origination.and.Review"`) is the `name` field. The `processKey` is a separate internal identifier. When the user provides a process name, first call `MaestroProcesses.getAll()`, find the process where `name` matches, then use its `processKey` and `folderKey`:
 
 ```typescript
-import {
-  ProcessIncidentStatus,    // Open, Closed
-  ProcessIncidentType,      // System, User, Deployment
-  ProcessIncidentSeverity,  // Error, Warning
-  DebugMode,                // None, Default, StepByStep, SingleStep
-  TimeInterval,             // Hour = 'HOUR', Day = 'DAY', Week = 'WEEK' (analytics time-axis grouping)
-  InstanceFinalStatus,      // status value in getInstanceStatusTimeline() entries
-} from '@uipath/uipath-typescript/maestro-processes';
-
-import {
-  StageTaskType,               // external-agent, rpa, process, agent, action, api-workflow
-  EscalationRecipientScope,    // user, usergroup
-  EscalationActionType,        // notification
-  EscalationTriggerType,       // sla-breached, at-risk
-  SLADurationUnit,             // h, d, w, m
-} from '@uipath/uipath-typescript/cases';
-```
-
-## MaestroProcesses Service
-
-### getAll()
-
-Returns `Promise<MaestroProcessGetAllResponse[]>`. Each process has: `processKey`, `packageId`, `name`, `folderKey`, `folderName`, `packageVersions`, `versionCount`, plus instance count fields (`runningCount`, `faultedCount`, `completedCount`, `pausedCount`, `cancelledCount`, `pendingCount`, `retryingCount`, `resumingCount`, `pausingCount`, `cancelingCount`). Each process has an attached `getIncidents()` method.
-
-**NOTE:** Maestro responses include `folderKey` (GUID string) but NOT `folderId` (number). If you need to call an Orchestrator method that requires `folderId` (e.g., `Processes.start()`), you must bridge using `Processes.getAll()` — see "Bridging folderKey ↔ folderId" in [orchestrator.md](orchestrator.md). **NEVER use `parseInt(folderKey)`** — it returns `NaN`.
-
-**CRITICAL — `name` is NOT `processKey`:** The human-readable process name (e.g., `"Loan.Origination.and.Review"`) is the `name` field. The `processKey` is a separate internal identifier (e.g., `"a1b2c3d4-..."`). When the user provides a process name, you MUST first call `MaestroProcesses.getAll()`, find the process where `name` matches, then extract its `processKey` and `folderKey` to use in subsequent calls like `ProcessInstances.getAll({ processKey })`. **NEVER use the process name as the processKey.**
-
-```typescript
-const maestroProcesses = new MaestroProcesses(sdk);
-const allProcesses = await maestroProcesses.getAll();
+const allProcesses = await new MaestroProcesses(sdk).getAll();
 const target = allProcesses.find(p => p.name === 'Loan.Origination.and.Review');
 if (!target) throw new Error('Process not found');
-// Now use target.processKey and target.folderKey for instance queries
 const instances = await processInstances.getAll({ processKey: target.processKey, pageSize: 20 });
 ```
 
-### getIncidents(processKey: string, folderKey: string)
+**NEVER use the process name as the processKey.**
 
-Returns `Promise<ProcessIncidentGetResponse[]>`. Each incident has: `instanceId`, `elementId`, `folderKey`, `processKey`, `incidentId`, `incidentStatus`, `incidentType`, `errorCode`, `errorMessage`, `errorTime`, `errorDetails`, `debugMode`, `incidentSeverity`, `incidentElementActivityType`, `incidentElementActivityName`.
+### Attached methods
 
-### Analytics / Insights methods
+Objects returned by `getAll()`/`getById()` carry attached operation methods (`instance.cancel()`, `instance.getVariables()`, `process.getIncidents()`, `caseInstance.reopen()` …) — prefer them over re-calling the service with ids. The full list per type is in the `.d.ts` (`ProcessInstanceMethods`, `CaseInstanceMethods`, `ProcessMethods`).
 
-Tenant-wide, time-ranged aggregates for dashboards. **All require `Insights.RealTimeData Insights OR.Folders.Read` scope** (not `PIMS`) — a separate scope bundle from the rest of Maestro. `startTime`/`endTime` are `Date` objects. Use these instead of fetching raw instances and aggregating client-side (which only sees one page — see [pagination.md](pagination.md)).
+### Rendering `getVariables()` output — MANDATORY
 
-#### getInstanceStatusTimeline(startTime: Date, endTime: Date, options?: TimelineOptions)
+See [../patterns.md](../patterns.md) section "Rendering Process Instance Data". **NEVER dump raw JSON** — parse `globalVariables` / `elements` and render structured UI.
 
-Returns `Promise<InstanceStatusTimelineResponse[]>` — instance counts bucketed across the time axis. `TimelineOptions` supports `groupBy` and a `TimeInterval` (`Hour` / `Day` / `Week`) controlling bucket size. Use for "instances over time" charts. Each entry: `startTime: string` (bucket start, local tz, e.g. `"5/8/2026 12:00:00 AM"`), `status: InstanceFinalStatus`, `count: number`.
+### `CaseInstances.reopen()` needs a `stageId`
 
-#### getTopRunCount(startTime: Date, endTime: Date, options?: TopQueryOptions)
+`reopen(instanceId, folderKey, { stageId, comment? })` — the `stageId` is required; get it from `getStages()`.
 
-Returns `Promise<ProcessGetTopRunCountResponse[]>` — processes ranked by run count. `TopQueryOptions` supports optional filters `packageId`, `processKey`, `version`. Each entry: `name: string`, `packageId: string`, `processKey: string`, `runCount: number`.
-
-#### getTopFaultedCount(startTime: Date, endTime: Date, options?: TopQueryOptions)
-
-Returns `Promise<ProcessGetTopFaultedCountResponse[]>` — processes ranked by faulted-instance count. Each entry: `name`, `packageId`, `processKey`, `faultedCount: number`.
-
-#### getTopExecutionDuration(startTime: Date, endTime: Date, options?: TopQueryOptions)
-
-Returns `Promise<ProcessGetTopDurationResponse[]>` — processes ranked by execution duration. Each entry: `name`, `packageId`, `processKey`, `duration: number`.
-
-```typescript
-import { MaestroProcesses, TimeInterval } from '@uipath/uipath-typescript/maestro-processes';
-
-const maestro = new MaestroProcesses(sdk);
-const end = new Date();
-const start = new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000); // last 7 days
-
-const timeline = await maestro.getInstanceStatusTimeline(start, end, { groupBy: TimeInterval.Day });
-const busiest = await maestro.getTopRunCount(start, end);
-const flakiest = await maestro.getTopFaultedCount(start, end);
-const slowest = await maestro.getTopExecutionDuration(start, end);
-```
-
-## Process-Attached Methods (ProcessMethods)
-
-Returned by `getAll()` on each `MaestroProcessGetAllResponse`:
-
-- `process.getIncidents()` -> `Promise<ProcessIncidentGetResponse[]>`
-
-## ProcessIncidents Service
-
-Standalone service exported from `@uipath/uipath-typescript/maestro-processes` (same subpath as `MaestroProcesses` and `ProcessInstances`). Use it when you need incidents across **all folders** without first resolving a specific `processKey` or `instanceId`.
-
-### getAll()
-
-Returns `Promise<ProcessIncidentGetAllResponse[]>`. Each summary has aggregated fields like `processKey`, `errorMessage`, `count`, `firstOccuranceTime`.
-
-```typescript
-import { ProcessIncidents } from '@uipath/uipath-typescript/maestro-processes';
-
-const processIncidents = new ProcessIncidents(sdk);
-const incidents = await processIncidents.getAll();
-for (const incident of incidents) {
-  console.log(`${incident.processKey}: ${incident.errorMessage} (count: ${incident.count})`);
-}
-```
-
-### When to use which incident accessor
+## Which incident accessor when
 
 | Scope | Use |
 |---|---|
 | All incidents across all folders (summary rollup) | `new ProcessIncidents(sdk).getAll()` — returns `ProcessIncidentGetAllResponse[]` |
-| All incidents for one process | `MaestroProcesses.getIncidents(processKey, folderKey)` or `process.getIncidents()` — returns `ProcessIncidentGetResponse[]` |
-| Incidents on a single instance | `ProcessInstances.getIncidents(instanceId, folderKey)` or `instance.getIncidents()` — returns `ProcessIncidentGetResponse[]` |
+| All incidents for one process | `MaestroProcesses.getIncidents(processKey, folderKey)` or `process.getIncidents()` |
+| Incidents on a single instance | `ProcessInstances.getIncidents(instanceId, folderKey)` or `instance.getIncidents()` |
 
-Note that `ProcessIncidentGetAllResponse` (summary) and `ProcessIncidentGetResponse` (per-incident detail) are different shapes.
-
-## ProcessInstanceGetResponse Fields
-
-`instanceId: string`, `packageKey: string`, `packageId: string`, `packageVersion: string`, `latestRunId: string`, `latestRunStatus: string`, `processKey: string`, `folderKey: string`, `userId: number`, `instanceDisplayName: string`, `startedByUser: string`, `source: string`, `creatorUserKey: string`, `startedTime: string`, `completedTime: string | null`, `instanceRuns: ProcessInstanceRun[]`. Plus all `ProcessInstanceMethods`.
-
-## ProcessInstances Service
-
-### getAll(options?: ProcessInstanceGetAllWithPaginationOptions)
-
-Returns `NonPaginatedResponse<ProcessInstanceGetResponse>` or `PaginatedResponse<ProcessInstanceGetResponse>`. Token-based pagination. Filter options: `processKey`, `packageId`, `packageVersion`, `errorCode`.
-
-### getById(id: string, folderKey: string)
-
-Returns `Promise<ProcessInstanceGetResponse>` with attached methods.
-
-### cancel(instanceId: string, folderKey: string, options?: ProcessInstanceOperationOptions)
-
-Returns `Promise<OperationResponse<ProcessInstanceOperationResponse>>`. Options: `{ comment?: string }`.
-
-### pause(instanceId: string, folderKey: string, options?: ProcessInstanceOperationOptions)
-
-Same signature and return type as cancel.
-
-### resume(instanceId: string, folderKey: string, options?: ProcessInstanceOperationOptions)
-
-Same signature and return type as cancel.
-
-### getExecutionHistory(instanceId: string)
-
-Returns `Promise<ProcessInstanceExecutionHistoryResponse[]>`. Each span has: `id`, `traceId`, `parentId`, `name`, `startedTime`, `endTime`, `attributes`, `createdTime`, `updatedTime?`, `expiredTime`.
-
-### getBpmn(instanceId: string, folderKey: string)
-
-Returns `Promise<BpmnXmlString>` (a string of BPMN XML).
-
-### getVariables(instanceId: string, folderKey: string, options?: ProcessInstanceGetVariablesOptions)
-
-Returns `Promise<ProcessInstanceGetVariablesResponse>` with `{ elements, globalVariables, instanceId, parentElementId }`. Options: `{ parentElementId?: string }`.
-
-**Response structure:**
-
-- `globalVariables: GlobalVariableMetaData[]` — Named variables with types. Each has:
-  - `id: string` — unique identifier
-  - `name: string` — human-readable variable name (e.g., `"loanAmount"`, `"applicantName"`)
-  - `type: string` — value type (`"integer"`, `"string"`, `"boolean"`, or custom types)
-  - `value: any` — the current value (can be primitive, object, or array)
-  - `source: string` — name of the BPMN element that set/owns this variable
-  - `elementId: string` — BPMN element ID
-- `elements: ElementMetaData[]` — Per-element execution data (activity steps). Each has:
-  - `elementId: string` — BPMN element ID (e.g., `"Activity_XYRXSH"`)
-  - `elementRunId: string` — unique run identifier
-  - `isMarker: boolean` — whether this is a marker element
-  - `inputs: Record<string, any>` — input arguments passed to the element (can be deeply nested objects)
-  - `inputDefinitions: Record<string, any>` — schema/definitions for inputs
-  - `outputs: Record<string, any>` — output values produced by the element (can be deeply nested objects)
-
-**UI rendering — MANDATORY:** See [../patterns.md](../patterns.md) section "Rendering Process Instance Data" for how to display variables and element data properly. **NEVER dump raw JSON** — always parse and render structured UI.
-
-### getIncidents(instanceId: string, folderKey: string)
-
-Returns `Promise<ProcessIncidentGetResponse[]>`.
-
-## ProcessInstance-Attached Methods (ProcessInstanceMethods)
-
-Returned by `getAll()` and `getById()` on each `ProcessInstanceGetResponse`:
-
-- `instance.cancel(options?)` -> `Promise<OperationResponse<ProcessInstanceOperationResponse>>`
-- `instance.pause(options?)` -> `Promise<OperationResponse<ProcessInstanceOperationResponse>>`
-- `instance.resume(options?)` -> `Promise<OperationResponse<ProcessInstanceOperationResponse>>`
-- `instance.getIncidents()` -> `Promise<ProcessIncidentGetResponse[]>`
-- `instance.getExecutionHistory()` -> `Promise<ProcessInstanceExecutionHistoryResponse[]>`
-- `instance.getBpmn()` -> `Promise<BpmnXmlString>`
-- `instance.getVariables(options?)` -> `Promise<ProcessInstanceGetVariablesResponse>`
-
-## Cases Service
-
-### getAll()
-
-Returns `Promise<CaseGetAllResponse[]>`. Each case has: `processKey`, `packageId`, `name`, `folderKey`, `folderName`, `packageVersions`, `versionCount`, plus instance count fields (same as MaestroProcesses).
-
-**Example response** — a **bare top-level array** (no `.items` wrapper):
-
-```json
-[
-  {
-    "name": "Loan Processing", "processKey": "case-proc-uuid",
-    "folderKey": "f-1001", "folderName": "Lending", "versionCount": 2,
-    "pendingCount": 5, "runningCount": 3, "completedCount": 125,
-    "faultedCount": 1, "pausedCount": 0, "cancelledCount": 2
-  }
-]
-```
-
-> **Semantics:** same shape as `MaestroProcesses.getAll` — bare array, counts pre-aggregated per case process. Chart `runningCount` / `completedCount` / `faultedCount` directly.
-
-### Analytics / Insights methods
-
-Same signatures and scope as the MaestroProcesses analytics methods above (`Insights.RealTimeData Insights OR.Folders.Read`), but scoped to cases:
-
-- `getInstanceStatusTimeline(startTime: Date, endTime: Date, options?: TimelineOptions)` → `Promise<InstanceStatusTimelineResponse[]>`
-- `getTopRunCount(startTime: Date, endTime: Date, options?: TopQueryOptions)` → `Promise<CaseGetTopRunCountResponse[]>`
-- `getTopFaultedCount(startTime: Date, endTime: Date, options?: TopQueryOptions)` → `Promise<CaseGetTopFaultedCountResponse[]>`
-- `getTopExecutionDuration(startTime: Date, endTime: Date, options?: TopQueryOptions)` → `Promise<CaseGetTopDurationResponse[]>`
-
-## CaseInstanceGetResponse Fields
-
-`instanceId: string`, `packageKey: string`, `packageId: string`, `packageVersion: string`, `latestRunId: string`, `latestRunStatus: string`, `processKey: string`, `folderKey: string`, `userId: number`, `instanceDisplayName: string`, `startedByUser: string`, `source: string`, `creatorUserKey: string`, `startedTime: string`, `completedTime: string`, `instanceRuns: CaseInstanceRun[]`, `caseAppConfig?: CaseAppConfig`, `caseType?: string`, `caseTitle?: string`. Plus all `CaseInstanceMethods`.
-
-## CaseInstanceExecutionHistoryResponse Fields
-
-`creationUserKey: string | null`, `folderKey: string`, `instanceDisplayName: string`, `instanceId: string`, `packageId: string`, `packageKey: string`, `packageVersion: string`, `processKey: string`, `source: string`, `status: string`, `startedTime: string`, `completedTime: string | null`, `elementExecutions: ElementExecutionMetadata[]`.
-
-## CaseGetStageResponse Fields
-
-`id: string`, `name: string`, `sla?: StageSLA`, `status: string`, `tasks: StageTask[][]`.
-
-## StageTask Fields
-
-`id: string`, `name: string`, `completedTime: string`, `startedTime: string`, `status: string`, `type: StageTaskType`.
-
-## CaseInstances Service
-
-### getAll(options?: CaseInstanceGetAllWithPaginationOptions)
-
-Returns `NonPaginatedResponse<CaseInstanceGetResponse>` or `PaginatedResponse<CaseInstanceGetResponse>`. Filter options: `processKey`, `packageId`, `packageVersion`, `errorCode`.
-
-### getById(instanceId: string, folderKey: string)
-
-Returns `Promise<CaseInstanceGetResponse>` with attached methods.
-
-### close(instanceId: string, folderKey: string, options?: CaseInstanceOperationOptions)
-
-Returns `Promise<OperationResponse<CaseInstanceOperationResponse>>`. Options: `{ comment?: string }`.
-
-### pause / resume
-
-Same signature pattern as close.
-
-### reopen(instanceId: string, folderKey: string, options: CaseInstanceReopenOptions)
-
-Options: `{ stageId: string, comment?: string }`. The `stageId` is required - get it from `getStages()`.
-
-### getStages(caseInstanceId: string, folderKey: string)
-
-Returns `Promise<CaseGetStageResponse[]>`. Each stage has: `id`, `name`, `sla`, `status`, `tasks: StageTask[][]`.
-
-### getExecutionHistory(instanceId: string, folderKey: string)
-
-Returns `Promise<CaseInstanceExecutionHistoryResponse>` with `{ elementExecutions, instanceId, status, startedTime, completedTime, ... }`.
-
-### getActionTasks(caseInstanceId: string, options?: TaskGetAllOptions)
-
-Returns `NonPaginatedResponse<TaskGetResponse>` or `PaginatedResponse<TaskGetResponse>`. Requires `OR.Tasks` scope.
-
-### getSlaSummary(options?)
-
-Returns `NonPaginatedResponse<SlaSummaryResponse>` or `PaginatedResponse<SlaSummaryResponse>` (pass pagination options to get the paginated shape). Tenant-wide SLA rollup across case instances. **Requires `Insights.RealTimeData Insights OR.Folders.Read PIMS` scope.**
-
-### getStagesSlaSummary(options?: CaseInstanceStageSLAOptions)
-
-Returns `Promise<CaseInstanceStageSLAResponse[]>` — per-stage SLA breakdown. Same scope as `getSlaSummary`. **Note:** Exact response fields are not fully published; check the TypeScript types.
-
-## CaseInstance-Attached Methods (CaseInstanceMethods)
-
-- `instance.close(options?)` -> `Promise<OperationResponse<CaseInstanceOperationResponse>>`
-- `instance.pause(options?)` -> `Promise<OperationResponse<CaseInstanceOperationResponse>>`
-- `instance.resume(options?)` -> `Promise<OperationResponse<CaseInstanceOperationResponse>>`
-- `instance.reopen(options)` -> `Promise<OperationResponse<CaseInstanceOperationResponse>>`
-- `instance.getExecutionHistory()` -> `Promise<CaseInstanceExecutionHistoryResponse>`
-- `instance.getStages()` -> `Promise<CaseGetStageResponse[]>`
-- `instance.getActionTasks(options?)` -> pagination-aware, returns tasks
-
-## Usage Example
-
-```typescript
-import { useMemo, useEffect, useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { ProcessInstances } from '@uipath/uipath-typescript/maestro-processes';
-import type { ProcessInstanceGetResponse } from '@uipath/uipath-typescript/maestro-processes';
-
-function InstanceDashboard() {
-  const { sdk } = useAuth();
-  const processInstances = useMemo(() => new ProcessInstances(sdk), [sdk]);
-  const [instances, setInstances] = useState<ProcessInstanceGetResponse[]>([]);
-
-  useEffect(() => {
-    const load = async () => {
-      const result = await processInstances.getAll({ pageSize: 20 });
-      setInstances(result.items);
-    };
-    load();
-  }, [processInstances]);
-
-  const handleCancel = async (instance: ProcessInstanceGetResponse) => {
-    const result = await instance.cancel({ comment: 'Cancelled from dashboard' });
-    if (result.success) {
-      // Refresh list
-    }
-  };
-
-  return (
-    <div>
-      {instances.map(inst => (
-        <div key={inst.instanceId}>
-          <span>{inst.instanceDisplayName} - {inst.latestRunStatus}</span>
-          <button onClick={() => handleCancel(inst)}>Cancel</button>
-        </div>
-      ))}
-    </div>
-  );
-}
-```
+`ProcessIncidentGetAllResponse` (summary) and `ProcessIncidentGetResponse` (per-incident detail) are different shapes.
 
 ## Maestro Insights — RTM (SDK ≥ 1.4.x)
 
-> Scopes: Top/timeline/element methods need `Insights Insights.RealTimeData OR.Folders.Read`; the SLA methods additionally need **`PIMS`**. These use the Insights RTM host (NOT PIMS) — contrast with `Cases.getAll`/`CaseInstances.getAll`. Surface a 403 as a permissions message (the External App may lack the scopes in this environment).
+> Scopes: Top/timeline/element methods need `Insights Insights.RealTimeData OR.Folders.Read`; the SLA methods additionally need **`PIMS`**. These use the Insights RTM host (NOT PIMS) — contrast with `Cases.getAll`/`CaseInstances.getAll`.
 
-`Cases` (`@uipath/uipath-typescript/cases`) and `MaestroProcesses` (`@uipath/uipath-typescript/maestro-processes`) expose the **same six methods** with identical signatures. `CaseInstances` (`@uipath/uipath-typescript/cases`) adds the two SLA methods.
+`Cases` and `MaestroProcesses` expose the **same six analytics methods** with identical signatures. `CaseInstances` adds the two SLA methods.
 
-**Positional `Date` args** (`start, end`) for the six analytics methods; `getSlaSummary` takes an **options object**. All return a **bare array** except `getSlaSummary` (rows on `.items`).
+**Calling conventions:** positional `Date` args (`start, end`) for the six analytics methods; `getSlaSummary` takes an **options object**. All return a **bare array** except `getSlaSummary` (rows on `.items`).
+
+Server-side behavior the types don't show:
 
 | Method | Returns (bare array of) | Notes |
 |--------|------------------------|-------|
@@ -419,17 +75,17 @@ function InstanceDashboard() {
 | `getTopFaultedCount(start, end, options?)` | `{ packageId, processKey, faultedCount, name }` | ≤10, ranked |
 | `getTopExecutionDuration(start, end, options?)` | `{ packageId, processKey, duration, name }` | ≤5, `duration` in ms |
 | `getTopElementFailedCount(start, end, options?)` | `{ elementName, elementType, processKey, failedCount }` | ≤10, BPMN elements |
-| `getInstanceStatusTimeline(start, end, options?)` | `{ startTime, status, count }` | `status` ∈ `Completed`/`Faulted`/`Cancelled`; `startTime` is a LOCALE string; `options`: `{ groupBy?: TimeInterval }` (HOUR/DAY/WEEK, default DAY) |
-| `getElementStats(processKey, packageId, start, end, packageVersion)` | `{ elementId, successCount, failCount, terminatedCount, pausedCount, inProgressCount, minDurationMs, maxDurationMs, avgDurationMs, p50DurationMs, p95DurationMs, p99DurationMs }` | all positional args |
+| `getInstanceStatusTimeline(start, end, options?)` | `{ startTime, status, count }` | `status` ∈ `Completed`/`Faulted`/`Cancelled`; `startTime` is a **LOCALE string**, not ISO; `options`: `{ groupBy?: TimeInterval }` (HOUR/DAY/WEEK, default DAY) |
+| `getElementStats(processKey, packageId, start, end, packageVersion)` | element duration/count stats incl. p50/p95/p99 | all positional args |
 
 For Cases, `name` is derived from `packageId` (CaseManagement prefix stripped); for MaestroProcesses, `name === packageId`. Both present on every row.
 
 `CaseInstances` SLA methods:
 
-| Method | Returns | Row shape |
-|--------|---------|-----------|
-| `getSlaSummary(options?)` | `{ items: SlaSummaryResponse[] }` (default top 50) or paginated | `{ caseInstanceId, folderKey, name, externalId, caseSummary, processKey, slaDueTime (ISO UTC), slaStatus, escalationRuleIndex, escalationRuleType, instanceStatus, lastModifiedTime }`. `options`: `{ caseInstanceId?, startTimeUtc?: Date, endTimeUtc?: Date }` + pagination |
-| `getStagesSlaSummary(options?)` | **bare** `{ caseInstanceId, stages: Stage[] }[]` | `Stage = { elementId, name, latestStatus, slaDueTime, slaStatus, escalationRuleIndex, escalationRuleType }`. `options`: `{ caseInstanceId? }` |
+| Method | Returns | Notes |
+|--------|---------|-------|
+| `getSlaSummary(options?)` | `{ items: SlaSummaryResponse[] }` (default top 50) or paginated | `options`: `{ caseInstanceId?, startTimeUtc?: Date, endTimeUtc?: Date }` + pagination; `slaDueTime` is ISO UTC |
+| `getStagesSlaSummary(options?)` | **bare** `{ caseInstanceId, stages: Stage[] }[]` | `options`: `{ caseInstanceId? }` |
 
 `slaStatus` string values: `'On Track'`, `'At Risk'`, `'Overdue'`, `'Completed'`, `'Unknown'`. **Compare as strings — do not import the enum** (avoids TS narrowing errors; values are stable).
 

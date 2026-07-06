@@ -1,6 +1,8 @@
 # Agent Governance Decisions (Insights RTM)
 
-> Requires `@uipath/uipath-typescript` **≥ 1.5.1**. Scopes: `Insights Insights.RealTimeData OR.Folders.Read` (all in `DASHBOARD_SCOPES`). Subpath: `@uipath/uipath-typescript/traces` (the `AgentTraces` service).
+Method signatures, parameters, return types, and usage examples: read the installed types — `node_modules/@uipath/uipath-typescript/dist/traces/index.d.ts` (the `AgentTraces` service; full JSDoc, matches your installed SDK version). This file covers ONLY what the `.d.ts` cannot tell you.
+
+> Requires `@uipath/uipath-typescript` **≥ 1.5.1**. Scopes: `Insights Insights.RealTimeData OR.Folders.Read` (all in `DASHBOARD_SCOPES`). Subpath: `@uipath/uipath-typescript/traces`.
 > **Org-admin required.** Both methods 403 for non-admin callers (SDK throws `AuthorizationError`). On 403: tell the user their account lacks governance access, render the widget's EmptyState, build the rest of the dashboard. Do not retry.
 
 First-class Insights endpoints for **agentic runtime governance** — every policy check an agent run went through (allow/deny per hook) plus an aggregated posture summary. These widgets honor the dashboard time range like any other metric.
@@ -22,46 +24,17 @@ Both methods take a **required positional `startTime: Date`** first (same conven
 
 ## getGovernanceSummary(startTime, options?) — breakdowns in ONE call
 
-Returns a **single object — not an array**. Options: `{ endTime?, topN?, packName?, sections? }`.
-
-**Example response** (grounded in SDK test fixtures):
-
-```json
-{
-  "total": 26, "violations": 3,
-  "byHook":   [{ "key": "BEFORE_MODEL", "name": null, "count": 12, "violationCount": 2 }],
-  "byAgent":  [{ "key": "af12…", "name": "customer-care-assistant-for-acmecare", "count": 20, "violationCount": 1 }],
-  "byPolicy": [{ "key": "ISO42001-guardrail-prompt-injection", "name": "AI system impact assessment", "count": 2, "violationCount": 0 }],
-  "byPack":   [{ "key": "ISO/IEC 42001:2023 Runtime", "name": null, "count": 26, "violationCount": 3 }],
-  "byAction": [], "byMode": []
-}
-```
+Returns a **single object — not an array**: `{ total, violations, byHook, byAgent, byPolicy, byPack, byAction, byMode }`; each breakdown is rows of `{ key, name, count, violationCount }`.
 
 Semantics:
 - `violations` / `violationCount` = **Deny verdicts**; `count`/`total` = all checks. Violation widgets read `violationCount`; all-checks widgets read `count`.
 - **`byAction` and `byMode` are EMPTY unless opted in** via `sections: [AgentGovernanceSection.Action]` / `[…Mode]`. Forgetting `sections` is the compiles-green-renders-empty trap here.
-- `name` is populated for `byPolicy`/`byAgent`; render `name ?? key`.
+- `name` is populated for `byPolicy`/`byAgent` (null for `byHook`/`byPack`); render `name ?? key`.
 - `topN` caps each breakdown; `packName` scopes totals + breakdowns to one pack.
 
 ## getGovernanceDecisions(startTime, options?) — the record grain
 
-One row per policy check. Paginated; rows on `.items`. Options: `{ endTime?, hook?, evaluatorResult?, policyId?, agentId?, violationsOnly?, pageSize?, cursor? }`.
-
-**Example response** (`.items` — grounded in SDK test fixtures):
-
-```json
-{
-  "items": [{
-    "startTime": "2026-06-28T14:03:22Z", "endTime": "2026-06-28T14:03:24Z",
-    "traceId": "3f9c…", "jobKey": "8a1d…", "folderKey": "f-1001", "source": "10",
-    "policyId": "ISO42001-guardrail-prompt-injection", "policyName": "AI system impact assessment",
-    "packName": "ISO/IEC 42001:2023 Runtime", "hook": "BEFORE_MODEL",
-    "mode": "ENFORCE", "actionApplied": "BLOCK", "evaluatorResult": "DENY",
-    "reason": "Prompt injection was detected with a probability of 0.97.",
-    "agentId": "af12…", "agentName": "customer-care-assistant-for-acmecare"
-  }]
-}
-```
+One row per policy check. Paginated; **rows on `.items`**.
 
 Semantics — the traps:
 - **`evaluatorResult === AgentGovernanceVerdict.Deny` IS the violation.** `mode` (`AUDIT`/`ENFORCE`) says whether it was enforced; `actionApplied` is the enforcement action string (`null` in audit mode). Compare enum fields with the imported enums — `d.evaluatorResult === 'DENY'` is a tsc error.

@@ -2,6 +2,22 @@
 
 Read this when writing TypeScript code that imports classes, types, or options from `@uipath/uipath-typescript`. The SDK uses subpath exports — service classes are **not** importable from the package root.
 
+## Method Signatures — Read the Installed Types, Never Guess
+
+Authoritative reference for method signatures, parameters, return types, and usage examples: the installed SDK's type declarations at
+
+```
+node_modules/@uipath/uipath-typescript/dist/<subpath>/index.d.ts
+```
+
+Full JSDoc (descriptions, `@param`, `@example`) ships in these files, and they match the **installed** SDK version exactly — hand-written docs cannot make that guarantee. Per-subpath files are small (≈500–2,400 lines); read the one for the service you are using before calling methods you have not used in this session.
+
+1. Before calling a service, Read `dist/<subpath>/index.d.ts` for its exact method signatures.
+2. If `node_modules` is absent, run the install step first (the app cannot build without it — see the scaffold workflow).
+3. NEVER guess or recall method names from memory — SDK versions differ; the `.d.ts` of the installed version is the contract.
+
+The remaining files in this `sdk/` folder deliberately do NOT duplicate signatures. They cover only what the `.d.ts` cannot tell you: OAuth scopes per method ([../oauth-scopes.md](../oauth-scopes.md)), calling conventions, response-shape gotchas, and cross-service traps.
+
 ## Subpath → Exports
 
 | Subpath | Classes |

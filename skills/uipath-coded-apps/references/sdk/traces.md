@@ -1,5 +1,7 @@
 # Agent Traces (Insights RTM) Reference
 
+Method signatures, parameters, return types, and usage examples: read the installed types — `node_modules/@uipath/uipath-typescript/dist/traces/index.d.ts` (full JSDoc; matches your installed SDK version). This file covers ONLY what the `.d.ts` cannot tell you.
+
 > Requires `@uipath/uipath-typescript` **≥ 1.4.1**. Scope: `Insights Insights.RealTimeData` (same as Agents/Agent Memory). Subpath: `@uipath/uipath-typescript/traces`.
 
 Trace-level (span-level) view of agent execution — errors, latency, unit consumption, and raw spans. Distinct from the `Agents` service (`sdk/agents.md`), which aggregates per agent. Use traces when the request is about *spans*, *trace-level* timelines, or per-(agent, version, folder) unit breakdowns.
@@ -9,7 +11,7 @@ import { AgentTraces, AgentTraceExecutionType } from '@uipath/uipath-typescript/
 const svc = new AgentTraces(sdk)
 ```
 
-**Convention:** every method takes ONE optional options object — `{ startTime?: Date, endTime?: Date, folderKeys?, agentId?, agentVersion?, executionType? }`. Dates go INSIDE the object (unlike `Agents`, which uses positional Dates). Window defaults to the **last 1 year** server-side. `executionType`: `AgentTraceExecutionType.Debug | Runtime` (omit for both). Exception: the two governance methods take a **required positional `startTime: Date`** first (options second) and are GATED — full contract, gate, and module patterns in [`sdk/governance-traces.md`](governance-traces.md).
+**Convention:** every method takes ONE optional options object — dates (`startTime` / `endTime`) go INSIDE the object (unlike `Agents`, which uses positional Dates). Window defaults to the **last 1 year** server-side. `executionType`: omit for both `Debug` and `Runtime`. Exception: the two governance methods take a **required positional `startTime: Date`** first (options second) and are GATED — full contract, gate, and module patterns in [`sdk/governance-traces.md`](governance-traces.md).
 
 The three timeline/consumption methods return a **bare array** — no `.items` / `.data` unwrapping. The span methods are listed for completeness but are record-grain (not dashboard metrics).
 
@@ -23,30 +25,10 @@ The three timeline/consumption methods return a **bare array** — no `.items` /
 | `getGovernanceDecisions(startTime, options?)` **(≥ 1.5.1, org-admin)** | paginated `.items` decision rows | Runtime-governance policy checks — see `sdk/governance-traces.md` |
 | `getGovernanceSummary(startTime, options?)` **(≥ 1.5.1, org-admin)** | single summary object | Governance posture breakdowns — see `sdk/governance-traces.md` |
 
-## getErrorsTimeline
+## Traps
 
-```json
-[ { "name": "ToolTimeout", "value": 4, "date": "2026-06-02" },
-  { "name": "ValidationError", "value": 1, "date": "2026-06-02" } ]
-```
-
-`name` is the **error name/category** (not an agent name — contrast with `Agents.getErrorsTimeline`).
-
-## getLatencyTimeline
-
-```json
-[ { "name": "P50", "value": 0.82, "date": "2026-06-02" },
-  { "name": "P95", "value": 2.40, "date": "2026-06-02" } ]
-```
-
-`value` is **decimal seconds**. `name` is a series/grouping label — the exact values are not guaranteed to be `P50`/`P95`. For a robust default, average `value` per `date` into a single series; inspect live `name` values before plotting distinct series with a `multi-line-chart`.
-
-## getUnitConsumption
-
-```json
-[ { "agentId": "ag-0001", "folderKey": "f-1001", "agentVersion": "1.2.0", "agentUnitsConsumed": 340, "platformUnitsConsumed": 0 },
-  { "agentId": "ag-0002", "folderKey": "f-1001", "agentVersion": "1.0.0", "agentUnitsConsumed": 1210, "platformUnitsConsumed": 12 } ]
-```
+- `getErrorsTimeline`: `name` is the **error name/category** (not an agent name — contrast with `Agents.getErrorsTimeline`).
+- `getLatencyTimeline`: `value` is **decimal seconds** (`Agents.getLatencyTimeline` is milliseconds). `name` is a series/grouping label — the exact values are not guaranteed to be `P50`/`P95`. For a robust default, average `value` per `date` into a single series; inspect live `name` values before plotting distinct series with a `multi-line-chart`.
 
 ## Module patterns
 
@@ -86,4 +68,4 @@ return consumption.map(x => ({ ...x }))
 
 ## Spans (drill-down only)
 
-`getSpansByTraceId(traceId)` and `getSpansByReference(referenceId, options?)` return raw span records (`AgentSpanGetResponse`: `id`, `traceId`, `parentId`, `name`, `startTime`, `endTime`, `attributes`, `status`, `spanType`, `jobKey`, `referenceId`, …). These are record-grain trace inspection, not aggregate dashboard metrics — use them for a `fetchDetail` drill-down, not a top-level widget. `getSpansByReference` is paginated (use `fetchAll`).
+`getSpansByTraceId(traceId)` and `getSpansByReference(referenceId, options?)` return raw span records — record-grain trace inspection, not aggregate dashboard metrics. Use them for a `fetchDetail` drill-down, not a top-level widget. `getSpansByReference` is paginated (use `fetchAll`).
