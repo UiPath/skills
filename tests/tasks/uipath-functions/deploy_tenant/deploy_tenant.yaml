@@ -1,12 +1,13 @@
 task_id: skill-functions-deploy-tenant
 description: >
-  Coded Function publish to the **tenant feed** with `packOptions`.
-  Exercises `uip functions publish` to a tenant-level feed and forces
-  the agent to keep a non-source directory (`data/`) out of the
-  package via `packOptions.directoriesExcluded` in `uipath.json` — the
-  documented knob for controlling package contents. **Cloud auth +
-  tenant-level publish permission required** for the host running
-  coder-eval.
+  Coded Function packaging with `packOptions`. Exercises `uip functions
+  pack` and forces the agent to keep a non-source directory (`data/`)
+  out of the package via `packOptions.directoriesExcluded` in
+  `uipath.json` — the documented knob for controlling package contents.
+  Publish/deploy is intentionally out of scope: the shipped CLI has no
+  non-interactive tenant-feed publish (pending uipath/cli#2778), so
+  requiring an interactive `publish` made this task nondeterministic
+  (the agent either fumbled the feed picker or exhausted its turns).
 tags: [uipath-functions, e2e, mode:build, feature:deploy]
 max_iterations: 1
 
@@ -17,15 +18,12 @@ initial_prompt: |
 
   Alongside the source, the project includes a `data/` directory
   with fixture JSON used during local development only — create it
-  as `tenant-echo/data/fixtures.json` containing
-  `{"sample": "value"}`. The `data/` directory must NOT end up in
-  the published package.
+  as `data/fixtures.json` containing `{"sample": "value"}`. The
+  `data/` directory must NOT end up in the packaged output.
 
-  Take the function through scaffold → init → run locally, then
-  publish it to the tenant feed. The host has UiPath auth
-  pre-configured with permission to publish to the tenant feed.
-
-  Do NOT publish to the personal workspace or to a folder feed.
+  Take the function through scaffold → init → run locally → pack.
+  Configure `packOptions` so the `data/` directory is excluded from
+  the package. Do NOT publish, upload, or deploy.
   Complete it in a single pass.
 
 success_criteria:
@@ -46,11 +44,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent published to the tenant feed"
+    description: "Agent packed the project to a .nupkg"
     tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+publish\b'
+    command_pattern: 'uip\s+functions\s+pack\b'
     min_count: 1
-    weight: 3.0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
@@ -62,12 +60,10 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
-  # Heaviest functions task: scaffold -> init -> run -> discover the tenant
-  # feed id -> publish --feed-id -> packOptions + data fixture. Until the
-  # non-interactive `publish --tenant` flag ships (uipath/cli#2778), the agent
-  # must discover the feed id, which costs turns. Sized to match the equally
-  # heavy coded_in_flow_register sibling (100), which was previously 60.
-  expected_turns: 55
-  max_turns: 100
+  # Offline: scaffold -> init -> run -> pack + packOptions + data fixture.
+  # No cloud publish (no headless tenant-feed path until uipath/cli#2778),
+  # so this stays deterministic and well under the turn budget.
+  expected_turns: 30
+  max_turns: 50
   turn_timeout: 1500
   task_timeout: 1500
