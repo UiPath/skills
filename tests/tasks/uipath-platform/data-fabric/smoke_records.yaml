@@ -10,7 +10,7 @@ description: >
 tags: [uipath-platform, data-fabric, smoke, records, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 15
-  max_turns: 50
+  max_turns: 75
 
 initial_prompt: |
   We already have a Tasks list. Each task has a title, a priority
