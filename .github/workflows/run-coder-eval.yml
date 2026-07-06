@@ -64,7 +64,10 @@ on:
         default: ''
 
 concurrency:
-  group: run-coder-eval-${{ github.ref }}
+  # Keyed on branch + agent so runs for different harnesses (claude / codex /
+  # antigravity) on the same branch run concurrently instead of cancelling
+  # each other.
+  group: run-coder-eval-${{ github.ref }}-${{ inputs.agent }}
   cancel-in-progress: false
 
 jobs:
