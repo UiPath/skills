@@ -1,6 +1,6 @@
 task_id: skill-mcp-servers-resource-create
 description: |
-  Add a resource-kind tool (automation/process) to a uipath-type AgentHub MCP server via `uip agenthub mcp-tools create-resource`. Exercises the generic Tool Kinds path: candidates --category automation, template resource, --target-identifier + --category + --dry-run, post-create verify. Uses the manifest-driven uip mock — no real tenant call.
+  Add a resource-kind tool (automation/process) to a uipath-type AgentHub MCP server via `uip agenthub mcp-tools create-resource`. Exercises the generic Tool Kinds path: candidates --category automation, template resource, --target-identifier + --category + --dry-run. Uses the manifest-driven uip mock — no real tenant call.
 tags: [uipath-mcp-servers, smoke, 'mode:build', resource]
 agent:
   type: claude-code
@@ -54,6 +54,7 @@ success_criteria:
   min_count: 1}
 - {type: command_executed, description: Agent read the resource metadata template before composing it,
   tool_name: Bash, command_pattern: uip\s+agenthub\s+mcp-tools\s+template\s+resource, min_count: 1}
-- {type: command_executed, description: Agent verified the new tool via mcp-tools list, tool_name: Bash,
-  command_pattern: uip\s+agenthub\s+mcp-tools\s+list\s+--mcp\s+test-mcp-skill, min_count: 1}
+# No post-create verify criterion: the final create is --dry-run (no mutation), so
+# skill Critical Rule 3 ("verify after every mutation") does not apply — there is
+# nothing created to list. Real-create + verify is covered by the remote-create task.
 run_limits: {max_turns: 40}
