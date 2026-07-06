@@ -165,13 +165,16 @@ codex plugin add uipath@uipath-marketplace
 
 The marketplace entry currently uses a `plugins/uipath` symlink so Codex can load the repository root as the plugin root; remove it once [openai/codex#17066](https://github.com/openai/codex/issues/17066) is resolved.
 
-> **Windows users:** This repo uses git symlinks. Clone with symlinks enabled:
+> **Windows users:** This repo uses git symlinks and deeply-nested paths. Enable both symlink support and long paths before cloning:
 > ```bash
-> git clone -c core.symlinks=true https://github.com/UiPath/skills
+> git config --global core.symlinks true
+> git config --global core.longpaths true
+> git clone https://github.com/UiPath/skills
 > ```
-> If you've already cloned without symlink support, re-enable and re-checkout:
+> If you've already cloned without these settings, re-enable and re-checkout:
 > ```bash
 > git config core.symlinks true
+> git config core.longpaths true
 > git checkout -- .
 > ```
 
