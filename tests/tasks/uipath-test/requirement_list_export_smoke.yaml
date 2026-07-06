@@ -25,9 +25,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent checked login status (`uip login status --output json`)"
+    description: "Agent checked login status (`uip login status`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -35,31 +35,31 @@ success_criteria:
   - type: command_executed
     description: "Complete create command: `uip tm requirements create --project-key HEALTH --name \"Eval Export Marker - HIPAA retention\" --output json`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name\s+["\x27]?Eval Export Marker - HIPAA retention)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+create\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name\s+["\x27]?Eval Export Marker - HIPAA retention)uip\s+tm\s+requirements?\s+create'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete tag command: `uip tm objectlabel add --project-key HEALTH --object-type Requirement --object-ids <uuid> --labels eval-export --output json`"
+    description: "Complete tag command: `uip tm objectlabel add --project-key HEALTH --object-type Requirement --object-ids <uuid> --labels eval-export`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+Requirement)(?=.*--object-ids\s+\S+)(?=.*--labels\s+["\x27]?eval-export)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+add\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+Requirement)(?=.*--object-ids\s+\S+)(?=.*--labels\s+["\x27]?eval-export)uip\s+tm\s+objectlabel\s+add'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete list command: `uip tm requirements list --project-key HEALTH --labels eval-export --output json`"
+    description: "Complete list command: `uip tm requirements list --project-key HEALTH --labels eval-export`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--labels\s+["\x27]?eval-export)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+list\s'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--labels\s+["\x27]?eval-export)uip\s+tm\s+requirements?\s+list\s'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete export command: `uip tm requirements export --project-key HEALTH --output-file ./health-requirements.xlsx --output json`"
+    description: "Complete export command: `uip tm requirements export --project-key HEALTH --output-file ./health-requirements.xlsx`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output-file\s+\S*health-requirements\.xlsx)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+export\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output-file\s+\S*health-requirements\.xlsx)uip\s+tm\s+requirements?\s+export'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

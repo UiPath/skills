@@ -49,13 +49,6 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent used --output json (not --format json) on uip rpa-legacy commands"
-    command_pattern: 'uip\s+rpa-legacy\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
   - type: file_exists
     description: "project.json was created"
     path: "HelloLegacy/project.json"

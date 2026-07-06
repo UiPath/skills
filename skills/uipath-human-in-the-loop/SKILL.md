@@ -41,7 +41,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 7. **The definition entry is added once per node type.** Check `workflow.definitions` — if an entry with the matching `nodeType` is already there, do not add it again.
 8. **Check existing node IDs before generating a new one.** Read `workflow.nodes[*].id` from the `.flow` file and pick the next available suffix (e.g. `invoiceReview1`, then `invoiceReview2`).
 9. **Never report a failed validation as done.** If `uip maestro flow validate` returns errors, diagnose from the JSON output and fix before reporting to the user.
-10. **Output fields are accessed by `field.id`, not `field.variable`.** The runtime result object uses field IDs as keys — `$vars.<nodeId>.output.<fieldId>`. The `variable` property creates a separate workflow-global variable (`$vars.{variable}`) but does NOT change the key used in the output object.
+10. **Output fields are accessed by `field.id`, not `field.variable`.** The runtime result object uses field IDs as keys — `$vars.<nodeId>.output.<fieldId>`. The `variable` property (always written as `"vars.<name>"`) creates a separate workflow-global path but does NOT change the key used in the output object.
 11. **Input field binding paths use the upstream output key, not the HITL field's own `id`.** These are two different things: the HITL field `id` identifies the form field (always lowercase); the binding path key is the name used in the upstream script's `return` statement (preserves camelCase). If a script returns `{ supplierName: "Acme" }`, the correct binding is `vars.fetchSupplier.output.supplierName` — writing `suppliername` (the field `id`) produces a path that does not exist at runtime. The form field will be blank; `flow validate` will not catch it. Always derive the binding key from the upstream script source, not from the HITL schema you are designing.
 12. **Downstream scripts must access `$vars.<nodeId>.output`.** Any script node that runs after the HITL node must read `$vars.<nodeId>.output` (the result object) — do not rely solely on `$vars.<nodeId>.status`. Concrete example: `const output = $vars.reviewNode1.output; const reason = output.reason;`. This is required even when the primary routing uses `status`.
 
@@ -174,35 +174,36 @@ Present the user with three options. Do not choose on their behalf or perform an
 
 ---
 
-## Step 4b — Schema Design Resilience (QuickForm only)
+## Step 4b — Schema Design Rules (QuickForm only)
 
-Apply these checks while designing the schema before confirming with the user.
+Apply these rules unconditionally while designing the schema.
 
-### Data type warnings
+### Field direction
 
-Flag these patterns and confirm before proceeding:
+Pick direction based on what the human does with the field:
 
-| Field description contains | Suggest type | Warning to show |
-|---|---|---|
-| "amount", "price", "cost", "total", "quantity", "count", "score", "percentage" | `number` | "I'm using `number` for `<field>` — confirm that's correct, or tell me if it should be text." |
-| "date", "deadline", "due", "scheduled" | `date` | "I'm using `date` for `<field>` — confirm, or use `text` if the format varies." |
-| "approved", "enabled", "active", "is ", "flag" | `boolean` | "I'm using `boolean` (true/false) for `<field>` — confirm, or use `text` if you need more than two states." |
+| Signal | Direction |
+|---|---|
+| "can see", "shown to", "read-only", "displays", "context for reviewer" | `input` |
+| "fills in", "enters", "types", "selects", "required decision", "approves" | `output` |
+| "can edit", "can correct", "pre-filled but editable", "suggested value the reviewer can adjust" | `inOut` |
+
+`inOut` means the field is pre-populated from an upstream node AND the human can modify it before submitting. The runtime exposes it under `$vars.<nodeId>.output.<fieldId>` the same as an output field.
+
+### Field types
+
+Use the JS/JSON type that fits the field: `string`, `number`, `boolean`, `date`, or `file`. These are the only valid values — do not use `text`.
 
 ### Vague or incomplete schema descriptions
 
 If the user says something like "just add some fields" or "use whatever makes sense":
 
 1. Infer sensible defaults from the upstream data and downstream needs visible in the `.flow` file.
-2. Show the proposed schema explicitly before writing: "Here's what I'm proposing — let me know if you want to change anything."
-3. If there are no upstream nodes to bind to (flow is just a trigger), use output-direction fields only and note: "There are no upstream nodes to pull data from, so the reviewer will fill in all fields from scratch."
+2. If there are no upstream nodes to bind to (flow is just a trigger), use output-direction fields only.
 
 ### Empty field labels block validation
 
 Every field in `inputs.schema.fields` must have a non-empty `label`. `flow validate` emits `HITL_QUICK_FORM_FIELD_LABEL_REQUIRED` (error severity) for each field with an empty or whitespace-only `label` — Debug and Publish are blocked until all labels are filled in. Never generate a field with `"label": ""` or omit the `label` key.
-
-### Partial confirmation
-
-If the user says "yes but change X" or gives conditional approval, apply the change and re-show the full updated schema for final confirmation before writing. Never write with an unresolved change.
 
 ---
 

@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the 'specified Python path is not valid' branch of the python-activities playbook. Python Scope fails at open because its Path property is set to C:\\Program Files\\Python311\\python.exe (the executable) instead of the install folder C:\\Program Files\\Python311. The error names the exact bad Path; the decisive evidence is the trailing \\python.exe in process/Main.xaml's Python Scope Path. Expected chain: folders list -> jobs list --state Faulted -> jobs get -> jobs logs -> read process/Main.xaml Python Scope config.",
+  "rules": [
+    { "match": "or folders list", "file": "6ed334f24b.json" },
+    { "match": "or jobs list", "file": "348d600ec1.json" },
+    { "match": "or jobs get", "file": "b402d7b9ea.json" },
+    { "match": "or jobs history", "file": "12ead3e479.json" },
+    { "match": "or jobs logs", "file": "9a87aba928.json" }
+  ]
+}

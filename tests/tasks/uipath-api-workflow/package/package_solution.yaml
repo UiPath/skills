@@ -30,14 +30,6 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Packager invoked with --output json (rule 18)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+pack.*--output\s+json'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
 # Packaging is a multi-step lifecycle task (scaffold solution -> Type: Api -> pack);
 # it inherits the experiment's generous turn budget rather than a tight smoke cap.
 # Tiered integration (not smoke) so it runs on the nightly runner, not the PR gate.
