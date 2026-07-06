@@ -20,8 +20,8 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 
 ## Critical Rules
 
-1. **NEVER modify any files.** This skill is read-only. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-coded-apps, uipath-platform, uipath-solution).
-2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa validate` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `validate` catches structural / analyzer issues, `build` catches compile-time issues `validate` misses (unknown member names, invalid enum values, JIT failures). Run `uip agent validate` on agents, `uip maestro flow validate` on flows. Report every Error, Warning, and Info result from every command. A review without both `validate` AND `build` (for RPA) is incomplete and may ship broken member references.
+1. **NEVER modify any files.** This skill is read-only. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-maestro-bpmn, uipath-api-workflow, uipath-coded-apps, uipath-platform, uipath-solution).
+2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa validate` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `validate` catches structural / analyzer issues, `build` catches compile-time issues `validate` misses (unknown member names, invalid enum values, JIT failures). Run `uip agent validate` on agents, `uip maestro flow validate` on flows, `uip maestro bpmn validate` on BPMN processes, `uip api-workflow validate` on API workflows. Report every Error, Warning, and Info result from every command. A review without both `validate` AND `build` (for RPA) is incomplete and may ship broken member references.
 3. **ALWAYS discover and classify before reviewing.** For solutions: classify every project before reviewing any individual one. For single projects: identify the project type and find the enclosing project directory before reviewing individual files.
 4. **Report severity for every finding.** Use: **Critical** (blocks deployment), **Warning** (should fix), **Info** (improvement opportunity).
 5. **Understand business context first.** Before evaluating optimization, ask or infer what the solution is trying to accomplish. A queue-based architecture is not "better" if the use case processes 5 items/day.
@@ -44,7 +44,7 @@ Run this from the directory the user specified (or the current working directory
 
 ```bash
 # Discover solution files, project markers, and documentation
-find . -maxdepth 3 \( -name "*.uipx" -o -name "project.json" -o -name "agent.json" -o -name "*.flow" -o -name "app.config.json" -o -name ".uipath" -o -name "langgraph.json" -o -name "llama_index.json" -o -name "openai_agents.json" -o -name "uipath.json" -o -name "main.py" \) 2>/dev/null
+find . -maxdepth 3 \( -name "*.uipx" -o -name "project.json" -o -name "project.uiproj" -o -name "agent.json" -o -name "*.flow" -o -name "*.bpmn" -o -name "app.config.json" -o -name ".uipath" -o -name "langgraph.json" -o -name "llama_index.json" -o -name "openai_agents.json" -o -name "uipath.json" -o -name "main.py" \) 2>/dev/null
 
 # Search for PDD or design documents
 find . -maxdepth 3 \( -name "*PDD*" -o -name "*pdd*" -o -name "*Process_Design*" -o -name "*process_design*" -o -name "*Process-Design*" -o -name "*ProcessDesign*" -o -name "*SDD*" -o -name "*Solution_Design*" -o -name "*design_document*" -o -name "*DesignDocument*" -o -name "*requirements*" -o -name "*specification*" \) 2>/dev/null
@@ -94,7 +94,7 @@ Classify the scope internally using these rules:
 
 **Scope: Solution or Multi-project** — `.uipx` exists at root, OR 2+ **executable** project markers exist in different subdirectories.
 
-- Executable project = `project.json` with `outputType` of `Process`/`Tests`/unspecified, OR `agent.json`, OR `.flow`
+- Executable project = `project.json` with `outputType` of `Process`/`Tests`/unspecified, OR `agent.json`, OR `.flow`, OR `project.uiproj` with `ProjectType` `Flow`/`ProcessOrchestration`/`Api`
 - Library projects (`outputType: "Library"`) co-located with consumers do NOT trigger this scope — that is the normal library+consumer pattern
 - **Windows-Legacy executables do NOT trigger this scope for `.uipx` purposes**: `.uipx` solutions are not supported for Legacy projects. If any detected executable is Legacy, do not flag missing `.uipx` — recommend migration to Modern compatibility if solution bundling is desired. Review each Legacy project independently.
 
@@ -139,6 +139,8 @@ Record the language per project alongside the type (see solution table below).
 | `main.py` + `langgraph.json` / `llama_index.json` / `openai_agents.json` / `google_adk.json` / `pydantic_ai.json` / `agent_framework.json` / `uipath.json` | Agent (Coded) | Checklist: [agent-review-checklist.md](references/agents/agent-review-checklist.md). Rule catalog (Step 2.5): [agents-common-rules.md](references/agents/agents-common-rules.md) + [agents-coded-rules.md](references/agents/agents-coded-rules.md) |
 | `agent.json` + `main.py` + `pyproject.toml` (agent-builder coded layout) | Agent (Low-Code + Coded) | Checklist: [agent-review-checklist.md](references/agents/agent-review-checklist.md). Rule catalog (Step 2.5): all three — [agents-common-rules.md](references/agents/agents-common-rules.md) + [agents-lowcode-rules.md](references/agents/agents-lowcode-rules.md) + [agents-coded-rules.md](references/agents/agents-coded-rules.md) |
 | `*.flow` + `project.uiproj` with `"ProjectType": "Flow"` | Flow | [flow-review-checklist.md](references/flows/flow-review-checklist.md) |
+| `*.bpmn` + `project.uiproj` with `"ProjectType": "ProcessOrchestration"` | Maestro BPMN | [bpmn-review-checklist.md](references/bpmn/bpmn-review-checklist.md) |
+| `Workflow.json` (`document.dsl` + `do[]`) + `project.uiproj` with `"ProjectType": "Api"` | API Workflow | [api-workflow-review-checklist.md](references/api-workflows/api-workflow-review-checklist.md) |
 | `.uipath/` directory or `app.config.json` | Coded App | [coded-app-review-checklist.md](references/coded-apps/coded-app-review-checklist.md) |
 
 For **Solution / Multi-project scope**, record all projects in a table:
@@ -203,10 +205,14 @@ If `uip rpa analyze` is not available, `uip rpa validate` includes Workflow Anal
 
 | Project Type | Validation Command | Report All Severities |
 |---|---|---|
-| Agent (Low-Code) | `uip agent validate ./path --output json` | Yes — errors, warnings, info |
-| Flow | `uip maestro flow validate <ProjectName>.flow --output json` | Yes — schema errors, reference errors, warnings |
-| Coded App | `uip codedapp pack dist --dry-run` | Yes — build errors, pack warnings |
-| Solution | `uip solution pack <SolutionDir> <OutputDir> --output json` | Yes — per-project pack results |
+| Agent (Low-Code) | `uip agent validate "<PROJECT_DIR>" --output json` | Yes — errors, warnings, info |
+| Flow | `uip maestro flow validate "<PROJECT_NAME>.flow" --output json` | Yes — schema errors, reference errors, warnings |
+| Maestro BPMN | `uip maestro bpmn validate "<FILE>.bpmn" --output json` | Yes — model errors, warnings |
+| API Workflow | `uip api-workflow validate "<WORKFLOW_JSON>" --output json` | Yes — schema + semantic errors, warnings |
+| Coded App | `uip codedapp pack dist --dry-run --output json` | Yes — build errors, pack warnings |
+| Solution | `uip solution pack "<SOLUTION_DIR>" "<OUTPUT_DIR>" --output json` | Yes — per-project pack results |
+
+> `uip api-workflow validate` is offline (no auth, no network, no side effects). Do NOT run `uip api-workflow run` — it executes vendor calls with real side effects. If the CLI reports an unknown command for `maestro bpmn validate` or `api-workflow validate` (older CLI), record it under "Rules Skipped" and fall back to the manual structural checks in the type's checklist.
 
 #### 2d. Record All Results
 
@@ -300,9 +306,10 @@ Every project has two units of work: what the **contract** declares one invocati
 | RPA + queue | Queue item schema (`Data/*.json`, `JSON Schema/`, or the SpecificContent fields used by `Add Queue Item` / `Get Transaction Item`) |
 | RPA without queue | `Main.xaml` input arguments |
 | Flow | `.flow` file → `variables.globals` → entries with `direction: "in"` or `"inout"` |
+| Maestro BPMN | Process start-event payload / process input variables |
 | Agent (low-code) | `agent.json` → `inputSchema` |
 | Agent (coded) | `Input` class in `main.py` (Pydantic `BaseModel`) |
-| API workflow | Request schema defined in the workflow |
+| API workflow | Request input schema in `Workflow.json` |
 | Coded app | Entry point input schema in `operate.json` / `entry-points.json` |
 
 **Step 3a.2 — Discover the actual unit of work** (core execution body):
@@ -580,6 +587,8 @@ Route each fix to the appropriate skill:
 | Fix RPA Windows-Legacy project | `uipath-rpa` (Legacy mode) |
 | Fix agent (coded or low-code) | `uipath-agents` |
 | Fix flow (.flow) | `uipath-maestro-flow` |
+| Fix Maestro BPMN (.bpmn) | `uipath-maestro-bpmn` |
+| Fix API workflow (Workflow.json) | `uipath-api-workflow` |
 | Fix coded app | `uipath-coded-apps` |
 | Fix Orchestrator resources (assets, queues, folders) | `uipath-platform` |
 | Fix `.uipx` solution / pack / publish / deploy lifecycle | `uipath-solution` |
@@ -630,6 +639,8 @@ This maps the letter to the verdict word only. The agent grade is `min(G_det, G_
 | Find common agent issues | [agent-common-issues.md](references/agents/agent-common-issues.md) |
 | Review a flow project | [flow-review-checklist.md](references/flows/flow-review-checklist.md) |
 | Find common flow issues | [flow-common-issues.md](references/flows/flow-common-issues.md) |
+| Review a Maestro BPMN project (.bpmn) | [bpmn-review-checklist.md](references/bpmn/bpmn-review-checklist.md) |
+| Review an API workflow project (Workflow.json) | [api-workflow-review-checklist.md](references/api-workflows/api-workflow-review-checklist.md) |
 | Review a coded app | [coded-app-review-checklist.md](references/coded-apps/coded-app-review-checklist.md) |
 | Review Orchestrator resources | [platform-resources-checklist.md](references/platform/platform-resources-checklist.md) |
 | Deep-dive an RPA project | [rpa-advanced-checklist.md](references/rpa/rpa-advanced-checklist.md) |
