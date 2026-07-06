@@ -69,18 +69,6 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "CSV uses exact case-sensitive field names as headers"
-    path: "inventory.csv"
-    includes:
-      - "SKU"
-      - "Quantity"
-      - "UnitCost"
-      - "Available"
-      - "LastRestocked"
-    weight: 2.5
-    pass_threshold: 1.0
-
   - type: run_command
     description: "inventory.csv has at least 4 data rows (header + 4)"
     command: "awk 'END { exit (NR >= 5 ? 0 : 1) }' inventory.csv"

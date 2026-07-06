@@ -25,6 +25,7 @@ import argparse
 import json
 import subprocess
 import sys
+import time
 
 
 UIP_TIMEOUT_SECONDS = 60
@@ -96,7 +97,18 @@ def delete_entity(entity_id: str, name: str, folder_key: str = "") -> None:
         args += ["--folder-key", folder_key]
     code, out, err = run_uip(*args)
     if code == 0:
-        print(f"OK: deleted leftover entity {name} ({entity_id})")
+        # ponytail: poll list index until the delete propagates, else the
+        # agent's first list sees the ghost and self-cleans it → guard fires.
+        for _ in range(20):
+            still_there = any(
+                (e.get("ID") or e.get("Id") or e.get("id")) == entity_id
+                for e in list_native_entities(include_folders=bool(folder_key))
+            )
+            if not still_there:
+                print(f"OK: deleted leftover entity {name} ({entity_id})")
+                return
+            time.sleep(1)
+        print(f"WARN: {name} ({entity_id}) still visible in list index after 20s", file=sys.stderr)
     else:
         # Non-zero is treated as a warning, not a failure — the test must
         # not be blocked by cleanup quirks (entity in use, transient API
