@@ -258,7 +258,7 @@ Match the observation to the correct fix section. **Jump directly to the matchin
 
 Read the app's current configuration:
 
-1. **Find SDK config.** The app initializes the SDK with `new UiPath()` (no config) and reads everything from `<meta name="uipath:*">` tags injected at runtime. During local dev those tags come from **`uipath.json`** (committed, project root) — the single config source, holding `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` (the local dev URL). The SDK reads `redirectUri` from the `uipath:redirect-uri` meta tag, not from `window.location`. To change any of these, edit `uipath.json`. The remediation scripts (Playwright OAuth helpers, base-URL/scope rules) below operate on that file.
+1. **Find SDK config.** The app initializes the SDK with `new UiPath()` (no config) and reads everything from `<meta name="uipath:*">` tags injected at runtime. During local dev those tags come from **`uipath.json`** (committed, project root) — the single config source, holding `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` (the local dev URL). To change any of these, edit `uipath.json`. The remediation scripts (Playwright OAuth helpers, base-URL/scope rules) below operate on that file.
 
 2. **Identify SDK services in use** — grep for `new Assets(`, `new Entities(`, `new Buckets(`, `new Processes(`, `new Tasks(`, `new Queues(`, `new MaestroProcesses(`, `new Cases(`, `new ConversationalAgent(` in `**/*.ts` and `**/*.tsx`.
 

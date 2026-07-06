@@ -138,7 +138,7 @@ uip login \
 
 ## SDK Config (web app)
 
-The web app initializes the SDK with `new UiPath()` (no config). At runtime the SDK reads `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` from `<meta name="uipath:*">` tags. During local dev `@uipath/coded-apps-dev` injects those tags from `uipath.json` (committed) — the single config source, holding `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` (the Vite dev URL for local). The SDK reads `redirectUri` from the `uipath:redirect-uri` meta tag, not from `window.location`. In production the UiPath platform injects the same tags directly.
+The web app initializes the SDK with `new UiPath()` (no config). At runtime the SDK reads `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` from `<meta name="uipath:*">` tags. During local dev `@uipath/coded-apps-dev` injects those tags from `uipath.json` (committed) — the single config source, holding `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` (the Vite dev URL for local). In production the UiPath platform injects the same tags directly.
 
 To change any of these values, edit `uipath.json`.
 
