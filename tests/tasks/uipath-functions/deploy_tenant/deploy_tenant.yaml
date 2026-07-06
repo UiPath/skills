@@ -53,12 +53,6 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Coded Function project exists"
-    path: "tenant-echo/pyproject.toml"
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "pyproject.toml + packOptions excludes data/ + .nupkg artifact present"
     command: "python3 $TASK_DIR/check_deploy_tenant.py"
@@ -68,7 +62,12 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
-  expected_turns: 50
-  max_turns: 60
+  # Heaviest functions task: scaffold -> init -> run -> discover the tenant
+  # feed id -> publish --feed-id -> packOptions + data fixture. Until the
+  # non-interactive `publish --tenant` flag ships (uipath/cli#2778), the agent
+  # must discover the feed id, which costs turns. Sized to match the equally
+  # heavy coded_in_flow_register sibling (100), which was previously 60.
+  expected_turns: 55
+  max_turns: 100
   turn_timeout: 1500
   task_timeout: 1500
