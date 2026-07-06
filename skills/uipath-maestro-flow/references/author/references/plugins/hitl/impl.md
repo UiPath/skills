@@ -24,11 +24,10 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 ```json
 {
   "id": "hitlReview1",
-  "type": "uipath.human-in-the-loop",
+  "type": "uipath.human-in-the-loop.quick-form",
   "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {
-    "type": "quick",
     "schema": {
       "schemaId": "<uuid>",
       "fields": [
@@ -120,11 +119,10 @@ Full step-by-step (app search → retrieve-configuration → resource files → 
 ```json
 {
   "id": "invoiceReview1",
-  "type": "uipath.human-in-the-loop",
+  "type": "uipath.human-in-the-loop.coded-action-app",
   "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Invoice Review" },
   "inputs": {
-    "type": "custom",
     "recipient": { "channels": ["ActionCenter"], "connections": {}, "assignee": { "type": "group" } },
     "app": {
       "displayName": "Invoice Approval",
