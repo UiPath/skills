@@ -22,6 +22,13 @@ initial_prompt: |
   once and move on. Do NOT retry or attempt to login.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected: "yes"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent used --process-name filter"
     tool_name: "Bash"

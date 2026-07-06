@@ -1,6 +1,6 @@
 ---
 name: uipath-insights
-description: "UiPath Insights job monitoring via `uip insights` — query job execution metrics, failure analysis, and process performance. TRIGGER: user asks about job failures, automation health, job success rates, processing times, failure reasons, process performance trends, or 'why are my jobs failing'. DO NOT TRIGGER: for Orchestrator job start/stop/logs (use uipath-platform), for root-cause analysis of specific job errors (use uipath-troubleshoot), for RPA workflow authoring (use uipath-rpa)."
+description: "UiPath Insights job monitoring via `uip insights` — query job execution metrics, failure analysis, and process performance. Covers job KPIs, failure reasons, completion trends, process breakdowns. For Orchestrator job start/stop/logs→uipath-platform, root-cause analysis of specific errors→uipath-troubleshoot, RPA workflow authoring→uipath-rpa."
 when_to_use: "User says 'job failures', 'automation health', 'job success rate', 'processing time', 'which processes fail the most', 'failure reasons', 'job trends', 'how many jobs ran', 'insights dashboard', 'job metrics', 'job KPIs', 'job performance', 'uncompleted jobs', 'pending jobs', 'faulted jobs', 'job timeline', 'process details'. Also 'uip insights', 'insights jobs'. NOT for starting/stopping jobs (uipath-platform), NOT for root-cause debugging of a specific job error (uipath-troubleshoot), NOT for queue metrics (not yet supported)."
 allowed-tools: Bash, Read
 ---
@@ -10,6 +10,18 @@ allowed-tools: Bash, Read
 Insights provides analytics and monitoring for UiPath automation execution. This skill covers **job monitoring** — querying aggregated job execution data for dashboards, health checks, and failure investigation.
 
 All operations go through `uip insights jobs <subcommand> --output json`.
+
+---
+
+## When to Use
+
+- Checking overall automation health (how many jobs ran, how many succeeded)
+- Investigating job failures (which processes fail most, what are the failure reasons)
+- Monitoring job execution trends over time (completed/uncompleted timelines)
+- Getting per-process performance breakdowns
+- Drilling into specific failure details for investigation
+
+> **Not in scope:** Starting, stopping, or managing individual jobs (use `uip or jobs` via uipath-platform). Root-cause debugging of a specific job's error (use uipath-troubleshoot). Queue item metrics, robot utilization, or dashboard CRUD (not yet available in CLI).
 
 ---
 
@@ -30,18 +42,6 @@ uip login --authority https://alpha.uipath.com --tenant MyTenant
 # Switch tenant within the same environment
 uip login tenant set MyTenant
 ```
-
----
-
-## When to Use
-
-- Checking overall automation health (how many jobs ran, how many succeeded)
-- Investigating job failures (which processes fail most, what are the failure reasons)
-- Monitoring job execution trends over time (completed/uncompleted timelines)
-- Getting per-process performance breakdowns
-- Drilling into specific failure details for investigation
-
-> **Not in scope:** Starting, stopping, or managing individual jobs (use `uip or jobs` via uipath-platform). Root-cause debugging of a specific job's error (use uipath-troubleshoot). Queue item metrics, robot utilization, or dashboard CRUD (not yet available in CLI).
 
 ---
 
@@ -256,6 +256,16 @@ uip insights jobs summary --started-after "$START" --started-before "$END" --out
 | `API request failed: 403` | User has no folder permissions | Check folder assignments in Orchestrator Admin |
 | `API request failed: 500` | Server error (often missing time range on older deployments) | Ensure time range is provided in the request body |
 | All Data fields are null/zero | No jobs ran in the given time window | Widen the `--time-range` (try 43200 for 30 days) |
+
+---
+
+## What NOT to Do
+
+- **Don't call `uip insights jobs` without a time range.** The server returns a 500 with a misleading success-shaped response. Always pass `--time-range` or `--started-after`/`--started-before`.
+- **Don't start, stop, or manage individual jobs.** This skill is for monitoring and analytics only. Use `uip or jobs start/stop` via uipath-platform to manage jobs.
+- **Don't construct raw API calls to the Insights endpoint.** The CLI handles auth headers (`X-UiPath-Internal-AccountName`, `X-UiPath-Internal-TenantName`), URL construction, and error handling. Hand-rolling `curl` or `fetch` calls will miss these.
+- **Don't retry on auth errors.** If `uip insights jobs` returns 401 or "Not logged in", the fix is `uip login`, not retrying the same command.
+- **Don't use this skill for root-cause debugging.** "Why did job X fail with error Y?" is a troubleshooting question — hand off to uipath-troubleshoot. This skill answers "which processes fail the most and what are the common reasons."
 
 ---
 

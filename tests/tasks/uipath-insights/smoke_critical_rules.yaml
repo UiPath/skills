@@ -1,83 +1,56 @@
 task_id: skill-insights-smoke-critical-rules
 description: >
-  Smoke test: agent correctly follows the uipath-insights skill's critical
-  rules — always requires a time range, uses --output json, and knows the
-  boundaries of what the skill covers vs what belongs to other skills.
+  Smoke test: agent correctly follows the uipath-insights skill's boundaries.
+  Presented with four requests — one in-scope (job failures) and three
+  out-of-scope (start a job, queue metrics, root-cause a specific error).
+  The agent should run an insights command for the first and NOT run insights
+  commands for the others. Auth errors are expected (no live tenant).
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover, negative]
 
 run_limits:
-  expected_turns: 6
+  expected_turns: 8
 
 initial_prompt: |
-  I have four requests. For each, decide what to do based on the
-  uipath-insights skill. If the skill covers it, describe the command.
-  If not, explain why and which skill to use instead.
+  Handle each of these four requests using the appropriate approach.
+  Use --output json on every uip command. The CLI is not connected to a live
+  tenant, so commands will fail with auth errors — that's expected. Run each
+  command once and move on. Do NOT retry or attempt to login.
 
-  Request 1: Show me job failures. (No time range specified — what do you do?)
+  1. Show me job failures for the last 24 hours.
+  2. Start the "Invoice_Processing" job immediately.
+  3. Show me queue item metrics for the last 24 hours.
+  4. Why did job abc-123 fail with error "FileNotFoundException"? Debug it.
 
-  Request 2: Start the "Invoice_Processing" job immediately.
-
-  Request 3: Show me queue item metrics for the last 24 hours.
-
-  Request 4: Why did job "abc-123" fail with error "FileNotFoundException"?
-
-  Save a summary to report.json:
-  {
-    "request_1_action": "<'use_insights' or 'refuse'>",
-    "request_1_detail": "<what command or why refused>",
-    "request_2_action": "<'use_insights' or 'use_other_skill'>",
-    "request_2_skill": "<which skill if other>",
-    "request_3_action": "<'use_insights' or 'not_supported'>",
-    "request_3_detail": "<explanation>",
-    "request_4_action": "<'use_insights' or 'use_other_skill'>",
-    "request_4_skill": "<which skill if other>"
-  }
-
-  Do NOT run any uip commands. Just analyze and write the report.
+  For requests that this skill cannot handle, explain which skill or command
+  should be used instead. Do NOT attempt to run uip insights commands for
+  out-of-scope requests.
 
 success_criteria:
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent knows insights needs a time range for request 1"
-    path: "report.json"
-    assertions:
-      - expression: "request_1_action"
-        operator: equals
-        expected: "use_insights"
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected: "yes"
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Agent redirects job start to another skill (uipath-platform)"
-    path: "report.json"
-    assertions:
-      - expression: "request_2_action"
-        operator: equals
-        expected: "use_other_skill"
+  - type: command_executed
+    description: "Agent ran insights jobs for the in-scope request (job failures)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+(failures-by-reason|top-failures|failure-details|summary)\s+.*--time-range'
+    min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Agent knows queue metrics are not yet supported in insights"
-    path: "report.json"
-    assertions:
-      - expression: "request_3_action"
-        operator: equals
-        expected: "not_supported"
+  - type: command_not_executed
+    description: "Agent did NOT run uip insights for starting a job (out of scope)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights.*start|uip\s+insights.*Invoice_Processing'
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Agent redirects root-cause debugging to uipath-troubleshoot"
-    path: "report.json"
-    assertions:
-      - expression: "request_4_action"
-        operator: equals
-        expected: "use_other_skill"
-    weight: 2.5
+  - type: command_not_executed
+    description: "Agent did NOT run uip insights for queue metrics (not supported)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights.*queue'
+    weight: 2.0
     pass_threshold: 1.0

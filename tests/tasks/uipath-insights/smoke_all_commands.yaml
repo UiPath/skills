@@ -1,30 +1,30 @@
 task_id: skill-insights-smoke-all-commands
 description: >
-  Smoke test: agent uses the uipath-insights skill to run all seven
-  uip insights jobs subcommands. Verifies the agent knows the full command
-  surface and uses --output json and --time-range on each. Auth errors are
-  expected (no live tenant).
+  Smoke test: agent uses the uipath-insights skill to discover and run all
+  available uip insights jobs subcommands. The prompt is goal-oriented —
+  the agent must discover the full command surface from the skill, not from
+  the prompt. Auth errors are expected (no live tenant).
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
   expected_turns: 10
 
 initial_prompt: |
-  I want to see all the job monitoring data available in Insights. Run each of
-  the following queries for the last 24 hours:
-  1. Jobs summary (KPIs)
-  2. Completed jobs timeline
-  3. Uncompleted jobs timeline
-  4. Top failures by process
-  5. Failures grouped by reason
-  6. Per-process job details
-  7. Failure drill-down details
+  I want a complete picture of my job monitoring data from Insights. Run every
+  available uip insights jobs subcommand for the last 24 hours.
 
-  Use --output json and --time-range 1440 on every command. The CLI is not
-  connected to a live tenant, so commands will fail with auth errors — that's
-  expected. Run each command once and move on. Do NOT retry or attempt to login.
+  Use --output json on every command. The CLI is not connected to a live tenant,
+  so commands will fail with auth errors — that's expected. Run each command
+  once and move on. Do NOT retry or attempt to login.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected: "yes"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent ran jobs summary"
     tool_name: "Bash"
