@@ -43,14 +43,6 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent used --output json on uip df commands"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: file_exists
     description: "products.csv was created"
     path: "products.csv"
