@@ -7,8 +7,8 @@
 | `.local/investigations/evidence/` | Interpreted evidence summaries | JSON files with analysis and interpretation |
 | `.local/investigations/raw/` | Raw data dumps | Unprocessed CLI responses, file contents |
 
-Created by: Triage sub-agent, Hypothesis Tester sub-agent
-Read by: All sub-agents, orchestrator
+Written during: TRIAGE, TEST
+Read during: all phases
 
 ## File naming
 
@@ -33,7 +33,7 @@ Each evidence file:
   "id": "evidence-unique-id",
   "hypothesis_id": "H1",
   "source": "uip_cli | docsai | playbook | user | source_code",
-  "collected_by": "triage | tester",
+  "collected_by": "triage | test",
   "timestamp": "ISO8601",
   "query": "What was queried or asked (uip command, docsai query, file path read)",
   "raw_data_ref": "raw/H1-Jobs_GetByKeyByIdentifier.json",
@@ -58,6 +58,32 @@ Each evidence file:
   "user_question": null
 }
 ```
+
+## Core evidence (triage-initial.json only)
+
+`evidence/triage-initial.json` carries a top-level `core_evidence` object — the curated, verbatim payload triage distills from its opening evidence batch. It is the **delta-baseline** for the TEST phase: TEST consumes it and fetches ONLY hypothesis-specific evidence that is absent from it (see `SKILL.md` § TEST steps C/E). Where `signals` is the atomic fact index used for matching, `core_evidence` is the data content that lets downstream phases skip re-fetching.
+
+```json
+{
+  "core_evidence": {
+    "entity":           { "type": "<entity type>", "key": "<id/key>", "state": "<state>", "start": "<ISO8601>", "end": "<ISO8601>", "machine": "<host>", "parent_key": "<parent id or null>" },
+    "error":            { "exception_class": "<FQN>", "message": "<verbatim message>", "inner_exception": "<unwrapped inner exception or null>", "error_code": "<code or null>", "http_status": "<status or null>" },
+    "error_logs":       { "summary": "<grouped-by-type summary for large sets>", "entries": [ "<error-level log lines>" ], "source": "raw/triage-job-logs.json" },
+    "traces":           { "execution_path": "<activity/node path reconstructed from traces>", "source": "raw/triage-job-traces.json" },
+    "failing_activity": { "label": "<activity-instance label>", "package_namespace": "<owning package>" },
+    "failing_project":  { "name": "<project/process name>", "package": "<package id>", "version": "<version>" },
+    "additional":       { "<guide-named-field>": { "value": "<observed value>", "source": "raw/<file>.json" } }
+  }
+}
+```
+
+### Rules
+
+- **All fields nullable.** Populate what the entity supports; a non-job entity leaves job-specific fields null. Never fabricate a field to fill the shape.
+- **`error_logs` and `traces` are the two heavy sources.** TRIAGE fetches them in the opening **parallel** batch, saves each to `raw/` via the guide's capture pattern, and summarizes large log sets by error type — never byte-slice.
+- **`error`, `failing_activity`, `failing_project` are DERIVED** from the entity fetch + `error_logs` + `traces`. They are not separate fetches.
+- **`additional` is where each system contributes its own fields.** Populate it from the load-bearing fields named in the matched product's `investigation_guide.md` `## Data Correlation` section (e.g., Database: `ProviderName`, `ConnectionString`, `Sql`, project compatibility, package version; Integration Service: connection/connector/auth-state). Each entry records `value` + `source`. Do NOT invent field names — use only what the guide names.
+- Every populated field MUST be traceable to a `raw/` file (`source`), same as signals.
 
 ## Signals (triage-initial.json only)
 
@@ -97,14 +123,14 @@ Each evidence file:
 
 ### Producers and consumers
 
-- **Triage** produces signals while executing plan data-fetch steps. Each fetched response is scanned for signal-worthy facts and entries are appended to `signals`. Triage step E (match playbooks) iterates this array, not the raw files.
-- **Hypothesis generator** reads `signals` to inform what hypotheses to draft. Each generated hypothesis records which signals supported it (see `schemas/hypotheses.schema.md` → `signals_supporting`).
-- **Hypothesis tester** reads `signals` BEFORE its test plan. For each `to_confirm` / `to_eliminate` item, the tester checks whether a signal already resolves it. If yes, the corresponding plan step is `status: skipped` with the signal name in `purpose` — no re-fetch.
+- **TRIAGE** produces signals while executing plan data-fetch steps. Each fetched response is scanned for signal-worthy facts and entries are appended to `signals`. TRIAGE step E (match playbooks) iterates this array, not the raw files.
+- **GENERATE** reads `signals` to inform what hypotheses to draft. Each generated hypothesis records which signals supported it (see `schemas/hypotheses.schema.md` → `signals_supporting`).
+- **TEST** reads `signals` BEFORE its test plan. For each `to_confirm` / `to_eliminate` item, it checks whether a signal already resolves it. If yes, the corresponding plan step is `status: skipped` with the signal name in `purpose` — no re-fetch.
 
 ### Rules
 
 - One signal per discrete fact. Do NOT combine multiple facts into one signal (`exception_class_and_message` is two signals, not one).
-- Never overwrite or reconcile a signal in place — one `name` = one observed fact. If two raw sources disagree, that is NOT a forbidden state: record each observation as its own signal with a distinct `name` and let the matcher / downstream agents resolve the conflict. The only thing disallowed is mutating an existing signal (see immutability below).
+- Never overwrite or reconcile a signal in place — one `name` = one observed fact. If two raw sources disagree, that is NOT a forbidden state: record each observation as its own signal with a distinct `name` and let the matcher / downstream phases resolve the conflict. The only thing disallowed is mutating an existing signal (see immutability below).
 - Signals are immutable once written. New evidence appends new signals; existing signals don't get rewritten.
 
 ## Rules
@@ -112,7 +138,7 @@ Each evidence file:
 - **Raw data MUST be written to `.local/investigations/raw/` immediately** — write the full response to a raw file BEFORE summarizing
 - **Never keep raw data in context** — write it to a raw file, then read it back only if needed for analysis. Do not hold CLI responses or log dumps in the agent's working memory.
 - Evidence files contain summaries and interpretation only; they reference raw files via `raw_data_ref`
-- If a sub-agent needs user input, set `needs_user_input: true` and `user_question` to the question
-- The orchestrator reads evidence files (not raw files) to make decisions
+- If a phase needs user input, set `needs_user_input: true` and `user_question` to the question (record-keeping; the question itself is asked via `AskUserQuestion`)
+- Decisions read evidence files, not raw files
 - Evidence files are immutable once written — new evidence gets a new file
 - Raw files are immutable once written — they are the source of truth for what was actually returned

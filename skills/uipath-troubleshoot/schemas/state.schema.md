@@ -2,9 +2,9 @@
 
 File: `.local/investigations/state.json`
 
-Created by: Triage sub-agent
-Read by: All sub-agents, orchestrator
-Updated by: Orchestrator (phase transitions)
+Written during: TRIAGE
+Read during: all phases
+Updated: at phase transitions (`phase` field) and on scope adjustment
 
 ## Structure
 
@@ -68,11 +68,11 @@ Updated by: Orchestrator (phase transitions)
 
 ## Investigation Guides
 
-Resolved by triage. Always includes the generic guide (`references/investigation_guide.md`). Includes the product-specific guide if one exists. Other agents read these paths directly — they do NOT scan the references folder themselves.
+Resolved during TRIAGE. Always includes the generic guide (`references/investigation_guide.md`). Includes the product-specific guide if one exists. Later phases use these resolved paths — they do NOT scan the references folder themselves.
 
 ## Matched Playbooks
 
-Resolved by triage. Full paths to every playbook that matches the symptoms, with per-playbook signal-match data.
+Resolved during TRIAGE. Full paths to every playbook that matches the symptoms, with per-playbook signal-match data.
 
 Fields per entry:
 
@@ -81,13 +81,13 @@ Fields per entry:
 - `signal_match_count` — integer count of how many distinct signature signals from the playbook's `## Context` and `## Investigation` sections the gathered evidence actually satisfies. A signal is a discrete fact: an exception class, a specific error code, a verbatim error fragment, an entity-state assertion, a package version, an activity-instance label, etc.
 - `signals_matched` — array of short labels naming each signal that was satisfied (audit trail for `signal_match_count`).
 
-**Ranking.** Matched playbooks are ordered by `signal_match_count` DESCENDING — highest specificity first, regardless of frontmatter confidence. A `medium`-confidence playbook with 3 matched signals ranks above a `high`-confidence playbook with 1 matched signal. The hypothesis generator drafts H1 from the top-ranked playbook, H2 from the second-ranked, etc. Ties on signal count are broken by frontmatter confidence (`high > medium > low`).
+**Ranking.** Matched playbooks are ordered by `signal_match_count` DESCENDING — highest specificity first, regardless of frontmatter confidence. A `medium`-confidence playbook with 3 matched signals ranks above a `high`-confidence playbook with 1 matched signal. GENERATE drafts H1 from the top-ranked playbook, H2 from the second-ranked, etc. Ties on signal count are broken by frontmatter confidence (`high > medium > low`).
 
 **Three categories of evidence-vs-playbook relationship:**
 
 - **Positively supported** (`signal_match_count >= 1`) → list in `matched_playbooks`.
 - **Silent** (evidence neither supports nor contradicts any of the playbook's signals) → do NOT list. The playbook is uninformed by the available evidence; it cannot be tested productively until more data exists.
-- **Contradicted** (evidence directly disproves at least one CORE signal of the playbook signature) → do NOT list in `matched_playbooks`; instead record in `eliminated_playbooks` with the contradicting evidence. The hypothesis generator will not draft hypotheses from these.
+- **Contradicted** (evidence directly disproves at least one CORE signal of the playbook signature) → do NOT list in `matched_playbooks`; instead record in `eliminated_playbooks` with the contradicting evidence. GENERATE will not draft hypotheses from these.
 
 A "core signal" is one named in the playbook's `## Context` or `## Investigation` as a required precondition for the cause to apply (e.g., "asset is absent / HTTP 404", "robot has no matching credentials", "connection ID returns 'invalid'"). Surface-level signals shared across siblings (e.g., "Get Asset activity") are NOT core signals — they're descriptors, not preconditions.
 
@@ -98,13 +98,13 @@ Playbooks whose signature was contradicted by triage evidence. Each entry record
 - `path` — playbook path.
 - `contradicting_signal` — short sentence naming the playbook's required signal AND the contradicting evidence (e.g., "playbook requires asset absent; evidence shows asset exists in folder").
 
-The hypothesis generator MUST exclude these from consideration. The depth-verifier MUST NOT confirm a hypothesis that maps to an eliminated playbook.
+GENERATE MUST exclude these from consideration. DEPTH CHECK MUST NOT verify a hypothesis that maps to an eliminated playbook.
 
 **Why count over confidence.** Multiple playbooks can match the same surface signal (e.g., "Get Asset activity failed" appears in five distinct get-asset playbooks at frontmatter `high`). Ranking purely on frontmatter confidence then surfaces 5-way false positives at HIGH. Counting actual signal hits per playbook discriminates between them: the one whose specific signature is most fully satisfied by the evidence wins. Frontmatter confidence still caps the root-cause certainty downstream (`high` matches can fast-path; `medium`/`low` require deeper testing) — but it does not decide ordering.
 
 ## Plan
 
-The investigation plan is the agent's single, growing record of everything it intends to do. Triage starts with a one-step plan (classify the user's message) and appends steps as data arrives. **The plan IS the procedure** — there is no pre-plan or post-plan phase; every action the agent takes is a plan step that is recorded, executed, and audited.
+The investigation plan is the single, growing record of everything the investigation intends to do. TRIAGE starts with a one-step plan (classify the user's message) and appends steps as data arrives. **The plan IS the procedure** — there is no pre-plan or post-plan phase; every action taken is a plan step that is recorded, executed, and audited.
 
 Field semantics:
 
@@ -127,19 +127,19 @@ Field semantics:
 - No undocumented commands. Every tool-call step must run a command documented in the matched investigation guide or the matched playbook's `## Investigation` section.
 - A single Pass 2 extension is permitted when the initial pass yields weak matches; a Pass 3 is not.
 
-The plan structure is reusable: any sub-agent that gathers data (triage, hypothesis-tester) writes a plan of its own. For the hypothesis-tester, the plan is stored on the hypothesis itself (`hypotheses.json` → per-hypothesis `test_plan`), not on `state.json`.
+The plan structure is reusable: any data-gathering phase (TRIAGE, TEST) writes a plan of its own. For TEST, the plan is stored on the hypothesis itself (`hypotheses.json` → per-hypothesis `test_plan`), not on `state.json`.
 
 ## Requirements
 
-Generic key-value store for data gathered during the investigation. Any agent can read it; triage and orchestrator write to it.
+Generic key-value store for data gathered during the investigation. Readable in all phases; written during TRIAGE, TEST (e.g., `source_code_path`), and EVALUATE.
 
 - Keys are freeform — use descriptive names (e.g., `folder_id`, `source_code_path`, `queue_name`)
 - Values are whatever was collected (string, number, etc.)
 
 ## Rules
 
-- Triage sub-agent creates this file and resolves investigation guides, matched playbooks, and requirements
-- Other agents read paths from `state.json` — they do NOT browse `references/` themselves (exception: triage, scope-checker, depth-verifier, and presenter browse references — see `shared.md` invariant 3)
-- Orchestrator updates `phase` as the investigation progresses
-- Any agent can read `requirements`; triage and orchestrator write to it
-- The `scope` may be updated by the orchestrator when scope adjustment occurs
+- TRIAGE creates this file and resolves investigation guides, matched playbooks, and requirements
+- Later phases use playbook/guide paths from `state.json` — reference browsing happens in TRIAGE, SCOPE CHECK, DEPTH CHECK, and RESOLUTION
+- `phase` is updated as the investigation progresses
+- `requirements` is readable in all phases; written during TRIAGE, TEST, and EVALUATE
+- `scope` may be updated when scope adjustment occurs
