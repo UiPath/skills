@@ -71,7 +71,7 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 - **Output fields**: `variable: "<globalName>"` (plain name, **no** `vars.` prefix). No `binding`.
 - **InOut fields**: both `binding` and `variable`, same formats as above.
 - `schemaId` (not `id`) at the schema level — generate a fresh UUID.
-- `typeVersion` — always `"1.0"` for `uipath.human-in-the-loop`. **Do not run `registry get` to derive this value; do not use `"1.1"` or any other version.** The OOTB HITL node version is stable at `1.0`.
+- `typeVersion` — always `"1.0"` for `uipath.human-in-the-loop.quick-form`. **Do not run `registry get` to derive this value; do not use `"1.1"` or any other version.** The OOTB HITL node version is stable at `1.0`.
 - No `model` block on node instances — only the definition carries it.
 
 **outputs block**: only `output` (with `properties` for output/inOut fields + `Action` outcome) and `status` (with `enum`/`default` from outcomes). No per-field `custom: true` entries.
@@ -173,6 +173,8 @@ Full step-by-step (app search → retrieve-configuration → resource files → 
   }
 }
 ```
+
+**`typeVersion`** — fill in the version returned by `uip maestro flow registry get <appKey>` for the specific deployed app. Unlike QuickForm (always `"1.0"`), AppTask version varies per app definition.
 
 **`inputs.app`**: `inputSchema` and `outputSchema` are JSON Schema objects (`{ "type": "object", "properties": { ... } }`), **not arrays**.
 
