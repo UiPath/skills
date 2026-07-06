@@ -45,11 +45,12 @@ Shared by both paths. Project-root config consumed by the `uip codedapp` CLI for
   "scope": "{{SCOPES}}",
   "orgName": "{{ORG_NAME}}",
   "tenantName": "{{TENANT_NAME}}",
-  "baseUrl": "{{BASE_URL}}"
+  "baseUrl": "{{BASE_URL}}",
+  "redirectUri": "http://localhost:5173"
 }
 ```
 
-`redirectUri` is not stored here — the SDK derives it at runtime from `window.location`. In production the platform injects every `<meta name="uipath:*">` tag itself; the committed values above drive local dev. To change scopes, client ID, org, tenant, or base URL, edit this file.
+The SDK reads `redirectUri` from the `uipath:redirect-uri` meta tag — **not** from `window.location`. Locally the plugin injects that tag from the `redirectUri` field above (the Vite dev URL). In production the platform injects every `<meta name="uipath:*">` tag itself, so these committed values only drive local dev. To change any value, edit this file. To set the redirect URI in code instead, pass it to the constructor — `new UiPath({ redirectUri: window.location.origin + window.location.pathname })` — which takes precedence over the meta tag; the templates omit it and rely on the tag.
 
 ---
 

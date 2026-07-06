@@ -26,7 +26,7 @@ Here's what your app needs:
 
 **OAuth scopes:** `<scopes>`
 
-**Redirect URI:** `http://localhost:5173` (computed automatically at runtime — works in both local dev and production)
+**Redirect URI:** `http://localhost:5173` (the local dev URL — stored as `redirectUri` in `uipath.json` and injected as the `uipath:redirect-uri` meta tag; the platform injects the production URI automatically at deploy)
 
 Please answer these questions to continue:
 
@@ -160,7 +160,7 @@ All file content lives in [../assets/templates/web-app-template.md](../assets/te
 
 ### 4.6 — `.gitignore`
 
-Neither path writes a `.env`, and `uipath.json` is committed (it holds the SDK config — a public OAuth client ID plus org/tenant/base-URL, no secrets), so no `.gitignore` change is needed for OAuth config. The `.uipath/` directory that `uip login` / `uip codedapp` create (auth session + deploy artifacts like `app.config.json`) must stay gitignored — it is covered by `npx create-vite`'s default plus `uip codedapp`'s conventions. Verify with `cat .gitignore | grep -i uipath` and add `.uipath/` if missing.
+Neither path writes a `.env`, and `uipath.json` is committed (it holds the SDK config — a public OAuth client ID plus org/tenant/base-URL/redirect-URI, no secrets), so no `.gitignore` change is needed for OAuth config. The project `.uipath/` directory created by `codedapp` commands must stay gitignored — it is covered by `npx create-vite`'s default plus `uip codedapp`'s conventions. Verify with `cat .gitignore | grep -i uipath` and add `.uipath/` if missing.
 
 ### 4.7 — Verify the scaffold
 
