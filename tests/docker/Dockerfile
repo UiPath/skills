@@ -58,12 +58,9 @@ RUN set -euo pipefail && \
     # return "unknown command 'df'" and pre_run seed scripts + agent calls
     # both fail.
     uip tools install @uipath/data-fabric-tool && \
-<<<<<<< HEAD
     # Governance tool — provides `uip gov aops-policy`, `uip gov access-policy`,
     # and `uip gov compliance-packs` commands used by uipath-governance skill tests.
     uip tools install @uipath/gov-tool && \
-=======
->>>>>>> bbe06a2e (test(uipath-data-fabric): coder-eval filter operator validation + shared scripts/seeds (#1079))
     uip tools list
 
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.
