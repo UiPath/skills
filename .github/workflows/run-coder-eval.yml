@@ -63,13 +63,8 @@ on:
         type: string
         default: ''
 
-concurrency:
-  # Keyed on branch + agent so runs for different harnesses (claude / codex /
-  # antigravity) on the same branch run concurrently instead of cancelling
-  # each other.
-  group: run-coder-eval-${{ github.ref }}-${{ inputs.agent }}
-  cancel-in-progress: false
-
+# No concurrency group: this is a manual, on-demand workflow — allow any number
+# of runs (e.g. the same task across claude / codex / antigravity) at once.
 jobs:
   partition:
     runs-on: ubuntu-latest
