@@ -44,7 +44,7 @@ success_criteria:
     description: "HITL node is present in the flow file"
     path: "ComplaintTriage/ComplaintTriage/ComplaintTriage.flow"
     includes:
-      - '"uipath.human-in-the-loop"'
+      - '"uipath.human-in-the-loop.quick-form"'
     weight: 2.0
     pass_threshold: 1.0
 

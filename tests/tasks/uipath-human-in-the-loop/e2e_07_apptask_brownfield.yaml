@@ -48,7 +48,7 @@ success_criteria:
     description: "HITL node with AppTask (custom) type is present in the flow file"
     path: "ExpenseAppTask/ExpenseAppTask/ExpenseAppTask.flow"
     includes:
-      - '"uipath.human-in-the-loop"'
+      - '"uipath.human-in-the-loop.coded-action-app"'
       - '"custom"'
     weight: 3.0
     pass_threshold: 1.0

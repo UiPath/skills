@@ -185,17 +185,18 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 
 ## Definition Entry
 
-Every `.flow` file must have one definition entry for `uipath.human-in-the-loop` in `workflow.definitions`. Add it exactly once — deduplicate by `nodeType`.
+Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.quick-form` in `workflow.definitions`. Add it exactly once — deduplicate by `nodeType`.
 
 ```json
 {
-  "nodeType": "uipath.human-in-the-loop",
+  "nodeType": "uipath.human-in-the-loop.quick-form",
   "version": "1.0",
   "category": "human-task",
-  "tags": ["human-task", "hitl", "human-in-the-loop", "approval"],
-  "sortOrder": 50,
+  "description": "Fast inline approvals with inline debug",
+  "tags": ["human-task", "hitl", "human-in-the-loop", "quick-form", "approval"],
+  "sortOrder": 27,
   "display": {
-    "label": "Human in the Loop",
+    "label": "Quick Form",
     "icon": "users",
     "shape": "square"
   },
@@ -436,11 +437,14 @@ After the HITL node, downstream nodes can reference:
 >
 > **Common mistake:** A field with `"id": "approved"` and `"variable": "vars.legalApproval"` must be read as `$vars.<nodeId>.output.approved` — **not** `$vars.<nodeId>.output.legalApproval`. Using the `variable` name as the key produces `undefined` at runtime; `flow validate` does not catch it.
 
-**In a downstream script node:**
+**In a downstream script node** — always access inline using `$vars.<nodeId>.output.<fieldId>`, not by destructuring:
 ```javascript
-const output = $vars.invoiceReview1.output;
-// Access by field ID, not variable name
+// Correct — field ID inline access
+const vendorName = $vars.invoiceReview1.output.vendorName;
+const costCenter = $vars.invoiceReview1.output.costCenter;
 if ($vars.invoiceReview1.status === "approve") {
-  await updateSystem(output.vendorName, output.costCenter);
+  await updateSystem(vendorName, costCenter);
 }
+// Wrong — do NOT destructure first:
+// const output = $vars.invoiceReview1.output;  // then output.vendorName misses the node path
 ```
