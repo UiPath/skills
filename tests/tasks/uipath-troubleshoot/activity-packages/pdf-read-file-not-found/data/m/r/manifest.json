@@ -4,39 +4,39 @@
   "rules": [
     {
       "match": "or folders list",
-      "file": "or-folders-list.json"
+      "file": "0c745290f5.json"
     },
     {
       "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e --state Faulted",
-      "file": "or-jobs-list-faulted.json"
+      "file": "94f4dd3dba.json"
     },
     {
       "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
-      "file": "or-jobs-list-faulted.json"
+      "file": "94f4dd3dba.json"
     },
     {
       "match": "or jobs list",
-      "file": "or-jobs-list-faulted.json"
+      "file": "94f4dd3dba.json"
     },
     {
       "match": "or jobs get 7a3e9f12-4c8b-4d6e-9a1f-2b3c4d5e6f70",
-      "file": "or-jobs-get.json"
+      "file": "7288879bf0.json"
     },
     {
       "match": "or jobs logs 7a3e9f12-4c8b-4d6e-9a1f-2b3c4d5e6f70 --level Error",
-      "file": "or-jobs-logs.json"
+      "file": "25e85eab3d.json"
     },
     {
       "match": "or jobs logs 7a3e9f12-4c8b-4d6e-9a1f-2b3c4d5e6f70",
-      "file": "or-jobs-logs.json"
+      "file": "25e85eab3d.json"
     },
     {
       "match": "or jobs traces 7a3e9f12-4c8b-4d6e-9a1f-2b3c4d5e6f70",
-      "file": "or-jobs-traces.json"
+      "file": "2d930e2440.json"
     },
     {
       "match": "traces spans get --job-key 7a3e9f12-4c8b-4d6e-9a1f-2b3c4d5e6f70",
-      "file": "or-traces-spans.json"
+      "file": "56a91ad33d.json"
     },
     {
       "match": "docsai ask",
