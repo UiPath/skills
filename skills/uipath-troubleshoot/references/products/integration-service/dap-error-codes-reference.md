@@ -98,7 +98,7 @@ A downstream provider response with status `429` or `5xx`, or a network-level fa
 | Code | Name | Root cause | Playbook |
 |------|------|------------|----------|
 | `DAP-RT-1101` _(429/5xx)_ | RequestFailed — provider subset | Provider `429` (rate limited) or `5xx` (outage); `ProviderErrorCode` confirms | [request-failed.md](./playbooks/request-failed.md) |
-| `DAP-RT-1103` | HttpClientException | Network-level failure — target host unreachable (DNS/connectivity/firewall) | [http-client-exception.md](./playbooks/http-client-exception.md) |
+| `DAP-RT-1103` | HttpClientException | Network-level failure — UiPath IS endpoint unreachable from the robot (DNS/connectivity/firewall) | [http-client-exception.md](./playbooks/http-client-exception.md) |
 | `DAP-RT-1051` | TriggerExecutionFailed | Trigger evaluation call failed/empty — connector trigger endpoint issue | [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md) |
 | `DAP-RT-1050` | TriggerDataMissing | Event payload missing expected event ID — malformed webhook/poll payload | [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md) |
 
