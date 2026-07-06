@@ -1,13 +1,14 @@
-task_id: skill-troubleshoot-pdf-extract-page-range-invalid
+task_id: skill-troubleshoot-pdf-read-encrypted
 description: >
-  Faithful replay of a UiPath.PDF.Activities Extract PDF Page Range failure. The
-  activity faults with
-  UiPath.DocumentProcessing.Contracts.Extensions.InvalidPageRangeException
-  ("The input string 'abc' was not in a correct format.") because the configured
-  Range argument is malformed. The agent runs the uipath-troubleshoot skill
-  against a uip CLI mock and must identify the invalid Range argument as the
-  cause — not blame the PDF content, a missing file, OCR, or a workflow-logic
-  bug. Success = same root cause as RESOLUTION.md.
+  Faithful replay of a UiPath.PDF.Activities ReadPDFText failure on an encrypted
+  PDF. The document is password-protected and no/wrong Password was supplied, so
+  the reader faults with
+  UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException
+  ("The password is incorrect.") from PdfReader..ctor. The agent runs the
+  uipath-troubleshoot skill against a uip CLI mock and must identify the
+  encrypted-PDF / missing-password as the cause — not blame a missing file, a
+  corrupt PDF, or the workflow logic. Signature captured verbatim from a live
+  run. Success = same root cause as RESOLUTION.md.
 tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, mode:diagnose]
 
 agent:
@@ -22,7 +23,7 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../_shared/mock_template
+      path: ../../_shared/mock_template
     - type: template_dir
       path: fixtures
   mock_path_dirs:

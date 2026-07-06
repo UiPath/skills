@@ -1,14 +1,15 @@
-task_id: skill-troubleshoot-sap-connection-no-host
+task_id: skill-troubleshoot-sap-connection-invalid-advanced-param
 description: >
   Faithful replay of a UiPath.SAP.BAPI.Activities SAP Application Scope failure.
-  The scope faults while opening the RFC connection with
-  SAP.Middleware.Connector.RfcConfigurationException ("Not any kind of host is
-  specified") because no connection parameters (application/message server) were
-  configured — it fails at RfcDestination.CheckConfiguration, before any BAPI or
-  network call. The agent runs the uipath-troubleshoot skill against a uip CLI
-  mock and must identify the missing SAP connection configuration as the cause —
-  not blame the BAPI, a live SAP outage, or the workflow logic. Signature
-  captured verbatim from a live run. Success = same root cause as RESOLUTION.md.
+  The scope faults with UiPath.SAP.BAPI.Utilities.SapActivityException
+  ("Advanced Parameters has invalid parameter <key>. Connection cannot be
+  established.") because an unsupported RFC advanced-parameter key was
+  configured — the UiPath connection layer rejects it (in
+  SapConnectionService.OverideWithAdvancedParameters) before any network call.
+  The agent runs the uipath-troubleshoot skill against a uip CLI mock and must
+  identify the invalid advanced parameter as the cause — not blame the BAPI,
+  host reachability, or logon. Signature captured verbatim from a live run.
+  Success = same root cause as RESOLUTION.md.
 tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, mode:diagnose]
 
 agent:
@@ -23,7 +24,7 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../_shared/mock_template
+      path: ../../_shared/mock_template
     - type: template_dir
       path: fixtures
   mock_path_dirs:
