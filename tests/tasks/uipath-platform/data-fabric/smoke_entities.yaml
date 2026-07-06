@@ -134,3 +134,25 @@ success_criteria:
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0
+
+pre_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py
+      --name-prefix CE_SmokeDepartments
+    timeout: 120
+    fail_on_error: false
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py
+      --name-prefix CE_SmokeEmployees
+    timeout: 120
+    fail_on_error: false
+
+post_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py
+      --name-prefix CE_SmokeDepartments
+    timeout: 120
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py
+      --name-prefix CE_SmokeEmployees
+    timeout: 120
