@@ -120,7 +120,7 @@ Binding is **identical to [agent/planning.md § Creating an Agent inline → Ste
 
 ### Failure — surface and re-prompt, never stall
 
-Same contract as [agent/planning.md § Creating an Agent inline](../agent/planning.md#creating-an-agent-inline): on build failure, surface the `error`, AskUserQuestion `Retry create` / `Skip (defer)`, Skip → placeholder + report, never halt. A verify-time I/O mismatch is a **warning** (rewire matched, report missing/extra), never a block. **"Already exists" is NOT a failure** — if the build reports the project directory already exists or `project add` returns "Project name already exists" (a sibling from an interrupted prior run not surfaced by the pre-gate local check), register it if needed, then rediscover + bind.
+Same contract as [agent/planning.md § Creating an Agent inline](../agent/planning.md#creating-an-agent-inline): on build failure, surface the `error`, AskUserQuestion `Retry create` / `Skip (defer)`, Skip → placeholder + report, never halt. A verify-time I/O mismatch is a **warning** (rewire matched, report missing/extra), never a block. **"Already exists" is NOT a failure** — an interrupted prior run already built the sibling; adopt it per [registry-discovery.md § Create-on-Missing → 3b](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Agentic-process tokens for that procedure: init verb `uip maestro bpmn init`; kind markers `Category: "processOrchestration"` (registered) / `.bpmn` file on disk (unregistered).
 
 ## tasks.md Entry Format
 
