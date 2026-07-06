@@ -428,6 +428,8 @@ jobs:
             echo "UIPATH_CLI_TENANT_NAME=$TENANT_NAME"
             echo "UIPATH_CLI_TENANT_ID=$TENANT_ID"
             echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
+            echo "CODED_APPS_TEST_PROJECT_ID=${{ secrets.CODED_APPS_TEST_PROJECT_ID }}"
+            echo "CODED_APPS_TEST_SOLUTION_ID=${{ secrets.CODED_APPS_TEST_SOLUTION_ID }}"
           } >> "$GITHUB_ENV"
           mkdir ~/.uipath
           run_uip_with_tenant "$TENANT_NAME" login status --output json
@@ -512,6 +514,8 @@ jobs:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
+          CODED_APPS_TEST_PROJECT_ID: ${{ secrets.CODED_APPS_TEST_PROJECT_ID }}
+          CODED_APPS_TEST_SOLUTION_ID: ${{ secrets.CODED_APPS_TEST_SOLUTION_ID }}
         run: |
           python - <<'PY'
           import os
@@ -522,6 +526,8 @@ jobs:
               "AWS_BEARER_TOKEN_BEDROCK",
               "ANTHROPIC_API_KEY",
               "TRACES_SMOKE_PROCESS_KEY",
+              "CODED_APPS_TEST_PROJECT_ID",
+              "CODED_APPS_TEST_SOLUTION_ID",
           )
           values = [os.environ[name] for name in names if len(os.environ.get(name, "")) >= 8]
           if not values:
