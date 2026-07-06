@@ -135,7 +135,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
           "label": "Notes",
           "type": "string",
           "direction": "output",
-          "variable": "vars.notes",
+          "variable": "notes",
           "required": false
         },
         {
@@ -143,7 +143,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
           "label": "Decision",
           "type": "string",
           "direction": "output",
-          "variable": "vars.decision",
+          "variable": "decision",
           "required": true
         }
       ],
@@ -277,7 +277,7 @@ The HITL node exposes two outputs (`output`, `status`). After adding it, **compl
 
 Include entries for **all** nodes in the flow, not just the HITL node. Replace the entire array — do not append. Add one `output` entry and one `status` entry per HITL node — no per-field entries. Output and inOut field values from the task are accessible via `$vars.<nodeId>.output.<fieldId>` at runtime (fields are embedded in the output object, not exposed as separate node variables).
 
-Output-direction and inOut-direction fields are also materialized as workflow-level globals in `variables.globals` with `direction: "inout"` — these are accessible directly as `$vars.<field.variable>` without a node prefix (e.g. `variable: "decision"` → `$vars.decision`).
+> **Scripts must always use `$vars.<nodeId>.output.<fieldId>`.** The `field.variable` property declares a name for the global alias — do NOT use that name directly in scripts. `$vars.decision` (global alias) and `$vars.<nodeId>.output.decision` (field ID access) are different paths and only the field ID path is reliable in script nodes. See Critical Rule 10 in SKILL.md.
 
 ---
 
@@ -307,14 +307,14 @@ This is the exact JSON a correctly authored QuickForm `fields[]` entry looks lik
       "type": "date",
       "label": "Approved Date",
       "direction": "output",
-      "variable": "vars.approvedDate"
+      "variable": "approvedDate"
     },
     {
       "id": "approved",
       "type": "boolean",
       "label": "Approved",
       "direction": "output",
-      "variable": "vars.approved"
+      "variable": "approved"
     }
   ],
   "outcomes": [
@@ -377,7 +377,7 @@ Business description: *"Human sees the AI-drafted email, can edit it, then click
 ```json
 "fields": [
   { "id": "recipient",  "label": "Recipient",  "type": "string", "direction": "input", "binding": "vars.draft1.output.recipient" },
-  { "id": "emailbody",  "label": "Email Body", "type": "string", "direction": "inOut", "binding": "vars.draft1.output.body", "variable": "vars.emailBody" }
+  { "id": "emailbody",  "label": "Email Body", "type": "string", "direction": "inOut", "binding": "vars.draft1.output.body", "variable": "emailBody" }
 ],
 "outcomes": [
   { "id": "send",    "name": "Send",    "type": "string", "isPrimary": true,  "action": "Continue" },
@@ -392,8 +392,8 @@ Business description: *"Agent couldn't extract vendor name or cost center. Human
 ```json
 "fields": [
   { "id": "rawextract",  "label": "Raw Extract",  "type": "string", "direction": "input",  "binding": "vars.extract1.output.rawText" },
-  { "id": "vendorname",  "label": "Vendor Name",  "type": "string", "direction": "output", "variable": "vars.vendorName",  "required": true },
-  { "id": "costcenter",  "label": "Cost Center",  "type": "string", "direction": "output", "variable": "vars.costCenter", "required": true }
+  { "id": "vendorname",  "label": "Vendor Name",  "type": "string", "direction": "output", "variable": "vendorName",  "required": true },
+  { "id": "costcenter",  "label": "Cost Center",  "type": "string", "direction": "output", "variable": "costCenter", "required": true }
 ],
 "outcomes": [
   { "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }
@@ -408,7 +408,7 @@ Business description: *"If agent confidence is low, escalate. Human sees reasoni
 "fields": [
   { "id": "reasoning",       "label": "Agent Reasoning",  "type": "string",   "direction": "input",  "binding": "vars.classify1.output.reasoning" },
   { "id": "confidencescore", "label": "Confidence Score", "type": "number", "direction": "input",  "binding": "vars.classify1.output.score" },
-  { "id": "notes",           "label": "Notes",            "type": "string",   "direction": "output", "variable": "vars.notes" }
+  { "id": "notes",           "label": "Notes",            "type": "string",   "direction": "output", "variable": "notes" }
 ],
 "outcomes": [
   { "id": "retry",    "name": "Retry",    "type": "string", "isPrimary": true,  "action": "Continue" },
