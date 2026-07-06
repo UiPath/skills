@@ -6,7 +6,7 @@
       "Key": "b2c3d4e5-f6a7-8901-2345-6789abcdef01",
       "Name": "ComputeJobs",
       "Path": "ComputeJobs",
-      "Description": "Folder hosting compute-heavy automations including the (misconfigured) MisconfiguredForeground process and the foreground ForegroundHolder process.",
+      "Description": "Folder hosting compute-heavy automations including the (misconfigured) ExpenseValidation process and the foreground AttendedReportJob process.",
       "Type": "Standard",
       "ParentKey": ""
     },

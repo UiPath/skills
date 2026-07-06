@@ -1,7 +1,7 @@
 {
   "Result": "Success",
   "Code": "JobGet",
-  "_doc": "Earlier ForegroundHolder run that was still Running when the failing job (c0a1b2c3) tried to start. By the time the diagnostic agent fetches this, the job has Completed normally (EndTime > failing job's StartTime).",
+  "_doc": "Earlier AttendedReportJob run that was still Running when the failing job (c0a1b2c3) tried to start. By the time the diagnostic agent fetches this, the job has Completed normally (EndTime > failing job's StartTime).",
   "Data": {
     "Key": "b0a1b2c3-d4e5-4678-9012-3456789abcde",
     "StartTime": "2026-05-12T10:14:50.000Z",
@@ -14,7 +14,7 @@
     "BatchExecutionKey": "8c1d6b30-09a2-4b5c-8e7f-1a2b3c4d5e6a",
     "Info": "",
     "CreationTime": "2026-05-12T10:14:49.852Z",
-    "ReleaseName": "ForegroundHolder",
+    "ReleaseName": "AttendedReportJob",
     "Type": "Unattended",
     "EnvironmentVariables": "",
     "OutputArguments": "{}",

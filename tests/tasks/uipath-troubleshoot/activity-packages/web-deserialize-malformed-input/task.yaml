@@ -44,7 +44,7 @@ initial_prompt: |
   febd892d-787b-4008-a573-4af66cf710cf. Why did it fail and how do I
   fix it?
 
-  The project source for the failing process is at ./WebRepro/ in the
+  The project source for the failing process is at ./WebApiClient/ in the
   current working directory.
 
 success_criteria:

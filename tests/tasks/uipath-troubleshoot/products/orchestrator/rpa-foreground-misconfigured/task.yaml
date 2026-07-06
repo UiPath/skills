@@ -1,10 +1,10 @@
 task_id: skill-troubleshoot-rpa-foreground-misconfigured
 description: >
-  UiPath diagnostic agent must diagnose a faulted MisconfiguredForeground
+  UiPath diagnostic agent must diagnose a faulted ExpenseValidation
   job that failed with System.InvalidOperationException ("A foreground
   process is already running"). The same exception family as the
   rpa-foreground-already-running scenario, but the cause-branch is
-  different: MisconfiguredForeground's Main.xaml performs no UI
+  different: ExpenseValidation's Main.xaml performs no UI
   interaction (LogMessage + Delay only) yet project.json declares
   runtimeOptions.requiresUserInteraction = true, so the workflow
   unnecessarily competes for the foreground slot. The agent must match
@@ -40,7 +40,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My MisconfiguredForeground process just faulted in Orchestrator a few
+  My ExpenseValidation process just faulted in Orchestrator a few
   seconds after it started — can you investigate? The project source is
   in the current working directory.
 

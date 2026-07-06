@@ -6,7 +6,7 @@ matched the `ambiguous-selector.md` playbook at high confidence.
 
 ## What this scenario reproduces
 
-- Process: `ERN` (entry point `Amb.xaml`)
+- Process: `ERN` (entry point `EmployeeRow.xaml`)
 - Failing activity: `NClick "Click 'Airi Satou'"` inside `NApplicationCard "Edge DataTables  Javascript table library"`
 - Selector authored too generically (`SearchSteps='FuzzySelector'`, no `FullSelectorArgument` set):
 
@@ -27,7 +27,7 @@ matched the `ambiguous-selector.md` playbook at high confidence.
 | Layer | Source |
 |---|---|
 | `mocks/uip` + `mocks/uip.cmd` | shared from `../_shared/mock_template/` (manifest-driven Python dispatcher) |
-| `process/` | minimal UiPath project where `Amb.xaml` encodes the ambiguous-selector failure (only the failing entry point is shipped; the original project's other entry-point XAMLs and binary `.screenshots/`/`.storage/`/`.uia/` directories are stripped) |
+| `process/` | minimal UiPath project where `EmployeeRow.xaml` encodes the ambiguous-selector failure (only the failing entry point is shipped; the original project's other entry-point XAMLs and binary `.screenshots/`/`.storage/`/`.uia/` directories are stripped) |
 | `fixtures/mocks/responses/*.json` | verbatim `uip` CLI responses captured from the original session (`or folders list`, `or jobs list --state Faulted`, `or jobs get`, `or jobs logs --level Error`, `or jobs history`) |
 | `fixtures/mocks/responses/manifest.json` | dispatch table mapping each command pattern to its fixture |
 
@@ -51,4 +51,4 @@ python tests/tasks/uipath-troubleshoot/_shared/scripts/generate_scenario.py \
     --scenario-name uia-ambiguous-node-test --apply
 ```
 
-Note: re-running the generator restores the full `process/` snapshot (including the other entry-point XAMLs and binary subdirs). Strip those again after regeneration — only `Amb.xaml`, `project.json`, and `project.uiproj` are needed for the test.
+Note: re-running the generator restores the full `process/` snapshot (including the other entry-point XAMLs and binary subdirs). Strip those again after regeneration — only `EmployeeRow.xaml`, `project.json`, and `project.uiproj` are needed for the test.

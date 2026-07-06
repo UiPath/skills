@@ -1,5 +1,5 @@
 {
-  "Name": "ForegroundHolder",
+  "Name": "AttendedReportJob",
   "ProjectType": "Process",
   "Description": "Repro: long-running foreground process that holds the foreground job slot (triggers System.InvalidOperationException when a second foreground process tries to start).",
   "MainFile": "Main.xaml"
