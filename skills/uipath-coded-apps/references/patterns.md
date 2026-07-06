@@ -880,7 +880,7 @@ https://cloud.uipath.com/embed_/{orgName}/{tenantName}/actions_/current-task/tas
 
 ### API-to-Cloud URL mapping
 
-**CRITICAL:** The API base URL (`VITE_UIPATH_BASE_URL`) and the cloud UI URL use different hostnames. You must map correctly when constructing task URLs:
+**CRITICAL:** The API base URL (read from the `<meta name="uipath:base-url">` tag) and the cloud UI URL use different hostnames. You must map correctly when constructing task URLs:
 
 | API URL | Cloud UI URL |
 |---------|-------------|
@@ -929,11 +929,16 @@ export const getEmbedTaskUrl = (taskUrl: string): string => {
   }
 };
 
+/** Reads a value from a <meta name="uipath:*"> tag injected at runtime. */
+function readUipathMeta(key: string): string {
+  return document.querySelector(`meta[name="uipath:${key}"]`)?.getAttribute('content') ?? '';
+}
+
 /** Constructs a standard Action Center task URL from components */
 export function buildTaskUrl(taskId: number | string): string {
-  const baseUrl = import.meta.env.VITE_UIPATH_BASE_URL || '';
-  const org = import.meta.env.VITE_UIPATH_ORG_NAME || '';
-  const tenant = import.meta.env.VITE_UIPATH_TENANT_NAME || '';
+  const baseUrl = readUipathMeta('base-url');
+  const org = readUipathMeta('org-name');
+  const tenant = readUipathMeta('tenant-name');
   const cloudHost = apiToCloudUrl(baseUrl);
   return `${cloudHost}/${org}/${tenant}/actions_/current-task/tasks/${taskId}`;
 }
