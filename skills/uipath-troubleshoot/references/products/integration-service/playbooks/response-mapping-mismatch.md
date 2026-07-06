@@ -21,6 +21,8 @@ What can cause it:
 - The activity's declared output type no longer matches what the provider returns
 - A field returned as a different type than the TypedDataTable column expects (e.g. string where a number is mapped)
 
+Concrete scenario (`DAP-RT-1005`): a workflow was published months ago with a Salesforce activity package whose "Get Record" output declares `AnnualRevenue` as a number. The vendor (or a connector schema update) now returns that field as a string, or renames/removes it. Every run since: the provider call itself succeeds (HTTP 200, data returned), but IS fails to deserialize the payload into the activity's generated output type — the job faults at the mapping step with no provider error. Nothing changed in the workflow; the schema drifted underneath it. The same shape triggers `1155`/`1156` when the drifted field feeds a TypedDataTable column.
+
 What to look for:
 - No provider error status — the failure is IS-side mapping, not a provider error (the call returned data)
 - The activity package version vs the current connector schema (drift is the usual cause of `1005`)
