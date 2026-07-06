@@ -75,7 +75,7 @@ uip is connections create "<connector-key>" --output json
 4. **On failure — surface and re-prompt, never stall.** The create failed if the command **exits non-zero**, the JSON `Result` is `"Failure"`, or no `Data.ConnectionId` is returned (e.g. OAuth denied/failed, browser closed, connector misconfigured). On auth failure the command **exits** (verified: exit 1) — it does not hang. Do NOT silently proceed and do NOT leave planning incomplete:
    1. Show the user the failure `Message` (and `Instructions` if present) verbatim — do not invent a cause. Example: `{ "Result": "Failure", "Message": "Authentication failed", "Instructions": "Check credentials and try again." }`.
    2. Re-prompt via **AskUserQuestion**: **Retry create** (re-run `is connections create`) / **Skip (defer)**.
-   3. On **Skip**, or after a repeated failure, fall to Selection rule 4 — mark `<UNRESOLVED>`, emit the placeholder, and **finish writing `tasks.md`** so planning completes.
+   3. On **Skip**, or after the 2nd consecutive failed **Retry create**, fall to Selection rule 4 — mark `<UNRESOLVED>`, emit the placeholder, and **finish writing `tasks.md`** so planning completes.
 
 **Headless / no-browser fallback** (CI, remote sandbox, no display) — the agent cannot complete browser OAuth. Either ask the user to run `! uip is connections create "<connector-key>" --output json` in their own terminal and paste back the `ConnectionId`, or run with `--no-wait` to get the pending authorization URL, surface it, and poll until `State: Enabled`.
 

@@ -53,6 +53,8 @@ uip maestro case processes incidents <PROCESS_KEY> --folder-key <FOLDER_KEY> --o
 
 > **Empty incidents →** skip to Step 3. **Invalid instance ID error →** recheck Step 1 output.
 
+> **Known by-design incident under `case debug`: `170007`** ("Failure to start the Orchestrator job" / "The job's associated process could not be found") on a task bound to an **inline-built non-agent sibling (RPA process or API workflow)** — debug does not provision non-agent siblings, so this is expected, not a binding bug. Do not edit the task's `folderPath:""` binding; verify via a full solution deploy. See [plugins/tasks/rpa/planning.md § Creating an RPA process inline](plugins/tasks/rpa/planning.md#creating-an-rpa-process-inline) / [plugins/tasks/api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline). The same incident on a **tenant-resolved** process task is a real missing/undeployed process — troubleshoot normally.
+
 ## Step 3 — Fetch runtime variable state
 
 Get the variable values at the time of failure to understand what data each stage/task was working with:

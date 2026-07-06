@@ -240,8 +240,8 @@ uip maestro case registry get <uiPathActivityTypeId> --type typecache-activities
 
 # --local: in-solution (offline) discovery of sibling projects (.uipx in cwd/parent/grandparent), no tenant/login
 uip maestro case registry list --local --output json
-uip maestro case registry search "<Name>" --type <agent|api> --local --output json    # matches by name (keyword); `agent` = agent sibling, `api` = api-workflow sibling
-uip maestro case registry get "<entityKey-or-projectId>" --type <agent|api> --local --output json   # matches by key, NOT name
+uip maestro case registry search "<Name>" --type <agent|process|api> --local --output json    # matches by name (keyword); `agent` = agent, `process` = RPA sibling (registry token — no local `rpa` type), `api` = api-workflow
+uip maestro case registry get "<entityKey-or-projectId>" --type <agent|process|api> --local --output json   # matches by key, NOT name
 ```
 
 Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `typecache-activities`, `typecache-triggers`, `action-apps`, `solution`.
@@ -267,7 +267,7 @@ Options for `get`:
 | `<identifier>` | **(required)** The entityKey (process types), id (action-apps), or uiPathActivityTypeId (typecache) of the resource |
 | `-t, --type <type>` | Limit to a specific resource type |
 | `--connection-id <id>` | Connection UUID for connector-specific IS field metadata. Only applies to `typecache-activities` / `typecache-triggers` results |
-| `--local` | Resolve against in-solution sibling projects (offline; no login). On `list`/`search`/`get`. Local types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`. |
+| `--local` | Resolve against in-solution sibling projects (offline; no login). On `list`/`search`/`get`. Local types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`. There is **no local `rpa` type** — an RPA sibling registers/searches as `process` (`Category:"process"`); `rpa` is only a task-node `type` / `tasks describe` token. |
 
 **`--local` semantics.** Discovers sibling projects from the enclosing solution `.uipx` (walks cwd → parent → grandparent). Keys (`--output json`, PascalCased): `search`/`get` nest each match under `Data.Resources[].Resource.{EntityKey,Name,Category,Folders[].FullyQualifiedName,Inputs,Outputs,Source}`; `list` flattens to `Data.Resources[].{EntityKey,Name,Category,Source}` (no `Resource` wrapper, no I/O). **`get --local` matches the identifier only against `entityKey`/`.uipx` project Id — never the display name; to find a sibling by name use `search "<Name>" --local`.** A freshly-built, unpacked sibling's `EntityKey` equals its `.uipx` project Id. No solution found → `Result:"Failure"`, `Message:"No solution found for --local"`, exit 1.
 

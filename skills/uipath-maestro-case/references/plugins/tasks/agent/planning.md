@@ -118,7 +118,7 @@ Delivery: a **coded** sibling delivered via **`uip solution upload`** then **ins
 
 ### Failure — surface and re-prompt, never stall
 
-Mirrors [connector-integration.md § Creating a Connection](../../../connector-integration.md#creating-a-connection) step 4. If a build sub-agent returns `built:false` (or dies), show its `error` verbatim, then AskUserQuestion: `Retry create` / `Skip (defer)`. On `Skip` or repeated failure, fall to the Unresolved Fallback above (placeholder + completion-report note) and finish planning — never halt. A verify-time I/O mismatch is a **warning**, not a failure: rewire matched fields, report missing/extra, continue.
+Mirrors [connector-integration.md § Creating a Connection](../../../connector-integration.md#creating-a-connection) step 4. If a build sub-agent returns `built:false` (or dies), show its `error` verbatim, then AskUserQuestion: `Retry create` / `Skip (defer)`. On `Skip` or after the 2nd consecutive failed `Retry create`, fall to the Unresolved Fallback above (placeholder + completion-report note) and finish planning — never halt. A verify-time I/O mismatch is a **warning**, not a failure: rewire matched fields, report missing/extra, continue.
 
 > **"Already exists" is NOT a failure** — an interrupted prior run already built the sibling; adopt it per [registry-discovery.md § Create-on-Missing → 3b](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Agent tokens for that procedure: init verb `uip agent init`; kind markers `Category: "agent"` (registered) / `agent.json` on disk (unregistered).
 

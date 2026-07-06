@@ -38,6 +38,7 @@ For RPA robot tasks specifically, prefer [rpa](../rpa/planning.md). For Coded wo
 
 If no match is found across both cache files after `registry pull`:
 
+- **If this task was PROCESS-defaulted from an ambiguous PROCESS/RPA reading, re-surface the ambiguity first** — an `rpa` reading is creatable at the Rule 17 gate, a `process` reading is placeholder-only (see [rpa/planning.md § When to Use](../rpa/planning.md#when-to-use)). Only after the user confirms `process` (or picks nothing) continue below.
 - Mark the task line: `<UNRESOLVED: process "<name>" in folder "<folder>" not found in registry>`
 - Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1).
 - Continue planning for remaining tasks.

@@ -112,7 +112,7 @@ Identical to [agent Step 3](../agent/planning.md#creating-an-agent-inline) excep
 
 ### Failure — surface and re-prompt, never stall
 
-Same contract as agents — [agent/planning.md § Failure](../agent/planning.md#creating-an-agent-inline): on `built:false` (or a dead sub-agent) show its `error` verbatim, then AskUserQuestion `Retry create` / `Skip (defer)`; on Skip or repeated failure fall to the Unresolved Fallback above (placeholder + completion-report note) — never halt. A verify-time I/O mismatch is a **warning**, not a failure: rewire matched fields, report missing/extra, continue.
+Same contract as agents — [agent/planning.md § Failure](../agent/planning.md#creating-an-agent-inline): on `built:false` (or a dead sub-agent) show its `error` verbatim, then AskUserQuestion `Retry create` / `Skip (defer)`; on Skip or after the 2nd consecutive failed `Retry create` fall to the Unresolved Fallback above (placeholder + completion-report note) — never halt. A verify-time I/O mismatch is a **warning**, not a failure: rewire matched fields, report missing/extra, continue.
 
 > **"Already exists" is NOT a failure** — an interrupted prior run already built the sibling; adopt it per [registry-discovery.md § Create-on-Missing → 3b](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). api-workflow tokens for that procedure: init verb `uip api-workflow init`; kind markers `Category: "api"` (registered) / `project.uiproj` `ProjectType: "Api"` (unregistered); stale-declaration category subpath `process/api/`.
 
