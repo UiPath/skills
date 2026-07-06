@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the column-schema-mismatch (branch 5) of the excel-activities/append-range-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (COMException 0x800A03EC from Range.set_Value during append cell-write) → jobs logs (DataTable columns ['EmployeeId', 'HireDate', 'FullName', 'Department'] vs. target sheet header ['FullName', 'EmployeeId', 'Department', 'HireDate'] — Append writes by POSITION, so numeric EmployeeId lands in target's FullName text column, triggering Excel COM cell-write rejection) → workflow source. The column ORDER mismatch between source and target is the smoking gun.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "1d4a124ef4.json"},
+    {"match": "or folders list --output json", "file": "1d4a124ef4.json"},
+    {"match": "or jobs list --folder-key \"f0099999-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "fb4f8a02fb.json"},
+    {"match": "or jobs list --folder-key f0099999-3333-4444-5555-666677778888 --state Faulted --output json", "file": "fb4f8a02fb.json"},
+    {"match": "or jobs get \"ff222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "2d254f8714.json"},
+    {"match": "or jobs get ff222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "2d254f8714.json"},
+    {"match": "or jobs history \"ff222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "88af12778b.json"},
+    {"match": "or jobs history ff222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "88af12778b.json"},
+    {"match": "or jobs logs \"ff222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "019eb08ebf.json"},
+    {"match": "or jobs logs ff222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "019eb08ebf.json"}
+  ]
+}

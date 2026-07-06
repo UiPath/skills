@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the sensitivity-label-rejection (branch 5) of the excel-activities/excel-application-card-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (BusinessException referencing Microsoft Purview sensitivity label 'Confidential - Client Data') → jobs logs (workbook label detection + card config inspection showing SensitivityLabel and SensitivityOperation properties NOT configured + package v2.24.7 supports these properties) → workflow source. The protected workbook with no label-handling on the card is the smoking gun.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "b99242ce80.json"},
+    {"match": "or folders list --output json", "file": "b99242ce80.json"},
+    {"match": "or jobs list --folder-key \"f00ddddd-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "e0ae5a1555.json"},
+    {"match": "or jobs list --folder-key f00ddddd-3333-4444-5555-666677778888 --state Faulted --output json", "file": "e0ae5a1555.json"},
+    {"match": "or jobs get \"aa333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "d819771869.json"},
+    {"match": "or jobs get aa333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "d819771869.json"},
+    {"match": "or jobs history \"aa333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "19067a612e.json"},
+    {"match": "or jobs history aa333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "19067a612e.json"},
+    {"match": "or jobs logs \"aa333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "57ef23ff3c.json"},
+    {"match": "or jobs logs aa333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "57ef23ff3c.json"}
+  ]
+}

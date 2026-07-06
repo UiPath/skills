@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures for read-text-missing-container. The modern Word-pack Read Text is placed outside a Use Word File and faults as invalid at runtime.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "36a7c93e47.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"e6f7a8b9-c0d1-4193-8b1c-7081920314a5\" --state Faulted --output json",
+      "file": "28bf6cb314.json"
+    },
+    {
+      "match": "or jobs list --folder-key e6f7a8b9-c0d1-4193-8b1c-7081920314a5 --state Faulted --output json",
+      "file": "28bf6cb314.json"
+    },
+    {
+      "match": "or jobs get \"f7a8b9c0-d1e2-4204-9c2d-81920314a5b6\" --output json",
+      "file": "c1ee1a29c7.json"
+    },
+    {
+      "match": "or jobs get f7a8b9c0-d1e2-4204-9c2d-81920314a5b6 --output json",
+      "file": "c1ee1a29c7.json"
+    },
+    {
+      "match": "or jobs logs \"f7a8b9c0-d1e2-4204-9c2d-81920314a5b6\" --level Error --output json",
+      "file": "bda652460b.json"
+    },
+    {
+      "match": "or jobs logs f7a8b9c0-d1e2-4204-9c2d-81920314a5b6 --level Error --output json",
+      "file": "bda652460b.json"
+    },
+    {
+      "match": "or jobs logs \"f7a8b9c0-d1e2-4204-9c2d-81920314a5b6\" --output json",
+      "file": "c97ff73448.json"
+    },
+    {
+      "match": "or jobs logs f7a8b9c0-d1e2-4204-9c2d-81920314a5b6 --output json",
+      "file": "c97ff73448.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

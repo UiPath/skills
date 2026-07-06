@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures for export-pdf-missing-output-dir. Export to PDF faults with generic 'Command Failed' because the output folder doesn't exist.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "b590f583da.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a3b4c5d6-e7f8-4193-9a0b-1c2d3e4f5061\" --state Faulted --output json",
+      "file": "6c791a8ea7.json"
+    },
+    {
+      "match": "or jobs list --folder-key a3b4c5d6-e7f8-4193-9a0b-1c2d3e4f5061 --state Faulted --output json",
+      "file": "6c791a8ea7.json"
+    },
+    {
+      "match": "or jobs get \"b4c5d6e7-f8a9-4204-ab1c-2d3e4f506172\" --output json",
+      "file": "567df0cf7d.json"
+    },
+    {
+      "match": "or jobs get b4c5d6e7-f8a9-4204-ab1c-2d3e4f506172 --output json",
+      "file": "567df0cf7d.json"
+    },
+    {
+      "match": "or jobs logs \"b4c5d6e7-f8a9-4204-ab1c-2d3e4f506172\" --level Error --output json",
+      "file": "db7f03e276.json"
+    },
+    {
+      "match": "or jobs logs b4c5d6e7-f8a9-4204-ab1c-2d3e4f506172 --level Error --output json",
+      "file": "db7f03e276.json"
+    },
+    {
+      "match": "or jobs logs \"b4c5d6e7-f8a9-4204-ab1c-2d3e4f506172\" --output json",
+      "file": "26a55dbd49.json"
+    },
+    {
+      "match": "or jobs logs b4c5d6e7-f8a9-4204-ab1c-2d3e4f506172 --output json",
+      "file": "26a55dbd49.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}
