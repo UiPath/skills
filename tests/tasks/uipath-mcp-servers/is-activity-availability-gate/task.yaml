@@ -1,0 +1,50 @@
+task_id: skill-mcp-servers-is-activity-availability-gate
+description: |
+  Attempt to wrap a Jira IS activity as an MCP tool on a tenant where IS-activity MCP tools are not rolled out: `candidates --category is-activity` fails with `Reason: IsActivityNotAvailable`. Per the skill's Availability gate the agent must STOP — no create attempt, no --force without user approval — and report the fallback (resource/raw tools). Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-mcp-servers, smoke, 'mode:diagnose']
+agent:
+  type: claude-code
+  allowed_tools: [Bash, Read, Write]
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+initial_prompt: |
+  For an IS-activity tool, read references/is-activity-workflow.md and use the exact `uip agenthub mcp-tools create-is-activity` flags it specifies; for a resource tool, read the resource guidance and run `mcp-tools candidates`/`template` as it directs. Use the exact CLI commands and flags the skill documents — do not invent flag names.
+
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Add a Jira Create Issue tool to my `test-mcp-skill` MCP server in
+  the Shared folder. The target is the Jira Integration Service activity
+  (connector uipath-atlassian-jira). I am running against my production
+  tenant on cloud.uipath.com. There is no user available for follow-up
+  questions in this session — if you hit a blocker you cannot resolve
+  within the skill's rules, stop and write up the outcome instead of
+  working around it.
+
+  Refs available:
+    - connector key: uipath-atlassian-jira
+    - MCP server slug: test-mcp-skill, in Shared folder (key: folder-mock-shared)
+
+  Save to the sandbox cwd:
+    - trajectory.md — every uip call you ran, one line each
+    - summary.txt — the outcome; if the tool could not be created, say why
+      and which alternative tool kinds the user could use instead
+success_criteria:
+- {type: file_exists, path: summary.txt, description: '`summary.txt` was produced'}
+- {type: command_executed, description: Agent attempted is-activity discovery and hit the availability
+    gate, tool_name: Bash, command_pattern: uip\s+agenthub\s+mcp-tools\s+candidates\s+--category\s+is-activity,
+  min_count: 1}
+- {type: command_not_executed, description: Agent did NOT attempt create-is-activity after the gate
+    error, tool_name: Bash, command_pattern: uip\s+agenthub\s+mcp-tools\s+create-is-activity, weight: 3.0}
+- {type: command_not_executed, description: Agent did NOT bypass the gate with --force without user
+    approval, tool_name: Bash, command_pattern: uip\s+agenthub\s+mcp-tools\s+.*--force, weight: 2.0}
+- type: file_contains
+  description: summary names the documented fallback tool kind (resource/raw) for the user
+  path: summary.txt
+  includes: [resource]
+run_limits: {max_turns: 40}
