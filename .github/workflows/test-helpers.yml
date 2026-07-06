@@ -7,6 +7,7 @@ on:
       - 'tests/tasks/uipath-maestro-case/**'
       - 'tests/scripts/**'
       - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
+      - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
       - '.github/workflows/test-helpers.yml'
   workflow_dispatch:
 
@@ -80,3 +81,23 @@ jobs:
       # (see #1203).
       - name: Run catalog guard tests
         run: pytest tests/scripts/test_catalog_build_guards.py -v
+
+  telemetry-hook-tests:
+    runs-on: ubuntu-latest
+    name: telemetry hook contract guard
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Runs hooks/send-telemetry.sh with a stubbed uip and asserts the
+      # eventName mapping (session-start/-end/completion/tool-use), lifecycle
+      # fields, and drop paths; and hooks/set-session-env.sh against a temp
+      # CLAUDE_ENV_FILE (export line, host-wins, idempotence, sanitization).
+      - name: Run telemetry hook tests
+        run: pytest tests/scripts/test_send_telemetry_hook.py tests/scripts/test_set_session_env_hook.py -v
