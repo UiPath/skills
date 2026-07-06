@@ -45,6 +45,7 @@ Harness has no subagent-spawning tool → execute each probe yourself, sequentia
 2. **Close each probe before opening the next**: write its structured return block (per confirm/eliminate item — supported / contradicted / no data, raw file + field; open gaps; cross-domain signals) into notes.md under `## Probe h{n}`. Adjudication reads ONLY these blocks — not your memory of the fetches.
 3. A probe surfacing a different-domain signal still stops at one hop — record it for adjudication; do not chase it mid-probe.
 4. Do not adjudicate early. A dominant-looking first probe does not skip the remaining candidates — elimination evidence from later probes is what separates siblings.
+5. **Single-candidate collapse:** when only one viable candidate exists (the upstream/elsewhere candidate has no concrete signal to chase), the probe round collapses to targeted fetches for that candidate's confirm/eliminate items. The structure still applies: per-item verdicts in notes.md, then the verifier.
 
 Then adjudicate per §3 unchanged.
 
