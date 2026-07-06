@@ -37,6 +37,17 @@ Return (structured): per confirm/eliminate item — supported / contradicted / n
 
 Probes may run concurrently because each writes to its own `raw/h{n}-*` namespace and nothing else.
 
+### Serial fallback — no subagent tool
+
+Harness has no subagent-spawning tool → execute each probe yourself, sequentially, in this context. Same protocol, same budget; only the execution changes:
+
+1. Take candidates in §1 rank order. Per candidate, execute the probe-prompt rules verbatim (read-only, documented commands only, `raw/h{n}-*` namespace, retry caps).
+2. **Close each probe before opening the next**: write its structured return block (per confirm/eliminate item — supported / contradicted / no data, raw file + field; open gaps; cross-domain signals) into notes.md under `## Probe h{n}`. Adjudication reads ONLY these blocks — not your memory of the fetches.
+3. A probe surfacing a different-domain signal still stops at one hop — record it for adjudication; do not chase it mid-probe.
+4. Do not adjudicate early. A dominant-looking first probe does not skip the remaining candidates — elimination evidence from later probes is what separates siblings.
+
+Then adjudicate per §3 unchanged.
+
 ## 3. Adjudicate
 
 You (not the probes) decide, in notes.md:
@@ -78,7 +89,9 @@ Route on the verdict:
 - `shallow` with factual gaps → ONE targeted re-fetch of the named datum (yourself or a single probe), then re-check. Still failing → treat as textual.
 - `shallow` with textual gaps → present at reduced confidence with the gap named. **Cause label and remediation path are separable**: an imprecise cause name does NOT invalidate the matched playbook's `## Resolution` procedure — an interactive resolution (e.g., apply recovered selector) still runs; never switch to another playbook's resolution just because it names the cause better. Only a resolution-alignment gap (check 3) changes the fix branch.
 
+No subagent tool → run the verifier's four checks yourself: re-read notes.md and every raw file the conclusion cites, answer each check in writing in notes.md under `## Self-verify`, then route on the verdict as above. Independence is lost — compensate by presenting at one confidence level lower than the adjudication assigned unless every check passes with a cited datum.
+
 ## Boundaries
 
 - Probes and the verifier never talk to the user; every user question is asked by you, directly, after they return.
-- Total spawn budget per investigation: one probe round (2–4 probes) + optionally one verifier + at most one factual re-fetch round. Beyond that, present what is known with gaps named.
+- Total spawn budget per investigation: one probe round (2–4 probes) + optionally one verifier + at most one factual re-fetch round. Beyond that, present what is known with gaps named. The budget counts probes, not subagents — serial-fallback probes consume it identically.

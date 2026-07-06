@@ -91,7 +91,7 @@ Load `references/escalation.md` when ANY of:
 5. **Checklist fails after the re-fetch** and no diagnostic-recommendation terminal applies.
 6. **Evidence or new user data contradicts the matched playbook's core precondition.**
 
-Escalation = 2–4 parallel read-only probe subagents (one per candidate playbook + one "origin is upstream/elsewhere") + your adjudication + a conditional fresh-eyes verifier. Protocol, prompt templates, and spawn budget: `references/escalation.md`.
+Escalation = 2–4 parallel read-only probe subagents (one per candidate playbook + one "origin is upstream/elsewhere") + your adjudication + a conditional fresh-eyes verifier. Protocol, prompt templates, and spawn budget: `references/escalation.md`. No subagent-spawning tool in this harness → same protocol, probes executed serially in this context (`references/escalation.md` § Serial fallback).
 
 ## 8. Present
 
