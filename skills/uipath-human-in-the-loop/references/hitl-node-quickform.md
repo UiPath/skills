@@ -430,7 +430,7 @@ After the HITL node, downstream nodes can reference:
 | `$vars.<nodeId>.output` | object | All `output` and `inOut` field values keyed by **field `id`** |
 | `$vars.<nodeId>.output.<fieldId>` | varies | Individual field value using the field's `id` (e.g. `$vars.invoiceReview1.output.decision`) |
 | `$vars.<nodeId>.status` | string | Selected outcome name (e.g. `"Approve"`, `"Reject"`) |
-| `$vars.<globalId>` | varies | Workflow-global variable for output/inOut fields — accessible without node prefix. The `globalId` equals `field.variable` directly (e.g. `variable: "notes"` → `$vars.notes`) |
+| `$vars.<globalId>` | varies | Workflow-global variable for output/inOut fields. `globalId` is `field.variable` with `vars.` stripped (e.g. `variable: "vars.notes"` → `$vars.notes`). **Do not use this path in scripts — use `$vars.<nodeId>.output.<fieldId>` instead.** |
 
 > **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `"decision"`), not by the `variable` property. The `variable` property (`"approvalResult"`) creates a separate workflow-global variable (`$vars.approvalResult`) — it does not change the key used in the output object. If a field has `"id": "dec1"` and `"variable": "vars.approvalResult"`, access it via the object as `$vars.nodeId.output.dec1`, or directly as `$vars.approvalResult`.
 >
