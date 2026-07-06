@@ -45,7 +45,7 @@ These are the things the CLI does not advertise in `--help`.
 
 5. **`mcp delete` looks up by slug, not GUID.** Passing a GUID returns 404.
 
-6. **For any `is-activity` tool, read [references/is-activity-workflow.md](references/is-activity-workflow.md) end-to-end before any CLI call.** It owns the cascade-asking gate, the action-triggered platform-IS reads, the `ActivityMetadata` schema, and the `inputSchema` / `designTimeLookups` rules. IS metadata authored from memory passes `--dry-run` but fails at runtime — do not skip the reference.
+6. **For any `is-activity` tool, read [references/is-activity-workflow.md](references/is-activity-workflow.md) end-to-end before any CLI call.** It owns the cascade-asking gate, the action-triggered platform-IS reads, the `ActivityMetadata` schema, and the `inputSchema` / `designTimeLookups` rules. IS metadata authored from memory passes `--dry-run` but fails at runtime — do not skip the reference. `Reason: IsActivityNotAvailable` from ANY is-activity verb → STOP immediately: no further is-activity calls (no create attempt "to confirm" — the error covers every verb), no `--force` without explicit user approval; offer `resource` / `raw` instead (reference §Availability).
 
 ## Server Types
 

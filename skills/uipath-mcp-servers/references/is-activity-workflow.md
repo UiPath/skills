@@ -6,7 +6,7 @@ Wrap an Integration Service connector activity as an MCP tool via `uip agenthub 
 
 ## Availability (rollout gate)
 
-IS-activity MCP tools are rolling out: live on alpha/staging; NOT yet on `cloud.uipath.com` (prod — server-side feature flag per tenant). CLI enforces this: `candidates --category is-activity` and `create-is-activity` fail fast with `Reason: IsActivityNotAvailable` on unavailable hosts. On that error: STOP — do not retry or work around. Tell the user the feature is not yet available on this environment; offer `resource` / `raw` tools instead. Re-run with `--force` ONLY when the user confirms the tenant is enrolled in the rollout. CLI versions without the gate: the create succeeds but yields a dead tool (hidden in UI, not invocable) — apply the same rule manually before authoring: base URL is `cloud.uipath.com` → stop and ask.
+IS-activity MCP tools are rolling out: live on alpha/staging; NOT yet on `cloud.uipath.com` (prod — server-side feature flag per tenant). CLI enforces this: `candidates --category is-activity` and `create-is-activity` fail fast with `Reason: IsActivityNotAvailable` on unavailable hosts. On that error: STOP — do not retry, do not run `create-is-activity` to "confirm" the gate (the error already covers every is-activity verb), do not work around. Tell the user the feature is not yet available on this environment; offer `resource` / `raw` tools instead. Re-run with `--force` ONLY when the user confirms the tenant is enrolled in the rollout. CLI versions without the gate: the create succeeds but yields a dead tool (hidden in UI, not invocable) — apply the same rule manually before authoring: base URL is `cloud.uipath.com` → stop and ask.
 
 ## Platform IS references — read by action
 

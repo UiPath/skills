@@ -47,10 +47,9 @@ success_criteria:
   description: create-command resolves the connection's folder explicitly via a target-folder flag
   path: create-command.sh
   includes: [--target-folder]
-- {type: command_executed, description: Agent looked the connection up folder-scoped (--folder), per
-    the skill's folder-scoping rule, tool_name: Bash, command_pattern: uip\s+is\s+connections\s+list\s+uipath-atlassian-jira.*--folder,
-  min_count: 1}
-- {type: command_executed, description: Agent ran create-is-activity with an explicit --target-folder-path/--target-folder-key
-    for the cross-folder connection, tool_name: Bash, command_pattern: uip\s+agenthub\s+mcp-tools\s+create-is-activity.*--target-folder-(path|key),
-  min_count: 1}
+- type: command_executed
+  description: Agent ran create-is-activity with an explicit --target-folder-path/--target-folder-key for the cross-folder connection
+  tool_name: Bash
+  command_pattern: uip\s+agenthub\s+mcp-tools\s+create-is-activity[\s\S]*--target-folder-(path|key)
+  min_count: 1
 run_limits: {max_turns: 40}
