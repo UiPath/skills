@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Context prompt-reference check.
 
-Validates that the agent referenced an attachments context in the user
-prompt via the Studio expression syntax `@{contexts.Knowledge}` and kept
-`content` and `contentTokens` aligned:
+Validates that the agent referenced an attachments context in a prompt
+message (system or user) via the Studio expression syntax
+`@{contexts.Knowledge}` and kept `content` and `contentTokens` aligned:
 
   1. The Knowledge resource is a context (`$resourceType: "context"`) with
      `contextType: "attachments"` (lowercase — Anti-pattern 12).
-  2. The user message content contains `@{contexts.Knowledge}`.
-  3. contentTokens contains a matching `{type: "expression",
+  2. At least one message's content contains `@{contexts.Knowledge}`.
+  3. That message's contentTokens contains a matching `{type: "expression",
      rawString: "contexts.Knowledge"}` token (Critical Rule 6 — the `@{ }`
      expression family, not a `variable`).
   4. `Knowledge` is NOT declared as an inputSchema property — a context is a
@@ -57,36 +57,47 @@ def assert_context_resource() -> None:
     print("OK: Knowledge is an attachments context resource")
 
 
-def assert_user_prompt_references_context(agent: dict) -> None:
+def assert_prompt_references_context(agent: dict) -> None:
     messages = agent.get("messages")
     if not isinstance(messages, list):
         sys.exit(f"FAIL: agent.json.messages is not a list: {messages!r}")
-    user_messages = [
-        m for m in messages if isinstance(m, dict) and m.get("role") == "user"
+    referencing = [
+        m
+        for m in messages
+        if isinstance(m, dict) and EXPR_LITERAL in m.get("content", "")
     ]
-    if not user_messages:
-        sys.exit("FAIL: agent.json.messages has no entry with role == 'user'")
-    user = user_messages[0]
-    content = user.get("content", "")
-    tokens = user.get("contentTokens")
-    if not isinstance(tokens, list):
-        sys.exit(f"FAIL: user message contentTokens is not a list: {tokens!r}")
-
-    if EXPR_LITERAL not in content:
+    if not referencing:
+        contents = {
+            m.get("role"): m.get("content")
+            for m in messages
+            if isinstance(m, dict)
+        }
         sys.exit(
-            f"FAIL: user message content does not reference {EXPR_LITERAL}: "
-            f"content={content!r}"
+            f"FAIL: no message content references {EXPR_LITERAL}: "
+            f"messages={contents!r}"
         )
 
     expected = {"type": "expression", "rawString": EXPR_RAW}
-    if expected not in tokens:
-        sys.exit(
-            "FAIL: contentTokens has no expression token with rawString "
-            f"{EXPR_RAW!r} (Critical Rule 6 — context refs are `expression` "
-            f"tokens, not `variable`)\n  expected: {expected}\n"
-            f"  got tokens: {json.dumps(tokens, indent=2)}"
-        )
-    print("OK: user prompt references @{contexts.Knowledge} with a synced expression token")
+    for msg in referencing:
+        tokens = msg.get("contentTokens")
+        if not isinstance(tokens, list):
+            sys.exit(
+                f"FAIL: {msg.get('role')} message contentTokens is not a list: "
+                f"{tokens!r}"
+            )
+        if expected not in tokens:
+            sys.exit(
+                f"FAIL: {msg.get('role')} message contentTokens has no "
+                f"expression token with rawString {EXPR_RAW!r} (Critical "
+                "Rule 6 — context refs are `expression` tokens, not "
+                f"`variable`)\n  expected: {expected}\n"
+                f"  got tokens: {json.dumps(tokens, indent=2)}"
+            )
+    roles = ", ".join(str(m.get("role")) for m in referencing)
+    print(
+        "OK: prompt references @{contexts.Knowledge} with a synced "
+        f"expression token (message roles: {roles})"
+    )
 
 
 def assert_context_not_an_input(agent: dict) -> None:
@@ -122,7 +133,7 @@ def main() -> None:
     agent = load(AGENT)
     entry = load(ENTRY)
     assert_context_resource()
-    assert_user_prompt_references_context(agent)
+    assert_prompt_references_context(agent)
     assert_context_not_an_input(agent)
     assert_schema_sync(agent, entry)
 
