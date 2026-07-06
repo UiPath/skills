@@ -1,0 +1,145 @@
+task_id: skill-datafabric-integration-constraint-violations
+description: >
+  Integration: 23-row SKU batch from `sales_batch.json` probes per-type
+  constraint boundaries — required / length / min-max / decimal precision
+  / date / AUTO_NUMBER / system columns / relationship-to-missing-row.
+  Agent must surface each rejection verbatim (Rule 18) and NOT retry.
+  Grading via verify_constraint_outcomes.py (per-row present/absent) +
+  assert_record_count aggregate + llm_judge on verbatim errors.
+tags: [uipath-platform, data-fabric, integration, constraints, error-paths, mode:diagnose, lifecycle:setup]
+
+run_limits:
+  expected_turns: 30
+  max_turns: 70
+  turn_timeout: 600
+
+initial_prompt: |
+  Sales just sent a messy batch of new SKUs — file is `sales_batch.json`
+  in the working directory. Load what you can and tell me what came back
+  for each row. For anything the system rejects, capture the actual error
+  verbatim — don't guess or rewrite values.
+
+  Set up `CE_ConstraintTest` with these columns first:
+    - Code — required, short text, up to 10 characters
+    - Quantity — whole number, 0 to 100
+    - Price — dollars with cents, never negative
+    - StockedDate — a date (when the SKU was first stocked)
+    - Serial — an auto-generated number the system fills in
+    - ParentLink — optional, links to another row in this list
+
+  Then work through `sales_batch.json` — 22 rows, each with a `_label`
+  (`"1A"`, `"2B"`, …) that identifies it in your walk-through, plus the
+  field values to attempt. Then one last row from me: add a row `"REL1"`
+  whose `ParentLink` references the row ID from `"1A"` (assuming `1A`
+  landed successfully).
+
+  When you're done, walk me through what succeeded and what failed, with
+  the specific error text for each rejection. Don't retry rejected rows.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the test list with the constraint columns"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_ConstraintTest)(?=.*lengthLimit)(?=.*decimalPrecision)(?=.*(minValue|maxValue))'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted several inserts (the 23 rows may be batched into fewer CLI calls if the agent uses array bodies)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert'
+    min_count: 6
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT retry a failed insert with substituted values (allow batched inserts up to ~3 retries' worth)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert'
+    min_count: 6
+    max_count: 50
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state (aggregate): CE_ConstraintTest has between 8 and 14 records — positive-path rows landed and no unambiguous rejections were silently accepted"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_ConstraintTest --min 8 --max 14"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Per-row deterministic outcome check (server-side): each unambiguous positive-path row (Code present in list) and each unambiguous negative-path row (Code absent from list). Ambiguous rows (DP3, SET, SYS, IDSET, and the missing/null/empty Code rows 1B/1C/1D — no Code to query on) are intentionally omitted; platform behavior varies."
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_constraint_outcomes.py
+      --entity-name CE_ConstraintTest
+      --expected-codes "OK1=present,AAAAAAAAAA=present,AAAAAAAAAAB=absent,MIN0=present,NEG1=absent,MAX=present,OVR=absent,INTOV=absent,DP2=present,DT1=present,DTLOW=present,DTHI=present,DTBAD=absent,AUTO=present,REL1=present,RELBAD=absent"
+    timeout: 90
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent surfaced distinct verbatim errors covering the expected constraint categories (required / length / min-max / decimal-precision / invalid-date / relationship-not-found), not paraphrased or aggregated"
+    include_agent_output: true
+    prompt: |
+      The agent was given 23 rows to attempt inserting against a Data Fabric
+      list `CE_ConstraintTest`. Most rows are DESIGNED to be rejected by
+      specific constraints:
+
+        - required-field rejections (rows 1B, 1C, 1D — Code missing/null/empty)
+        - string length-limit rejections (row 2B — 11 chars vs limit 10)
+        - numeric min-value / max-value rejections (rows 3B, 4B, 4C)
+        - decimal-precision rejection (row 5B — 3 dp vs limit 2)
+        - invalid calendar date (row 6D — Feb 30)
+        - client-supplied system columns (rows 7C, 7D)
+        - relationship to non-existent row (row 8B)
+
+      Read the agent's final response (its "walk me through" summary). Does
+      the agent report DISTINCT VERBATIM error messages for the rejection
+      cases — real error strings / codes from the platform, distinguishable
+      per constraint category? Or does the agent aggregate/paraphrase?
+
+      Score 1.0 if the agent surfaced verbatim errors for at least 5 of the
+      7 expected rejection categories, distinguishing WHICH constraint fired.
+      Score 0.5 if the agent surfaced verbatim errors for 2-4 categories, or
+      surfaced 5+ but merged them into a single generic summary.
+      Score 0.0 if the agent hid all errors behind paraphrases like "some
+      rows failed" without any raw text OR skipped scenarios.
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  # Stage the input fixture into the agent's working directory so the prompt
+  # can refer to it as sales_batch.json (kept out of the skill workspace).
+  - command: "cp $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/inputs/constraint_violations.rows.json ./sales_batch.json"
+    timeout: 10
+    fail_on_error: true
+
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ConstraintTest"
+    timeout: 60
+    fail_on_error: false
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ConstraintTest"
+    timeout: 60

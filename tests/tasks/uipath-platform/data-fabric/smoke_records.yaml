@@ -1,60 +1,52 @@
 task_id: skill-datafabric-smoke-records
 description: >
-  Smoke test: agent uses the uipath-platform skill (Data Fabric area) to manage records offline
+  Smoke test: agent uses the uipath-platform skill to manage records offline
   — single insert (JSON object), batch insert (2+ element JSON array routes to
   batch endpoint), filterGroup query, pagination via --limit/--cursor and the
   new -o/--offset jump (mutually exclusive with --cursor), records get by ID,
   single update (Id required), batch update (Id required in every element),
   and records delete. Tests the full records command surface and the
   array-body routing rule in a single pass.
-tags: [uipath-platform, smoke, data-fabric, records]
-
+tags: [uipath-platform, data-fabric, smoke, records, mode:build, lifecycle:setup]
 run_limits:
-  expected_turns: 13
+  expected_turns: 15
   max_turns: 50
 
 initial_prompt: |
-  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
-  Every uip df command will fail with an auth error — that is expected and normal.
-  Run each command exactly once, ignore the auth error, and continue to the next step.
-  Do NOT retry any command. Do NOT attempt to login.
+  We already have a Tasks list. Each task has a title, a priority
+  number, and a done flag.
 
-  There is a "Tasks" entity with entity ID "task-001-ent".
-  Fields: Title (STRING), Priority (INTEGER), Done (BOOLEAN).
+  Could you help me with this:
 
-  Do the following in order:
-  1. Insert a single record using a JSON object body:
-       { "Title": "Write tests", "Priority": 1, "Done": false }
-  2. Batch-insert 2 more records in one command using a JSON array (2+ elements
-     routes to the batch endpoint):
-       - { "Title": "Review PR",  "Priority": 2, "Done": false }
-       - { "Title": "Deploy",     "Priority": 3, "Done": false }
-  3. Retrieve the single record from step 1 by ID using records get.
-     Use placeholder record ID "id-single" since the CLI is offline.
-  4. Query all records where Done = false with --limit 50 and --offset 100
-     on the same command (filterGroup body + offset CLI flag).
-  5. List the first page of all records with --limit 10.
-  6. Fetch the next page by passing the previous response's NextCursor
-     verbatim via --cursor. Use placeholder cursor "cursor-page-2".
-  7. Jump directly to the page containing record index 200 using --offset 200
-     with --limit 10. (--offset and --cursor are mutually exclusive — pick
-     one per command, never both.)
-  8. Update the record from step 1: set Done = true.
-     Use placeholder record ID "id-single" in the "Id" field of the body.
-  9. Batch-update the 2 records from step 2: set Done = true for each.
-     Use placeholder IDs "id-2" and "id-3".
-  10. Delete the record from step 1 using records delete.
-      Use placeholder record ID "id-single".
+    - Add one new task: "Write tests", priority 1, not done. Call it
+      the first row — we'll come back to it.
 
-  Additional constraints:
-  - Each of the 10 steps MUST be its OWN Bash tool call. Do NOT batch
-    multiple `uip df` invocations into a single shell command using `&&`,
-    `;`, or `|` — the criterion checker counts Bash tool calls, not
-    invocations inside a chained shell command.
-  - Pagination MUST use CLI flags (--limit, --cursor, --offset). Do NOT put
-    "start", "limit", "offset", or "pageSize" inside any --body JSON.
-  - Never pass both --offset and --cursor on the same command.
-  - Use --output json on every uip df command.
+    - Add two more in a single shot: "Review PR" (priority 2) and
+      "Deploy" (priority 3), both not done.
+
+    - Pull the first row back up so I can see it.
+
+    - Show me everything that's not done, in batches of 50, and skip
+      the first 100 rows.
+
+    - Show me the first page of everything, 10 to a page.
+
+    - Give me the next page of that same list.
+
+    - Jump straight to whatever page holds row number 200, still 10
+      to a page.
+
+    - Mark the first row done.
+
+    - Mark the other two done in one shot.
+
+    - Delete the first row.
+
+  Important:
+  - The `uip` CLI is available but not connected to a live tenant. Commands
+    will fail — that is expected. Run each command exactly once regardless
+    of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,
+    do NOT troubleshoot.
 
 success_criteria:
   - type: command_executed
@@ -92,15 +84,15 @@ success_criteria:
   - type: command_executed
     description: "Agent listed records with --limit (cursor pagination)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+list\s+.*--limit'
+    command_pattern: 'uip\s+df\s+records\s+(list|query)\s+.*--limit'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent paged forward using --cursor on records list"
+    description: "Agent paged forward via --cursor or --offset (either satisfies smoke; integration_large_pagination tests cursor specifically)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+list\s+.*--cursor'
+    command_pattern: 'uip\s+df\s+records\s+list\s+.*(--cursor|--offset|-o\s+\d+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -164,10 +156,26 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip df commands"
+    description: "Agent used --output json at least once (informational; agent may operate on human-readable output when not parsing)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+.*--output\s+json'
-    min_count: 2
-    weight: 1.0
+    min_count: 1
+    weight: 0.5
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

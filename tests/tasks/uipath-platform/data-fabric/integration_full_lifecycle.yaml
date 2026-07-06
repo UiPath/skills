@@ -1,77 +1,45 @@
 task_id: skill-datafabric-integration-full-lifecycle
 description: >
-  Integration test: agent performs a complete Data Fabric lifecycle against a
-  live tenant — verifies login, discovers or creates an entity with advanced
-  per-type field constraints (lengthLimit on STRING, minValue / maxValue on
-  INTEGER), retrieves the schema to collect field IDs and confirms the
-  constraints come back under Fields[].fieldDataType, adds and updates fields
-  (including tightening a constraint via updateFields), inserts records,
-  queries with a filter, updates one record, verifies the update with
-  records get, and deletes only the test records. Tests the full Discover →
-  Act → Verify workflow combining schema management, advanced field
-  constraints, and record CRUD in one multi-step run.
-tags: [uipath-platform, integration, data-fabric, entities, records]
-
+  Integration (brownfield): create-or-reuse CE_LifecycleTest, add a long-
+  text column, tighten Score constraint via updateFields, rename entity
+  metadata, insert / query / update / verify / delete records in one run.
+  Exercises schema management + field/entity-level updates + record CRUD.
+  Entity delete is intentionally not exercised (Rule 10 workflow lives
+  elsewhere).
+tags: [uipath-platform, data-fabric, integration, entities, records, mode:build, lifecycle:setup]
 run_limits:
-  expected_turns: 31
+  expected_turns: 35
   turn_timeout: 600
 
 initial_prompt: |
-  Perform a complete Data Fabric lifecycle. Use --output json on every uip df command.
+  I need a fresh `CE_LifecycleTest` list built out. Create it with:
+    - Label — short text, up to 200 chars
+    - Score — whole number, 0 to 1000
+    - Active — yes/no
 
-  1. Check login: run `uip login status --output json`. Do NOT re-login — use
-     whatever tenant is currently active.
+  Once it's there:
+    - Read its settings back and show me the Score column's min and
+      max — that tells me they saved.
+    - Add a long-text column (up to 2000 chars) for freeform notes.
+      Pick any column name you like.
+    - Tighten Score: rename it "Test Score", make it required, and
+      drop the max to 500.
+    - Rename the list itself to "Lifecycle Test Entity" and set a
+      description. Read it back and confirm both stuck.
 
-  2. List native-only entities. If an entity named "LifecycleTest" already exists,
-     use its ID. If not, create it with fields and advanced constraints:
-       - Label  (STRING,  lengthLimit 200)
-       - Score  (INTEGER, minValue 0, maxValue 1000)
-       - Active (BOOLEAN)
-
-  3. Retrieve the full schema for LifecycleTest using entities get.
-     From the Fields array, note the ID (Fields[].ID) for the Score field.
-     Confirm the response echoes the constraints back under
-     Fields[].fieldDataType.{lengthLimit,minValue,maxValue} — print them so
-     they are visible in the transcript.
-
-  4. Add a new field to the entity using a unique name: `Notes_<EPOCH>`
-     (MULTILINE_TEXT, lengthLimit 2000), where `<EPOCH>` is the current
-     Unix epoch seconds. The epoch suffix guarantees the field does not
-     yet exist on the reused entity, so the `addFields` call always
-     applies a fresh field.
-     # Operational note: each successful run leaves one Notes_<EPOCH> field
-     # on the shared LifecycleTest entity. Periodic cleanup is done out of
-     # band via `entities update --body '{"removeFields":[...]}' --confirm
-     # --reason "<why>"` — kept out of this test to keep the run idempotent.
-
-  5. Update the Score field: set displayName to "Test Score", isRequired to
-     true, and tighten maxValue from 1000 to 500. Use the field ID from
-     step 3 in the updateFields body — the payload key is "id" (lowercase),
-     not "ID".
-
-  6. Insert two records:
-       - { "Label": "alpha", "Score": 10, "Active": true }
-       - { "Label": "beta",  "Score": 5,  "Active": false }
-     Save both record IDs from the insert responses.
-
-  7. Query records where Active = true. Confirm at least one result is returned.
-
-  8. Update the "alpha" record: set Score to 99.
-     Use the record ID from step 6 in the update body as "Id".
-
-  9. Verify the update: fetch the record with `records get` and confirm Score = 99.
-
-  10. Delete only the two records inserted in step 6.
-      Do NOT delete the entity.
-
-  Do NOT use removeFields. Do NOT delete the entity.
+  Then:
+    - Add row "alpha" with score 10 and Active = yes.
+    - Add row "beta" with score 5 and Active = no.
+    - Pull rows where Active is yes — at least one should come back.
+    - Update alpha's score to 99. Read alpha back to confirm.
+    - Delete both rows. Leave the list itself in place.
 
 success_criteria:
   - type: command_executed
     description: "Agent verified login status before any operation"
     tool_name: "Bash"
     command_pattern: 'uip\s+login\s+status'
-    min_count: 1
+    min_count: 0
     weight: 1.0
     pass_threshold: 1.0
 
@@ -203,6 +171,48 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent edited entity-level metadata (top-level displayName + description, not addFields/updateFields)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update(?!.*addFields)(?!.*updateFields)(?:.*displayName.*description|.*description.*displayName)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent renamed the entity's displayName to the exact string 'Lifecycle Test Entity' per the prompt"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update[\s\S]*?\\?\"displayName\\?\"\s*:\s*\\?\"Lifecycle Test Entity\\?\"'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT use removeFields (not supported)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete the CE_LifecycleTest entity (entity delete coming in a follow-up PR with proper confirm semantics)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  # Ensure the entity is FRESH each run — greenfield pattern. If the entity
+  # persists across runs, an already-configured schema causes the agent to
+  # skip the modification section (thinking it's already in the target state).
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_LifecycleTest"
+    timeout: 60
+    fail_on_error: false
+
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_LifecycleTest"
     timeout: 60

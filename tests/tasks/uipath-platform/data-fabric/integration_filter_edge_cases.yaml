@@ -1,0 +1,163 @@
+task_id: skill-datafabric-integration-filter-edge-cases
+description: >
+  Integration: 10-row `feedback_batch.json` fixture probes filter + paging
+  edges — null-vs-empty-vs-missing, special chars (`'`, `%`, `_`, `\`),
+  case sensitivity, page-size 0 / oversized / past-end, sort stability on
+  a nullable column, and pagination consistency during mid-walk mutation.
+  Grading via command-shape + llm_judge on walk-through observations.
+tags: [uipath-platform, data-fabric, integration, records, filter-edges, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 30
+  max_turns: 60
+  turn_timeout: 1200
+
+initial_prompt: |
+  Set up a list `CE_FilterEdgeTest` with three columns: Title (required
+  text, up to 200 chars), Score (optional whole number), Notes (optional
+  long text). Then load the 10 rows from `feedback_batch.json` in the
+  working directory — some rows have `Score: null`, some omit `Notes`,
+  some have `Notes: ""`, and a few include quotes / percent / underscore
+  / backslash / unicode / newline. Load each row verbatim.
+
+  Then run these searches and walk me through the counts / results:
+
+  Null / empty:
+    - customers with no score / with a score
+    - notes blank (missing key) / notes empty-string — the two should
+      NOT be the same set
+
+  Substring / special chars in Notes:
+    - contains "O'Brien", "%", "_", "\\"
+
+  Case-sensitivity:
+    - Title exactly "alpha". Note whether "ALPHA" also matched.
+
+  Paging edges (describe what came back — no exceptions):
+    - page size 0
+    - page size 100000
+    - start position 1000 on a 10-row list
+
+  Sort stability:
+    - sort by Score ascending. Where does the null-score row land
+      (first / last / middle)? Repeat the same sort and confirm the
+      null row lands in the same spot.
+
+  Concurrent write during walk:
+    - Start walking in pages of 3. Between page 1 and page 2, add a row
+      "midstream-add" (score 95) and delete row 5. Keep walking with the
+      SAME cursor. Report duplicate IDs and missing IDs (if any).
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the test list"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*CE_FilterEdgeTest'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent loaded the 10 edge-case rows"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran null-handling searches (is null / is not null on Score and Notes)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"value"\s*:\s*null'
+    min_count: 2
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent searched on special characters (quote / percent / underscore / backslash)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query'
+    min_count: 10
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted page size 0 and a very large page size"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+(list|query)\s+.*--limit\s+(0|100000)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent sorted by Score (nullable column)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*sortOptions.*Score'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent walked through null/empty/substring/case/pagination/sort edge-case observations coherently — reasonable counts + observations, not obvious contradictions"
+    include_agent_output: true
+    prompt: |
+      The agent loaded 10 edge-case rows into `CE_FilterEdgeTest` and was
+      asked to walk through six categories of observations after running
+      queries against it:
+
+        1. Null / empty on Score AND Notes:
+             - rows with no score (1) vs with a score (9)
+             - notes blank (1: row 2 omits Notes) vs empty-string (1: row 3)
+             - the two "no notes" sets should NOT be identical
+        2. Substring / special chars in Notes: contains "O'Brien" (row 4),
+           "%" (row 5), "_" (row 6), "\\" (row 7). Each search should return
+           at least 1 row (may return more if the platform treats %/_ as
+           LIKE wildcards — worth noting either way).
+        3. Case-sensitivity: exact-match Title "alpha" — is "ALPHA" (row 8)
+           also matched or not?
+        4. Pagination edges: page size 0, page size 100000, start position
+           1000 on a 10-row list. Agent describes what came back (empty,
+           error, count, clamped) — no fixed expectation on which.
+        5. Sort stability: sort by Score ascending, note where the
+           null-score row lands, re-sort, confirm position stable.
+        6. Concurrent write during walk: paging in 3s, adding + deleting
+           between page 1 and page 2 — report duplicate/missing IDs.
+
+      Read the agent's final walk-through. Score 1.0 if the agent reported
+      plausible observations across at LEAST 5 of the 6 categories AND the
+      null-count claim (1 with no score, 9 with a score) matches the data.
+      Score 0.5 if 3-4 categories are reported clearly.
+      Score 0.0 if 3+ categories are missing OR the null count is wrong.
+    weight: 3.5
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  # Stage the input fixture into the agent's working directory.
+  - command: "cp $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/inputs/filter_edge_cases.rows.json ./feedback_batch.json"
+    timeout: 10
+    fail_on_error: true
+
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FilterEdgeTest"
+    timeout: 60
+    fail_on_error: false
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FilterEdgeTest"
+    timeout: 60

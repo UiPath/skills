@@ -1,151 +1,63 @@
 task_id: skill-datafabric-e2e-expense-tracker
 description: >
-  E2E scenario: agent builds an expense tracker in Data Fabric — a parent
-  Employee entity and a child Expense entity whose fields include the complex
-  types (RELATIONSHIP to Employee, CHOICE_SET_SINGLE for category, optional
-  CHOICE_SET_MULTIPLE for tags). Seeds 6 employees and 12 expenses, produces a
-  department summary using filterGroup queries on both the relationship and
-  choice fields, and confirms each field stores its expected value form
-  (UUID for relationship, integer for choice). Choice sets are authored only
-  in the web UI — if none exists in the tenant, the agent records the gap and
-  finishes the relationship workflow.
-tags: [uipath-platform, e2e, data-fabric, expense-tracker, complex-fields]
+  E2E: parent Employee + child Expense entity exercising RELATIONSHIP,
+  CHOICE_SET_SINGLE / _MULTIPLE, FILE, and DECIMAL constraints. Seeds 6
+  employees + 12 expenses, runs filterGroup queries by relationship and
+  choice, and does an Engineering department aggregation. Grading via
+  assert_record_count + verify_field_binding + inline UUID check on a
+  live record + llm_judge on the aggregate walk-through.
+tags: [uipath-platform, data-fabric, e2e, expense-tracker, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 40
-  max_turns: 80
-  turn_timeout: 600
+  expected_turns: 60
+  max_turns: 100
+  turn_timeout: 900
 
 initial_prompt: |
-  Finance needs an expense tracker in UiPath Data Fabric where each Expense is
-  submitted by an Employee, has a category from a fixed picklist (choice set),
-  and can carry one or more tags from a second picklist. Use these field types:
-  `DECIMAL` (amount), `MULTILINE_TEXT` (description), `RELATIONSHIP` (submitter
-  → Employee), `CHOICE_SET_SINGLE` (category), and optionally
-  `CHOICE_SET_MULTIPLE` (tags).
+  Build an expense tracker for Finance. Two linked lists.
 
-  Use --output json on every uip df command.
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation.
+  `CE_E2EEmployee`:
+    - name — required, up to 200 chars
+    - email — unique, up to 255 chars
+    - department — required, up to 100 chars
 
-  Choice sets cannot be created via the CLI — they are authored in the Data
-  Fabric web UI. Discover what is already available before you commit to a
-  schema.
+  `CE_E2EExpense` (each expense belongs to an employee):
+    - amount in dollars — required, cents allowed, $0 to $100,000
+    - `submitter` — required, links to an employee
+    - description — long text, up to 2000 chars
+    - `Receipt` — attachment slot for a PDF
+    - category — pick from a dropdown if the tenant has one, else skip
+    - tags — pick one-or-more from a second dropdown if it exists (or
+      reuse the category dropdown if there's only one, or skip)
 
-  1. Login check (do not re-login):
-       uip df entities list --native-only --output json
-       uip df choice-sets list --output json
+  Pick the tenant's best fit for `category`: if a dropdown name contains
+  "Category", "Expense", or "Type", use that; else grab the first one.
+  If none exist, skip category+tags and note that in the report.
 
-  2. Pick a choice set to use as Expense.category. Strategy:
-       - If the list contains a choice set whose Name looks like a category
-         picklist (e.g. contains "Category", "Expense", or "Type") pick it.
-       - Otherwise pick the first choice set returned.
-       - If the list is empty, set `category_choice_set_id = null` and skip
-         the category field on Expense.
-     Capture the chosen ID as `category_choice_set_id` and call
-     `uip df choice-sets list-values <id>` to resolve each value's NumberId. Save the
-     full Name → NumberId map under `category_value_map` in report.json.
+  Seed:
+    - 6 employees — 3 Engineering, 3 Sales
+    - 12 expenses — 2 per employee, amounts $25 to $1200. Vary
+      categories; add 1-2 tags on about half.
 
-  3. Optionally pick a second choice set for tags. Same strategy as step 2 —
-     prefer one whose Name suggests tags, fall back to the second-listed
-     choice set, otherwise null. Save as `tags_choice_set_id` (and its value
-     map as `tags_value_map`). If only one choice set exists, OR if you'd
-     rather reuse the category one, you may reuse `category_choice_set_id`
-     for tags — the same choice set can back multiple fields.
+  Answer with FRESH queries (not counts from earlier responses):
+    - how many expenses one specific employee has
+    - if categories used, how many expenses in each
+    - total dollars of expenses from Engineering employees (find the
+      3 Engineering employees first, then sum)
 
-  4. Create the PARENT entity "E2EEmployee<RUN_SUFFIX>" where <RUN_SUFFIX> is
-     a unique 6-character suffix using ONLY `[a-zA-Z0-9_]` (entity names
-     must start with a letter and contain only letters / digits / underscores;
-     3–100 chars total). Generate via Python `secrets.token_hex(3)` or similar.
-     Fields:
-       - Name       (STRING, isRequired: true)
-       - Email      (STRING, isUnique: true)
-       - Department (STRING, isRequired: true)
-     Save entity ID as `parent_entity_id` in report.json.
+  Open one expense: confirm `submitter` stored as employee ID (not
+  email/name), category stored as a number (not the label), tags
+  stored as a list of numbers.
 
-  5. Create the CHILD entity "E2EExpense<SAME_SUFFIX>" with fields:
-       - amount      (DECIMAL, decimalPrecision 2, minValue 0, isRequired: true)
-       - submitter   (RELATIONSHIP — `referenceEntityId` equals the parent's
-                      entity UUID (`parent_entity_id` from step 4); `referenceFieldId`
-                      equals the parent's `Id` field UUID — discover with
-                      `uip df entities get <parent_entity_id>` and read the
-                      `Fields[]` entry whose `Name == "Id"`; isRequired: true)
-       - description (MULTILINE_TEXT, lengthLimit 1000)
-       - if category_choice_set_id is not null:
-           category  (CHOICE_SET_SINGLE, choiceSetId = category_choice_set_id,
-                      isRequired: true)
-       - if tags_choice_set_id is not null:
-           tags      (CHOICE_SET_MULTIPLE, choiceSetId = tags_choice_set_id)
-     Save entity ID as `child_entity_id` in report.json.
+  Then walk me through:
+    - the per-employee expense count for one specific employee,
+    - the per-category breakdown (if categories were used),
+    - the Engineering total (three employee IDs + summed amount),
+    - what you saw when you opened one expense — the stored form
+      of submitter / category / tags.
 
-  6. Seed 6 employees across 2 departments (3 in "Engineering", 3 in "Sales")
-     via batch insert. Use realistic names + emails. Save the 6 returned UUIDs
-     under `employee_ids` (an array) in report.json.
-
-  7. Insert 12 expenses across the 6 employees (2 expenses per employee).
-       - Every expense's `submitter` MUST be an Employee UUID from
-         `employee_ids` — never an email, never a Name.
-       - If `category_choice_set_id` is set, every expense's `category` MUST
-         be a NumberId integer from `category_value_map` — never a display
-         label. Vary categories across expenses.
-       - If `tags_choice_set_id` is set, half of the expenses include `tags`
-         as a JSON array of 1–2 NumberId integers.
-       - amounts: spread between 25 and 1200.
-     Save the 12 returned expense UUIDs under `expense_ids`.
-
-  8. Business questions — answer with filterGroup queries:
-       a. Total expenses for one specific employee.
-          Query Expense where submitter == <one_employee_uuid>.
-          Save the count as `q_per_employee_count`.
-       b. If category_choice_set_id is set: count of expenses per category.
-          For each NumberId in `category_value_map`, query Expense where
-          category == "<NumberId-as-string>" and record the count under
-          `q_per_category` (object keyed by category Name).
-       c. Sum of amounts for the Engineering department's employees:
-          - First resolve the 3 Engineering employee UUIDs via a parent
-            query: filter Employee where Department == "Engineering",
-            selectedFields ["Id"]. Capture Records[].Id as
-            `engineering_employee_ids`.
-          - Then query Expense where submitter IN engineering_employee_ids
-            using operator `in` and `valueList` (array of UUID strings).
-            Sum the `amount` values of returned records and save as
-            `engineering_total_amount`.
-
-  9. Read ONE expense back via `records get` and confirm in report.json:
-       - "stored_submitter_is_uuid": true (the value matches the UUID
-         regex `^[0-9a-fA-F-]{8,}` and was NOT the submitter's email)
-       - if category was used:
-           "stored_category_is_integer": true
-       - if tags were used:
-           "stored_tags_is_integer_array": true
-
-  10. Write a final report.json with every captured field:
-        {
-          "category_choice_set_id": "<id-or-null>",
-          "category_value_map": { "<Name>": <NumberId>, ... } | null,
-          "tags_choice_set_id": "<id-or-null>",
-          "tags_value_map":     { "<Name>": <NumberId>, ... } | null,
-          "parent_entity_id": "<id>",
-          "child_entity_id":  "<id>",
-          "employee_ids": ["<id>", ... 6 ...],
-          "expense_ids":  ["<id>", ... 12 ...],
-          "q_per_employee_count": <int>,
-          "q_per_category": { "<Name>": <int>, ... } | null,
-          "engineering_employee_ids": ["<id>", "<id>", "<id>"],
-          "engineering_total_amount": <number>,
-          "stored_submitter_is_uuid": true,
-          "stored_category_is_integer": <bool|null>,
-          "stored_tags_is_integer_array": <bool|null>
-        }
-
-  Constraints:
-  - NEVER write a choice value as a display label, e.g. "category":"travel".
-    Use the integer NumberId. Multi-select tags use a JSON array of integers.
-  - NEVER write a relationship value as anything but the target record's
-    UUID Id — `referenceFieldId` only configures join behavior on read, not
-    the stored value shape.
-  - NEVER attempt to create / update / delete a choice set via the CLI.
-  - Do NOT delete any entity or record yourself — cleanup runs post-test.
+  We'll wire receipt uploads up later — just get the column in place.
+  Don't author any new dropdowns either.
 
 success_criteria:
   - type: command_executed
@@ -159,7 +71,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the parent Employee entity"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create.*E2EEmployee'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*CE_E2EEmployee'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -167,23 +79,73 @@ success_criteria:
   - type: command_executed
     description: "Agent created the child Expense entity with a RELATIONSHIP field"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*E2EExpense)(?=.*RELATIONSHIP)(?=.*referenceEntityId)(?=.*referenceFieldId)'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_E2EExpense)(?=.*RELATIONSHIP)(?=.*referenceEntityId)(?=.*referenceFieldId)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inserted employee records"
+    description: "Agent applied lengthLimit on STRING / MULTILINE_TEXT fields"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"(Name|Email|Department)\"'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*lengthLimit'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied decimalPrecision on the amount DECIMAL field"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*decimalPrecision'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied minValue / maxValue on the amount DECIMAL field"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*(minValue|maxValue)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the Receipt FILE field with EntityAttachment referenceEntityId / referenceFieldId binding"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_E2EExpense)(?=.*\"type\"\s*:\s*\"FILE\")(?=.*referenceEntityId)(?=.*referenceFieldId)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT define a field literally named `Status` (Rule 4 reserved keyword)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*\"fieldName\"\s*:\s*\"Status\"'
+    min_count: 0
+    max_count: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT attempt `uip df files upload` — the Receipt FILE field was newly created via CLI, so its referenceEntity is unwired and upload would fail with Relationship violation (see Not Supported)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+files\s+upload'
+    min_count: 0
+    max_count: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inserted employee records (either --body with inline field names OR --file with a JSON payload)"
+    tool_name: "Bash"
+    command_pattern: '(?is)uip\s+df\s+records\s+insert[\s\S]*?(?:--body[\s\S]*?\\?\"(Name|Email|Department)\\?\"|--file\s+\S+\.json)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inserted expense records writing submitter as a UUID"
+    description: "Agent inserted expense records (either --body with inline submitter UUID, or --file with a JSON payload — the stored-form check is a separate run_command that reads a live record's submitter value)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"submitter\"\s*:\s*\"[0-9a-fA-F-]{8,}'
+    command_pattern: '(?s)uip\s+df\s+records\s+insert[\s\S]*?(?:--body[\s\S]*?\\?\"[Ss]ubmitter\\?\"\s*:\s*\\?\"[0-9a-fA-F-]{8,}|--file\s+\S+\.json)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -191,7 +153,7 @@ success_criteria:
   - type: command_executed
     description: "Agent must NOT write an email / non-UUID into the submitter relationship"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+(insert|update).*\"submitter\"\s*:\s*\"[^\"]*@'
+    command_pattern: '(?s)uip\s+df\s+records\s+(insert|update).*\"[Ss]ubmitter\"\s*:\s*\"[^\"]*@'
     min_count: 0
     max_count: 0
     weight: 3.0
@@ -200,23 +162,23 @@ success_criteria:
   - type: command_executed
     description: "Agent filtered expenses by the relationship (submitter UUID)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*filterGroup)(?=.*\"fieldName\"\s*:\s*\"submitter\")'
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*filterGroup)(?=.*\"fieldName\"\s*:\s*\"[Ss]ubmitter\")'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent resolved Engineering employee UUIDs via parent query"
+    description: "Agent ran a query / list against the Employee entity to find the Engineering employees"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*filterGroup)(?=.*\"fieldName\"\s*:\s*\"Department\")'
+    command_pattern: 'uip\s+df\s+records\s+(query|list)\s+'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used `in` operator with valueList for submitter (Engineering UUIDs)"
+    description: "Agent ran a query / list against the Expense entity to compute the Engineering total"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"submitter\")(?=.*\"operator\"\s*:\s*\"in\")(?=.*valueList)'
+    command_pattern: 'uip\s+df\s+records\s+query'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -247,54 +209,102 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
+  - type: run_command
+    description: "End state (deterministic): 6 Employee records landed"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_E2EEmployee --expected 6"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json captured parent + child entity IDs and 6 employees + 12 expenses"
-    path: "report.json"
-    assertions:
-      - expression: "parent_entity_id"
-        operator: regex
-        expected: "^[0-9a-fA-F-]{8,}"
-      - expression: "child_entity_id"
-        operator: regex
-        expected: "^[0-9a-fA-F-]{8,}"
-      - expression: "length(employee_ids)"
-        operator: equals
-        expected: 6
-      - expression: "length(expense_ids)"
-        operator: equals
-        expected: 12
+  - type: run_command
+    description: "End state (deterministic): 12 Expense records landed"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_E2EExpense --expected 12"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema (deterministic): `submitter` RELATIONSHIP field on CE_E2EExpense is correctly bound to CE_E2EEmployee"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_binding.py --entity-name CE_E2EExpense --field-name submitter --target-entity-name CE_E2EEmployee"
+    timeout: 60
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Stored relationship value is a UUID (not a label / email)"
-    path: "report.json"
-    assertions:
-      - expression: "stored_submitter_is_uuid"
-        operator: equals
-        expected: true
-    weight: 2.5
+  - type: run_command
+    description: "Stored form (deterministic): a live Expense record's `submitter` value is a UUID (not an email / name)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_record_field.py --entity-name CE_E2EExpense --field-name submitter --value-regex '^[0-9a-fA-F-]{8,}'"
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Engineering aggregation resolved 3 employee UUIDs and a numeric total"
-    path: "report.json"
-    assertions:
-      - expression: "length(engineering_employee_ids)"
-        operator: equals
-        expected: 3
-      - expression: "engineering_total_amount"
-        operator: gte
-        expected: 0
-    weight: 2.5
+  - type: llm_judge
+    description: "Agent's walk-through covers the per-employee count, per-category breakdown, and Engineering total (3 employees + summed amount) accurately"
+    include_agent_output: true
+    prompt: |
+      The agent built two linked entities (CE_E2EEmployee with 6 rows —
+      3 Engineering, 3 Sales — and CE_E2EExpense with 12 rows, 2 per
+      employee, amounts $25-$1200) and was asked to answer three
+      questions with FRESH queries after seeding:
+
+        Q1. How many expenses does one specific employee have? (Should
+            be 2, since 2 expenses per employee.)
+        Q2. If categories were used, how many expenses per category?
+        Q3. Total dollar amount of expenses from the 3 Engineering
+            employees — first identify the 3 Engineering IDs, then sum
+            those employees' expense amounts.
+
+      Read the agent's final walk-through. Did the agent report:
+        - Q1: a plausible per-employee count (any positive integer OK
+          if the reasoning shows one specific employee's expenses)?
+        - Q2: either a category breakdown, OR an explicit note that
+          the tenant had no dropdown so this was skipped?
+        - Q3: exactly 3 Engineering employee IDs identified AND a
+          numeric total dollar amount summed from their expenses?
+        - Stored-form observation: submitter as UUID, category as
+          integer (if used), tags as list of integers (if used)?
+
+      Score 1.0 if all four are reported clearly and correctly.
+      Score 0.5 if 2-3 are correct.
+      Score 0.0 if 2+ are wrong or skipped.
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  # Sweep leftover state from prior crashed runs. Child first, then parent.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EExpense"
+    timeout: 60
+    fail_on_error: false
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EEmployee"
+    timeout: 60
+    fail_on_error: false
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
+  # Cleanup order matters: child (CE_E2EExpense) must be deleted BEFORE
+  # parent (CE_E2EEmployee) because Expense has a RELATIONSHIP FK pointing
+  # at Employee. CLI delete on Employee would otherwise fail with an FK
+  # constraint.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EExpense"
+    timeout: 60
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EEmployee"
     timeout: 60

@@ -1,48 +1,44 @@
 task_id: skill-datafabric-e2e-employee-directory
 description: >
-  E2E scenario: agent builds an employee directory in Data Fabric from
-  scratch — designs the entity schema, bulk-imports 20 employees from a
-  generated CSV (4 departments, 5 each), evolves the schema by adding a
-  PerformanceScore field post-import, updates 6 employees with scores,
-  queries top performers and paginated department listings, and produces a
-  workforce summary. Tests entity schema evolution with live data, CSV
-  bulk import, addFields after insert, batch updates, and filter+sort
-  queries in a single end-to-end run.
-tags: [uipath-platform, e2e, data-fabric, employee-directory]
+  E2E: build CE_EmployeeDirectory from scratch with STRING lengthLimit +
+  DECIMAL constraints + DATE, bulk-import 20 employees via generated CSV
+  (4 departments, 5 each), evolve schema with addFields + PerformanceScore
+  constraints, batch-update scores on 6 employees, then run top-performers
+  and per-department headcount queries.
+tags: [uipath-platform, data-fabric, e2e, employee-directory, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 35
-  max_turns: 75
-  turn_timeout: 900
+  expected_turns: 40
+  max_turns: 50
+  turn_timeout: 1200
 
 initial_prompt: |
   HR needs a digital employee directory in UiPath Data Fabric.
 
-  Create entity `EmployeeDirectory_<EPOCH>` (Unix epoch seconds suffix —
-  e.g. `EmployeeDirectory_1716163200`) with fields:
-    - FullName    STRING
-    - Department  STRING   (values: Engineering | Sales | Finance | HR)
-    - JobTitle    STRING
-    - HireDate    DATE
-    - Salary      DECIMAL
+  Make a list called `CE_EmployeeDirectory` with these fields:
+    - Full name — required, no longer than 200 characters
+    - Department — required, no longer than 50 characters (one of:
+      Engineering, Sales, Finance, HR)
+    - Job title — no longer than 100 characters
+    - Hire date — just the date, no time of day
+    - Salary — required, in dollars, two decimal places, between
+      $0 and $1,000,000
 
-  Generate `employees.csv` with 20 employees, 5 per department — realistic
-  names and job titles (e.g. "Software Engineer", "Account Executive"),
-  hire dates spread 2020–2024, salaries $45k–$120k. Import via
-  `uip df records import --file employees.csv`.
+  Then bulk-load 20 employees from a CSV file you generate
+  (`employees.csv`):
+    - 5 per department
+    - Realistic names and job titles (Software Engineer, Account
+      Executive, etc.)
+    - Hire dates spread across 2020 to 2024
+    - Salaries in the $45k–$120k range
 
-  Evolve the schema: add `PerformanceScore` (INTEGER). Set scores between
-  70 and 98 on 6 employees spanning all four departments.
+  After the import, add one more field — a performance score (0 to
+  100) — and set scores between 70 and 98 on 6 employees spanning
+  all four departments.
 
-  Answer with `records query --body` (filterGroup):
-    1. Top performers — PerformanceScore > 85, sorted PerformanceScore desc.
-    2. Department headcount — one filterGroup query per department.
-
-  Before finishing, write `report.json` to the working directory:
-    {"entity_id": "<created-entity-id>"}
-
-  The harness deletes the entity using `report.json`. Do not delete it
-  yourself.
+  Then two quick queries for me:
+    1. Top performers (score above 85), highest first.
+    2. Headcount per department — one query per department.
 
 success_criteria:
   - type: command_executed
@@ -54,9 +50,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent imported employees from CSV"
+    description: "Agent bulk-loaded employees — CSV via records import, JSON array via records insert --body '[...]', or JSON via records insert --file"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+import'
+    command_pattern: '(?s)uip\s+df\s+records\s+(?:import|insert[\s\S]*?(?:--file\s+\S+|--body\s+[\''"]?\[))'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -102,6 +98,31 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Agent applied lengthLimit on STRING fields"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*lengthLimit'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied decimalPrecision on Salary"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*decimalPrecision'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied minValue / maxValue on a numeric field (Salary on create or PerformanceScore on addFields)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*(minValue|maxValue)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+
+  - type: command_executed
     description: "Agent used filterGroup key in records query body"
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup'
@@ -131,12 +152,59 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was written so cleanup can delete the entity"
-    path: "report.json"
-    weight: 1.0
+  - type: run_command
+    description: "End state (deterministic): all 20 employee records landed in CE_EmployeeDirectory"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_EmployeeDirectory --expected 20"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
+  - type: llm_judge
+    description: "Agent reported correct query results — top performers sorted descending by score, and per-department headcount adds up to 20 across 4 departments"
+    include_agent_output: true
+    prompt: |
+      The agent seeded 20 employees (5 per department across Engineering,
+      Sales, Finance, HR), then set PerformanceScore on 6 employees
+      (scores between 70 and 98). Two queries were asked:
+
+        Q1. Top performers (score > 85), highest first. Some subset of
+            the 6 scored employees should come back, sorted descending.
+        Q2. Headcount per department — one query per department. Each
+            department has 5 employees so the four counts should be
+            5 + 5 + 5 + 5 = 20 total.
+
+      Read the agent's final response. Score 1.0 if BOTH queries were
+      reported with plausible results (Q1: descending-by-score order,
+      Q2: 5-per-department or a total of 20 across the four).
+      Score 0.5 if 1 of 2 is clearly reported.
+      Score 0.0 if the queries are skipped or the reported numbers
+      contradict the seed (e.g., "3 in Engineering" when we seeded 5).
+    weight: 2.5
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_EmployeeDirectory"
+    timeout: 60
+    fail_on_error: false
+
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_EmployeeDirectory"
     timeout: 60
