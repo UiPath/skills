@@ -45,7 +45,7 @@ Cascade roots and search references with no user-supplied filter = **hard ask** 
 ## Pre-flight (walk before drafting `--metadata`)
 
 0. **Scope.** Restate server slug, folder, exact tool list (one bullet per `<connector> · <activity> · <op>`), baked statics. Folder: if unnamed, `uip or folders list --output json` → `Shared` (org-default) or `<email>'s workspace` (personal needs `--folder-key <guid>`). Run `mcp-tools list --mcp <slug> --folder-path <name>` first — same name + connector + objectName exists → ask update vs add-new.
-1. **Connection** — Rule 2. Confirm even on a single match (present name / owner / folder, never UUIDs, per `connections.md` §`Selecting a Connection`). N>1 → ASK. Zero → retry `--refresh`, then surface a create-connection hint and STOP.
+1. **Connection** — Rule 2. Confirm even on a single match (present name / owner / folder, never UUIDs, per `connections.md` §`Selecting a Connection`). N>1 → ASK. Zero in the searched folder → re-run per remaining folder from `uip or folders list --output json` (a connection in ANY folder is usable via Rule 2's target-folder flags) and retry `--refresh`; still zero everywhere → surface a create-connection hint and STOP.
 2. **Activity disambiguation.** `candidates --category is-activity --connector <key>` returns ≥2 overlapping entries (`send_message_to_channel` vs `_to_user`) → ASK. GET tie-break: `Get…` / `Find…` without an id → `List`; `Get … by …` or path `{id}`/`{key}` → `Retrieve`; unsure → describe without `--operation`, present `Data.availableOperations[]`.
 3. **Reference fields** — the 3-way choice above, per field.
 4. **Required scalar with no enum / reference / description** → STOP, ask (e.g. Slack `UsersByEmail.By`). Do not bake a guess.
@@ -160,7 +160,7 @@ Skeleton for `--file`: `uip agenthub mcp-tools template is-activity --output jso
 - **Form renders raw scalar (`OR`, `3`) instead of a labeled value** — `designTimeLookups[<field>]` missing (Rule 4 / Step 5), then `mcp-tools update <tool-id>`.
 - **`ConflictingInput: Use exactly one of --file, --body, or scalar options.`** — pass schemas as scalars, not `--file`.
 - **`Unexpected end of JSON input` on `--output-schema`** — pass `"{}"` for no-response-body activities.
-- **`connections list <key>` empty in one folder, connection exists elsewhere** — folder-scoped; re-run with `--folder <name-or-key>` of the server's folder (`connections.md` §`Folder Scoping`).
+- **`connections list <key>` empty in one folder, connection exists elsewhere** — folder-scoped; re-run with `--folder <name-or-key>` of the folder that owns the connection (`uip or folders list --output json` to enumerate). Cross-folder is allowed — reference it via `--target-folder-path` / `--target-folder-key` (Rule 2); do NOT move the connection to the server folder. (`connections.md` §`Folder Scoping`)
 - **403 Forbidden at runtime** — connection scope mismatch; re-authorize via `uip is connections edit <id>` with broader scopes (`connections.md` §`Scope-Related Errors`).
 
 For generic AgentHub-MCP issues (slug regex, folder context, refresh-tools async/sync, `mcp delete` lookup), see SKILL.md §Troubleshooting.
