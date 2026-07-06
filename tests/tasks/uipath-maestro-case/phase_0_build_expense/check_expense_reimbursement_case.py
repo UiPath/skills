@@ -7,7 +7,10 @@ reimbursement process, not just a structurally valid case:
   - 5 primary stages exist with the expected names
   - Submission -> Manager Approval -> Finance Approval -> Payment -> Approved
     exists as a condition-driven transition path
-  - Rejected and Withdrawn terminal lanes exist
+  - Rejected and Withdrawn terminal lanes exist and are reachable from approval
+    stages
+  - Payment is gated by an approved Finance Approval decision and consumes the
+    finance-selected payment method
   - terminal lanes do not route back into the happy path
   - case-exit conditions cover happy-path completion and terminal dispositions
   - required task-type mix is present, including Payment Tracking as a child case
@@ -42,6 +45,11 @@ PRIMARY_STAGES = [
     "Approved",
 ]
 TERMINAL_LANES = ["Rejected", "Withdrawn"]
+EXPECTED_CASEPLAN = os.path.join(
+    "ExpenseReimbursement",
+    "ExpenseReimbursement",
+    "caseplan.json",
+)
 REQUIRED_TASK_TYPES = {
     "api-workflow",
     "agent",
@@ -118,12 +126,66 @@ def _task_text(task: dict) -> str:
     return repr(task).lower()
 
 
+def _read_expense_caseplan() -> dict:
+    if os.path.exists(EXPECTED_CASEPLAN):
+        return read_caseplan(EXPECTED_CASEPLAN)
+    return read_caseplan()
+
+
+def _conditions_text(stage: dict) -> str:
+    data = stage.get("data") or {}
+    conditions = (data.get("entryConditions") or []) + (
+        data.get("exitConditions") or []
+    )
+    return repr(conditions).lower()
+
+
+def _node_by_id(plan: dict, node_id: str) -> dict | None:
+    for node in plan.get("nodes") or []:
+        if node.get("id") == node_id:
+            return node
+    return None
+
+
+def _condition_references_stage(condition: dict, stage_id: str) -> bool:
+    for group in condition.get("rules") or []:
+        for rule in group or []:
+            if (rule or {}).get("selectedStageId") == stage_id:
+                return True
+    return False
+
+
+def _transition_condition_text(plan: dict, source_id: str, target_id: str) -> str:
+    source = _node_by_id(plan, source_id) or {}
+    target = _node_by_id(plan, target_id) or {}
+    source_data = source.get("data") or {}
+    target_data = target.get("data") or {}
+    conditions = [
+        cond
+        for cond in source_data.get("exitConditions") or []
+        if cond.get("exitToStageId") == target_id
+    ]
+    conditions.extend(
+        cond
+        for cond in target_data.get("entryConditions") or []
+        if _condition_references_stage(cond, source_id)
+    )
+    return repr(conditions).lower()
+
+
+def _has_incoming_from_any(plan: dict, target_id: str, source_ids: set[str]) -> bool:
+    return any(
+        transition.get("source") in source_ids
+        for transition in find_transitions(plan, target=target_id)
+    )
+
+
 def _fail(msg: str):
     sys.exit(f"FAIL: {msg}")
 
 
 def main():
-    plan = read_caseplan()
+    plan = _read_expense_caseplan()
     assert_tasks_nested(plan)
 
     all_stages = find_stages(plan, include_exception=True)
@@ -160,6 +222,29 @@ def main():
     for src, dst in zip(PRIMARY_STAGES, PRIMARY_STAGES[1:]):
         if not _has_path(plan, primary_nodes[src]["id"], primary_nodes[dst]["id"]):
             _fail(f"no transition path from {src!r} to {dst!r}; happy path is broken")
+
+    manager_id = primary_nodes["Manager Approval"]["id"]
+    finance_id = primary_nodes["Finance Approval"]["id"]
+    payment = primary_nodes["Payment"]
+    payment_id = payment["id"]
+    if not _has_incoming_from_any(
+        plan,
+        terminal_nodes["Rejected"]["id"],
+        {manager_id, finance_id, payment_id},
+    ):
+        _fail(
+            "Rejected lane exists but is not reachable from Manager Approval, "
+            "Finance Approval, or Payment"
+        )
+    if not _has_incoming_from_any(
+        plan,
+        terminal_nodes["Withdrawn"]["id"],
+        {manager_id, finance_id},
+    ):
+        _fail(
+            "Withdrawn lane exists but is not reachable from Manager Approval "
+            "or Finance Approval"
+        )
 
     primary_ids = {node["id"] for node in primary_nodes.values()}
     for name, node in {**terminal_nodes, "Approved": primary_nodes["Approved"]}.items():
@@ -222,8 +307,27 @@ def main():
             f"types seen: {sorted(t for t in types_seen if t)}"
         )
 
-    payment = primary_nodes["Payment"]
+    finance_conditions = _conditions_text(primary_nodes["Finance Approval"])
+    if not all(
+        term in finance_conditions
+        for term in ("financedecision", "approved", "rejected")
+    ):
+        _fail(
+            "Finance Approval must capture financeDecision with approved and "
+            "rejected outcomes before downstream routing"
+        )
+
+    finance_to_payment_gate = _transition_condition_text(plan, finance_id, payment_id)
+    if (
+        "financedecision" not in finance_to_payment_gate
+        or "approved" not in finance_to_payment_gate
+    ):
+        _fail("Payment transition must be gated by an approved financeDecision")
+
     payment_tasks = _stage_tasks(payment)
+    payment_tasks_text = repr(payment_tasks).lower()
+    if "selectedpaymentmethod" not in payment_tasks_text:
+        _fail("Payment tasks must consume selectedPaymentMethod chosen by finance")
     if not any(task.get("type") == "rpa" for task in payment_tasks):
         _fail("Payment stage must contain an ERP reimbursement RPA task")
     if not any(task.get("type") == "wait-for-connector" for task in payment_tasks):

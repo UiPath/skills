@@ -1,11 +1,11 @@
 task_id: skill-case-phase-0-build-expense
 description: >
-  BUILD FROM GENERATED EXPENSE SDD - a finalized ExpenseReimbursement sdd.md
-  produced from the Phase 0 expense interview output is staged into the sandbox;
-  the skill uses it as the sole source of truth, proceeds past planning/build
-  approval stops, creates the case-management project, and validates the
-  resulting caseplan.json. This covers the "can we proceed further after SDD?"
-  path for the employee expense scenario.
+  BUILD FROM GENERATED EXPENSE SDD - an approved ExpenseReimbursement sdd.md
+  fixture derived from the Phase 0 expense interview output is staged into the
+  sandbox; the skill uses it as the sole source of truth, proceeds past
+  planning/build approval stops, creates the case-management project, and
+  validates the resulting caseplan.json. This covers the "can we proceed
+  further after SDD?" path for the employee expense scenario.
 tags:
   - uipath-maestro-case
   - integration
@@ -16,12 +16,11 @@ tags:
   - feature:stages
   - feature:case-exit
   - feature:conditions
-  - feature:trigger
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite"]
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWrite"]
   sdk_options:
     max_thinking_tokens: 10000
 
@@ -57,11 +56,18 @@ initial_prompt: |
   - If `uip maestro case registry pull` reports unauthenticated, empty, or
     missing cache, record that state and proceed without live registry data.
   - Skip Phase 6 entirely. Do not run `uip maestro case debug` yourself.
-  - Finish with `uip maestro case validate
-    ExpenseReimbursement/ExpenseReimbursement/caseplan.json --output json`
+  - Finish with `uip maestro case validate ExpenseReimbursement/ExpenseReimbursement/caseplan.json --output json`
     passing on the resulting caseplan.json.
 
 success_criteria:
+  - type: command_executed
+    description: "Agent ran uip maestro case validate on the built case"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+validate[^\n]*ExpenseReimbursement/ExpenseReimbursement/caseplan\.json[^\n]*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "uip maestro case validate passes on the generated ExpenseReimbursement caseplan.json"
     command: "uip maestro case validate ExpenseReimbursement/ExpenseReimbursement/caseplan.json --output json"

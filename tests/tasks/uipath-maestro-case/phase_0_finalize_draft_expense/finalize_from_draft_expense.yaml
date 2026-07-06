@@ -16,7 +16,6 @@ tags:
   - feature:stages
   - feature:case-exit
   - feature:conditions
-  - feature:trigger
 
 agent:
   type: claude-code
