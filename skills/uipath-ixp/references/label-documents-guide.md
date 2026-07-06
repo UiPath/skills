@@ -5,7 +5,7 @@ Reusable workflow for labelling documents in an IXP project. Used by:
 - [Project Setup](project-setup-guide.md) — initial labelling after creating a project
 - [Improve Prompts](improve-prompts-guide.md) — reviewing predictions during optimization
 
-Claude acts as a **reviewer** — IXP generates predictions, Claude validates them field-by-field against the document. Only fields that are correct get confirmed. Fields that are wrong are left unannotated. Fields where the prediction found the right location but the value is OCR-mangled get corrected.
+You act as a **reviewer** — IXP generates predictions, you validate them field-by-field against the document. Only fields that are correct get confirmed. Fields that are wrong are left unannotated. Fields where the prediction found the right location but the value is OCR-mangled get corrected.
 
 ## Step 1 — Get Documents and Taxonomy
 
@@ -44,7 +44,7 @@ Use the document ID as the filename. Pass `-o` **without an extension** — the 
 
 ### 2c. Review predictions field-by-field
 
-Use the **Read tool** to view the document file (read the whole document in one call, no `pages` parameter — a full Read returns text + image natively for digital and scanned PDF/PNG/JPG docs; no PDF tools to install), then review each predicted field against the document:
+View the document file with `Read` — the whole document in one pass, as text + rendered image together, so OCR garble and layout are both visible (see the Tool vocabulary note in [SKILL.md](../SKILL.md)). Then review each predicted field against the document:
 
 1. **Look at the document** to understand the layout and where field values appear.
 2. **For each predicted field**, assign one of four verdicts:
@@ -170,7 +170,7 @@ uip ixp documents delete <project-name> <document-id> -y --output json
 |----------|---------------------------|
 | Filename (e.g., `invoice-001.pdf`) | `uip ixp documents list <project-name> --output json --output-filter "Documents[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` (rows are under `Documents` — the list is a paged envelope) |
 | A distinctive predicted field value (e.g., Invoice Number `MSI0601020`) | Run `uip ixp labellings get-predictions <project-name> --output json`, find the entry in `Predictions[]` whose `Labels[].Fields[].FormattedValue` matches, take its `DocumentId` |
-| Nothing — need to find by content | `uip ixp documents list <project-name> --output json`, then `documents download` candidates and read with the Read tool |
+| Nothing — need to find by content | `uip ixp documents list <project-name> --output json`, then `documents download` candidates and view them with `Read` |
 
 `documents list` returns `Filename` alongside `DocumentId` (the original upload filename, or `null` if none was sent at upload time). When filenames aren't unique within the project, the JMESPath filter returns multiple IDs — review them with `documents download` before deleting.
 
