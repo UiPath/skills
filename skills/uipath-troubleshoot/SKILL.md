@@ -27,6 +27,7 @@ Legacy note — some playbooks predate this single-agent flow. Translate their p
 13. **Batch independent calls.** A plan step marked `batch` executes all its independent calls in one round-trip: for CLI fetches, ONE shell invocation chaining the commands, each redirecting to its own `raw/` file; for file reads, ONE message containing all the Read calls. Never serialize independent fetches or reads one message at a time.
 14. **Never `cd`.** Run commands from the working directory; redirect output to relative `.local/investigations/raw/` paths.
 15. **Never generate or execute code** (no Python, no inline code). Shell commands for file I/O and `uip` are fine.
+16. **Fixes come from playbooks, never from raw artifacts.** The recommended fix MUST be the matched playbook's `## Resolution` (or a docsai result when no playbook resolution exists), grounded in its branch logic — when the resolution branches, name the applicable branch and cite the discriminating evidence that selects it. NEVER synthesize a remedy from inspecting raw job/XAML/config fields alone: raw artifacts explain the *symptom*, the playbook prescribes the *fix*. If no matched playbook was read, you are not ready to present a fix.
 
 ## Investigation State
 
@@ -319,6 +320,8 @@ Required steps in every test plan:
 
 Understand the hypothesis's confirm/eliminate criteria, then read the matched playbook (path in `state.json.matched_playbooks`; skip if already read — read-once). Read `## Context` first to understand the cause being investigated. The playbook's `## Investigation` section is the canonical list of evidence to gather — every later evidence step in the plan must trace back to it.
 
+**Reading the matched playbook is a hard gate — it is the only source of the fix (Critical Rule 16).** You may not set `confirmed`, classify a root cause, or carry any remedy forward without having actually read the matched playbook's `## Context`, `## Investigation`, and `## Resolution`. If the playbook path in `state.json.matched_playbooks` cannot be located or read (e.g., a relative path resolves to nothing, or a `Glob` returns no hit), STOP and resolve the correct absolute path from the skill's `references/` tree — do NOT proceed to diagnose or propose a fix from raw job/XAML/config artifacts. When the playbook's `## Resolution` is branched (`If X, then …` / branch A/B/C/D keyed on a condition), the plan MUST include the evidence steps that discriminate the branches, and the chosen branch's discriminating datum must be captured in the evidence file — a confirmed hypothesis that cannot name which resolution branch applies is not done.
+
 Scope the work per the Confidence-Level Behavior table.
 
 #### B. Investigation guides — Data Correlation always; Testing Prerequisites by confidence
@@ -504,7 +507,7 @@ Produce the final user-facing resolution — formatting, entity naming, cross-do
 3. **Assemble fixes across all domains.** For each domain in the causal chain, classify: **root cause domain** (where the failure originated) or **propagation domain** (where the failure surfaced or was relayed).
 
    Root cause domain:
-   1. Matched playbook's `## Resolution` present → use it as the fix for that domain.
+   1. Matched playbook's `## Resolution` present → use it as the fix for that domain. If it is **branched** (`If X, then …` / branch A/B/C/D keyed on a condition), name the applicable branch explicitly and cite the discriminating evidence signal that selects it — the same datum DEPTH CHECK check 3 pinned. Do NOT collapse a branched resolution to a generic remedy, and NEVER substitute a fix synthesized from raw-artifact inspection (job fields, XAML attributes, config values) for the playbook's prescribed branch (Critical Rule 16). If the matched playbook was somehow never read, go back to TEST step A and read it — do not present a fix without it.
    2. No `## Resolution` → `uip docsai ask` targeted at the domain's fix (e.g., "how to prevent [specific issue] in [domain]"). Use the result if it provides a concrete, actionable fix.
    3. Nothing useful → write: "No documented fix found for the {domain} layer — check UiPath documentation or consult UiPath support."
 
