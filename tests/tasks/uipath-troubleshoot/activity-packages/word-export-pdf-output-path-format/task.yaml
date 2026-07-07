@@ -1,0 +1,90 @@
+task_id: skill-troubleshoot-export-pdf-output-path-format
+description: >
+  UiPath troubleshooting agent must diagnose an Export to PDF failure where
+  the output path is built by string concatenation WITHOUT a .pdf extension
+  (`outFolder + "\" + reportName` → `C:\Reports\MonthlyReport`), so the
+  activity faults with an ArgumentException requiring a .pdf file. Success =
+  agent matches the export-pdf-output-path-format playbook AND recommends
+  formatting the path with a .pdf suffix (Path.Combine(folder, name & ".pdf")),
+  not blaming a missing folder, COM, or the document.
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 300
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: data
+  mock_path_dirs:
+  - m
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My ReportPdfGen process faults in Orchestrator (folder "Report PDFs",
+  machine MOCK-ROBOT-14). It exports a Word report to PDF and the error
+  mentions the file path / a .pdf file. It builds the output path from a
+  folder variable and the report name.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can from Orchestrator and the project source, and tell me how to fix it.
+
+  The project source for the process is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the user who reported the failing PDF export. The error mentions
+    the file path / a .pdf file; the output path is built from a folder
+    variable and the report name. You are off-host, Orchestrator only. You
+    want a diagnosis and the fix.
+  goal: |
+    Let the agent complete its flow; approve scope expansions / clarifications.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and hand you the fix."
+    - "If asked how the output path is built, confirm it concatenates the folder variable, a backslash, and the report name."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

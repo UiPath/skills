@@ -110,7 +110,7 @@ for each string value V anywhere in caseplan.json:
     write V back
 ```
 
-Resolution semantics are identical to whole-value `<-` (same name-triple, same lookup), with two differences: the substitution is **bare** `vars.<var>` (the marker already sits inside `=js:`), and it happens in a global string pass rather than against a single input's `value`. Exception-stage / adhoc scoping (reference any task across any stage) applies unchanged.
+Resolution semantics are identical to whole-value `<-` (same name-triple, same lookup), with two differences: the substitution is **bare** `vars.<var>` (the marker already sits inside `=js:`), and it happens in a global string pass rather than against a single input's `value`. Secondary-stage / adhoc scoping (reference any task across any stage) applies unchanged.
 
 After this pass and all bindings, run the end-of-Phase-3 validator. It performs the cross-reference checks below:
 

@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the uninitialized-DataTable (branch 1) of the excel-activities/write-range-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (NullReferenceException at WriteRangeX on null DataTable argument) → jobs logs (preceding `If File.Exists` branch returned False because the source workbook was missing, so the Then-branch Read Range was skipped and dtSource was never assigned) → workflow source. The skipped-If + null variable is the smoking gun.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "68ba941af4.json"},
+    {"match": "or folders list --output json", "file": "68ba941af4.json"},
+    {"match": "or jobs list --folder-key \"f0055555-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "5bc3340905.json"},
+    {"match": "or jobs list --folder-key f0055555-3333-4444-5555-666677778888 --state Faulted --output json", "file": "5bc3340905.json"},
+    {"match": "or jobs get \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "528a001c26.json"},
+    {"match": "or jobs get ee111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "528a001c26.json"},
+    {"match": "or jobs history \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "96003356e7.json"},
+    {"match": "or jobs history ee111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "96003356e7.json"},
+    {"match": "or jobs logs \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "da0a0f6f4f.json"},
+    {"match": "or jobs logs ee111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "da0a0f6f4f.json"}
+  ]
+}

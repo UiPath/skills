@@ -1,0 +1,96 @@
+task_id: skill-planner-lane-a-task-derivation
+description: >
+  Lane A (PDD-driven) coverage: a finished SDD carrying a `## Planner Handoff`
+  header is staged into the sandbox. The skill must detect the marker, route to
+  Lane A, parse the project list, and write a `<process>-tasks.md` that routes
+  work to the correct specialist skills — WITHOUT re-authoring the SDD or
+  building anything. Lane A was previously untested (all planner tests exercised
+  Phase D / SDD generation only).
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 12
+  # Lane A only derives tasks from an existing SDD (no full SDD authoring), so a
+  # modest budget suffices. Kept above the experiment defaults as headroom.
+  task_timeout: 1800
+  turn_timeout: 1500
+
+# Stage the ready-made SDD into the sandbox root. The skill's entry guard reads
+# its `## Planner Handoff` marker and routes to Lane A.
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I've finished the Solution Design Document for our Vendor Payment Sync
+  process — it's saved as `vendor-payment-sync-sdd.md` in the current directory,
+  with the Planner Handoff section at the top.
+
+  Plan the build from it: produce the implementation task list, breaking the
+  work into tasks routed to the right specialist skills, and save it alongside
+  the SDD as `vendor-payment-sync-tasks.md`.
+
+  Work autonomously — don't ask me questions, don't redesign or rewrite the SDD,
+  and don't build or scaffold anything yet. Just the task list.
+
+success_criteria:
+  - type: file_exists
+    description: "Lane A wrote the tasks file named in the handoff header"
+    path: "vendor-payment-sync-tasks.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Tasks route to the correct specialists (RPA build + platform for the queue/asset/Orchestrator deploy)"
+    path: "vendor-payment-sync-tasks.md"
+    includes:
+      - "uipath-rpa"
+      - "uipath-platform"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Tasks follow the plan-and-tasks task-row schema"
+    path: "vendor-payment-sync-tasks.md"
+    includes:
+      - "Task T1"
+      - "Identity:"
+      - "Status:"
+      - "Skill prompt"
+      - "Blocked by:"
+    weight: 1.5
+    pass_threshold: 0.8
+
+  - type: file_contains
+    description: "Tasks file references its source SDD and carries the autonomy mode"
+    path: "vendor-payment-sync-tasks.md"
+    includes:
+      - "vendor-payment-sync-sdd"
+      - "autonomous"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A dedicated testing task is present (Testing / test case / uipath-test)"
+    command: "grep -Eiq 'testing|test case|uipath-test' vendor-payment-sync-tasks.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every skill prompt carries the anti-hallucination rule"
+    command: "grep -qi 'do not infer or guess' vendor-payment-sync-tasks.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Stayed in Lane A — derived tasks only, did not start building (no .xaml authored)"
+    command: "! find . -name '*.xaml' -not -path '*/.venv/*' -not -path '*/node_modules/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

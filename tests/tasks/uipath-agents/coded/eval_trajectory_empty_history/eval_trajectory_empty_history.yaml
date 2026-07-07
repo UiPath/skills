@@ -16,6 +16,8 @@ max_iterations: 1
 pre_run:
   - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/eval_trajectory_empty_history/_fixtures/ticket-router ."
     timeout: 10
+  - command: "bash -c 'cd ticket-router && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
+    timeout: 180
 
 initial_prompt: |
   I have a LangGraph coded agent project at `ticket-router/`. It

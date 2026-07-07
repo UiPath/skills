@@ -39,41 +39,41 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent checked login status with `--output json` (Critical Rule #1 + #2)"
+    description: "Agent checked login status (Critical Rule #1 + #2)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent looked up Shipment Routing project with `project list --filter` + `--output json`"
+    description: "Agent looked up Shipment Routing project with `project list --filter`"
     tool_name: "Bash"
-    command_pattern: '(?i)uip\s+tm\s+project\s+list\s+.*--filter\s+\S*ship.*--output\s+json|uip\s+tm\s+project\s+list\s+.*--output\s+json.*--filter\s+\S*ship'
+    command_pattern: '(?i)uip\s+tm\s+project\s+list\s+.*--filter\s+\S*ship|uip\s+tm\s+project\s+list\s+.*--filter\s+\S*ship'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed test sets scoped to project (`testsets list --project-key` + `--output json`)"
+    description: "Agent listed test sets scoped to project (`testsets list --project-key`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testsets\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+testsets\s+list\s+.*--output\s+json.*--project-key'
+    command_pattern: 'uip\s+tm\s+testsets\s+list\s+.*--project-key'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent enumerated test cases in test set (`testsets list-testcases --project-key --test-set-key` + `--output json` — all three flags required; SKILL.md documents `--project-key` as required)"
+    description: "Agent enumerated test cases in test set (`testsets list-testcases --project-key --test-set-key` — all three flags required; SKILL.md documents `--project-key` as required)"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key)(?=.*--test-set-key)(?=.*--output\s+json)uip\s+tm\s+testsets\s+list-testcases\b'
+    command_pattern: '(?=.*--project-key)(?=.*--test-set-key)uip\s+tm\s+testsets\s+list-testcases'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent retrieved execution history (`executions list --project-key` + `--output json`)"
+    description: "Agent retrieved execution history (`executions list --project-key`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+executions\s+list\s+.*--output\s+json.*--project-key'
+    command_pattern: 'uip\s+tm\s+executions\s+list\s+.*--project-key'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

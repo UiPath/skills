@@ -2,6 +2,8 @@
 
 Authoritative reference for the post-planning execution flow. Read before executing any T-entry from an approved `tasks.md`.
 
+> **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip these phases — see [brownfield.md](brownfield.md).
+
 > **Relationship to other docs.** This document defines phase boundaries and hard-stop contracts. Per-plugin execution detail lives in `plugins/<name>/impl-json.md`. Per-step ordering and file-system mutations live in [implementation.md](implementation.md).
 
 ## Downstream CLI compatibility
@@ -43,6 +45,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 - Stages — all StageIds generated and captured.
 - Edges — none authored; `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 3).
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
+- Entry-points input/output — `entry-points.json` `input`/`output` schemas refreshed from the declared In/Out arguments (Step 6.3, per [entry-points-sync.md](entry-points-sync.md)). Makes the Phase-2 publish-for-review contract correct; idempotent.
 
 ### Tasks (shape depends on resolution state + task class)
 
@@ -51,6 +54,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs and task-specific scalar fields (e.g. `action`'s `taskTitle`/`priority`/`recipient`/`labels`) populated per plugin — these are final at Step 2; only input `value`s defer to Phase 3. |
 | Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data.typeId` + `data.connectionId` set. `data.inputs` omitted or empty. **No `case spec` call in Phase 2** — schema discovery is deferred to Phase 3. |
 | Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Placeholder task per Rule 8 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
+| `agent` built inline | Built + bound in Phase 1 at the Rule 17 gate | **Not a placeholder** — fully resolved task (name+folder binding, `resourceKey="solution_folder.<name>"`, **`folderPath` binding `default` = `""`** — co-located runtime folder; `solution_folder` stays only in `resourceKey`). Phase 2 treats it like any resolved resource. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery). |
 
 ### What does NOT get written in Phase 2
 
@@ -79,7 +83,7 @@ uip maestro case validate "<caseplan.json path>" --skeleton --output json
 
 Print before prompt:
 
-1. Counts: stages / primary stages / exception stages / triggers / tasks total / placeholder tasks / unresolved resources.
+1. Counts: stages / primary stages / secondary stages / triggers / tasks total / placeholder tasks / unresolved resources.
 2. Validate result (placeholder-profile): `<N> errors, <M> warnings` — remaining errors are structural (unreachable/orphan stage, missing trigger, duplicate names) and actionable. Surfacing counts is enough; do not dump full error list unless user asks.
 3. Paths: `caseplan.json`, `tasks.md`, `registry-resolved.json`.
 
@@ -126,7 +130,7 @@ Phase 3 begins after user selects `Continue to phase 3` (or `Skip publish and co
 
 1. **Re-read `tasks.md`** — per Rule 7. Declarative plan is the handoff.
 2. **Re-read `caseplan.json`** — authoritative source of all IDs generated in Phase 2:
-   - Stage name → StageId (from `schema.nodes[]` where `type === "case-management:Stage"` or `"case-management:ExceptionStage"`, keyed on `data.label`).
+   - Stage name → StageId (from `schema.nodes[]` where `type === "case-management:Stage"`, keyed on `data.label`; secondary stages are the same type with `data.stageType === "secondary"`).
    - Trigger ID (from `schema.nodes[]` where `type === "case-management:Trigger"`).
    - Task name → TaskId per stage (from `schema.nodes[<stage>].data.tasks[][]`).
    - Variable name → `var` ID (from top-level `variables.{inputs,outputs,inputOutputs}`).
@@ -147,7 +151,7 @@ After re-entry:
    - Case exit conditions
 4. **SLA + escalation** — per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Group `tasks.md §4.8` by target (root or stage); write full `slaRules[]` in one mutation per target.
 5. **In-expression marker resolution** — per [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md). After all outputs are minted/deduped and bindings/conditions/SLA are written, resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` to bare `vars.<var>` in one sink-blind whole-file pass (input payloads, conditions, SLA, connector bodies). Unresolved triple → ERROR.
-6. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-5 (=vars.X resolution, Q10 II Out-arg producer presence, type mismatch, surviving `$xref` markers, resolved-resource I/O completeness). AskUserQuestion for unresolved references (incl. `$xref` markers), pure orphan Out-args, and unbound required inputs / phantom output fields; option (c)/(d) "continue with best-effort emit" preserves forward progress. Never HALT.
+6. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-6 (=vars.X resolution, Out-arg producer presence, type mismatch, surviving `$xref` markers, resolved-resource I/O completeness, entry-point schema parity). AskUserQuestion for unresolved references (incl. `$xref` markers), pure orphan Out-args, and unbound required inputs / phantom output fields; option (c)/(d) "continue with best-effort emit" preserves forward progress. Check 6 is non-interactive (auto re-run, else log). Never HALT.
 
 Phase 3 produces a `caseplan.json` that should pass authoritative validation. No hard stop on Phase 3 exit — agent proceeds directly to Phase 4.
 
@@ -195,7 +199,7 @@ After debug completes, return to Phase 5 prompt so user can re-run or move on. P
 1. File path of `caseplan.json`.
 2. What was built — summary of stages, tasks, conditions, SLA.
 3. Validation status — `validate` pass / remaining warnings.
-4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. See [placeholder-tasks.md](placeholder-tasks.md).
+4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. Also list **agents built inline** (built as in-solution siblings, already bound) and any **built but unreferenced** (reject case) separately — they need no user action. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
 5. Missing connections — connector tasks needing IS connections that don't exist yet.
 
 ### Debug notes
@@ -221,6 +225,8 @@ For further authoring changes (add task, tweak condition, etc.), user updates `s
 ## Placeholder tasks — unchanged semantics
 
 Placeholder tasks (empty `data: {}` for unresolved resources) behave the same in all phases. Phase 2 creates them; Phase 3 does **not** upgrade them to typed tasks — upgrading requires user to register missing resource externally. See [placeholder-tasks.md](placeholder-tasks.md).
+
+> **Agents built inline are not placeholders.** When the user picks **Create** at the Rule 17 gate, Phase 1 builds the agent (a side effect — spawns a sub-agent invoking `uipath-agents`, registers the sibling, binds it) so it enters Phase 2 as a fully resolved task. Phase 3 never upgrades it (nothing to upgrade). Only resources the user declined/skipped or whose build failed become placeholders. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery).
 
 Phase 3 still wires placeholder TaskIds into:
 - Task-entry conditions that reference the placeholder.

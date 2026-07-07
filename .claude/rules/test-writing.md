@@ -53,7 +53,7 @@ Use side effects (`command_executed`, `file_exists`, `file_contains`, `json_chec
 
 Weight: `1.0` supporting · `1.5` core command/artifact · `2.0` artifact content · `3.0` primary validation · `5.0–6.0` e2e execution. `pass_threshold: 1.0` unless the criterion has multiple sub-assertions.
 
-When criteria parse CLI output, steer the prompt toward `--output json` and add a low-weight check matching `(uip|\$UIP)\s+.*--output\s+json`.
+When criteria parse CLI output, steer the prompt toward `--output json`, but grade the **outcome** (the parsed value, via `run_command` / `file_check`), NOT the literal flag. Never add a gating `command_executed` check on `(uip|\$UIP)\s+.*--output\s+json`: the flag is outcome-invisible (often the CLI default), so gating on it docks agents that reach the same result without typing it. To record convention adherence, use an advisory check (`pass_threshold: 0`).
 
 ## Prompts
 

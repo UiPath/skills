@@ -61,8 +61,8 @@
         <x:Boolean x:Key="IsExpanded">True</x:Boolean>
       </scg:Dictionary>
     </sap:WorkflowViewStateService.ViewState>
-    <ui:LogMessage DisplayName="Log: holding slot" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[ForegroundHolder] Holding the foreground slot for 60 seconds. Trigger a second foreground process now to reproduce InvalidOperationException.&quot;]" />
+    <ui:LogMessage DisplayName="Log: holding slot" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[AttendedReportJob] Holding the foreground slot for 60 seconds. Trigger a second foreground process now to reproduce InvalidOperationException.&quot;]" />
     <Delay DisplayName="Hold foreground slot" Duration="00:01:00" sap2010:WorkflowViewState.IdRef="Delay_1" />
-    <ui:LogMessage DisplayName="Log: releasing" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[ForegroundHolder] Releasing the foreground slot.&quot;]" />
+    <ui:LogMessage DisplayName="Log: releasing" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[AttendedReportJob] Releasing the foreground slot.&quot;]" />
   </Sequence>
 </Activity>

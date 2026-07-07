@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the opaque/needs-inspection path of the excel-activities/read-range-null-reference playbook. Job logs show workbook opened OK but parsing failed with TIE wrapping generic NRE. No label evidence (rules out branch 1); workflow source uses empty Range (rules out branch 3). The remaining branches (corruption / unsupported OpenXML / heavy formatting) cannot be distinguished by CLI alone; agent must hand the user a workbook-inspection checklist.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "858738168e.json"},
+    {"match": "or folders list --output json", "file": "858738168e.json"},
+    {"match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json", "file": "f5469e8bd7.json"},
+    {"match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json", "file": "f5469e8bd7.json"},
+    {"match": "or jobs get \"cc333333-bbbb-cccc-dddd-eeeeffffaaaa\" --output json", "file": "cbca3820c4.json"},
+    {"match": "or jobs get cc333333-bbbb-cccc-dddd-eeeeffffaaaa --output json", "file": "cbca3820c4.json"},
+    {"match": "or jobs history \"cc333333-bbbb-cccc-dddd-eeeeffffaaaa\" --output json", "file": "9a56a36c36.json"},
+    {"match": "or jobs history cc333333-bbbb-cccc-dddd-eeeeffffaaaa --output json", "file": "9a56a36c36.json"},
+    {"match": "or jobs logs \"cc333333-bbbb-cccc-dddd-eeeeffffaaaa\" --output json", "file": "2d49c3ab3c.json"},
+    {"match": "or jobs logs cc333333-bbbb-cccc-dddd-eeeeffffaaaa --output json", "file": "2d49c3ab3c.json"}
+  ]
+}

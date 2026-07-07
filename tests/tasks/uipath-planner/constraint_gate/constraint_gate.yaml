@@ -16,9 +16,11 @@ run_limits:
   # whole task at task_timeout: 1200s — that fires before the SDD lands no
   # matter how high turn_timeout is. Raise BOTH: task_timeout for the
   # end-to-end wall clock, turn_timeout for the long authoring turn.
-  # See fix/planner-sdd-turn-timeout.
-  task_timeout: 2700
-  turn_timeout: 1800
+  # turn_timeout: 1800 was still too tight for this constraint-gate PDD — the
+  # turn was hard-killed at 1800s with NO SDD written (run 28360253990, ERROR).
+  # Match the e2e sibling's proven budget: 2700s turn / 3600s task.
+  task_timeout: 3600
+  turn_timeout: 2700
 
 initial_prompt: |
   Analyze the Process Design Document below and generate a Solution Design

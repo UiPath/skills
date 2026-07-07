@@ -19,22 +19,20 @@ pre_run:
     timeout: 10
 
 initial_prompt: |
-  I have a UiPath coded agent project in the current directory. Its
-  `entry-points.json` declares two entrypoints (`main` and `report`),
-  each file makes one SDK resource call, and `bindings.json` is
-  currently empty.
+  I have a uipath coded agent in the current directory. Can you sync its
+  `bindings.json` so it reflects the resources the code uses?
 
-  Sync `bindings.json` so it reflects every resource call across the
-  project. Two entrypoints exist; the bindings reference allows either
-  binding each resource to a chosen entrypoint or leaving the
-  entrypoint field off the resource entirely. Whatever you choose,
-  every entrypoint id you write must match one of the two real
-  entrypoints in `entry-points.json`.
-
-  Do NOT publish, upload, or deploy. Do NOT pause between planning
-  and implementation. Complete end-to-end in a single pass.
+  Do NOT publish, upload, or deploy. Complete the task end-to-end. Only stop
+  if there is a critical blocker you cannot resolve.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill (not claude-api or another skill)"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "bindings.json exists"
     path: "bindings.json"

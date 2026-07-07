@@ -28,7 +28,7 @@ Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage >
 
 > **Conditional SLA rules are root-only.** They live in `metadata.slaRules[]`; per-stage conditional SLA is not supported. If the sdd.md describes one, flag to the user.
 
-> **ExceptionStage SLA is supported.** Author it the same way as a regular Stage SLA — write `data.slaRules[]` on the `case-management:ExceptionStage` node. See [`impl-json.md`](impl-json.md).
+> **Secondary-stage SLA is supported.** Author it the same way as a regular Stage SLA — write `data.slaRules[]` on the `case-management:Stage` node (the secondary stage, i.e. `data.stageType: "secondary"`). See [`impl-json.md`](impl-json.md).
 
 > **Per-conditional-rule escalations are supported.** Attach an escalation rule to any entry in `slaRules[]`, not only the default `"=js:true"` rule.
 

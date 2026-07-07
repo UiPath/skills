@@ -5,7 +5,7 @@ Reusable workflow for labelling documents in an IXP project. Used by:
 - [Project Setup](project-setup-guide.md) — initial labelling after creating a project
 - [Improve Prompts](improve-prompts-guide.md) — reviewing predictions during optimization
 
-Claude acts as a **reviewer** — IXP generates predictions, Claude validates them field-by-field against the document. Only fields that are correct get confirmed. Fields that are wrong are left unannotated. Fields where the prediction found the right location but the value is OCR-mangled get corrected.
+You act as a **reviewer** — IXP generates predictions, you validate them field-by-field against the document. Only fields that are correct get confirmed. Fields that are wrong are left unannotated. Fields where the prediction found the right location but the value is OCR-mangled get corrected.
 
 ## Step 1 — Get Documents and Taxonomy
 
@@ -107,11 +107,13 @@ uip ixp labellings confirm <project-name> <document-id> \
   --fields "<field_id_1>,<field_id_2>,<field_id_3>" --output json
 ```
 
-If ALL predicted fields for a document are correct with no corrections needed, you can omit `--fields` to confirm everything:
+If ALL predicted fields for a document are correct with no corrections needed, you can omit `--fields` to confirm every predicted field on **that one document** in a single call:
 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> --output json
 ```
+
+This per-document form is fine **once you've reviewed the document and every field is correct** (2c). What you must NOT do is run `confirm` **without a `<document-id>`** — that confirms every document in the project at once, bypassing the per-document review loop. Confirming unreviewed predictions bakes wrong values into the labels, and because F1 compares predictions against those labels, **the metric reports 1.00 even when the confirmed values are wrong**. F1 alone is never evidence the values are correct.
 
 **If there are missing fields**, include their IDs in the same `--fields` list as the CONFIRMED and CORRECTED IDs. The `confirm` command applies one uniform rule per listed field: if IXP predicted content, the content is confirmed; if IXP predicted nothing, a missing marker is written. No separate call needed.
 

@@ -154,6 +154,49 @@ When the fetched docs show a middleware supports TOOL scope, it requires passing
 ),
 ```
 
+### LLM- / Agent-scoped middleware
+
+Pass `scopes=[GuardrailScope.LLM]` or `[GuardrailScope.AGENT]`. No `tools=`.
+
+```python
+*SomeMiddlewareClass(
+    name="...",
+    scopes=[GuardrailScope.LLM],   # or GuardrailScope.AGENT
+    action=...,
+),
+```
+
+`scopes` is required on most middleware. Exceptions: LLM-only validators (`UiPathUserPromptAttacksMiddleware`, `UiPathPromptInjectionMiddleware`) make `scopes` optional — it defaults to LLM. Passing `scopes=[GuardrailScope.LLM]` and omitting it are equivalent; AGENT/TOOL are rejected.
+
+### Stage is fixed by the validator — no `stage=` on middleware
+
+Middleware classes take **no `stage` argument**. Each validator's stage is fixed: input validators (`user_prompt_attacks`, `prompt_injection`, input PII) run PRE; `intellectual_property` runs POST (output-only). Adding `stage=GuardrailExecutionStage....` to a middleware call raises `TypeError`. Only the **decorator** (`@guardrail`) accepts `stage=`.
+
+### Intellectual property (output-only) middleware
+
+> **`scopes=` is REQUIRED** on `UiPathIntellectualPropertyMiddleware` (and on PII / harmful-content middleware). It has no default — omitting it raises `TypeError: missing 1 required positional argument: 'scopes'`. Always pass `scopes=[GuardrailScope.LLM]` or `[GuardrailScope.AGENT]` (Tool not supported).
+
+```python
+from uipath_langchain.guardrails import (
+    BlockAction,
+    UiPathIntellectualPropertyMiddleware,
+    IntellectualPropertyEntityType,
+)
+from uipath.core.guardrails import GuardrailScope
+
+*UiPathIntellectualPropertyMiddleware(
+    name="Intellectual property",
+    scopes=[GuardrailScope.LLM],   # REQUIRED — LLM or AGENT; Tool not supported
+    action=BlockAction(),
+    entities=[
+        IntellectualPropertyEntityType.TEXT,
+        IntellectualPropertyEntityType.CODE,
+    ],
+),
+```
+
+Runs at POST (checks the LLM's output) — fixed by the validator, not a parameter.
+
 ---
 
 ## Decorator Style — Code Patterns
@@ -229,11 +272,10 @@ like `BlockAction`). Get the exact parameters / supported scopes / stages from t
 **The same `EscalateAction` works in both styles** — pass it as the `action`:
 
 ```python
-# Middleware
+# Middleware (no stage= — fixed by the validator)
 *UiPathPIIDetectionMiddleware(
     name="PII escalation",
     scopes=[GuardrailScope.AGENT],
-    stage=GuardrailExecutionStage.PRE,
     action=EscalateAction(
         app_name="Guardrail.Escalation.Action.App",
         app_folder_path="Shared",

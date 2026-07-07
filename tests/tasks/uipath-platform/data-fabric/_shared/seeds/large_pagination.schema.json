@@ -1,0 +1,27 @@
+{
+  "displayName": "Large Pagination Test",
+  "description": "Schema-only seed for integration_large_pagination brownfield test (500-record CSV import + cursor/offset pagination at scale). Records are populated by the agent at runtime — pre_run ensures the entity exists with the right schema and wipes any leftover records; post_run wipes again.",
+  "fields": [
+    {
+      "fieldName": "Name",
+      "displayName": "Record Name",
+      "type": "STRING",
+      "isRequired": true,
+      "isUnique": true,
+      "lengthLimit": 100
+    },
+    {
+      "fieldName": "Score",
+      "displayName": "Score",
+      "type": "INTEGER",
+      "isRequired": true,
+      "minValue": 0
+    },
+    {
+      "fieldName": "Active",
+      "displayName": "Active",
+      "type": "BOOLEAN",
+      "isRequired": true
+    }
+  ]
+}

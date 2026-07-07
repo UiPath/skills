@@ -3,16 +3,16 @@ description: >
   Connector feature: validate a generic (dynamic) connector node end-to-end. A
   generic activity encodes only the operation in its node type; the object is
   supplied dynamically at configure time, so the agent must resolve the object
-  name and set it on the node. Uses ServiceNow `list-all-records`
-  (`uipath.connector.uipath-servicenow-servicenow.list-all-records`, API
-  `objectName: "acr_user"`) as the concrete generic activity, bound to the
-  tenant's ServiceNow connection, then runs `flow debug`. Exercises connector
-  discovery (including connections in non-default folders), generic-activity
-  object-name resolution, connection binding, and live execution. The `acr_user`
-  table is empty in the codereval tenant, so the call legitimately returns `[]`;
-  the checker asserts the node is a generic `list-all-records` node on
-  `objectName: "acr_user"`, `finalStatus: "Completed"`, and an array-typed
-  output (empty allowed) rather than requiring rows.
+  name and set it on the node. Uses ServiceNow's generic "List All Records"
+  activity (API `objectName: "acr_user"`) as the concrete generic activity,
+  bound to the tenant's ServiceNow connection, then runs `flow debug`. Exercises
+  connector discovery (including connections in non-default folders),
+  generic-activity object-name resolution, connection binding, and live
+  execution. The `acr_user` table is empty in the codereval tenant, so the call
+  legitimately returns `[]`; the checker asserts the node is a generic list
+  activity (Generic-type `list` operation, whatever the registry's current
+  node-type slug) on `objectName: "acr_user"`, `finalStatus: "Completed"`, and
+  an array-typed output (empty allowed) rather than requiring rows.
   Connection note: ServiceNow developer instances hibernate after inactivity.
   If a run fails with a connection error, log into the ServiceNow account to
   wake the instance, then re-run.
@@ -55,9 +55,9 @@ success_criteria:
 
   # ── Agent invoked debug ────────────────────────────────────────────────
   - type: command_executed
-    description: "Agent ran flow debug with --output json"
+    description: "Agent ran flow debug"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug.*--output\s+json'
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

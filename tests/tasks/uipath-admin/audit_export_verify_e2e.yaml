@@ -3,8 +3,8 @@ description: >
   End-to-end test (artifact verification tier): agent drives the default
   `uip admin audit tenant export` (json) to produce a real folder of
   day-wise JSON files, then verifies (a) the output folder exists, and
-  (b) each per-day file is a JSON array whose events use the documented
-  PascalCase schema.
+  (b) each per-day file is a JSON array whose events use the LTS-schema
+  keys.
 
   Unlike the command-construction e2e (`audit_export_e2e.yaml`), this
   task asserts real artifact correctness against the test tenant
@@ -64,11 +64,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Generated folder contains well-formed events: each per-day .json file is a JSON array; events use the documented PascalCase schema (empty window acceptable for a quiet tenant)"
+    description: "Generated folder contains well-formed events: each per-day .json file is a JSON array; events use the LTS-schema keys (empty window acceptable for a quiet tenant)"
     command: |
       python3 -c "
       import glob, json, os, sys
-      REQUIRED = ['Id','CreatedOn','OrganizationId','ActorId','EventType','EventSource','EventTarget']
+      REQUIRED = ['Identifier','DateCreatedUtc','OrganizationId','ActorId','Action','Source','Category']
       subs = [p for p in glob.glob('./audit-window/audit_*') if os.path.isdir(p)]
       assert subs, 'no generated export folder under ./audit-window'
       d = subs[0]
@@ -89,7 +89,7 @@ success_criteria:
           print('OK: every per-day file is an empty JSON array — structural assertion trivially holds')
           sys.exit(0)
       missing = [k for k in REQUIRED if k not in sample]
-      assert not missing, f'sample event missing PascalCase keys: {missing}; sample={sample}'
+      assert not missing, f'sample event missing LTS keys: {missing}; sample={sample}'
       print(f'OK: validated structure across {len(day_files)} per-day files, total events={total}')
       "
     timeout: 60

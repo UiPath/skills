@@ -300,7 +300,7 @@ def shape_repr(path: tuple[str, ...], flags: frozenset[str], positional_count: i
 
 def walk_manifests(root: Path) -> Iterable[dict]:
     """Yield one entry per rule.match across every troubleshoot manifest."""
-    for manifest_path in sorted(root.glob("**/fixtures/mocks/responses/manifest.json")):
+    for manifest_path in sorted(root.glob("**/data/m/r/manifest.json")):
         scenario = manifest_path.parents[3].name
         try:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))

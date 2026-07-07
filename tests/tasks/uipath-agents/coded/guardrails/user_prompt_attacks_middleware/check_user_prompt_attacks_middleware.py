@@ -5,11 +5,17 @@ Validates (middleware style, LangChain agent):
 - guardrail symbols imported from uipath_langchain.guardrails (NOT
   uipath.platform.guardrails — the platform path silently no-ops for LangChain)
 - UiPathUserPromptAttacksMiddleware is spread (*) into create_agent(middleware=[...])
-- GuardrailScope.LLM is configured (user prompt attacks is LLM-only)
-- GuardrailExecutionStage.PRE is used (PRE-only — input concern)
+- Scope is LLM (user prompt attacks is LLM-only): either GuardrailScope.LLM is
+  passed explicitly, or scopes= is omitted (the SDK defaults this middleware to
+  LLM). An explicit AGENT/TOOL scope fails.
 - BlockAction is used (block adversarial inputs)
 - Decorator style is NOT used (no @guardrail decorator) — this test specifically
   covers the middleware path, distinct from the decorator-style sibling test
+
+NOT validated: execution stage. The *Middleware classes take no ``stage``
+argument (only the @guardrail decorator does); user prompt attacks runs at PRE
+internally, fixed by the validator. Requiring a literal
+``GuardrailExecutionStage.PRE`` token would force dead code.
 """
 
 import ast
@@ -22,7 +28,11 @@ sys.path.insert(
     0,
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
 )
-from _shared.guardrail_middleware import call_name, spread_middleware_calls  # noqa: E402
+from _shared.guardrail_middleware import (  # noqa: E402
+    call_kwarg,
+    call_name,
+    spread_middleware_calls,
+)
 
 GRAPH = Path("graph.py")
 MIDDLEWARE = "UiPathUserPromptAttacksMiddleware"
@@ -57,8 +67,9 @@ def main() -> None:
     check(MIDDLEWARE in src, f"{MIDDLEWARE} not found in graph.py")
     print(f"OK: {MIDDLEWARE} referenced")
 
+    middleware_calls = [c for c in spread_middleware_calls(tree) if call_name(c) == MIDDLEWARE]
     check(
-        any(call_name(c) == MIDDLEWARE for c in spread_middleware_calls(tree)),
+        bool(middleware_calls),
         f"{MIDDLEWARE} not spread with * into the middleware list "
         f"(accepts inline `[*{MIDDLEWARE}(...)]` or a variable "
         f"`m = {MIDDLEWARE}(...); middleware=[*m]`)",
@@ -68,19 +79,25 @@ def main() -> None:
     check("middleware=" in src, "create_agent() has no middleware= argument")
     print("OK: middleware= argument present")
 
-    # LLM-only scope.
-    check(
-        "GuardrailScope.LLM" in src,
-        "GuardrailScope.LLM not found — user prompt attacks is LLM-scoped only",
-    )
-    print("OK: GuardrailScope.LLM configured")
+    # LLM-only scope. scopes= is optional and defaults to LLM, so accept either an
+    # explicit GuardrailScope.LLM or an omitted scopes=; reject an explicit AGENT/TOOL.
+    def scope_ok(call: ast.Call) -> bool:
+        scopes = call_kwarg(call, "scopes")
+        if scopes is None:
+            return True  # defaults to LLM (user prompt attacks is LLM-only)
+        rendered = ast.unparse(scopes)
+        return (
+            "GuardrailScope.LLM" in rendered
+            and "GuardrailScope.AGENT" not in rendered
+            and "GuardrailScope.TOOL" not in rendered
+        )
 
-    # PRE-only stage.
     check(
-        "GuardrailExecutionStage.PRE" in src,
-        "GuardrailExecutionStage.PRE not found — user prompt attacks runs at PRE stage only",
+        all(scope_ok(c) for c in middleware_calls),
+        "user prompt attacks is LLM-scoped only — pass scopes=[GuardrailScope.LLM] "
+        "or omit scopes= (it defaults to LLM); do not use AGENT or TOOL scope",
     )
-    print("OK: GuardrailExecutionStage.PRE used")
+    print("OK: LLM scope (explicit or default)")
 
     check(
         "BlockAction" in src,

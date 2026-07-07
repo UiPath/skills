@@ -1,0 +1,79 @@
+# PROTOTYPE — data-grounded on the Maestro Flow surface. skip:true.
+# Agent builds a flow (create-test-case node -> get-test-case node -> output the
+# retrieved name) and EXECUTES it (`uip maestro flow debug`) to produce the
+# retrieved value — then records the round-trip. Needs the codereval TM connection
+# + the agent reliably authoring multi-node data flow (today unreliable, hence
+# skip:true). Must run `uip maestro flow registry pull` first (stale manifest).
+# Reusable data-grounded pattern for Maestro Flow / BPMN; flip skip:false when reliable.
+task_id: skill-flow-testmanager-crud-grounded
+description: >
+  Data-grounded (Maestro Flow): agent builds a flow that creates a Test Case via
+  the uipath-uipath-testmanager connector node with a unique seeded name, gets it
+  back, outputs the retrieved name, and debugs (executes) the flow — then records
+  the round-trip. Graded on pull/node-add/validate/debug AND on retrieved ==
+  created (real data through the connector, executed).
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector]
+skip: true
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 60
+  turn_timeout: 1200
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/testmanager_crud_grounded/seed.py"
+    timeout: 30
+
+initial_prompt: |
+  Build a Maestro Flow (inside a solution of the same name) that uses the UiPath Test Manager Integration Service connector.
+
+  Read seed.json for a unique `name` and a `project_key`, then:
+  1. Create a test case with that exact name under that project.
+  2. Read it back so the create and read actually execute, and capture the name that comes back.
+  3. Record result.json with `created_name` (the name you sent), `retrieved_name` (the name returned), and `id`.
+
+  The task is not complete until validation passed for the flow.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent refreshed the node manifest (`uip maestro flow registry pull`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+pull'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added connector nodes (`uip maestro flow node add`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow (`uip maestro flow validate`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent executed the flow (`uip maestro flow debug`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+debug'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Data-grounded: retrieved name == created (seeded) name — real data round-tripped through the executed flow"
+    command: "python3 $TASK_DIR/check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

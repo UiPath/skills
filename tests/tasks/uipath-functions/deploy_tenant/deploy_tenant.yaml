@@ -1,0 +1,69 @@
+task_id: skill-functions-deploy-tenant
+description: >
+  Coded Function packaging with `packOptions`. Exercises `uip functions
+  pack` and forces the agent to keep a non-source directory (`data/`)
+  out of the package via `packOptions.directoriesExcluded` in
+  `uipath.json` — the documented knob for controlling package contents.
+  Publish/deploy is intentionally out of scope: the shipped CLI has no
+  non-interactive tenant-feed publish (pending uipath/cli#2778), so
+  requiring an interactive `publish` made this task nondeterministic
+  (the agent either fumbled the feed picker or exhausted its turns).
+tags: [uipath-functions, e2e, mode:build, feature:deploy]
+max_iterations: 1
+
+initial_prompt: |
+  Build a UiPath Coded Function named `tenant-echo`
+  that takes a `message` (string) and returns
+  `{"echoed": message}`. No LLM, no SDK calls.
+
+  Alongside the source, the project includes a `data/` directory
+  with fixture JSON used during local development only — create it
+  as `data/fixtures.json` containing `{"sample": "value"}`. The
+  `data/` directory must NOT end up in the packaged output.
+
+  Take the function through scaffold → init → run locally → pack.
+  Configure `packOptions` so the `data/` directory is excluded from
+  the package. Do NOT publish, upload, or deploy.
+  Complete it in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+functions\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip functions init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+functions\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent packed the project to a .nupkg"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+functions\s+pack\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "pyproject.toml + packOptions excludes data/ + .nupkg artifact present"
+    command: "python3 $TASK_DIR/check_deploy_tenant.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+run_limits:
+  # Offline: scaffold -> init -> run -> pack + packOptions + data fixture.
+  # No cloud publish (no headless tenant-feed path until uipath/cli#2778),
+  # so this stays deterministic and well under the turn budget.
+  expected_turns: 30
+  max_turns: 50
+  turn_timeout: 1500
+  task_timeout: 1500

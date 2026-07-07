@@ -25,16 +25,16 @@ initial_prompt: |
   Use the tenant I'm already signed into (check I'm logged in; don't
   re-authenticate). Set up an invoice project from the files in `./fixtures/` —
   import the taxonomy and upload the three invoices — and give it a unique title
-  `ixp-it-resolve-<random-suffix>` so concurrent runs don't collide.
+  `codereval-integ-resolve-<random-suffix>` so concurrent runs don't collide.
 
   Then:
   - Delete the file `york_solutions_invoice.png`, then save the remaining document
     list to `documents_after.json`.
   - Rename that project to the same title with `-renamed` appended (i.e.
-    `ixp-it-resolve-<random-suffix>-renamed`), then save the project's details to
+    `codereval-integ-resolve-<random-suffix>-renamed`), then save the project's details to
     `project_after.json`.
 
-  Clean up by deleting the project at the end.
+  Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
 success_criteria:
   - type: command_executed
@@ -76,11 +76,9 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Deleted the project as cleanup"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\b(?=.*(--yes|-y))'
-    min_count: 1
+  - type: file_exists
+    description: "report.json written for post-run cleanup"
+    path: "report.json"
     weight: 1.0
     pass_threshold: 1.0
 
@@ -96,6 +94,13 @@ success_criteria:
   - type: file_contains
     description: "The project was renamed: title now carries the `-renamed` suffix"
     path: "project_after.json"
-    includes: ["ixp-it-resolve", "-renamed"]
+    includes: ["codereval-integ-resolve", "-renamed"]
     weight: 2.0
     pass_threshold: 1.0
+
+# Safety net: delete the project even if the agent's in-band cleanup never ran
+# (crash / MAX_TURNS before the final delete). Reads report.json; idempotent;
+# always exits 0 so it never fails the test.
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/cleanup_project.py"
+    timeout: 60

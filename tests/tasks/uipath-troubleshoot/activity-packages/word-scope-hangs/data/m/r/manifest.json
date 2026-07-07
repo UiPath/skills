@@ -1,0 +1,68 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the word-scope-hangs-background-prompt playbook signature. The job hung on a background password prompt and was cancelled, so it shows as Stopped (no faulted jobs).",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "0b0669cfea.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f6a7b8c9-d0e1-4193-a4b5-c6d7e8f90304\" --state Faulted --output json",
+      "file": "6d75a2ad66.json"
+    },
+    {
+      "match": "or jobs list --folder-key f6a7b8c9-d0e1-4193-a4b5-c6d7e8f90304 --state Faulted --output json",
+      "file": "6d75a2ad66.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f6a7b8c9-d0e1-4193-a4b5-c6d7e8f90304\" --state Stopped --output json",
+      "file": "0162000c28.json"
+    },
+    {
+      "match": "or jobs list --folder-key f6a7b8c9-d0e1-4193-a4b5-c6d7e8f90304 --state Stopped --output json",
+      "file": "0162000c28.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f6a7b8c9-d0e1-4193-a4b5-c6d7e8f90304\" --output json",
+      "file": "0162000c28.json"
+    },
+    {
+      "match": "or jobs list --folder-key f6a7b8c9-d0e1-4193-a4b5-c6d7e8f90304 --output json",
+      "file": "0162000c28.json"
+    },
+    {
+      "match": "or jobs get \"a7b8c9d0-e1f2-4204-b5c6-d7e8f9012415\" --output json",
+      "file": "3fb9a5fa3a.json"
+    },
+    {
+      "match": "or jobs get a7b8c9d0-e1f2-4204-b5c6-d7e8f9012415 --output json",
+      "file": "3fb9a5fa3a.json"
+    },
+    {
+      "match": "or jobs logs \"a7b8c9d0-e1f2-4204-b5c6-d7e8f9012415\" --level Error --output json",
+      "file": "38786cca77.json"
+    },
+    {
+      "match": "or jobs logs a7b8c9d0-e1f2-4204-b5c6-d7e8f9012415 --level Error --output json",
+      "file": "38786cca77.json"
+    },
+    {
+      "match": "or jobs logs \"a7b8c9d0-e1f2-4204-b5c6-d7e8f9012415\" --output json",
+      "file": "3b3b2e59a8.json"
+    },
+    {
+      "match": "or jobs logs a7b8c9d0-e1f2-4204-b5c6-d7e8f9012415 --output json",
+      "file": "3b3b2e59a8.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}
