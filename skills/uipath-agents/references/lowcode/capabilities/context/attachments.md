@@ -46,7 +46,8 @@ None. No solution-level file is produced — attachments are runtime-only.
 
 ## Gotchas
 
-`contextType` value MUST be `"attachments"` (all lowercase) — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
+1. `contextType` value MUST be `"attachments"` (all lowercase) — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
+2. **Every field in the shape above is required — including `indexName` and `folderPath`.** Schema validation rejects the resource without them; `uip agent refresh` / `validate` fails with only `resources/<Name>/resource.json: Invalid input`. Do not drop `indexName` or `folderPath` as index-only leftovers: set `indexName` to the context name and `folderPath` to the literal `"solution_folder"`. If you hit `Invalid input` on a context resource, diff against the full shape above first.
 
 ## References
 
