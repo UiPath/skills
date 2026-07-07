@@ -6,12 +6,13 @@
 #     release ref with blockOnIssue=true and blocks the npmjs publish if FOSSA
 #     finds issues
 #
-# Register this file as an Azure DevOps pipeline definition. It requires:
+# Register this file as a pipeline definition in the "skills" ADO project
+# (https://dev.azure.com/uipath/skills). The project needs:
 #   - the "UiPath" GitHub service connection (for the fossa template repository)
 #   - the Azure service connection below (FOSSA API key retrieval via Key Vault)
 #   - access to the agent pool below and the "DevOps" universal packages feed
-# Then set AZDO_FOSSA_PROJECT / AZDO_FOSSA_PIPELINE_ID repo variables and the
-# AZDO_FOSSA_PAT secret in GitHub so publish.yml can enforce the release gate.
+# Then set the AZDO_FOSSA_PIPELINE_ID repo variable and the AZDO_FOSSA_PAT
+# secret in GitHub so publish.yml can enforce the release gate.
 
 name: $(Date:yyMMdd)$(Rev:.r)-sec
 

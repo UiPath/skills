@@ -41,10 +41,12 @@ jobs:
   # Queues the FOSSA pipeline (.pipelines/security.yml, registered in Azure
   # DevOps) at this exact ref with blockOnIssue=true, waits for the verdict,
   # and fails — blocking the stable npmjs publish — if FOSSA finds issues.
-  # Alpha publishes are not gated. Soft-skips with a loud warning until the
+  # Alpha publishes are not gated. The pipeline lives in the "skills" ADO
+  # project (https://dev.azure.com/uipath/skills — same convention as
+  # StudioWeb's repo-named project). Soft-skips with a loud warning until the
   # gate is configured:
-  #   vars.AZDO_FOSSA_PROJECT     — ADO project hosting the pipeline
-  #   vars.AZDO_FOSSA_PIPELINE_ID — numeric pipeline definition id
+  #   vars.AZDO_FOSSA_PIPELINE_ID — numeric pipeline definition id, assigned
+  #                                 when .pipelines/security.yml is registered
   #   secrets.AZDO_FOSSA_PAT      — PAT with Build (read & execute) scope
   fossa-gate:
     name: FOSSA security gate
@@ -55,13 +57,12 @@ jobs:
     steps:
       - name: Run FOSSA pipeline and wait for verdict
         env:
-          AZDO_ORG_URL: https://dev.azure.com/uipath
-          AZDO_PROJECT: ${{ vars.AZDO_FOSSA_PROJECT }}
+          AZDO_PROJECT_URL: https://dev.azure.com/uipath/skills
           AZDO_PIPELINE_ID: ${{ vars.AZDO_FOSSA_PIPELINE_ID }}
           AZDO_PAT: ${{ secrets.AZDO_FOSSA_PAT }}
         run: |
-          if [ -z "$AZDO_PROJECT" ] || [ -z "$AZDO_PIPELINE_ID" ] || [ -z "$AZDO_PAT" ]; then
-            MSG="FOSSA release gate NOT enforced: AZDO_FOSSA_PROJECT / AZDO_FOSSA_PIPELINE_ID repo variables or AZDO_FOSSA_PAT secret are missing. Register .pipelines/security.yml in Azure DevOps and configure them."
+          if [ -z "$AZDO_PIPELINE_ID" ] || [ -z "$AZDO_PAT" ]; then
+            MSG="FOSSA release gate NOT enforced: AZDO_FOSSA_PIPELINE_ID repo variable or AZDO_FOSSA_PAT secret is missing. Register .pipelines/security.yml as a pipeline in the skills ADO project and configure them."
             echo "::warning::$MSG"
             {
               echo "## ⚠️ FOSSA gate skipped (not configured)"
@@ -74,7 +75,7 @@ jobs:
           BODY=$(jq -n --arg ref "$GITHUB_REF" \
             '{resources: {repositories: {self: {refName: $ref}}}, templateParameters: {blockOnIssue: true}}')
           RUN=$(curl -sSf -u ":$AZDO_PAT" -H "Content-Type: application/json" -d "$BODY" \
-            "$AZDO_ORG_URL/$AZDO_PROJECT/_apis/pipelines/$AZDO_PIPELINE_ID/runs?api-version=7.1")
+            "$AZDO_PROJECT_URL/_apis/pipelines/$AZDO_PIPELINE_ID/runs?api-version=7.1")
           RUN_ID=$(echo "$RUN" | jq -r '.id')
           RUN_URL=$(echo "$RUN" | jq -r '._links.web.href')
           echo "Queued FOSSA run $RUN_ID at $GITHUB_REF: $RUN_URL"
@@ -84,7 +85,7 @@ jobs:
           for i in $(seq 1 60); do
             sleep 30
             RUN=$(curl -sSf -u ":$AZDO_PAT" \
-              "$AZDO_ORG_URL/$AZDO_PROJECT/_apis/pipelines/$AZDO_PIPELINE_ID/runs/$RUN_ID?api-version=7.1")
+              "$AZDO_PROJECT_URL/_apis/pipelines/$AZDO_PIPELINE_ID/runs/$RUN_ID?api-version=7.1")
             STATE=$(echo "$RUN" | jq -r '.state')
             echo "[$i/60] state=$STATE"
             if [ "$STATE" = "completed" ]; then
