@@ -50,13 +50,13 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
    3. Wait for the answer. Do NOT continue with any data fetch until the user responds.
    4. Once answered, record the chosen folder in `state.json` and proceed to step 2 (Process).
 
-   **Bounded fallback** — applies ONLY when the user explicitly answers the folder question with "I don't know" / "no preference" / equivalent. Run ONCE without folder filter, pick the most-recent, record the folder, proceed:
+   **Bounded fallback** — trigger and candidate selection follow SKILL TRIAGE step C (one bounded pass only when the user can't name a folder or authorizes it; then confirm the candidate — do not auto-commit). The orchestrator pass, run ONCE without a folder filter:
    ```
    uip or jobs list --state <state> --output json \
      --output-filter "[].{Key:Key,State:State,StartTime:StartTime,FolderName:FolderName}" \
      | tee .local/investigations/raw/triage-jobs-cross-folder.json
    ```
-   `<state>` is the state the user named (`Faulted` for "failed", `Pending` for "stuck", etc.). If this returns nothing, report and stop — do NOT relax the state filter and do NOT retry against per-folder keys.
+   `<state>` is the state the user named (`Faulted` for "failed", `Pending` for "stuck", etc.). Present the candidates and confirm per step C, then record the chosen folder. If this returns nothing, report and stop — do NOT relax the state filter and do NOT retry against per-folder keys.
 
    ---
 

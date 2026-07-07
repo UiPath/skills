@@ -195,7 +195,7 @@ Plan steps that gather the primary entity. Action shape comes from the matched s
 **Branch on anchor presence:**
 
 - **Anchored** — user named a concrete locator (id/key, process/package/queue/folder name, instance/incident id, specific error code/message), or the working directory implies one (recognisable UiPath project at top level). Step action: the guide's deterministic first locator command for that entity type.
-- **No anchor** — step action: `ask user (select): <option> | <option> | ...` offering plausible anchor candidates. Do NOT plan a `get <placeholder>` for an unlocated entity. Do NOT enumerate every folder/queue/entity hoping to find the right one. Only if the user explicitly declines and authorizes a scan: one bounded locate pass, followed by `ask user (select)` confirming which candidate to investigate.
+- **No anchor** — step action: `ask user (select): <option> | <option> | ...` offering plausible anchor candidates. Do NOT plan a `get <placeholder>` for an unlocated entity. Do NOT enumerate every folder/queue/entity hoping to find the right one. Only if the user cannot name an anchor when asked ("I don't know" / "no preference") or explicitly authorizes a scan: one bounded locate pass, then `ask user (select)` to confirm which candidate to investigate — do not auto-commit to a pick. This is the canonical anchor policy; product guides supply the locator commands, not a divergent scan rule.
 
 **Entity-instance selection.** A step yielding multiple candidates (several faulted jobs/incidents) must NOT fetch all of them. Priority for the next step:
 
