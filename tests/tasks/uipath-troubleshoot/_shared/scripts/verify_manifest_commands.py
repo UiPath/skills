@@ -209,9 +209,22 @@ def validate_shape(
 ) -> tuple[bool, str]:
     """Validate a (path, flag-set, positional-count) shape against the CLI."""
     if not path:
+        # A flag-only invocation (`uip --version`) is valid when every flag is
+        # a root-level flag — check against root --help instead of rejecting.
+        root_help = fetch_help(uip_bin, ())
+        allowed = (flag_names(root_help) if root_help else set()) | GLOBAL_FLAGS
+        if used_flags and all(f in allowed for f in used_flags):
+            return True, "root-level flag invocation (no subcommand)"
         return False, "no parseable subcommand path"
 
-    # 1. Walk the path level-by-level
+    # 1. Walk the path level-by-level. tokenize_match can only recognise
+    # UUID/hex/quoted positionals, so a kebab-case positional VALUE (e.g. the
+    # `[connector-key]` on `is connections list uipath-freshworks-freshdesk`)
+    # arrives here as a path token. When a token is not a subcommand but the
+    # parent leaf declares enough positional Arguments to absorb the remaining
+    # tokens, stop the walk there and validate the remainder as positionals.
+    leaf_path = tuple(path)
+    extra_positionals = 0
     for depth in range(len(path)):
         parent = tuple(path[:depth])
         token = path[depth]
@@ -239,6 +252,19 @@ def validate_shape(
             #     subcommands at runtime.
             if token in KNOWN_ASPECT_ROUTERS.get(parent, frozenset()):
                 continue
+            # (c) Kebab-case positional values: the parent (as a leaf) declares
+            #     positional Arguments and every remaining path token fits into
+            #     that arity — they are argument VALUES (`is connections list
+            #     <connector-key>`, `is resources describe <connector-key>
+            #     <object-name>`), not subcommands. Reroute them to the
+            #     positional count and validate flags/arity against the parent.
+            #     A genuine typo'd subcommand is still caught: its parent
+            #     declares no Arguments (or too few for the remaining tokens).
+            remaining = len(path) - depth
+            if arg_count(help_payload) >= remaining:
+                leaf_path = parent
+                extra_positionals = remaining
+                break
             # (b) Lazily-listed tool command-groups: under the alpha `uip` CLI,
             #     an installed tool's top-level group (`or`, `is`, `maestro`,
             #     `resource`, `docsai`, `traces`, `rpa`, ...) is NOT listed in
@@ -266,21 +292,22 @@ def validate_shape(
             return False, f"'{token}' is not a subcommand of 'uip {' '.join(parent) or '(root)'}'"
 
     # 2. Leaf-level flag validation (per-command flags + inherited global flags)
-    leaf_help = fetch_help(uip_bin, tuple(path))
+    leaf_help = fetch_help(uip_bin, leaf_path)
     if leaf_help is None:
-        return False, f"could not fetch help for leaf 'uip {' '.join(path)}'"
+        return False, f"could not fetch help for leaf 'uip {' '.join(leaf_path)}'"
 
     allowed_flags = flag_names(leaf_help) | GLOBAL_FLAGS
     bad_flags = sorted(f for f in used_flags if f not in allowed_flags)
     if bad_flags:
-        return False, f"unknown flag(s) on 'uip {' '.join(path)}': {', '.join(bad_flags)}"
+        return False, f"unknown flag(s) on 'uip {' '.join(leaf_path)}': {', '.join(bad_flags)}"
 
     # 3. Argument count check (informational — many commands accept varargs)
     expected_args = arg_count(leaf_help)
-    if expected_args and positional_count > expected_args:
+    total_positionals = positional_count + extra_positionals
+    if expected_args and total_positionals > expected_args:
         return False, (
-            f"'uip {' '.join(path)}' expects {expected_args} positional arg(s); "
-            f"manifest supplies {positional_count}"
+            f"'uip {' '.join(leaf_path)}' expects {expected_args} positional arg(s); "
+            f"manifest supplies {total_positionals}"
         )
 
     return True, ""
