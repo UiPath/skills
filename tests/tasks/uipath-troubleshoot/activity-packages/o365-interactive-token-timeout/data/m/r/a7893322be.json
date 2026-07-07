@@ -1,3 +1,46 @@
-get exit=0
-logs exit=0
-history exit=0
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "b7974725-4438-4315-a9cc-9ec41f8acd62",
+    "StartTime": "2026-06-09T10:49:38.483Z",
+    "EndTime": "2026-06-09T10:50:41.847Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "SpecificPriorityValue": 45,
+    "Source": "Agent",
+    "SourceType": "Agent",
+    "BatchExecutionKey": "b7974725-4438-4315-a9cc-9ec41f8acd62",
+    "Info": "Get Email List: The client did not complete the authentication after 30 seconds, and as a result the operation was canceled. Authentication type: InteractiveToken.\r\n\r\nin O365_Auth401.xaml\r\n    at GetEmailListConnections \"Get Email List\"\r\n    at Office365ApplicationScope \"Microsoft 365 Scope\"\r\n    at Sequence \"Main Sequence\"\r\n\r\nUiPath.MicrosoftOffice365.Business.Office365Exception: The client did not complete the authentication after 30 seconds, and as a result the operation was canceled. Authentication type: InteractiveToken. ---> System.TimeoutException: The client did not complete the authentication after 30 seconds, and as a result the operation was canceled. Authentication type: InteractiveToken.\r\n   at UiPath.MicrosoftOffice365.Business.Extensions.TaskExtensions.TimeoutAfter[TResult](Task`1 task, TimeSpan timeout)\r\n   at UiPath.MicrosoftOffice365.Business.Graph.GraphClientServiceFactory.LoginWithInteractiveTokenAsync(Office365AuthenticationContext authenticationContext, CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Business.Graph.GraphClientServiceFactory.ResolveAccessTokenAsync(CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Business.Graph.GraphClientServiceFactory.AuthenticateAsync(HttpRequestMessage request, CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Business.Graph.AuthenticationHandler.AuthorizeAsync(HttpRequestMessage request, CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Business.Graph.AuthenticationHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)\r\n   at Microsoft.Graph.UserMailFoldersCollectionRequest.GetAsync(CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Business.Graph.GraphServiceClientProxy.GetMailFolderByPathAsync(String path, CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Activities.Mail.BaseMailFolderArgument.ResolveAsync(IExecutionContext context, CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Activities.Mail.GetEmailListConnections.SafeExecuteAsync(IExecutionContext context, CancellationToken cancellationToken)\r\n   --- End of inner exception stack trace ---",
+    "CreationTime": "2026-06-09T10:49:38.483Z",
+    "ReleaseName": "ERN",
+    "Type": "Attended",
+    "InputArguments": "{}",
+    "EnvironmentVariables": "",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "HasMediaRecorded": false,
+    "HasVideoRecorded": false,
+    "RuntimeType": "StudioPro",
+    "RequiresUserInteraction": true,
+    "ReleaseVersionId": 20941233,
+    "EntryPointPath": "O365_Auth401.xaml",
+    "OrganizationUnitId": 1500287,
+    "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+    "Reference": "",
+    "ProcessType": "Process",
+    "ResumeOnSameContext": false,
+    "LocalSystemAccount": "UIPATH\\ORIGINAL_USER",
+    "OrchestratorUserIdentity": "original_email@test.com",
+    "RemoteControlAccess": "None",
+    "LastModificationTime": "2026-06-09T10:50:41.847Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "b797472544384315a9cc9ec41f8acd62",
+    "AutopilotForRobots": {
+      "Enabled": false,
+      "HealingEnabled": false
+    },
+    "Id": 4015051
+  }
+}

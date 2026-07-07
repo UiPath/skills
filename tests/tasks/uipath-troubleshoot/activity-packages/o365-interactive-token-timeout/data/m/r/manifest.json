@@ -19,6 +19,22 @@
       "file": "99d0038951.json"
     },
     {
+      "match": "or jobs get b7974725-4438-4315-a9cc-9ec41f8acd62",
+      "file": "a7893322be.json"
+    },
+    {
+      "match": "or jobs logs b7974725-4438-4315-a9cc-9ec41f8acd62",
+      "file": "c3a17d40b2.json"
+    },
+    {
+      "match": "or jobs history b7974725-4438-4315-a9cc-9ec41f8acd62",
+      "file": "e5b90c2d71.json"
+    },
+    {
+      "match": "or jobs traces b7974725-4438-4315-a9cc-9ec41f8acd62",
+      "file": "99d0038951.json"
+    },
+    {
       "match": "docsai ask",
       "passthrough": true
     }

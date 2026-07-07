@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-09T10:49:38.712Z",
+      "Message": "ERN execution started"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-09T10:50:41.512Z",
+      "Message": "Get Email List: The client did not complete the authentication after 30 seconds, and as a result the operation was canceled. Authentication type: InteractiveToken.\r\nin O365_Auth401.xaml\r\n    at GetEmailListConnections \"Get Email List\"\r\n    at Office365ApplicationScope \"Microsoft 365 Scope\"\r\n    at Sequence \"Main Sequence\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.MicrosoftOffice365.Business.Office365Exception ---> System.TimeoutException: The client did not complete the authentication after 30 seconds, and as a result the operation was canceled. Authentication type: InteractiveToken.\r\n   at UiPath.MicrosoftOffice365.Business.Extensions.TaskExtensions.TimeoutAfter[TResult](Task`1 task, TimeSpan timeout)\r\n   at UiPath.MicrosoftOffice365.Business.Graph.GraphClientServiceFactory.LoginWithInteractiveTokenAsync(Office365AuthenticationContext authenticationContext, CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Business.Graph.GraphClientServiceFactory.ResolveAccessTokenAsync(CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Business.Graph.GraphClientServiceFactory.AuthenticateAsync(HttpRequestMessage request, CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Business.Graph.AuthenticationHandler.AuthorizeAsync(HttpRequestMessage request, CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Business.Graph.AuthenticationHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)\r\n   at Microsoft.Graph.UserMailFoldersCollectionRequest.GetAsync(CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Business.Graph.GraphServiceClientProxy.GetMailFolderByPathAsync(String path, CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Activities.Mail.BaseMailFolderArgument.ResolveAsync(IExecutionContext context, CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Activities.Mail.GetEmailListConnections.SafeExecuteAsync(IExecutionContext context, CancellationToken cancellationToken)"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-09T10:50:41.798Z",
+      "Message": "ERN execution ended in: 00:01:03"
+    }
+  ]
+}

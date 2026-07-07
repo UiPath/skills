@@ -1,2 +1,46 @@
-traces exit=0
---- stderr ---
+{
+  "Result": "Success",
+  "Code": "JobTraces",
+  "Data": [
+    {
+      "PermissionStatus": 0,
+      "Id": "00000000-0000-0000-8a41-77c2f5e09b12",
+      "TraceId": "b7974725-4438-4315-a9cc-9ec41f8acd62",
+      "ParentId": null,
+      "Name": "Robot Job b7974725-4438-4315-a9cc-9ec41f8acd62",
+      "StartTime": "2026-06-09T10:49:38.9120544Z",
+      "EndTime": "2026-06-09T10:50:41.8473311Z",
+      "Attributes": "{\"Exception\":\"UiPath.MicrosoftOffice365.Business.Office365Exception: The client did not complete the authentication after 30 seconds, and as a result the operation was canceled. Authentication type: InteractiveToken. ---> System.TimeoutException: The client did not complete the authentication after 30 seconds, and as a result the operation was canceled. Authentication type: InteractiveToken.\",\"Status\":2}"
+    },
+    {
+      "PermissionStatus": 0,
+      "Id": "00000000-0000-0000-8a41-77c2f5e09b13",
+      "TraceId": "b7974725-4438-4315-a9cc-9ec41f8acd62",
+      "ParentId": "00000000-0000-0000-8a41-77c2f5e09b12",
+      "Name": "Microsoft 365 Scope",
+      "StartTime": "2026-06-09T10:49:39.3130000Z",
+      "EndTime": "2026-06-09T10:49:39.3510000Z",
+      "Attributes": "{\"ActivityType\":\"Office365ApplicationScope\",\"AuthenticationType\":\"InteractiveToken\",\"UseConnectionService\":\"False\",\"OAuthApplication\":\"UIPATH\",\"DataStoreLocation\":\"DISK\",\"Environment\":\"Global\",\"Account\":\"Please select an account.\",\"Status\":1}"
+    },
+    {
+      "PermissionStatus": 0,
+      "Id": "00000000-0000-0000-8a41-77c2f5e09b14",
+      "TraceId": "b7974725-4438-4315-a9cc-9ec41f8acd62",
+      "ParentId": "00000000-0000-0000-8a41-77c2f5e09b13",
+      "Name": "Get Email List",
+      "StartTime": "2026-06-09T10:49:39.9210000Z",
+      "EndTime": "2026-06-09T10:50:41.7200000Z",
+      "Attributes": "{\"ActivityType\":\"GetEmailListConnections\",\"MailFolder\":\"Inbox\",\"SelectionMode\":\"EnterPath\",\"MaxResults\":\"50\",\"Connector\":\"uipath-microsoft-outlook365\",\"Status\":2,\"Exception\":\"UiPath.MicrosoftOffice365.Business.Office365Exception: The client did not complete the authentication after 30 seconds, and as a result the operation was canceled. Authentication type: InteractiveToken. ---> System.TimeoutException: The client did not complete the authentication after 30 seconds, and as a result the operation was canceled. Authentication type: InteractiveToken.\\r\\n   at UiPath.MicrosoftOffice365.Business.Extensions.TaskExtensions.TimeoutAfter[TResult](Task`1 task, TimeSpan timeout)\\r\\n   at UiPath.MicrosoftOffice365.Business.Graph.GraphClientServiceFactory.LoginWithInteractiveTokenAsync(Office365AuthenticationContext authenticationContext, CancellationToken cancellationToken)\\r\\n   at UiPath.MicrosoftOffice365.Business.Graph.GraphClientServiceFactory.ResolveAccessTokenAsync(CancellationToken cancellationToken)\\r\\n   at UiPath.MicrosoftOffice365.Business.Graph.GraphClientServiceFactory.AuthenticateAsync(HttpRequestMessage request, CancellationToken cancellationToken)\\r\\n   at UiPath.MicrosoftOffice365.Business.Graph.AuthenticationHandler.AuthorizeAsync(HttpRequestMessage request, CancellationToken cancellationToken)\\r\\n   at UiPath.MicrosoftOffice365.Business.Graph.AuthenticationHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)\\r\\n   at Microsoft.Graph.UserMailFoldersCollectionRequest.GetAsync(CancellationToken cancellationToken)\\r\\n   at UiPath.MicrosoftOffice365.Business.Graph.GraphServiceClientProxy.GetMailFolderByPathAsync(String path, CancellationToken cancellationToken)\\r\\n   at UiPath.MicrosoftOffice365.Activities.Mail.BaseMailFolderArgument.ResolveAsync(IExecutionContext context, CancellationToken cancellationToken)\\r\\n   at UiPath.MicrosoftOffice365.Activities.Mail.GetEmailListConnections.SafeExecuteAsync(IExecutionContext context, CancellationToken cancellationToken)\"}"
+    },
+    {
+      "PermissionStatus": 0,
+      "Id": "00000000-0000-0000-8a41-77c2f5e09b15",
+      "TraceId": "b7974725-4438-4315-a9cc-9ec41f8acd62",
+      "ParentId": "00000000-0000-0000-8a41-77c2f5e09b14",
+      "Name": "Resolving drive item by path",
+      "StartTime": "2026-06-09T10:50:11.1950000Z",
+      "EndTime": "2026-06-09T10:50:11.4210000Z",
+      "Attributes": "{\"Path\":\"Inbox\",\"Status\":1}"
+    }
+  ]
+}
