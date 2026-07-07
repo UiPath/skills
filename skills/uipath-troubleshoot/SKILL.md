@@ -133,7 +133,7 @@ Read files from paths in `state.json`:
 
 ### Raw Data Rule
 
-- **Redirect CLI output to file:** `uip ... --output json > .local/investigations/raw/{filename}.json` (or `-o .local/investigations/raw/`). Read back only the fields you need — never load full responses into context. The raw file is the record.
+- **Capture with `| tee`, not `>`:** pipe each fetch through `tee` — `uip ... --output json | tee .local/investigations/raw/{filename}.json`. `tee` saves the file AND keeps the response in the tool result, so you read the fields you need the same turn. A bare `>` redirect hides stdout (an extra turn to inspect) and, in some sandboxes, a standalone write to `raw/` is denied — `tee` avoids both. Read back only the fields you need; never load full responses into context. The raw file is the record. Filtering + fallback: generic guide § Output Capture.
 - Evidence files reference raw files via `raw_data_ref`.
 - Before fetching, check `raw/` and `evidence/` — reuse if the entity was already queried.
 

@@ -13,10 +13,16 @@ Before using any fetched data, verify it matches the user's reported problem:
 
 If the data doesn't match: **discard it**. Do NOT use unrelated data as a proxy. Report the mismatch and ask for clarification.
 
-## Interpreting Query Results
+## Output Capture
 
-- **Empty results or 404** — before concluding an entity doesn't exist, verify the container (folder, tenant, instance) is still accessible. If the container was deleted or returns 404, all scoped queries are unreliable. Widen the search (different folder, broader time window, different state filters) or flag as a data gap and ask the user. Never treat empty results from an inaccessible container as proof of absence.
-- **Live infrastructure data** — machine connectivity, license counts, connection health, and robot availability reflect current state, not historical state. For incidents older than 24 hours, this data shows what's true NOW, not what was true when the incident happened. Use it as context only — machines could have been online 6 months ago and gone offline since. Never use current infrastructure snapshots as causal evidence for past incidents.
+Every `uip` data-gathering command follows two patterns — lean context AND an audit trail:
+
+1. **Filter at the source with `--output-filter`** — pull only the fields you need. Do NOT fetch the full response and slice it (`[:3000]` etc.); that silently drops information.
+2. **Save AND inspect in one call with `| tee`** — pipe the filtered response through `tee` to `.local/investigations/raw/<command>.json`: it stays visible in the tool result for immediate use AND is saved to disk to re-read during TEST. `raw/` must already exist (created at Startup with the Write tool); `tee` does not create it. Prefer `tee` over a bare `>` redirect — `>` hides stdout (extra turn to inspect) and a standalone write to `raw/` is denied in some sandboxes.
+
+**Filter-failure fallback.** If `--output-filter` returns empty, an error, or an uninterpretable shape (usually a field name that drifted from the current CLI schema), retry the SAME command ONCE without `--output-filter` to see the actual shape. Use that unfiltered response for the current call and note the stale filter in your evidence summary. Do NOT silently swallow filter errors.
+
+**Anti-patterns:** bare `> file.json` (hides stdout); `| head -c N` or byte/character slicing (drops required fields); fetching the unfiltered full response when 2–3 fields suffice (bloats context); inventing JSONpath field names (use only documented filters; on failure apply the fallback above).
 
 ## Locating Project Source & Resource Files
 
