@@ -1,0 +1,13 @@
+# FOSSA scan scope for the Skills project (passed via --config).
+# Excludes:
+#   - tests: coder-eval task fixtures (pyproject.toml/package.json stubs) are
+#     eval scaffolding, not shipped code
+#   - plugins, .agents: symlinks back into the repo root / skills tree — would
+#     duplicate scan targets or cycle
+version: 3
+
+paths:
+  exclude:
+    - ./tests
+    - ./plugins
+    - ./.agents

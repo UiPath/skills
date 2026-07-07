@@ -38,6 +38,68 @@ jobs:
       # Fails if version-manifest.json has drifted from package.json.
       - run: node scripts/sync-version.mjs --check
 
+  # Queues the FOSSA pipeline (.pipelines/security.yml, registered in Azure
+  # DevOps) at this exact ref with blockOnIssue=true, waits for the verdict,
+  # and fails — blocking the stable npmjs publish — if FOSSA finds issues.
+  # Alpha publishes are not gated. Soft-skips with a loud warning until the
+  # gate is configured:
+  #   vars.AZDO_FOSSA_PROJECT     — ADO project hosting the pipeline
+  #   vars.AZDO_FOSSA_PIPELINE_ID — numeric pipeline definition id
+  #   secrets.AZDO_FOSSA_PAT      — PAT with Build (read & execute) scope
+  fossa-gate:
+    name: FOSSA security gate
+    needs: [guard]
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'npmjs')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Run FOSSA pipeline and wait for verdict
+        env:
+          AZDO_ORG_URL: https://dev.azure.com/uipath
+          AZDO_PROJECT: ${{ vars.AZDO_FOSSA_PROJECT }}
+          AZDO_PIPELINE_ID: ${{ vars.AZDO_FOSSA_PIPELINE_ID }}
+          AZDO_PAT: ${{ secrets.AZDO_FOSSA_PAT }}
+        run: |
+          if [ -z "$AZDO_PROJECT" ] || [ -z "$AZDO_PIPELINE_ID" ] || [ -z "$AZDO_PAT" ]; then
+            MSG="FOSSA release gate NOT enforced: AZDO_FOSSA_PROJECT / AZDO_FOSSA_PIPELINE_ID repo variables or AZDO_FOSSA_PAT secret are missing. Register .pipelines/security.yml in Azure DevOps and configure them."
+            echo "::warning::$MSG"
+            {
+              echo "## ⚠️ FOSSA gate skipped (not configured)"
+              echo ""
+              echo "$MSG"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          BODY=$(jq -n --arg ref "$GITHUB_REF" \
+            '{resources: {repositories: {self: {refName: $ref}}}, templateParameters: {blockOnIssue: true}}')
+          RUN=$(curl -sSf -u ":$AZDO_PAT" -H "Content-Type: application/json" -d "$BODY" \
+            "$AZDO_ORG_URL/$AZDO_PROJECT/_apis/pipelines/$AZDO_PIPELINE_ID/runs?api-version=7.1")
+          RUN_ID=$(echo "$RUN" | jq -r '.id')
+          RUN_URL=$(echo "$RUN" | jq -r '._links.web.href')
+          echo "Queued FOSSA run $RUN_ID at $GITHUB_REF: $RUN_URL"
+
+          # FOSSA on this repo takes a few minutes; poll every 30s, cap at 30m
+          # (job timeout above is the hard stop).
+          for i in $(seq 1 60); do
+            sleep 30
+            RUN=$(curl -sSf -u ":$AZDO_PAT" \
+              "$AZDO_ORG_URL/$AZDO_PROJECT/_apis/pipelines/$AZDO_PIPELINE_ID/runs/$RUN_ID?api-version=7.1")
+            STATE=$(echo "$RUN" | jq -r '.state')
+            echo "[$i/60] state=$STATE"
+            if [ "$STATE" = "completed" ]; then
+              RESULT=$(echo "$RUN" | jq -r '.result')
+              if [ "$RESULT" = "succeeded" ]; then
+                echo "FOSSA gate passed: $RUN_URL"
+                exit 0
+              fi
+              echo "::error::FOSSA gate failed (result: $RESULT) — release blocked. Review $RUN_URL (the FOSSA report link is in that run's fossa-report-links artifact)."
+              exit 1
+            fi
+          done
+          echo "::error::FOSSA run $RUN_ID did not complete within 30 minutes: $RUN_URL"
+          exit 1
+
   publish-alpha:
     name: Publish alpha to GitHub Packages
     needs: [guard]
@@ -77,7 +139,7 @@ jobs:
 
   publish-release:
     name: Publish stable to npmjs
-    needs: [guard]
+    needs: [guard, fossa-gate]
     if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'npmjs')
     runs-on: ubuntu-latest
     permissions:

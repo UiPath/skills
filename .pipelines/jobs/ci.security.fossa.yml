@@ -1,0 +1,28 @@
+# FOSSA dependency scan for the skills plugin — one stage, one FOSSA project.
+# No build step: this repo is markdown + scripts with no compilation, so FOSSA
+# analyzes dependency manifests directly (root package.json and the
+# uipath-maestro-bpmn validator package.json). Scan scope is controlled by
+# fossa-skills.yml next to this file.
+parameters:
+  azureServiceConnection: ''
+  poolName: 'Security-Linux'
+  # false: findings only warn (nightly). true: `fossa test` fails the run on
+  # findings — used by the publish.yml release gate.
+  blockOnIssue: false
+
+stages:
+  - stage: Security_FOSSA
+    displayName: FOSSA
+    dependsOn: []
+    jobs:
+      - job: Skills
+        pool: ${{ parameters.poolName }}
+        steps:
+          - checkout: self
+          - template: Security/fossa.steps.yml@fossa
+            parameters:
+              OS: 'linux'
+              azureSubscription: ${{ parameters.azureServiceConnection }}
+              blockOnIssue: ${{ parameters.blockOnIssue }}
+              FOSSAFlags: '--branch "$(Build.SourceBranch)" --revision "$(Build.SourceVersion)-$(Build.BuildId)" --project "Skills" --config ".pipelines/jobs/fossa-skills.yml"'
+              FOSSATestFlags: '--revision "$(Build.SourceVersion)-$(Build.BuildId)" --project "Skills"'

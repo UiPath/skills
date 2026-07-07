@@ -1,0 +1,62 @@
+# Dedicated security scanning pipeline. Two entry points:
+#   - nightly schedule on main (02:00 UTC, below) — warn-only, mirrors
+#     StudioWeb's .pipelines/security.yml: decoupled from regular CI so scans
+#     never delay PR/merge builds
+#   - release gate: publish.yml (GitHub Actions) queues this pipeline at the
+#     release ref with blockOnIssue=true and blocks the npmjs publish if FOSSA
+#     finds issues
+#
+# Register this file as an Azure DevOps pipeline definition. It requires:
+#   - the "UiPath" GitHub service connection (for the fossa template repository)
+#   - the Azure service connection below (FOSSA API key retrieval via Key Vault)
+#   - access to the agent pool below and the "DevOps" universal packages feed
+# Then set AZDO_FOSSA_PROJECT / AZDO_FOSSA_PIPELINE_ID repo variables and the
+# AZDO_FOSSA_PAT secret in GitHub so publish.yml can enforce the release gate.
+
+name: $(Date:yyMMdd)$(Rev:.r)-sec
+
+trigger: none
+
+pr: none
+
+schedules:
+  - cron: "0 2 * * *"
+    displayName: Nightly security scan
+    branches:
+      include:
+        - main
+    always: true
+
+parameters:
+  - name: enableFossa
+    displayName: Run FOSSA scan
+    type: boolean
+    default: true
+  - name: azureServiceConnection
+    displayName: Azure connection pointing to Internal-Production-EA
+    type: string
+    default: 'Azure Internal-Production-EA'
+  - name: poolName
+    displayName: Agent pool
+    type: string
+    default: 'Security-Linux'
+  - name: blockOnIssue
+    displayName: Fail the run when FOSSA finds issues (release gate)
+    type: boolean
+    default: false
+
+resources:
+  repositories:
+    - repository: fossa
+      type: github
+      name: UiPath/AzurePipelinesTemplates
+      ref: refs/tags/uipath.security.fossa.3.1.1
+      endpoint: UiPath
+
+stages:
+  - ${{ if eq(parameters.enableFossa, true) }}:
+      - template: jobs/ci.security.fossa.yml
+        parameters:
+          azureServiceConnection: ${{ parameters.azureServiceConnection }}
+          poolName: ${{ parameters.poolName }}
+          blockOnIssue: ${{ parameters.blockOnIssue }}
