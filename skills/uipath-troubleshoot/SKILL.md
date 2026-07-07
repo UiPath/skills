@@ -29,7 +29,7 @@ These rules are the starting line for every phase — they apply in full at ever
 5. **Empty ≠ absent.** On empty/404: first verify the correlation key and scope were correct per the guide's Data Correlation rules — an empty result is more often a wrong-key error than a missing entity — then verify the container exists. Deleted/inaccessible container = data gap, not proof of absence.
 6. **Live state ≠ historical state.** Current infrastructure snapshots cannot prove what happened during past incidents (>24h old — context only).
 8. **Symptom ≠ cause.** "Confirmed as root cause" requires the underlying cause from the playbook's cause list ("What can cause it", under `## Context`) named with cause-specific evidence. Symptom matches (right error string, expected non-zero exit code) confirm the *playbook match*, not the *cause*. DEPTH CHECK enforces this gate — never skip it.
-16. **Fixes come from playbooks, never raw artifacts.** The recommended fix MUST be the matched playbook's `## Resolution` (or a docsai result when no playbook resolution exists), grounded in its branch logic — when the resolution branches, name the applicable branch and cite the discriminating evidence that selects it. NEVER synthesize a remedy from raw job/XAML/config fields: raw artifacts explain the *symptom*, the playbook prescribes the *fix*. No matched playbook read → not ready to present a fix.
+16. **Fixes are playbook-grounded, not invented.** The recommended fix MUST be grounded in the matched playbook's `## Resolution` (or a docsai result when no playbook resolution exists) — when the resolution branches, name the applicable branch and cite the discriminating evidence that selects it. Raw job/XAML/config artifacts supply the evidence and the concrete values a fix acts on (an uninitialized variable, a wrong config value, a null field are read straight from them); what you must NOT do is invent a remedy the matched playbook's resolution doesn't sanction, or skip reading the playbook. No matched playbook read → not ready to present a fix.
 
 ### Ask, don't guess (P2)
 
@@ -331,7 +331,7 @@ Required steps in every test plan:
 
 Understand the confirm/eliminate criteria, then read the matched playbook (path in `state.json.matched_playbooks`; read-once). `## Context` first, then `## Investigation` — the canonical list of evidence to gather; every later evidence step traces back to it.
 
-**Reading the matched playbook is a hard gate — it is the only source of the fix (Critical Rule 16).** No `confirmed` status, root-cause classification, or remedy without having read the playbook's `## Context`, `## Investigation`, and `## Resolution`. Playbook path unresolvable → STOP and resolve the correct absolute path from the skill's `references/` tree — do NOT diagnose or propose a fix from raw artifacts. Branched `## Resolution` (`If X, then …` / branches keyed on a condition) → the plan MUST include the evidence steps that discriminate the branches, and the chosen branch's discriminating datum goes in the evidence file — a confirmed hypothesis that cannot name its resolution branch is not done.
+**Reading the matched playbook is a hard gate — it is the only source of the fix (Critical Rule 16).** No `confirmed` status, root-cause classification, or remedy without having read the playbook's `## Context`, `## Investigation`, and `## Resolution`. Playbook path unresolvable → STOP and resolve the correct absolute path from the skill's `references/` tree — do NOT proceed to a fix ungrounded by the matched playbook's resolution. Branched `## Resolution` (`If X, then …` / branches keyed on a condition) → the plan MUST include the evidence steps that discriminate the branches, and the chosen branch's discriminating datum goes in the evidence file — a confirmed hypothesis that cannot name its resolution branch is not done.
 
 Scope the work per the Confidence-Level Behavior table.
 
@@ -487,7 +487,7 @@ Produce the final user-facing resolution — formatting, entity naming, cross-do
 3. **Assemble fixes across all domains.** Classify each domain: **root cause** (failure originated) or **propagation** (failure surfaced/relayed).
 
    Root cause domain:
-   1. Playbook `## Resolution` present → the fix for that domain. Branched → name the applicable branch and cite the discriminating evidence signal — the datum DEPTH CHECK check 3 pinned. Do NOT collapse a branched resolution to a generic remedy or substitute a raw-artifact remedy. Playbook never read → return to TEST step A and read it first.
+   1. Playbook `## Resolution` present → the fix for that domain. Branched → name the applicable branch and cite the discriminating evidence signal — the datum DEPTH CHECK check 3 pinned. Do NOT collapse a branched resolution to a generic remedy, or replace the playbook's prescribed branch with a remedy the resolution doesn't sanction. Playbook never read → return to TEST step A and read it first.
    2. No `## Resolution` → `uip docsai ask` targeted at the domain's fix ("how to prevent [specific issue] in [domain]"); use if concrete and actionable.
    3. Nothing useful → write: "No documented fix found for the {domain} layer — check UiPath documentation or consult UiPath support."
 
