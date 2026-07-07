@@ -6,10 +6,11 @@ description: >
   content (non-breaking space U+00A0 vs regular space U+0020). The
   agent must match the activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md
   playbook, recognize that the names visually match but the BusinessException
-  still fires, conclude that a look-alike-character / whitespace
-  branch is the most likely cause, and recommend the host-side
-  PowerShell byte-compare snippet from the playbook to confirm —
-  rather than guess.
+  still fires, and either identify the U+00A0 mismatch from the byte
+  content of the Get Workbook Sheets log evidence, or narrow to the
+  look-alike/whitespace branches and recommend the host-side PowerShell
+  byte-compare snippet to confirm — never assert a specific code point
+  without byte-level evidence.
 
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, read-range, sheet-not-found, byte-inspection, look-alike]
 
