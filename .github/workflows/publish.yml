@@ -43,38 +43,83 @@ jobs:
   # and fails — blocking the stable npmjs publish — if FOSSA finds issues.
   # Alpha publishes are not gated. The pipeline lives in the "skills" ADO
   # project (https://dev.azure.com/uipath/skills — same convention as
-  # StudioWeb's repo-named project). Soft-skips with a loud warning until the
-  # gate is configured:
+  # StudioWeb's repo-named project).
+  #
+  # Auth is OIDC workload identity federation — no PAT, no repo secrets. The
+  # job's GitHub OIDC token (subject repo:UiPath/skills:environment:fossa-gate,
+  # stable across release tags because of the environment below) is exchanged
+  # through an Entra app registration for a short-lived Azure DevOps access
+  # token. Soft-skips with a loud warning until configured (all plain repo
+  # variables — none of these are secrets):
   #   vars.AZDO_FOSSA_PIPELINE_ID — numeric pipeline definition id, assigned
   #                                 when .pipelines/security.yml is registered
-  #   secrets.AZDO_FOSSA_PAT      — PAT with Build (read & execute) scope
+  #   vars.AZDO_FOSSA_CLIENT_ID   — Entra app registration client id. The app
+  #                                 needs a federated credential for this
+  #                                 repo's `fossa-gate` environment, and its
+  #                                 service principal must be added to the ADO
+  #                                 org with Build read & execute on the
+  #                                 skills project.
+  #   vars.AZDO_FOSSA_TENANT_ID   — Entra tenant id of that app registration
   fossa-gate:
     name: FOSSA security gate
     needs: [guard]
     if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'npmjs')
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # Pins the OIDC subject claim to environment:fossa-gate so one federated
+    # credential covers every release tag (per-ref subjects can't wildcard).
+    environment: fossa-gate
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - name: Run FOSSA pipeline and wait for verdict
+      - name: Check gate configuration
+        id: config
         env:
-          AZDO_PROJECT_URL: https://dev.azure.com/uipath/skills
           AZDO_PIPELINE_ID: ${{ vars.AZDO_FOSSA_PIPELINE_ID }}
-          AZDO_PAT: ${{ secrets.AZDO_FOSSA_PAT }}
+          AZDO_CLIENT_ID: ${{ vars.AZDO_FOSSA_CLIENT_ID }}
+          AZDO_TENANT_ID: ${{ vars.AZDO_FOSSA_TENANT_ID }}
         run: |
-          if [ -z "$AZDO_PIPELINE_ID" ] || [ -z "$AZDO_PAT" ]; then
-            MSG="FOSSA release gate NOT enforced: AZDO_FOSSA_PIPELINE_ID repo variable or AZDO_FOSSA_PAT secret is missing. Register .pipelines/security.yml as a pipeline in the skills ADO project and configure them."
+          if [ -z "$AZDO_PIPELINE_ID" ] || [ -z "$AZDO_CLIENT_ID" ] || [ -z "$AZDO_TENANT_ID" ]; then
+            MSG="FOSSA release gate NOT enforced: AZDO_FOSSA_PIPELINE_ID, AZDO_FOSSA_CLIENT_ID or AZDO_FOSSA_TENANT_ID repo variable is missing. Register .pipelines/security.yml as a pipeline in the skills ADO project and configure the OIDC federation (see this job's comments)."
             echo "::warning::$MSG"
             {
               echo "## ⚠️ FOSSA gate skipped (not configured)"
               echo ""
               echo "$MSG"
             } >> "$GITHUB_STEP_SUMMARY"
-            exit 0
+            echo "enforce=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enforce=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # allow-no-subscriptions: the identity only needs Azure DevOps, not an
+      # Azure subscription.
+      - name: Azure login (OIDC)
+        if: steps.config.outputs.enforce == 'true'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZDO_FOSSA_CLIENT_ID }}
+          tenant-id: ${{ vars.AZDO_FOSSA_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Run FOSSA pipeline and wait for verdict
+        if: steps.config.outputs.enforce == 'true'
+        env:
+          AZDO_PROJECT_URL: https://dev.azure.com/uipath/skills
+          AZDO_PIPELINE_ID: ${{ vars.AZDO_FOSSA_PIPELINE_ID }}
+        run: |
+          # Entra access token for the Azure DevOps first-party app (fixed
+          # resource id, same in every tenant); ~1h lifetime covers the 30m
+          # polling cap below.
+          AZDO_TOKEN=$(az account get-access-token \
+            --resource 499b84ac-1321-427f-aa17-267ca6975798 \
+            --query accessToken -o tsv)
+          echo "::add-mask::$AZDO_TOKEN"
 
           BODY=$(jq -n --arg ref "$GITHUB_REF" \
             '{resources: {repositories: {self: {refName: $ref}}}, templateParameters: {blockOnIssue: true}}')
-          RUN=$(curl -sSf -u ":$AZDO_PAT" -H "Content-Type: application/json" -d "$BODY" \
+          RUN=$(curl -sSf -H "Authorization: Bearer $AZDO_TOKEN" -H "Content-Type: application/json" -d "$BODY" \
             "$AZDO_PROJECT_URL/_apis/pipelines/$AZDO_PIPELINE_ID/runs?api-version=7.1")
           RUN_ID=$(echo "$RUN" | jq -r '.id')
           RUN_URL=$(echo "$RUN" | jq -r '._links.web.href')
@@ -84,7 +129,7 @@ jobs:
           # (job timeout above is the hard stop).
           for i in $(seq 1 60); do
             sleep 30
-            RUN=$(curl -sSf -u ":$AZDO_PAT" \
+            RUN=$(curl -sSf -H "Authorization: Bearer $AZDO_TOKEN" \
               "$AZDO_PROJECT_URL/_apis/pipelines/$AZDO_PIPELINE_ID/runs/$RUN_ID?api-version=7.1")
             STATE=$(echo "$RUN" | jq -r '.state')
             echo "[$i/60] state=$STATE"

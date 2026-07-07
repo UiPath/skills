@@ -11,8 +11,10 @@
 #   - the "UiPath" GitHub service connection (for the fossa template repository)
 #   - the Azure service connection below (FOSSA API key retrieval via Key Vault)
 #   - access to the agent pool below and the "DevOps" universal packages feed
-# Then set the AZDO_FOSSA_PIPELINE_ID repo variable and the AZDO_FOSSA_PAT
-# secret in GitHub so publish.yml can enforce the release gate.
+# Then set the AZDO_FOSSA_PIPELINE_ID / AZDO_FOSSA_CLIENT_ID /
+# AZDO_FOSSA_TENANT_ID repo variables in GitHub so publish.yml can enforce
+# the release gate — auth is OIDC workload identity federation, no PAT
+# (setup details in publish.yml's fossa-gate job).
 
 name: $(Date:yyMMdd)$(Rev:.r)-sec
 
