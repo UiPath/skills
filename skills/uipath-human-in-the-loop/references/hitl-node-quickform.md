@@ -192,10 +192,11 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.
   "nodeType": "uipath.human-in-the-loop.quick-form",
   "version": "1.0",
   "category": "human-task",
-  "tags": ["human-task", "hitl", "human-in-the-loop", "approval"],
-  "sortOrder": 50,
+  "description": "Fast inline approvals with inline debug",
+  "tags": ["human-task", "hitl", "human-in-the-loop", "quick-form", "approval"],
+  "sortOrder": 27,
   "display": {
-    "label": "Human in the Loop",
+    "label": "Quick Form",
     "icon": "users",
     "shape": "square"
   },
@@ -214,7 +215,7 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.
     {
       "position": "right",
       "handles": [
-        { "id": "completed", "label": "Completed", "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } }
+        { "id": "completed", "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } }
       ],
       "visible": true
     }
@@ -438,9 +439,12 @@ After the HITL node, downstream nodes can reference:
 
 **In a downstream script node:**
 ```javascript
-const output = $vars.invoiceReview1.output;
-// Access by field ID, not variable name
+// Always access inline — do NOT destructure first
+const vendorName = $vars.invoiceReview1.output.vendorName;
+const costCenter = $vars.invoiceReview1.output.costCenter;
 if ($vars.invoiceReview1.status === "approve") {
-  await updateSystem(output.vendorName, output.costCenter);
+  await updateSystem(vendorName, costCenter);
 }
+// Wrong — do NOT destructure first:
+// const output = $vars.invoiceReview1.output; // then output.vendorName misses the node path
 ```

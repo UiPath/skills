@@ -381,7 +381,36 @@ Maps app parameter names to binding expressions. Format: `"=vars.<path>"` (with 
 
 ## Definition Entry
 
-Same definition as QuickForm — see [hitl-node-quickform.md](hitl-node-quickform.md) for the full definition block. Add it once to `workflow.definitions`, deduplicated by `nodeType`.
+Add this once to `workflow.definitions`, deduplicated by `nodeType`. The AppTask uses its own `nodeType` — do NOT reuse the QuickForm definition.
+
+```json
+{
+  "nodeType": "uipath.human-in-the-loop.coded-action-app",
+  "version": "1.0",
+  "category": "human-task",
+  "description": "App-based human task using a deployed coded action app",
+  "tags": ["human-task", "hitl", "human-in-the-loop", "coded-action-app", "approval"],
+  "sortOrder": 28,
+  "display": { "label": "App Task", "icon": "users", "shape": "square" },
+  "handleConfiguration": [
+    {
+      "position": "left",
+      "handles": [{ "id": "input", "type": "target", "handleType": "input" }],
+      "visible": true
+    },
+    {
+      "position": "right",
+      "handles": [{ "id": "completed", "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } }],
+      "visible": true
+    }
+  ],
+  "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" },
+  "outputDefinition": {
+    "output": { "type": "object", "description": "Task result data", "source": "=result", "var": "output" },
+    "status": { "type": "string", "description": "Task completion status", "source": "=result.Action", "var": "status" }
+  }
+}
+```
 
 ---
 
