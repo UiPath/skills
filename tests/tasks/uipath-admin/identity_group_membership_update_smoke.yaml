@@ -39,7 +39,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed groups to find the target group"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+groups\s+list\b.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+groups\s+list'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

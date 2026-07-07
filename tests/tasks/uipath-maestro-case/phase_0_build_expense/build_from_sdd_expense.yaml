@@ -1,0 +1,98 @@
+task_id: skill-case-phase-0-build-expense
+description: >
+  BUILD FROM GENERATED EXPENSE SDD - an approved ExpenseReimbursement sdd.md
+  fixture derived from the Phase 0 expense interview output is staged into the
+  sandbox; the skill uses it as the sole source of truth, proceeds past
+  planning/build approval stops, creates the case-management project, and
+  validates the resulting caseplan.json. This covers the "can we proceed
+  further after SDD?" path for the employee expense scenario.
+tags:
+  - uipath-maestro-case
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+  - feature:phase-0
+  - feature:stages
+  - feature:case-exit
+  - feature:conditions
+  - feature:trigger
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWrite"]
+  sdk_options:
+    max_thinking_tokens: 10000
+
+run_limits:
+  task_timeout: 3600
+  max_turns: 150
+  turn_timeout: 2700
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I have an approved SDD for our ExpenseReimbursement case-management solution -
+  it's saved as `sdd.md` in this folder. Build a UiPath Case Management solution
+  named "ExpenseReimbursement" containing a project also named
+  "ExpenseReimbursement" from this SDD.
+
+  Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0, do
+  not re-interview me, and do not redesign the process. The connector IDs and
+  resource references in the SDD are placeholders where the eval environment
+  does not have tenant-specific registry data; preserve the requested task
+  types and proceed with skeleton/placeholder resource bindings when registry
+  resolution is unavailable.
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Treat all hard stops after the SDD as pre-approved, including Phase 1
+    planning approval, Phase 2 publish-for-review, and Phase 5 publish. Choose
+    the continue / skip-publish path and keep going.
+  - Do NOT call AskUserQuestion - it is not available in this harness.
+  - If `uip maestro case registry pull` reports unauthenticated, empty, or
+    missing cache, record that state and proceed without live registry data.
+  - Skip Phase 6 entirely. Do not run `uip maestro case debug` yourself.
+  - Finish with `uip maestro case validate ExpenseReimbursement/ExpenseReimbursement/caseplan.json --output json`
+    passing on the resulting caseplan.json.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip maestro case validate on the built case"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+validate[^\n]*ExpenseReimbursement/ExpenseReimbursement/caseplan\.json[^\n]*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the generated ExpenseReimbursement caseplan.json"
+    command: "uip maestro case validate ExpenseReimbursement/ExpenseReimbursement/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "staged sdd.md preserves the expense_requests record-created trigger, companion data objects, and trigger-sourced intake field mappings"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/phase_0_to_case/expense_reimbursement/check_expense_trigger_sdd.py sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "caseplan preserves the expense-management domain structure, stage chain, terminal lanes, task-type mix, and Payment Tracking child case"
+    command: "python3 $TASK_DIR/check_expense_reimbursement_case.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

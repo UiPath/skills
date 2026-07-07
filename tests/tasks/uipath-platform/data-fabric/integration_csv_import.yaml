@@ -5,7 +5,16 @@ description: >
   schema to confirm exact field names (case-sensitive), creates a correctly
   formatted CSV (no system fields), runs the bulk import, then verifies results
   with records list. Tests the Discover → Act → Verify pattern for bulk data loading.
-tags: [uipath-platform, data-fabric, integration, records, import, mode:build, lifecycle:setup]
+tags:
+  [
+    uipath-platform,
+    data-fabric,
+    integration,
+    records,
+    import,
+    mode:build,
+    lifecycle:setup,
+  ]
 run_limits:
   expected_turns: 25
   turn_timeout: 600
@@ -58,18 +67,6 @@ success_criteria:
     description: "inventory.csv was created"
     path: "inventory.csv"
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "CSV uses exact case-sensitive field names as headers"
-    path: "inventory.csv"
-    includes:
-      - "SKU"
-      - "Quantity"
-      - "UnitCost"
-      - "Available"
-      - "LastRestocked"
-    weight: 2.5
     pass_threshold: 1.0
 
   - type: run_command

@@ -36,21 +36,25 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Advisory (non-gating): for a coded scope/placement fix of an EXISTING validator,
+  # the SDK docs (fetched below) are the authoritative source for allowed scopes —
+  # `catalog` (tenant-invariant metadata) and `list` (tenant entitlement) add nothing
+  # load-bearing here. Kept for signal, not scored. Matches the low-code validate task.
   - type: command_executed
-    description: "Agent fetched the guardrail catalog"
+    description: "Advisory: agent fetched the guardrail catalog (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Agent fetched the guardrails list"
+    description: "Advisory: agent fetched the guardrails list (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+guardrails\s+list'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent fetched the UiPath Python SDK guardrail docs"

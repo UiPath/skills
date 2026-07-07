@@ -29,7 +29,7 @@ def _flow_doc(
             },
             {
                 "id": "reviewExpense",
-                "type": "uipath.human-in-the-loop",
+                "type": "uipath.human-in-the-loop.quick-form",
                 "typeVersion": "1.0",
                 "inputs": {
                     "schema": {

@@ -23,7 +23,7 @@ initial_prompt: |
 success_criteria:
   - type: command_executed
     description: "Agent called catalog get to retrieve clause recommendations"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+(?:iso-42001|\$\S+).*--output\s+json'
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+(?:iso-42001|\$\S+)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

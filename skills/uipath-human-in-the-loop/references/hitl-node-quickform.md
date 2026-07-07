@@ -69,7 +69,7 @@ Also read `workflow.variables.globals`. Each entry has an `id` that maps directl
 | Node output | `vars.<nodeId>.output.<field>` | `=js:$vars.<nodeId>.output.<field>` |
 | Flow global (`direction: "in"`) | `vars.<globalId>` | `=js:$vars.<globalId>` |
 
-> **`binding` vs `variable` prefix rule:** `binding` (input/inOut fields) uses the full path starting with `vars.` because it references an existing variable path. `variable` (output/inOut fields) is just a **name** with no prefix — it declares a new global variable, not a reference to an existing one.
+> **`binding` vs `variable` prefix rule:** `binding` (input/inOut fields) uses the full path starting with `vars.` because it references an existing variable path. `variable` (output/inOut fields) uses `vars.<name>` — the `vars.` prefix is required; it declares the global variable name.
 
 For the full variable system, see → [How $vars paths are constructed in Flow](../../uipath-maestro-flow/references/shared/variables-and-expressions.md)
 
@@ -85,7 +85,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 | Output field | `"output"` | Write | Data the automation needs back |
 | InOut field | `"inOut"` | Read + modify | Data the human can see and optionally correct |
 
-**Supported field types:** `text` (maps from `string`), `number`, `boolean`, `date`
+**Supported field types:** `string`, `number`, `boolean`, `date`, `file`
 
 **Design rules:**
 - Input fields: everything the human needs to decide — IDs, amounts, context; bind to upstream node output via `binding`
@@ -106,7 +106,6 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
   "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {
-    "type": "quick",
     "title": "Invoice Review",
     "recipient": {
       "channels": ["Email", "ActionCenter"],
@@ -120,7 +119,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
         {
           "id": "invoiceid",
           "label": "Invoice ID",
-          "type": "text",
+          "type": "string",
           "direction": "input",
           "binding": "vars.fetchInvoice.output.invoiceId"
         },
@@ -134,17 +133,17 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
         {
           "id": "notes",
           "label": "Notes",
-          "type": "text",
+          "type": "string",
           "direction": "output",
-          "variable": "notes",
+          "variable": "vars.notes",
           "required": false
         },
         {
           "id": "decision",
           "label": "Decision",
-          "type": "text",
+          "type": "string",
           "direction": "output",
-          "variable": "decision",
+          "variable": "vars.decision",
           "required": true
         }
       ],
@@ -193,10 +192,11 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.
   "nodeType": "uipath.human-in-the-loop.quick-form",
   "version": "1.0",
   "category": "human-task",
-  "tags": ["human-task", "hitl", "human-in-the-loop", "approval"],
-  "sortOrder": 50,
+  "description": "Fast inline approvals with inline debug",
+  "tags": ["human-task", "hitl", "human-in-the-loop", "quick-form", "approval"],
+  "sortOrder": 27,
   "display": {
-    "label": "Human in the Loop",
+    "label": "Quick Form",
     "icon": "users",
     "shape": "square"
   },
@@ -222,7 +222,6 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.
   ],
   "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" },
   "inputDefaults": {
-    "type": "quick",
     "schema": {
       "fields": [],
       "outcomes": [{ "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }]
@@ -279,7 +278,63 @@ The HITL node exposes two outputs (`output`, `status`). After adding it, **compl
 
 Include entries for **all** nodes in the flow, not just the HITL node. Replace the entire array — do not append. Add one `output` entry and one `status` entry per HITL node — no per-field entries. Output and inOut field values from the task are accessible via `$vars.<nodeId>.output.<fieldId>` at runtime (fields are embedded in the output object, not exposed as separate node variables).
 
-Output-direction and inOut-direction fields are also materialized as workflow-level globals in `variables.globals` with `direction: "inout"` — these are accessible directly as `$vars.<field.variable>` without a node prefix (e.g. `variable: "decision"` → `$vars.decision`).
+> **Scripts must always use `$vars.<nodeId>.output.<fieldId>`.** The `field.variable` property declares a name for the global alias — do NOT use that name directly in scripts. `$vars.decision` (global alias) and `$vars.<nodeId>.output.decision` (field ID access) are different paths and only the field ID path is reliable in script nodes. See Critical Rule 10 in SKILL.md.
+
+---
+
+## Canonical Field Shape (reference)
+
+This is the exact JSON a correctly authored QuickForm `fields[]` entry looks like for each direction. Use this as ground truth when writing or reviewing HITL nodes.
+
+```json
+{
+  "fields": [
+    {
+      "id": "invoiceid",
+      "type": "number",
+      "label": "Invoice ID",
+      "direction": "input",
+      "binding": "vars.fetchInvoice1.output.invoiceId"
+    },
+    {
+      "id": "vendorname",
+      "type": "string",
+      "label": "Vendor Name",
+      "direction": "input",
+      "binding": "vars.fetchInvoice1.output.vendorName"
+    },
+    {
+      "id": "approveddate",
+      "type": "date",
+      "label": "Approved Date",
+      "direction": "output",
+      "variable": "vars.approvedDate"
+    },
+    {
+      "id": "approved",
+      "type": "boolean",
+      "label": "Approved",
+      "direction": "output",
+      "variable": "vars.approved"
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "submit",
+      "name": "Submit",
+      "type": "string",
+      "action": "Continue",
+      "isPrimary": true
+    }
+  ]
+}
+```
+
+**Key rules this sample encodes:**
+- `type`: always a JS/JSON type — `string`, `number`, `boolean`, `date`, or `file`. Never `"text"`.
+- `variable`: always `"vars.<name>"` — the `vars.` prefix is required.
+- `binding`: input/inOut fields only; raw path (`vars.<nodeId>.output.<field>`), no `=js:$` prefix.
+- Output/inOut fields have `variable`; input fields do not.
 
 ---
 
@@ -293,9 +348,9 @@ The agent translates the user's business description into the `fields[]` and `ou
 |---|---|
 | field `id` | lowercase label, spaces→`-`, strip non-alphanumeric. `"Invoice ID"` → `"invoiceid"`, `"Due Date"` → `"due-date"` |
 | `direction` | `inputs[]` items → `"input"`, `outputs[]` → `"output"`, `inOuts[]` → `"inOut"` |
-| field `type` | `"string"` → `"text"`, `"number"` → `"number"`, `"boolean"` → `"boolean"`, `"date"` → `"date"` |
+| field `type` | Use the JS/JSON type: `string`, `number`, `boolean`, `date`, or `file` |
 | `binding` | **Input / inOut fields only.** Format: `"vars.<nodeId>.output.<field>"` for node outputs; `"vars.<globalId>"` for flow globals. **No `=js:$` prefix** — HITL binding is a raw path, not an expression. |
-| `variable` | **Output / inOut fields only** — absent on input fields. Format: `"<name>"` (**no** `vars.` prefix — just the variable name). Defaults to the camelCase of the field `id` if not specified. |
+| `variable` | **Output / inOut fields only** — absent on input fields. Format: `"vars.<name>"` (always include the `vars.` prefix). Defaults to `"vars.<camelCase id>"` if not specified. |
 | `required` | omit if false; set `true` for mandatory outputs |
 | `outcomes[0]` | `isPrimary: true`, `action: "Continue"` |
 | `outcomes[1+]` | `isPrimary: false`, `action: "End"` |
@@ -307,7 +362,7 @@ Business description: *"Reviewer sees invoice ID and amount, clicks Approve or R
 
 ```json
 "fields": [
-  { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input", "binding": "vars.fetchData1.output.invoiceId" },
+  { "id": "invoiceid", "label": "Invoice ID", "type": "string",   "direction": "input", "binding": "vars.fetchData1.output.invoiceId" },
   { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "vars.fetchData1.output.amount" }
 ],
 "outcomes": [
@@ -322,8 +377,8 @@ Business description: *"Human sees the AI-drafted email, can edit it, then click
 
 ```json
 "fields": [
-  { "id": "recipient",  "label": "Recipient",  "type": "text", "direction": "input", "binding": "vars.draft1.output.recipient" },
-  { "id": "emailbody",  "label": "Email Body", "type": "text", "direction": "inOut", "binding": "vars.draft1.output.body", "variable": "emailBody" }
+  { "id": "recipient",  "label": "Recipient",  "type": "string", "direction": "input", "binding": "vars.draft1.output.recipient" },
+  { "id": "emailbody",  "label": "Email Body", "type": "string", "direction": "inOut", "binding": "vars.draft1.output.body", "variable": "vars.emailBody" }
 ],
 "outcomes": [
   { "id": "send",    "name": "Send",    "type": "string", "isPrimary": true,  "action": "Continue" },
@@ -337,9 +392,9 @@ Business description: *"Agent couldn't extract vendor name or cost center. Human
 
 ```json
 "fields": [
-  { "id": "rawextract",  "label": "Raw Extract",  "type": "text", "direction": "input",  "binding": "vars.extract1.output.rawText" },
-  { "id": "vendorname",  "label": "Vendor Name",  "type": "text", "direction": "output", "variable": "vendorName",  "required": true },
-  { "id": "costcenter",  "label": "Cost Center",  "type": "text", "direction": "output", "variable": "costCenter", "required": true }
+  { "id": "rawextract",  "label": "Raw Extract",  "type": "string", "direction": "input",  "binding": "vars.extract1.output.rawText" },
+  { "id": "vendorname",  "label": "Vendor Name",  "type": "string", "direction": "output", "variable": "vars.vendorName",  "required": true },
+  { "id": "costcenter",  "label": "Cost Center",  "type": "string", "direction": "output", "variable": "vars.costCenter", "required": true }
 ],
 "outcomes": [
   { "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }
@@ -352,9 +407,9 @@ Business description: *"If agent confidence is low, escalate. Human sees reasoni
 
 ```json
 "fields": [
-  { "id": "reasoning",       "label": "Agent Reasoning",  "type": "text",   "direction": "input",  "binding": "vars.classify1.output.reasoning" },
+  { "id": "reasoning",       "label": "Agent Reasoning",  "type": "string",   "direction": "input",  "binding": "vars.classify1.output.reasoning" },
   { "id": "confidencescore", "label": "Confidence Score", "type": "number", "direction": "input",  "binding": "vars.classify1.output.score" },
-  { "id": "notes",           "label": "Notes",            "type": "text",   "direction": "output", "variable": "notes" }
+  { "id": "notes",           "label": "Notes",            "type": "string",   "direction": "output", "variable": "vars.notes" }
 ],
 "outcomes": [
   { "id": "retry",    "name": "Retry",    "type": "string", "isPrimary": true,  "action": "Continue" },
@@ -376,17 +431,20 @@ After the HITL node, downstream nodes can reference:
 | `$vars.<nodeId>.output` | object | All `output` and `inOut` field values keyed by **field `id`** |
 | `$vars.<nodeId>.output.<fieldId>` | varies | Individual field value using the field's `id` (e.g. `$vars.invoiceReview1.output.decision`) |
 | `$vars.<nodeId>.status` | string | Selected outcome name (e.g. `"Approve"`, `"Reject"`) |
-| `$vars.<globalId>` | varies | Workflow-global variable for output/inOut fields — accessible without node prefix. The `globalId` equals `field.variable` directly (e.g. `variable: "notes"` → `$vars.notes`) |
+| `$vars.<globalId>` | varies | Workflow-global variable for output/inOut fields. `globalId` is `field.variable` with `vars.` stripped (e.g. `variable: "vars.notes"` → `$vars.notes`). **Do not use this path in scripts — use `$vars.<nodeId>.output.<fieldId>` instead.** |
 
-> **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `"decision"`), not by the `variable` property. The `variable` property (`"approvalResult"`) creates a separate workflow-global variable (`$vars.approvalResult`) — it does not change the key used in the output object. If a field has `"id": "dec1"` and `"variable": "approvalResult"`, access it via the object as `$vars.nodeId.output.dec1`, or directly as `$vars.approvalResult`.
+> **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `"decision"`), not by the `variable` property. The `variable` property (`"approvalResult"`) creates a separate workflow-global variable (`$vars.approvalResult`) — it does not change the key used in the output object. If a field has `"id": "dec1"` and `"variable": "vars.approvalResult"`, access it via the object as `$vars.nodeId.output.dec1`, or directly as `$vars.approvalResult`.
 >
-> **Common mistake:** A field with `"id": "approved"` and `"variable": "legalApproval"` must be read as `$vars.<nodeId>.output.approved` — **not** `$vars.<nodeId>.output.legalApproval`. Using the `variable` name as the key produces `undefined` at runtime; `flow validate` does not catch it.
+> **Common mistake:** A field with `"id": "approved"` and `"variable": "vars.legalApproval"` must be read as `$vars.<nodeId>.output.approved` — **not** `$vars.<nodeId>.output.legalApproval`. Using the `variable` name as the key produces `undefined` at runtime; `flow validate` does not catch it.
 
-**In a downstream script node:**
+**In a downstream script node** — always access inline using `$vars.<nodeId>.output.<fieldId>`, not by destructuring:
 ```javascript
-const output = $vars.invoiceReview1.output;
-// Access by field ID, not variable name
+// Correct — field ID inline access
+const vendorName = $vars.invoiceReview1.output.vendorName;
+const costCenter = $vars.invoiceReview1.output.costCenter;
 if ($vars.invoiceReview1.status === "approve") {
-  await updateSystem(output.vendorName, output.costCenter);
+  await updateSystem(vendorName, costCenter);
 }
+// Wrong — do NOT destructure first:
+// const output = $vars.invoiceReview1.output;  // then output.vendorName misses the node path
 ```

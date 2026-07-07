@@ -1,0 +1,25 @@
+{
+  "name": "WebApiClient",
+  "description": "Process",
+  "main": "Wf_ParseDocument.xaml",
+  "dependencies": {
+    "UiPath.System.Activities": "[26.2.6]",
+    "UiPath.WebAPI.Activities": "2.4.0"
+  },
+  "schemaVersion": "4.0",
+  "projectVersion": "1.0.1",
+  "expressionLanguage": "CSharp",
+  "targetFramework": "Windows",
+  "entryPoints": [
+    {
+      "filePath": "Wf_ParseDocument.xaml",
+      "input": [],
+      "output": [],
+      "uniqueId": "11111111-1111-1111-1111-111111111111"
+    }
+  ],
+  "designOptions": {
+    "outputType": "Process",
+    "fileInfoCollection": []
+  }
+}

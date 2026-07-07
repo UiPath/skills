@@ -28,6 +28,8 @@ defaults:
         - TRACES_SMOKE_PROCESS_KEY
         - CODEX_API_KEY
         - CODEX_BASE_URL
+        - CODED_APPS_TEST_PROJECT_ID
+        - CODED_APPS_TEST_SOLUTION_ID
       extra_mounts:
         - ~/.uipath:/.uipath:rw
 

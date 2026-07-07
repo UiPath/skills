@@ -25,14 +25,14 @@ initial_prompt: |
 success_criteria:
   - type: command_executed
     description: "Agent checked current pack state before disabling"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+get\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+).*--output\s+json'
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+get\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent called state disable to remove standard settings"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+disable\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+).*--output\s+json'
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+disable\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

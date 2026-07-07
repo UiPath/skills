@@ -1,0 +1,6 @@
+{
+  "Name": "PyRecordCleaner",
+  "ProjectType": "Process",
+  "Description": "Loads a Python script in a Python Scope and invokes one of its methods to clean a set of records.",
+  "MainFile": "Main.xaml"
+}

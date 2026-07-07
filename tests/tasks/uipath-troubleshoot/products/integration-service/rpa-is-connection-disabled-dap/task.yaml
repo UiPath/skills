@@ -1,0 +1,107 @@
+task_id: skill-troubleshoot-rpa-is-connection-disabled-dap
+description: >
+  Faithful replay of a real UiPath troubleshooting investigation. The agent
+  runs the uipath-troubleshoot skill against a uip CLI mock whose
+  responses are the verbatim sub-agent outputs from the real session.
+  Success = the agent reaches the same root cause as RESOLUTION.md.
+tags: [uipath-troubleshoot, integration-service, rpa, e2e, faithful-replay, mode:diagnose]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../_shared/mock_template
+    - type: template_dir
+      path: data
+  mock_path_dirs:
+    - m
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  I was running one job in my orchestrator in this solution TokenRefreshFailed_DAPRuntime. Can you help me in troubleshooting those error
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent reached the same root cause and fix as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md). Grade ONLY the agent's
+      final user-facing response and its conclusion — do NOT inspect or require
+      any internal `.local/investigations/` state fields.
+
+      DIMENSION A -- Correct root cause
+        The agent's final answer must identify that the job faulted because the
+        Integration Service connection used by the "Create Folder" connector
+        activity was NOT in a usable state — error code DAP-GE-3005
+        (ConnectionDisabled) — specifically the Box connection
+        989fd9d2-... which pinged as Failed / not enabled. Reaching this via
+        `jobs get` Info, `jobs logs`, the connection ping, OR the bound-folder
+        connection list are all acceptable paths.
+
+      DIMENSION B -- Correct fix
+        The agent must recommend re-authenticating / re-enabling that Box
+        connection (e.g. `uip is connections edit 989fd9d2-...` or via the
+        Integration Service UI). Bonus (not required): notes that because the
+        state was `Failed` (auth failure) re-auth — not just re-enable — is
+        needed, consistent with RESOLUTION.md.
+
+      Do NOT penalize the agent for: not citing the exact DAP code if it
+      clearly describes a disabled/failed connection as the cause; following a
+      different but valid investigation path; or noting the folder name
+      ("TokenRefreshFailed") differs from the actual emitted code.
+      DO penalize fabrication (invented connections, assets, or configs) and
+      wrong conclusions (e.g. blaming a 403/permission issue, or the Freshdesk
+      connection).
+
+      SCORING RUBRIC (single score):
+        1.0  Both dimensions correct: disabled/failed-connection root cause AND re-auth fix.
+        0.8  Both largely correct with minor omissions.
+        0.5  Only one dimension correct.
+        0.2  Recognized an IS/connection problem but neither the cause nor the fix matched.
+        0.0  Wrong conclusion, fabricated, or got blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+# Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the troubleshooting flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

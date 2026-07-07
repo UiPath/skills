@@ -5,7 +5,7 @@ description: >
   lacks Connections.View in the folder where the connection lives. The agent runs
   the uipath-troubleshoot skill against a uip CLI mock whose responses are the
   verbatim (scrubbed) job evidence. Success = same root cause as RESOLUTION.md.
-tags: [uipath-troubleshoot, integration-service, rpa, orchestrator, e2e, faithful-replay, mode:diagnose]
+tags: [uipath-troubleshoot, integration-service, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
@@ -21,9 +21,9 @@ sandbox:
     - type: template_dir
       path: ../../../_shared/mock_template
     - type: template_dir
-      path: fixtures
+      path: data
   mock_path_dirs:
-    - mocks
+    - m
 
 reference:
   file: RESOLUTION.md
