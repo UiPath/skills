@@ -198,6 +198,7 @@ GLOBAL_FLAGS = frozenset({
     "--output", "--output-filter",
     "--log-level", "--log-file",
     "-h", "--help", "--help-all",
+    "--version",  # `uip --version` is a valid root invocation (no subcommand)
 })
 
 
@@ -209,9 +210,16 @@ def validate_shape(
 ) -> tuple[bool, str]:
     """Validate a (path, flag-set, positional-count) shape against the CLI."""
     if not path:
-        return False, "no parseable subcommand path"
+        # A rule matching only flags (e.g. `uip --version`) is a valid root
+        # invocation, not a broken subcommand path.
+        unknown = sorted(f for f in used_flags if f not in GLOBAL_FLAGS)
+        if unknown:
+            return False, f"no subcommand path; unknown root flag(s): {', '.join(unknown)}"
+        return True, ""
 
     # 1. Walk the path level-by-level
+    path = list(path)
+    extra_positionals = 0
     for depth in range(len(path)):
         parent = tuple(path[:depth])
         token = path[depth]
@@ -232,7 +240,7 @@ def validate_shape(
         subs = subcommand_names(help_payload)
         if token not in subs:
             # The token isn't enumerated in the parent's --help Subcommands.
-            # Two known-legitimate reasons before we flag it invalid:
+            # Three known-legitimate reasons before we flag it invalid:
             #
             # (a) Aspect-routers (e.g. `maestro` -> bpmn/case/flow): the
             #     parent's JSON --help hides these even though they're real
@@ -263,10 +271,27 @@ def validate_shape(
                 probe_subs = subcommand_names(probe)
                 if probe_subs and probe_subs != subs:
                     continue  # real command group, just not enumerated by the parent
+            # (c) Positional argument: the token is not a subcommand, but the
+            #     parent command declares positional Arguments (e.g. the
+            #     connector key in `uip is connections list <connector-key>`, or
+            #     `<connector-key> <resource>` in `uip is resources describe`).
+            #     A kebab-case connector key is shape-indistinguishable from a
+            #     subcommand, so reclassify this token and every remaining path
+            #     token as positionals of the parent, which becomes the leaf.
+            #     Guarded on `not subs` (parent is a genuine leaf, not a command
+            #     group) so a typo'd subcommand on a group still fails — only a
+            #     leaf that declares positional Arguments accepts trailing tokens.
+            if depth > 0 and not subs and arg_count(help_payload) > 0:
+                extra_positionals = len(path) - depth
+                path = path[:depth]
+                break
             return False, f"'{token}' is not a subcommand of 'uip {' '.join(parent) or '(root)'}'"
 
+    path = tuple(path)
+    positional_count += extra_positionals
+
     # 2. Leaf-level flag validation (per-command flags + inherited global flags)
-    leaf_help = fetch_help(uip_bin, tuple(path))
+    leaf_help = fetch_help(uip_bin, path)
     if leaf_help is None:
         return False, f"could not fetch help for leaf 'uip {' '.join(path)}'"
 
