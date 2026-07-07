@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the foreground-misconfigured cause-branch. Failing job is MisconfiguredForeground (d1e2f3a4-...); blocking foreground job is ForegroundHolder (e1f2a3b4-...). The agent must inspect process/Main.xaml + process/project.json to identify the misconfig (no UI activities, yet requiresUserInteraction=true).",
+  "_doc": "Synthetic fixture set for the foreground-misconfigured cause-branch. Failing job is ExpenseValidation (d1e2f3a4-...); blocking foreground job is AttendedReportJob (e1f2a3b4-...). The agent must inspect process/Main.xaml + process/project.json to identify the misconfig (no UI activities, yet requiresUserInteraction=true).",
   "rules": [
     {
       "match": "or folders list --output json",

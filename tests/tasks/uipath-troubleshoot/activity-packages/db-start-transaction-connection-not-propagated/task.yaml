@@ -15,7 +15,7 @@ description: >
   rollback, a package-version bug, SQL syntax, or a timeout, and NOT
   settle for a Try Catch / null check as the primary fix.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

@@ -2,5 +2,5 @@
   "Name": "ERN",
   "ProjectType": "Process",
   "Description": "Blank Process",
-  "MainFile": "Amb.xaml"
+  "MainFile": "EmployeeRow.xaml"
 }

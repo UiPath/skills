@@ -12,7 +12,7 @@ description: >
   the same root cause as RESOLUTION.md: a deterministic name-conflict
   (ConflictResolution=Fail + a pre-existing same-named sheet), NOT a
   connection/auth, 404, invalid-range, or transient failure.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, faithful-replay, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 # Inherits from experiments/default.yaml: model, permission_mode, plugins
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides

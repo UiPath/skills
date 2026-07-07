@@ -8,7 +8,7 @@ description: >
   the verbatim sub-agent outputs from the real session. Success = the
   agent matches the healing-agent-no-license playbook AND identifies
   cause #1 (missing tenant entitlement) as RESOLUTION.md does.
-tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, healing-agent, licensing, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

@@ -9,7 +9,7 @@ description: >
   'CyberArk'. Error code: 2304." The agent must recognize that the
   failure layer is the external vault, not the asset itself.
 
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, system-activities, get-asset, external-vault-failure, credential-stores, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

@@ -7,7 +7,7 @@ description: >
   agent must rule out asset-not-found (1002) and folder-scope-mismatch
   (1100) and converge on the permission-denied root cause.
 
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, system-activities, get-asset, permission-denied, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

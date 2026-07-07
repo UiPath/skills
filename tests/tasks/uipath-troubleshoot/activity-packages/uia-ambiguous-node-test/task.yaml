@@ -3,7 +3,7 @@ description: >
   Faithful replay of a real UiPath troubleshooting investigation. The agent
   runs the uipath-troubleshoot skill against a uip CLI mock whose
   responses are the verbatim sub-agent outputs from the real session.
-  Failure mode: NClick "Click 'Airi Satou'" in Amb.xaml threw
+  Failure mode: NClick "Click 'Airi Satou'" in EmployeeRow.xaml threw
   NodeAmbiguousException because the FuzzySelectorArgument's inner segment
   <webctrl tag='TD' /> matches every TD cell in the DataTables demo grid
   (id='example'). Success = the agent matches the ambiguous-selector

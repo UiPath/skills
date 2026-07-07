@@ -15,7 +15,7 @@ agent:
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
-    timeout: 30
+    timeout: 60
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"

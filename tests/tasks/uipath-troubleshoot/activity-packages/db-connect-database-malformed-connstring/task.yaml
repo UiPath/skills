@@ -11,7 +11,7 @@ description: >
   Extended Properties value (Extended Properties="Excel 12.0 Xml;HDR=YES;") and
   recognize this as the Connect to Database failures playbook, branch 1.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

@@ -10,7 +10,7 @@ description: >
   (different error signature) — and converge on the activity-vs-asset
   type mismatch.
 
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, system-activities, get-asset, wrong-activity-type, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

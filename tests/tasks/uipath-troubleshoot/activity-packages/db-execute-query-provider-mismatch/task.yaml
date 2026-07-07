@@ -15,7 +15,7 @@ description: >
   installed on the Robot host — NOT blame a null connection, SQL syntax,
   a timeout, a CLR crash, a wrong activity, or a database outage.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, execute-query]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

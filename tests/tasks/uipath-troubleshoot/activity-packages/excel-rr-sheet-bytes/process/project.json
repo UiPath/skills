@@ -1,7 +1,7 @@
 {
   "name": "ExcelDailyImport",
   "projectId": "e1c2d3e4-5f60-4178-92a3-cc333377c8d9",
-  "description": "Loads the quarterly workbook and imports the data range into the reporting pipeline.",
+  "description": "Reads the quarterly workbook and imports the Quarterly Data sheet into the daily reporting pipeline.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.24.7]",

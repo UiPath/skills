@@ -9,7 +9,7 @@ description: >
   input — an upstream Find Files And Folders search found the folder
   'Documents' and the shared variable bound it to the download. Success =
   the agent reaches the same root cause as RESOLUTION.md.
-tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, mode:diagnose, o365-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

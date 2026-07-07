@@ -1,6 +1,6 @@
 # Final Resolution
 
-Root Cause: A C# input-argument expression on the `Copy File` activity in `ERN.xaml` dereferences a variable that the workflow itself sets to `null` before the activity runs.
+Root Cause: A C# input-argument expression on the `Copy File` activity in `CopyFile.xaml` dereferences a variable that the workflow itself sets to `null` before the activity runs.
 
 What went wrong: `Copy File`'s `Path` argument evaluates `myVar.ToString()`, but `myVar` is `null` at that moment, so argument resolution throws `System.NullReferenceException` and the job faulted.
 
@@ -16,7 +16,7 @@ Evidence:
 ### Runtime Exceptions (Root Cause)
 - `System.NullReferenceException` — "Object reference not set to an instance of an object".
 - Stack: `Namespace_fmq3zcn67w.ERN_Expressions.__Expr2Get` invoked by `CSharpValue.Execute` → `InArgument.TryPopulateValue` → `ActivityInstance.ResolveArguments` (fault is in argument resolution).
-- Faulted activity: `Copy File` (id `CopyFile_1`) inside `Sequence 'ERN'` in `ERN.xaml`.
+- Faulted activity: `Copy File` (id `CopyFile_1`) inside `Sequence 'ERN'` in `CopyFile.xaml`.
 - `Copy File.Path` expression: `myVar.ToString()` (`CSharpValue\`1_2`).
 - `myVar` declared in `Sequence 'ERN'`, type `x:Object`, no Default.
 - Upstream `Assign_1` sets `myVar = null` (literal).
@@ -32,7 +32,7 @@ Immediate fix:
   - Source: `references/runtime-exceptions/playbooks/null-reference-exception.md` § Resolution — uninitialized variable.
 2. Tighten the `myVar` variable declaration: change type to `String` and provide a Default (or promote to a workflow `In` argument bound to the source path).
   - Why: Evidence shows `myVar` is `Object` with `Default = null`; a typed, defaulted variable removes argument-resolution null-refs.
-  - Where: `ERN.xaml` Variables panel for `Sequence 'ERN'`.
+  - Where: `CopyFile.xaml` Variables panel for `Sequence 'ERN'`.
   - Who: RPA developer.
   - Source: same playbook § Resolution.
 
@@ -40,7 +40,7 @@ Preventive fix:
 
 1. Runtime Exceptions — Guard `Copy File.Path` against null.
   - Why: A future upstream null (config read, lookup) would reproduce this. Use `myVar?.ToString()` plus an `If String.IsNullOrEmpty(...) Then Throw new BusinessException("source path missing")` so the failure is an explicit business error rather than a raw NRE.
-  - Where: `ERN.xaml`, `Copy File.Path` and a preceding validation `If` in `Sequence 'ERN'`.
+  - Where: `CopyFile.xaml`, `Copy File.Path` and a preceding validation `If` in `Sequence 'ERN'`.
   - Who: RPA developer.
   - Source: same playbook § Resolution — null-check after activity output.
 2. Orchestrator — Pass the source path as a workflow `In` argument when starting from folder **Shared**.
