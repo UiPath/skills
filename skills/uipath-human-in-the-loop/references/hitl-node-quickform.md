@@ -69,7 +69,7 @@ Also read `workflow.variables.globals`. Each entry has an `id` that maps directl
 | Node output | `vars.<nodeId>.output.<field>` | `=js:$vars.<nodeId>.output.<field>` |
 | Flow global (`direction: "in"`) | `vars.<globalId>` | `=js:$vars.<globalId>` |
 
-> **`binding` vs `variable` prefix rule:** `binding` (input/inOut fields) uses the full path starting with `vars.` because it references an existing variable path. `variable` (output/inOut fields) is just a **name** with no prefix — it declares a new global variable, not a reference to an existing one.
+> **`binding` vs `variable` prefix rule:** `binding` (input/inOut fields) uses the full path starting with `vars.` because it references an existing variable path. `variable` (output/inOut fields) uses `vars.<name>` — the `vars.` prefix is required; it declares the global variable name.
 
 For the full variable system, see → [How $vars paths are constructed in Flow](../../uipath-maestro-flow/references/shared/variables-and-expressions.md)
 
@@ -192,10 +192,11 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.
   "nodeType": "uipath.human-in-the-loop.quick-form",
   "version": "1.0",
   "category": "human-task",
-  "tags": ["human-task", "hitl", "human-in-the-loop", "approval"],
-  "sortOrder": 50,
+  "description": "Fast inline approvals with inline debug",
+  "tags": ["human-task", "hitl", "human-in-the-loop", "quick-form", "approval"],
+  "sortOrder": 27,
   "display": {
-    "label": "Human in the Loop",
+    "label": "Quick Form",
     "icon": "users",
     "shape": "square"
   },
@@ -277,7 +278,7 @@ The HITL node exposes two outputs (`output`, `status`). After adding it, **compl
 
 Include entries for **all** nodes in the flow, not just the HITL node. Replace the entire array — do not append. Add one `output` entry and one `status` entry per HITL node — no per-field entries. Output and inOut field values from the task are accessible via `$vars.<nodeId>.output.<fieldId>` at runtime (fields are embedded in the output object, not exposed as separate node variables).
 
-Output-direction and inOut-direction fields are also materialized as workflow-level globals in `variables.globals` with `direction: "inout"` — these are accessible directly as `$vars.<field.variable>` without a node prefix (e.g. `variable: "decision"` → `$vars.decision`).
+> **Scripts must always use `$vars.<nodeId>.output.<fieldId>`.** The `field.variable` property declares a name for the global alias — do NOT use that name directly in scripts. `$vars.decision` (global alias) and `$vars.<nodeId>.output.decision` (field ID access) are different paths and only the field ID path is reliable in script nodes. See Critical Rule 10 in SKILL.md.
 
 ---
 
@@ -430,17 +431,20 @@ After the HITL node, downstream nodes can reference:
 | `$vars.<nodeId>.output` | object | All `output` and `inOut` field values keyed by **field `id`** |
 | `$vars.<nodeId>.output.<fieldId>` | varies | Individual field value using the field's `id` (e.g. `$vars.invoiceReview1.output.decision`) |
 | `$vars.<nodeId>.status` | string | Selected outcome name (e.g. `"Approve"`, `"Reject"`) |
-| `$vars.<globalId>` | varies | Workflow-global variable for output/inOut fields — accessible without node prefix. The `globalId` equals `field.variable` directly (e.g. `variable: "notes"` → `$vars.notes`) |
+| `$vars.<globalId>` | varies | Workflow-global variable for output/inOut fields. `globalId` is `field.variable` with `vars.` stripped (e.g. `variable: "vars.notes"` → `$vars.notes`). **Do not use this path in scripts — use `$vars.<nodeId>.output.<fieldId>` instead.** |
 
-> **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `"decision"`), not by the `variable` property. The `variable` property (`"approvalResult"`) creates a separate workflow-global variable (`$vars.approvalResult`) — it does not change the key used in the output object. If a field has `"id": "dec1"` and `"variable": "approvalResult"`, access it via the object as `$vars.nodeId.output.dec1`, or directly as `$vars.approvalResult`.
+> **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `"decision"`), not by the `variable` property. The `variable` property (`"approvalResult"`) creates a separate workflow-global variable (`$vars.approvalResult`) — it does not change the key used in the output object. If a field has `"id": "dec1"` and `"variable": "vars.approvalResult"`, access it via the object as `$vars.nodeId.output.dec1`, or directly as `$vars.approvalResult`.
 >
-> **Common mistake:** A field with `"id": "approved"` and `"variable": "legalApproval"` must be read as `$vars.<nodeId>.output.approved` — **not** `$vars.<nodeId>.output.legalApproval`. Using the `variable` name as the key produces `undefined` at runtime; `flow validate` does not catch it.
+> **Common mistake:** A field with `"id": "approved"` and `"variable": "vars.legalApproval"` must be read as `$vars.<nodeId>.output.approved` — **not** `$vars.<nodeId>.output.legalApproval`. Using the `variable` name as the key produces `undefined` at runtime; `flow validate` does not catch it.
 
-**In a downstream script node:**
+**In a downstream script node** — always access inline using `$vars.<nodeId>.output.<fieldId>`, not by destructuring:
 ```javascript
-const output = $vars.invoiceReview1.output;
-// Access by field ID, not variable name
+// Correct — field ID inline access
+const vendorName = $vars.invoiceReview1.output.vendorName;
+const costCenter = $vars.invoiceReview1.output.costCenter;
 if ($vars.invoiceReview1.status === "approve") {
-  await updateSystem(output.vendorName, output.costCenter);
+  await updateSystem(vendorName, costCenter);
 }
+// Wrong — do NOT destructure first:
+// const output = $vars.invoiceReview1.output;  // then output.vendorName misses the node path
 ```
