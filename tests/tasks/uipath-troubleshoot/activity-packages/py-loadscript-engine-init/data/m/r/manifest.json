@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the load-script-failures playbook engine-init (L1) signature.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "d03abaad81.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"b2c3d4e5-f6a7-4182-93a4-b5c6d7e8f902\" --state Faulted --output json",
+      "file": "d7c7a0328a.json"
+    },
+    {
+      "match": "or jobs list --folder-key b2c3d4e5-f6a7-4182-93a4-b5c6d7e8f902 --state Faulted --output json",
+      "file": "d7c7a0328a.json"
+    },
+    {
+      "match": "or jobs get \"c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90123\" --output json",
+      "file": "67696b56ff.json"
+    },
+    {
+      "match": "or jobs get c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90123 --output json",
+      "file": "67696b56ff.json"
+    },
+    {
+      "match": "or jobs logs \"c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90123\" --level Error --output json",
+      "file": "5e4fb795b8.json"
+    },
+    {
+      "match": "or jobs logs c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90123 --level Error --output json",
+      "file": "5e4fb795b8.json"
+    },
+    {
+      "match": "or jobs logs \"c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90123\" --output json",
+      "file": "7d574be68e.json"
+    },
+    {
+      "match": "or jobs logs c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90123 --output json",
+      "file": "7d574be68e.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

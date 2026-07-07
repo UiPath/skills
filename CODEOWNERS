@@ -158,5 +158,9 @@
 /skills/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents
 /tests/tasks/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents
 
+# Insights skill (job monitoring and analytics)
+/skills/uipath-insights/ @suranabhavya @rliuup
+/tests/tasks/uipath-insights/ @suranabhavya @rliuup
+
 # Automation Discovery skill
 /skills/uipath-automation-discovery/ @uisherif

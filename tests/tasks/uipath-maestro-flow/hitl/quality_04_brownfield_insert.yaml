@@ -51,7 +51,7 @@ success_criteria:
     description: "Flow contains the inserted HITL node"
     path: "ContractReview/ContractReview/ContractReview.flow"
     includes:
-      - '"uipath.human-in-the-loop"'
+      - '"uipath.human-in-the-loop.quick-form"'
     weight: 2.5
     pass_threshold: 1.0
 

@@ -4,7 +4,7 @@ description: |
 tags: [uipath-mcp-servers, smoke, 'mode:build']
 agent:
   type: claude-code
-  allowed_tools: [Bash, Read, Write]
+  allowed_tools: [Skill, Bash, Read, Write]
 sandbox:
   driver: tempdir
   python: {}
@@ -16,7 +16,8 @@ initial_prompt: |
   For an IS-activity tool, read references/is-activity-workflow.md and use the exact `uip agenthub mcp-tools create-is-activity` flags it specifies (`--mcp`, `--target-identifier`, `--description`, `--metadata`, `--input-schema`, `--output-schema`); for a resource tool, read the resource guidance and run `mcp-tools candidates`/`template` as it directs. Use the exact CLI commands and flags the skill documents — do not invent flag names.
 
   Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
-  sandbox; manifest-driven canned responses).
+  sandbox; manifest-driven canned responses). Run `uip` commands directly;
+  do NOT read or inspect the mock fixtures under `mocks/`.
 
   TASK: Add a Jira Create Issue tool to my `test-mcp-skill` MCP server.
   Bake project=MOCKPROJ and issue type id=10 into the tool — the LLM should
@@ -29,7 +30,7 @@ initial_prompt: |
     - MCP server slug: test-mcp-skill, in Shared folder (key: folder-mock-shared)
     - Jira connection id: conn-mock-jira-01 (in folder folder-mock-workspace)
 
-  Save to the sandbox cwd:
+  Save to the sandbox cwd (the working directory root — do NOT create a subdirectory such as `output/`):
     - metadata.json — the ActivityMetadata object (pretty JSON, not stringified)
     - input-schema.json — JSON Schema for LLM inputs
     - output-schema.json — JSON Schema for responseFields ({} acceptable)
@@ -52,4 +53,4 @@ success_criteria:
   includes: [MOCKPROJ]
 - {type: command_executed, description: Agent ran the cascade describe with -f field values, tool_name: Bash,
   command_pattern: uip\s+is\s+resources\s+describe.*-f\s+fields\.project\.key, min_count: 1}
-run_limits: {max_turns: 40}
+run_limits: {max_turns: 60}

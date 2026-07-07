@@ -6,7 +6,7 @@ description: >
   (catalog-driven) and emit `LC_GUARDRAIL_RECOMMENDED` naming the content-safety
   case at Info — generically (do not name a platform-documented validator unless
   already present). Non-gating (integration tag). Needs the authed CLI.
-tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover, guardrail]
 
 run_limits:
   turn_timeout: 1200

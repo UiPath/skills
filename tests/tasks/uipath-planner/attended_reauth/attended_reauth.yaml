@@ -47,7 +47,7 @@ success_criteria:
   - type: skill_triggered
     description: "Agent engaged the uipath-planner skill (rather than free-forming the SDD)"
     skill_name: "uipath-planner"
-    expected: "yes"
+    expected_skill: "uipath-planner"
     weight: 1.0
     pass_threshold: 1.0
 

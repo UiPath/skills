@@ -1,0 +1,46 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the case-mismatch branch of the excel-activities/read-range-sheet-not-found playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs logs (reveals actual sheets ['Sheet1', 'Data', 'Summary']) → workflow source. Compare configured 'data' (lowercase) vs actual 'Data' (capital), identify Use Excel File scope without COM-forcing properties → OpenXML provider → case-sensitive lookup.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "858738168e.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "858738168e.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json",
+      "file": "5b1ed2d2b7.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json",
+      "file": "5b1ed2d2b7.json"
+    },
+    {
+      "match": "or jobs get \"bb222222-7777-8888-9999-000011112222\" --output json",
+      "file": "8216031ee4.json"
+    },
+    {
+      "match": "or jobs get bb222222-7777-8888-9999-000011112222 --output json",
+      "file": "8216031ee4.json"
+    },
+    {
+      "match": "or jobs history \"bb222222-7777-8888-9999-000011112222\" --output json",
+      "file": "6ab339f308.json"
+    },
+    {
+      "match": "or jobs history bb222222-7777-8888-9999-000011112222 --output json",
+      "file": "6ab339f308.json"
+    },
+    {
+      "match": "or jobs logs \"bb222222-7777-8888-9999-000011112222\" --output json",
+      "file": "0ac7b4bac4.json"
+    },
+    {
+      "match": "or jobs logs bb222222-7777-8888-9999-000011112222 --output json",
+      "file": "0ac7b4bac4.json"
+    }
+  ]
+}

@@ -33,6 +33,10 @@ initial_prompt: |
     will fail — that is expected. Run each command exactly once regardless
     of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,
     do NOT troubleshoot.
+  - Use the placeholder entity ID `exp-ent-001` in every `uip df records query`
+    call. Do NOT look up the entity via `entities list`, do NOT try to create
+    it, do NOT hunt for a real ID — the queries will fail at the CLI, but the
+    JSON body shape is what matters here.
 
 success_criteria:
   - type: command_executed

@@ -102,6 +102,16 @@ uip solution project add "<built path>" "<solution .uipx>" --output json   # one
 
 Both positionals MUST be absolute paths — the relative form fails with `Failed to add project to solution` regardless of CWD (see [implementation.md](implementation.md) § Step 6.0b). Then run `uip solution resources refresh` (Rule 14) so the solution-level resource files + `debug_overwrites.json` are generated before any upload/debug.
 
+### 3b — "Already exists" = adopt (kind-agnostic residual)
+
+An interrupted prior run can leave a built sibling **on disk but unregistered**. Nothing that reads `.uipx` `Projects[]` sees it — the pre-gate `--local` check misses, the gate fires, and the build/register step collides: the type's `init` fails *"directory exists / not empty"*, or `uip solution project add` returns *"Project name already exists"*. **Neither is a failure.** Adopt:
+
+1. **Kind-check the collision.** Name present in `uip maestro case registry list --local --output json` → its `Category` identifies a registered owner; a different kind = cross-kind name collision, NOT a prior build → rename the new resource (§1 name-uniqueness) and rebuild. Name absent (`list --local` also reads only `Projects[]`) → read the colliding directory's `project.uiproj` `ProjectType`. Matching kind → adopt:
+2. **Register.** `uip solution project add` (absolute paths). It can refuse *"Project name already exists"* even when the name is absent from `.uipx` `Projects[]` — its collision check keys on **stale resource declaration files** from a prior registration, not the manifest. Delete `resources/solution_folder/package/<Name>.json` and the kind's `resources/solution_folder/process/<category>/<Name>.json`, re-run `project add`, then `uip solution resources refresh` regenerates them.
+3. **Continue at §4** (rediscover, verify, bind). Never rebuild, never Retry/Skip, never placeholder — the sibling is already built.
+
+Per-type verbs and kind markers: each plugin's § Failure blockquote.
+
 ### 4 — Rediscover + verify + bind (offline `--local`)
 
 Rediscover **by name** with `search` (not `get`): `registry get <id> --local` matches only on `entityKey`/project Id, never the display name, so `get "<Name>"` returns 0. `search` matches the keyword against the name. Read keys in **PascalCase** (`--output json` PascalCases recursively):

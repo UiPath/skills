@@ -407,7 +407,7 @@ Verify a file contains (or excludes) expected strings. From `uipath-maestro-flow
   description: "Flow contains the inline HITL node type"
   path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
   includes:
-    - '"uipath.human-in-the-loop"'
+    - '"uipath.human-in-the-loop.quick-form"'
   weight: 3.0
   pass_threshold: 1.0
 ```

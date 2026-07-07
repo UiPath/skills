@@ -67,6 +67,11 @@ RUN set -euo pipefail && \
     # Governance tool — provides `uip gov aops-policy`, `uip gov access-policy`,
     # and `uip gov compliance-packs` commands used by uipath-governance skill tests.
     uip tools install @uipath/gov-tool && \
+    # Test Manager command group (`uip tm …`) — required by uipath-test tasks
+    uip tools install @uipath/test-manager-tool && \
+    # Solution command group (`uip solution …`) — required by uipath-solution
+    # tasks (e.g. skill-solution-deploy-list)
+    uip tools install @uipath/solution-tool && \
     uip tools list
 
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.

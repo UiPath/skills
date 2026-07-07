@@ -1,0 +1,63 @@
+task_id: skill-insights-smoke-job-health-investigation
+description: >
+  Smoke test: agent uses the uipath-insights skill to investigate automation
+  health. Given a prompt about job failures, the agent should run the right
+  sequence of uip insights jobs commands — summary first, then top-failures,
+  then failures-by-reason for drill-down. Tests that the agent follows the
+  investigation workflow and uses --output json and --time-range consistently.
+  Auth errors are expected (no live tenant).
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Our automations seem unhealthy lately. Can you check how our jobs are doing
+  over the last 7 days? I want to know:
+  1. Overall success rate
+  2. Which processes are failing the most
+  3. What the failure reasons are
+
+  Use --output json on every command. The CLI is not connected to a live tenant,
+  so commands will fail with auth errors — that's expected. Run each command
+  once, note the result, and move on. Do NOT retry or attempt to login.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran jobs summary to get overall KPIs"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+summary\s+.*--time-range'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran top-failures to find which processes fail most"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+top-failures\s+.*--time-range'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran failures-by-reason to get error reasons"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+failures-by-reason\s+.*--time-range'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on all commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s+.*--output\s+json'
+    min_count: 3
+    weight: 1.5
+    pass_threshold: 1.0

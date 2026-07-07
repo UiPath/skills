@@ -120,7 +120,7 @@ Delivery: a **coded** sibling delivered via **`uip solution upload`** then **ins
 
 Mirrors [connector-integration.md § Creating a Connection](../../../connector-integration.md#creating-a-connection) step 4. If a build sub-agent returns `built:false` (or dies), show its `error` verbatim, then AskUserQuestion: `Retry create` / `Skip (defer)`. On `Skip` or repeated failure, fall to the Unresolved Fallback above (placeholder + completion-report note) and finish planning — never halt. A verify-time I/O mismatch is a **warning**, not a failure: rewire matched fields, report missing/extra, continue.
 
-> **"Already exists" is NOT a failure** (idempotency residual). If a build reports the project directory already exists / `agent init` fails *"directory exists / not empty"* or `project add` returns *"Project name already exists"*, the sibling was built by an interrupted prior run but wasn't surfaced by the pre-gate local check (it was never registered in the `.uipx`, so `--local` didn't see it). Do **not** route to Retry/Skip — instead register it (`uip solution project add`, if not already registered), then rediscover + bind (Step 3/4). It's already built.
+> **"Already exists" is NOT a failure** — an interrupted prior run already built the sibling; adopt it per [registry-discovery.md § Create-on-Missing → 3b](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Agent tokens for that procedure: init verb `uip agent init`; kind markers `Category: "agent"` (registered) / `agent.json` on disk (unregistered).
 
 ## tasks.md Entry Format
 

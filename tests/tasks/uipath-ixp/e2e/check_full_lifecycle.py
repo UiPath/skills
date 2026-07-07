@@ -4,11 +4,13 @@
 Grades artifact integrity, NOT whether the model's F1 improved. On the ~3-doc
 fixture set a single flipped prediction moves a field's F1 by a large fraction,
 so a small regression tolerance is noise the agent doesn't control, not signal.
-Asserts: artifacts present & well-formed; Fields[] populated; ModelVersion an int,
-not backwards, and if advanced the Fields[] actually changed (else it's one
-snapshot with the counter bumped); target field resolves to a numeric F1 in both
-snapshots. The F1 delta is printed but never gates. "Did the agent run the improve
-loop" (update-prompts, two metric fetches) is graded by the command_executed criteria.
+Asserts: artifacts present & well-formed; Fields[] populated; ModelVersion an int
+and not backwards; target field resolves to a numeric F1 in both snapshots. The F1
+delta is printed but never gates. An advanced version with byte-identical Fields[]
+only WARNs — on the coarse fixture a genuine retrain can flip no prediction, so
+identical metrics are the same noise this check refuses to grade, and it cannot be
+told from a counter bump by the artifacts alone. "Did the agent run the improve loop"
+(update-prompts, two metric fetches, publish) is graded by the command_executed criteria.
 """
 from __future__ import annotations
 
@@ -104,11 +106,15 @@ def main() -> int:
     if improved_version == baseline_version:
         log_info(f"ModelVersion unchanged at {baseline_version} — no new version yet (acceptable)")
     else:
-        # Advanced version + identical Fields[] = one snapshot with the counter bumped, not a
-        # real re-measurement. Gates incoherence, not F1 direction (never inspects which way F1 moved).
-        if improved_fields == baseline_fields:
-            log_fail(f"ModelVersion advanced {baseline_version} -> {improved_version} but Fields[] is identical to baseline — a new version must carry a fresh re-measurement")
         log_info(f"ModelVersion advanced {baseline_version} -> {improved_version}")
+        # Advanced version + byte-identical Fields[] *can* be a copied snapshot with the counter
+        # bumped, but on the ~3-doc fixture it is far more often a genuine second measurement where
+        # the retrain flipped no prediction, so every field's F1 is unchanged — the same coarse-metric
+        # noise this check deliberately refuses to grade (see docstring / #1814). The artifacts alone
+        # cannot tell the two apart; whether the agent actually re-measured is enforced by the
+        # command_executed criteria (get-metrics >=2, update-prompts, publish). So warn, don't fail.
+        if improved_fields == baseline_fields:
+            log_warn(f"ModelVersion advanced {baseline_version} -> {improved_version} but Fields[] is identical to baseline — retrain likely flipped no prediction on the coarse fixture; re-measurement is graded by the command_executed criteria")
 
     # Chosen field must resolve to a numeric F1 in both snapshots (catches a hallucinated
     # field_id or truncated metrics), regardless of which way F1 moved.

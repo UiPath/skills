@@ -7,7 +7,7 @@ description: >
   Actionability), read `pii_detection`'s recommended action for that scope, and cite
   `CODED_GUARDRAIL_ACTION_INEFFECTIVE`. Non-gating (integration tag). Needs the
   authed CLI.
-tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover, guardrail]
 
 run_limits:
   turn_timeout: 1200

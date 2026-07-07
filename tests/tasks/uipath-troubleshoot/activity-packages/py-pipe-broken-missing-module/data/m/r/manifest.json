@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the pipe-is-broken / missing-module branch of the python-activities playbook. The Python host process dies because parse_invoice.py imports pandas, which is installed in the developer's IDE interpreter but not in the robot's Python 3.11 interpreter that Python Scope resolves. UiPath reports only 'Pipe is broken' — the ModuleNotFoundError is hidden, so the decisive evidence is the script's import line plus the 'runs in my IDE' framing, not the job log. Expected chain: folders list -> jobs list --state Faulted -> jobs get -> jobs logs -> read process/parse_invoice.py + Python Scope config.",
+  "rules": [
+    { "match": "or folders list", "file": "ccbd9863b4.json" },
+    { "match": "or jobs list", "file": "da8db33dfd.json" },
+    { "match": "or jobs get", "file": "2c90546e13.json" },
+    { "match": "or jobs history", "file": "7ebce67886.json" },
+    { "match": "or jobs logs", "file": "79723a4720.json" }
+  ]
+}
