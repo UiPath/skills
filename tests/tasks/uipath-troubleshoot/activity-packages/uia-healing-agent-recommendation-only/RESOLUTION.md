@@ -1,19 +1,19 @@
 # Final Resolution
 
-Root Cause: Authoring-time selector typo in the **Click 'Simt ca am noroc'** activity — the workflow's selector targets an `aria-label` value that does not exist in the live page.
+Root Cause: Authoring-time selector typo in the **Click 'Simt că am noroc'** activity — the workflow's selector targets an `aria-label` value that does not exist in the live page.
 
-What went wrong: The job for process **ERN** in folder **Shared** (job key `d5fed611-e740-406c-a1b0-3c6de3371f17`) faulted because the **Click 'Simt ca am noroc'** activity in **Google.xaml** could not find the "I'm Feeling Lucky" button — its selector's `aria-label` has an extra trailing `cccccccccc` suffix that doesn't match the real element.
+What went wrong: The job for process **ERN** in folder **Shared** (job key `d5fed611-e740-406c-a1b0-3c6de3371f17`) faulted because the **Click 'Simt că am noroc'** activity in **Google.xaml** could not find the "I'm Feeling Lucky" button — its selector's `aria-label` has an extra trailing `cccccccccc` suffix that doesn't match the real element.
 
-Why: The selector for the Click activity was authored with `aria-label='Simt ca am noroccccccccccc'`, but the live element on the page is `aria-label='Simt ca am noroc'`. Every other selector attribute (`css-selector`, `tag`, `type`) is identical to the live element, which proves the live UI did not change — the workflow simply ships with a typo. Healing Agent did run an analysis on the live page (`AutopilotForRobots.Enabled=true`, `HealingEnabled=true`, `AutoHealStatus=IssueDetected`) and identified a 94% match that corrects exactly that typo, but the run was in **recommendation-only mode** (`OrchestratorEnableHeal=false` — job logs: *"Healing agent analysis is enabled but recovery is disabled for current job"* and *"Healing agent could not recover the activity. Self-healing is disabled."*), so HA never retried at runtime and `RecoverySuccessful=false`. Orchestrator surfaced the result as a Faulted job with no automatic retry — Orchestrator does not auto-retry faulted jobs.
+Why: The selector for the Click activity was authored with `aria-label='Simt că am noroccccccccccc'`, but the live element on the page is `aria-label='Simt că am noroc'`. Every other selector attribute (`css-selector`, `tag`, `type`) is identical to the live element, which proves the live UI did not change — the workflow simply ships with a typo. Healing Agent did run an analysis on the live page (`AutopilotForRobots.Enabled=true`, `HealingEnabled=true`, `AutoHealStatus=IssueDetected`) and identified a 94% match that corrects exactly that typo, but the run was in **recommendation-only mode** (`OrchestratorEnableHeal=false` — job logs: *"Healing agent analysis is enabled but recovery is disabled for current job"* and *"Healing agent could not recover the activity. Self-healing is disabled."*), so HA never retried at runtime and `RecoverySuccessful=false`. Orchestrator surfaced the result as a Faulted job with no automatic retry — Orchestrator does not auto-retry faulted jobs.
 
 Evidence:
 
 ### UI Automation (Root Cause)
-- Faulted activity: **Click 'Simt ca am noroc'** in **Google.xaml**, inside **Use Application/Browser 'Edge Google'** → **Sequence 'Do'**.
+- Faulted activity: **Click 'Simt că am noroc'** in **Google.xaml**, inside **Use Application/Browser 'Edge Google'** → **Sequence 'Do'**.
 - Exception: `UiPath.UIAutomationNext.Exceptions.NodeNotFoundException` at 2026-05-12T08:14:10Z.
-- Strict selector failure log (08:13:32Z): `aria-label='Simt ca am noroccccccccccc'` did not match any element; HA reported closest live matches at 94%, 82%, 69%, 57%.
-- Failed selector (verbatim): `<webctrl aria-label='Simt ca am noroccccccccccc' css-selector='body>div>div>form>div>div>div>center>input' tag='INPUT' type='submit' />`
-- Healing Agent's recovered partial selector (94% — `aria-label` corrected, every other attribute identical): `<webctrl aria-label='Simt ca am noroc' css-selector='body>div>div>form>div>div>div>center>input' tag='INPUT' type='submit'/>`
+- Strict selector failure log (08:13:32Z): `aria-label='Simt că am noroccccccccccc'` did not match any element; HA reported closest live matches at 94%, 82%, 69%, 57%.
+- Failed selector (verbatim): `<webctrl aria-label='Simt că am noroccccccccccc' css-selector='body>div>div>form>div>div>div>center>input' tag='INPUT' type='submit' />`
+- Healing Agent's recovered partial selector (94% — `aria-label` corrected, every other attribute identical): `<webctrl aria-label='Simt că am noroc' css-selector='body>div>div>form>div>div>div>center>input' tag='INPUT' type='submit'/>`
 - Selector diff: only `aria-label` changes — confirms an authoring typo, not UI drift.
 - Healing Agent ran in recommendation-only mode (`OrchestratorEnableHeal=false`); the recovered selector was inferred from the post-failure UI tree but was never validated at runtime (`RecoverySuccessful=false`).
 
@@ -26,9 +26,9 @@ Evidence:
 Immediate fix:
 
 ### UI Automation (Root Cause)
-1. Apply Healing Agent's recovered selector to the **Click 'Simt ca am noroc'** activity in **Google.xaml**, replacing the typo'd `aria-label='Simt ca am noroccccccccccc'` with `aria-label='Simt ca am noroc'`.
+1. Apply Healing Agent's recovered selector to the **Click 'Simt că am noroc'** activity in **Google.xaml**, replacing the typo'd `aria-label='Simt că am noroccccccccccc'` with `aria-label='Simt că am noroc'`.
   - Why: The failed and recovered selectors differ only by the `aria-label` value (failed has an extra trailing `cccccccccc`); every other attribute matches the live element. HA's 94% candidate is the same DOM position with the corrected label.
-  - Where: `Google.xaml`, the `NClick` activity named *Click 'Simt ca am noroc'* inside `NApplicationCard 'Edge Google'` → `Sequence 'Do'`. Use the `uia-improve-selector` skill at `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-improve-selector/USAGE.md` if available, otherwise edit the XAML target directly with XML-encoded selector text.
+  - Where: `Google.xaml`, the `NClick` activity named *Click 'Simt că am noroc'* inside `NApplicationCard 'Edge Google'` → `Sequence 'Do'`. Use the `uia-improve-selector` skill at `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-improve-selector/USAGE.md` if available, otherwise edit the XAML target directly with XML-encoded selector text.
   - Who: RPA developer.
   - Source: `references/activity-packages/ui-automation/playbooks/selector-failure-healing-fix.md` → `interpretations/healing-agent-data.md` § "Applying `update-target` Fixes".
 2. After editing, validate the workflow compiles cleanly.
@@ -61,7 +61,7 @@ Investigation summary:
 
 | # | Hypothesis | Confidence | Status | Root Cause? | Key Evidence | Resolution |
 |---|------------|------------|--------|-------------|--------------|------------|
-| H1 | Job faulted because the Click 'Simt ca am noroc' activity in Google.xaml has an authoring-time `aria-label` typo (`Simt ca am noroccccccccccc` vs the live `Simt ca am noroc`); Healing Agent produced a recommendation-only recovery for it. | high | confirmed | yes | Strict selector failure log at 08:13:32Z with `aria-label='Simt ca am noroccccccccccc'`; HA 94% match selector identical except for `aria-label='Simt ca am noroc'`; `OrchestratorEnableHeal=false` (logs: "recovery is disabled for current job"); `RecoverySuccessful=false`; ancestry matches triage (NClick inside NApplicationCard 'Edge Google' / Sequence 'Do' in Google.xaml). | Apply HA's recovered selector to the Click activity (interactive — see Post-presentation actions); enable self-healing at runtime; add Orchestrator-side retry/alerting. |
+| H1 | Job faulted because the Click 'Simt că am noroc' activity in Google.xaml has an authoring-time `aria-label` typo (`Simt că am noroccccccccccc` vs the live `Simt că am noroc`); Healing Agent produced a recommendation-only recovery for it. | high | confirmed | yes | Strict selector failure log at 08:13:32Z with `aria-label='Simt că am noroccccccccccc'`; HA 94% match selector identical except for `aria-label='Simt că am noroc'`; `OrchestratorEnableHeal=false` (logs: "recovery is disabled for current job"); `RecoverySuccessful=false`; ancestry matches triage (NClick inside NApplicationCard 'Edge Google' / Sequence 'Do' in Google.xaml). | Apply HA's recovered selector to the Click activity (interactive — see Post-presentation actions); enable self-healing at runtime; add Orchestrator-side retry/alerting. |
 
 ---
 
@@ -71,10 +71,10 @@ Source: `references/activity-packages/ui-automation/playbooks/selector-failure-h
 
 ```
 Failed selector:
-<webctrl aria-label='Simt ca am noroccccccccccc' css-selector='body>div>div>form>div>div>div>center>input' tag='INPUT' type='submit' />
+<webctrl aria-label='Simt că am noroccccccccccc' css-selector='body>div>div>form>div>div>div>center>input' tag='INPUT' type='submit' />
 
 Recovered Partial selector:
-<webctrl aria-label='Simt ca am noroc' css-selector='body>div>div>form>div>div>div>center>input' tag='INPUT' type='submit'/>
+<webctrl aria-label='Simt că am noroc' css-selector='body>div>div>form>div>div>div>center>input' tag='INPUT' type='submit'/>
 
 Recovered Fuzzy selector:
 (not available — fuzzy variant lives in uia/*.json on host MOCK-HOST and is not exposed via Orchestrator OData)
