@@ -1,16 +1,26 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the formula-prefix sub-cause of branch 5 in the excel-activities/write-range-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (COMException 0x800A03EC Application-defined or object-defined error from Range.set_Value during the Write Range dispatch) → jobs logs (DataTable marshal Trace exposes the offending row: row 43 column 'FullName' contains the literal value '=Smith, John' — leading equals sign triggers Excel COM formula parsing) → workflow source. The leading-equals cell value is the smoking gun.",
+  "_doc": "Synthetic fixture set for the formula-prefix sub-cause of branch 5 in the excel-activities/write-range-failures playbook. Agent must chain: folders \u2192 jobs list faulted \u2192 jobs get (COMException 0x800A03EC Application-defined or object-defined error from Range.set_Value during the Write Range dispatch) \u2192 jobs logs (DataTable marshal Trace exposes the offending row: row 43 column 'FullName' contains the literal value '=Smith, John' \u2014 leading equals sign triggers Excel COM formula parsing) \u2192 workflow source. The leading-equals cell value is the smoking gun.",
   "rules": [
-    {"match": "or folders list --output json", "file": "7927c35c86.json"},
-    {"match": "or folders list --output json", "file": "7927c35c86.json"},
-    {"match": "or jobs list --folder-key \"f0077777-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "20779427df.json"},
-    {"match": "or jobs list --folder-key f0077777-3333-4444-5555-666677778888 --state Faulted --output json", "file": "20779427df.json"},
-    {"match": "or jobs get \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "ef9a2bc1c5.json"},
-    {"match": "or jobs get ee333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "ef9a2bc1c5.json"},
-    {"match": "or jobs history \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "450e93cc79.json"},
-    {"match": "or jobs history ee333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "450e93cc79.json"},
-    {"match": "or jobs logs \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "9a5a316d79.json"},
-    {"match": "or jobs logs ee333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "9a5a316d79.json"}
+    {
+      "match": "or folders list --output json",
+      "file": "7927c35c86.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0077777-3333-4444-5555-666677778888\" --state Faulted --output json",
+      "file": "20779427df.json"
+    },
+    {
+      "match": "or jobs get \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json",
+      "file": "ef9a2bc1c5.json"
+    },
+    {
+      "match": "or jobs history \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json",
+      "file": "450e93cc79.json"
+    },
+    {
+      "match": "or jobs logs \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json",
+      "file": "9a5a316d79.json"
+    }
   ]
 }

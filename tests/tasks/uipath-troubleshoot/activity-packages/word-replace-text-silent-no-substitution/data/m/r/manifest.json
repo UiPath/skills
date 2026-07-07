@@ -11,15 +11,7 @@
       "file": "6d75a2ad66.json"
     },
     {
-      "match": "or jobs list --folder-key c4d5e6f7-a8b9-4193-0c1d-2e3f40516273 --state Faulted --output json",
-      "file": "6d75a2ad66.json"
-    },
-    {
       "match": "or jobs list --folder-key \"c4d5e6f7-a8b9-4193-0c1d-2e3f40516273\" --state Successful --output json",
-      "file": "f3cf204185.json"
-    },
-    {
-      "match": "or jobs list --folder-key c4d5e6f7-a8b9-4193-0c1d-2e3f40516273 --state Successful --output json",
       "file": "f3cf204185.json"
     },
     {
@@ -27,15 +19,7 @@
       "file": "f3cf204185.json"
     },
     {
-      "match": "or jobs list --folder-key c4d5e6f7-a8b9-4193-0c1d-2e3f40516273 --output json",
-      "file": "f3cf204185.json"
-    },
-    {
       "match": "or jobs get \"d5e6f7a8-b9c0-4204-1d2e-3f4051627384\" --output json",
-      "file": "ceb4a83764.json"
-    },
-    {
-      "match": "or jobs get d5e6f7a8-b9c0-4204-1d2e-3f4051627384 --output json",
       "file": "ceb4a83764.json"
     },
     {
@@ -43,15 +27,7 @@
       "file": "38786cca77.json"
     },
     {
-      "match": "or jobs logs d5e6f7a8-b9c0-4204-1d2e-3f4051627384 --level Error --output json",
-      "file": "38786cca77.json"
-    },
-    {
       "match": "or jobs logs \"d5e6f7a8-b9c0-4204-1d2e-3f4051627384\" --output json",
-      "file": "c7717a7a9d.json"
-    },
-    {
-      "match": "or jobs logs d5e6f7a8-b9c0-4204-1d2e-3f4051627384 --output json",
       "file": "c7717a7a9d.json"
     },
     {

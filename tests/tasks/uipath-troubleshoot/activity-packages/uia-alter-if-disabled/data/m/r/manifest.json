@@ -15,17 +15,9 @@
       "file": "895bd23db7.json"
     },
     {
-      "match": "or jobs get 49655b57-ad0a-410c-8256-38c215f9246d --output json",
-      "file": "895bd23db7.json"
-    },
-    {
-      "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1 --state Faulted --output json",
-      "file": "1f2709180b.json"
-    },
-    {
       "match": "docsai ask",
       "passthrough": true,
-      "_doc": "docsai queries always passthrough — query strings vary between runs."
+      "_doc": "docsai queries always passthrough \u2014 query strings vary between runs."
     }
   ],
   "unmocked_default": {

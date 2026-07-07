@@ -1,11 +1,7 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the autocancel-trigger variant of the 0x40010004 playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs history → admin audit tenant events --search <job-key>. The audit event surfaces the actor as 'System' with eventDetails referencing the auto-cancel trigger name 'kill-after-10min' and the time-budget that was exceeded.",
+  "_doc": "Synthetic fixture set for the autocancel-trigger variant of the 0x40010004 playbook. Agent must chain: folders list-current-user \u2192 jobs list --state Faulted \u2192 jobs get \u2192 jobs history \u2192 admin audit tenant events --search <job-key>. The audit event surfaces the actor as 'System' with eventDetails referencing the auto-cancel trigger name 'kill-after-10min' and the time-budget that was exceeded.",
   "rules": [
-    {
-      "match": "or folders list --output json",
-      "file": "63044a0ebf.json"
-    },
     {
       "match": "or folders list --output json",
       "file": "63044a0ebf.json"
@@ -15,15 +11,7 @@
       "file": "7e2ed776f6.json"
     },
     {
-      "match": "or jobs list --folder-key f1e2d3c4-b5a6-7890-1234-56789abcdef0 --state Faulted --output json",
-      "file": "7e2ed776f6.json"
-    },
-    {
       "match": "or jobs list --folder-key \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\" --output json",
-      "file": "0daab04c98.json"
-    },
-    {
-      "match": "or jobs list --folder-key f1e2d3c4-b5a6-7890-1234-56789abcdef0 --output json",
       "file": "0daab04c98.json"
     },
     {
@@ -31,15 +19,7 @@
       "file": "d2c0fce688.json"
     },
     {
-      "match": "or jobs get c3c0b2c3-d4e5-4678-9012-3456789ccccc --output json",
-      "file": "d2c0fce688.json"
-    },
-    {
       "match": "or jobs history \"c3c0b2c3-d4e5-4678-9012-3456789ccccc\" --output json",
-      "file": "a3af837b80.json"
-    },
-    {
-      "match": "or jobs history c3c0b2c3-d4e5-4678-9012-3456789ccccc --output json",
       "file": "a3af837b80.json"
     },
     {
@@ -47,15 +27,7 @@
       "file": "be3c4e785f.json"
     },
     {
-      "match": "or jobs logs c3c0b2c3-d4e5-4678-9012-3456789ccccc --level Error --output json",
-      "file": "be3c4e785f.json"
-    },
-    {
       "match": "or jobs logs \"c3c0b2c3-d4e5-4678-9012-3456789ccccc\" --output json",
-      "file": "be3c4e785f.json"
-    },
-    {
-      "match": "or jobs logs c3c0b2c3-d4e5-4678-9012-3456789ccccc --output json",
       "file": "be3c4e785f.json"
     },
     {
@@ -86,8 +58,20 @@
     "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
   },
   "expected_calls": [
-    { "pattern": "or jobs get c3c0b2c3", "min": 1, "description": "Agent must inspect the failing job to confirm the exit code" },
-    { "pattern": "or jobs history c3c0b2c3", "min": 1, "description": "Agent must inspect state history to distinguish operator-initiated Stop from host-side termination" },
-    { "pattern": "admin audit", "min": 1, "description": "Agent must query the audit log to identify the actor" }
+    {
+      "pattern": "or jobs get c3c0b2c3",
+      "min": 1,
+      "description": "Agent must inspect the failing job to confirm the exit code"
+    },
+    {
+      "pattern": "or jobs history c3c0b2c3",
+      "min": 1,
+      "description": "Agent must inspect state history to distinguish operator-initiated Stop from host-side termination"
+    },
+    {
+      "pattern": "admin audit",
+      "min": 1,
+      "description": "Agent must query the audit log to identify the actor"
+    }
   ]
 }

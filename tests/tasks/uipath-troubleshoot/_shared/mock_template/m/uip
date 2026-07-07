@@ -40,9 +40,11 @@ Dispatch precedence:
     2. `unmocked_default` — if set, return its `response` + `exit_code`.
     3. Otherwise, error on stderr (legacy behavior).
 
-Matching is plain substring on `" ".join(argv[1:])`. List specific
-patterns before generic ones. A passthrough rule with `match: "docsai ask"`
-is the typical way to proxy open-ended natural-language commands.
+Matching is plain substring on `" ".join(argv[1:])`, with quotes stripped
+from both sides first — write each rule ONCE, verbatim as recorded (quotes
+included); never add a quoted/unquoted duplicate. List specific patterns
+before generic ones. A passthrough rule with `match: "docsai ask"` is the
+typical way to proxy open-ended natural-language commands.
 """
 
 import hashlib

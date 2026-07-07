@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for foreground-already-running scenario. Folder/job/release keys are stable and human-readable; the agent should derive them by chaining: folders list-current-user → jobs list --state Faulted → jobs get → jobs logs. The overlapping prior job (b0a1b2c3-...) is the key evidence — surfaced via the broader jobs list call without the state filter.",
+  "_doc": "Synthetic fixture set for foreground-already-running scenario. Folder/job/release keys are stable and human-readable; the agent should derive them by chaining: folders list-current-user \u2192 jobs list --state Faulted \u2192 jobs get \u2192 jobs logs. The overlapping prior job (b0a1b2c3-...) is the key evidence \u2014 surfaced via the broader jobs list call without the state filter.",
   "rules": [
     {
       "match": "or folders list --output json",
@@ -15,15 +15,7 @@
       "file": "e9b4a8abc2.json"
     },
     {
-      "match": "or jobs list --folder-key a1b2c3d4-e5f6-7890-1234-56789abcdef0 --state Faulted --output json",
-      "file": "e9b4a8abc2.json"
-    },
-    {
       "match": "or jobs list --folder-key \"a1b2c3d4-e5f6-7890-1234-56789abcdef0\" --output json",
-      "file": "3603e33798.json"
-    },
-    {
-      "match": "or jobs list --folder-key a1b2c3d4-e5f6-7890-1234-56789abcdef0 --output json",
       "file": "3603e33798.json"
     },
     {
@@ -31,15 +23,7 @@
       "file": "c8f5871c1b.json"
     },
     {
-      "match": "or jobs get c0a1b2c3-d4e5-4678-9012-3456789abcde --output json",
-      "file": "c8f5871c1b.json"
-    },
-    {
       "match": "or jobs get \"b0a1b2c3-d4e5-4678-9012-3456789abcde\" --output json",
-      "file": "df6832044b.json"
-    },
-    {
-      "match": "or jobs get b0a1b2c3-d4e5-4678-9012-3456789abcde --output json",
       "file": "df6832044b.json"
     },
     {
@@ -47,15 +31,7 @@
       "file": "1e29694194.json"
     },
     {
-      "match": "or jobs logs c0a1b2c3-d4e5-4678-9012-3456789abcde --level Error --output json",
-      "file": "1e29694194.json"
-    },
-    {
       "match": "or jobs logs \"c0a1b2c3-d4e5-4678-9012-3456789abcde\" --output json",
-      "file": "dd51f4fc27.json"
-    },
-    {
-      "match": "or jobs logs c0a1b2c3-d4e5-4678-9012-3456789abcde --output json",
       "file": "dd51f4fc27.json"
     },
     {

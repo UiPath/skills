@@ -7,15 +7,7 @@
       "file": "c2f12ac5da.json"
     },
     {
-      "match": "or folders list --output json",
-      "file": "c2f12ac5da.json"
-    },
-    {
       "match": "or jobs list --folder-key \"2c5e8f4a-9b3d-4f6c-8e1d-7a2b3c4d5e6f\" --state Faulted --output json",
-      "file": "c0f70a5cf5.json"
-    },
-    {
-      "match": "or jobs list --folder-key 2c5e8f4a-9b3d-4f6c-8e1d-7a2b3c4d5e6f --state Faulted --output json",
       "file": "c0f70a5cf5.json"
     },
     {
@@ -27,15 +19,7 @@
       "file": "c0f70a5cf5.json"
     },
     {
-      "match": "or jobs list --folder-path \"Remote Debugging\"",
-      "file": "c0f70a5cf5.json"
-    },
-    {
       "match": "or jobs get \"4d7e9f3a-1b6c-5e8f-9d4c-3b2a1f0e9d8c\" --output json",
-      "file": "091e30f0a1.json"
-    },
-    {
-      "match": "or jobs get 4d7e9f3a-1b6c-5e8f-9d4c-3b2a1f0e9d8c --output json",
       "file": "091e30f0a1.json"
     },
     {
@@ -43,23 +27,11 @@
       "file": "a77a9c9516.json"
     },
     {
-      "match": "or jobs logs 4d7e9f3a-1b6c-5e8f-9d4c-3b2a1f0e9d8c --level Error --output json",
-      "file": "a77a9c9516.json"
-    },
-    {
       "match": "or assets list --folder-key 2c5e8f4a-9b3d-4f6c-8e1d-7a2b3c4d5e6f --output json",
       "file": "1c0fece232.json"
     },
     {
-      "match": "or assets list --folder-key \"2c5e8f4a-9b3d-4f6c-8e1d-7a2b3c4d5e6f\" --output json",
-      "file": "1c0fece232.json"
-    },
-    {
       "match": "or assets list --folder-path Remote Debugging",
-      "file": "1c0fece232.json"
-    },
-    {
-      "match": "or assets list --folder-path \"Remote Debugging\"",
       "file": "1c0fece232.json"
     },
     {

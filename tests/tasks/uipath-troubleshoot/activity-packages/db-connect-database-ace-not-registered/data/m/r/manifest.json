@@ -11,15 +11,7 @@
       "file": "537e7696b8.json"
     },
     {
-      "match": "or jobs list --folder-key 7c1f2e9a-4b6d-4a8e-9f3c-2d5e6a7b8c9d --state Faulted --output json",
-      "file": "537e7696b8.json"
-    },
-    {
       "match": "or jobs get \"3b8d5c2e-1a4f-4e6c-8b9d-5c7a2e3f4b6d\" --output json",
-      "file": "f08d1aaf2b.json"
-    },
-    {
-      "match": "or jobs get 3b8d5c2e-1a4f-4e6c-8b9d-5c7a2e3f4b6d --output json",
       "file": "f08d1aaf2b.json"
     },
     {
@@ -27,15 +19,7 @@
       "file": "78d8ec0f80.json"
     },
     {
-      "match": "or jobs logs 3b8d5c2e-1a4f-4e6c-8b9d-5c7a2e3f4b6d --level Error --output json",
-      "file": "78d8ec0f80.json"
-    },
-    {
       "match": "or jobs logs \"3b8d5c2e-1a4f-4e6c-8b9d-5c7a2e3f4b6d\" --output json",
-      "file": "78d8ec0f80.json"
-    },
-    {
-      "match": "or jobs logs 3b8d5c2e-1a4f-4e6c-8b9d-5c7a2e3f4b6d --output json",
       "file": "78d8ec0f80.json"
     },
     {

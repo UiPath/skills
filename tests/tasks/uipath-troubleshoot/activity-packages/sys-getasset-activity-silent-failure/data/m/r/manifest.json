@@ -7,15 +7,7 @@
       "file": "e31450ec93.json"
     },
     {
-      "match": "or folders list --output json",
-      "file": "e31450ec93.json"
-    },
-    {
       "match": "or jobs list --folder-key \"5a8c4d3e-9f2b-4a6c-8e1f-2b3c4d5e6f7a\" --state Faulted --output json",
-      "file": "c71e761bef.json"
-    },
-    {
-      "match": "or jobs list --folder-key 5a8c4d3e-9f2b-4a6c-8e1f-2b3c4d5e6f7a --state Faulted --output json",
       "file": "c71e761bef.json"
     },
     {
@@ -27,15 +19,7 @@
       "file": "c71e761bef.json"
     },
     {
-      "match": "or jobs list --folder-path \"Remote Debugging\"",
-      "file": "c71e761bef.json"
-    },
-    {
       "match": "or jobs get \"7d2e5f3c-1a6b-4e9f-8c4d-3e2f1a0b9c8d\" --output json",
-      "file": "f9d1c2249e.json"
-    },
-    {
-      "match": "or jobs get 7d2e5f3c-1a6b-4e9f-8c4d-3e2f1a0b9c8d --output json",
       "file": "f9d1c2249e.json"
     },
     {
@@ -43,15 +27,7 @@
       "file": "73b95426ba.json"
     },
     {
-      "match": "or jobs logs 7d2e5f3c-1a6b-4e9f-8c4d-3e2f1a0b9c8d --level Error --output json",
-      "file": "73b95426ba.json"
-    },
-    {
       "match": "or jobs logs \"7d2e5f3c-1a6b-4e9f-8c4d-3e2f1a0b9c8d\" --output json",
-      "file": "a17b40918f.json"
-    },
-    {
-      "match": "or jobs logs 7d2e5f3c-1a6b-4e9f-8c4d-3e2f1a0b9c8d --output json",
       "file": "a17b40918f.json"
     },
     {
@@ -59,15 +35,7 @@
       "file": "46d9acc45e.json"
     },
     {
-      "match": "or assets list --folder-key \"5a8c4d3e-9f2b-4a6c-8e1f-2b3c4d5e6f7a\" --output json",
-      "file": "46d9acc45e.json"
-    },
-    {
       "match": "or assets list --folder-path Remote Debugging",
-      "file": "46d9acc45e.json"
-    },
-    {
-      "match": "or assets list --folder-path \"Remote Debugging\"",
       "file": "46d9acc45e.json"
     },
     {

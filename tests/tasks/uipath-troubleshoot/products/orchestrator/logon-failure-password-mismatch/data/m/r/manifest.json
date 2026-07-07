@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for logon-failure-password-mismatch scenario (job-faulted-logon-failure playbook, branch 3 — stale Orchestrator credential after AD password rotation). Folder/job/user keys are stable; the agent derives them by chaining: folders list-current-user -> jobs list --state Faulted -> jobs get -> jobs logs -> robots list -> users get. The same-user-different-machine and same-machine-different-user evidence is surfaced via the broader jobs-list call (without --state filter).",
+  "_doc": "Synthetic fixture set for logon-failure-password-mismatch scenario (job-faulted-logon-failure playbook, branch 3 \u2014 stale Orchestrator credential after AD password rotation). Folder/job/user keys are stable; the agent derives them by chaining: folders list-current-user -> jobs list --state Faulted -> jobs get -> jobs logs -> robots list -> users get. The same-user-different-machine and same-machine-different-user evidence is surfaced via the broader jobs-list call (without --state filter).",
   "rules": [
     {
       "match": "or folders list --output json",
@@ -15,15 +15,7 @@
       "file": "614ae8d27d.json"
     },
     {
-      "match": "or jobs list --folder-key f1e2d3c4-b5a6-7890-1234-56789abcdef0 --state Faulted --output json",
-      "file": "614ae8d27d.json"
-    },
-    {
       "match": "or jobs list --folder-key \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\" --output json",
-      "file": "09d516cd3a.json"
-    },
-    {
-      "match": "or jobs list --folder-key f1e2d3c4-b5a6-7890-1234-56789abcdef0 --output json",
       "file": "09d516cd3a.json"
     },
     {
@@ -31,15 +23,7 @@
       "file": "c734b36651.json"
     },
     {
-      "match": "or jobs get aabb1122-3344-5566-7788-99aabbccdd00 --output json",
-      "file": "c734b36651.json"
-    },
-    {
       "match": "or jobs get \"aabb1100-3344-5566-7788-99aabbccdd11\" --output json",
-      "file": "4a7c6d2630.json"
-    },
-    {
-      "match": "or jobs get aabb1100-3344-5566-7788-99aabbccdd11 --output json",
       "file": "4a7c6d2630.json"
     },
     {
@@ -47,15 +31,7 @@
       "file": "fce2357a00.json"
     },
     {
-      "match": "or jobs get bbcc2233-4455-6677-8899-aabbccddee22 --output json",
-      "file": "fce2357a00.json"
-    },
-    {
       "match": "or jobs logs \"aabb1122-3344-5566-7788-99aabbccdd00\" --level Error --output json",
-      "file": "6e219c488f.json"
-    },
-    {
-      "match": "or jobs logs aabb1122-3344-5566-7788-99aabbccdd00 --level Error --output json",
       "file": "6e219c488f.json"
     },
     {
@@ -63,15 +39,7 @@
       "file": "1c1475ea15.json"
     },
     {
-      "match": "or jobs logs aabb1122-3344-5566-7788-99aabbccdd00 --output json",
-      "file": "1c1475ea15.json"
-    },
-    {
       "match": "or users get \"c1d2e3f4-a5b6-c7d8-e9f0-1a2b3c4d5e6f\" --output json",
-      "file": "c77be39749.json"
-    },
-    {
-      "match": "or users get c1d2e3f4-a5b6-c7d8-e9f0-1a2b3c4d5e6f --output json",
       "file": "c77be39749.json"
     },
     {

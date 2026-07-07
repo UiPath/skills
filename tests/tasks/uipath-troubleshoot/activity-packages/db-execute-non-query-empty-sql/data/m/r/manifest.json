@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures hand-authored from the execute-non-query-failures playbook (Branch 3 — empty Sql). Replace with verbatim captures from a real .local/investigations/ before treating as a regression signal (see ../_shared/scripts/generate_scenario.py).",
+  "_doc": "Synthetic fixtures hand-authored from the execute-non-query-failures playbook (Branch 3 \u2014 empty Sql). Replace with verbatim captures from a real .local/investigations/ before treating as a regression signal (see ../_shared/scripts/generate_scenario.py).",
   "rules": [
     {
       "match": "or folders list --output json",
@@ -11,15 +11,7 @@
       "file": "ff61cd7b09.json"
     },
     {
-      "match": "or jobs list --folder-key 7c1e9a2b-3d4f-4a5b-8c6d-9e0f1a2b3c4d --state Faulted --output json",
-      "file": "ff61cd7b09.json"
-    },
-    {
       "match": "or jobs get \"2f8a4d6c-9b1e-4c3a-8d5f-6e7a8b9c0d1e\" --output json",
-      "file": "496df6cc05.json"
-    },
-    {
-      "match": "or jobs get 2f8a4d6c-9b1e-4c3a-8d5f-6e7a8b9c0d1e --output json",
       "file": "496df6cc05.json"
     },
     {
@@ -27,15 +19,7 @@
       "file": "c938076446.json"
     },
     {
-      "match": "or jobs logs 2f8a4d6c-9b1e-4c3a-8d5f-6e7a8b9c0d1e --level Error --output json",
-      "file": "c938076446.json"
-    },
-    {
       "match": "or jobs logs \"2f8a4d6c-9b1e-4c3a-8d5f-6e7a8b9c0d1e\" --output json",
-      "file": "398f066dd8.json"
-    },
-    {
-      "match": "or jobs logs 2f8a4d6c-9b1e-4c3a-8d5f-6e7a8b9c0d1e --output json",
       "file": "398f066dd8.json"
     },
     {

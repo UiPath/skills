@@ -1,11 +1,7 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the file-deleted-upstream branch of the excel-activities/read-range-file-not-found playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs logs → jobs list (broader; reveals multiple prior Successful runs against the same process/path) → workflow source. The recent-success pattern is decisive: stable absolute path + recent successes rule out config issues; the current FileNotFoundException points at upstream deletion between runs.",
+  "_doc": "Synthetic fixture set for the file-deleted-upstream branch of the excel-activities/read-range-file-not-found playbook. Agent must chain: folders list-current-user \u2192 jobs list --state Faulted \u2192 jobs get \u2192 jobs logs \u2192 jobs list (broader; reveals multiple prior Successful runs against the same process/path) \u2192 workflow source. The recent-success pattern is decisive: stable absolute path + recent successes rule out config issues; the current FileNotFoundException points at upstream deletion between runs.",
   "rules": [
-    {
-      "match": "or folders list --output json",
-      "file": "858738168e.json"
-    },
     {
       "match": "or folders list --output json",
       "file": "858738168e.json"
@@ -15,15 +11,7 @@
       "file": "ad3693385b.json"
     },
     {
-      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json",
-      "file": "ad3693385b.json"
-    },
-    {
       "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --output json",
-      "file": "6bb9f5d750.json"
-    },
-    {
-      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --output json",
       "file": "6bb9f5d750.json"
     },
     {
@@ -31,15 +19,7 @@
       "file": "6bb9f5d750.json"
     },
     {
-      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --process-name ExcelDailyImport --output json",
-      "file": "6bb9f5d750.json"
-    },
-    {
       "match": "or jobs get \"aa111111-8888-9999-aaaa-bbbbccccdddd\" --output json",
-      "file": "160d07ab53.json"
-    },
-    {
-      "match": "or jobs get aa111111-8888-9999-aaaa-bbbbccccdddd --output json",
       "file": "160d07ab53.json"
     },
     {
@@ -47,23 +27,11 @@
       "file": "ba3719a305.json"
     },
     {
-      "match": "or jobs get bb222222-8888-9999-aaaa-bbbbccccdddd --output json",
-      "file": "ba3719a305.json"
-    },
-    {
       "match": "or jobs history \"aa111111-8888-9999-aaaa-bbbbccccdddd\" --output json",
       "file": "67562150ed.json"
     },
     {
-      "match": "or jobs history aa111111-8888-9999-aaaa-bbbbccccdddd --output json",
-      "file": "67562150ed.json"
-    },
-    {
       "match": "or jobs logs \"aa111111-8888-9999-aaaa-bbbbccccdddd\" --output json",
-      "file": "f9dc038676.json"
-    },
-    {
-      "match": "or jobs logs aa111111-8888-9999-aaaa-bbbbccccdddd --output json",
       "file": "f9dc038676.json"
     }
   ]

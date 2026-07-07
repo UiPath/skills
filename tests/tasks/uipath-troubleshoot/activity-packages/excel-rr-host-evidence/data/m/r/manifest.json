@@ -1,11 +1,7 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the needs-host-evidence path of the excel-activities/read-range-file-locked playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs logs → jobs list (broader, returns only this single failure — no siblings, no prior fails) → triggers list (single trigger). At this point CLI evidence is exhausted; the agent must surface a host-side investigation recommendation instead of guessing a branch.",
+  "_doc": "Synthetic fixture set for the needs-host-evidence path of the excel-activities/read-range-file-locked playbook. Agent must chain: folders list-current-user \u2192 jobs list --state Faulted \u2192 jobs get \u2192 jobs logs \u2192 jobs list (broader, returns only this single failure \u2014 no siblings, no prior fails) \u2192 triggers list (single trigger). At this point CLI evidence is exhausted; the agent must surface a host-side investigation recommendation instead of guessing a branch.",
   "rules": [
-    {
-      "match": "or folders list --output json",
-      "file": "858738168e.json"
-    },
     {
       "match": "or folders list --output json",
       "file": "858738168e.json"
@@ -15,15 +11,7 @@
       "file": "8d61cefe8e.json"
     },
     {
-      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json",
-      "file": "8d61cefe8e.json"
-    },
-    {
       "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --output json",
-      "file": "fe864065f5.json"
-    },
-    {
-      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --output json",
       "file": "fe864065f5.json"
     },
     {
@@ -31,15 +19,7 @@
       "file": "fe864065f5.json"
     },
     {
-      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --process-name ExcelDailyImport --output json",
-      "file": "fe864065f5.json"
-    },
-    {
       "match": "or jobs get \"ee555555-6666-7777-8888-99990000aaaa\" --output json",
-      "file": "51183f1459.json"
-    },
-    {
-      "match": "or jobs get ee555555-6666-7777-8888-99990000aaaa --output json",
       "file": "51183f1459.json"
     },
     {
@@ -47,23 +27,11 @@
       "file": "5964b42a2b.json"
     },
     {
-      "match": "or jobs history ee555555-6666-7777-8888-99990000aaaa --output json",
-      "file": "5964b42a2b.json"
-    },
-    {
       "match": "or jobs logs \"ee555555-6666-7777-8888-99990000aaaa\" --output json",
       "file": "2fe5edebee.json"
     },
     {
-      "match": "or jobs logs ee555555-6666-7777-8888-99990000aaaa --output json",
-      "file": "2fe5edebee.json"
-    },
-    {
       "match": "or triggers list --folder-key \"f0011111-2222-3333-4444-555566667777\" --output json",
-      "file": "d1082fb9ed.json"
-    },
-    {
-      "match": "or triggers list --folder-key f0011111-2222-3333-4444-555566667777 --output json",
       "file": "d1082fb9ed.json"
     }
   ]
