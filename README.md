@@ -110,7 +110,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-solution` | Preview |
 | `uipath-tasks` | Preview |
 | `uipath-test` | In-development |
-| `uipath-troubleshoot` | Preview |
+| `uipath-troubleshoot` | Stable |
 
 **Status legend:**
 - **Stable** — Stable, production-ready surface; safe for production.
