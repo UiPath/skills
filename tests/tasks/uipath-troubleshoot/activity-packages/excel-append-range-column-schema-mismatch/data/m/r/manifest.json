@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the column-schema-mismatch (branch 5) of the excel-activities/append-range-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (COMException 0x800A03EC from Range.set_Value during append cell-write) → jobs logs (DataTable columns ['EmployeeId', 'HireDate', 'FullName', 'Department'] vs. target sheet header ['FullName', 'EmployeeId', 'Department', 'HireDate'] — Append writes by POSITION, so numeric EmployeeId lands in target's FullName text column, triggering Excel COM cell-write rejection) → workflow source. The column ORDER mismatch between source and target is the smoking gun.",
+  "_doc": "Synthetic fixture set for the Append Range new-hire append scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {"match": "or folders list --output json", "file": "1d4a124ef4.json"},
     {"match": "or folders list --output json", "file": "1d4a124ef4.json"},

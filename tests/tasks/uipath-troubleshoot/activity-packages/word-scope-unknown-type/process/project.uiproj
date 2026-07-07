@@ -1,6 +1,6 @@
 {
   "Name": "InvoiceLetters",
   "ProjectType": "Process",
-  "Description": "Reproduces a Word Application Scope load failure on a robot whose UiPath.Word.Activities package version does not match the published dependency (Cannot create unknown type).",
+  "Description": "Generates invoice letters by opening a letter document and replacing the recipient placeholder with the recipient name via Word activities.",
   "MainFile": "Main.xaml"
 }

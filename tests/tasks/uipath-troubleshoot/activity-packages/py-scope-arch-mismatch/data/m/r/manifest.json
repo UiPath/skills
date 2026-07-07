@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the architecture/version-mismatch branch of the python-activities playbook. Python Scope fails to initialize the engine ('One or more errors occurred. (Error initializing the Python engine)' with an inner BadImageFormatException 0x8007000B) because Target=x86 in the workflow does not match the 64-bit Python 3.11 install on the robot host. The decisive evidence is Target=x86 in process/Main.xaml combined with the user's statement that the installed Python is 64-bit. Expected chain: folders list -> jobs list --state Faulted -> jobs get (BadImageFormat inner) -> jobs logs -> read process/Main.xaml Python Scope Target.",
+  "_doc": "Synthetic fixture set for the python-scope-arch-mismatch scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     { "match": "or folders list", "file": "7194e07d97.json" },
     { "match": "or jobs list", "file": "995237c075.json" },

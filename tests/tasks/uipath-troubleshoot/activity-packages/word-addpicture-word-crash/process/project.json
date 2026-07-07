@@ -1,7 +1,7 @@
 {
   "name": "ResumePhotoStamp",
   "projectId": "c3d3f2a1-6b71-4289-a3b4-cc333399d9ea",
-  "description": "Repro: Word Add Picture process whose XAML is correct (WordAddImage nested in UseWordFile, valid absolute ImagePath, InsertRelativeTo=Document) but faults because Microsoft Word (WINWORD.EXE) crashes/closes while the image is inserted. The COM cast to Word._Document then fails on the async-completion path with HRESULT 0x8001010E (RPC_E_WRONG_THREAD) — a downstream symptom of the process crash, not a source defect. Exercises the Word process-crash branch (E4) of the word-com-interop-failures playbook.",
+  "description": "Opens a resume draft document and inserts the candidate photo image into it via Word activities.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.21.0]",

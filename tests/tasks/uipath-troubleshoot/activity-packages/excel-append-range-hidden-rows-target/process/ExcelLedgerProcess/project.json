@@ -1,7 +1,7 @@
 {
   "name": "ExcelLedgerProcess",
   "projectId": "f3c2d3e4-5f60-4178-92a3-ff3333ccd8d9",
-  "description": "Repro: Excel Append Range fails because an active AutoFilter on the target sheet hides rows in the append target region; package v2.8.5+ throws BusinessException explicitly flagging the data-loss risk. Exercises the hidden-rows-in-target branch of append-range-failures playbook.",
+  "description": "Fetches the day's transactions and appends them as rows to the ledger workbook via Append Range inside a Use Excel File scope.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.24.7]",

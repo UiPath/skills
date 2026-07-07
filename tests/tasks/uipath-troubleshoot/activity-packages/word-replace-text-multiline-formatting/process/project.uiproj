@@ -1,6 +1,6 @@
 {
   "Name": "AddressBlockFill",
   "ProjectType": "Process",
-  "Description": "Reproduces a Replace Text multi-line formatting issue: the Replace value carries Environment.NewLine breaks, so the inserted address block collapses to a single line / loses paragraph formatting.",
+  "Description": "Fills the recipient address block into the address template to produce an addressed document.",
   "MainFile": "Main.xaml"
 }

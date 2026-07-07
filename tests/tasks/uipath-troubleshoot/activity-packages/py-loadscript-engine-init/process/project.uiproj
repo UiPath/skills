@@ -1,6 +1,6 @@
 {
   "Name": "PyDataTransform",
   "ProjectType": "Process",
-  "Description": "Reproduces a Load Python Script failure caused by the Python Scope engine failing to initialize on the robot host (Error initializing Python engine 64 bit).",
+  "Description": "Loads and runs a Python data-transformation script inside a Python Scope on the robot host.",
   "MainFile": "Main.xaml"
 }

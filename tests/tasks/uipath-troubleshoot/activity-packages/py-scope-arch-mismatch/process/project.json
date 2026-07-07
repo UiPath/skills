@@ -1,7 +1,7 @@
 {
   "name": "PythonDataCruncher",
   "projectId": "f3c33333-7777-4bbb-8ccc-cc3333339999",
-  "description": "Repro: Python Scope with Target=x86 against a 64-bit Python 3.11 install. Exercises the architecture/version-mismatch (One or more errors occurred / engine init) branch of the python-activities playbook.",
+  "description": "Runs a Python data-processing script inside a Python Scope on the robot host.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Python.Activities": "[1.9.1]",

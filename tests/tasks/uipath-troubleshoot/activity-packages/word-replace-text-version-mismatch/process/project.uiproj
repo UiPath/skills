@@ -1,6 +1,6 @@
 {
   "Name": "ClauseInserter",
   "ProjectType": "Process",
-  "Description": "Reproduces a design-time Studio crash (TargetInvocationException) when the Replace Text activity is dropped/opened, caused by a UiPath.Word.Activities version newer than the installed Studio supports.",
+  "Description": "Inserts the confidentiality clause into the agreement document by replacing the clause placeholder.",
   "MainFile": "Main.xaml"
 }

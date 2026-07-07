@@ -1,6 +1,6 @@
 {
   "Name": "ExcelInvoiceReport",
   "ProjectType": "Process",
-  "Description": "Repro: Classic Excel Application Scope (COM-only) deployed to an unattended Robot host where Excel is not installed. Scope acquisition fails with 'Make sure Excel is installed.' Exercises the Excel-not-installed branch of the excel-application-card-failures playbook.",
+  "Description": "Reads the 'Invoices' sheet from the invoice report workbook at C:\\Robot\\Data\\invoice-report.xlsm into a DataTable via Read Range inside an Excel Application Scope.",
   "MainFile": "Main.xaml"
 }

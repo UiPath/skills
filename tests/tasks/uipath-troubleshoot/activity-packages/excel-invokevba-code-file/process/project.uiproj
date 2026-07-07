@@ -1,6 +1,6 @@
 {
   "Name": "ReportRefresher",
   "ProjectType": "Process",
-  "Description": "Reproduces an Invoke VBA failure caused by macro.txt containing bare VBA statements at the module top level (no Sub/Function wrapper).",
+  "Description": "Runs the RefreshSheets VBA macro against the WeeklyKPI workbook via Invoke VBA inside an Excel Process Scope.",
   "MainFile": "Main.xaml"
 }

@@ -1,7 +1,7 @@
 {
   "name": "OnboardingLetter",
   "projectId": "c4d5e6f7-a8b9-4193-0c1d-2e3f40516273",
-  "description": "Reproduces a Replace Text silent no-substitution: the job succeeds but the placeholder is left unchanged because it is split across Word XML runs in the template.",
+  "description": "Generates an onboarding letter by inserting the employee name into the placeholder in the offer template.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

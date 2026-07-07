@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the VBA-error branch of the excel-activities/execute-macro-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (COMException 0x80020009 wrapping Run-time error 91) → jobs logs (Trace shows macro dispatched and started executing, then faulted inside VBA) → workflow source. The HRESULT 0x80020009 + inner 'Run-time error 91' text is decisive for branch 2 (VBA bug inside macro) vs. branch 7 (missing add-in, which would have 424/429 inner).",
+  "_doc": "Synthetic fixture set for the Excel Execute Macro scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {"match": "or folders list --output json", "file": "858738168e.json"},
     {"match": "or folders list --output json", "file": "858738168e.json"},

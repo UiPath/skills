@@ -1,7 +1,7 @@
 {
   "name": "SupportTriageReader",
   "projectId": "a4b5c6d7-e8f9-4a0b-1c2d-3e4f5a6b7c8d",
-  "description": "Reproduces a Get Outlook Mail Messages failure caused by a malformed DASL/Jet Filter: the right-hand value is unquoted ([Subject] = VarSubject), so Outlook cannot parse the restriction.",
+  "description": "Reads Outlook Inbox messages with Get Outlook Mail Messages using a subject-based filter to pull matching items for support triage.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Mail.Activities": "[1.18.3]",

@@ -1,7 +1,7 @@
 {
   "name": "BatchLetterFill",
   "projectId": "a2b3c4d5-e6f7-4193-8a9b-0c1d2e3f4051",
-  "description": "Reproduces a Replace Text COM-busy failure (RPC_E_SERVERCALL_RETRYLATER) when WINWORD.EXE is busy or stalled on a background dialog.",
+  "description": "Opens a Word letter template and replaces the client-name placeholder with the target client value.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

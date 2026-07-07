@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for branch 3 (COM add-in interface clash) of the excel-activities/excel-application-scope-failures playbook. The Classic scope throws System.InvalidCastException on System.__ComObject (QueryInterface for Microsoft.Office.Interop.Excel._Application returns E_NOINTERFACE 0x80004002) because COM add-ins loaded into the Excel instance corrupt the interop interface negotiation. The decisive evidence (jobs logs) names the loaded add-ins — UiPath.Integration.ExcelAddin (the Studio design-time Excel Add-in, LoadBehavior=3) on a runtime host — and notes that 'excel.exe /safe' (add-ins disabled) succeeds. Agent must chain: folders -> jobs list faulted -> jobs get (InvalidCastException / E_NOINTERFACE) -> jobs logs (loaded COM add-ins + /safe succeeds) -> workflow source (single Classic scope). Fix: disable the add-in (File>Options>Add-ins>COM Add-ins) or LoadBehavior=0; confirm with /safe. NOT not-installed (Excel is present) and NOT a lock.",
+  "_doc": "Synthetic fixture set for the Excel Application Scope reconciliation-export scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {"match": "or folders list --output json", "file": "6194634ea7.json"},
     {"match": "or folders list --output json", "file": "6194634ea7.json"},

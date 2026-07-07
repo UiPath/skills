@@ -1,7 +1,7 @@
 {
   "name": "ArchiveMailScanner",
   "projectId": "d2e3f4a5-b6c7-4d18-9e2f-3a4b5c6d7e8f",
-  "description": "Reproduces a Get Outlook Mail Messages timeout: the activity exceeds the default TimeoutMS=30000 while enumerating the 'Archive' folder (thousands of messages) with Top high and OnlyUnreadMessages off, faulting with System.TimeoutException.",
+  "description": "Scans the Outlook 'Archive' folder with Get Outlook Mail Messages to read its messages for downstream processing.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Mail.Activities": "[1.18.3]",

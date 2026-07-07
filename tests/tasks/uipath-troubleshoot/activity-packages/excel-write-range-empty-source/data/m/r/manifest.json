@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the empty-source (branch 3) of the excel-activities/write-range-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (BusinessException 'Ignore empty source is ineffective' from WriteRangeX) → jobs logs (Filter DataTable on Status='Overdue' produced 0 rows from 247 input rows + WriteRange config shows ExcludeHeaders=False) → workflow source. The 0-row DataTable + ExcludeHeaders=False combination is the smoking gun; the 'Ignore empty source' option does not handle this case (only the Nothing case).",
+  "_doc": "Synthetic fixture set for the Write Range overdue-invoice report scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {"match": "or folders list --output json", "file": "d7aedb669e.json"},
     {"match": "or folders list --output json", "file": "d7aedb669e.json"},

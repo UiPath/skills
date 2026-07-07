@@ -1,7 +1,7 @@
 {
   "name": "ExcelDailyImport",
   "projectId": "e1c2d3e4-5f60-4178-92a3-bb2222bbc8d9",
-  "description": "Repro: Read Range references named range MyDataRange with #REF! refers-to; NRE during range resolution. Exercises broken-named-range branch of read-range-null-reference playbook.",
+  "description": "Reads the named range MyDataRange from the daily sales workbook at C:\\Robot\\Data\\sales-2026-05.xlsx into a DataTable via Read Range.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.24.7]",
