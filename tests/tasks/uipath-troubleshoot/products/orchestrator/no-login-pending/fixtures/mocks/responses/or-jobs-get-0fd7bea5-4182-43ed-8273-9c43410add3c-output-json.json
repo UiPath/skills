@@ -17,7 +17,7 @@
     "HasVideoRecorded": false,
     "RuntimeType": "Unattended",
     "RequiresUserInteraction": true,
-    "EntryPointPath": "Ofsb.xaml",
+    "EntryPointPath": "EditorLink.xaml",
     "OrganizationUnitId": 1500287,
     "FolderKey": "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
     "Reference": "",

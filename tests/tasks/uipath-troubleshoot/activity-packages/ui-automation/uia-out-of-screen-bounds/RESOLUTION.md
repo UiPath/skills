@@ -2,7 +2,7 @@
 
 Root Cause: **Click activity drove an OS-cursor coordinate outside the host's screen bounds** on a browser target — playbook `click-coordinate-off-screen.md`, sub-cause **C1 (page-scroll mismatch)** with **C2 (window-not-normalized)** as an indistinguishable co-candidate.
 
-What went wrong: The "Click 'Learn More About Editor'" activity in `Ofsb.xaml` ran with `InteractionMode=HardwareEvents`, which dispatches a real OS cursor click at an absolute screen coordinate; the resolved element's runtime Y position sat below the visible viewport (likely because the DataTables page loaded at scroll=0 and no `Scroll Into View` precedes the click), so Windows rejected the input with `HRESULT 0x800402bd` before the click was sent.
+What went wrong: The "Click 'Learn More About Editor'" activity in `EditorLink.xaml` ran with `InteractionMode=HardwareEvents`, which dispatches a real OS cursor click at an absolute screen coordinate; the resolved element's runtime Y position sat below the visible viewport (likely because the DataTables page loaded at scroll=0 and no `Scroll Into View` precedes the click), so Windows rejected the input with `HRESULT 0x800402bd` before the click was sent.
 
 Why: At design time the click was recorded against the element 'Learn More About Editor' on `https://datatables.net/` while the page was scrolled to bring the element into the viewport (`Target.DesignTimeRectangle` Y=1090, well below the fold of a fresh page-load). At runtime the `NApplicationCard` scope reuses an existing Edge window (`AttachMode=ByInstance`) and the click sequence's body has **zero preceding siblings** — no `Scroll Into View`, `Hover`, `Navigate Browser` with `#fragment`, `Maximize Window`, `Set Browser Size`, or `Set Window State`. So either the page is at scroll=0 (C1) or the window is in an inherited non-maximized state (C2), or both. The fault originates inside `UiPath.UIAutomationNext.Services.UiInputService.ClickAtPointAsync` (`UiNodeClass.Click` stack frame) — this is the cursor-injection stage, not selector resolution. C3 (multi-monitor canvas) is eliminated: element-center (1736.5, 1137) fits inside the host's single-monitor 4K screen (3840x2160). C4 (sticky chrome) is plausible but unsupported by evidence (no Healing screenshot — Healing was disabled; ~4.75s runtime is too short for a typical cookie/update banner to accumulate). The Orchestrator layer surfaced the fault but did not cause it — `ErrorCode=Robot`, Source=Manual, and `AutopilotForRobots.HealingEnabled=false` meant nothing intercepted the fault and the job moved straight to Faulted.
 
@@ -12,7 +12,7 @@ Evidence:
 - Job error message: `Cannot send input to UI element because it is outside of screen bounds.`
 - Exception: `UiPath.UIAutomationNext.Exceptions.UiAutomationException` → inner `System.Runtime.InteropServices.COMException` HRESULT `0x800402bd`
 - Originating stack frame: `UiPath.UiNodeClass.Click` → `UiPath.UIAutomationNext.Services.UiInputService.ClickAtPointAsync`
-- Faulted activity: Click "Learn More About Editor" (`NClick_1` in `Ofsb.xaml`), `InteractionMode=HardwareEvents`, `ActivateBefore=False`, target selector `<webctrl aaname='Learn More About Editor' class='site-btn' tag='A' />`, `DesignTimeRectangle=1333, 1090, 807, 94` (element-center 1736.5, 1137)
+- Faulted activity: Click "Learn More About Editor" (`NClick_1` in `EditorLink.xaml`), `InteractionMode=HardwareEvents`, `ActivateBefore=False`, target selector `<webctrl aaname='Learn More About Editor' class='site-btn' tag='A' />`, `DesignTimeRectangle=1333, 1090, 807, 94` (element-center 1736.5, 1137)
 - Enclosing scope: Use Application/Browser "Edge DataTables Javascript table library" (`NApplicationCard_1`), `AttachMode=ByInstance`, scope `InteractionMode=DebuggerApi`, `TargetApp.BrowserType=Edge`, `TargetApp.Url=https://datatables.net/`, `TargetApp.Area=-13, -13, 3866, 2330`
 - Preceding-sibling walk inside the scope's "Do" sequence: **zero** activities before the click. No `Scroll`, `Scroll Into View`, `Hover`, `Navigate Browser`, `Maximize Window`, `Set Browser Size`, `Set Window State`, or `Move Window`. The only other body activity is a disabled (CommentOut) `Keyboard Shortcuts` block that does not execute.
 - Host display: MOCK-HOST is single-monitor 4K (3840x2160, user-confirmed) — element fits inside host screen, so C3 (multi-monitor canvas → smaller host) is eliminated.
@@ -32,7 +32,7 @@ Immediate fix:
   - Why: The scope `NApplicationCard_1` already runs `InteractionMode=DebuggerApi` (the Chromium debugger / DOM-driven input pipeline). Inheriting it via `SameAsCard`, or naming `DebuggerApi` explicitly, dispatches the click through the browser's DOM rather than at an OS screen coordinate, so the `0x800402bd` screen-bounds check disappears. This is the playbook's **universal fix** and covers both C1 and C2 — disambiguation isn't required.
 
     **Valid `InteractionMode` enum values:** `SameAsCard`, `HardwareEvents`, `Simulate`, `DebuggerApi`, `WindowMessages`. **Do NOT use `ChromiumAPI`** — it is not a valid enum value and XAML deserialization will fail on it (the activity won't load in Studio or at runtime).
-  - Where: `Ofsb.xaml`, activity `NClick_1` ("Click 'Learn More About Editor'") inside `NApplicationCard_1`. In Studio: open the activity properties → **Input** section → **Input mode** = `SameAsCard` (or `DebuggerApi`). In XAML: change `InteractionMode="HardwareEvents"` to `InteractionMode="SameAsCard"` (or `InteractionMode="DebuggerApi"`) on the `<uix:NClick ... />` element.
+  - Where: `EditorLink.xaml`, activity `NClick_1` ("Click 'Learn More About Editor'") inside `NApplicationCard_1`. In Studio: open the activity properties → **Input** section → **Input mode** = `SameAsCard` (or `DebuggerApi`). In XAML: change `InteractionMode="HardwareEvents"` to `InteractionMode="SameAsCard"` (or `InteractionMode="DebuggerApi"`) on the `<uix:NClick ... />` element.
   - Who: RPA developer
   - Source: `references/activity-packages/ui-automation/playbooks/click-coordinate-off-screen.md` § Resolution → "Universal fix — switch the interaction mode"
 
@@ -47,13 +47,13 @@ Preventive fix:
 
 1. **UI Automation** — As a C1-specific alternative if the team prefers to stay on `HardwareEvents` (e.g., the click must drive a real OS cursor): insert a `Scroll Into View` activity targeting "Learn More About Editor" as the first child of the `NApplicationCard_1` "Do" sequence, immediately before the click. For a static page anchor, a `Navigate Browser` with the in-page `#fragment` URL works equivalently.
   - Why: Walk of preceding siblings shows **zero** scroll-class activities in the scope body — at runtime the page loads at scroll=0 and the design-time-captured Y=1090 element sits below the fold. `Scroll Into View` brings the element into the viewport before the click resolves its screen coordinate, eliminating C1.
-  - Where: `Ofsb.xaml`, inside `Sequence_5` ("Do") inside `NApplicationCard_1`, before `NClick_1`.
+  - Where: `EditorLink.xaml`, inside `Sequence_5` ("Do") inside `NApplicationCard_1`, before `NClick_1`.
   - Who: RPA developer
   - Source: `references/activity-packages/ui-automation/playbooks/click-coordinate-off-screen.md` § Resolution → "C1-specific fix — scroll the element into view"
 
 2. **UI Automation** — Add a window normalization step as defense-in-depth for the C2 co-candidate: insert a `Maximize Window` (or `Set Browser Size` / `Set Window State`) activity before the click, or change `AttachMode` on `NApplicationCard_1` from `ByInstance` to `SingleWindow` so the scope opens/sizes a window rather than reusing whatever state the existing Edge window has.
   - Why: `AttachMode=ByInstance` combined with no preceding sizing activity is the exact C2 fingerprint per the playbook — the runtime window can inherit an arbitrary size/position from the existing Edge instance. The playbook explicitly notes C1 and C2 are indistinguishable from the XAML alone for this scope shape.
-  - Where: `Ofsb.xaml`, `NApplicationCard_1` (change `AttachMode`) and/or inside `Sequence_5` "Do" (insert a sizing activity before `NClick_1`).
+  - Where: `EditorLink.xaml`, `NApplicationCard_1` (change `AttachMode`) and/or inside `Sequence_5` "Do" (insert a sizing activity before `NClick_1`).
   - Who: RPA developer
   - Source: `references/activity-packages/ui-automation/playbooks/click-coordinate-off-screen.md` § Resolution → "C2-specific fix — normalize the application window"
 
@@ -78,7 +78,7 @@ Now executing Post-presentation actions in order.
 Source: `references/activity-packages/ui-automation/playbooks/click-coordinate-off-screen.md` § Resolution → "Universal fix — switch the interaction mode"
 
 ```
-File:      Ofsb.xaml
+File:      EditorLink.xaml
 Activity:  Click "Learn More About Editor"  (IdRef = NClick_1)
 Scope:     Use Application/Browser "Edge DataTables  Javascript table library"  (IdRef = NApplicationCard_1, AttachMode=ByInstance, scope InteractionMode=DebuggerApi)
 

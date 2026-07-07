@@ -7,6 +7,7 @@ signatures:
     value: "Could not find the asset"
   - kind: error-code
     value: "1002"
+    note: "asset flavor — 'Could not find an asset with this name' on Get Asset / Get Credential; queue flavor → queue-transaction-activity-failed.md"
 ---
 
 # Get Asset Failed — Asset Does Not Exist

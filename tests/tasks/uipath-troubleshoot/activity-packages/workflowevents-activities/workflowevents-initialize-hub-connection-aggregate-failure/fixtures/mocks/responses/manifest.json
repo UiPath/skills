@@ -1,0 +1,96 @@
+{
+  "version": 2,
+  "_doc": "Hand-built faithful-replay fixtures for a UiPath.WorkflowEvents.Activities InitializeHubConnection AggregateException. Signatures and stack frames are source-grounded (InitializeHubConnection.ExecuteAsync throws WorkflowApplicationException 'SignalR: Invalid SessionId: ... OR Orchestrator Url: ...' synchronously; the async-activity framework surfaces it as AggregateException). Substring dispatch, first match wins.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs get c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61",
+      "file": "or-jobs-get-c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61-output-json.json"
+    },
+    {
+      "match": "or jobs logs c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61 --level Error",
+      "file": "or-jobs-logs-c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61-level-error.json",
+      "_doc": "Error-level log row repeats the exception already visible in jobs get."
+    },
+    {
+      "match": "or jobs logs c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61",
+      "file": "or-jobs-logs-c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61-level-error.json",
+      "_doc": "The Error-level set answers any logs variant."
+    },
+    {
+      "match": "or jobs history c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61",
+      "file": "or-jobs-history-c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61-output-json.json",
+      "_doc": "Pending -> Running -> Faulted; the activity fails fast in its synchronous bootstrap (~3s), confirming it is not a transport/connect wait."
+    },
+    {
+      "match": "or jobs traces c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61",
+      "file": "or-jobs-traces-c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61-output-json.json",
+      "_doc": "Two spans: RobotJob (AggregateException wrapping WorkflowApplicationException) and the Initialize Apps Hub Connection span (FullTypeName UiPath.WorkflowEvents.Activities.NetCore.Activities.InitializeHubConnection, SessionId='' — the blank session id that triggers the synchronous throw). The blank SessionId + the inner 'Invalid SessionId OR Orchestrator Url' message are the cause-disambiguation evidence (session/URL bootstrap vs SignalR socket failure)."
+    },
+    {
+      "match": "traces spans get --job-key c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61",
+      "file": "or-jobs-traces-c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61-output-json.json",
+      "_doc": "Alternate trace-retrieval form; same span payload."
+    },
+    {
+      "match": "traces spans get c0a4f7e21b584d369a728e3c5f0d2b61",
+      "file": "or-jobs-traces-c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61-output-json.json",
+      "_doc": "Positional TraceId form; same span payload."
+    },
+    {
+      "match": "or jobs list --folder-key 2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82",
+      "file": "or-jobs-list-folder-key-2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82.json",
+      "_doc": "Substring dispatch routes --state Faulted variants here too; the failing job is the most recent row."
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-folder-key-2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82.json",
+      "_doc": "Fallback for flag-order variations."
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "docsai queries always passthrough — query strings vary between runs."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any unmatched uip command returns an empty array."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Triage must resolve the Shared folder key before listing jobs."
+    },
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent must list jobs in folder Shared to identify the most recent (faulted) job."
+    },
+    {
+      "pattern": "or jobs get c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61",
+      "min": 1,
+      "description": "Agent must fetch the failing job to read the System.AggregateException wrapping System.Activities.WorkflowApplicationException 'SignalR: Invalid SessionId:  OR Orchestrator Url: ' from UiPath.WorkflowEvents.Activities.NetCore.Activities.InitializeHubConnection."
+    },
+    {
+      "pattern": "traces",
+      "min": 1,
+      "description": "Cause disambiguation: the Initialize Apps Hub Connection span shows SessionId='' (blank), pinning the fault to the synchronous session/URL bootstrap rather than a SignalR socket/transport failure (which the activity swallows on a background thread)."
+    },
+    {
+      "pattern": "or jobs logs c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61",
+      "min": 0,
+      "description": "OPTIONAL — Error-level log repeats the exception already visible in jobs get."
+    },
+    {
+      "pattern": "or jobs history c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61",
+      "min": 0,
+      "description": "OPTIONAL — fast (~3s) Pending -> Running -> Faulted confirms a synchronous bootstrap failure, not a connect wait."
+    }
+  ]
+}

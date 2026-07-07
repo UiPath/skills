@@ -1,0 +1,83 @@
+task_id: skill-troubleshoot-sap-connection-invalid-advanced-param
+description: >
+  Faithful replay of a UiPath.SAP.BAPI.Activities SAP Application Scope failure.
+  The scope faults with UiPath.SAP.BAPI.Utilities.SapActivityException
+  ("Advanced Parameters has invalid parameter <key>. Connection cannot be
+  established.") because an unsupported RFC advanced-parameter key was
+  configured — the UiPath connection layer rejects it (in
+  SapConnectionService.OverideWithAdvancedParameters) before any network call.
+  The agent runs the uipath-troubleshoot skill against a uip CLI mock and must
+  identify the invalid advanced parameter as the cause — not blame the BAPI,
+  host reachability, or logon. Signature captured verbatim from a live run.
+  Success = same root cause as RESOLUTION.md.
+tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, mode:diagnose]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 28
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  why did my last job from the Shared folder fail?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing job. You are waiting for
+    the troubleshooting agent to finish and trust its expertise. You only have
+    the information in your initial report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification it requests so
+    the investigation reaches a final resolution.
+  constraints:
+    - "If the agent asks where the project source code / project directory / XAML files are, tell it the source is not available and to proceed best-effort from the Orchestrator job evidence."
+    - "If the agent asks whether to expand investigation scope (e.g. integration-service, activity-packages, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
