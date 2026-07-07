@@ -1,5 +1,11 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "System.AggregateException"
+    note: "at InitializeHubConnection in a Studio Web app-workflow run — SignalR hub bootstrap failed; unwrap the inner exception; connector activity stacks → connector-aggregate-exception.md"
+  - kind: message
+    value: "SignalR: Invalid SessionId"
 ---
 
 # Initialize Apps Hub Connection — Aggregate Exception (AggregateException)

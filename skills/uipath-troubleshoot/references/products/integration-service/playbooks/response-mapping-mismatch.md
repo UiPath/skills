@@ -1,4 +1,5 @@
 ---
+silent: true
 confidence: medium
 ---
 
