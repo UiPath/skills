@@ -4,6 +4,8 @@ Connector platform that provides pre-built integrations with third-party service
 
 > **Runtime errors carry a DAP code.** Every IS execution failure surfaces a structured `DAP-<LAYER>-<CODE>` code (e.g. `DAP-RT-1101`) plus a telemetry `customEvent`. When triaging a failure that carries a `DAP-…` code, start at [dap-error-codes-reference.md](./dap-error-codes-reference.md) — it maps each code to its **fault bucket** (👤 customer-resolvable vs 🛠 service-side/escalate) and its playbook, and lists the customEvent fields to read. **Classify the bucket first** (from the DAP code + whether a provider status is present — "service error" is your judgment, not a telemetry field), then route to the playbook.
 
+> **Service API errors carry a CNS code.** The Connection Service HTTP API (connections/connectors/triggers CRUD — called by the portal UI, the connector runtime, Maestro, and other UiPath services) returns `{ "code": "CNS…", "message": "…", "traceId": "…" }` on every failure. Start at [cns-error-codes-reference.md](./cns-error-codes-reference.md) for the code → bucket → playbook map. A runtime failure often carries both codes (e.g. `DAP-GE-3000` wrapping `CNS1006`) — **the CNS code is the more specific signal; prefer it when present.**
+
 Integration Service is used by both Orchestrator (standalone automations) and Maestro (BPMN service tasks). Connection failures here surface as errors in whichever product initiated the call.
 
 ## Organization Model
