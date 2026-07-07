@@ -10,4 +10,6 @@ What it validates: routing must succeed via language-invariant signals (exceptio
 translate-before-grep of the localized message — per SKILL.md's localized-error-text rule.
 A failure here means the skill's diagnosis depends on English message text.
 
+CLI-only variant: the project source snapshot is deliberately omitted so the ONLY evidence path runs through the localized runtime fixtures — a source snapshot lets agents shortcut to design-time evidence and never touch the German text (observed in the first validation run).
+
 Grading: identical contract to the English variant (`RESOLUTION.md` — same root cause, same fix).
