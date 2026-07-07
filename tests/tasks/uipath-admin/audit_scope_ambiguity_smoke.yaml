@@ -22,12 +22,19 @@ initial_prompt: |
   Show me the Admin audit trail for the last 24 hours.
 
 success_criteria:
+  # Advisory (non-gating, pass_threshold 0). After the audit-surface separation,
+  # an ambiguous "audit" prompt is handled correctly from EITHER skill:
+  # uipath-admin (owns `uip admin audit`) or uipath-platform (whose docs now
+  # redirect the audit trail to `uip admin audit` and stop-and-ask). Which skill
+  # the router picks is therefore no longer a pass/fail signal — the
+  # command_not_executed criteria below are the real guard for the stop-and-ask
+  # behavior. Kept to report which skill engaged (classification signal).
   - type: skill_triggered
-    description: "Agent loaded the uipath-admin skill"
+    description: "Agent engaged the uipath-admin skill (advisory; uipath-platform also acceptable post-separation)"
     skill_name: "uipath-admin"
     expected_skill: "uipath-admin"
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: command_not_executed
     description: "Agent must NOT run audit tenant events without clarifying scope first"
