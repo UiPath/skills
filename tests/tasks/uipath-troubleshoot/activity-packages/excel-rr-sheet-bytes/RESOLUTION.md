@@ -2,14 +2,16 @@
 
 ---
 
-**Outcome:** The `uip` CLI evidence confirms the playbook match
-and rules out most cause-branches, but it cannot distinguish
-between branch 5 (whitespace) and branch 6 (look-alike Unicode)
-without byte-level inspection. The agent's correct action is to
-recommend the host-side PowerShell byte-compare snippet from the
-playbook, NOT to guess which character differs.
+**Root Cause:** The workbook's actual sheet tab name is `Quarterly Data`
+with a **non-breaking space `U+00A0`** between the words, while the
+workflow's `Read Range` uses the literal `SheetName: "Quarterly Data"`
+with a regular space `U+0020`. The two names render identically in every
+human-facing UI surface (Excel tab bar, Orchestrator log viewer, Studio),
+but the exact/ordinal string comparison fails, so the activity throws
+`UiPath.Excel.BusinessException: The sheet with the name 'Quarterly Data'
+does not exist.`
 
-**What the CLI evidence does establish:**
+**What the CLI evidence establishes:**
 
 - Failing job `cc333333-7777-8888-9999-000011112222` faulted at
   `2026-05-19T08:00:02.812Z` with `UiPath.Excel.BusinessException:
@@ -19,8 +21,6 @@ playbook, NOT to guess which character differs.
   and logged the actual sheet titles. The logged list **visually**
   contains `Quarterly Data`. Workflow source has a literal
   `SheetName: "Quarterly Data"` on the failing `Read Range`.
-- The configured name and the logged name render identically in
-  every UI surface — terminal output, editor, log viewer.
 
 **What the CLI evidence RULES OUT:**
 
@@ -37,66 +37,58 @@ playbook, NOT to guess which character differs.
   source shows `SheetName="Quarterly Data"` as a literal string,
   not an expression.
 
-**What the CLI evidence CANNOT determine:**
+**The decisive evidence:** the `Get Workbook Sheets` entry in the job
+logs preserves the actual tab name **byte-for-byte** — JSON tool output
+carries the real code points even though every human rendering collapses
+them to an ordinary space. Inspecting the logged title at the byte /
+code-point level (reading the raw log payload, dumping the string's code
+points, or any equivalent) reveals `U+00A0` between `Quarterly` and
+`Data`, while the configured literal uses `U+0020`.
 
-- Whether the apparent space in the actual name is a regular
-  space `U+0020` or a non-breaking space `U+00A0`, an ideographic
-  space, or another whitespace code point (branch 5 / 6).
-- Whether any other character in the name (the letters
-  themselves) is a Latin or Cyrillic or other-script look-alike
-  (branch 6).
-- Whether there is invisible leading or trailing whitespace
-  (branch 5).
+**Acceptable diagnosis paths (either is correct):**
 
-JSON serialization in the agent's tool output preserves the bytes,
-but the agent's rendering of them (terminal, editor) does not
-distinguish look-alikes. The only reliable way to identify the
-differing code point is a byte-level dump on a host that can run
-PowerShell or an equivalent.
+1. **Byte-level identification from the captured evidence** — state that
+   the actual tab name contains a non-breaking space `U+00A0` where the
+   configured name has a regular space `U+0020`, citing the byte /
+   code-point content of the `Get Workbook Sheets` log output (branch 6,
+   look-alike whitespace).
+2. **Impasse + host-side byte-compare** — if the byte content was not
+   extracted from the logs, narrow the cause to branch 5 / branch 6
+   (invisible whitespace or look-alike code point), state that the
+   specific code point still needs byte-level confirmation, and hand the
+   user the PowerShell byte-compare snippet below — WITHOUT asserting
+   which code point it is.
 
 ---
 
 **Recommended Fix (Resolution):**
 
-Ask the user to capture host-side evidence on `MOCK-HOST` (or any
-host with PowerShell access — the comparison itself does not
-require the Robot host). The bytes do not change between hosts:
+1. **Rename the sheet tab** in the workbook to use a regular space.
+   Common origin in this scenario: the tab name was copy-pasted from an
+   email or Word document that auto-converted space → NBSP. Alternatively
+   (when the workbook cannot be changed) normalize in the workflow:
+   resolve the sheet name from `Get Workbook Sheets` output by comparing
+   with whitespace normalization (replace `U+00A0` and friends with
+   `U+0020`, then trim) instead of a hardcoded literal.
 
-1. **Run the byte-compare snippet from the playbook.**
+2. **Confirm with the byte-compare snippet** (also the fallback
+   diagnostic when the code point could not be read from the logs):
    ```powershell
    $configured = 'Quarterly Data'        # exactly as in the workflow's SheetName
    $actual     = 'Quarterly Data'        # copy from the workbook's tab name in Excel
    "configured: $($configured.Length) chars  bytes: $(([System.Text.Encoding]::UTF8.GetBytes($configured) | ForEach-Object { $_.ToString('X2') }) -join ' ')"
    "actual:     $($actual.Length) chars  bytes: $(([System.Text.Encoding]::UTF8.GetBytes($actual) | ForEach-Object { $_.ToString('X2') }) -join ' ')"
    ```
+   `C2 A0` in the byte dump = NBSP `U+00A0`; equal lengths with differing
+   bytes = look-alike code point (branch 6); differing lengths = extra
+   whitespace (branch 5).
 
-2. **Interpret the result:**
-   - **Equal `.Length`, differing byte sequences** → branch 6
-     (look-alike Unicode). Identify the offending code point
-     from the byte diff (the most common offenders: `C2 A0` =
-     NBSP `U+00A0`, `D0 B0` = Cyrillic `а` `U+0430`).
-   - **Differing `.Length`** → branch 5 (whitespace). One of the
-     names has leading or trailing whitespace the other lacks.
-   - **Equal `.Length`, equal byte sequences** → not this
-     playbook; re-triage with a different fingerprint.
-
-3. **Apply the per-branch fix from the playbook:**
-   - Branch 5 (whitespace): trim in the workflow (`SheetName =
-     name.Trim()`) and audit the upstream source of the
-     configured name; or coordinate with the workbook publisher
-     to rename without the whitespace.
-   - Branch 6 (look-alike): replace the offending character with
-     the intended code point in whichever side has the wrong
-     one. Common in this scenario: the workbook's sheet name was
-     copy-pasted from an email or Word doc that auto-converted
-     space → NBSP. Rename the sheet in Excel to use a regular
-     space.
-
-**Anti-pattern to avoid:** Confidently picking branch 5 or
-branch 6 (or any other branch) based on intuition without
-running the byte-compare. The CLI evidence narrows the candidates
-but does not identify the specific code point; recommending the
-WRONG fix wastes operator time and erodes trust.
+**Anti-pattern to avoid:** asserting a SPECIFIC code point without
+byte-level evidence — picking NBSP (or Cyrillic, or trailing space) from
+playbook priors when neither the logs' bytes nor a host-side byte-compare
+was inspected. Recommending a fix for a code point that was never
+observed wastes operator time and erodes trust. Identification is only as
+good as the bytes it cites.
 
 **Prevention:** Workflow authors should normalize sheet names
 sourced from external data (email, Word, internationalized
