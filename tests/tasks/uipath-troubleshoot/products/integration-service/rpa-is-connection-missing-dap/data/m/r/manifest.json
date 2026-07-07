@@ -1,0 +1,64 @@
+{
+  "version": 2,
+  "_doc": "Faithful-replay dispatch table for the rpa-is-connection-missing-dap scenario (DAP-GE-3000, deleted Box connection). Fixtures are verbatim uip CLI responses captured at investigation time. State-dependent fixtures (jobs list, bound-folder list, tenant-wide list, ping 989fd9d2) reflect the PRE-FIX state: connection 989fd9d2 deleted (404), no Box connection in folder b262689d or tenant-wide, c3a00022 the latest faulted job.",
+  "rules": [
+    {
+      "match": "--version",
+      "file": "02e8acc99f.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    },
+    {
+      "match": "or folders list --all --output json",
+      "file": "e919f3989b.json",
+      "exit_code": 3
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "2e37ebc77e.json"
+    },
+    {
+      "match": "or jobs list --folder-key eba26f86-ea3a-4955-a029-28c6e5006dab --output json",
+      "file": "d30940f343.json"
+    },
+    {
+      "match": "or jobs get c3a00022-67c7-4b04-8faa-35a726d641cc --output json",
+      "file": "5d253e87ea.json"
+    },
+    {
+      "match": "or jobs logs c3a00022-67c7-4b04-8faa-35a726d641cc --level Error --output json",
+      "file": "74f92d894a.json"
+    },
+    {
+      "match": "or jobs history c3a00022-67c7-4b04-8faa-35a726d641cc --output json",
+      "file": "dc664aaf9f.json"
+    },
+    {
+      "match": "or jobs traces c3a00022-67c7-4b04-8faa-35a726d641cc --output json",
+      "file": "177e41f489.json"
+    },
+    {
+      "match": "is connections list --folder-key eba26f86-ea3a-4955-a029-28c6e5006dab --output json",
+      "file": "081b84c7c0.json"
+    },
+    {
+      "match": "is connections list --folder-key b262689d-e2a9-4c1a-8e68-04382a7fff76 --output json",
+      "file": "f50db666cc.json"
+    },
+    {
+      "match": "is connections ping 989fd9d2-4b07-443e-86e3-ed6f1b00079b --output json",
+      "file": "4dc2cb914e.json"
+    },
+    {
+      "match": "is connections list --output json",
+      "file": "8a280b15db.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  }
+}
