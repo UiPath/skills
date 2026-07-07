@@ -34,7 +34,7 @@ Each workflow doc covers a multi-command choreography for a specific goal. Load 
 | Setup Environment | [setup-environment.md](setup-environment.md) | Folders, users, roles, machines, licenses |
 | Run Jobs | [run-jobs.md](run-jobs.md) | Packages, processes, jobs, logs, traces |
 | Manage Sessions | [manage-sessions.md](manage-sessions.md) | Sessions, runtimes, maintenance mode |
-| Tenant Admin | [tenant-admin.md](tenant-admin.md) | Settings, calendars, Orchestrator audit-logs (org/tenant audit trail → **uipath-admin** `uip admin audit`), credential stores, feeds, attachments |
+| Tenant Admin | [tenant-admin.md](tenant-admin.md) | Settings, calendars, audit logs, credential stores, feeds, attachments |
 
 ---
 
