@@ -467,15 +467,21 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
 ### Step 2.5: Word (.docx) Delivery — only when requested
 
-When the user asks for a Word deliverable (client-facing SDD, "official template", ".docx"), convert the written SDD — do not author Word content by hand and never drive Word via COM automation:
+When the user asks for a Word or client-facing deliverable, convert the written SDD — do not author Word content by hand or drive Word via COM.
+
+**Plain `.docx` of the SDD:**
 
 ```bash
-bash <SKILL_DIR>/scripts/sdd-to-docx.sh "<SDD_PATH>.md"
+bash <SKILL_DIR>/scripts/sdd-to-docx.sh "<SDD_PATH>.md" [--reference-doc "<TEMPLATE>.docx"]
 ```
 
-- **Corporate styling:** if the user has an official SDD Word template, pass it as a style reference — `--reference-doc "<TEMPLATE_PATH>.docx"`. The output picks up its fonts, heading styles, and margins. Section *structure* still follows this skill's markdown SDD; mapping content into a different section skeleton is a manual step — say so.
-- **Mermaid diagrams** stay as code blocks in the .docx (the script warns). Offer the user the choice: leave as-is, or render externally and insert manually.
-- If the script reports pandoc missing, relay its install command. Do not fall back to COM, HTML-to-doc tricks, or hand-built XML.
+`--reference-doc` applies a customer template's fonts, heading styles, and margins. The section structure stays as the markdown SDD.
+
+**Official client SDD/ASDD (customer's structure):** the markdown SDD is agent-first; the official Word document is the client deliverable in the customer's own section layout. Ask the user for the template path, then follow [asdd-crosswalk-guide.md](asdd-crosswalk-guide.md) to match the markdown SDD into the template's sections and compute the missing pieces. Do not invent the official section structure.
+
+**Diagrams:** keep them as Mermaid and make them readable — clear node labels, one node per step, a logical direction. They convert as code blocks. Rendering them to images and styling the final document are not this skill's job — leave that to the user or their doc tooling.
+
+If the script reports pandoc missing, relay its install command.
 
 Skip this step entirely when the user did not ask for Word output.
 

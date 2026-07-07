@@ -6,7 +6,7 @@ agent reached a verified resolution. The fixtures are the verbatim
 
 ## What the original session uncovered
 
-Root Cause: A C# input-argument expression on the `Copy File` activity in `ERN.xaml` dereferences a variable that the workflow itself sets to `null` before the activity runs.
+Root Cause: A C# input-argument expression on the `Copy File` activity in `CopyFile.xaml` dereferences a variable that the workflow itself sets to `null` before the activity runs.
 
 ## How this test reproduces it
 

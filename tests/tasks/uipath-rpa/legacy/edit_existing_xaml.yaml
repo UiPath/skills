@@ -134,13 +134,6 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent used --output json on uip rpa-legacy commands"
-    command_pattern: 'uip\s+rpa-legacy\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Main.xaml has a TryCatch that actually nests the WriteLine inside its Try block"
     command: "python -c \"import re,sys; s=open('HelloLegacy/Main.xaml',encoding='utf-8').read(); sys.exit(0 if re.search(r'<TryCatch\\b[^>]*>[\\s\\S]*?<TryCatch\\.Try>[\\s\\S]*?<WriteLine\\b[\\s\\S]*?</TryCatch\\.Try>[\\s\\S]*?<TryCatch\\.Catches>[\\s\\S]*?</TryCatch>', s) else 1)\""

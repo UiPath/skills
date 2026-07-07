@@ -74,7 +74,18 @@ Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / cod
     - **(Solutions-mode + IntSvc only)** sync the connection into the catalogue: `uip api-workflow bindings sync --workflow <Workflow.json>` then `uip solution resource refresh --solution-folder <path>`. Skip for Http kind, non-connector activities, and standalone (no `Solution/`) projects.
 17. **Pass input as a JSON string.** `--input-arguments '{"key":"value"}'`. Invalid JSON exits 1.
 18. **Always `--output json`** when parsing CLI output programmatically. Success → `{ "Result": "Success", "Code": "WorkflowRun", "Data": {...} }`. Failure → `{ "Result": "Failure", "Message": "...", "Instructions": "..." }` with exit 1.
-19. **Build & publish goes through the solution packager.** API workflows pack via `uip solution pack <solutionDir> <outputDir>` and publish via `uip solution publish <package.zip>`. There is no `uip api-workflow build` or `uip api-workflow publish` command. Project type must be `"Api"` in the solution `.uipx`.
+19. **Scaffold with `uip api-workflow init`; publish goes through the solution packager.** Create every API workflow project with `uip api-workflow init <name>` (rule 19a) — never hand-assemble the project files. Project-level CLI commands also exist: `uip api-workflow build <projectDir>` (compile) and `uip api-workflow pack <projectDir> <outputDir>` (single-project `.nupkg`, useful to test one project in isolation). Solution-level build/publish go through `uip solution pack <solutionDir> <outputDir>` + `uip solution publish <package.zip>`. There is NO `uip api-workflow publish` command. Project type must be `"Api"` in the solution `.uipx`.
+
+19a. **Create projects with `uip api-workflow init <name>` — it produces the correct Studio Web editable shape and wires the solution.** Run it from inside the solution directory (the folder containing the `.uipx`):
+    ```bash
+    uip api-workflow init <name> --output json   # add --skip-solution-registration for a standalone (no .uipx) project
+    ```
+    It scaffolds `project.uiproj` + `Workflow.json` + `entry-points.json` + `bindings_v2.json` and, when run inside a solution, **auto-registers the project in the surrounding `.uipx`** (correct `ProjectRelativePath` + a fresh `Id`). Success → `Code: "ApiWorkflowInit"`. Then edit `Workflow.json` only.
+
+    **Why it matters:** a legacy `project.json` + `workflows/WF_*.json` layout (no `.uiproj`) passes every runtime gate — `validate`, `run`, `pack`, `publish`, deploy — but Studio Web rejects it as `invalid_project_folder` and never shows it. `init` is the one step that can't produce the wrong shape. Full layout + field rules: [references/workflow-file-format.md](references/workflow-file-format.md#project-structure-studio-web-editable-contract).
+
+    To **convert a legacy `project.json` project**, `init` a fresh sibling and move the existing workflow content into its `Workflow.json` (cleanest), or convert in place — see [references/troubleshooting.md](references/troubleshooting.md). Never wire it with `uip solution project add/remove` (errors on an already-registered name; `remove`+`add` destroys the project `Id`).
+
 20. **`uip api-workflow validate <Workflow.json>` is the autonomous closure step for every authoring or edit cycle.** Run it as the LAST command before asking the user anything about runtime. It's offline (no auth, no network, no side effects): JSON Schema + semantic checks on the static file. Output codes:
     - `Result: "Success"`, `Code: "ApiwfValidate"`, `Data.Status: "Valid"` (exit 0) — possibly with `Data.Warnings`. Proceed to rule 21 (ask the user whether to run).
     - `Result: "Failure"` (exit 1) — do NOT bother the user. Read `Instructions`, locate the offending activity by its JSON path (e.g. `/do/0/Sequence_1/do/2/Mystery_1/metadata/activityType`), edit `Workflow.json` to fix it, then re-validate. Loop until pass.
@@ -173,7 +184,7 @@ Fix run failures in category order — **Structure > Expression > Activity Confi
 
 ### Phase 4: Package and Publish
 
-Once the workflow runs locally, deploy via the solution packager.
+Once the workflow runs locally, deploy via the solution packager. If the project must open in Studio Web, confirm it uses the `init`-produced shape first (rule 19a) — runtime/pack success does not prove it.
 
 **Pack:**
 ```bash
@@ -197,20 +208,26 @@ Requires `uip login`.
 ## Quick Start (CREATE from scratch)
 
 ```bash
-# 1. Copy the empty template
-cp ./.claude/plugins/uipath/skills/uipath-api-workflow/assets/templates/api-workflow-template.json \
-   ./MyApiProject/main.json
+# 0. Create the solution (skip if one already exists). Creates ./MySolution/ with the .uipx.
+uip solution init MySolution --output json
 
-# 2. Edit main.json to add user activities after WorkflowStart inside the root sequence
+# 1. Scaffold the project — correct Studio Web shape + auto-registers in the .uipx (rule 19a).
+#    init's <name> arg takes no slashes, so cd into the solution dir first; it registers the
+#    project in the nearest parent .uipx. Creates MyApiProject/ with project.uiproj,
+#    Workflow.json, entry-points.json, bindings_v2.json.
+cd ./MySolution
+uip api-workflow init MyApiProject --output json
+
+# 2. Edit MyApiProject/Workflow.json to add user activities after WorkflowStart inside the root sequence
 
 # 3. Validate (offline, autonomous — fix + re-validate until Status: Valid)
-uip api-workflow validate ./MyApiProject/main.json --output json
+uip api-workflow validate ./MyApiProject/Workflow.json --output json
 
 # 4. Ask the user, then run (only on user "yes")
-uip api-workflow run ./MyApiProject/main.json --no-auth --output json
+uip api-workflow run ./MyApiProject/Workflow.json --no-auth --output json
 
-# 5. Package
-uip solution pack ./MySolution ./build --name MyApiSolution --version 1.0.0 --output json
+# 5. Package (cwd is the solution dir)
+uip solution pack . ./build --name MyApiSolution --version 1.0.0 --output json
 
 # 6. Publish
 uip login
@@ -227,7 +244,7 @@ uip solution publish ./build/MyApiSolution.zip --tenant MyTenant --output json
 | [references/control-flow-patterns.md](references/control-flow-patterns.md) | Combining activities into hierarchical structures — nested If, ForEach inside DoWhile, TryCatch around/inside loops, conditional Break, multi-way branching, key uniqueness rules |
 | [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — three-step flow, sample stub output, field-shape rules, multipart subsection, worked examples |
 | [references/expressions-and-context.md](references/expressions-and-context.md) | Writing JS expressions, propagating outputs via `export.as`, accessing `$context` / `$input` / `$workflow`, JS_Invoke argument passing, strict-mode gotchas, key patterns |
-| [references/cli-reference.md](references/cli-reference.md) | All `uip` commands — `api-workflow run`, `solution pack`, `solution publish`, `solution new`, `login` |
+| [references/cli-reference.md](references/cli-reference.md) | All `uip` commands — `api-workflow init`, `run`, `build`, `pack`, `validate`, `solution init`, `solution pack`, `solution publish`, `login` |
 | [references/troubleshooting.md](references/troubleshooting.md) | Failed runs, structure/expression/loop/nesting/response/validation pitfalls, packaging errors, publish errors, debugging strategy |
 
 ## Templates
@@ -251,6 +268,9 @@ The mistakes an agent makes most often (each maps to a Critical Rule above — s
 - **Do NOT** ship a `<REPLACE_WITH_*>` placeholder in a workflow — StudioWeb renders it as a broken connection and it 401s. No pinged UUID → ask the user. See rule 16.
 - **Do NOT** read workflow inputs as `$input.<name>` from a non-first activity — use `$workflow.input.<name>`. See rule 13.
 - **Do NOT** invoke `uip api-workflow run` autonomously, and never with auth without an explicit "yes" — vendor calls have irreversible side effects (emails sent, tickets created). See rules 20–21.
+- **Do NOT** hand-assemble a project (`project.json` + `main.json`/`workflows/WF_*.json`). Scaffold with `uip api-workflow init <name>` — it writes the correct `project.uiproj` shape and registers it in the `.uipx`. The legacy `project.json`-only shape runs and packs but Studio Web rejects it (`invalid_project_folder`) and never shows it. See rules 19–19a.
+- **Do NOT** wire a project into the solution with `uip solution project add/remove` — it errors on an already-registered name, and `remove`+`add` destroys the project `Id`. `init` registers it; for an already-built project, edit the `.uipx` `ProjectRelativePath` in place. See rule 19a.
+- **Do NOT** trust "it packed / published / ran" as proof a project opens in Studio Web — every runtime gate passes on the wrong shape. Scaffolding with `init` is what guarantees it (rule 19a).
 
 ## Infinite Loop Prevention
 

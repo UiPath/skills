@@ -1,0 +1,96 @@
+task_id: skill-troubleshooting-gsuite-add-sheet-name-conflict
+description: >
+  Faithful replay of a real UiPath troubleshooting investigation. The agent
+  runs the uipath-troubleshoot skill against a uip CLI mock whose responses
+  are the verbatim, scrubbed sub-agent outputs from the real session
+  (.local/investigations/raw/*.json). The most-recent Faulted job in folder
+  Shared (GSuite_AddSheetNameConflict, job 2fbf6ba4-b347-462f-a83e-33c6c34bbea6)
+  ran a single GSuite Add Sheet activity that hit a duplicate sheet-name
+  conflict: the target spreadsheet already contained a tab matching the
+  configured SheetName and ConflictResolution was left at Fail, so the activity
+  threw "A sheet with the same name already exists." Success = the agent reaches
+  the same root cause as RESOLUTION.md: a deterministic name-conflict
+  (ConflictResolution=Fail + a pre-existing same-named sheet), NOT a
+  connection/auth, 404, invalid-range, or transient failure.
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
+
+# Inherits from experiments/default.yaml: model, permission_mode, plugins
+# ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides
+# specific to this scenario. This scenario is CLI-driven — the root cause is
+# fully contained in `or jobs get` Info, so there is no process/ snapshot.
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 300
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: data
+  mock_path_dirs:
+    - m
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  why did my last job from folder Shared fail?
+  (The user is logged in to UiPath alpha cloud via the uip CLI.)
+
+success_criteria:
+  # Binary tool-invocation check: confirms the right skill ran at all.
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+# Override experiments/default.yaml's 600s limit -- the multi-agent troubleshooting
+# skill (triage -> hypothesis-generator -> tester -> presenter) routinely takes
+# 10-20 minutes when sub-agents run sequentially.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

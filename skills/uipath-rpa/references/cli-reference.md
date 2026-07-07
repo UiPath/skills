@@ -209,9 +209,35 @@ The verbs you'll reach for: list/describe **connectors** and their **activities*
 
 ---
 
-## Test Manager (`uip tm`)
+## Test Manager
 
-Test Manager integration lives in the dedicated `uip tm` tool — `uip tm --help`. Do not document or invoke Test Manager verbs from `uip rpa`.
+Two distinct surfaces — pick by intent:
+
+- **`uip tm` (dedicated tool)** — *runtime* Test Manager operations: browsing manual test cases, runs, results. `uip tm --help`. Do **not** invoke these runtime verbs from `uip rpa`.
+- **`uip rpa tm` (project configuration)** — *authoring/setup*: wire an RPA project to Test Manager by editing its `.tmh/config.json`. Pure file I/O — no Studio or Helm process is needed, so it works with everything closed.
+
+### `uip rpa tm` verbs
+
+| Verb | Purpose |
+|---|---|
+| `uip rpa tm connect --url <url>` | Set the Test Manager **server URL** (`testManagerBasePath`). Switching to a **different** server (different host/org/tenant) also **clears the default project**, since it belonged to the old server. |
+| `uip rpa tm set-default-project --id <guid> [--name <name>] [--key <key>]` | Link the **default Test Manager project** (`defaultProject`). **Requires a connected server** — run `connect` first or it is rejected. |
+| `uip rpa tm clear-default-project` | Unlink the default project; the server URL is kept. |
+| `uip rpa tm status` | Show the current configuration — server URL and linked default project. |
+
+Typical setup flow (all verbs take the standard `--project-dir` and `--output json`):
+
+```
+uip rpa tm connect --url "https://cloud.uipath.com/<org>/<tenant>/testmanager_" --project-dir "<PROJECT_DIR>" --output json
+uip rpa tm set-default-project --id <project-guid> --name "<project-name>" --key "<KEY>" --project-dir "<PROJECT_DIR>" --output json
+uip rpa tm status --project-dir "<PROJECT_DIR>" --output json
+```
+
+`set-default-project` does **not** call the server to validate the id (there is no server round-trip) — pass a real Test Manager project id (and optional name/key). Listing projects from the server is not available here; obtain the id from Test Manager itself. Confirm exact flags via `uip rpa tm --help`.
+
+#### Acting on `reloadHint` in the output
+
+A `connect` / `set-default-project` / `clear-default-project` response may include a **`reloadHint`** field. It appears only when the project is currently **open in a Studio older than 26.0.197**, which reads `.tmh/config.json` *only on project open*. When you see it, tell the user to **close and reopen the project in Studio** for the change to take effect — the CLI cannot do this for them. No `reloadHint` means nothing to do: either the project isn't open in Studio, or it's open in Studio 26.0.197+, which applies the change live.
 
 ---
 

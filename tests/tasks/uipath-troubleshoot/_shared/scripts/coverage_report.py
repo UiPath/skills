@@ -1,9 +1,9 @@
 """Coverage reporter: expected vs performed uip commands per replicate.
 
 Reads:
-  - <run_dir>/<NN>/artifacts/<task_id>/mocks/.calls.jsonl
+  - <run_dir>/<NN>/artifacts/<task_id>/m/.calls.jsonl
       one JSON record per uip invocation written by the mock dispatcher
-  - <run_dir>/<NN>/artifacts/<task_id>/mocks/responses/manifest.json
+  - <run_dir>/<NN>/artifacts/<task_id>/m/r/manifest.json
       the manifest's `expected_calls` declares minimum-coverage patterns
 
 Writes per replicate:
@@ -27,8 +27,8 @@ from pathlib import Path
 def analyze_replicate(rep_dir: Path) -> dict:
     """Build a coverage record for one replicate."""
     sandbox = rep_dir / "artifacts" / rep_dir.parent.name
-    calls_path = sandbox / "mocks" / ".calls.jsonl"
-    manifest_path = sandbox / "mocks" / "responses" / "manifest.json"
+    calls_path = sandbox / "m" / ".calls.jsonl"
+    manifest_path = sandbox / "m" / "r" / "manifest.json"
 
     rec: dict = {
         "replicate": rep_dir.name,

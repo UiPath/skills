@@ -7,10 +7,14 @@ Validates (middleware style, LangChain agent):
   framework module; the platform path silently no-ops)
 - UiPathIntellectualPropertyMiddleware is spread (*) into create_agent(middleware=[...])
 - IntellectualPropertyEntityType entities TEXT and CODE are referenced
-- GuardrailExecutionStage.POST is used (IP is an output-only / POST-stage concern)
 - An LLM or Agent scope is configured, and Tool scope is NOT used
   (intellectual_property does not support Tool scope)
 - BlockAction is used (block, not log)
+
+NOT validated: execution stage. The *Middleware classes take no ``stage``
+argument (only the @guardrail decorator does); IP runs at POST internally,
+fixed by the validator. Requiring a literal ``GuardrailExecutionStage.POST``
+token would force dead code, so stage is left to the SDK.
 """
 
 import ast
@@ -76,13 +80,6 @@ def main() -> None:
     check("TEXT" in src, "IntellectualPropertyEntityType.TEXT not referenced")
     check("CODE" in src, "IntellectualPropertyEntityType.CODE not referenced")
     print("OK: IntellectualPropertyEntityType TEXT and CODE referenced")
-
-    # POST stage — IP is output-only.
-    check(
-        "GuardrailExecutionStage.POST" in src,
-        "GuardrailExecutionStage.POST not found — intellectual property runs at POST stage only",
-    )
-    print("OK: GuardrailExecutionStage.POST used")
 
     # Scope — LLM or Agent, never Tool.
     check(

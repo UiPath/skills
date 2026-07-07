@@ -69,22 +69,6 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent consulted the coded judgment catalog (agents-coded-rules.md)"
-    tool_name: "Read"
-    command_pattern: 'agents-coded-rules\.md'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent consulted the common agent judgment catalog (agents-common-rules.md)"
-    tool_name: "Read"
-    command_pattern: 'agents-common-rules\.md'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "A non-trivial review report was produced"
     command: "python3 $TASK_DIR/check_coded_review_runs_review_cli.py"

@@ -130,7 +130,7 @@ Skip a dimension's prompt only when Listen already captured it verbatim at high 
 | 5 | Decisions / gates | `Where does someone approve / decline / escalate?` Each gate → an `action` task with buttons, or a routing exit. | task buttons, exits |
 | 6 | Data per stage | `What information is collected or produced at each step?` | §1.5 variables |
 | 7 | Trigger & exit | `What kicks this off, and what does 'done' look like?` Trigger type is Always-Ask the moment a portal / form / schedule / event is named. | §1.3, §1.4 |
-| 8 | Exceptions / escalations | `What goes wrong, and how is it handled?` Each handler → a secondary (exception) stage — see [sdd-generation-rules.md § Mental model](sdd-generation-rules.md#mental-model-stages-secondary-stages-tasks). | exception stages |
+| 8 | Exceptions / escalations | `What goes wrong, and how is it handled?` Each handler → a secondary (exception) stage — see [sdd-generation-rules.md § Mental model](sdd-generation-rules.md#mental-model-stages-secondary-stages-tasks). | secondary stages |
 | 9 | SLA / timing | Only when the user mentioned timing. `How long should <stage / case> take?` | §1.2, stage SLA |
 
 Each row is a single-question prompt by default. Collapse only the safe-to-default rows (4 persona descriptions, 9 SLA when timing was never raised) into the one allowed §Batched prompt. Trigger type (7), task type on ambiguous verbs (3), and case exit (7) stay single-question — they are Always-Ask.
@@ -167,7 +167,7 @@ One AskUserQuestion with up to 4 `multiSelect: true` rows for fields whose value
 |---|---|
 | Case-level description (Section 1.1) | `—` (Phase 1 leaves blank) |
 | Persona descriptions (Section 3) | `—` |
-| Exception-stage descriptions | `—` |
+| Secondary-stage descriptions | `—` |
 | Optional `conditionExpression` cells in Entry / Exit rows | `—` (no IF filter) |
 | Optional `Business Calendar` cell on timers | `—` (use 24×7) |
 | Optional task SLA on `action` tasks | `—` (inherits case SLA) |
@@ -190,6 +190,7 @@ Use sparingly — at most one batched prompt in the whole interview. Each row de
 | Field | Why never default |
 |---|---|
 | Trigger type when ANY external system, portal, form, schedule, signup, or inbound event is mentioned | `Timer` / `Connector Event` change generation path. "Vendor signs up" → portal/event, NOT Manual. |
+| Trigger type when a tenant case-entity / data-object record-created start is mentioned | This is an event trigger with the named object as Source. Missing tenant provisioning is handled later as an unresolved placeholder, not by downgrading to Manual. |
 | Task type on ambiguous verbs (`review`, `approve`, `check`, `validate`, `process`, `assess`, `sign off`, `decide`) | `action` (HITL) vs `agent` (LLM) generate different shapes. The verb alone is not enough. |
 | Task type when a **compliance trigger phrase** is in the transcript (ECOA, NCQA, HIPAA, SOC 2, FCRA, FINRA, "licensed X", "fiduciary review", etc.) AND user proposed non-`action` | Tier 2 of the authority hierarchy forces `action`; do not silently accept user's stated type. See [sdd-generation-rules.md § Task-type override priority](sdd-generation-rules.md#task-type-override-priority). |
 | Case exit condition | Wrong exit traps the case open or closes prematurely. |
@@ -207,6 +208,7 @@ These thoughts mean STOP and use AskUserQuestion before continuing:
 | Thought | Reality |
 |---|---|
 | "I'm confident enough about the trigger." | Trigger ≠ Manual the moment a portal, form, schedule, or external system is mentioned. Always-Ask. |
+| "The named data object might not exist in this tenant, so Manual is safer." | Preserve the object as an event trigger. Unresolved resources become placeholders during planning/build. |
 | "The user said 'review' — probably an `action` task." | `review` is on the Always-Ask list. Ask. |
 | "User said 'I'll fix it later' — defaulting is sanctioned." | User-permission to default ≠ permission to skip Ask. Rule 2 locks the file post-Approve. Wrong defaults survive. |
 | "User is in a hurry, don't burn turns." | One Ask costs 30s. One wrong default costs a Phase 4 retry loop. Ask. |
@@ -242,7 +244,7 @@ Classification of each reply:
 After Sketch + Ask close out, count from `sdd.draft.md`:
 
 - Stages, Tasks total, Distinct integrations, Distinct personas, `case-management` tasks (child cases).
-- Exception stages — counted but never triggers redirect.
+- Secondary stages — counted but never triggers redirect.
 
 Breach any quantitative cap → §Soft redirect.
 
@@ -302,10 +304,10 @@ Per-task AskUserQuestion (4 options max). **When candidate matches differ by fol
 |---|---|
 | `<top match — name · folder · version · type>` | Record selection (incl. chosen folder). |
 | `<second match — name · folder · version · type>` (if available) | Record selection (incl. chosen folder). |
-| `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. |
+| `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. **For an `agent`,** Phase 1's Rule 17 gate additionally offers to build it inline as an in-solution sibling ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a no-match agent need not stay manual. |
 | `Something else` | Free-text re-search keyword, retry. |
 
-**Empty registry match** across bucket C → AskUserQuestion `Force pull and re-resolve` / `Skip and use placeholders` (Rule 17), applied per batch, not per task. When the user picks `Skip and use placeholders`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
+**Empty registry match** across bucket C → AskUserQuestion `Force pull and re-resolve` / `Skip and use placeholders` — plus, when ≥1 still-empty is an `agent` AND the CLI supports `registry --local`, `Create the missing agent(s) inline` (build as in-solution siblings; see [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — per Rule 17, applied per batch, not per task. When the user picks `Skip and use placeholders`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
 
 #### Schema discovery — pull each resolved task's I/O contract
 
@@ -461,7 +463,7 @@ Hard quantitative caps. Breach triggers §Soft redirect (not hard refuse).
 | Distinct personas | > 3 |
 | Child cases (`case-management` tasks) | ≥ 1 |
 
-**Exception stages are NOT a threshold.** They may appear freely.
+**Secondary stages are NOT a threshold.** They may appear freely.
 
 ## Soft redirect
 

@@ -20,7 +20,8 @@ Pack a solution into a deployable package, publish to the feed, and deploy to Or
 
 ```mermaid
 graph LR
-    A[solution pack] --> B[solution publish]
+    R["(optional)<br/>solution restore"] --> A[solution pack]
+    A --> B[solution publish]
     B --> C[deploy config get]
     C --> D[config set / link]
     D --> E["deploy run<br/>(auto-activate by default)"]
@@ -31,6 +32,21 @@ graph LR
 ```
 
 ---
+
+## Step 0 (Optional): Restore Dependencies
+
+Resolve NuGet dependencies for every project in the solution, in place, using the authenticated session:
+
+```bash
+uip solution restore ./MySolution --output json
+```
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `<solutionPath>` | Solution directory (containing a `.uipx`) or a `.uis` file (required) | -- |
+| `--login-validity <minutes>` | Minimum minutes left on the access token before the CLI refreshes it before restore starts | 10 |
+
+`restore` resolves dependencies on disk and does **not** produce a package. It needs an authenticated session (`uip login`) to reach private Orchestrator feeds. `pack` already restores internally, so this step is an **optimization, not a requirement** — its value is in CI, where running `login → restore → pack` fails fast on a missing or unreachable feed before the heavier pack step runs. Skip it for a plain local pack.
 
 ## Step 1: Pack the Solution
 
@@ -75,7 +91,7 @@ uip solution upload ./MySolution --output json
 
 This uploads to Studio Web for collaborative editing. It does **not** place the package on the solution feed and cannot be used with `deploy run`. If the `SolutionId` in `.uipx` already exists in Studio Web, `upload` refuses unless `--force` is passed (forcing replaces the cloud project in place and wipes its Studio Web version history).
 
-`upload` always lands the solution in Studio Web's **Cloud workspace** tab, not the Local tab. SW's Local tab is a separate registration for solutions whose source of truth is a tracked local folder — populated by SW-initiated flows (creating a solution from the SW UI, or downloading a cloud solution to local) or by Studio Desktop signing into the same tenant. `uip solution upload` does not address the Local tab. Authoring with `uip solution new` then `upload` produces a Cloud-tab solution; the local folder on disk has no live link to either tab afterward — edits in one place do not propagate to the other without a re-upload (Cloud) or a download (Local).
+`upload` always lands the solution in Studio Web's **Cloud workspace** tab, not the Local tab. SW's Local tab is a separate registration for solutions whose source of truth is a tracked local folder — populated by SW-initiated flows (creating a solution from the SW UI, or downloading a cloud solution to local) or by Studio Desktop signing into the same tenant. `uip solution upload` does not address the Local tab. Authoring with `uip solution init` then `upload` produces a Cloud-tab solution; the local folder on disk has no live link to either tab afterward — edits in one place do not propagate to the other without a re-upload (Cloud) or a download (Local).
 
 ## Step 4: Deploy to Orchestrator
 
@@ -245,6 +261,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: npm install -g @uipath/cli
       - run: uip login --client-id "${{ secrets.UIPATH_CLIENT_ID }}" --client-secret "${{ secrets.UIPATH_CLIENT_SECRET }}" --tenant "${{ secrets.UIPATH_TENANT }}" --output json
+      - run: uip solution restore ./MySolution --output json   # optional: fail fast on a missing feed before pack
       - run: uip solution pack ./MySolution ./output --version "1.0.${{ github.run_number }}" --output json
       - run: uip solution publish ./output/MySolution.*.zip --output json
       - run: uip solution deploy run -n "MySolution-${{ github.run_number }}" --package-name "MySolution" --package-version "1.0.${{ github.run_number }}" --folder-name "MySolution" --config-file deploy-config.json --output json

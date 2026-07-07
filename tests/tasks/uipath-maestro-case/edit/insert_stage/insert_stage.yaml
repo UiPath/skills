@@ -1,0 +1,67 @@
+task_id: skill-case-edit-insert-stage
+description: >
+  Insert a new "Approval" stage carrying one wait-for-timer task into the
+  middle of an existing LinearThreeStages case, between the Review and
+  Decision stages. Exercises editing an existing caseplan.json: adding a
+  Stage node, adding a task in its data.tasks lane, and rewiring the
+  condition-driven chain so Approval runs after Review and Decision now
+  runs after Approval (the case analog of inserting a node into an edge).
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:edit, shape:multi-node, feature:stages, feature:conditions, feature:wait-for-timer]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../templates
+
+initial_prompt: |
+  The LinearThreeStages case solution already exists on disk under
+  LinearThreeStages/. Its case definition (LinearThreeStages/LinearThreeStages/caseplan.json)
+  chains three stages linearly: Intake → Review → Decision.
+
+  Insert a NEW regular stage named "Approval" between Review and Decision.
+  Approval must:
+    - run after Review completes (its stage-entry condition references the
+      Review stage), and
+    - hand off to Decision — rewire Decision so it now runs after Approval
+      completes instead of after Review. After the edit there must be NO
+      direct Review → Decision hand-off.
+    - contain ONE built-in wait-for-timer task named "Approval Hold" with a
+      current-stage-entered task-entry condition and a short time duration
+      (e.g. 5s).
+
+  Leave Intake and Review otherwise unchanged.
+
+  Do NOT run `uip maestro case debug` — the test harness handles execution.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Make the edit end-to-end in a single pass and
+  finish with `uip maestro case validate` passing on the resulting
+  caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the edited caseplan.json"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Approval stage inserted between Review and Decision: 4 stages total, Approval carries a wait-for-timer task with current-stage-entered entry, Review → Approval and Approval → Decision transitions exist, the old Review → Decision transition is gone, and the edited case launches in the Studio Web debug runtime"
+    command: "python3 $TASK_DIR/check_insert_stage.py"
+    timeout: 720
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

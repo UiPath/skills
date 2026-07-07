@@ -1,0 +1,12 @@
+[
+  { "row": 1,  "Title": "alpha",              "Score": 10,   "Notes": "first" },
+  { "row": 2,  "Title": "beta",               "Score": 20 },
+  { "row": 3,  "Title": "Gamma",              "Score": null, "Notes": "" },
+  { "row": 4,  "Title": "delta",              "Score": 30,   "Notes": "with quote: O'Brien" },
+  { "row": 5,  "Title": "epsilon",            "Score": 40,   "Notes": "with percent 50%" },
+  { "row": 6,  "Title": "zeta",               "Score": 50,   "Notes": "with underscore _ here" },
+  { "row": 7,  "Title": "eta",                "Score": 60,   "Notes": "with backslash \\ here" },
+  { "row": 8,  "Title": "ALPHA",              "Score": 70,   "Notes": "uppercase twin" },
+  { "row": 9,  "Title": "row with newline",   "Score": 80,   "Notes": "line1\nline2" },
+  { "row": 10, "Title": "unicode café résumé","Score": 90,   "Notes": "non-ascii" }
+]

@@ -36,6 +36,7 @@ Namespaces: `UiPath.IntegrationService.Activities`, `UiPath.IntegrationService.A
 CLI: `uip is --help`
 
 - [products/integration-service/overview.md](./products/integration-service/overview.md) — Product overview, connectors, connections, and CLI commands
+- [products/integration-service/dap-error-codes-reference.md](./products/integration-service/dap-error-codes-reference.md) — DAP runtime error-code catalog, telemetry customEvent fields, retry semantics, code → playbook map
 - [products/integration-service/summary.md](./products/integration-service/summary.md) — All playbooks for Integration Service issues
 
 ## Agents
@@ -162,6 +163,15 @@ Namespaces: `UiPath.Web.Activities`
 
 - [activity-packages/web-activities/overview.md](./activity-packages/web-activities/overview.md) — Package overview, activity families, and common failure patterns
 - [activity-packages/web-activities/summary.md](./activity-packages/web-activities/summary.md) — All playbooks for Web Activities issues
+
+## App Events (Workflow Events) Activities
+
+Internal activities that connect a **UiPath App** (or a Studio Web app preview) to the robot running the App's workflows. They are `[Internal]` — a user never places them — so failures surface as **a job invoked by an App faulting**, with the activity name (`HandleAppRequest`, `AppRequestTrigger`, `InitializeHubConnection`) appearing in the job error / trace spans rather than the user's project. The App↔robot channel runs in one of two modes: RobotJS (legacy local pipe) or SignalR (modern hub). These activities propagate raw .NET framework exceptions (no package-specific wrapper), so the faulted activity class + exception class is the discriminator: `HandleAppRequest` `NullReferenceException` (a null deref inside the App-invoked workflow), `AppRequestTrigger` `TimeoutException`/`IOException`/`InvalidOperationException` (App↔robot channel/transport lost), and `InitializeHubConnection` `AggregateException` (SignalR hub bootstrap failed — unwrap the inner).
+
+Namespaces: `UiPath.WorkflowEvents.Activities`
+
+- [activity-packages/workflowevents-activities/overview.md](./activity-packages/workflowevents-activities/overview.md) — Package overview, connection modes, activity types, and common failure patterns
+- [activity-packages/workflowevents-activities/summary.md](./activity-packages/workflowevents-activities/summary.md) — All playbooks for App Events (Workflow Events) Activities issues
 
 
 ## Playbooks

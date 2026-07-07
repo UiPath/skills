@@ -6,79 +6,40 @@ description: >
   using records query (no body). Creates test records first, runs 5 query
   scenarios, then deletes the test records. Tests the full query body schema
   and the no-body pagination path end-to-end.
-tags: [uipath-platform, integration, data-fabric, records]
-
+tags: [uipath-platform, data-fabric, integration, records, mode:operate, lifecycle:discover]
 run_limits:
-  expected_turns: 26
+  expected_turns: 25
   turn_timeout: 600
 
 initial_prompt: |
-  1. Check login: run `uip login status --output json`. Do NOT re-login — use
-     whatever tenant is currently active.
+  We have an Orders list called `CE_IntegrationOrders` already loaded
+  up with a small set of orders. Each order has a code, a value, and
+  a status. Please don't change anything — I just need a handful of
+  searches run over it.
 
-  2. List native-only entities. Use an entity named "IntegrationOrders" if it
-     exists. If not, create it with fields:
-       - Code (STRING)
-       - Value (DECIMAL)
-       - Status (STRING)
+  Run each of these and tell me the result:
 
-  3. Batch-insert exactly these 4 records (use a single insert call with an array body):
-       { "Code": "ORD-001", "Value": 100.00, "Status": "Pending" }
-       { "Code": "ORD-002", "Value": 500.00, "Status": "Active"  }
-       { "Code": "ORD-003", "Value": 250.00, "Status": "Active"  }
-       { "Code": "ORD-004", "Value": 750.00, "Status": "Closed"  }
-     Save the 4 record IDs from the response.
+    - Active orders worth more than $300 — how many, and which codes?
+    - Orders that are Pending OR Closed — how many, and which codes?
+    - Either (Active AND worth more than $200) OR Pending — how many?
+    - Sort everything by value, highest first — top row's value?
+    - Return just the code column for every row. Are value and status
+      absent from the response?
+    - Page through everything two at a time, no filter, until no more
+      pages. Any duplicate IDs across pages? How many unique IDs total?
+    - Orders whose status is one of {Pending, Active} — how many?
+    - Count of orders grouped by status — one count per status.
 
-  4. AND query: records query with filterGroup logicalOperator 0 (AND):
-       Status = "Active" AND Value > "300"
-     Expected: exactly 1 result (ORD-002; ORD-003 is Active but Value 250 fails).
-     Save count as and_query_count.
-
-  5. OR query: records query with filterGroup logicalOperator 1 (OR):
-       Status = "Pending" OR Status = "Closed"
-     Expected: exactly 2 results (ORD-001, ORD-004).
-     Save count as or_query_count.
-
-  6. Nested filterGroups query — outer logicalOperator 1 (OR) over two inner AND groups:
-       Group 1: Status = "Active" AND Value > "200"
-       Group 2: Status = "Pending"
-     Expected: exactly 3 results (ORD-001, ORD-002, ORD-003; ORD-004 fails both).
-     Save count as nested_query_count.
-
-  7. Sort query: records query with sortOptions Value isDescending true, no filter.
-     Save the Value field of Records[0] as sort_first_value (expected: 750.0).
-
-  8. Projection query: records query with selectedFields ["Code"], no filter.
-     Verify that the Value and Status fields are absent from every record returned.
-     Save projection_value_absent and projection_status_absent as true/false.
-
-  9. Paginate all records using records query with --limit 2 and no --body:
-       uip df records query <entity-id> --limit 2 --output json
-     If HasNextPage is true, repeat with --cursor <NextCursor> until exhausted.
-     Collect all record IDs across pages.
-     Use Python to verify: total unique IDs == 4 and no duplicates.
-     Save pagination_total_ids and pagination_no_duplicates.
-
-  10. Delete the 4 records you inserted in step 3.
-
-  Use --output json on every uip df command.
-  Pagination must use --limit and --cursor CLI flags — never body keys.
+  Paging should stay on the command line — never put page-size or
+  page-cursor stuff inside the search body itself.
 
 success_criteria:
   - type: command_executed
     description: "Agent verified login status"
     tool_name: "Bash"
     command_pattern: 'uip\s+login\s+status'
-    min_count: 1
+    min_count: 0
     weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent inserted test records"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+insert'
-    min_count: 1
-    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -97,12 +58,12 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent deleted the test records"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+delete'
-    min_count: 1
-    weight: 1.5
+  - type: run_command
+    description: "End state: CE_IntegrationOrders has exactly 4 records (agent did not mutate the seed)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_IntegrationOrders --expected 4"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -111,6 +72,56 @@ success_criteria:
     command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup'
     min_count: 3
     weight: 2.5
+    pass_threshold: 1.0
+
+  # ---------------------------------------------------------------------
+  # Filter body shape — enforces the supported keys and operator strings
+  # documented in SKILL.md Critical Rule 16 and
+  # references/records-query.md#filter-body-reference.
+  # ---------------------------------------------------------------------
+
+  - type: command_executed
+    description: "Filter body uses the supported keys `queryFilters` and `fieldName`"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*"queryFilters")(?=.*"fieldName")'
+    min_count: 3
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Filter body uses `queryFilters` (not `filters`) as the array key on filterGroup"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"filters"\s*:'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Filter body uses `fieldName` (not `field`) as the per-filter field key"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"field"\s*:\s*"[^"]*"\s*,\s*"operator"'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Operator uses the `=` symbol (not the JS/SQL alias `==`)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"operator"\s*:\s*"=="'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Operator uses the `=` symbol (not the named aliases `Equals` / `equals` / `eq`)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"operator"\s*:\s*"([Ee]quals?|eq)"'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -137,6 +148,85 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
+  - type: command_executed
+    description: "Agent used `in` operator with valueList (step 9)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"operator"\s*:\s*"in".*valueList'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran an aggregate query with groupBy + aggregates (step 10)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:aggregates.*groupBy|groupBy.*aggregates)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used COUNT aggregate function with an alias"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"function"\s*:\s*"COUNT".*"alias"'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent's reported answers match the expected counts / values for each of the 8 query scenarios"
+    include_agent_output: true
+    prompt: |
+      The agent ran 8 queries against a seeded 4-row `CE_IntegrationOrders`
+      entity (records ORD-001..ORD-004, statuses: 1x Pending, 2x Active,
+      1x Closed; values 100, 500, 200, 750). Expected answers:
+
+        Q1. AND(status=Active, value>300) → 1 row (ORD-002)
+        Q2. OR(status=Pending, status=Closed) → 2 rows (ORD-001, ORD-004)
+        Q3. Nested: (Active AND value>200) OR Pending → 3 rows
+             (ORD-001, ORD-002, ORD-003)
+        Q4. Sort by value desc — top value = 750.0
+        Q5. Project just Code column — value / status absent from response
+        Q6. Full pagination walk, page size 2 — 4 unique IDs, no duplicates
+        Q7. IN filter {Pending, Active} → 3 rows
+        Q8. Aggregate count by status → { Pending: 1, Active: 2, Closed: 1 }
+
+      Read the agent's final response. Score 1.0 if the agent reported
+      correct answers for at LEAST 6 of the 8 questions (allowing minor
+      phrasing variance). Score 0.5 if 4-5 are correct. Score 0.0 if 3+
+      are wrong OR queries were skipped.
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
+      --entity-name CE_IntegrationOrders
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_orders.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_orders.records.json
     timeout: 60
+    fail_on_error: false
+
+post_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_IntegrationOrders
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_orders.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_orders.records.json
+    timeout: 120

@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Word Replace Text scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "6ce601f459.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a2b3c4d5-e6f7-4193-8a9b-0c1d2e3f4051\" --state Faulted --output json",
+      "file": "1c46b4cc10.json"
+    },
+    {
+      "match": "or jobs list --folder-key a2b3c4d5-e6f7-4193-8a9b-0c1d2e3f4051 --state Faulted --output json",
+      "file": "1c46b4cc10.json"
+    },
+    {
+      "match": "or jobs get \"b3c4d5e6-f7a8-4204-9b0c-1d2e3f405162\" --output json",
+      "file": "17a2e63318.json"
+    },
+    {
+      "match": "or jobs get b3c4d5e6-f7a8-4204-9b0c-1d2e3f405162 --output json",
+      "file": "17a2e63318.json"
+    },
+    {
+      "match": "or jobs logs \"b3c4d5e6-f7a8-4204-9b0c-1d2e3f405162\" --level Error --output json",
+      "file": "70b8bca898.json"
+    },
+    {
+      "match": "or jobs logs b3c4d5e6-f7a8-4204-9b0c-1d2e3f405162 --level Error --output json",
+      "file": "70b8bca898.json"
+    },
+    {
+      "match": "or jobs logs \"b3c4d5e6-f7a8-4204-9b0c-1d2e3f405162\" --output json",
+      "file": "4dcb8ac841.json"
+    },
+    {
+      "match": "or jobs logs b3c4d5e6-f7a8-4204-9b0c-1d2e3f405162 --output json",
+      "file": "4dcb8ac841.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

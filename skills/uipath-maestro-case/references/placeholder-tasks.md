@@ -115,6 +115,8 @@ These are **expected** and do not block the build. Errors only appear when cross
 
 ## Upgrade Procedure — Placeholder → Full Task
 
+> **Built-inline agents are not placeholders.** An `agent` the user chose to **Create** at the Rule 17 gate is built and bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — it enters Phase 2 as a fully resolved task, never a placeholder, and skips this procedure. This procedure covers agents the user **declined/skipped or whose build failed** (their recovery is the same as any other unresolved kind — register the real resource, below), plus every other unresolved kind.
+
 When the user has registered the real resource:
 
 ### 1. Re-pull the registry
@@ -127,7 +129,7 @@ uip maestro case registry pull --force
 
 ### 2. Resolve the task-type-id
 
-Read the relevant cache file directly per [registry-discovery.md](registry-discovery.md) — e.g., `process-index.json` for processes, `action-apps-index.json` for action apps.
+Read the relevant cache file directly per [registry-discovery.md](registry-discovery.md) — e.g., `process-index.json` for processes, `action-apps-index.json` for action apps. For a **manually-built in-solution agent sibling**, find it offline by name with `uip maestro case registry search "<name>" --type agent --local --output json` (select the exact-name `Data.Resources[].Resource` entry; use `search` — `get --local` matches only the opaque `entityKey`, not the name). Its `Resource.EntityKey` is an opaque derived key (not the `.uipx` `Projects[].Id`), audit-only; the node binds by name+folder. Read the sibling's I/O field names from its raw `entry-points.json` (the `--output json` keys are PascalCased).
 
 ### 3. Fetch the schema
 
@@ -185,7 +187,23 @@ When the build finishes with placeholders, the skill's completion report must li
 - **Custom IS connectors** (N): U Submit (GetSubmission), U Place (SubmitPlannedMarkets), …
 ```
 
-The user uses this list to drive external resource creation, then runs the upgrade procedure.
+When agents were **built inline** at the gate, list them separately — they are resolved, not placeholders:
+
+```
+### Agents built inline (N)
+
+| Stage | Task | Resource | Status |
+|-------|------|----------|--------|
+| Triage | Classify PO | Classify PO (agent) | built as in-solution sibling via uipath-agents; bound via --local |
+
+### Built but not referenced (reject case)
+
+| Resource | Note |
+|----------|------|
+| Sentiment (agent) | built sibling on disk; task dropped from plan — reuse or remove manually |
+```
+
+The user uses the placeholder/external lists to drive external resource creation, then runs the upgrade procedure; the "built inline" list is informational (already wired).
 
 ## Anti-Patterns
 
@@ -193,3 +211,6 @@ The user uses this list to drive external resource creation, then runs the upgra
 - **Do NOT partially bind inputs on a placeholder.** A placeholder has no `data.inputs[]` to edit — the io-binding plugin logs a `SKIPPED` entry and moves on. Half-bound placeholders are harder to upgrade than bare ones.
 - **Do NOT skip task-entry conditions on placeholders.** Conditions are structural; they work on the TaskId and must be created so the workflow order is visible in review.
 - **Do NOT create placeholders for timer tasks.** Timers have no registry dependency — use the full `wait-for-timer` plugin.
+- **Do NOT create a placeholder for an agent the user chose to build inline.** It is built + bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a resolved task, not a placeholder.
+- **Do NOT build an agent from SDD content alone.** Inline create runs only for agents the user explicitly selected at the Rule 17 gate. The built agent is an in-solution **sibling** that co-deploys with the case — never a separate tenant publish.
+- **Invoking `uipath-agents` for the inline build is sanctioned** — it is not a violation of the "don't auto-invoke other skills" anti-pattern, which still applies to every non-creatable kind (regular RPA process, action, connectors, agentic process) and to `uipath-planner`.

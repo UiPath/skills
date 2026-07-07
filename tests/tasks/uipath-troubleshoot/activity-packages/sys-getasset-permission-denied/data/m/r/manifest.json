@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the getasset-permission-denied scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "b08a6b2edb.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "b08a6b2edb.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"7e9d4f2a-3b5c-4d8e-9f1a-2b3c4d5e6f7a\" --state Faulted --output json",
+      "file": "ffbc003668.json"
+    },
+    {
+      "match": "or jobs list --folder-key 7e9d4f2a-3b5c-4d8e-9f1a-2b3c4d5e6f7a --state Faulted --output json",
+      "file": "ffbc003668.json"
+    },
+    {
+      "match": "or jobs list --process-name AssetPermissionDenied",
+      "file": "ffbc003668.json"
+    },
+    {
+      "match": "or jobs list --folder-path Remote Debugging",
+      "file": "ffbc003668.json"
+    },
+    {
+      "match": "or jobs list --folder-path \"Remote Debugging\"",
+      "file": "ffbc003668.json"
+    },
+    {
+      "match": "or jobs get \"9f5e4d3c-2b1a-4f8e-7d6c-5b4a3e2d1f0c\" --output json",
+      "file": "b6aed3308b.json"
+    },
+    {
+      "match": "or jobs get 9f5e4d3c-2b1a-4f8e-7d6c-5b4a3e2d1f0c --output json",
+      "file": "b6aed3308b.json"
+    },
+    {
+      "match": "or jobs logs \"9f5e4d3c-2b1a-4f8e-7d6c-5b4a3e2d1f0c\" --level Error --output json",
+      "file": "526c1dc17e.json"
+    },
+    {
+      "match": "or jobs logs 9f5e4d3c-2b1a-4f8e-7d6c-5b4a3e2d1f0c --level Error --output json",
+      "file": "526c1dc17e.json"
+    },
+    {
+      "match": "or assets list --folder-key 7e9d4f2a-3b5c-4d8e-9f1a-2b3c4d5e6f7a --output json",
+      "file": "46d9acc45e.json"
+    },
+    {
+      "match": "or assets list --folder-key \"7e9d4f2a-3b5c-4d8e-9f1a-2b3c4d5e6f7a\" --output json",
+      "file": "46d9acc45e.json"
+    },
+    {
+      "match": "or assets list --folder-path Remote Debugging",
+      "file": "46d9acc45e.json"
+    },
+    {
+      "match": "or assets list --folder-path \"Remote Debugging\"",
+      "file": "46d9acc45e.json"
+    },
+    {
+      "match": "or users list --output json",
+      "file": "f4d26b8984.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}

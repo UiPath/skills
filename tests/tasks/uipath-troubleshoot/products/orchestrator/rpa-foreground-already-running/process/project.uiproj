@@ -1,5 +1,5 @@
 {
-  "Name": "ForegroundHolder",
+  "Name": "AttendedReportJob",
   "ProjectType": "Process",
   "Description": "Foreground process that logs progress while performing a long-running interactive step, then releases.",
   "MainFile": "Main.xaml"

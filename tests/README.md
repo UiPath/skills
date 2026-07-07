@@ -223,7 +223,7 @@ directly.
 ```yaml
 pre_run:
   - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
-    timeout: 30
+    timeout: 60
 ```
 
 A single helper script (`tests/tasks/uipath-platform/seed.py`) writes
@@ -407,7 +407,7 @@ Verify a file contains (or excludes) expected strings. From `uipath-maestro-flow
   description: "Flow contains the inline HITL node type"
   path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
   includes:
-    - '"uipath.human-in-the-loop"'
+    - '"uipath.human-in-the-loop.quick-form"'
   weight: 3.0
   pass_threshold: 1.0
 ```

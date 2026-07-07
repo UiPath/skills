@@ -1,0 +1,163 @@
+task_id: skill-datafabric-integration-naming-edge-cases
+description: >
+  Integration: name-validation matrix from `schema_migration.json` —
+  6 list names (leading digit, hyphen, underscore, 100/101-char
+  boundary) + 12 column names (system-reserved Id/CreatedBy/…,
+  SQL/C#/VB keywords). Agent must surface each rejection verbatim
+  and NOT silently rename. Grading via tenant queries (positives
+  present / negatives absent) + llm_judge on the walk-through.
+tags: [uipath-platform, data-fabric, integration, entities, naming, mode:diagnose, lifecycle:setup]
+
+run_limits:
+  expected_turns: 30
+  max_turns: 60
+  turn_timeout: 600
+
+initial_prompt: |
+  Migrating a schema from another system — `schema_migration.json` in
+  the working directory has 6 lists to attempt (each with one `Title`
+  column, short text) and 12 columns to add to the first successful
+  list (`CE_NameOK1`). Try each item verbatim. For rejections, capture
+  the error verbatim — don't rewrite names or retry.
+
+  When you're done, walk me through what came back for each item —
+  what succeeded, what was rejected, and for the rejections the exact
+  error the platform returned.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent attempted to create multiple lists (positives and negatives)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create'
+    min_count: 5
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted to add columns (may batch multiple per update call)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*addFields'
+    min_count: 3
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent explicitly tried to add a column named exactly `Id` (must be rejected by server)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update[\s\S]*?addFields[\s\S]*?\\?\"fieldName\\?\"\s*:\s*\\?\"Id\\?\"'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent explicitly tried to add a column named exactly `Status` (attempts a SQL-keyword name; platform behavior is what we're testing)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update[\s\S]*?addFields[\s\S]*?\\?\"fieldName\\?\"\s*:\s*\\?\"Status\\?\"'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT silently rename a rejected keyword to make it pass (bounded number of entity-create calls)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create'
+    min_count: 5
+    max_count: 15
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state (deterministic): at least the 2 fully-positive list names landed (CE_NameOK1 + CE_NameWithUnderscore)"
+    command: "python3 -c \"import subprocess,json,sys; r=subprocess.run(['uip','df','entities','list','--native-only','--output','json'], capture_output=True, text=True, timeout=60); data=json.loads(r.stdout or '{}'); items=data.get('Data') if isinstance(data.get('Data'),list) else []; names={e.get('Name') for e in items if isinstance(e,dict)}; sys.exit(0 if 'CE_NameOK1' in names and 'CE_NameWithUnderscore' in names else 1)\""
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state (deterministic): rejected names are NOT present on the tenant — 9StartsWithDigit (leading digit), CE-Name-With-Hyphen (hyphen), and the 101-char over-limit name were all correctly rejected by the server"
+    command: "python3 -c \"import subprocess,json,sys; r=subprocess.run(['uip','df','entities','list','--native-only','--output','json'], capture_output=True, text=True, timeout=60); data=json.loads(r.stdout or '{}'); items=data.get('Data') if isinstance(data.get('Data'),list) else []; names={e.get('Name') for e in items if isinstance(e,dict)}; over_limit='CE_'+'A'*98; sys.exit(0 if not any(n in names for n in ['9StartsWithDigit','CE-Name-With-Hyphen',over_limit]) else 1)\""
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent correctly reported which names were accepted vs rejected and surfaced the specific platform error for each rejection"
+    include_agent_output: true
+    prompt: |
+      The agent attempted 18 name-boundary probes (6 list names + 12 column
+      names) against Data Fabric entity naming rules:
+
+        Should SUCCEED: A1 (CE_NameOK1), B1 (CE_NameWithUnderscore),
+        C1 (100-char CE_A…A), D1 (Notes), E1 (OrderStatus).
+        Should FAIL: A2 (leading digit 9StartsWithDigit), B2 (hyphen
+        CE-Name-With-Hyphen), C2 (101-char over-limit), D2-D6 (reserved
+        system fields: Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime).
+        Platform-dependent: E2-E6 (SQL keywords Status/Order/Group/Key/Type).
+
+      Read the agent's final walk-through. Did the agent:
+        - Correctly report the accept/reject outcome for all 18 attempts?
+        - For each rejection, cite the platform's actual error string (not
+          "it failed" or a paraphrase)?
+        - NOT silently rename any rejected name to make it pass?
+
+      Score 1.0 if the walk-through covers all 18 attempts with correct
+      outcomes AND verbatim errors for at least the D2-D6 (system-field)
+      rejections.
+      Score 0.5 if 14-17 attempts are correctly reported OR the reject
+      errors are described generically.
+      Score 0.0 if 4+ outcomes are wrong OR the agent silently renamed a
+      rejected name.
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  # Stage the migration input into the agent's working directory.
+  - command: "cp $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/inputs/naming_migration.json ./schema_migration.json"
+    timeout: 10
+    fail_on_error: true
+
+  # Idempotency safety net — sweep any leftovers from a prior crashed run
+  # before the agent starts. Without this, an already-existing CE_NameOK1
+  # makes the agent's create call fail with "Another entity with the same
+  # name already exists", which then fails the corresponding llm_judge case.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameOK1"
+    timeout: 60
+    fail_on_error: false
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameWithUnderscore"
+    timeout: 60
+    fail_on_error: false
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_AAA"
+    timeout: 60
+    fail_on_error: false
+
+post_run:
+  # Three positives created: CE_NameOK1, CE_NameWithUnderscore, and the
+  # 100-char `CE_AAAA…` list. Sweep them all by the CE_ prefix the test
+  # uses, plus any stray 9StartsWithDigit / CE-Name-With-Hyphen that the
+  # server somehow accepted.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameOK1"
+    timeout: 60
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameWithUnderscore"
+    timeout: 60
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_AAA"
+    timeout: 60

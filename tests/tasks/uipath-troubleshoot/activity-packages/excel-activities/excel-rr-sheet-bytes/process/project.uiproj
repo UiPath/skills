@@ -1,6 +1,0 @@
-{
-  "Name": "ExcelDailyImport",
-  "ProjectType": "Process",
-  "Description": "Reads the 'Quarterly Data' sheet from the monthly sales workbook via Read Range.",
-  "MainFile": "Main.xaml"
-}

@@ -6,7 +6,7 @@ Data Fabric supports file-type fields on entities. Files are stored per-record p
 
 ## Creating a FILE field correctly
 
-The FILE field itself must still be created via the CLI before the UI can upload to it. Bind `referenceEntityId` / `referenceFieldId` to the tenant's `EntityAttachment` entity + its `Name` field — any other target produces a column the UI cannot use, with no in-place fix. Discovery snippet and full shape: [`entity-schema.md` → FILE Fields](entity-schema.md#file-fields).
+The FILE field must be created via the CLI before the UI can upload to it. Body is just `{"fieldName":"X","type":"FILE"}` — server auto-wires the `EntityAttachment` binding. Full shape + CLI-floor caveat in [`entity-schema.md` → FILE Fields](entity-schema.md#file-fields).
 
 ## Prerequisites
 

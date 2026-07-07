@@ -1,0 +1,86 @@
+task_id: skill-planner-integration-attended-reauth
+description: >
+  Integration coverage for the attended re-authentication / hardware-token
+  handoff pattern (PILOT-6046). A PDD whose portal login needs a physical
+  hardware token the robot cannot supply must NOT stop at [SME REVIEW]: the
+  authored SDD emits the §9 "Interactive Authentication / Re-auth Handoff"
+  subsection with a filled handoff contract, and marks the robot Attended.
+  Guards references/attended-reauth-pattern-guide.md + the pdd-analysis-guide
+  detection upgrade against regressing back to a bare detect-and-flag.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+
+run_limits:
+  # Full Phase D SDD authoring is one unbroken autonomous turn (read PDD +
+  # guides, select scope, generate §1–§18). Mirror the gap_detection / e2e
+  # budgets: the experiment task_timeout fires before the SDD lands unless
+  # BOTH the wall clock and the long authoring turn are raised.
+  expected_turns: 25
+  task_timeout: 2700
+  turn_timeout: 1800
+
+# Stage the PDD as `pdd.md` — a real PDD file is the strongest planner
+# activation signal (SKILL.md: "Always invoke for pdd.md files"), far more
+# reliable than an inline PDD, which the agent sometimes free-forms into a
+# non-template SDD without loading the skill.
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I've saved the Process Design Document for our VAT Return Submission process
+  as `pdd.md` in the current directory. Read it and produce the complete
+  Solution Design Document.
+
+  Before starting, load the uipath-planner skill and follow its workflow steps
+  and RPA SDD template exactly — do not free-form the SDD.
+
+  Work autonomously — don't pause for checkpoints; for any [SME REVIEW] items,
+  keep them as-is and proceed.
+
+  Important:
+  - Do NOT create a UiPath project or run any `uip` commands.
+  - Your only deliverable is the SDD markdown file, saved as
+    `vat-return-submission-sdd.md` in the current directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill (rather than free-forming the SDD)"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "SDD file was created"
+    path: "vat-return-submission-sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD emits the Interactive Authentication / Re-auth Handoff subsection (not a bare [SME REVIEW] punt)"
+    path: "vat-return-submission-sdd.md"
+    includes:
+      - "Interactive Authentication"
+      - "Re-auth Handoff"
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: file_contains
+    description: "The handoff contract is filled — at least half of the contract fields are present"
+    path: "vat-return-submission-sdd.md"
+    includes:
+      - "Handoff point"
+      - "Resume condition"
+      - "Human action"
+      - "No-completion"
+    weight: 2.0
+    pass_threshold: 0.5
+
+  - type: file_contains
+    description: "Robot is marked Attended (a human must complete the hardware-token sign-in)"
+    path: "vat-return-submission-sdd.md"
+    includes:
+      - "Attended"
+    weight: 1.5
+    pass_threshold: 1.0

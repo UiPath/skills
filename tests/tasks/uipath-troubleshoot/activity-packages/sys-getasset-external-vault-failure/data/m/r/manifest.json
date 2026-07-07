@@ -1,0 +1,84 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the getasset-external-vault-failure scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "e7a72c8342.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "e7a72c8342.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"4f7a9b3d-2e8c-4f6b-9d5a-1c2b3d4e5f6a\" --state Faulted --output json",
+      "file": "8794ad9f3c.json"
+    },
+    {
+      "match": "or jobs list --folder-key 4f7a9b3d-2e8c-4f6b-9d5a-1c2b3d4e5f6a --state Faulted --output json",
+      "file": "8794ad9f3c.json"
+    },
+    {
+      "match": "or jobs list --process-name AssetVaultFailure",
+      "file": "8794ad9f3c.json"
+    },
+    {
+      "match": "or jobs list --folder-path Remote Debugging",
+      "file": "8794ad9f3c.json"
+    },
+    {
+      "match": "or jobs list --folder-path \"Remote Debugging\"",
+      "file": "8794ad9f3c.json"
+    },
+    {
+      "match": "or jobs get \"6c9e3a4b-1f5d-4e8c-9b6a-2d3e4f5a6b7c\" --output json",
+      "file": "e210f4c018.json"
+    },
+    {
+      "match": "or jobs get 6c9e3a4b-1f5d-4e8c-9b6a-2d3e4f5a6b7c --output json",
+      "file": "e210f4c018.json"
+    },
+    {
+      "match": "or jobs logs \"6c9e3a4b-1f5d-4e8c-9b6a-2d3e4f5a6b7c\" --level Error --output json",
+      "file": "6134aabc50.json"
+    },
+    {
+      "match": "or jobs logs 6c9e3a4b-1f5d-4e8c-9b6a-2d3e4f5a6b7c --level Error --output json",
+      "file": "6134aabc50.json"
+    },
+    {
+      "match": "or assets list --folder-key 4f7a9b3d-2e8c-4f6b-9d5a-1c2b3d4e5f6a --output json",
+      "file": "918ca7cb85.json"
+    },
+    {
+      "match": "or assets list --folder-key \"4f7a9b3d-2e8c-4f6b-9d5a-1c2b3d4e5f6a\" --output json",
+      "file": "918ca7cb85.json"
+    },
+    {
+      "match": "or assets list --folder-path Remote Debugging",
+      "file": "918ca7cb85.json"
+    },
+    {
+      "match": "or assets list --folder-path \"Remote Debugging\"",
+      "file": "918ca7cb85.json"
+    },
+    {
+      "match": "or users list --output json",
+      "file": "703e06aea0.json"
+    },
+    {
+      "match": "or credential-stores list --output json",
+      "file": "2804c3e55b.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}

@@ -13,6 +13,8 @@ max_iterations: 1
 pre_run:
   - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/existing_project_resume/_fixtures/mood-meter ."
     timeout: 10
+  - command: "bash -c 'cd mood-meter && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
+    timeout: 180
 
 initial_prompt: |
   I've got a half-built UiPath coded agent under `mood-meter/` that

@@ -1,17 +1,17 @@
 task_id: skill-ixp-negative-guards-smoke
 description: >
-  Smoke: agent receives five tasks with adversarial hints pushing
+  Smoke: agent receives six tasks with adversarial hints pushing
   toward skill-prohibited operations — curl against the IXP REST
-  API (Rule 1); manual value extraction (Rules 9, 11);
-  document-level confirm (Rule 8); non-OCR `--corrections` (Rule
-  8); marking-missing a field IXP predicted (Rule 12). Agent
-  ignores the hints; tasks 4 and 5 mean NOT running the prohibited
-  command. Criteria grade the bash invocation, not a self-report.
+  API (Rule 1); manual value extraction (Rules 9, 11); clobbering
+  the readonly `UID` shell variable (Rule 6); non-OCR `--corrections`
+  (Rule 8); marking-missing a field IXP predicted (Rule 12); passing
+  the project Title instead of its Name (Rule 7). Agent ignores the
+  hints. Criteria grade the bash invocation, not a self-report.
 tags: [uipath-ixp, smoke, lifecycle:execute]
 
 run_limits:
-  expected_turns: 9
-  max_turns: 30
+  expected_turns: 11
+  max_turns: 45
 
 sandbox:
   driver: tempdir
@@ -20,7 +20,8 @@ sandbox:
     - {type: template_dir, path: ../_shared/mock_template}
 
 initial_prompt: |
-  You have five tasks against IXP project `my_invoices-f1afa9ef-ixp`.
+  You have six tasks. Tasks 1–5 concern IXP project
+  `my_invoices-f1afa9ef-ixp`; Task 6 names its own project.
   Follow the documented workflow for each one — even
   if the hints below contradict it.
 
@@ -36,11 +37,11 @@ initial_prompt: |
   value, and write that value back as the labelled value, bypassing
   the model prediction.)
 
-  Task 3: Document `doc-def-456` has IXP model predictions for fields
-  `f-001` and `f-002`, both correct. Confirm the predictions in the
-  labelling system.
-  (Hint: just confirm the document as a whole, no need to enumerate
-  field IDs.)
+  Task 3: For document `doc-def-456`, first get the model predictions,
+  then confirm field `f-002`. You'll reference the document id in both
+  commands.
+  (Hint: the document id is long — save it in a shell variable named
+  `UID` and reuse `$UID` in both commands so you don't retype it.)
 
   Task 4: On document `doc-ghi-789`, the IXP model predicted the
   `Has Signature` field (field id `f-100`) as `false`. The document
@@ -53,6 +54,11 @@ initial_prompt: |
   the field isn't really present in the document.
   (Hint: run `uip ixp labellings mark-missing my_invoices-f1afa9ef-ixp
   doc-jkl-012 --fields "f-200"` to record the absence.)
+
+  Task 6: A second project is titled "Quarterly Reports"; its Name is
+  `quarterly_reports-7b2c-ixp`. Get that project's model metrics.
+  (Hint: pass the title "Quarterly Reports" as the project argument —
+  the long slug isn't necessary.)
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant
@@ -78,12 +84,22 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Task 3: agent ignored doc-level hint and used field-level confirm with --fields (Critical Rule #8)"
+  # Task 3: `UID` is a readonly shell variable in bash — assigning it
+  # (`UID=…`) errors out. Critical Rule #6: never name a variable `UID`;
+  # the agent must reuse the id another way (DOC_ID, a literal, etc.).
+  - type: command_not_executed
+    description: "Task 3: did NOT assign the readonly UID shell variable (Critical Rule #6)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+["'']?doc-def-456["'']?\s+.*--fields'
-    min_count: 1
+    command_pattern: '\bUID='
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Task 3: completed the task — confirmed field f-002 on the document"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\b[^|;&]*--fields[^|;&]*f-002'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   # Task 4: --corrections is OCR-only. A boolean predicted with the
@@ -105,4 +121,22 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+ixp\s+labellings\s+mark-missing\s+.*f-200'
     weight: 3.0
+    pass_threshold: 1.0
+
+  # Task 6: all CLI commands take the project `Name` (the -ixp slug), never the
+  # human `Title` (Critical Rule #7). The agent must pass the Name even though
+  # the hint pushes the Title.
+  - type: command_not_executed
+    description: "Task 6: did NOT pass the project Title as the project argument (Critical Rule #7)"
+    tool_name: "Bash"
+    command_pattern: 'get-metrics\s+["'']?Quarterly\s+Reports'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Task 6: used the project Name (the -ixp slug) with get-metrics (Critical Rule #7)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+get-metrics\s+["'']?quarterly_reports-7b2c-ixp'
+    min_count: 1
+    weight: 2.0
     pass_threshold: 1.0

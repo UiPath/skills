@@ -1,0 +1,76 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the getasset-wrong-activity-type scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "d5a6d4e894.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "d5a6d4e894.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"8f6c5d4e-3a2b-4c9d-7e6f-1a2b3c4d5e6f\" --state Faulted --output json",
+      "file": "4a4cf90044.json"
+    },
+    {
+      "match": "or jobs list --folder-key 8f6c5d4e-3a2b-4c9d-7e6f-1a2b3c4d5e6f --state Faulted --output json",
+      "file": "4a4cf90044.json"
+    },
+    {
+      "match": "or jobs list --process-name AssetWrongActivityType",
+      "file": "4a4cf90044.json"
+    },
+    {
+      "match": "or jobs list --folder-path Remote Debugging",
+      "file": "4a4cf90044.json"
+    },
+    {
+      "match": "or jobs list --folder-path \"Remote Debugging\"",
+      "file": "4a4cf90044.json"
+    },
+    {
+      "match": "or jobs get \"1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6\" --output json",
+      "file": "387fce62c9.json"
+    },
+    {
+      "match": "or jobs get 1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6 --output json",
+      "file": "387fce62c9.json"
+    },
+    {
+      "match": "or jobs logs \"1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6\" --level Error --output json",
+      "file": "ed86c6e056.json"
+    },
+    {
+      "match": "or jobs logs 1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6 --level Error --output json",
+      "file": "ed86c6e056.json"
+    },
+    {
+      "match": "or assets list --folder-key 8f6c5d4e-3a2b-4c9d-7e6f-1a2b3c4d5e6f --output json",
+      "file": "1702d2a4b1.json"
+    },
+    {
+      "match": "or assets list --folder-key \"8f6c5d4e-3a2b-4c9d-7e6f-1a2b3c4d5e6f\" --output json",
+      "file": "1702d2a4b1.json"
+    },
+    {
+      "match": "or assets list --folder-path Remote Debugging",
+      "file": "1702d2a4b1.json"
+    },
+    {
+      "match": "or assets list --folder-path \"Remote Debugging\"",
+      "file": "1702d2a4b1.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}

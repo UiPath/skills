@@ -48,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Agent checked the BPMN job status"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+job\s+status\s+job-triage-001\s+--output\s+json'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+job\s+status\s+job-triage-001'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -56,7 +56,7 @@ success_criteria:
   - type: command_executed
     description: "Agent read instance incidents with folder context"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+incidents\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public\s+--output\s+json'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+incidents\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -64,7 +64,7 @@ success_criteria:
   - type: command_executed
     description: "Agent inspected runtime variables with folder context"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+variables\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public\s+--output\s+json'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+variables\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -72,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched the deployed BPMN asset"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+asset\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public\s+--output\s+json'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+asset\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

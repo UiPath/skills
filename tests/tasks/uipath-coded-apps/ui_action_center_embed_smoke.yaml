@@ -1,0 +1,107 @@
+task_id: skill-coded-apps-ui-action-center-embed-smoke
+description: >
+  Smoke test (mode:build): agent authors the Action Center task embed
+  pattern from `patterns.md §Embedding Action Center Tasks (HITL)` —
+  the `apiToCloudUrl` mapping helper (api.uipath.com → cloud.uipath.com,
+  staging.api → staging, alpha.api → alpha) and a task-embed URL
+  builder that inserts `embed_/` after the origin. Covers the trap
+  documented explicitly in the skill: naive string replace
+  (`baseUrl.replace('api.', 'cloud.')`) breaks for staging/alpha and
+  is forbidden. Zero test covers HITL task embedding today.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, implement the Action Center task
+  embedding pattern documented in the skill's `patterns.md` §Embedding
+  Action Center Tasks.
+
+  Author `src/utils/formatters.ts` at the sandbox root with two
+  exported helpers:
+
+  1. `apiToCloudUrl(apiBaseUrl: string): string` — maps an API base URL
+     to the corresponding cloud UI URL. The mapping is NOT a naive
+     `.replace('api.', 'cloud.')` (that would produce
+     `staging.cloud.uipath.com` — wrong). Required mappings:
+       - `https://api.uipath.com`         → `https://cloud.uipath.com`
+       - `https://staging.api.uipath.com` → `https://staging.uipath.com`
+       - `https://alpha.api.uipath.com`   → `https://alpha.uipath.com`
+
+  2. `buildTaskEmbedUrl(apiBaseUrl: string, orgName: string,
+     tenantName: string, taskId: string): string` — returns the embed
+     URL for a specific Action Center task. Format:
+     `<cloudOrigin>/embed_/<orgName>/<tenantName>/actions_/current-task/tasks/<taskId>`
+     — note the `embed_/` segment right after the origin.
+
+  Do NOT use `str.replace('api.', 'cloud.')` — that's the anti-pattern
+  the skill explicitly forbids. Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "src/utils/formatters.ts was created"
+    path: "src/utils/formatters.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "apiToCloudUrl is exported from formatters.ts"
+    command: "grep -E 'export\\s+(function|const)\\s+apiToCloudUrl\\b' src/utils/formatters.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "buildTaskEmbedUrl is exported from formatters.ts"
+    command: "grep -E 'export\\s+(function|const)\\s+buildTaskEmbedUrl\\b' src/utils/formatters.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "formatters.ts does NOT use the forbidden `.replace('api.', 'cloud.')` shortcut in executable code (breaks staging/alpha per patterns.md). JSDoc/`//` comments referencing the anti-pattern are allowed."
+    command: "grep -v -E '^\\s*(/\\*|\\*/|\\*)' src/utils/formatters.ts | sed 's|//.*||' | grep -E \"\\.replace\\(\\s*['\\\"]api\\.['\\\"]\\s*,\\s*['\\\"]cloud\\.\""
+    timeout: 10
+    expected_exit_code: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "formatters.ts embed URL includes the `embed_/` segment (patterns.md §Embed URL format)"
+    command: "grep -qE 'embed_/' src/utils/formatters.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "formatters.ts references the actions_/current-task/tasks path segment"
+    command: "grep -qE 'actions_/current-task/tasks' src/utils/formatters.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "formatters.ts URL mapping handles the base case: api.uipath.com → cloud.uipath.com (test the pure logic — the module must export the function correctly)"
+    command: |
+      node -e "
+        const path = require('path');
+        const modulePath = path.resolve('src/utils/formatters.ts');
+        const src = require('fs').readFileSync(modulePath, 'utf-8');
+        // Verify the function references the base-case host mapping semantically
+        const okBase = /cloud\.uipath\.com/.test(src);
+        const okStaging = /staging\.uipath\.com|staging/.test(src);
+        const okAlpha = /alpha\.uipath\.com|alpha/.test(src);
+        if (!okBase || !okStaging || !okAlpha) {
+          console.error('Missing mappings: base=' + okBase + ' staging=' + okStaging + ' alpha=' + okAlpha);
+          process.exit(1);
+        }
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0

@@ -76,5 +76,5 @@ Apply at planning time (Phase 2):
 | Task location | Can reference |
 |---|---|
 | Regular stage task | Earlier stages + same stage earlier tasks + root variables |
-| Exception stage task | ALL tasks across ALL stages |
+| Secondary stage task | ALL tasks across ALL stages |
 | Adhoc task | ALL tasks |

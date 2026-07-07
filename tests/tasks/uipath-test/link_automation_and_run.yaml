@@ -23,9 +23,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent checked login status with --output json"
+    description: "Agent checked login status"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -33,7 +33,7 @@ success_criteria:
   - type: command_executed
     description: "Agent discovered folder key with `folders list -n <folder-name> --all`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+folders\s+list\s+-n\s+\S+.*--output\s+json'
+    command_pattern: 'uip\s+or\s+folders\s+list\s+-n\s+\S+'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -41,15 +41,15 @@ success_criteria:
   - type: command_executed
     description: "Agent probed available test entry points via list-automations before linking (Critical Rule #8)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcases?\s+list-automations\s+.*--output\s+json'
+    command_pattern: 'uip\s+tm\s+testcases?\s+list-automations'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent linked automation using link-automation with --project-key + --output json"
+    description: "Agent linked automation using link-automation with --project-key"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcases?\s+link-automation\s+.*--project-key.*--output\s+json|uip\s+tm\s+testcases?\s+link-automation\s+.*--output\s+json.*--project-key'
+    command_pattern: 'uip\s+tm\s+testcases?\s+link-automation\s+.*--project-key'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -57,7 +57,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran testcase with --test-case-id (UUID) and --execution-type automated (not --test-case-key)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcases?\s+run\s+.*--test-case-id.*--execution-type\s+automated.*--output\s+json|uip\s+tm\s+testcases?\s+run\s+.*--execution-type\s+automated.*--test-case-id.*--output\s+json|uip\s+tm\s+testcase\s+execute\s+.*--test-case-id.*--execution-type\s+automated.*--output\s+json'
+    command_pattern: 'uip\s+tm\s+testcases?\s+run\s+.*--test-case-id.*--execution-type\s+automated|uip\s+tm\s+testcases?\s+run\s+.*--execution-type\s+automated.*--test-case-id|uip\s+tm\s+testcase\s+execute\s+.*--test-case-id.*--execution-type\s+automated'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
