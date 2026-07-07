@@ -28,6 +28,9 @@ initial_prompt: |
     - Have the default evaluation set use both evaluators, and give it at
       least three test cases (question in, expected answer out).
 
+  Manage the test cases through the `uip agent eval` CLI rather than
+  hand-editing the eval JSON files.
+
   Do NOT upload, publish, or deploy. Do NOT run the evaluations (no cloud).
   Do NOT call `uip login`. Do NOT ask for approval, confirmation, or
   feedback. Do NOT pause between planning and implementation. Complete the

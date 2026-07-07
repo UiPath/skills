@@ -43,7 +43,8 @@ No `indexName` and no `settings` for DataFabric contexts. The shape is entirely 
 
 ## Gotchas
 
-`contextType` value MUST be `"datafabricentityset"` (all lowercase) — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
+1. `contextType` value MUST be `"datafabricentityset"` (all lowercase) — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
+2. **Every `entitySet` entry requires a non-null `referenceKey` (string) and a UUID-string `folderId`.** Schema validation rejects `null` or missing values for either — `uip agent refresh` / `validate` fails with only `resources/<Name>/resource.json: Invalid input`, no field path. When authoring offline without the live DataFabric folder GUID, use a placeholder UUID for `folderId` and the entity name as `referenceKey` — refresh does not resolve them against the cloud (solution-level generation is unsupported, see above). Do NOT leave `entitySet` empty to silence the error: an empty list passes refresh but the context retrieves nothing.
 
 ## References
 
