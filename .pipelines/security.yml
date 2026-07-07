@@ -9,7 +9,12 @@
 # (https://dev.azure.com/uipath/skills). The project needs:
 #   - the "github.com_UiPath" GitHub service connection (for the fossa
 #     template repository; auto-created by the ADO GitHub App integration)
-#   - the Azure service connection below (FOSSA API key retrieval via Key Vault)
+#   - the Azure service connection below (FOSSA API key retrieval via Key
+#     Vault). Provisioned per-project by dev-sre (#dev-sre): an ARM connection
+#     named "InternalProdEAServiceConnection" backed by a
+#     "uipath-skills-202e5d15-…" app registration with a get/list secrets
+#     access policy on the devopsprodauthtokenswekv vault
+#     (Internal-Production-EA subscription)
 #   - access to the agent pool below and the "DevOps" universal packages feed
 # No GitHub-side variables or secrets are required.
 
@@ -35,7 +40,7 @@ parameters:
   - name: azureServiceConnection
     displayName: Azure connection pointing to Internal-Production-EA
     type: string
-    default: 'Azure Internal-Production-EA'
+    default: 'InternalProdEAServiceConnection'
   - name: poolName
     displayName: Agent pool
     type: string
