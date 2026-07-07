@@ -5,7 +5,7 @@
     {
       "Key": "d1e2f3a4-b5c6-4789-abcd-ef0123456789",
       "State": "Faulted",
-      "ProcessName": "MisconfiguredForeground",
+      "ProcessName": "ExpenseValidation",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",

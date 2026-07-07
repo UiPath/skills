@@ -36,7 +36,7 @@ initial_prompt: |
   My last job in folder Shared just faulted. Job key 9937b232-5a94-44ab-8aee-ce6ea52d3bb4. Why
   did it fail and how do I fix it?
 
-  The project source for the failing process is at ./WebRepro/ in the
+  The project source for the failing process is at ./WebApiClient/ in the
   current working directory.
 
 success_criteria:

@@ -10,7 +10,7 @@
     {
       "Level": "Error",
       "TimeStamp": "2026-05-13T14:20:46.190Z",
-      "Message": "[Robot] Cannot start foreground job 'd1e2f3a4-b5c6-4789-abcd-ef0123456789' (ReleaseName=MisconfiguredForeground). Another foreground job ('e1f2a3b4-c5d6-4789-abcd-ef0123456789', ReleaseName=ForegroundHolder, started 2026-05-13T14:20:30.000Z) is currently running on this session. Only one foreground process can run at a time."
+      "Message": "[Robot] Cannot start foreground job 'd1e2f3a4-b5c6-4789-abcd-ef0123456789' (ReleaseName=ExpenseValidation). Another foreground job ('e1f2a3b4-c5d6-4789-abcd-ef0123456789', ReleaseName=AttendedReportJob, started 2026-05-13T14:20:30.000Z) is currently running on this session. Only one foreground process can run at a time."
     }
   ]
 }
