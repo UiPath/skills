@@ -11,6 +11,9 @@ signatures:
     value: "File should have a name:"
   - kind: message
     value: "Cannot locate file. Please ensure that you have proper permissions to access it."
+  - kind: exception
+    value: "Office365Exception"
+    note: "generic O365 package exception — this claim is the download/export surface on DownloadFileConnections / DownloadFile / ExportAsPdf: folder given where a file is required, unsupported PDF conversion source, bad local destination, or an unresolvable shared item's parent"
 exclusions:
   - "The resource could not be found. / A file with the specified ID does not exist. → drive-item-not-found.md"
   - "Multiple items with the name <name> found ... → download-multiple-items-name-conflict.md"

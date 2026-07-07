@@ -61,6 +61,11 @@ KINDS = {
     "http-status",      # HTTP status relevant to the failure surface
     "state",            # entity state / status field value (e.g. Pending + PendingReasons code)
 }
+# Kinds whose values never localize with the robot host's system language.
+# `message` fragments (and to a lesser degree `state` labels quoted from UI)
+# can appear translated on non-English hosts — a playbook routable ONLY via
+# those degrades in localized environments (warning, not an error).
+INVARIANT_KINDS = {"exception", "error-code", "error-code-prefix", "http-status", "message-key"}
 
 BEGIN_MARKER = "<!-- BEGIN GENERATED SIGNATURES -->"
 END_MARKER = "<!-- END GENERATED SIGNATURES -->"
@@ -319,10 +324,26 @@ def main():
     if args.check_index:
         return check_index(entries)
 
+    # Localization-robustness warnings (never affect the exit code): a
+    # signature-bearing playbook with no language-invariant signature is
+    # unroutable when the host localizes its error messages.
+    localized_only = [
+        relpath for relpath, data in entries
+        if data["signatures"]
+        and not any(s.get("kind") in INVARIANT_KINDS for s in data["signatures"])
+    ]
+    if localized_only:
+        print(f"{len(localized_only)} warning(s) — routable only via localizable "
+              "message/state signatures (add an exception class, error code, "
+              "resource key, or HTTP status where the playbook documents one):")
+        for relpath in localized_only:
+            print(f"  {relpath}")
+        print()
+
     total_sigs = sum(len(d["signatures"]) for _, d in entries)
     total_silent = sum(1 for _, d in entries if d["silent"])
     print(f"OK — {len(entries)} playbooks, {total_sigs} signatures, "
-          f"{total_silent} silent.")
+          f"{total_silent} silent, {len(localized_only)} localization warning(s).")
     return 0
 
 

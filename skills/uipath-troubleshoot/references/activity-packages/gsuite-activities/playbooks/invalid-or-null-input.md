@@ -19,6 +19,12 @@ signatures:
     note: "local filesystem path on a GSuite activity (legacy SendEmail attachment, upload source, service-account key) — the same sentence on an O365 send is a missing attachment → send-mail-rejected.md (o365)"
   - kind: message
     value: "You must provide a value for at least one of the following properties: To, Cc, Bcc"
+  - kind: exception
+    value: "System.IO.FileNotFoundException"
+    note: "generic .NET exception — this claim is a GSuite activity's local path miss (legacy SendEmail attachment, upload source, service-account key file); at Excel workbook open → read-range-file-not-found.md (excel)"
+  - kind: exception
+    value: "ArgumentOutOfRangeException"
+    note: "generic .NET exception — this claim is a GSuite Drive by-ID/URL activity given a URL with no extractable ID segment ('Could not extract an object Id from the Url')"
 exclusions:
   - "Invalid data[0]: Unable to parse range (server-side Google 400) → sheets-invalid-range.md"
   - "This action would increase the number of cells → sheets-cell-limit-exceeded.md"

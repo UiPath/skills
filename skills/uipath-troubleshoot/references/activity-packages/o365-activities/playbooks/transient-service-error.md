@@ -13,6 +13,12 @@ signatures:
   - kind: message
     value: "Automation Cloud cannot be reached"
     note: "network fluctuation on the Runtime machine mid-run; the same message at authentication time is claimed by authentication-token-invalid"
+  - kind: http-status
+    value: "503"
+    note: "Microsoft Graph service unavailable surfaced by an O365 activity (500/504/timeout forms route here too); Google-side 5xx → transient-and-timeout-errors.md (gsuite)"
+  - kind: exception
+    value: "Microsoft.Graph.ServiceException"
+    note: "generic Graph SDK exception from legacy (non-Connections) O365 activities — this claim is the raw 5xx / timeout wording; throttle wording / 429 → request-throttled.md"
 exclusions:
   - "Too many requests. / The app or user has been throttled. (429) → request-throttled.md"
   - "Invalid Query. Please use OData format for filter queries. (deterministic parse failure) → mail-invalid-odata-query.md"

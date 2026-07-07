@@ -8,6 +8,9 @@ signatures:
   - kind: message
     value: "Value is 'null' but should be 'object'"
     note: "optional file/attachment passed as null"
+  - kind: http-status
+    value: "400"
+    note: "at workflow/agent start with schema-conformance wording (Input does not conform to schema / Agent.InputArgumentsSchema) — other named 400s route to their specific playbooks"
 ---
 
 # Input Does Not Conform to Schema (400)

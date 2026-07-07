@@ -13,6 +13,15 @@ signatures:
   - kind: state
     value: "Data.Allowed.AgentService == 0"
     note: "uip or licenses info with LicensedFeatures: [] — no HA entitlement on the tenant"
+  - kind: error-code
+    value: "HealingAgent"
+    note: "operation code in the robot log line / backend licenseCode — regular Heals pool requested (release ProcessType is not TestAutomationProcess)"
+  - kind: error-code
+    value: "HealingAgent.Test"
+    note: "operation code / licenseCode — Test Heals pool requested (release ProcessType = TestAutomationProcess); Flex tenants cannot assign Test Heals"
+  - kind: error-code
+    value: "Allowed.AgentService"
+    note: "== 0 with LicensedFeatures [] in uip or licenses info — no HA entitlement on the tenant; > 0 while triaging expected HA surfaces → healing-agent-orch-issues.md"
 exclusions:
   - "AutopilotForRobots.HealingEnabled = false → selector-failure-healing-disabled.md"
   - "HA licensed but produced no data (connectivity, image-only target, classic activities) → no-recovery-data.md"
