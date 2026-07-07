@@ -184,10 +184,16 @@ def main(argv: list[str]) -> int:
 
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 
-    # 1. First matching rule wins.
+    # 1. First matching rule wins. The shell strips quotes from the agent's
+    # command before argv is built, so quoted manifest rules never matched
+    # raw argv — normalize quotes away on BOTH sides before the substring
+    # test. Manifests keep the verbatim quoted command (verify_manifest_commands.py
+    # needs the quotes to tokenize natural-language arguments); matching
+    # must not depend on them.
+    args_normalized = args.replace('"', "").replace("'", "")
     for rule in manifest.get("rules", []):
-        match = rule.get("match", "")
-        if not match or match not in args:
+        match = rule.get("match", "").replace('"', "").replace("'", "")
+        if not match or match not in args_normalized:
             continue
         if rule.get("passthrough"):
             return _passthrough(args, argv, rule)
