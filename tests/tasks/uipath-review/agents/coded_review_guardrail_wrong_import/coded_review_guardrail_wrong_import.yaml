@@ -7,7 +7,7 @@ description: >
   import. The reviewer must run `uip codedagent review` (Step 2.5a) — which emits
   `CODED_GUARDRAIL_WRONG_IMPORT` deterministically and offline (no catalog/auth) —
   then carry it into the report. Exercises the coded guardrail deterministic path.
-tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover, guardrail]
 
 run_limits:
   turn_timeout: 1200

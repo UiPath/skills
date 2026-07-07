@@ -114,18 +114,17 @@ def check_main_py() -> None:
     main_path = ROOT / "main.py"
     text = _read_text(main_path)
 
-    # Typed I/O is required, but the SDK accepts several forms: stdlib
-    # @dataclass, pydantic BaseModel, or pydantic.dataclasses.dataclass (the
-    # shipped samples use pydantic). Accept any recognized typed form.
-    if not any(m in text for m in ("@dataclass", "BaseModel", "pydantic")):
+    # Typed I/O is required, but the SDK resolves the schema from the
+    # entrypoint's parameter/return *type hints* (functions/runtime.py:
+    # inspect.signature + get_type_hints) — NOT from classes named
+    # literally `Input`/`Output`. Accept any recognized typed form:
+    # stdlib @dataclass, pydantic BaseModel/pydantic.dataclasses, or a
+    # TypedDict (the shipped SDK fixture uses TypedDict).
+    if not any(m in text for m in ("@dataclass", "BaseModel", "pydantic", "TypedDict")):
         sys.exit(
-            "FAIL: main.py Input/Output are not typed — use a stdlib @dataclass, "
-            "pydantic BaseModel, or pydantic.dataclasses.dataclass."
+            "FAIL: main.py I/O is not typed — use a stdlib @dataclass, "
+            "pydantic BaseModel/dataclass, or a TypedDict."
         )
-
-    for needle in ("class Input", "class Output"):
-        if needle not in text:
-            sys.exit(f"FAIL: main.py is missing `{needle}`")
 
     input_fields = ("invoice_number", "vendor_name", "total_amount", "currency")
     output_fields = ("is_valid", "validation_errors", "normalized_currency")

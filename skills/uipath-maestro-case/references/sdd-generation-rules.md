@@ -227,7 +227,7 @@ Required when Case SLA is set. Always renders with both rows; no `—` allowed i
 
 | Trigger type | Write |
 |---|---|
-| Event | The operation in business terms (`Calendar created`, `Email received`). Append a filter clause when the user wants filtering (`Email received in Inbox; filter: subject contains "URGENT"`). Append a required event-param ONLY when the user supplies it (`Email received in folder "<folder name>"`). |
+| Event | The operation in business terms (`Calendar created`, `Email received`, `Record created`). For tenant case-entity / business data-object starts, preserve the object name in Source (`expense_requests`) and write the business event in Configuration (`Record created`). Append a filter clause when the user wants filtering (`Email received in Inbox; filter: subject contains "URGENT"`). Append a required event-param ONLY when the user supplies it (`Email received in folder "<folder name>"`). |
 | Timer | Cycle or duration (`every 24 hours`, `daily at 09:00 UTC`). |
 | Manual | `N/A` or omit. |
 
@@ -239,6 +239,13 @@ Required when Case SLA is set. Always renders with both rows; no `—` allowed i
 - Connector activity slug, HTTP method, spec-discovered detail.
 
 > Variable mapping (which trigger payload field populates which case variable) is declared in **§1.5 Case Variables** via the `sourceTriggers` / `sourceFields` columns — NOT in this table. The Triggers table only identifies and configures each trigger; payload extraction is owned by Case Variables.
+
+> **Tenant object starts are not Manual.** If the user says a case starts when a
+> tenant case-entity / data-object record is created, record an
+> `Intsvc.EventTrigger` row with the object name as Source. Missing tenant
+> provisioning, absent local registry data, or unresolved connection details
+> become an unresolved event trigger / placeholder later; they are never a reason
+> to change the SDD trigger type to `Manual`.
 
 Unresolved `Intsvc.EventTrigger` resolution (`connectionId` / `activityTypeId` missing) → `high`-severity review item.
 

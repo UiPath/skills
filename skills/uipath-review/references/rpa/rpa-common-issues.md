@@ -31,55 +31,19 @@ done
 
 ### Windows-Legacy Compatibility Lock-In
 
-**Symptom:** Project uses Windows-Legacy compatibility (`expressionLanguage: "VisualBasic"` with no/Legacy `targetFramework`).
+**Symptom:** Project uses Windows-Legacy compatibility (`project.json` has no `targetFramework` or `targetFramework: "Legacy"` — the reliable marker; expression language is usually VisualBasic but Legacy C# projects exist).
 
 **Support status:** Legacy is supported **indefinitely** in Studio LTS (2024.10, 2025.10, 2026.10, and all future LTS releases). It is NOT a deployment blocker. It is NOT a mid-term support risk. Deprecation means "no new features in Legacy," not "Legacy will be removed."
 
 **NEVER flag as Critical based on framework alone.** Severity is Warning if blocking desired modern features, Info if Studio LTS is the organizational standard.
 
-**What you lose by staying on Legacy (ranked by developer-impact):**
-
-1. **Healing Agent** — AI-powered selector self-healing at runtime. When selectors drift from app updates, DOM changes, or resolution shifts, Healing Agent recovers automatically. Legacy has no self-healing — every broken selector becomes a ticket + redeploy.
-2. **Unified Target Method** (Strict + Fuzzy + Image + Anchor) — modern multi-strategy UI targeting. Legacy uses single-strategy classic selectors that break on minor UI changes.
-3. **Object Repository + shared UI Libraries** — centralized, hierarchical, versioned UI descriptors. Legacy has limited OR support.
-4. **Coded test cases (C#)** + Test Manager integration — real testing rigor (mocks, assertions, CI-runnable). Legacy testing is Studio Test Activity only.
-5. **Autopilot™** — AI-assisted Studio development (generate, fix, explain workflows).
-6. **ScreenPlay** — modern scripted UI interaction experience.
-7. **AI Agents + Maestro + Agentic Automation** — participate as actors in multi-agent BPMN processes.
-8. **Coded workflows (C#)** — type safety, unit testability, IDE refactoring for complex logic.
-9. **Modern .NET (JIT)** — compiled performance + modern encryption/TLS. Legacy runs on .NET Framework 4.6.1.
-10. **Cross-platform execution** (Linux robots).
-11. **Studio STS** (2-month cadence) — locked to annual LTS on Legacy.
-
 **When recommending migration, lead with the 2-3 features most relevant to the project's actual pain points** — heavy UI maintenance → Healing Agent + Unified Target + Object Repository; weak testing → coded tests + Test Manager; AI use cases → Autopilot + Agents.
 
 **Valid reason to stay on Legacy:** SOAP web services (only supported in Legacy).
 
-**Migration paths:**
-1. **Studio's built-in Converter** — single project, framework-only (W-L → W)
-2. **Activity Migrator Tool** (`UiPath.Upgrade.exe`) — bulk, activity-level. Handles:
-   - W-L → Windows framework
-   - Classic → Modern UI Automation (needed for Unified Target/Healing Agent)
-   - Classic Outlook → Microsoft 365 Mail
-
-For most real-world migrations (projects with Classic UIA), **Activity Migrator is the right tool**.
-
-**Migration blockers** (manual rework required — Activity Migrator cannot convert these):
-- All CV activities, all Trigger activities
-- Anchor Base, Element Scope, Double Click variants
-- Classic OCR engines, Callout, Set Clipping Region
-- `Outlook Desktop Mail Messages Trigger` (no M365 folder-monitoring equivalent)
-- `Get Outlook Desktop Mail Messages` filter options
-
-**Pre-flight order:**
-1. Run `UiPath.Upgrade.exe analyze` first (dry-run) — review SARIF report
-2. Migrate libraries BEFORE consumer projects
-3. Pilot on one project before `bulk`
-4. Prepare ConnectionId config file for M365 mail migration
-
 **Route Legacy-specific deep validation to `uipath-rpa` (Legacy mode).** The standard `uip rpa` tooling targets Windows/Cross-platform projects; Legacy mode in `uipath-rpa` uses the `uip rpa-legacy` CLI internally.
 
-For full severity matrix and post-migration checks, see rpa-review-checklist.md §10 "Windows-Legacy Compatibility".
+Ranked feature list, severity matrix, migration tooling and blockers, pre-flight order, and post-migration checks: [rpa-review-checklist.md §10 "Windows-Legacy Compatibility"](rpa-review-checklist.md).
 
 ### Wrong Expression Language
 
@@ -120,7 +84,7 @@ find . -name "*.xaml" -size +500k -exec ls -lh {} \;
 
 **Symptom:** Automation starts fast (30 sec/item) and progressively slows to minutes per item after 1+ hours. No crash — just gets slower.
 
-**Impact:** Jobs that should take 1 hour take 8. Timeouts, missed SLAs, wasted robot licenses. The most consistently reported performance issue on the UiPath Forum.
+**Impact:** Jobs that should take 1 hour take 8. Timeouts, missed SLAs, wasted robot licenses.
 
 **Root causes:** Excel processes not killed between iterations (dozens of orphaned EXCEL.EXE accumulate), browser DOM growth in web loops, DataTable variables growing with uncleared temp data, Log Message flooding inside tight loops.
 
@@ -304,9 +268,9 @@ grep -ri "apikey\|api_key\|secret\|token" --include="*.xaml" --include="*.cs" --
 
 **Impact:** Business exceptions (data issues) get retried unnecessarily. System exceptions (transient failures) don't get retried.
 
-**Detection:** Check exception handling in REFramework's SetTransactionStatus or equivalent logic.
+**Detection:** Grep all `.xaml` and `.cs` files for `BusinessRuleException` — if absent, the distinction is missing entirely. Also check exception handling in REFramework's SetTransactionStatus or equivalent logic.
 
-**Fix:** Throw `BusinessRuleException` for data/validation issues (no retry). Let `System.Exception` propagate for transient failures (auto-retry).
+**Fix:** Throw `BusinessRuleException` for data/validation issues (e.g., `Throw New BusinessRuleException("Invoice amount is negative")`) — marked Failed-Business, not retried. Let system exceptions propagate for transient failures (auto-retry).
 
 ### ContinueOnError Overuse
 
@@ -456,7 +420,7 @@ Filenames like `CheckIfEmployeeExists.xaml` are one manifestation. Inline checks
 | No | Guards + adequate retry but no per-sub-item progress output | **Info** | "Partial-failure recovery could be improved with per-sub-item progress markers written to queue Output for observability." |
 | Yes | Guards + retry + per-sub-item output | **Info** | "Working with compensation; consider dispatcher/performer if volume grows." |
 
-**When it cannot be split — hardening checklist:**
+#### When it cannot be split — hardening checklist
 
 If the domain forces a one-to-many shape that cannot be decomposed into separate queue items (e.g., SAP multi-step enrollment, carrier portal group submission, bank wire requiring sequential steps in one session), the reviewer MUST verify ALL of these safeguards. Each missing safeguard is a separate finding.
 
@@ -474,8 +438,10 @@ If the domain forces a one-to-many shape that cannot be decomposed into separate
 | 10 | **Timeout per sub-item** | Each sub-item has a reasonable timeout (not relying only on the global job timeout) | Info — one hanging sub-item blocks all remaining items |
 
 Report each missing safeguard as a numbered finding. Example:
-- `[W-005] One-to-many loop in Process.xaml (line 47): no per-sub-item status tracking — partial progress invisible after crash`
-- `[C-003] One-to-many loop in Process.xaml (line 47): no idempotency guard on sub-item write — retry creates duplicate records`
+- `[W-005] One-to-many loop in Process.xaml (For Each 'Process Employees'): no per-sub-item status tracking — partial progress invisible after crash`
+- `[C-003] One-to-many loop in Process.xaml (For Each 'Process Employees'): no idempotency guard on sub-item write — retry creates duplicate records`
+
+Anchor findings on activity display names, never XAML line numbers — line numbers are meaningless in Studio.
 
 **Why this shape is a real problem (when remediation is weak):**
 
@@ -509,7 +475,7 @@ The shape is what the execution body does. Remediation posture and business cons
 
 **Symptom:** Environment-specific values (URLs, paths, queue names) stored in Config.xlsx Settings or Constants sheets instead of the Assets sheet.
 
-**Impact:** Deploying to a new environment requires manually editing Config.xlsx and republishing. Secrets leak into version control. The most debated configuration issue on the UiPath Forum.
+**Impact:** Deploying to a new environment requires manually editing Config.xlsx and republishing. Secrets leak into version control.
 
 **Detection:** Read Config.xlsx — verify: Constants sheet contains only truly constant values (MaxRetryNumber, timeouts). Settings sheet contains only environment-agnostic settings. All environment-specific values (URLs, paths, credentials, queue names) are in the Assets sheet, referencing Orchestrator Asset names.
 
@@ -534,16 +500,6 @@ The shape is what the execution body does. Remediation posture and business cons
 **Detection:** Read `Framework/CloseAllApplications.xaml` and `Framework/KillAllProcesses.xaml` — check if they contain only the default empty Sequence.
 
 **Fix:** Implement CloseAllApplications with graceful Close Application activities for each app. Implement KillAllProcesses with Kill Process for each app process name.
-
-### All Exceptions Treated as System Exceptions
-
-**Symptom:** No `BusinessRuleException` thrown anywhere. All failures trigger retry logic.
-
-**Impact:** Data validation failures (missing fields, invalid formats, duplicate records) get retried and will never succeed. Wastes queue retry capacity and processing time.
-
-**Detection:** Grep for `BusinessRuleException` in all .xaml and .cs files. If not found, business exception handling is likely missing.
-
-**Fix:** Throw `BusinessRuleException` for data issues: `Throw New BusinessRuleException("Invoice amount is negative")`. These get marked as Failed-Business and are not retried.
 
 ### Business Logic in Framework Folder
 
@@ -573,7 +529,7 @@ The shape is what the execution body does. Remediation posture and business cons
 
 ### Excel Process Hanging
 
-**Symptom:** Excel Application Scope completes but Excel process stays alive in background. Robot hangs indefinitely waiting for Excel. Occurs in 10-20% of executions.
+**Symptom:** Excel Application Scope completes but Excel process stays alive in background. Robot hangs indefinitely waiting for Excel.
 
 **Detection:** Check for orphaned EXCEL.EXE processes after automation runs. Check for timeout errors in Excel activities.
 
@@ -621,7 +577,7 @@ Issues where the bot reports success but the outcome is wrong. These are the cos
 
 **Symptom:** Bot writes data (Excel, database, web form, API POST) but does not verify the write succeeded. The target system may accept the command but fail to save.
 
-**Impact:** Bot reports success. The next morning someone discovers blank reports, missing records, or duplicate entries. Occurs ~1% of executions but extremely costly.
+**Impact:** Bot reports success. The next morning someone discovers blank reports, missing records, or duplicate entries. Rare but extremely costly.
 
 **Detection:** After every write operation (`Write Range`, `Submit Form`, HTTP POST, database INSERT), check for a verification step — read-back, count check, or status code validation.
 
@@ -669,7 +625,7 @@ Issues specific to coded workflows that differ from XAML patterns.
 
 **Detection:** Check if coded library workflows use service accessors. Test library invocation from an external project.
 
-**Fix:** Ensure library workflows are properly bootstrapped. Use `RunWorkflow` with strongly-typed invocation instead of direct class instantiation.
+**Fix:** Ensure library workflows are properly bootstrapped. Invoke via the generated strongly-typed `workflows.<NAME>()` accessors instead of direct class instantiation.
 
 ## Concurrency Issues
 
@@ -727,7 +683,7 @@ Issues specific to coded workflows that differ from XAML patterns.
 
 **Symptom:** `Get Asset` activity used to retrieve a Credential-type Orchestrator asset (instead of `Get Credential`).
 
-**Impact:** `Get Asset` cannot retrieve credential-type assets — it returns only username as a string, password is null. Automation appears to work but login fails silently downstream.
+**Impact:** `Get Asset` cannot retrieve credential-type assets — depending on Orchestrator version it errors at runtime or yields no usable password. Either way the downstream login fails.
 
 **Detection:** In Config.xlsx Assets sheet, identify credential assets (by name convention or known usage). Grep XAML for `GetAsset` activities retrieving those names — should be `GetCredential`.
 

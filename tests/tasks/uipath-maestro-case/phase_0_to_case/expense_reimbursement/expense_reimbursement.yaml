@@ -111,6 +111,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "design preserves the expense_requests record-created trigger, companion data objects, and trigger-sourced intake field mappings"
+    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && python3 $TASK_DIR/check_expense_trigger_sdd.py \"$f\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "design captures the required task-type mix"
     command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'api[- ]workflow' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'connector|outlook|workday|slack|sap|servicenow' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'agent' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'action|hitl|human' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'timer' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'rpa' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'sub-case|subcase|case-management|child case'"
     timeout: 10

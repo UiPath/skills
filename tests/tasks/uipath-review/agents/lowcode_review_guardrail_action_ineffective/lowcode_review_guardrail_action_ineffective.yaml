@@ -11,7 +11,7 @@ description: >
   guardrails-review.md Audit Mode), and cite `LC_GUARDRAIL_ACTION_INEFFECTIVE`.
   Un-eyeball-able (block looks protective), so it forces the catalog read —
   needs the authed CLI (the smoke runner passes UIPATH_CLI_* auth).
-tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover, guardrail]
 
 run_limits:
   turn_timeout: 1200
