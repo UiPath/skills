@@ -18,6 +18,17 @@ If the data doesn't match: **discard it**. Do NOT use unrelated data as a proxy.
 - **Empty results or 404** — before concluding an entity doesn't exist, verify the container (folder, tenant, instance) is still accessible. If the container was deleted or returns 404, all scoped queries are unreliable. Widen the search (different folder, broader time window, different state filters) or flag as a data gap and ask the user. Never treat empty results from an inaccessible container as proof of absence.
 - **Live infrastructure data** — machine connectivity, license counts, connection health, and robot availability reflect current state, not historical state. For incidents older than 24 hours, this data shows what's true NOW, not what was true when the incident happened. Use it as context only — machines could have been online 6 months ago and gone offline since. Never use current infrastructure snapshots as causal evidence for past incidents.
 
+## Locating Project Source & Resource Files
+
+A UiPath project ships in one of two layouts, and a named source or resource file (workflow, code, manifest, or a connection/asset/queue/bucket resource) may sit in either. Resolve BOTH before concluding a file is absent — this applies to every product, not just the one that named the file:
+
+- **Standalone** — resources inline under the project dir (e.g. `<project>/connection/<connector>/*.json`).
+- **Solution** — the project sits under a subdir and resources are hoisted into a solution wrapper at the **solution root**: the working directory, which is the *parent* of the named project dir — NOT inside it. E.g. from the working directory `resources/solution_folder/connection/<connector>/*.json`; likewise `resources/solution_folder/{package,process,asset,queue,bucket}/...`.
+
+**Search from the working-directory root, not only under a named project subdir.** When the user points you at a project dir (e.g. `./MyProject/`), the solution resources live beside it — one level up — at `./resources/solution_folder/...`. So look both **inside the named project** (standalone layout) AND **in the working-directory root / one level up from the project** (solution layout).
+
+When a playbook names a file at one layout's path and it is not there, check the other layout — including the solution root above the project dir — before treating it as missing. If neither resolves: data gap — ask the user for the correct path. Absence from one layout is NOT absence.
+
 ## Testing Prerequisites
 
 Gather and verify these before drawing conclusions on any hypothesis:
