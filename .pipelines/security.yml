@@ -7,7 +7,8 @@
 #
 # Register this file as a pipeline definition in the "skills" ADO project
 # (https://dev.azure.com/uipath/skills). The project needs:
-#   - the "UiPath" GitHub service connection (for the fossa template repository)
+#   - the "github.com_UiPath" GitHub service connection (for the fossa
+#     template repository; auto-created by the ADO GitHub App integration)
 #   - the Azure service connection below (FOSSA API key retrieval via Key Vault)
 #   - access to the agent pool below and the "DevOps" universal packages feed
 # No GitHub-side variables or secrets are required.
@@ -50,7 +51,9 @@ resources:
       type: github
       name: UiPath/AzurePipelinesTemplates
       ref: refs/tags/uipath.security.fossa.3.1.1
-      endpoint: UiPath
+      # GitHub App connection auto-created in the skills ADO project when the
+      # pipeline was registered (Project Settings > Service connections).
+      endpoint: github.com_UiPath
 
 stages:
   - ${{ if eq(parameters.enableFossa, true) }}:
