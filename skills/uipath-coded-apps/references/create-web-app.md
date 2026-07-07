@@ -203,7 +203,7 @@ const { sdk } = useAuth();
 export const assets = new Assets(sdk);
 ```
 
-See the **SDK Module Imports** table in `SKILL.md` for all subpath imports. The `useAuth` hook implementation and the SDK methods it uses internally are documented in the `## src/hooks/useAuth.tsx` section of [../assets/templates/web-app-template.md](../assets/templates/web-app-template.md).
+Subpaths and classes are discovered from the installed package — see the lookup protocol in [sdk/imports.md](sdk/imports.md). The `useAuth` hook implementation and the SDK methods it uses internally are documented in the `## src/hooks/useAuth.tsx` section of [../assets/templates/web-app-template.md](../assets/templates/web-app-template.md).
 
 ---
 

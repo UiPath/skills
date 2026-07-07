@@ -1,9 +1,9 @@
 # Agent Governance Decisions (Insights RTM)
 
-Method signatures, parameters, return types, and usage examples: read the installed types — `node_modules/@uipath/uipath-typescript/dist/traces/index.d.ts` (the `AgentTraces` service; full JSDoc, matches your installed SDK version). This file covers ONLY what the `.d.ts` cannot tell you.
+Signatures/params/examples: `dist/traces/index.d.ts` (the `AgentTraces` service). Per-method scopes: shipped `docs/oauth-scopes.md`. This file covers only what neither can express.
 
-> Requires `@uipath/uipath-typescript` **≥ 1.5.1**. Scopes: `Insights Insights.RealTimeData OR.Folders.Read` (all in `DASHBOARD_SCOPES`). Subpath: `@uipath/uipath-typescript/traces`.
-> **Org-admin required.** Both methods 403 for non-admin callers (SDK throws `AuthorizationError`). On 403: tell the user their account lacks governance access, render the widget's EmptyState, build the rest of the dashboard. Do not retry.
+> Requires `@uipath/uipath-typescript` **≥ 1.5.1**. Subpath: `@uipath/uipath-typescript/traces`.
+> **Org-admin required** (both methods 403 otherwise — see the JSDoc `@remarks`). On 403: tell the user their account lacks governance access, render the widget's EmptyState, build the rest of the dashboard. Do not retry. Never fabricate data.
 
 First-class Insights endpoints for **agentic runtime governance** — every policy check an agent run went through (allow/deny per hook) plus an aggregated posture summary. These widgets honor the dashboard time range like any other metric.
 
@@ -15,31 +15,10 @@ First-class Insights endpoints for **agentic runtime governance** — every poli
 > a different domain (platform policy enforcement). When unsure which the user means, ASK. Never add these
 > widgets to a plain agent-health/ops dashboard.
 
-```typescript
-import { AgentTraces, AgentGovernanceVerdict, AgentGovernanceSection } from '@uipath/uipath-typescript/traces'
-const svc = new AgentTraces(sdk)
-```
+## Semantics the JSDoc lacks
 
-Both methods take a **required positional `startTime: Date`** first (same convention as `Governance.getPolicyTraces`); everything else lives in options.
-
-## getGovernanceSummary(startTime, options?) — breakdowns in ONE call
-
-Returns a **single object — not an array**: `{ total, violations, byHook, byAgent, byPolicy, byPack, byAction, byMode }`; each breakdown is rows of `{ key, name, count, violationCount }`.
-
-Semantics:
-- `violations` / `violationCount` = **Deny verdicts**; `count`/`total` = all checks. Violation widgets read `violationCount`; all-checks widgets read `count`.
-- **`byAction` and `byMode` are EMPTY unless opted in** via `sections: [AgentGovernanceSection.Action]` / `[…Mode]`. Forgetting `sections` is the compiles-green-renders-empty trap here.
-- `name` is populated for `byPolicy`/`byAgent` (null for `byHook`/`byPack`); render `name ?? key`.
-- `topN` caps each breakdown; `packName` scopes totals + breakdowns to one pack.
-
-## getGovernanceDecisions(startTime, options?) — the record grain
-
-One row per policy check. Paginated; **rows on `.items`**.
-
-Semantics — the traps:
-- **`evaluatorResult === AgentGovernanceVerdict.Deny` IS the violation.** `mode` (`AUDIT`/`ENFORCE`) says whether it was enforced; `actionApplied` is the enforcement action string (`null` in audit mode). Compare enum fields with the imported enums — `d.evaluatorResult === 'DENY'` is a tsc error.
-- **No server-side `traceId` filter.** Per-run views fetch the window and filter client-side on the row's `traceId`. `agentId` (agent project key) IS a server-side filter.
-- `violationsOnly: true` → Deny rows only. Use for violation tables and violation drill-downs.
+- Widget routing: violation widgets read `violationCount` / `violations`; all-checks widgets read `count` / `total`.
+- **No server-side `traceId` filter** on `getGovernanceDecisions`. Per-run views fetch the window and filter client-side on the row's `traceId`.
 - One agent run = one `traceId` (with its `jobKey`); group rows by `traceId` for run-level rollups.
 - Rows are TS interfaces — project with `.map(x => ({ ...x }))`, never `as` casts.
 - User vocabulary maps onto the response fields: "rule" → **policy** (`policyId`/`policyName`), "standard" → **pack** (`packName`), "violation" → **Deny verdict**, "enforcement action" → **actionApplied**, "audit vs enforce" → **mode**.

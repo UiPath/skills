@@ -1,61 +1,29 @@
-# SDK Module Imports
+# SDK Reference Protocol
 
-Read this when writing TypeScript code that imports classes, types, or options from `@uipath/uipath-typescript`. The SDK uses subpath exports — service classes are **not** importable from the package root.
+The installed package is the authoritative reference for the `@uipath/uipath-typescript` SDK. This folder's files contain ONLY knowledge the package cannot carry; everything else is read from `node_modules`.
 
-## Method Signatures — Read the Installed Types, Never Guess
+## Where to look things up
 
-Authoritative reference for method signatures, parameters, return types, and usage examples: the installed SDK's type declarations at
+| Need | Source (inside `node_modules/@uipath/uipath-typescript/`) |
+|---|---|
+| Which subpaths exist | `ls dist/` — every directory is an import subpath: `@uipath/uipath-typescript/<dir>` |
+| Which subpath exports a class | `grep -l "class <Name>" dist/*/index.d.ts` |
+| Method signatures, params, return types, usage examples | `dist/<subpath>/index.d.ts` — full JSDoc, matches the installed version exactly |
+| Per-method OAuth scopes | `docs/oauth-scopes.md` (shipped with newer SDK versions; fallback: [../oauth-scopes.md](../oauth-scopes.md) § Per-method scope lookup) |
+| Types, enums, option interfaces | same `dist/<subpath>/index.d.ts` as their service class — use `import type` for type-only imports |
 
-```
-node_modules/@uipath/uipath-typescript/dist/<subpath>/index.d.ts
-```
+Rules:
 
-Full JSDoc (descriptions, `@param`, `@example`) ships in these files, and they match the **installed** SDK version exactly — hand-written docs cannot make that guarantee. Per-subpath files are small (≈500–2,400 lines); read the one for the service you are using before calling methods you have not used in this session.
-
-1. Before calling a service, Read `dist/<subpath>/index.d.ts` for its exact method signatures.
+1. Before calling a service you have not used in this session, Read its `dist/<subpath>/index.d.ts`.
 2. If `node_modules` is absent, run the install step first (the app cannot build without it — see the scaffold workflow).
-3. NEVER guess or recall method names from memory — SDK versions differ; the `.d.ts` of the installed version is the contract.
-4. Scopes: the per-method scope table ships in the package at `node_modules/@uipath/uipath-typescript/docs/oauth-scopes.md` — Read it there. Task-level scope **bundles**, version gates, org-admin notes, and widget scopes are in [../oauth-scopes.md](../oauth-scopes.md) (which also covers what to do when the installed SDK predates the shipped table).
-
-The remaining files in this `sdk/` folder deliberately do NOT duplicate signatures. They cover only what the `.d.ts` cannot tell you: OAuth scopes per method ([../oauth-scopes.md](../oauth-scopes.md)), calling conventions, response-shape gotchas, and cross-service traps.
-
-## Subpath → Exports
-
-| Subpath | Classes |
-|---------|---------|
-| `@uipath/uipath-typescript/core` | `UiPath`, `UiPathError`, `UiPathSDKConfig`, `PaginationCursor`, `PaginationOptions`, `PaginatedResponse`, `NonPaginatedResponse` |
-| `@uipath/uipath-typescript/entities` | `Entities`, `ChoiceSets` |
-| `@uipath/uipath-typescript/tasks` | `Tasks` |
-| `@uipath/uipath-typescript/maestro-processes` | `MaestroProcesses`, `ProcessInstances`, `ProcessIncidents` |
-| `@uipath/uipath-typescript/cases` | `Cases`, `CaseInstances` |
-| `@uipath/uipath-typescript/assets` | `Assets` |
-| `@uipath/uipath-typescript/queues` | `Queues` |
-| `@uipath/uipath-typescript/buckets` | `Buckets` |
-| `@uipath/uipath-typescript/processes` | `Processes` |
-| `@uipath/uipath-typescript/jobs` | `Jobs` |
-| `@uipath/uipath-typescript/attachments` | `Attachments` |
-| `@uipath/uipath-typescript/agents` | `Agents`, `AgentListSortColumn`, `AgentErrorSortColumn` (Insights RTM — SDK ≥ 1.4.1) |
-| `@uipath/uipath-typescript/traces` | `AgentTraces`, `AgentTraceExecutionType`, `Traces` (generic spans — `Traces.getById(traceId)`) (Insights RTM — SDK ≥ 1.4.1) |
-| `@uipath/uipath-typescript/agent-memory` | `AgentMemory`, `AgentMemoryExecutionType` (SDK ≥ 1.4.1) |
-| `@uipath/uipath-typescript/governance` | `Governance`, `PolicyEvaluationResult` (SDK ≥ 1.4.1) |
-| `@uipath/uipath-typescript/conversational-agent` | `ConversationalAgent`, `Exchanges`, `Messages` |
-| `@uipath/uipath-typescript/feedback` | `Feedback` |
-
-## Type Imports
-
-Types, enums, and option interfaces are exported from the **same subpath** as their service class. Use `import type` for type-only imports:
-
-```typescript
-import type { AssetGetResponse } from '@uipath/uipath-typescript/assets';
-import type { ProcessInstanceGetResponse } from '@uipath/uipath-typescript/maestro-processes';
-import type { UiPathSDKConfig } from '@uipath/uipath-typescript/core';
-```
+3. NEVER guess or recall method names, signatures, or scopes from memory — SDK versions differ; the installed package is the contract.
+4. Task-level scope **bundles**, version gates, org-admin notes, and widget scopes: [../oauth-scopes.md](../oauth-scopes.md). Cross-service traps and server-side behavior the types cannot express: the per-domain files in this folder.
 
 ## Anti-patterns
 
 ### Never import service classes from the package root
 
-Service classes are only available via subpath imports. Root-level imports will fail at build time.
+Service classes are only available via subpath imports. Root-level imports fail at build time.
 
 ```typescript
 // ❌ Wrong — service classes are not exported from the root

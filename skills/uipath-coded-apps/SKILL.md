@@ -169,7 +169,7 @@ To change any of these values, edit `uipath.json`.
 
 ## SDK Module Imports
 
-See [references/sdk/imports.md](references/sdk/imports.md) for the subpath ↔ class mapping, type import conventions, and anti-pattern examples. Core rules are listed under **Anti-patterns** below.
+See [references/sdk/imports.md](references/sdk/imports.md) for the lookup protocol (subpaths and classes are discovered from the installed package — `ls node_modules/@uipath/uipath-typescript/dist/`), type import conventions, and anti-pattern examples. Core rules are listed under **Anti-patterns** below.
 
 ## Key Concepts
 

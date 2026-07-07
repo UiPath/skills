@@ -1,57 +1,8 @@
-# Orchestrator Reference — Scopes, Conventions, Traps
+# Orchestrator — Traps & Server Behavior
 
-Method signatures, parameters, return types, and usage examples: read the installed types — `node_modules/@uipath/uipath-typescript/dist/assets/index.d.ts`, `dist/queues/index.d.ts`, `dist/buckets/index.d.ts`, `dist/processes/index.d.ts`, `dist/jobs/index.d.ts`, `dist/attachments/index.d.ts` (full JSDoc; matches your installed SDK version). This file covers ONLY what the `.d.ts` cannot tell you.
+Signatures/params/examples: `dist/assets/index.d.ts`, `dist/queues/index.d.ts`, `dist/buckets/index.d.ts`, `dist/processes/index.d.ts`, `dist/jobs/index.d.ts`, `dist/attachments/index.d.ts`. Per-method scopes: shipped `docs/oauth-scopes.md`. This file covers only what neither can express.
 
-## Imports
-
-```typescript
-import { Assets } from '@uipath/uipath-typescript/assets';
-import { Queues } from '@uipath/uipath-typescript/queues';
-import { Buckets } from '@uipath/uipath-typescript/buckets';
-import { Processes } from '@uipath/uipath-typescript/processes';
-import { Jobs } from '@uipath/uipath-typescript/jobs';
-import { Attachments } from '@uipath/uipath-typescript/attachments';
-```
-
-Types, options, and enums export from the same subpath as their service class.
-
-## Scopes
-
-- Assets: `OR.Assets` or `OR.Assets.Read`
-- Queues: `OR.Queues` or `OR.Queues.Read`
-- Buckets: `OR.Buckets` or `OR.Buckets.Read`; `OR.Buckets.Write` for `deleteFile`
-- Processes: `OR.Execution` / `OR.Execution.Read`; `OR.Jobs` / `OR.Jobs.Write` for `start`
-- Jobs: `OR.Jobs` or `OR.Jobs.Read`
-- Attachments: `OR.Folders` or `OR.Folders.Read`
-- `Jobs.getOutput()` uses Attachments internally to resolve file-type output arguments — if you call `Jobs.getOutput()` you must add `OR.Folders` (or `OR.Folders.Read`) to the app's scopes in addition to `OR.Jobs`
-
-## Traps
-
-### Folder-scoped services
-
-Assets, Queues, Buckets, and Processes are folder-scoped. Many methods require a `folderId` parameter.
-
-### Attached methods
-
-`Jobs.getById()` and `Jobs.getAll()` items return response objects with attached methods (`getOutput()`, `stop()`, `resume()`, `restart()`) bound to the job's `key` and `folderId`, so you don't need to pass them again — prefer them over re-calling the service with ids. The full list is the `JobMethods` type in the `.d.ts`. Assets, Queues, Buckets, Processes, and Attachments responses do **not** have attached methods — use the service directly.
-
-### `getByName` folder identifiers
-
-`Assets.getByName`, `Processes.getByName`, and `Buckets.getByName` accept `FolderScopedOptions` — supply one of `folderId`, `folderKey`, or `folderPath` (e.g., `'Shared/Finance'`). If multiple are supplied, server precedence is `folderPath` > `folderKey` > `folderId`. Throws `NotFoundError` if nothing matches.
-
-### `getFiles` vs `getFileMetaData` (Buckets)
-
-`getFiles` returns `BucketFile` items (folder-aware — each includes `isDirectory` — supports regex filtering) and is folder-scoped via `FolderScopedOptions`. `getFileMetaData` returns flat `BlobItem` items by `prefix` and takes a positional `folderId`. Prefer `getFiles` for directory-style browsing.
-
-### Jobs service behavior
-
-- `Jobs.getById()`: **Note:** `id` is a `string` here (not a `number` like Assets/Queues/Processes).
-- `getOutput()` returns the job's parsed output arguments, or `null` if unavailable. Use after a job has finished; output is not populated while the job is still running.
-- `stop()` takes an array of job keys (pass an array even for a single job). Throws if any keys cannot be resolved. `StopStrategy.SoftStop` (default, graceful) or `StopStrategy.Kill` (immediate).
-- `resume()` resumes a job currently in `Suspended` state.
-- `restart()` returns a **new** job with a new `key`, in `Pending` state. The original job must be in a final state (`Successful`, `Faulted`, or `Stopped`). Inputs are inherited from the original.
-- `Processes.start()`: the `request` must include either `processKey` or `processName`.
-- `JobGetResponse`: the `machine`, `robot`, and `process` fields are populated only when requested via `expand`.
+> **Scope pairing warning:** `Jobs.getOutput()` resolves file-type output arguments through the Attachments service internally — the app needs `OR.Folders` (or `OR.Folders.Read`) **in addition to** its Jobs scope, or the call 403s. Do not assume one scope per service; check the shipped table per method.
 
 ## Job classification — agent vs process vs app
 
@@ -127,18 +78,12 @@ export const fetchDetailByKey: MetricDetailByKeyFn = async (sdk, agentName) => {
 
 ## Attachments Service
 
-Standalone service for retrieving an Orchestrator attachment's metadata and a signed URL for downloading the blob. Coded Action Apps use this to resolve a `type: "file"` input — the file reference handed in by the automation (Maestro / Agent / RPA) — into downloadable bytes. `Jobs.getOutput()` also uses it internally to resolve file-type output arguments (see Scopes above).
-
-This service exposes **only** `getById` — there is no `getAll`, no create, and no delete. `id` is the attachment **UUID** (string) — not a number. Throws `ValidationError` if `id` is empty.
-
-Resolve a `file`-typed input to its bytes via `blobFileAccess` (the signed URL + headers). Respect `requiresAuth` — when `true`, pass `headers` on the download request:
+Cross-artifact role the types don't show: Coded Action Apps resolve a `type: "file"` input — the file reference handed in by the automation (Maestro / Agent / RPA) — into bytes via `Attachments.getById()` → `blobFileAccess` (signed URL + headers). `Jobs.getOutput()` uses the same service internally for file-type outputs (see scope pairing warning above). When `blobFileAccess.requiresAuth` is `true`, pass `blobFileAccess.headers` on the download request.
 
 ```typescript
 import { Attachments } from '@uipath/uipath-typescript/attachments';
 
-const attachments = new Attachments(sdk);
-const attachment = await attachments.getById('<attachmentId>');
-// Download the blob using the signed URI
+const attachment = await new Attachments(sdk).getById('<attachmentId>');
 const blob = await fetch(attachment.blobFileAccess.uri).then(r => r.blob());
 ```
 

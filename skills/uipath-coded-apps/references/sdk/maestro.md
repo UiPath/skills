@@ -1,22 +1,8 @@
-# Maestro Reference — Scopes, Conventions, Traps
+# Maestro — Traps & Server Behavior
 
-Method signatures, parameters, return types, and usage examples: read the installed types — `node_modules/@uipath/uipath-typescript/dist/maestro-processes/index.d.ts` and `dist/cases/index.d.ts` (full JSDoc; matches your installed SDK version). This file covers ONLY what the `.d.ts` cannot tell you.
+Signatures/params/examples: `dist/maestro-processes/index.d.ts`, `dist/cases/index.d.ts`. Per-method scopes: shipped `docs/oauth-scopes.md`. This file covers only what neither can express.
 
-## Imports
-
-```typescript
-import { MaestroProcesses, ProcessInstances, ProcessIncidents } from '@uipath/uipath-typescript/maestro-processes';
-import { Cases, CaseInstances } from '@uipath/uipath-typescript/cases';
-```
-
-Types, options, and enums export from the same subpath as their service class.
-
-## Scopes
-
-- All Maestro operations: `PIMS`
-- ProcessInstances.getBpmn: also requires `OR.Execution.Read`
-- CaseInstances.getActionTasks: also requires `OR.Tasks` or `OR.Tasks.Read`
-- Analytics / Insights methods (timelines, top-N, SLA): `Insights.RealTimeData Insights OR.Folders.Read` — a **separate bundle from `PIMS`**; SLA summaries additionally need `PIMS`. A 403 here means the External App lacks these scopes — surface it as a permissions message.
+> **Scope fork warning:** this service family splits across TWO scope bundles — instance/process operations use `PIMS`, while the analytics/SLA methods use the Insights bundle (`Insights Insights.RealTimeData OR.Folders.Read`; SLA also needs `PIMS`). Do not assume service-uniform scopes; check the shipped table per method. A 403 on analytics means the External App lacks the Insights bundle — surface it as a permissions message.
 
 ## Traps
 
@@ -37,17 +23,13 @@ const instances = await processInstances.getAll({ processKey: target.processKey,
 
 **NEVER use the process name as the processKey.**
 
-### Attached methods
+### `reopen()` — where the required `stageId` comes from
 
-Objects returned by `getAll()`/`getById()` carry attached operation methods (`instance.cancel()`, `instance.getVariables()`, `process.getIncidents()`, `caseInstance.reopen()` …) — prefer them over re-calling the service with ids. The full list per type is in the `.d.ts` (`ProcessInstanceMethods`, `CaseInstanceMethods`, `ProcessMethods`).
+Get it from `getStages()` on the case instance.
 
 ### Rendering `getVariables()` output — MANDATORY
 
 See [../patterns.md](../patterns.md) section "Rendering Process Instance Data". **NEVER dump raw JSON** — parse `globalVariables` / `elements` and render structured UI.
-
-### `CaseInstances.reopen()` needs a `stageId`
-
-`reopen(instanceId, folderKey, { stageId, comment? })` — the `stageId` is required; get it from `getStages()`.
 
 ## Which incident accessor when
 
@@ -59,35 +41,21 @@ See [../patterns.md](../patterns.md) section "Rendering Process Instance Data". 
 
 `ProcessIncidentGetAllResponse` (summary) and `ProcessIncidentGetResponse` (per-incident detail) are different shapes.
 
-## Maestro Insights — RTM (SDK ≥ 1.4.x)
+## Analytics / Insights RTM — server behavior the types don't show
 
-> Scopes: Top/timeline/element methods need `Insights Insights.RealTimeData OR.Folders.Read`; the SLA methods additionally need **`PIMS`**. These use the Insights RTM host (NOT PIMS) — contrast with `Cases.getAll`/`CaseInstances.getAll`.
+Requires SDK **≥ 1.4.x**. `Cases` and `MaestroProcesses` expose the same six analytics methods; `CaseInstances` adds the two SLA methods.
 
-`Cases` and `MaestroProcesses` expose the **same six analytics methods** with identical signatures. `CaseInstances` adds the two SLA methods.
+| Method | Server behavior |
+|--------|----------------|
+| `getTopRunCount` | ≤5 rows, ranked |
+| `getTopFaultedCount` | ≤10 rows, ranked |
+| `getTopExecutionDuration` | ≤5 rows, `duration` in **ms** |
+| `getTopElementFailedCount` | ≤10 rows, BPMN elements |
+| `getInstanceStatusTimeline` | `startTime` is a **LOCALE string**, not ISO; `groupBy` default DAY |
+| `getSlaSummary` | default top 50 rows |
 
-**Calling conventions:** positional `Date` args (`start, end`) for the six analytics methods; `getSlaSummary` takes an **options object**. All return a **bare array** except `getSlaSummary` (rows on `.items`).
-
-Server-side behavior the types don't show:
-
-| Method | Returns (bare array of) | Notes |
-|--------|------------------------|-------|
-| `getTopRunCount(start, end, options?)` | `{ packageId, processKey, runCount, name }` | ≤5, ranked. `options`: `{ packageId?, processKey?, version? }` |
-| `getTopFaultedCount(start, end, options?)` | `{ packageId, processKey, faultedCount, name }` | ≤10, ranked |
-| `getTopExecutionDuration(start, end, options?)` | `{ packageId, processKey, duration, name }` | ≤5, `duration` in ms |
-| `getTopElementFailedCount(start, end, options?)` | `{ elementName, elementType, processKey, failedCount }` | ≤10, BPMN elements |
-| `getInstanceStatusTimeline(start, end, options?)` | `{ startTime, status, count }` | `status` ∈ `Completed`/`Faulted`/`Cancelled`; `startTime` is a **LOCALE string**, not ISO; `options`: `{ groupBy?: TimeInterval }` (HOUR/DAY/WEEK, default DAY) |
-| `getElementStats(processKey, packageId, start, end, packageVersion)` | element duration/count stats incl. p50/p95/p99 | all positional args |
-
-For Cases, `name` is derived from `packageId` (CaseManagement prefix stripped); for MaestroProcesses, `name === packageId`. Both present on every row.
-
-`CaseInstances` SLA methods:
-
-| Method | Returns | Notes |
-|--------|---------|-------|
-| `getSlaSummary(options?)` | `{ items: SlaSummaryResponse[] }` (default top 50) or paginated | `options`: `{ caseInstanceId?, startTimeUtc?: Date, endTimeUtc?: Date }` + pagination; `slaDueTime` is ISO UTC |
-| `getStagesSlaSummary(options?)` | **bare** `{ caseInstanceId, stages: Stage[] }[]` | `options`: `{ caseInstanceId? }` |
-
-`slaStatus` string values: `'On Track'`, `'At Risk'`, `'Overdue'`, `'Completed'`, `'Unknown'`. **Compare as strings — do not import the enum** (avoids TS narrowing errors; values are stable).
+- For Cases, `name` is derived from `packageId` (CaseManagement prefix stripped); for MaestroProcesses, `name === packageId`.
+- `slaStatus`: **compare as strings** (`'At Risk'`, `'Overdue'`, …) — do not import the enum (avoids TS narrowing errors; values are stable).
 
 ### Module patterns
 
