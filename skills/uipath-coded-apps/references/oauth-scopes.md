@@ -20,7 +20,7 @@ node_modules/@uipath/uipath-typescript/docs/oauth-scopes.md
 
 Read it there — it matches the installed SDK version exactly. If the installed SDK predates the file, the same table is at `https://github.com/UiPath/uipath-typescript/blob/main/docs/oauth-scopes.md`, or upgrade the SDK. This skill deliberately does NOT duplicate the per-method table.
 
-What the shipped table does NOT cover (skill knowledge, below): version gates, org-admin requirements, host routing notes, widget scopes, and the task-level bundles.
+What the shipped table does NOT cover (skill knowledge, below): widget scopes and the task-level bundles.
 
 ## Common Scope Bundles
 
@@ -44,13 +44,6 @@ Task-level bundles — what to put in `VITE_UIPATH_SCOPE` / `uipath.json` `scope
 | Insights RTM (Agents, Agent Traces, Agent Memory, Governance, Maestro Insights) | `Insights Insights.RealTimeData OR.Folders.Read` |
 | Maestro SLA (CaseInstances SLA summary) | `Insights Insights.RealTimeData OR.Folders.Read PIMS` |
 | Generic trace spans (`Traces.getById` / `getSpansByIds`) | `Traces.Api` (+ `Insights Insights.RealTimeData`) |
-
-## Version gates & platform notes (not in the shipped table)
-
-- Insights RTM services (`Agents`, `AgentTraces`, `AgentMemory`, `Governance`, Maestro Insights analytics) require SDK **≥ 1.4.1**; `Agents` aggregates **≥ 1.5.0**; `AgentTraces` governance methods **≥ 1.5.1**.
-- `Governance.getPolicyTraces()` / `getOperationSummary()` and `AgentTraces.getGovernanceDecisions()` / `getGovernanceSummary()`: caller needs elevated (**org-admin**) access — `fullOrganization: true` returns 403 without it.
-- Insights RTM methods use the Insights RTM host; `Cases.getAll` / `CaseInstances.getAll` / `ProcessIncidents.getAll()` use the PIMS host and require `PIMS` — same service family, different scope bundle. See [sdk/maestro.md](sdk/maestro.md).
-- All Insights RTM methods also require `OR.Folders.Read` — covered by a granted `OR.Folders`.
 
 ## Widgets
 

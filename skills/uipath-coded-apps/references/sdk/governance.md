@@ -2,8 +2,6 @@
 
 Signatures/params/examples: `dist/governance/index.d.ts`. Per-method scopes: shipped `docs/oauth-scopes.md`. This file covers only what neither can express.
 
-> Requires `@uipath/uipath-typescript` **≥ 1.4.1**.
-
 This service answers the **platform governance** question — policy enforcement verdicts (allow/deny) on user and agent actions across the platform. For **agentic runtime governance** (per-hook policy checks inside agent runs — standards packs, rule violations) → [`sdk/governance-traces.md`](governance-traces.md), a different domain.
 
 On a 403 (org-admin gating — see the `fullOrganization` JSDoc): tell the user their account lacks governance access; do not retry.

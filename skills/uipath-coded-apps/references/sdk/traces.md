@@ -2,7 +2,7 @@
 
 Signatures/params/examples: `dist/traces/index.d.ts`. Per-method scopes: shipped `docs/oauth-scopes.md`. This file covers only what neither can express.
 
-> Requires `@uipath/uipath-typescript` **≥ 1.4.1**. The two governance methods (`getGovernanceDecisions` / `getGovernanceSummary`) are **≥ 1.5.1, org-admin, GATED** — full contract, gate, and module patterns in [`sdk/governance-traces.md`](governance-traces.md).
+> The two governance methods (`getGovernanceDecisions` / `getGovernanceSummary`) are **org-admin, GATED** — full contract, gate, and module patterns in [`sdk/governance-traces.md`](governance-traces.md).
 
 Trace-level (span-level) view of agent execution — errors, latency, unit consumption, and raw spans. Distinct from the `Agents` service (`sdk/agents.md`), which aggregates per agent. Use traces when the request is about *spans*, *trace-level* timelines, or per-(agent, version, folder) unit breakdowns.
 

@@ -2,7 +2,7 @@
 
 Signatures/params/examples: `dist/traces/index.d.ts` (the `AgentTraces` service). Per-method scopes: shipped `docs/oauth-scopes.md`. This file covers only what neither can express.
 
-> Requires `@uipath/uipath-typescript` **≥ 1.5.1**. Subpath: `@uipath/uipath-typescript/traces`.
+> Subpath: `@uipath/uipath-typescript/traces`.
 > **Org-admin required** (both methods 403 otherwise — see the JSDoc `@remarks`). On 403: tell the user their account lacks governance access, render the widget's EmptyState, build the rest of the dashboard. Do not retry. Never fabricate data.
 
 First-class Insights endpoints for **agentic runtime governance** — every policy check an agent run went through (allow/deny per hook) plus an aggregated posture summary. These widgets honor the dashboard time range like any other metric.

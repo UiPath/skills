@@ -17,7 +17,7 @@ Rules:
 1. Before calling a service you have not used in this session, Read its `dist/<subpath>/index.d.ts`.
 2. If `node_modules` is absent, run the install step first (the app cannot build without it — see the scaffold workflow).
 3. NEVER guess or recall method names, signatures, or scopes from memory — SDK versions differ; the installed package is the contract.
-4. Task-level scope **bundles**, version gates, org-admin notes, and widget scopes: [../oauth-scopes.md](../oauth-scopes.md). Cross-service traps and server-side behavior the types cannot express: the per-domain files in this folder.
+4. Task-level scope **bundles** and widget scopes: [../oauth-scopes.md](../oauth-scopes.md). Cross-service traps and server-side behavior the types cannot express: the per-domain files in this folder.
 
 ## Anti-patterns
 

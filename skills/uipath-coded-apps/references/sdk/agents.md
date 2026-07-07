@@ -2,15 +2,13 @@
 
 Signatures/params/examples: `dist/agents/index.d.ts`, `dist/agent-memory/index.d.ts`. Per-method scopes: shipped `docs/oauth-scopes.md`. This file covers only what neither can express.
 
-> Requires `@uipath/uipath-typescript` **≥ 1.4.1**; Insights aggregates **≥ 1.5.0**.
-
 > **Cross-service contrast warning:** calling conventions and field semantics differ between `Agents`, `AgentMemory`, and `AgentTraces` (`sdk/traces.md`) — positional Dates vs options objects, `name` = agent vs error, ms vs seconds. Read each signature/JSDoc; do NOT pattern-match from one service to another.
 
 ## Agents — which method for which widget
 
 `getAll` returns per-agent totals over the window — good for KPIs and ranked tables. For *time-series* (error / latency / consumption trends) use the dedicated timeline methods. There is still **no invocation-count timeline** and **no per-percentile method other than `getLatencyTimeline`**.
 
-### Insights aggregates (SDK ≥ 1.5.0)
+### Insights aggregates
 
 Purpose-built aggregate endpoints — prefer these over hand-rolling aggregates from `getAll`. Registry widget mapping:
 
@@ -80,20 +78,20 @@ return (result?.items ?? []).map(agent => ({ ...agent }))
 ```
 
 ```typescript
-// Agents ranked by error count (ranked-table) — ≥ 1.5.0
+// Agents ranked by error count (ranked-table)
 const { Agents } = await import('@uipath/uipath-typescript/agents')
 const result = await new Agents(sdk).getTopErrorCount(THIRTY_DAYS_AGO, NOW, { limit: 10 })
 return result.data.map(agent => ({ name: agent.name, value: agent.count }))
 ```
 
 ```typescript
-// Agents ranked by consumption (ranked-table) — ≥ 1.5.0
+// Agents ranked by consumption (ranked-table)
 const { Agents } = await import('@uipath/uipath-typescript/agents')
 return (await new Agents(sdk).getTopConsumption(THIRTY_DAYS_AGO, NOW, { limit: 10 })).agents.map(agent => ({ ...agent }))
 ```
 
 ```typescript
-// Incident distribution (donut) — ≥ 1.5.0: flat response → chart rows
+// Incident distribution (donut): flat response → chart rows
 const { Agents } = await import('@uipath/uipath-typescript/agents')
 const distribution = await new Agents(sdk).getIncidentDistribution(THIRTY_DAYS_AGO, NOW)
 return [
@@ -104,14 +102,14 @@ return [
 ```
 
 ```typescript
-// Success-rate KPI with vs-previous delta (kpi-card) — ≥ 1.5.0
+// Success-rate KPI with vs-previous delta (kpi-card)
 const { Agents } = await import('@uipath/uipath-typescript/agents')
 const summary = await new Agents(sdk).getSummary(THIRTY_DAYS_AGO, NOW, { lookbackPeriodAnalysis: true })
 return [{ value: summary.currentPeriodSummary.successRate, previous: summary.lookbackPeriodSummary?.successRate }]
 ```
 
 ```typescript
-// Total Agent Units consumed, with delta (kpi-card) — ≥ 1.5.0
+// Total Agent Units consumed, with delta (kpi-card)
 const { Agents } = await import('@uipath/uipath-typescript/agents')
 const summary = await new Agents(sdk).getUnitConsumptionSummary(THIRTY_DAYS_AGO, NOW, { lookbackPeriodAnalysis: true })
 const current = summary.currentPeriodSummary.totalAgentUnitConsumption

@@ -43,7 +43,7 @@ See [../patterns.md](../patterns.md) section "Rendering Process Instance Data". 
 
 ## Analytics / Insights RTM — server behavior the types don't show
 
-Requires SDK **≥ 1.4.x**. `Cases` and `MaestroProcesses` expose the same six analytics methods; `CaseInstances` adds the two SLA methods.
+`Cases` and `MaestroProcesses` expose the same six analytics methods; `CaseInstances` adds the two SLA methods.
 
 | Method | Server behavior |
 |--------|----------------|
@@ -51,8 +51,7 @@ Requires SDK **≥ 1.4.x**. `Cases` and `MaestroProcesses` expose the same six a
 | `getTopFaultedCount` | ≤10 rows, ranked |
 | `getTopExecutionDuration` | ≤5 rows, `duration` in **ms** |
 | `getTopElementFailedCount` | ≤10 rows, BPMN elements |
-| `getInstanceStatusTimeline` | `startTime` is a **LOCALE string**, not ISO; `groupBy` default DAY |
-| `getSlaSummary` | default top 50 rows |
+| `getInstanceStatusTimeline` | `startTime` is a **LOCALE string**, not ISO |
 
 - For Cases, `name` is derived from `packageId` (CaseManagement prefix stripped); for MaestroProcesses, `name === packageId`.
 - `slaStatus`: **compare as strings** (`'At Risk'`, `'Overdue'`, …) — do not import the enum (avoids TS narrowing errors; values are stable).

@@ -6,19 +6,13 @@ Signatures/params/examples for services, event-helper classes, options, enums: `
 
 ## Session Lifecycle (WebSocket)
 
-The real-time WebSocket session is the core of this domain. Event ordering spans five helper classes (session → exchange → message → content part / tool call) and is NOT derivable from the per-class types — follow it exactly:
+The event flow is documented IN the package — read it there: the module JSDoc in `dist/conversational-agent/index.d.ts` has a mermaid graph of the full stream hierarchy (session → exchange → message → content part / tool call) plus an end-to-end walkthrough, and `onExchangeStart`'s JSDoc carries complete nested examples: streaming chunks, whole-message handling (`onMessageCompleted`), tool-call events, and interrupt confirmation (with the `startEvent.type` check — use that version, not a blind approve).
 
-```
-startSession → onSessionStarted → startExchange → sendMessageWithContentPart →
-  onExchangeStart (agent response) → onMessageStart → onContentPartStart → onChunk →
-  ... → sendSessionEnd
-```
-
-Register handlers top-down: exchange handlers inside `onExchangeStart`, message handlers inside `onMessageStart`, content-part handlers inside `onContentPartStart`. Every `on*` handler returns a cleanup function — capture and call on unmount.
+Skill-only discipline the JSDoc doesn't state: every `on*` registration returns a cleanup function — capture them and call on unmount / agent switch, or handlers leak across React re-renders.
 
 ## Chat Interface Wiring — Mandatory Design Decisions
 
-**IMPORTANT:** This pattern matches the working sample app in `samples/conversational-agent-app/`. The key design decisions:
+**IMPORTANT:** This pattern matches the working sample app in the SDK repo (`uipath-typescript/samples/conversational-agent-app/` — repo only, not shipped in the npm package). The key design decisions:
 
 1. **Add the assistant placeholder message IMMEDIATELY in `sendMessage()`** — before `startExchange()`. Do NOT wait for `onMessageStart`. This ensures the typing dots show up instantly.
 2. **Pre-register exchangeId → assistantMessageId mapping** so `onExchangeStart` can wire up handlers for the right message.
@@ -81,23 +75,6 @@ const exchange = sessionRef.current.startExchange({ exchangeId });
 const message = exchange.startMessage({ role: MessageRole.User });
 await message.sendContentPart({ data: input });
 message.sendMessageEnd();
-```
-
-## Tool Call Confirmation (Interrupts)
-
-```typescript
-session.onExchangeStart((exchange) => {
-  exchange.onMessageStart((message) => {
-    if (message.isAssistant) {
-      // Handle tool call confirmations
-      message.onInterruptStart(({ interruptId, startEvent }) => {
-        // Show confirmation dialog to user
-        const confirmed = window.confirm(`Agent wants to use tool. Allow?`);
-        message.sendInterruptEnd(interruptId, { approved: confirmed });
-      });
-    }
-  });
-});
 ```
 
 ## OAuth Client Setup

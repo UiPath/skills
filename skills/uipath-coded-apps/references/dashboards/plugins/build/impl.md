@@ -86,7 +86,7 @@ The plan message ends there — no OAuth talk in the plan, no tool calls in the 
 > views) when the prompt signals runtime-governance intent — "governance/policy violation(s)", "compliance",
 > a standard/pack reference (`ISO 42001`, `A.8.4`, "standard", "pack"), or runtime-governance terms. Then read
 > `sdk/governance-traces.md` and build the modules on `AgentTraces.getGovernanceDecisions` /
-> `getGovernanceSummary` (SDK ≥ 1.5.1). NEVER add them to a plain agent-health/ops dashboard. They need an
+> `getGovernanceSummary`. NEVER add them to a plain agent-health/ops dashboard. They need an
 > **org-admin** caller — a 403 means the user's account lacks governance access (say so; the rest of the
 > dashboard still builds). Widgets honor the dashboard time range like any other metric.
 
@@ -274,7 +274,7 @@ If both fail: direct the user to `<CLOUD_URL>/<ORG>/portal_/adminui/#/externalAp
 
 **The build subagent (Phase 4) authors these modules and applies this check — it is NOT done in the main thread.** When the subagent writes each `metrics/<name>.ts` from the SDK references, it cross-checks every one against the **Example response** and **semantics notes** in the relevant `references/sdk/*.md` file (already loaded in the parallel blast). For each metric, confirm:
 
-1. **The field you filter or read on appears in the example response** — with the value you expect. Not just "the field exists in the type" (both `sourceType` and `packageType` exist) — the example shows the real *value*. **Appearing in the response does NOT make a field filterable**: mapped fields like `processName` are read-only and throw `Invalid OData query options` in a `$filter` (see `orchestrator.md § Filterable vs read-only Job fields`). Filter only on documented raw fields and match mapped fields client-side.
+1. **The field you filter or read on appears in the example response** — with the value you expect. Not just "the field exists in the type" (both `sourceType` and `packageType` exist) — the example shows the real *value*. SDK field names work in `$filter`/`orderby` (the SDK rewrites them to API names — see `orchestrator.md § OData filter field names`); `folderId` is header-scoped, never a `$filter` field, and there is no server-side name filter — match `processName` client-side.
 2. **No semantics note warns against your choice.** The references flag the traps types can't express.
 3. **Your return shape matches the example** — `.items` vs `.data` vs a top-level array, and the exact field names you map to `xKey`/`yKey`/columns.
 4. **Table column keys match the return shape.** For a `data-table`/`ranked-table`, every `columns`/`columnDefs` key must be a field your module actually returns per row — a key with no matching field renders an empty `—` column. Tables use `columns`/`columnDefs` (NOT `detailColumns`, which only feeds chart drill-down views); a T3 table with no columns is rejected by the build.

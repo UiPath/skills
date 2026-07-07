@@ -6,12 +6,7 @@ Signatures/params/examples: `dist/assets/index.d.ts`, `dist/queues/index.d.ts`, 
 
 ## Job classification — agent vs process vs app
 
-An agent job is identified by **`packageType === 'Agent'`** on the SDK response object. The SDK's `JobMap` renames the raw API field `ProcessType → packageType`, so a raw job with `ProcessType: "Agent"` arrives as `packageType: "Agent"`.
-
-| Where | Field | Agent job value |
-|-------|-------|-----------------|
-| SDK response object (`fnBody` reads this) | `packageType` | `"Agent"` |
-| OData server-side `filter` string (raw API name) | `ProcessType` | `"Agent"` |
+An agent job is identified by **`packageType === 'Agent'`** — both when reading response objects and in OData `filter` strings (the SDK rewrites SDK field names to API names in `filter`/`orderby`/`select`/`expand` automatically).
 
 > **Do NOT use `sourceType` to find agent jobs.** `sourceType` (raw `Source` / `JobSourceType`) is the **trigger origin** — `Manual`, `Schedule`, `Queue`, `Agent`, `Apps`, `HttpTrigger`, … An agent job can be triggered manually (`sourceType: "Manual"`), and `sourceType: "Agent"` only means "started by an agent source," which is a different thing. Filtering on `sourceType === 'Agent'` is wrong in both directions.
 
@@ -39,25 +34,16 @@ An agent job is identified by **`packageType === 'Agent'`** on the SDK response 
 }
 ```
 
-Field mappings (raw → SDK, from `JobMap`): `releaseName → processName`, `creationTime → createdTime`, `organizationUnitId → folderId`. Job latency ← `endTime − startTime` (both timestamps; `endTime` is null while `Running`).
+Job latency ← `endTime − startTime` (both timestamps; `endTime` is null while `Running` — a server behavior the types show only as `string | null`).
 
-Server-side filters (use the raw field name `ProcessType` in the OData string):
-- Agent jobs: `getAll({ filter: "ProcessType eq 'Agent'", orderby: 'CreationTime desc' })`
-- Faulted agent jobs: `getAll({ filter: "State eq 'Faulted' and ProcessType eq 'Agent'" })`
-- Reading results: `result.items.filter(j => j.packageType === 'Agent')` (client-side, mapped field name)
+Server-side filters (SDK field names — the SDK rewrites them to API names):
+- Agent jobs: `getAll({ filter: "packageType eq 'Agent'", orderby: 'createdTime desc' })`
+- Faulted agent jobs: `getAll({ filter: "State eq 'Faulted' and packageType eq 'Agent'" })`
+- Reading results: `result.items.filter(j => j.packageType === 'Agent')`
 
-### Filterable vs read-only Job fields
+### OData filter field names
 
-A field appearing in the response does **NOT** make it valid in an OData `$filter`. The SDK's mapped (renamed) response fields are **read-only** — filtering on them throws `Invalid OData query options … Could not find a property named '<field>'` at request time (invisible to `tsc`).
-
-| Read-only (response only — NEVER in `$filter`) | Filter on the raw field instead |
-|---|---|
-| `processName` (← `releaseName`) | match **client-side**: `items.filter(j => j.processName === name)` |
-| `createdTime` (← `creationTime`) | `CreationTime` (e.g. `orderby: 'CreationTime desc'`) |
-| `folderId` (← `organizationUnitId`) | folder is scoped via header, not `$filter` |
-| `packageType` (← `ProcessType`) | `ProcessType` |
-
-Safe `$filter` fields: **`ProcessType`**, **`State`**, **`CreationTime`**, **`StartTime`**. To find a specific agent's jobs, filter `ProcessType eq 'Agent'` and match the name **client-side** on `processName` — there is no server-side name filter.
+The SDK rewrites SDK field names inside `filter` / `orderby` / `select` / `expand` to raw API names before sending (`processName → releaseName`, `createdTime → creationTime`, `packageType → processType`); raw API names pass through unchanged, so either spelling works. `folderId` is never a `$filter` field — folder scoping travels via header.
 
 ### Recipe — jobs for a named agent → its most-recent trace's spans
 
@@ -69,12 +55,16 @@ import type { MetricDetailByKeyFn } from '@/lib/metric-contract'
 export const fetchDetailByKey: MetricDetailByKeyFn = async (sdk, agentName) => {
   const { Jobs } = await import('@uipath/uipath-typescript/jobs')
   const { AgentTraces } = await import('@uipath/uipath-typescript/traces')
-  const jobs = (await new Jobs(sdk).getAll({ filter: "ProcessType eq 'Agent'", orderby: 'CreationTime desc' }))?.items ?? []
-  const job = jobs.find(j => j.processName === agentName)   // client-side match — processName is read-only
+  const jobs = (await new Jobs(sdk).getAll({ filter: "packageType eq 'Agent'", orderby: 'createdTime desc' }))?.items ?? []
+  const job = jobs.find(j => j.processName === agentName)   // name match is client-side (no server-side name filter)
   if (!job?.traceId) return []
   return await new AgentTraces(sdk).getSpansByTraceId(job.traceId)   // Job carries traceId (see traces.md)
 }
 ```
+
+## Bucket file listing — which method
+
+`getFiles` (folder-aware `BucketFile` items, regex filtering) vs `getFileMetaData` (flat `BlobItem` list by `prefix`): prefer **`getFiles`** for directory-style browsing. Neither method's JSDoc mentions the other. Note `JobGetResponse.process` is populated only via `expand` (its JSDoc, unlike `machine`/`robot`, does not say so).
 
 ## Attachments Service
 
