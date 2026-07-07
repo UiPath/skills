@@ -21,7 +21,7 @@ initial_prompt: |
       - Approve → Script node that logs "PO approved"
       - Reject  → End node
 
-  Use the inline quickform node (uipath.human-in-the-loop).
+  Use the inline quickform node (uipath.human-in-the-loop.quick-form).
   Set priority to High.
   Wire completed → decision node.
   Validate the flow after building.

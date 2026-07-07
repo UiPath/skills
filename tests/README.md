@@ -105,7 +105,6 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl` (omit `script`/`http` — ubiquitous) |
 | **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
 | **connector** | flat, present iff applicable | Marks tasks that use any IS connector. The specific connector is in the YAML body / file path. |
-| **guardrail** | flat, present iff applicable | Marks tasks that exercise guardrail logic — authoring, validation, recommendation, or review (catalog fetch, guardrail rule IDs, middleware/decorators). The specific scenario is in the file path / `task_id`. |
 | **windows** | flat, present iff applicable | Marks tasks that require a Windows host (e.g. RPA `.xaml`/`.cs` projects that need Studio Helm). Used by `smoke-rpa-skills.yml` to route the task to a `windows-latest` runner; Linux/macOS smoke runs skip it. |
 | **feature** | `feature:X`, repeatable | Cross-cutting capability orthogonal to node/resource/connector. Closed vocabulary: `http`, `trigger`, `registry`, `transform`, `eval`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks`, `conversational`. Do not invent leaf names like `feature:ceql-where` or directory-name markers like `feature:connector-feature` — those duplicate the file path. |
 
@@ -340,12 +339,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json (advisory — convention only, non-gating)"
+    description: "Agent used --output json on uip commands"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 0   # advisory: the flag is outcome-invisible — never gate on it
+    pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent linked flow project to solution"
@@ -408,7 +407,7 @@ Verify a file contains (or excludes) expected strings. From `uipath-maestro-flow
   description: "Flow contains the inline HITL node type"
   path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
   includes:
-    - '"uipath.human-in-the-loop"'
+    - '"uipath.human-in-the-loop.quick-form"'
   weight: 3.0
   pass_threshold: 1.0
 ```
@@ -479,7 +478,7 @@ Score is binary: 1.0 when matches ≤ `max_count` (default `0`), else 0.0. Empty
 
 | Weight | When to use | Example from existing tests |
 |--------|-------------|---------------------------|
-| `1.0` | Supporting checks | presence of an auxiliary file, an advisory (`pass_threshold: 0`) convention check such as `--output json` used |
+| `1.0` | Supporting checks | `--output json` flag used, presence of an auxiliary file |
 | `1.5` | Core behavior | `uip solution new` executed, `.flow` file created |
 | `2.0` | Important artifact content | `.flow` file contains the expected node type or handle wiring |
 | `3.0` | Primary artifact validity | `uip maestro flow validate` passes on the generated flow file |
