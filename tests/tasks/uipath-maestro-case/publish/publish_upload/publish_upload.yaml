@@ -6,7 +6,7 @@ description: >
   refresh + debug and never upload). Asserts the publish commands run in the
   correct order and the upload succeeds. Requires cloud auth; the uploaded
   solution is removed by the post-run cleanup.
-tags: [uipath-maestro-case, integration, mode:operate, lifecycle:setup, feature:publish]
+tags: [uipath-maestro-case, integration, mode:operate, lifecycle:setup]
 max_iterations: 1
 
 run_limits:

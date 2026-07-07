@@ -8,7 +8,7 @@ description: >
   `entry-points.json` entry, and start the case from the first stage's
   `case-entered` condition (no trigger edge). Local-only (validate, no debug) —
   the connector is intentionally unresolvable so no cloud connection is needed.
-tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:trigger, feature:event]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:trigger]
 max_iterations: 1
 
 run_limits:

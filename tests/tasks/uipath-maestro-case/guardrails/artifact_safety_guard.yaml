@@ -9,7 +9,7 @@ description: >
   `node -e "crypto.randomUUID()"` UUID subprocess (no `fs`, no redirection)
   stays allowed. Grades the build succeeding via the sanctioned path, not
   a self-report.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, guardrail, shape:multi-node, node:hitl]
 
 initial_prompt: |
   Create a UiPath Case Management project named "InvoiceReviewCase" with a
