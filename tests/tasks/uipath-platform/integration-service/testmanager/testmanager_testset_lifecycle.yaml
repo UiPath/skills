@@ -21,7 +21,7 @@ run_limits:
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/testmanager/_tm_shared/seed.py"
-    timeout: 60
+    timeout: 30
 
 initial_prompt: |
   Using the UiPath Test Manager Integration Service connector, work with a test set end to end and confirm the data round-trips.
