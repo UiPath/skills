@@ -14,6 +14,8 @@ Every failed Connection Service API call returns:
 - `message` — resolved user-facing text (safe to show; technical detail stays in service logs).
 - `traceId` — also returned as a response header; **always capture it** — it is the correlation key the owner team uses to find the request in telemetry.
 
+**Where these codes surface in RPA productivity activities:** the modern Microsoft 365 / Google Workspace activity packages resolve their Integration Service connection and fetch the OAuth token through this API at runtime — so a failing activity often carries the CNS body inside a `UiPath.ConnectionClient.Contracts.ConnectionHttpException` (raw, or quoted verbatim in the wrapped `Office365Exception`/`GSuiteException` message). The runtime token fetch is the single biggest customer-facing source of `CNS1008`/`CNS1006`/`CNS1045`. Activity-side routing lives in the [O365](../../activity-packages/o365-activities/investigation_guide.md) and [Google Workspace](../../activity-packages/gsuite-activities/investigation_guide.md) investigation guides.
+
 Code families:
 
 - **`CNS1xxx`** — client/validation errors (4xx): resolution failures, bad input, permissions, connector lifecycle, Solutions packages.
