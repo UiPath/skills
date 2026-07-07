@@ -28,7 +28,7 @@ Every node in a `.flow` file has exactly one author. The validator enforces this
 | Triggers | `core.trigger.manual`, `core.trigger.scheduled` |
 | Control flow | `core.logic.decision`, `core.logic.switch`, `core.logic.loop`, `core.logic.merge`, `core.control.end`, `core.logic.terminate`, `core.subflow` |
 | Logic | `core.action.script`, `core.action.transform`, `core.logic.delay`, `core.logic.mock` |
-| Human-in-the-loop | `uipath.human-in-the-loop` (inline + app-task forms) |
+| Human-in-the-loop | `uipath.human-in-the-loop.quick-form` (inline form), `uipath.human-in-the-loop.coded-action-app` (app-based) |
 | Patterns | `uipath.pattern.batch-transform`, `uipath.pattern.deep-rag` |
 | Agents | `uipath.agent.autonomous` (inline; after `uip agent init --inline-in-flow`) |
 | Resource nodes | `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, `uipath.core.human-task.*` |

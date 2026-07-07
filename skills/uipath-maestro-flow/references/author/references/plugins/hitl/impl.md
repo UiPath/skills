@@ -4,7 +4,7 @@ Two node types implement human-in-the-loop checkpoints. Choose based on whether 
 
 ---
 
-## Option 1 — `uipath.human-in-the-loop` (Inline Schema — OOTB)
+## Option 1 — `uipath.human-in-the-loop.quick-form` (Inline Schema — OOTB)
 
 This is the preferred option. No registry pull, no app publishing, no tenant dependency. Write the node directly into the `.flow` file as JSON.
 
