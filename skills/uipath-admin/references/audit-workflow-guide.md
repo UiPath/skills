@@ -4,7 +4,7 @@ Four canonical investigations the `uipath-audit` skill should drive. Each starts
 
 > Every command below assumes the user has run `uip login` and the active token includes the `Audit.Read` scope. Every command should pass `--output json` so the agent can parse the envelope.
 
-> **Use `uip admin audit`, never `uip or audit-logs`.** Every org/tenant audit request — including generic phrasings like "audit logs", "export the audit trail", "login history", "who did what" — is answered with `uip admin audit <scope>` (`sources`/`events`/`export`). `uip or audit-logs` is the *Orchestrator-operational* audit surface (different schema, `--export` yields a ZIP; `uipath-platform` skill) and is the wrong tool here even when the wording is generic. When asked **what** events/sources exist, run `uip admin audit <scope> sources` and report the live catalog — don't describe it from memory.
+> **Use `uip admin audit`, never `uip or audit-logs`.** Every org/tenant audit request — including generic phrasings like "audit logs", "export the audit trail", "login history", "who did what" — is answered with `uip admin audit <scope>` (`sources`/`events`/`export`). `uip or audit-logs` is the *Orchestrator-operational* audit surface (different schema, `--export` yields a CSV; `uipath-platform` skill) and is the wrong tool here even when the wording is generic. When asked **what** events/sources exist, run `uip admin audit <scope> sources` and report the live catalog — don't describe it from memory.
 
 ## Audit scope disambiguation — route by user phrasing
 
