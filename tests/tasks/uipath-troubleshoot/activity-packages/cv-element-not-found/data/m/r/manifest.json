@@ -70,7 +70,7 @@
     {
       "pattern": "or jobs get 37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9",
       "min": 1,
-      "description": "Agent must fetch the failing job to read the UiPath.CV.ElementNotFoundException 'Element not found' fault from CvClickWithDescriptor (\"CV Click - 'Button'\") inside CVScope (\"CV Screen Scope 'msedge.exe  Google'\") in CV_ElementNotFound.xaml."
+      "description": "Agent must fetch the failing job to read the UiPath.CV.ElementNotFoundException 'Element not found' fault from CvClickWithDescriptor (\"CV Click - 'Button'\") inside CVScope (\"CV Screen Scope 'msedge.exe  Google'\") in InvoiceEntryUI.xaml."
     },
     {
       "pattern": "traces",

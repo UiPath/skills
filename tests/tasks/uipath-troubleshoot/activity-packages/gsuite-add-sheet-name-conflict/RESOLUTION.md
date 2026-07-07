@@ -1,7 +1,7 @@
-# Resolution — GSuite_AddSheetNameConflict (Shared)
+# Resolution — SheetTabBuilder (Shared)
 
 ## Fault
-The last job in folder **Shared** (`GSuite_AddSheetNameConflict`, job `2fbf6ba4-b347-462f-a83e-33c6c34bbea6`, Unattended on `MOCK-HOST`) ended **Faulted** ~4s after start. It ran a single GSuite **Add Sheet** (`UiPath.GSuite.Activities.AddSheetConnections`) activity.
+The last job in folder **Shared** (`SheetTabBuilder`, job `2fbf6ba4-b347-462f-a83e-33c6c34bbea6`, Unattended on `MOCK-HOST`) ended **Faulted** ~4s after start. It ran a single GSuite **Add Sheet** (`UiPath.GSuite.Activities.AddSheetConnections`) activity.
 
 ## Cause
 The target spreadsheet **already contains a sheet (tab) whose name matches the configured `SheetName`**, and the activity's `ConflictResolution` was left at its default `Fail`, so it refused to create a duplicate and threw:

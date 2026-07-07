@@ -28,7 +28,7 @@
     {
       "match": "or jobs traces e893a4d4-e061-4cba-a799-6ed4de6ee4e2",
       "file": "6ac702a3fd.json",
-      "_doc": "Three recorded spans: RobotJob (full System.ArgumentNullException stack with the GetMailFolder faulting frame in Attributes), the Microsoft 365 Scope span (AuthenticationType=InteractiveToken, no Account/shared-mailbox override — Private.Account holds the designer placeholder 'Please select an account.'), and the faulting 'Get Mail from nonexistent folder' GetMail span with Private.MailFolder='NoSuchFolder-Repro-123' and Public.AuthScopesInvalid='False'. The MailFolder literal + AuthScopesInvalid=False + no account override are the cause-disambiguation evidence (folder absent vs insufficient-scope vs wrong-mailbox)."
+      "_doc": "Three recorded spans: RobotJob (full System.ArgumentNullException stack with the GetMailFolder faulting frame in Attributes), the Microsoft 365 Scope span (AuthenticationType=InteractiveToken, no Account/shared-mailbox override — Private.Account holds the designer placeholder 'Please select an account.'), and the faulting 'Get Mail' GetMail span with Private.MailFolder='NoSuchFolder-Repro-123' and Public.AuthScopesInvalid='False'. The MailFolder literal + AuthScopesInvalid=False + no account override are the cause-disambiguation evidence (folder absent vs insufficient-scope vs wrong-mailbox)."
     },
     {
       "match": "traces spans get --job-key e893a4d4-e061-4cba-a799-6ed4de6ee4e2",

@@ -36,7 +36,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My AssetPerRobotNoValue process is faulting in Orchestrator on every
+  My PerRobotConfigReader process is faulting in Orchestrator on every
   run. Can you investigate?
 
   The project source for the failing process is in the current working

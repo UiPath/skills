@@ -19,7 +19,7 @@
       "file": "c0f70a5cf5.json"
     },
     {
-      "match": "or jobs list --process-name AssetPerRobotNoValue",
+      "match": "or jobs list --process-name PerRobotConfigReader",
       "file": "c0f70a5cf5.json"
     },
     {

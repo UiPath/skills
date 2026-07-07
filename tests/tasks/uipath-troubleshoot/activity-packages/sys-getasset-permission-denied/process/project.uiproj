@@ -1,5 +1,5 @@
 {
-  "Name": "AssetPermissionDenied",
+  "Name": "CredentialAssetLoader",
   "ProjectType": "Process",
   "Description": "Reproduces a Get Credential failure caused by the robot account lacking Assets.View permission in the target folder.",
   "MainFile": "Main.xaml"

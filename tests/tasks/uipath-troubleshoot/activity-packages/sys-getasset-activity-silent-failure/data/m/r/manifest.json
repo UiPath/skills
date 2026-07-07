@@ -19,7 +19,7 @@
       "file": "c71e761bef.json"
     },
     {
-      "match": "or jobs list --process-name AssetSilentFailure",
+      "match": "or jobs list --process-name SettingsAssetFetcher",
       "file": "c71e761bef.json"
     },
     {

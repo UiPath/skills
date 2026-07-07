@@ -1,5 +1,5 @@
 {
-  "Name": "AssetNetworkConnectivity",
+  "Name": "TenantConfigReader",
   "ProjectType": "Process",
   "Description": "Reproduces a Get Credential failure caused by the robot host being unable to reach the Orchestrator URL (network / firewall / DNS / proxy / SSL).",
   "MainFile": "Main.xaml"

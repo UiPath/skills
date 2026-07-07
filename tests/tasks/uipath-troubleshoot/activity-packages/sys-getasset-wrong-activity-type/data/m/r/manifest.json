@@ -19,7 +19,7 @@
       "file": "4a4cf90044.json"
     },
     {
-      "match": "or jobs list --process-name AssetWrongActivityType",
+      "match": "or jobs list --process-name AssetValueLoader",
       "file": "4a4cf90044.json"
     },
     {

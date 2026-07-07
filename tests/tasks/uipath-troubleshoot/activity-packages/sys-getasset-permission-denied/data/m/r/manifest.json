@@ -19,7 +19,7 @@
       "file": "ffbc003668.json"
     },
     {
-      "match": "or jobs list --process-name AssetPermissionDenied",
+      "match": "or jobs list --process-name CredentialAssetLoader",
       "file": "ffbc003668.json"
     },
     {

@@ -7,10 +7,10 @@ agent reached a verified resolution. The fixtures are the verbatim
 ## What the original session uncovered
 
 The user asked why their last job in folder `Shared` failed. The most recent
-job, `ERN_O365_MailMessageNotFound` (key `cbbaaaf6-b416-4025-9a98-c8ee50990f76`),
+job, `SupportMailLookup` (key `cbbaaaf6-b416-4025-9a98-c8ee50990f76`),
 faulted at the **Get Mail** activity ("Get Mail by corrupted ID (expect
 ErrorInvalidIdMalformed; for ErrorItemNotFound use the ID of a deleted
-email)" in `O365_MailMessageNotFound.xaml`) inside the Microsoft 365 Scope
+email)" in `Main.xaml`) inside the Microsoft 365 Scope
 with a raw `Microsoft.Graph.ServiceException` — `Code: ErrorItemNotFound`,
 `Message: The specified object was not found in the store., The process
 failed to get the correct properties.`, `Status Code: NotFound`. The raw

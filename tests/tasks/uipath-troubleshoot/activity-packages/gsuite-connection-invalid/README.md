@@ -9,7 +9,7 @@ Integration Service connection that could not be resolved or authorized.
 The user asked only *"why did my last job from folder Shared fail?"*. The agent:
 
 1. Listed folders → resolved **Shared** to key `1965a46b-db4e-469e-aaaa-7e0b379cb34d`.
-2. Listed Faulted jobs in Shared → newest is **GSuite_ConnectionInvalid**,
+2. Listed Faulted jobs in Shared → newest is **WorkspaceSheetSync**,
    job `4e00b4ca-b35b-4457-bb12-74f270d20cb0`.
 3. Read the job's `Info` → a `UiPath.GSuite.Exceptions.GSuiteException`
    wrapping `ConnectionHttpException`, thrown from `GetAccessToken` at OAuth

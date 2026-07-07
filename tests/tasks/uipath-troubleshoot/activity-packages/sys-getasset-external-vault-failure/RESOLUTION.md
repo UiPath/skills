@@ -11,7 +11,7 @@ returns error code 2304 / "Failed to read from Credential Store type
 'CyberArk'." — the failing layer is the external vault, not the asset
 itself.
 
-**What went wrong:** The `AssetVaultFailure` job (started
+**What went wrong:** The `VaultCredentialReader` job (started
 2026-05-13T15:42:08Z) faulted ~1.4 seconds after launch because
 Orchestrator could not read the credential value from the backing
 CyberArk vault.
@@ -39,7 +39,7 @@ vault that holds the asset's value is the failing component.
 **Evidence:**
 
 ### Orchestrator (Propagation)
-- Job: AssetVaultFailure — Faulted at 2026-05-13T15:42:09.402Z (ran for ~1.4 seconds)
+- Job: VaultCredentialReader — Faulted at 2026-05-13T15:42:09.402Z (ran for ~1.4 seconds)
 - Folder: Remote Debugging (key `4f7a9b3d-2e8c-4f6b-9d5a-1c2b3d4e5f6a`) — folder exists
 - Executing robot: `RobotUser1` (Connected, Licensed, has Asset Administrator role)
 

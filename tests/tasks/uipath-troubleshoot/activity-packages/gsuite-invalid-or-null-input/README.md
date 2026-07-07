@@ -10,7 +10,7 @@ Sheets API call.
 The user asked only *"why did my last job from folder Shared fail?"*. The agent:
 
 1. Listed folders → resolved **Shared** to key `1965a46b-db4e-469e-aaaa-7e0b379cb34d`.
-2. Listed Faulted jobs in Shared → newest is **GSuite_WriteRangeEmptyRange**,
+2. Listed Faulted jobs in Shared → newest is **SheetExportRunner**,
    job `c123367e-8e5e-4ec0-9903-fd75d5ef9ad7`.
 3. Read the job's `Info` → a `UiPath.GSuite.Exceptions.GSuiteException`
    wrapping `GSuiteInternalException` / `System.ArgumentNullException` on the

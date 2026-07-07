@@ -83,7 +83,7 @@
     {
       "pattern": "or jobs logs 7fd5e890-f162-4591-a895-e649b09aea02",
       "min": 0,
-      "description": "OPTIONAL — Error-level log (1 entry) repeats the exception already visible in jobs get, anchored to activity 'Upload File' in O365_UploadQuotaSize.xaml."
+      "description": "OPTIONAL — Error-level log (1 entry) repeats the exception already visible in jobs get, anchored to activity 'Upload File' in Main.xaml."
     },
     {
       "pattern": "or jobs history 7fd5e890-f162-4591-a895-e649b09aea02",

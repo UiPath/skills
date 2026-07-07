@@ -19,7 +19,7 @@
       "file": "a3f5a7328b.json"
     },
     {
-      "match": "or jobs list --process-name GetAssetFailure",
+      "match": "or jobs list --process-name AssetLookupRunner",
       "file": "a3f5a7328b.json"
     },
     {

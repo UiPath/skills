@@ -19,7 +19,7 @@
       "file": "aed1d35dca.json"
     },
     {
-      "match": "or jobs list --process-name AssetFolderMismatch",
+      "match": "or jobs list --process-name ConfigAssetReader",
       "file": "aed1d35dca.json"
     },
     {

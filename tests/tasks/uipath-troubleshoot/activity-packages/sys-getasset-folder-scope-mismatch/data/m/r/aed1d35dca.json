@@ -5,7 +5,7 @@
     {
       "Key": "8e4f3b2c-1a9d-5e6f-b7c8-d9e0f1a2b3c4",
       "State": "Faulted",
-      "ProcessName": "AssetFolderMismatch",
+      "ProcessName": "ConfigAssetReader",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",

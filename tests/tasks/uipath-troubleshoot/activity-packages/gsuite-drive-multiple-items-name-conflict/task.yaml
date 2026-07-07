@@ -4,7 +4,7 @@ description: >
   runs the uipath-troubleshoot skill against a uip CLI mock whose responses
   are the verbatim, scrubbed sub-agent outputs from the real session
   (.local/investigations/raw/*.json). The most-recent Faulted job in folder
-  Shared (GSuite_DriveNameConflict, job 6c8b1949-2603-437d-86a6-6b82b989fd6a)
+  Shared (DriveFileCreator, job 6c8b1949-2603-437d-86a6-6b82b989fd6a)
   ran a single GSuite Create Folder activity that threw
   "Multiple items with the name dupe-folder found in the specified folder."
   Success = the agent reaches the same root cause as RESOLUTION.md: the

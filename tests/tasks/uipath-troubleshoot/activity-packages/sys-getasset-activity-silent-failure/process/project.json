@@ -1,5 +1,5 @@
 {
-  "name": "AssetSilentFailure",
+  "name": "SettingsAssetFetcher",
   "projectId": "f1c8e4a7-3b2d-4f9c-a6e5-8d1b2c3e4f5a",
   "description": "Reproduces a silent Get Credential failure caused by the UiPath.System.Activities 22.10.x bug — activity completes without exception but output variables remain null, triggering a NullReferenceException downstream.",
   "main": "Main.xaml",

@@ -19,7 +19,7 @@
       "file": "8794ad9f3c.json"
     },
     {
-      "match": "or jobs list --process-name AssetVaultFailure",
+      "match": "or jobs list --process-name VaultCredentialReader",
       "file": "8794ad9f3c.json"
     },
     {

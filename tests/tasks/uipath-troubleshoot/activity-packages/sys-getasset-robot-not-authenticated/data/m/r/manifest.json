@@ -19,7 +19,7 @@
       "file": "5894eac7f1.json"
     },
     {
-      "match": "or jobs list --process-name AssetRobotUnlicensed",
+      "match": "or jobs list --process-name RobotConfigLoader",
       "file": "5894eac7f1.json"
     },
     {

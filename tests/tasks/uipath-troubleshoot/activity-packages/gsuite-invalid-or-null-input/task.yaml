@@ -4,7 +4,7 @@ description: >
   runs the uipath-troubleshoot skill against a uip CLI mock whose responses
   are the verbatim, scrubbed sub-agent outputs from the real session
   (.local/investigations/raw/*.json). The most-recent Faulted job in folder
-  Shared (GSuite_WriteRangeEmptyRange, job c123367e-8e5e-4ec0-9903-fd75d5ef9ad7)
+  Shared (SheetExportRunner, job c123367e-8e5e-4ec0-9903-fd75d5ef9ad7)
   ran a single GSuite Write Range activity that threw a CLIENT-SIDE input
   validation error before any Google Sheets API call: the `range` input was
   null/empty ("Value cannot be null. (Parameter 'range')"). Success = the agent

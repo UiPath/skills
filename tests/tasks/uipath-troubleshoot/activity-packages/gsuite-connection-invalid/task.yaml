@@ -4,7 +4,7 @@ description: >
   runs the uipath-troubleshoot skill against a uip CLI mock whose responses
   are the verbatim, scrubbed sub-agent outputs from the real session
   (.local/investigations/raw/*.json). The most-recent Faulted job in folder
-  Shared (GSuite_ConnectionInvalid, job 4e00b4ca-b35b-4457-bb12-74f270d20cb0)
+  Shared (WorkspaceSheetSync, job 4e00b4ca-b35b-4457-bb12-74f270d20cb0)
   ran a single GSuite Download File activity that referenced an Integration
   Service connection (00000000-1111-2222-3333-444444444444) that could not be
   resolved or authorized, faulting at OAuth token acquisition BEFORE any Google

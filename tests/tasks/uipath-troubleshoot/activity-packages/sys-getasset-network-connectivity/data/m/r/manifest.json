@@ -19,7 +19,7 @@
       "file": "6945bfff10.json"
     },
     {
-      "match": "or jobs list --process-name AssetNetworkConnectivity",
+      "match": "or jobs list --process-name TenantConfigReader",
       "file": "6945bfff10.json"
     },
     {

@@ -7,7 +7,7 @@ agent reached a verified resolution. The fixtures are the verbatim
 ## What the original session uncovered
 
 The user asked why their last job in folder `Shared` failed. The most recent
-job, `ERN_O365_CopyItemArgNull` (key `909ed39c-08a1-48fb-921a-06d332f8f5fb`),
+job, `DriveItemCopier` (key `909ed39c-08a1-48fb-921a-06d332f8f5fb`),
 faulted with a raw `System.ArgumentNullException: Value cannot be null.
 (Parameter 'DriveItem')` thrown by the legacy O365 `CopyItem` activity. Job
 trace spans proved the binding chain: an upstream `FindFilesAndFolders`

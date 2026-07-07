@@ -7,7 +7,7 @@ agent reached a verified resolution. The fixtures are the verbatim
 ## What the original session uncovered
 
 The user asked why their last job in folder `Shared` failed. The most recent
-job, `ERN_O365_SendMailRejected` (key `74db8e32-8535-40b2-9b40-62540456adab`),
+job, `NotificationMailer` (key `74db8e32-8535-40b2-9b40-62540456adab`),
 faulted with a raw `System.IO.FileNotFoundException: File does not exist:
 C:\Temp\missing-attachment-repro.pdf` thrown by the legacy O365 `SendMail`
 activity. The package's `AttachmentsHelpers.EnsureFileExists` check threw

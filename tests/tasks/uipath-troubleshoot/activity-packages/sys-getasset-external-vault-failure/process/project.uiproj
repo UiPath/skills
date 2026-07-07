@@ -1,5 +1,5 @@
 {
-  "Name": "AssetVaultFailure",
+  "Name": "VaultCredentialReader",
   "ProjectType": "Process",
   "Description": "Reproduces a Get Credential failure caused by an unreachable external credential store (CyberArk) backing the asset.",
   "MainFile": "Main.xaml"
