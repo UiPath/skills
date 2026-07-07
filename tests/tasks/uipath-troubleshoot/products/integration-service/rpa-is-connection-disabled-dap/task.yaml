@@ -4,7 +4,7 @@ description: >
   runs the uipath-troubleshoot skill against a uip CLI mock whose
   responses are the verbatim sub-agent outputs from the real session.
   Success = the agent reaches the same root cause as RESOLUTION.md.
-tags: [uipath-troubleshoot, integration-service, rpa, orchestrator, e2e, faithful-replay]
+tags: [uipath-troubleshoot, integration-service, rpa, e2e, faithful-replay, mode:diagnose]
 
 agent:
   type: claude-code
@@ -16,15 +16,13 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
     - type: template_dir
-      path: ../_shared/mock_template
+      path: ../../../_shared/mock_template
     - type: template_dir
-      path: fixtures
-  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
-  mock_path_dirs: ["mocks"]
+      path: data
+  mock_path_dirs:
+    - m
 
 reference:
   file: RESOLUTION.md

@@ -1,10 +1,10 @@
-task_id: skill-troubleshoot-rpa-is-connection-missing-dap
+task_id: skill-troubleshoot-rpa-is-request-failed-dap
 description: >
   Faithful replay of a real UiPath troubleshooting investigation. The agent
   runs the uipath-troubleshoot skill against a uip CLI mock whose
   responses are the verbatim sub-agent outputs from the real session.
   Success = the agent reaches the same root cause as RESOLUTION.md.
-tags: [uipath-troubleshoot, integration-service, rpa, orchestrator, e2e, faithful-replay]
+tags: [uipath-troubleshoot, integration-service, rpa, e2e, faithful-replay, mode:diagnose]
 
 agent:
   type: claude-code
@@ -16,21 +16,19 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
     - type: template_dir
-      path: ../_shared/mock_template
+      path: ../../../_shared/mock_template
     - type: template_dir
-      path: fixtures
-  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
-  mock_path_dirs: ["mocks"]
+      path: data
+  mock_path_dirs:
+    - m
 
 reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  I was running one job in my orchestrator in this solution TokenRefreshFailed_DAPRuntime. Can you help me in troubleshooting those error
+  I have deployed a new solution under this folder uipath-rpa-isActivities/RequestFailed_DAPRuntime and recently I run one job there but it failed, can you help me in troubleshooting the error i am getting there
 
 success_criteria:
   - type: skill_triggered
@@ -49,42 +47,32 @@ success_criteria:
     prompt: |
       You are grading a UiPath troubleshooting agent against a known-correct
       reference outcome (the attached RESOLUTION.md). Grade ONLY the agent's
-      final user-facing response and its conclusion — do NOT inspect or require
-      any internal `.local/investigations/` state fields.
+      final user-facing response and tool calls — NOT any internal files it
+      may have written under .local/investigations/.
 
       DIMENSION A -- Correct root cause
-        The agent's final answer must identify that the job faulted because the
-        Integration Service connection bound to the "Create Folder" connector
-        activity could not be resolved — error code DAP-GE-3000 — specifically
-        that the Box connection 989fd9d2-... no longer exists (was DELETED):
-        ping returns HTTP 404, the bound folder b262689d-... no longer contains
-        a Box connection, and no Box connection exists tenant-wide. Reaching
-        this via `jobs get` Info, `jobs logs`, the 404 ping, OR the
-        connection-list evidence are all acceptable paths.
-        It must NOT conclude the connection is merely disabled (DAP-GE-3005) —
-        the connection is gone, not disabled.
+        The agent's final answer must identify that the "Create Ticket"
+        Integration Service connector activity failed because the provider
+        (Freshdesk) returned HTTP 403 access_denied (DAP-RT-1101) — i.e. the
+        connection authenticated but the underlying account lacks permission
+        to create tickets. It must NOT mislabel this as a credential/auth
+        failure (401), a connection-resolution failure, or a bad-record (404).
 
       DIMENSION B -- Correct fix
-        The agent must recommend CREATING A NEW Box connection in the folder
-        (the deleted one cannot be re-authenticated) AND re-binding the
-        "Create Folder" activity to the new connection + republishing the
-        process. Recommending only "re-authenticate the existing connection"
-        is INCORRECT for this case (there is nothing to re-authenticate).
+        The agent recommends granting the Freshdesk account the ticket-create
+        permission/role (or widening the connection scope) AND re-authenticating
+        the connection, consistent with RESOLUTION.md.
 
-      Do NOT penalize the agent for: following a different but valid
-      investigation path; not quoting the exact DAP code if it clearly
-      describes a deleted/missing connection; or noting the folder name
-      ("TokenRefreshFailed") differs from the actual emitted code.
-      DO penalize fabrication (invented connections/configs) and wrong
-      conclusions (blaming a disabled connection, a 403/permission issue, or
-      the Freshdesk connection).
+      Penalize fabrication: invented assets, queues, policies, or error codes
+      not grounded in the evidence the mock returned.
 
       SCORING RUBRIC (single score):
-        1.0  Both dimensions correct: deleted/missing-connection root cause AND create-new + rebind fix.
-        0.8  Both largely correct with minor omissions.
+        1.0  Both dimensions correct: right 403/permission root cause AND fix.
+        0.8  Both substantially correct, minor omissions.
         0.5  Only one dimension correct.
-        0.2  Recognized an IS/connection problem but neither the cause nor the fix matched.
-        0.0  Wrong conclusion (e.g. "just re-enable/re-auth"), fabricated, or got blocked.
+        0.2  Recognized an Integration Service failure but neither the 403
+             permission cause nor the fix.
+        0.0  Wrong conclusion, fabricated cause, or got blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

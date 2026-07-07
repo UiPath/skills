@@ -4,7 +4,7 @@
   "rules": [
     {
       "match": "--version",
-      "file": "version.json"
+      "file": "02e8acc99f.json"
     },
     {
       "match": "docsai ask",
@@ -12,48 +12,48 @@
     },
     {
       "match": "or folders list --all --output json",
-      "file": "or-folders-list-all-output-json.json",
+      "file": "e919f3989b.json",
       "exit_code": 3
     },
     {
       "match": "or folders list --output json",
-      "file": "or-folders-list-output-json.json"
+      "file": "2e37ebc77e.json"
     },
     {
       "match": "or jobs list --folder-key eba26f86-ea3a-4955-a029-28c6e5006dab --output json",
-      "file": "or-jobs-list-folder-key-eba26f86-ea3a-4955-a029-28c6e5006dab.json"
+      "file": "d30940f343.json"
     },
     {
       "match": "or jobs get c3a00022-67c7-4b04-8faa-35a726d641cc --output json",
-      "file": "or-jobs-get-c3a00022-67c7-4b04-8faa-35a726d641cc-output-json.json"
+      "file": "5d253e87ea.json"
     },
     {
       "match": "or jobs logs c3a00022-67c7-4b04-8faa-35a726d641cc --level Error --output json",
-      "file": "or-jobs-logs-c3a00022-67c7-4b04-8faa-35a726d641cc-level-erro.json"
+      "file": "74f92d894a.json"
     },
     {
       "match": "or jobs history c3a00022-67c7-4b04-8faa-35a726d641cc --output json",
-      "file": "or-jobs-history-c3a00022-67c7-4b04-8faa-35a726d641cc-output-.json"
+      "file": "dc664aaf9f.json"
     },
     {
       "match": "or jobs traces c3a00022-67c7-4b04-8faa-35a726d641cc --output json",
-      "file": "or-jobs-traces-c3a00022-67c7-4b04-8faa-35a726d641cc-output-j.json"
+      "file": "177e41f489.json"
     },
     {
       "match": "is connections list --folder-key eba26f86-ea3a-4955-a029-28c6e5006dab --output json",
-      "file": "is-connections-list-folder-key-eba26f86-ea3a-4955-a029-28c6e.json"
+      "file": "081b84c7c0.json"
     },
     {
       "match": "is connections list --folder-key b262689d-e2a9-4c1a-8e68-04382a7fff76 --output json",
-      "file": "is-connections-list-folder-key-b262689d-e2a9-4c1a-8e68-04382.json"
+      "file": "f50db666cc.json"
     },
     {
       "match": "is connections ping 989fd9d2-4b07-443e-86e3-ed6f1b00079b --output json",
-      "file": "is-connections-ping-989fd9d2-4b07-443e-86e3-ed6f1b00079b-out.json"
+      "file": "4dc2cb914e.json"
     },
     {
       "match": "is connections list --output json",
-      "file": "is-connections-list-output-json.json"
+      "file": "8a280b15db.json"
     }
   ],
   "unmocked_default": {
