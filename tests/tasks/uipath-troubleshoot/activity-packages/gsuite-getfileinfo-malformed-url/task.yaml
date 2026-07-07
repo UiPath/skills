@@ -4,7 +4,7 @@ description: >
   runs the uipath-troubleshoot skill against a uip CLI mock whose responses
   are the verbatim, scrubbed sub-agent outputs from the real session
   (.local/investigations/raw/*.json). The most-recent Faulted job in folder
-  Shared (GSuite_GetFileInfoMalformedUrl, job
+  Shared (DriveFileInspector, job
   0e3938d5-e2b0-480b-99d5-bcaf0e9123d6) ran a single legacy GSuite Get File Info
   activity that threw a CLIENT-SIDE input error before any Google Drive API
   call: the File ID was a malformed Drive URL with no extractable object id

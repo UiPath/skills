@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures for read-text-protected-view. An email-sourced .docx (Mark-of-the-Web) opens in Protected View and the read is blocked.",
+  "_doc": "Synthetic fixture set for the Word Read Text scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

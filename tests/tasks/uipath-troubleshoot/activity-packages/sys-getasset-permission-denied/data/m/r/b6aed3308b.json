@@ -13,7 +13,7 @@
     "BatchExecutionKey": "7a2b4c5d-3e6f-4a7b-9c8d-0e1f2a3b4c5d",
     "Info": "Get Credential: Status code: 403 (Forbidden). Orchestrator response: You are not authorized! The robot account does not have the required permissions on Assets in this folder. Error code: 0\r\n\r\nin Main.xaml\r\n    at GetRobotCredential \"Get Credential\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nUiPath.Core.Activities.OrchestratorCommunicationException: You are not authorized! The robot account does not have the required permissions on Assets in this folder. Error code: 0",
     "CreationTime": "2026-05-12T15:42:17.985Z",
-    "ReleaseName": "AssetPermissionDenied",
+    "ReleaseName": "CredentialAssetLoader",
     "Type": "Unattended",
     "EnvironmentVariables": "",
     "OutputArguments": "{}",

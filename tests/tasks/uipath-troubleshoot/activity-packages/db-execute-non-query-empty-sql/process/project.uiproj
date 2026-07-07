@@ -1,6 +1,6 @@
 {
   "Name": "ConfigSyncProcess",
   "ProjectType": "Process",
-  "Description": "Reproduces an Execute Non Query failure caused by an empty Sql expression (CommandText property has not been initialized).",
+  "Description": "Connects to a SQL Server database and runs a configuration-sync statement via Execute Non Query to apply pending updates.",
   "MainFile": "Main.xaml"
 }

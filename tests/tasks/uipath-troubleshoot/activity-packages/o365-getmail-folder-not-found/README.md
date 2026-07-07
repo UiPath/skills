@@ -7,9 +7,9 @@ agent reached a verified resolution. The fixtures are the verbatim
 ## What the original session uncovered
 
 The user asked why their last job in folder `Shared` failed. The most recent
-job, `ERN_O365_MailFolderNotFound` (key `e893a4d4-e061-4cba-a799-6ed4de6ee4e2`),
+job, `TeamMailRetriever` (key `e893a4d4-e061-4cba-a799-6ed4de6ee4e2`),
 faulted at the legacy **Get Mail** activity ("Get Mail from nonexistent
-folder" in `O365_MailFolderNotFound.xaml`) inside the Microsoft 365 Scope
+folder" in `Main.xaml`) inside the Microsoft 365 Scope
 with the unwrapped `System.ArgumentNullException: Value cannot be null.
 (Parameter 'Folder named 'NoSuchFolder-Repro-123' could not be found on
 this account.')` — the unwrapped form of the mail-folder-not-found
@@ -25,7 +25,7 @@ nested folders), confirm the resolved mailbox, then restart the job.
 ### Span evidence pattern
 
 This scenario's cause disambiguation lives in the **trace spans**: the
-"Get Mail from nonexistent folder" `GetMail` span carries
+"Get Mail" `GetMail` span carries
 `Private.MailFolder="NoSuchFolder-Repro-123"` (matching the error verbatim)
 and `Public.AuthScopesInvalid="False"` (eliminating the insufficient-scope
 branch), and the Microsoft 365 Scope span shows

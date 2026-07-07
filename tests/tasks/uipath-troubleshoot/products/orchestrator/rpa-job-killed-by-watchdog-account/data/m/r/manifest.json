@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the watchdog-account-kill variant of the 0x40010004 playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs history → admin audit tenant events --search <job-key>. The audit event surfaces the actor (watchdog-svc@acme.com) as an automation/service account that issued Kill via the REST API.",
+  "_doc": "Synthetic fixture set for the rpa-job-killed-by-watchdog-account scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

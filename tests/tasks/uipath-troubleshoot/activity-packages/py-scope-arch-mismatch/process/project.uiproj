@@ -1,6 +1,6 @@
 {
   "Name": "PythonDataCruncher",
   "ProjectType": "Process",
-  "Description": "Repro: Python Scope Target=x86 against a 64-bit Python 3.11 install. Exercises the architecture/version-mismatch branch of the python-activities playbook.",
+  "Description": "Runs a Python data-processing script inside a Python Scope on the robot host.",
   "MainFile": "Main.xaml"
 }

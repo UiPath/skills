@@ -66,7 +66,7 @@
     {
       "pattern": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --state Faulted",
       "min": 1,
-      "description": "Agent finds the most-recent Faulted job in Shared (c123367e GSuite_WriteRangeEmptyRange is the latest by StartTime)."
+      "description": "Agent finds the most-recent Faulted job in Shared (c123367e SheetExportRunner is the latest by StartTime)."
     },
     {
       "pattern": "or jobs get c123367e-8e5e-4ec0-9903-fd75d5ef9ad7",

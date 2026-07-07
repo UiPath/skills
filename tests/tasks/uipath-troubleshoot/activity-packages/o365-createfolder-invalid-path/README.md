@@ -7,12 +7,12 @@ agent reached a verified resolution. The fixtures are the verbatim
 ## What the original session uncovered
 
 The user asked why their last job in folder `Shared` failed. The most recent
-job, `ERN_O365_CreateFolderInvalidPath` (key
+job, `DriveFolderProvisioner` (key
 `a04406a9-4c64-40d0-a7f3-042c3224c13b`), faulted with
 `UiPath.MicrosoftOffice365.Office365Exception: Folder path segment
 ' Quarterly' cannot have leading or trailing whitespace. (Parameter
 'FolderPath')` thrown by the Create Folder (`CreateFolderConnections`)
-activity in `O365_CreateFolderInvalidPath.xaml`. The package's own pre-flight
+activity in `Main.xaml`. The package's own pre-flight
 path validation in `GraphServiceClientProxy.CreateFolderByPathAsync` threw
 (exception chain `Office365Exception → Office365InternalException →
 ArgumentException`) before any Microsoft Graph folder operation ran — a

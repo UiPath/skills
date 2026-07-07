@@ -7,7 +7,7 @@ description: >
   UiPath.CV.ElementNotFoundException — "Element not found" — thrown from the
   Computer Vision CV Click activity (CvClickWithDescriptor, "CV Click -
   'Button'") inside the CV Screen Scope (CVScope, "CV Screen Scope
-  'msedge.exe  Google'") in CV_ElementNotFound.xaml. The CV find could not
+  'msedge.exe  Google'") in InvoiceEntryUI.xaml. The CV find could not
   match its locked descriptor geometry against the live msedge/Google screen
   and the retry loop exhausted its timeout — timeout expiry surfaces AS
   ElementNotFoundException, not a TimeoutException. The operative cause is a

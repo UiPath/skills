@@ -1,6 +1,6 @@
 {
   "Name": "ServerAppend",
   "ProjectType": "Process",
-  "Description": "Reproduces an Append Text COM startup failure on a server with no desktop Word installed (REGDB_E_CLASSNOTREG / 'make sure Word application is installed').",
+  "Description": "Opens a Word document on an unattended robot and appends a processing note to it.",
   "MainFile": "Main.xaml"
 }

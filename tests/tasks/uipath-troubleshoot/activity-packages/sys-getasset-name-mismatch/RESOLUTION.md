@@ -8,7 +8,7 @@ in the `Remote Debugging` folder is named `myHiddenAsset`. Orchestrator
 matches asset names exactly, so the lookup returned HTTP 404 / error
 code 1002 and the job faulted.
 
-**What went wrong:** The `GetAssetFailure` job (started
+**What went wrong:** The `AssetLookupRunner` job (started
 2026-05-10T14:32:11Z) faulted ~2 seconds after launch because the
 `Get Credential` activity (`GetRobotCredential`) in `Main.xaml` could
 not find an asset named `myHiddenAset` in its target folder.
@@ -27,7 +27,7 @@ Orchestrator does not fall back to fuzzy matching.
 **Evidence:**
 
 ### Orchestrator (Propagation)
-- Job: GetAssetFailure — Faulted at 2026-05-10T14:32:13.420Z (ran for ~2.3 seconds)
+- Job: AssetLookupRunner — Faulted at 2026-05-10T14:32:13.420Z (ran for ~2.3 seconds)
 - Job type: Unattended, triggered manually by user "user1" on machine MOCK-HOST
 - Folder: Remote Debugging (key `5a8b9c2d-1e3f-4a6b-8c9d-0e1f2a3b4c5d`)
 - Final error: `Could not find the asset 'myHiddenAset'. Error code: 1002` → `Main.xaml` → `GetRobotCredential "Get Credential"` → `Sequence "Main Sequence"`

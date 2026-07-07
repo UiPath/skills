@@ -3,7 +3,7 @@
 ---
 
 **Root Cause:** The robot account `RobotUser1` running the
-`AssetRobotAuthFailure` process **cannot authenticate its Orchestrator
+`RuntimeConfigReader` process **cannot authenticate its Orchestrator
 API calls**. The robot is licensed (`IsLicensed: true`,
 `LicenseType: Unattended`) and connected, so the job dispatches and
 starts executing, but the first Orchestrator REST call the workflow
@@ -12,7 +12,7 @@ makes — the `Get Credential` asset read — is rejected with HTTP 401 /
 **identity / token**, not the asset, the folder, permissions, or
 licensing.
 
-**What went wrong:** The `AssetRobotAuthFailure` job (started
+**What went wrong:** The `RuntimeConfigReader` job (started
 2026-05-13T13:24:17Z) reached the `Get Credential` activity and faulted
 ~1 second later with an authentication error. The job *did* run — it
 acquired a runtime and began executing `Main.xaml` — which already
@@ -68,7 +68,7 @@ covers the ranked checklist rather than asserting a single sub-cause.
 **Evidence:**
 
 ### Orchestrator (Propagation)
-- Job: AssetRobotAuthFailure — Faulted at 2026-05-13T13:24:18.602Z, after running ~1.0 seconds (started 2026-05-13T13:24:17.510Z). The job started and executed — proof the robot is licensed and able to launch.
+- Job: RuntimeConfigReader — Faulted at 2026-05-13T13:24:18.602Z, after running ~1.0 seconds (started 2026-05-13T13:24:17.510Z). The job started and executed — proof the robot is licensed and able to launch.
 - Job type: Unattended, triggered manually under robot account `RobotUser1` on machine MOCK-HOST
 - Folder: Remote Debugging (key `3e6f9b4c-1a2d-4f7e-8c5d-9b3a4c5d6e7f`) — folder exists
 - Robot account: `RobotUser1` — `IsLicensed: true`, `LicenseType: Unattended`, `ConnectionState: Connected` (licensed and connected — licensing is NOT the cause)

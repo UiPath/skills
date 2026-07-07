@@ -1,6 +1,6 @@
 {
   "Name": "ExcelDailyImport",
   "ProjectType": "Process",
-  "Description": "Repro: Excel Read Range process with intentionally orphan-prone scope (ContinueOnError=True + swallowing TryCatch). Used to exercise the activity-packages/excel-activities/playbooks/read-range-file-locked.md playbook (orphan-process branch).",
+  "Description": "Reads Sheet1 from the daily sales workbook at C:\\Robot\\Data\\sales-2026-05.xlsx into a DataTable via Read Range inside an Excel Application Scope.",
   "MainFile": "Main.xaml"
 }

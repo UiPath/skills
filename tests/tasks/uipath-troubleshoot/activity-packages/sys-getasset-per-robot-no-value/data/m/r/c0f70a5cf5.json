@@ -5,7 +5,7 @@
     {
       "Key": "4d7e9f3a-1b6c-5e8f-9d4c-3b2a1f0e9d8c",
       "State": "Faulted",
-      "ProcessName": "AssetPerRobotNoValue",
+      "ProcessName": "PerRobotConfigReader",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",

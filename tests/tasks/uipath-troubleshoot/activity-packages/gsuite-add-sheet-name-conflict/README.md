@@ -9,7 +9,7 @@ Orchestrator job whose UiPath.GSuite **Add Sheet** activity hit a duplicate
 The user asked only *"why did my last job from folder Shared fail?"*. The agent:
 
 1. Listed folders → resolved **Shared** to key `1965a46b-db4e-469e-aaaa-7e0b379cb34d`.
-2. Listed Faulted jobs in Shared → newest is **GSuite_AddSheetNameConflict**,
+2. Listed Faulted jobs in Shared → newest is **SheetTabBuilder**,
    job `2fbf6ba4-b347-462f-a83e-33c6c34bbea6`.
 3. Read the job's `Info` → a `UiPath.GSuite.Exceptions.GSuiteException` thrown
    from `AddSheetWithConflictResolution` in `AddSheetConnections`.

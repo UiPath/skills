@@ -5,7 +5,7 @@
     {
       "Key": "7f3e2a1b-9c8d-4e5f-a6b7-c8d9e0f1a2b3",
       "State": "Faulted",
-      "ProcessName": "GetAssetFailure",
+      "ProcessName": "AssetLookupRunner",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",

@@ -1,7 +1,7 @@
 {
   "name": "DailyDigestRunner",
   "projectId": "c5d6e7f8-a9b0-4c12-d3e4-f5a6b7c80912",
-  "description": "Reproduces an Invoke VBA failure caused by COM interop HRESULT 0x80010100 RPC_E_SYS_CALL_FAILED, with a hidden modal dialog blocking the macro injection while the Excel Process Scope runs with ShowExcel=False.",
+  "description": "Runs the BuildDigest VBA macro against the DailyDigest workbook via Invoke VBA inside an Excel Process Scope.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[3.4.1]",

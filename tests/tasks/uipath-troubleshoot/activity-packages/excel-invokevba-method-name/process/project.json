@@ -1,7 +1,7 @@
 {
   "name": "InvoiceImporter",
   "projectId": "a3b2c1d4-5e6f-4789-0abc-def123456789",
-  "description": "Reproduces an Invoke VBA failure caused by an EntryMethodName typo (ProcessInvoces vs ProcessInvoices).",
+  "description": "Runs the invoice-processing VBA macro against the Invoices workbook via Invoke VBA inside an Excel Process Scope.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[3.4.1]",

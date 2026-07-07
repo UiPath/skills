@@ -1,7 +1,7 @@
 {
   "name": "AppendNotes",
   "projectId": "b0c1d2e3-f4a5-4193-8061-728394a5b6c7",
-  "description": "Reproduces an Append Text failure where the App-Integration activity is placed outside a Word Application Scope and is invalid.",
+  "description": "Appends a review note to a Word document as part of a document approval process.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

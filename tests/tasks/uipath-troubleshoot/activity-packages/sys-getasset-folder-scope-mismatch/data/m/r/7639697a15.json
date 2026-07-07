@@ -13,7 +13,7 @@
     "BatchExecutionKey": "5a1d3f7e-2c8b-4a9f-9e3d-7b8c0a1d2e3f",
     "Info": "Get Credential: Status code: 403 (Forbidden). Orchestrator response: Folder 'OldDevFolder' does not exist or the user does not have access to the folder. Error code: 1100\r\n\r\nin Main.xaml\r\n    at GetRobotCredential \"Get Credential\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.ServiceModel.FaultException: Folder 'OldDevFolder' does not exist or the user does not have access to the folder. Error code: 1100",
     "CreationTime": "2026-05-12T09:18:41.870Z",
-    "ReleaseName": "AssetFolderMismatch",
+    "ReleaseName": "ConfigAssetReader",
     "Type": "Unattended",
     "EnvironmentVariables": "",
     "OutputArguments": "{}",

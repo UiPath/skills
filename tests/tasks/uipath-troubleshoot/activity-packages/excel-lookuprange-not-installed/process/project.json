@@ -1,7 +1,7 @@
 {
   "name": "VendorLookup",
   "projectId": "f2a3b4c5-d6e7-4f80-91a2-b3c4d5e6f701",
-  "description": "Reproduces a classic Lookup Range failure caused by Microsoft Excel not being installed on the robot host (REGDB_E_CLASSNOTREG).",
+  "description": "Looks up a vendor in the vendors workbook with Lookup Range inside an Excel Application Scope.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.22.4]",

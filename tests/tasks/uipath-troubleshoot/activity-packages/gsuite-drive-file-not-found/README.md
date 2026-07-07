@@ -9,7 +9,7 @@ Drive **404**.
 The user asked only *"why did my last job from folder Shared fail?"*. The agent:
 
 1. Listed folders → resolved **Shared** to key `1965a46b-db4e-469e-aaaa-7e0b379cb34d`.
-2. Listed Faulted jobs in Shared → newest is **GSuite_DriveFileNotFound**,
+2. Listed Faulted jobs in Shared → newest is **DriveDocSync**,
    job `f41ed418-163b-487b-8077-e51f8af4a1af`.
 3. Read the job's `Info` → a `UiPath.GSuite.Exceptions.GSuiteException`
    wrapping `Google.GoogleApiException` with **HttpStatusCode NotFound** and

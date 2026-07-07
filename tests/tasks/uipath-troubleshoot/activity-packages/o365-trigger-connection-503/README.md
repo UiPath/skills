@@ -7,10 +7,10 @@ agent reached a verified resolution. The fixtures are the verbatim
 ## What the original session uncovered
 
 The user asked why their last job in folder `Shared` failed. The most recent
-job, `ERN_O365_TriggerConnFailure` (key `1db8bac1-ecc2-4670-843e-ff5f9a26c532`),
+job, `MailEventListener` (key `1db8bac1-ecc2-4670-843e-ff5f9a26c532`),
 faulted after ~2.4 s when its **New Email Received** trigger activity
 (`NewEmailReceived`, "New Email Received via dead connection (expect
-ConnectionHttpException)" in `O365_TriggerConnFailure.xaml`) could not reach
+ConnectionHttpException)" in `Main.xaml`) could not reach
 the Integration Service connection layer. The HTTP request received 503; the
 connection client exhausted its internal retries
 (`HttpConnectionServiceClient.RequestWithRetryAsync`) and threw

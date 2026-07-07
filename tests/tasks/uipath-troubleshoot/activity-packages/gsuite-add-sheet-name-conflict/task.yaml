@@ -4,7 +4,7 @@ description: >
   runs the uipath-troubleshoot skill against a uip CLI mock whose responses
   are the verbatim, scrubbed sub-agent outputs from the real session
   (.local/investigations/raw/*.json). The most-recent Faulted job in folder
-  Shared (GSuite_AddSheetNameConflict, job 2fbf6ba4-b347-462f-a83e-33c6c34bbea6)
+  Shared (SheetTabBuilder, job 2fbf6ba4-b347-462f-a83e-33c6c34bbea6)
   ran a single GSuite Add Sheet activity that hit a duplicate sheet-name
   conflict: the target spreadsheet already contained a tab matching the
   configured SheetName and ConflictResolution was left at Fail, so the activity
