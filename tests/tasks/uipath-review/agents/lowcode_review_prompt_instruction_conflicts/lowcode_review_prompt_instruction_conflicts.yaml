@@ -23,23 +23,11 @@ pre_run:
     timeout: 30
 
 initial_prompt: |
-  A low-code UiPath agent project exists at `ReviewSol/SampleAgent`
-  inside the solution `ReviewSol`. Review the agent project and produce
-  a structured review report with Critical / Warning / Info findings.
+  A low-code UiPath agent project exists at `ReviewSol/SampleAgent` inside the
+  solution `ReviewSol`. Review the agent project for issues and save your review
+  report to `./_review_report.md` at the sandbox root.
 
-  This is a read-only review. Do NOT modify, create, or delete any
-  files inside `ReviewSol/`. Do NOT scaffold a new project. Do NOT
-  ask for approval, confirmation, or feedback.
-
-  Important — produce the review in TWO places, identical content:
-
-  1. As the chat output (the normal review surface), AND
-  2. Save the SAME report to a file at `./_review_report.md` at the
-     sandbox root (NOT inside `ReviewSol/`).
-
-  Writing the file copy first, before producing the chat report, is
-  encouraged — that way the file persists even if the chat response is
-  cut off. The file is the source of truth the test harness will check.
+  This is a read-only review — do not modify anything inside `ReviewSol/`.
 
 success_criteria:
   - type: skill_triggered
