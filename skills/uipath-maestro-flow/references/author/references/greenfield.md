@@ -35,7 +35,7 @@ Steps 0–6 are **logical phases**, not separate turns. A typical greenfield bui
 
 | Turn | Steps | What you emit in ONE assistant message |
 |---|---|---|
-| **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (scaffold + register + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s) **+** optional `uip login status` |
+| **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (scaffold + register + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s) **+** optional `uip login status`. **If existing `.uipx` solutions are present, the Step 2 gate fires first in its own turn** — resolve it before this chain. |
 | **T2 — Read + author** | 4 | One `Read` of the `.flow` **+** a batch of `Edit` calls (or one `Write` if ≥70% of nodes change). Claude Code serializes Edits on the same file, so they don't race |
 | **T3 — Finalize** | 5, 6 | One chained `Bash` (`node configure && validate && format`). On validate failure: one Edit turn, then re-chain `validate && format` |
 
@@ -75,7 +75,7 @@ When you do need it, emit `uip login status --output json` as a parallel `Bash` 
 
 > **A Flow project cannot exist outside a solution** (universal rule in [SKILL.md](../../../SKILL.md)). Scaffold or select a solution (Step 2a) BEFORE running `uip maestro flow init` (Step 2b). Skipping the solution step produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload and packaging. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested — see the tree after Step 2c).
 
-Check the current directory for existing `.uipx` files. If existing solutions are found, ask the user, presenting a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option (for a custom path). If no existing solutions are found, create a new one automatically. See the dropdown question rule in [SKILL.md](../../../SKILL.md).
+Check for existing solutions with `ls *.uipx */*.uipx 2>/dev/null` (each solution is its own folder — `<Solution>/<Solution>.uipx` — so a bare `*.uipx` misses them). If any are found, **STOP before the T1 chain — do not run `uip solution init` yet** — and ask via `AskUserQuestion`, presenting a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option. The user wanting a new solution does not let you skip this; you only learn that by asking. If none are found, create a new one automatically. See the dropdown question rule in [SKILL.md](../../../SKILL.md).
 
 - If the user specifies an existing `.uipx` file path or solution name, use that (skip to Step 2b)
 - Otherwise, create a new solution (Step 2a)
