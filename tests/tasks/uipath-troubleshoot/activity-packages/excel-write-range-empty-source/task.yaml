@@ -14,7 +14,6 @@ description: >
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, write-range, empty-source]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

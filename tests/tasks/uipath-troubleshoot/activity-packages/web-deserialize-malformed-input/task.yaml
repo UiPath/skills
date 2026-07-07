@@ -15,7 +15,6 @@ description: >
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, web-activities]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "TodoWrite"]
 
 run_limits:

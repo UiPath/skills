@@ -15,7 +15,6 @@ description: >
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, delete-range, invalid-range-syntax]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

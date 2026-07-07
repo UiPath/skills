@@ -15,7 +15,6 @@ description: >
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, faulted-jobs, orchestrator, word-activities, export-pdf, com-wrong-thread]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
