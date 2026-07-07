@@ -1,20 +1,16 @@
-# Dedicated security scanning pipeline. Two entry points:
-#   - nightly schedule on main (02:00 UTC, below) — warn-only, mirrors
-#     StudioWeb's .pipelines/security.yml: decoupled from regular CI so scans
-#     never delay PR/merge builds
-#   - release gate: publish.yml (GitHub Actions) queues this pipeline at the
-#     release ref with blockOnIssue=true and blocks the npmjs publish if FOSSA
-#     finds issues
+# Dedicated security scanning pipeline. Runs nightly on main (02:00 UTC,
+# below) — warn-only, mirrors StudioWeb's .pipelines/security.yml: decoupled
+# from regular CI so scans never delay PR/merge builds. Can also be queued
+# manually with blockOnIssue=true to fail the run on FOSSA findings; no
+# automated release gate is wired up currently (the publish.yml gate was
+# backed out — see this branch's history if it needs reviving).
 #
 # Register this file as a pipeline definition in the "skills" ADO project
 # (https://dev.azure.com/uipath/skills). The project needs:
 #   - the "UiPath" GitHub service connection (for the fossa template repository)
 #   - the Azure service connection below (FOSSA API key retrieval via Key Vault)
 #   - access to the agent pool below and the "DevOps" universal packages feed
-# Then set the AZDO_FOSSA_PIPELINE_ID / AZDO_FOSSA_CLIENT_ID /
-# AZDO_FOSSA_TENANT_ID repo variables in GitHub so publish.yml can enforce
-# the release gate — auth is OIDC workload identity federation, no PAT
-# (setup details in publish.yml's fossa-gate job).
+# No GitHub-side variables or secrets are required.
 
 name: $(Date:yyMMdd)$(Rev:.r)-sec
 

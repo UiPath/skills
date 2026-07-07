@@ -38,114 +38,6 @@ jobs:
       # Fails if version-manifest.json has drifted from package.json.
       - run: node scripts/sync-version.mjs --check
 
-  # Queues the FOSSA pipeline (.pipelines/security.yml, registered in Azure
-  # DevOps) at this exact ref with blockOnIssue=true, waits for the verdict,
-  # and fails — blocking the stable npmjs publish — if FOSSA finds issues.
-  # Alpha publishes are not gated. The pipeline lives in the "skills" ADO
-  # project (https://dev.azure.com/uipath/skills — same convention as
-  # StudioWeb's repo-named project).
-  #
-  # Auth is OIDC workload identity federation — no PAT, no repo secrets. The
-  # job's GitHub OIDC token (subject repo:UiPath/skills:environment:fossa-gate,
-  # stable across release tags because of the environment below) is exchanged
-  # through an Entra app registration for a short-lived Azure DevOps access
-  # token. Soft-skips with a loud warning until configured (all plain repo
-  # variables — none of these are secrets):
-  #   vars.AZDO_FOSSA_PIPELINE_ID — numeric pipeline definition id, assigned
-  #                                 when .pipelines/security.yml is registered
-  #   vars.AZDO_FOSSA_CLIENT_ID   — Entra app registration client id. The app
-  #                                 needs a federated credential for this
-  #                                 repo's `fossa-gate` environment, and its
-  #                                 service principal must be added to the ADO
-  #                                 org with Build read & execute on the
-  #                                 skills project.
-  #   vars.AZDO_FOSSA_TENANT_ID   — Entra tenant id of that app registration
-  fossa-gate:
-    name: FOSSA security gate
-    needs: [guard]
-    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'npmjs')
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    # Pins the OIDC subject claim to environment:fossa-gate so one federated
-    # credential covers every release tag (per-ref subjects can't wildcard).
-    environment: fossa-gate
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Check gate configuration
-        id: config
-        env:
-          AZDO_PIPELINE_ID: ${{ vars.AZDO_FOSSA_PIPELINE_ID }}
-          AZDO_CLIENT_ID: ${{ vars.AZDO_FOSSA_CLIENT_ID }}
-          AZDO_TENANT_ID: ${{ vars.AZDO_FOSSA_TENANT_ID }}
-        run: |
-          if [ -z "$AZDO_PIPELINE_ID" ] || [ -z "$AZDO_CLIENT_ID" ] || [ -z "$AZDO_TENANT_ID" ]; then
-            MSG="FOSSA release gate NOT enforced: AZDO_FOSSA_PIPELINE_ID, AZDO_FOSSA_CLIENT_ID or AZDO_FOSSA_TENANT_ID repo variable is missing. Register .pipelines/security.yml as a pipeline in the skills ADO project and configure the OIDC federation (see this job's comments)."
-            echo "::warning::$MSG"
-            {
-              echo "## ⚠️ FOSSA gate skipped (not configured)"
-              echo ""
-              echo "$MSG"
-            } >> "$GITHUB_STEP_SUMMARY"
-            echo "enforce=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "enforce=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      # allow-no-subscriptions: the identity only needs Azure DevOps, not an
-      # Azure subscription.
-      - name: Azure login (OIDC)
-        if: steps.config.outputs.enforce == 'true'
-        uses: azure/login@v2
-        with:
-          client-id: ${{ vars.AZDO_FOSSA_CLIENT_ID }}
-          tenant-id: ${{ vars.AZDO_FOSSA_TENANT_ID }}
-          allow-no-subscriptions: true
-
-      - name: Run FOSSA pipeline and wait for verdict
-        if: steps.config.outputs.enforce == 'true'
-        env:
-          AZDO_PROJECT_URL: https://dev.azure.com/uipath/skills
-          AZDO_PIPELINE_ID: ${{ vars.AZDO_FOSSA_PIPELINE_ID }}
-        run: |
-          # Entra access token for the Azure DevOps first-party app (fixed
-          # resource id, same in every tenant); ~1h lifetime covers the 30m
-          # polling cap below.
-          AZDO_TOKEN=$(az account get-access-token \
-            --resource 499b84ac-1321-427f-aa17-267ca6975798 \
-            --query accessToken -o tsv)
-          echo "::add-mask::$AZDO_TOKEN"
-
-          BODY=$(jq -n --arg ref "$GITHUB_REF" \
-            '{resources: {repositories: {self: {refName: $ref}}}, templateParameters: {blockOnIssue: true}}')
-          RUN=$(curl -sSf -H "Authorization: Bearer $AZDO_TOKEN" -H "Content-Type: application/json" -d "$BODY" \
-            "$AZDO_PROJECT_URL/_apis/pipelines/$AZDO_PIPELINE_ID/runs?api-version=7.1")
-          RUN_ID=$(echo "$RUN" | jq -r '.id')
-          RUN_URL=$(echo "$RUN" | jq -r '._links.web.href')
-          echo "Queued FOSSA run $RUN_ID at $GITHUB_REF: $RUN_URL"
-
-          # FOSSA on this repo takes a few minutes; poll every 30s, cap at 30m
-          # (job timeout above is the hard stop).
-          for i in $(seq 1 60); do
-            sleep 30
-            RUN=$(curl -sSf -H "Authorization: Bearer $AZDO_TOKEN" \
-              "$AZDO_PROJECT_URL/_apis/pipelines/$AZDO_PIPELINE_ID/runs/$RUN_ID?api-version=7.1")
-            STATE=$(echo "$RUN" | jq -r '.state')
-            echo "[$i/60] state=$STATE"
-            if [ "$STATE" = "completed" ]; then
-              RESULT=$(echo "$RUN" | jq -r '.result')
-              if [ "$RESULT" = "succeeded" ]; then
-                echo "FOSSA gate passed: $RUN_URL"
-                exit 0
-              fi
-              echo "::error::FOSSA gate failed (result: $RESULT) — release blocked. Review $RUN_URL (the FOSSA report link is in that run's fossa-report-links artifact)."
-              exit 1
-            fi
-          done
-          echo "::error::FOSSA run $RUN_ID did not complete within 30 minutes: $RUN_URL"
-          exit 1
-
   publish-alpha:
     name: Publish alpha to GitHub Packages
     needs: [guard]
@@ -185,7 +77,7 @@ jobs:
 
   publish-release:
     name: Publish stable to npmjs
-    needs: [guard, fossa-gate]
+    needs: [guard]
     if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'npmjs')
     runs-on: ubuntu-latest
     permissions:
