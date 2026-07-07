@@ -7,7 +7,7 @@ description: >
   human-in-the-loop skills work together across the full authoring lifecycle.
   Validate-only: inline HITL nodes block on human review and cannot be `flow debug`-ged
   headlessly, so correctness is enforced via the semantic checker rather than runtime.
-tags: [uipath-maestro-flow, uipath-human-in-the-loop, e2e, devcon]
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, e2e, devcon, path-to-ga]
 
 run_limits:
   expected_turns: 29
