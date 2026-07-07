@@ -15,6 +15,7 @@ Full JSDoc (descriptions, `@param`, `@example`) ships in these files, and they m
 1. Before calling a service, Read `dist/<subpath>/index.d.ts` for its exact method signatures.
 2. If `node_modules` is absent, run the install step first (the app cannot build without it — see the scaffold workflow).
 3. NEVER guess or recall method names from memory — SDK versions differ; the `.d.ts` of the installed version is the contract.
+4. Scopes: if `node_modules/@uipath/uipath-typescript/docs/oauth-scopes.md` exists (newer SDK versions ship it), it is the version-exact per-method scope reference — prefer it. If absent, use [../oauth-scopes.md](../oauth-scopes.md). Scope *bundles* (which scopes an app needs for a given feature set) are always in [../oauth-scopes.md](../oauth-scopes.md).
 
 The remaining files in this `sdk/` folder deliberately do NOT duplicate signatures. They cover only what the `.d.ts` cannot tell you: OAuth scopes per method ([../oauth-scopes.md](../oauth-scopes.md)), calling conventions, response-shape gotchas, and cross-service traps.
 

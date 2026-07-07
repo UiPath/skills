@@ -2,6 +2,8 @@
 
 Required OAuth scopes for each `@uipath/uipath-typescript` SDK service and method.
 
+> **Prefer the shipped copy when present:** newer SDK versions ship this per-method table inside the package at `node_modules/@uipath/uipath-typescript/docs/oauth-scopes.md` — that copy matches the installed SDK version exactly; Read it first. Fall back to the tables below when the installed SDK does not ship it. The **Common Scope Bundles** section at the end is skill knowledge (task-level bundles), not SDK docs — always use it from here.
+
 Use this reference to:
 1. Determine which scopes to include in the `scope` field of `uipath.json`
 2. Determine which scopes to add to the UiPath External Application
