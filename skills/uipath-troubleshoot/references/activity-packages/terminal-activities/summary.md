@@ -1,8 +1,0 @@
-# Terminal Activities Playbooks
-
-**Investigation guide:** [investigation_guide.md](./investigation_guide.md) — data correlation rules and testing prerequisites for Terminal Activities investigations
-
-| Issue | Confidence | Description | Playbook |
-|-------|:---:|-------------|----------|
-| Terminal Session — Connection Failed | Medium | `TerminalSession` cannot open or attach the terminal. Surfaces as a `TerminalConnectionException` (a `System.Exception`) with `<message> \| ResultCode=<code> \| ConnectionStatus=<status>` — `Error initiating connection`, `Error waiting for connection`, `The specified existing connection is disconnected`, `No connection specified` — or a provider error (`There was an error connecting to terminal. Error code: {0}`, `Terminal host process path not found: {0}`, `Service unavailable`, `Error attaching to session`, `Error initializing EHLLL library`), or its async-wrapped `System.AggregateException` form. Causes: unreachable host / wrong port / provider, provider runtime not installed, connect/wait timeout, or a disconnected reused connection. | [terminal-session-connection-failed.md](./playbooks/terminal-session-connection-failed.md) |
-| Terminal Session — NullReferenceException (masked connect failure) | Medium | `TerminalSession` faults with `System.NullReferenceException`. Most often the scope's cleanup calls `Shutdown()` on a connection that was never opened (the connect threw, leaving the connection null), so the NRE masks the real connect failure; or a passed `ExistingConnection` is null/disposed. | [terminal-session-null-reference.md](./playbooks/terminal-session-null-reference.md) |
