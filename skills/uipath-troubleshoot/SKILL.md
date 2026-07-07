@@ -1,6 +1,6 @@
 ---
 name: uipath-troubleshoot
-description: "UiPath troubleshooting, diagnostics, and root-cause investigations across any UiPath product, feature, runtime, or artifact. Investigates errors, failures, faults, exceptions, regressions, performance problems, unexpected behavior, and silent malfunctions — answers why something failed, broke, stopped, hung, slowed down, returned wrong results, lost access, or stopped working after a change. Walks the available evidence (logs, traces, incidents, status fields, configuration, history) to identify the originating fault and explain what changed."
+description: "UiPath troubleshooting, diagnostics, and root-cause investigations across any UiPath product, feature, runtime, or artifact. Investigates errors, failures, faults, exceptions, regressions, performance problems, unexpected behavior, and silent malfunctions — answers why something failed, broke, stopped, hung, slowed down, returned wrong results, lost access, or stopped working after a change. Also diagnoses failures and faults in Integration Service connectors/connections, Office 365 / Outlook, Google Workspace (GSuite), Excel / Word / PDF activities, Computer Vision, databases / SQL, and HTTP / web activities — route here (not uipath-platform) when the intent is why it failed rather than operating the surface. Walks the available evidence (logs, traces, incidents, status fields, configuration, history) to identify the originating fault and explain what changed."
 when_to_use: "User asks why something failed, broke, stopped, hung, was stuck, returns wrong results, or behaves unexpectedly in any UiPath system. Triggers: 'why did X fail', 'find the cause', 'find why', 'what changed', 'investigate', 'diagnose', 'debug this', 'triage', 'help me figure out', 'what's wrong', 'root cause', 'fix this error', 'inspect this trace / incident / log / job / instance', 'X worked yesterday but now …'. Also fires on raw error messages, exception stacks, error codes, job / queue IDs, or 'stuck / orphan / zombie' state descriptions."
 ---
 
@@ -45,6 +45,8 @@ From the raw responses, record in notes.md one line per observed fact: exception
 
 **Unwrap wrappers at extraction time.** `System.AggregateException` and "One or more errors occurred" are async wrappers — the inner exception is the routable signal. Extract inner exception class, message, and error code before routing. Same for `--->`-chained inner exceptions in stacks.
 
+**Localized error text.** Host-side messages (.NET framework, Office/COM) localize with the robot's system language; the index stores canonical English. Route on language-invariant signals first — exception class/FQN, error codes, resource keys, HTTP status, API state enum values (these never localize). If a message fragment is non-English, grep the index with its canonical English wording (translate before grepping) and record the original text plus locale in notes.md.
+
 ## 4. Route
 
 Grep `references/signature-index.md` (never read it whole) for each extracted signal: leaf exception class, error code, message fragments, resource keys. Check hits' discriminator notes and the Disambiguations section.
@@ -71,7 +73,7 @@ Write the answers in notes.md; do not skip items, do not present without them:
 3. **Runtime evidence:** for runtime failures, ≥1 cited datum from runtime/platform data (logs, job records, instance state, incidents) that passes correlation. Design-time evidence alone (source files, manifests) proves a defect exists, not that it caused this failure. Every runtime query empty while the user reports active failures = CONTRADICTION — wrong scope; re-verify or ask, never conclude. If the contradiction persists and the user cannot be asked, present the contradiction itself as the finding (runtime evidence unreachable — root cause unconfirmed) — never re-attribute the failure to a design-time observation.
 4. **Resolution aligned:** the fix is the playbook's `## Resolution` branch keyed to that exact cause.
 5. **Causal precedence:** list every event the conclusion treats as given and answer "why did that occur?" — each answered by evidence, explained by the named cause, or explicitly out of scope. A persistence/state-transition story presupposes an upstream condition; unexplained upstream → not root cause.
-6. **Fix scope:** every proposed fix traces to the confirmed cause. A property or code path the failing run never evaluated cannot be asserted as a defect from source reading alone — and a defect claim that rests on how the platform parses or evaluates source syntax (expression bindings, escaping, argument direction) is unverified until confirmed against a playbook or documentation. Surface such suspicions as clearly-labeled unverified observations OUTSIDE the fix list — labeling one a "separate observation" while still listing it as a fix or offering to apply it violates this rule.
+6. **Fix scope:** every proposed fix traces to the confirmed cause. A property or code path the failing run never evaluated cannot be asserted as a defect from source reading alone — and a defect claim that rests on how the platform parses or evaluates source syntax (expression bindings, escaping, argument direction) is unverified until confirmed against a playbook or documentation. Surface such suspicions as clearly-labeled unverified observations OUTSIDE the fix list — labeling one a "separate observation" while still listing it as a fix or offering to apply it violates this rule. The same gate applies to solutions: a fix must not presuppose infrastructure or mechanisms absent from the evidence (e.g., do not prescribe wiring an input to an Orchestrator asset unless an asset appears in the evidence) — prescribe the minimal evidence-supported fix; alternatives go as labeled options.
 
 Any check fails → ONE targeted re-fetch for the missing datum. Still failing →
 
@@ -89,7 +91,7 @@ Load `references/escalation.md` when ANY of:
 5. **Checklist fails after the re-fetch** and no diagnostic-recommendation terminal applies.
 6. **Evidence or new user data contradicts the matched playbook's core precondition.**
 
-Escalation = 2–4 parallel read-only probe subagents (one per candidate playbook + one "origin is upstream/elsewhere") + your adjudication + a conditional fresh-eyes verifier. Protocol, prompt templates, and spawn budget: `references/escalation.md`.
+Escalation = 2–4 parallel read-only probe subagents (one per candidate playbook + one "origin is upstream/elsewhere") + your adjudication + a conditional fresh-eyes verifier. Protocol, prompt templates, and spawn budget: `references/escalation.md`. No subagent-spawning tool in this harness → same protocol, probes executed serially in this context (`references/escalation.md` § Serial fallback).
 
 ## 8. Present
 

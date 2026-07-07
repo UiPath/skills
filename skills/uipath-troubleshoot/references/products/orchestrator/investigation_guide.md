@@ -45,7 +45,7 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
    **Step A — User named a folder.** Resolve its key:
    ```
    uip or folders list --output json \
-     --output-filter "[?DisplayName=='<name>'].{Key:Key,FullyQualifiedName:FullyQualifiedName}" \
+     --output-filter "[?Name=='<name>'].{Key:Key,Path:Path,Type:Type}" \
      | tee .local/investigations/raw/triage-folders-list.json
    ```
    If the result is empty (no folder with that name), ask the user via `AskUserQuestion`, listing the available folders as options to confirm the correct one. Do NOT guess. Proceed once the key is resolved.
@@ -57,7 +57,7 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
    1. Run folders list ONCE to get candidates:
       ```
       uip or folders list --output json \
-        --output-filter "[].{Key:Key,DisplayName:DisplayName,FullyQualifiedName:FullyQualifiedName}" \
+        --output-filter "[].{Key:Key,Name:Name,Path:Path,Type:Type}" \
         | tee .local/investigations/raw/triage-folders-list.json
       ```
    2. Ask via `AskUserQuestion` with the candidate folder names as options. If `project.json` exists in the working directory and its `name` matches one of the folders, put that folder FIRST in the options list with the label `"<folder> (your current project)"` — surface the hint, do not select for the user. Ask: *"Which folder is the failing job in?"*

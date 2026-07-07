@@ -42,6 +42,13 @@ Every fix step cites its source (playbook section, docsai result, or evidence fi
 - Step with no documented source → drop it, or mark `[Unverified]` visibly.
 - Undocumented field/setting behavior → do NOT include. Write: "Check UiPath documentation for [{field/setting}] behavior before proceeding."
 
+### Discriminator carry
+
+The final answer states the discriminating datum, not just the verdict:
+
+- Name the datum that separates the confirmed cause from its sibling causes (the same evidence the verification checklist pinned) — "the recovered label matches the unchanged live button, so this is a mistyped selector, not a page change", not just "fix the selector".
+- Upstream "why" unproven after the checklist AND after every reachable evidence source is exhausted — including workflow source present in the working directory (check its top level; if the project is there, read it, do not enumerate around it) → enumerate the candidate explanations ranked by evidence (most likely first, one line each, each tagged by what would confirm it) instead of only flagging the gap. Enumeration is never a substitute for reading available source.
+
 ## 3. Format
 
 ```
