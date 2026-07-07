@@ -72,6 +72,9 @@ RUN set -euo pipefail && \
     # Solution command group (`uip solution …`) — required by uipath-solution
     # tasks (e.g. skill-solution-deploy-list)
     uip tools install @uipath/solution-tool && \
+    # Admin command group (`uip admin …`) — uipath-coded-apps tasks use it to
+    # create the OAuth external application the coded web app authenticates with.
+    uip tools install @uipath/admin-tool && \
     uip tools list
 
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.
