@@ -13,6 +13,9 @@ signatures:
     value: "Activity is only valid inside an Office 365 Scope"
   - kind: message
     value: "Cannot be used outside of a MicrosoftOffice365 Application Scope"
+  - kind: exception
+    value: "ArgumentNullException"
+    note: "generic .NET exception — this claim is the runtime surface of a missing credential field (e.g. ApplicationId) on the Microsoft 365 Application Scope; an ArgumentNullException wrapping a 'Folder named ... could not be found' sentence → mail-folder-not-found.md"
 exclusions:
   - "Messages carrying a Graph result (403/404/429/503 or AADSTS token errors) → insufficient-graph-scope.md, request-throttled.md, transient-service-error.md, authentication-token-invalid.md"
 ---

@@ -20,6 +20,12 @@ signatures:
   - kind: message
     value: "An error occurred in the activity."
     note: "GSuite generic fallback for unmapped Google API errors — read the inner status/reason from the trace before concluding"
+  - kind: error-code
+    value: "dailyLimitExceeded"
+  - kind: error-code
+    value: "userRateLimitExceeded"
+  - kind: error-code
+    value: "rateLimitExceeded"
 exclusions:
   - "Authentication attempt took longer than <N> seconds (auth-phase TimeoutException) → connection-and-auth-failures.md"
   - "The storage quota was exceeded. / Upload failed after <N> bytes → upload-storage-quota-exceeded.md"

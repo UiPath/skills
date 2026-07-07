@@ -13,6 +13,9 @@ signatures:
     value: "cannot have leading or trailing whitespace."
   - kind: message
     value: "Cannot create folder path:"
+  - kind: exception
+    value: "Office365Exception"
+    note: "generic O365 package exception — this claim is the Create Folder (CreateFolderConnections) input-validation family: null/empty name, path, or parent folder, empty or whitespace path segments, or a file occupying a segment"
 exclusions:
   - "The specified item name already exists. → item-name-already-exists.md"
   - "The resource could not be found. / Cannot find item configured with connection (parent folder does not resolve) → drive-item-not-found.md"

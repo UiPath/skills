@@ -16,6 +16,9 @@ signatures:
   - kind: message
     value: "One or more errors occurred"
     note: "at Load Python Script — wrapper around a script-layer load failure (L2); at engine init → python-scope-architecture-version-mismatch.md; on Invoke Python Method → invoke-method-failures.md"
+  - kind: exception
+    value: "ModuleNotFoundError"
+    note: "Python exception class — top-level import missing from the interpreter at the scope's Path during Load Python Script (L2a); lazy import inside a called function → invoke-method-failures.md"
 ---
 
 # Load Python Script (LoadScript) Failures

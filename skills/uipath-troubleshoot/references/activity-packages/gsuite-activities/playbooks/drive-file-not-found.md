@@ -10,6 +10,9 @@ signatures:
   - kind: message
     value: "Cannot find item configured with connection"
     note: "GSuite connection-browser item (Drive/Sheets) that no longer resolves; the same wrapper on O365 → drive-item-not-found.md or mail-folder-not-found.md (o365)"
+  - kind: http-status
+    value: "404"
+    note: "Google API NotFound on a GSuite activity (Drive/Sheets/Docs item or Gmail message by ID); O365 Mail folder 404 → mail-folder-not-found.md (o365), Maestro/agents 404s → those domains' playbooks"
 exclusions:
   - "Permission to the resource was denied. / Invalid authentication credentials. (403/401) → connection-and-auth-failures.md"
   - "File does not exist: <path> (local filesystem miss) → invalid-or-null-input.md"

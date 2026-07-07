@@ -6,6 +6,12 @@ signatures:
     note: "on Lookup Range or its Excel Application Scope / Use Excel File — workbook file handle held; Read Range family full lock-owner chain → read-range-file-locked.md"
   - kind: message
     value: "is locked for editing by"
+  - kind: exception
+    value: "IOException"
+    note: "generic .NET IO class (leaf form) — on Lookup Range or its Excel Application Scope / Use Excel File, the workbook file handle is held by another process; Read Range family full lock-owner chain → read-range-file-locked.md"
+  - kind: error-code
+    value: "0x800A03EC"
+    note: "COM error resolving to a busy/locked workbook on Lookup Range or its scope; malformed Range field on Lookup Range → lookup-range-invalid-range.md"
 ---
 
 # Lookup Range — Workbook Locked / File In Use

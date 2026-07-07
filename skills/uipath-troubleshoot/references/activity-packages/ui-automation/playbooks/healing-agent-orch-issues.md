@@ -19,6 +19,9 @@ signatures:
   - kind: message
     value: "Recommendations for resolution or self-healing procedures have been quickly generated"
     note: "email/in-app Notification Summary, Component = Healing Agent — real HA event"
+  - kind: error-code
+    value: "Allowed.AgentService"
+    note: "> 0 while triaging whether an Orchestrator HA status/log/notification is expected; == 0 when the customer wants HA working → healing-agent-no-license.md"
 exclusions:
   - "Customer wants HA working and the robot log carries the no-license line → healing-agent-no-license.md"
   - "HA licensed and engaged but produced no data (connectivity, classic activity, image-only target) → no-recovery-data.md"

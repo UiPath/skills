@@ -48,13 +48,14 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | 0x800A03EC | error-code | activity-packages/excel-activities/playbooks/append-range-failures.md | medium | on Append Range — sheet name / file extension mismatch (branch 2) or source-vs-target column schema mismatch (branch 5) |
 | 0x800A03EC | error-code | activity-packages/excel-activities/playbooks/delete-range-failures.md | medium | on Delete Range — ShiftCells/ShiftOption direction conflicts with merged cells or Excel Tables (branch 3) |
 | 0x800A03EC | error-code | activity-packages/excel-activities/playbooks/execute-macro-failures.md | medium | generic Excel COM error raised during macro execution |
+| 0x800A03EC | error-code | activity-packages/excel-activities/playbooks/lookup-range-file-locked.md | medium | COM error resolving to a busy/locked workbook on Lookup Range or its scope; malformed Range field on Lookup Range → lookup-range-invalid-range.md |
 | 0x800A03EC | error-code | activity-packages/excel-activities/playbooks/lookup-range-invalid-range.md | medium | on Lookup Range — malformed Range field (empty-string literal instead of blank, or invalid A1 reference) |
 | 0x800A03EC | error-code | activity-packages/excel-activities/playbooks/read-range-file-locked.md | medium | COMException wrapper of the same file lock under Excel COM — Excel's own message about the file being locked for editing |
+| 0x800A03EC | error-code | activity-packages/excel-activities/playbooks/write-cell-failures.md | medium | on Write Cell — COMException near Worksheet.Protect, protected target (branch 5) |
 | 0x800AC472 | error-code | activity-packages/excel-activities/playbooks/execute-macro-failures.md | medium |  |
 | 0xE0434352 | error-code | activity-packages/database-activities/playbooks/execute-query-failures.md | medium |  |
 | 1 or more scope requested are not robot scopes. | message | products/integration-service/playbooks/connector-remote-exception.md | medium |  |
-| 1002 | error-code | activity-packages/system-activities/playbooks/get-asset-not-found.md | high | asset flavor — 'Could not find an asset with this name' on Get Asset / Get Credential; queue flavor → queue-transaction-activity-failed.md |
-| 1002 | error-code | activity-packages/system-activities/playbooks/queue-transaction-activity-failed.md | medium | queue flavor — Orchestrator response '<name> does not exist' on Get Queue Item / Add Queue Item / Set Transaction Status; asset flavor → get-asset-not-found.md |
+| 1002 | error-code | activity-packages/system-activities/playbooks/get-asset-not-found.md | high |  |
 | 102001 | error-code | products/maestro/playbooks/integration-service-404.md | medium | IntSvcResourceNotFound |
 | 102002 | error-code | products/integration-service/playbooks/connection-auth-expired.md | high | IntSvcOperationFailed with auth-related details on a previously working connection |
 | 102002 | error-code | products/integration-service/playbooks/connection-invalid.md | high | IntSvcOperationFailed at connection resolution — process fails immediately when using the connection |
@@ -72,7 +73,14 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | 170007 | error-code | products/maestro/playbooks/process-not-found-404.md | high | OrchestratorRpaJobFailedToStart — failure at job-start time |
 | 2303 | error-code | activity-packages/system-activities/playbooks/get-asset-external-vault-failure.md | medium |  |
 | 2304 | error-code | activity-packages/system-activities/playbooks/get-asset-external-vault-failure.md | medium |  |
+| 400 | http-status | activity-packages/gsuite-activities/playbooks/sheets-cell-limit-exceeded.md | high | Google Sheets BadRequest whose message names the 10000000-cell limit; 'Unable to parse range' 400 → sheets-invalid-range.md; Maestro Error_400 → generic-error-400.md (products/maestro) |
+| 400 | http-status | activity-packages/gsuite-activities/playbooks/sheets-invalid-range.md | medium | Google Sheets BadRequest 'Unable to parse range'; cell-limit 400 → sheets-cell-limit-exceeded.md; Maestro Error_400 → generic-error-400.md (products/maestro) |
+| 400 | http-status | products/maestro/playbooks/argument-mismatch-400.md | medium | with the argument-mismatch wording and no single named field — named-field 400 → missing-required-parameter.md; schema-conformance 400 → input-schema-mismatch.md; empty errorDetails → generic-error-400.md |
 | 400 | http-status | products/maestro/playbooks/generic-error-400.md | low | generic 400 with empty errorDetails only — named 400 errors route to their specific playbooks |
+| 400 | http-status | products/maestro/playbooks/input-schema-mismatch.md | high | at workflow/agent start with schema-conformance wording (Input does not conform to schema / Agent.InputArgumentsSchema) — other named 400s route to their specific playbooks |
+| 400 | http-status | products/maestro/playbooks/insufficient-funds.md | high | from an agent or GenAI activity with the insufficient-funds/credits wording — other named 400s route to their specific playbooks |
+| 400 | http-status | products/maestro/playbooks/missing-required-parameter.md | high | at activity execution naming a single missing required parameter — broad schema wording → input-schema-mismatch.md; empty errorDetails → generic-error-400.md |
+| 400 | http-status | products/maestro/playbooks/no-message-events.md | high | at a Message Start/Receive Event with the no-events wording — other named 400s route to their specific playbooks |
 | 400001 | error-code | products/maestro/playbooks/gateway-no-outgoing-flow.md | high | NoOutgoingFlow |
 | 400007 | error-code | products/maestro/playbooks/marker-input-null.md | high | BpmnMarkerInputNullError |
 | 400008 | error-code | products/maestro/playbooks/marker-invalid-cast.md | high | BpmnMarkerInputEvaluationFailure |
@@ -85,24 +93,27 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | 401 | http-status | products/agents/playbooks/is-invalid-credentials.md | high | first IS call in an agent run fails — connection folder/scope mismatch or rotated credentials; IS-connection OAuth expiry outside agents → connection-auth-expired.md |
 | 401 | http-status | products/integration-service/playbooks/connection-auth-expired.md | high | OAuth token expired / refresh failed on a previously working IS connection — for agent toolCall 401s see is-invalid-credentials.md |
 | 401 | http-status | products/llm-gateway/playbooks/byo-connection-dead.md | high | vendor-surfaced auth error on a BYO LLM call — the IS connection behind the BYO config is dead; for agent IS toolCall 401s see is-invalid-credentials.md |
+| 403 | http-status | activity-packages/o365-activities/playbooks/insufficient-graph-scope.md | high | Microsoft Graph 403 on an O365 activity — missing Graph permission scope or per-item access denial; IS connection lockout / BYO LLM / Orchestrator-asset 403s → those domains' playbooks |
 | 403 | http-status | activity-packages/system-activities/playbooks/get-asset-permission-denied.md | high | on Get Asset/Credential — Orchestrator RBAC missing Assets view; 403 on an IS connection or BYO LLM call → those domains' playbooks |
 | 403 | http-status | products/agents/playbooks/is-connection-disabled.md | medium | IS connection lockout on an agent toolCall span — OAuth2 authorization-code connections only; vendor-direct LLM-call 403s → byo-connection-dead.md |
 | 403 | http-status | products/llm-gateway/playbooks/byo-connection-dead.md | high | vendor-surfaced auth error on a BYO LLM call — errors reference the vendor directly, not the UiPath platform; for IS connection lockout see is-connection-disabled.md |
+| 404 | http-status | activity-packages/gsuite-activities/playbooks/drive-file-not-found.md | high | Google API NotFound on a GSuite activity (Drive/Sheets/Docs item or Gmail message by ID); O365 Mail folder 404 → mail-folder-not-found.md (o365), Maestro/agents 404s → those domains' playbooks |
+| 404 | http-status | activity-packages/o365-activities/playbooks/mail-folder-not-found.md | high | Microsoft Graph 404 while a Mail activity resolves a MailFolder argument; GSuite 404 → drive-file-not-found.md (gsuite), Maestro/agents 404s → those domains' playbooks |
 | 404 | http-status | products/agents/playbooks/is-invalid-element-instance.md | high | IS element instance missing — can fire mid-run after earlier successful IS calls |
 | 404 | http-status | products/maestro/playbooks/attachment-not-found.md | high | on file/attachment access after retention elapsed — not an IS-call or job-start 404 |
 | 404 | http-status | products/maestro/playbooks/integration-service-404.md | medium | on an Integration Service call — connector/connection/action missing; job attachment → attachment-not-found.md; job start → process-not-found-404.md |
 | 404 | http-status | products/maestro/playbooks/process-not-found-404.md | high | from Orchestrator at job start — stale ReleaseKey/binding; IS-call 404 → integration-service-404.md; attachment → attachment-not-found.md |
-| 429 | http-status | products/maestro/playbooks/autopilot-429.md | high |  |
+| 429 | http-status | activity-packages/o365-activities/playbooks/request-throttled.md | high | Microsoft Graph rate limit on an O365 activity; Autopilot for Maestro 429 → autopilot-429.md (products/maestro) |
+| 429 | http-status | products/maestro/playbooks/autopilot-429.md | high | Autopilot for Maestro apply-failure — backend/LLM Gateway rate limiting; Microsoft Graph 429 on an O365 activity → request-throttled.md (o365-activities) |
 | 502 | http-status | products/maestro/playbooks/file-field-required.md | high | raised by an Integration Service activity expecting a file input — DAP-RT-1003 present |
 | 502 | http-status | products/maestro/playbooks/index-out-of-bounds.md | low | with System.IndexOutOfRangeException stack trace — engine/platform bug |
 | 502 | http-status | products/maestro/playbooks/job-operation-timeout.md | medium | child job often Successful in Orchestrator while Maestro reports timeout — gateway/proxy limit |
 | 502 | http-status | products/maestro/playbooks/personal-automation-quota.md | high | at job start with the Personal Automation quota message verbatim in errorMessage |
-| 503 | http-status | activity-packages/slack-activities/playbooks/connection-resolution-failure.md | medium | transient RemoteException from service discovery during Slack connection resolution — clears on retry |
+| 503 | http-status | activity-packages/o365-activities/playbooks/transient-service-error.md | medium | Microsoft Graph service unavailable surfaced by an O365 activity (500/504/timeout forms route here too); Google-side 5xx → transient-and-timeout-errors.md (gsuite) |
 | 80040154 | error-code | activity-packages/excel-activities/playbooks/lookup-range-excel-not-installed.md | high | REGDB_E_CLASSNOTREG at Lookup Range / Excel scope init — no registered Excel installation; Excel confirmed installed but COM registration broken → excel-application-scope-failures.md |
 | 80080005 | error-code | activity-packages/excel-activities/playbooks/invoke-vba-com-interop-failure.md | medium | COM class factory retrieval failure ('failed due to the following error: 80080005') during Invoke VBA / Excel Process Scope; CO_E_SERVER_EXEC_FAILURE 0x80080005 on a Use Excel File card → excel-application-card-failures.md |
 | A file with the specified ID does not exist. | message | activity-packages/o365-activities/playbooks/drive-item-not-found.md | high |  |
 | A foreground process is already running. Only one foreground process can run at a time. | message | products/orchestrator/playbooks/foreground-already-running.md | medium |  |
-| A password for the encrypted PDF file was not supplied | message | activity-packages/pdf-activities/playbooks/pdf-encrypted-or-wrong-password.md | high |  |
 | A sheet with the same name already exists. | message | activity-packages/gsuite-activities/playbooks/add-sheet-name-conflict.md | high |  |
 | A task was canceled. | message | activity-packages/gsuite-activities/playbooks/transient-and-timeout-errors.md | medium | GSuite per-request RequestTimeout (HttpClient cancellation) — not a System.TimeoutException, which is auth-phase → connection-and-auth-failures.md |
 | AADSTS | error-code-prefix | activity-packages/o365-activities/playbooks/authentication-token-invalid.md | medium | Entra ID failure at token acquisition — 'A configuration error AADSTS<code> occurred in the activity.' |
@@ -123,7 +134,8 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | agent.json failed schema validation | message | products/agents/playbooks/input-schema-validation-failure.md | high | Variant A — agent configuration schema |
 | AGENT_RUNTIME.TERMINATION_GUARDRAIL_VIOLATION | error-code | products/agents/playbooks/guardrail-violation.md | high |  |
 | AGENT_RUNTIME.UNEXPECTED_ERROR | error-code | products/agents/playbooks/context-grounding-index-not-found.md | high | generic runtime code — routable here only with the ContextGroundingIndex not found detail |
-| already exists in the compressed file | message | activity-packages/system-activities/playbooks/compress-extract-files-failed.md | medium |  |
+| Allowed.AgentService | error-code | activity-packages/ui-automation/playbooks/healing-agent-no-license.md | high | == 0 with LicensedFeatures [] in uip or licenses info — no HA entitlement on the tenant; > 0 while triaging expected HA surfaces → healing-agent-orch-issues.md |
+| Allowed.AgentService | error-code | activity-packages/ui-automation/playbooks/healing-agent-orch-issues.md | high | > 0 while triaging whether an Orchestrator HA status/log/notification is expected; == 0 when the customer wants HA working → healing-agent-no-license.md |
 | An error occurred in the activity. | message | activity-packages/gsuite-activities/playbooks/transient-and-timeout-errors.md | medium | GSuite generic fallback for unmapped Google API errors — read the inner status/reason from the trace before concluding |
 | An organization unit is required | message | activity-packages/system-activities/playbooks/get-asset-folder-scope-mismatch.md | high |  |
 | API key not valid | message | products/llm-gateway/playbooks/byo-connection-dead.md | high |  |
@@ -133,8 +145,10 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Archive file cannot be size zero | message | activity-packages/word-activities/playbooks/append-text-zero-byte-file.md | medium |  |
 | Argument values did not match definitions | message | products/maestro/playbooks/argument-mismatch-400.md | medium | generic argument-mismatch 400 — no single named field, no broad schema wording |
 | ArgumentException | exception | activity-packages/word-activities/playbooks/replace-text-length-limit.md | high | Search/Replace value over 256 characters on a classic UiPath.Word.Activities version; silent truncation variant shows no exception |
+| ArgumentNullException | exception | activity-packages/o365-activities/playbooks/application-scope-misconfigured.md | medium | generic .NET exception — this claim is the runtime surface of a missing credential field (e.g. ApplicationId) on the Microsoft 365 Application Scope; an ArgumentNullException wrapping a 'Folder named ... could not be found' sentence → mail-folder-not-found.md |
+| ArgumentNullException | exception | activity-packages/o365-activities/playbooks/mail-folder-not-found.md | high | generic .NET exception — this claim is the unwrapped form carrying 'Folder named ... could not be found' as the parameter text; a bare ArgumentNullException naming a credential field → application-scope-misconfigured.md |
+| ArgumentOutOfRangeException | exception | activity-packages/gsuite-activities/playbooks/invalid-or-null-input.md | medium | generic .NET exception — this claim is a GSuite Drive by-ID/URL activity given a URL with no extractable ID segment ('Could not extract an object Id from the Url') |
 | Assignments are not allowed in expressions | message | products/maestro/playbooks/variable-expression-errors.md | medium |  |
-| Attachment has an unsafe or invalid name | message | activity-packages/pdf-activities/playbooks/pdf-corrupt-or-image-input.md | medium |  |
 | Attachment not found | message | products/maestro/playbooks/attachment-not-found.md | high | file access fails after job retention deleted the owning job — process initially worked |
 | Attachment not found | message | products/maestro/playbooks/file-handling.md | medium | general file-input mishandling — variable vs argument, connector File-type bugs; retention-deleted job → attachment-not-found.md |
 | Authentication attempt took longer than | message | activity-packages/gsuite-activities/playbooks/connection-and-auth-failures.md | medium | GSuite connection/OAuth token acquisition (System.TimeoutException); the same wording on Microsoft 365 is the connection-creation sign-in wizard → authentication-token-invalid.md (o365) |
@@ -143,7 +157,6 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Automation Cloud cannot be reached | message | activity-packages/o365-activities/playbooks/authentication-token-invalid.md | medium | in an authentication context — connection could not be resolved; the same message on a mid-run Graph call is transient-service-error |
 | Automation Cloud cannot be reached | message | activity-packages/o365-activities/playbooks/transient-service-error.md | medium | network fluctuation on the Runtime machine mid-run; the same message at authentication time is claimed by authentication-token-invalid |
 | BadImageFormatException | exception | activity-packages/python-activities/playbooks/python-scope-architecture-version-mismatch.md | medium | generic .NET — here: Target bitness does not match the installed interpreter |
-| BAPI name is null or empty | message | activity-packages/sap-bapi-activities/playbooks/sap-bapi-not-found.md | medium |  |
 | Batching request failed with an unknown reason. | message | activity-packages/o365-activities/playbooks/transient-service-error.md | medium | any embedded status — but the '(HTTP Status Code: TooManyRequests)' form routes to request-throttled.md; check the status, not the sentence alone |
 | BC36754 | error-code | activity-packages/python-activities/playbooks/invoke-method-failures.md | medium | design-time VB compile error on InputParameters — argument is not an Object array (M3) |
 | because it is being used by another process | message | activity-packages/database-activities/playbooks/connect-to-database-failures.md | medium | Connect to Database against a file-based (ACE OLE DB / ODBC) source — workbook held by another process (branch 3) |
@@ -161,15 +174,12 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Cannot be used outside of a MicrosoftOffice365 Application Scope | message | activity-packages/o365-activities/playbooks/application-scope-misconfigured.md | medium |  |
 | Cannot convert the item into PDF format. | message | activity-packages/o365-activities/playbooks/download-file-conversion-or-destination.md | high |  |
 | Cannot convert type 'String' to 'IResource' | message | activity-packages/mail-activities/playbooks/move-outlook-mail-failures.md | medium | modern Move Email fed a classic string input after a dependency update (branch 3) |
-| Cannot create a file with the same name as an existing directory | message | activity-packages/system-activities/playbooks/file-folder-operation-failed.md | medium |  |
 | Cannot create an instance of Microsoft.Office.Interop.Excel.ApplicationClass | message | activity-packages/excel-activities/playbooks/lookup-range-excel-not-installed.md | high |  |
 | Cannot create an instance of Microsoft.Office.Interop.Word.ApplicationClass | message | activity-packages/word-activities/playbooks/word-scope-com-not-installed.md | high |  |
 | Cannot create folder path: | message | activity-packages/o365-activities/playbooks/create-folder-invalid-path.md | high |  |
-| Cannot create sap connection, connection info params are not set | message | activity-packages/sap-bapi-activities/playbooks/sap-connection-failed.md | medium |  |
 | Cannot create unknown type '{clr-namespace:UiPath.Word.Activities;assembly=UiPath.Word.Activities}WordApplicationScope' | message | activity-packages/word-activities/playbooks/word-scope-cannot-create-unknown-type.md | high | runtime/load-time missing UiPath.Word.Activities dependency; design-time Studio crash on drop → replace-text-version-mismatch.md |
 | Cannot deserialize the current JSON array | message | activity-packages/web-activities/playbooks/deserialize-type-mismatch.md | medium |  |
 | Cannot deserialize the current JSON object | message | activity-packages/web-activities/playbooks/deserialize-type-mismatch.md | medium |  |
-| Cannot extract data from archive | message | activity-packages/system-activities/playbooks/compress-extract-files-failed.md | medium |  |
 | Cannot find item configured with connection | message | activity-packages/gsuite-activities/playbooks/drive-file-not-found.md | high | GSuite connection-browser item (Drive/Sheets) that no longer resolves; the same wrapper on O365 → drive-item-not-found.md or mail-folder-not-found.md (o365) |
 | Cannot find item configured with connection | message | activity-packages/o365-activities/playbooks/drive-item-not-found.md | high | O365 Drive item / path form; the same wrapper text on a Mail activity is a mail folder → mail-folder-not-found.md, and on GSuite → drive-file-not-found.md (gsuite) |
 | Cannot find item configured with connection | message | activity-packages/o365-activities/playbooks/mail-folder-not-found.md | high | wrapper around 'Folder named ... could not be found' on a Mail activity; the same wrapper on a Files activity is a Drive item → drive-item-not-found.md, on GSuite → drive-file-not-found.md (gsuite) |
@@ -182,7 +192,6 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Cannot run the macro | message | activity-packages/excel-activities/playbooks/invoke-vba-entry-method-name.md | high | Invoke VBA at Application.Run — EntryMethodName does not resolve (typo, appended parentheses, Private/nested Sub) while the code file itself compiles; code-file load/compile failure → invoke-vba-code-file-path.md; Execute Macro surface → execute-macro-failures.md |
 | Cannot save the document because it is read-only | message | activity-packages/word-activities/playbooks/replace-text-file-locked.md | medium |  |
 | Cannot send input to UI element because it is outside of screen bounds. | message | activity-packages/ui-automation/playbooks/click-coordinate-off-screen.md | high |  |
-| channel_not_found | message | activity-packages/slack-activities/playbooks/slack-api-error.md | medium |  |
 | CNS1044 | error-code | activity-packages/gsuite-activities/playbooks/connection-and-auth-failures.md | medium |  |
 | CNS1045 | error-code | activity-packages/gsuite-activities/playbooks/connection-and-auth-failures.md | medium |  |
 | Collection was modified; enumeration operation may not execute | message | activity-packages/mail-activities/playbooks/delete-outlook-mail-failures.md | medium | Delete runs inside a For Each over the live message list (branch 2) |
@@ -192,16 +201,13 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Command failed | message | activity-packages/word-activities/playbooks/word-open-sharepoint-url-com-command-failed.md | medium | on the open path (Documents.Open / WordDocumentFactory) with a :w:/:f: sharing-link FilePath; 'Command Failed' at Export to PDF → export-pdf-missing-output-dir.md |
 | CommandText property has not been initialized | message | activity-packages/database-activities/playbooks/execute-non-query-failures.md | medium |  |
 | Compile error | message | activity-packages/excel-activities/playbooks/invoke-vba-code-file-path.md | medium |  |
-| CompressionException | exception | activity-packages/system-activities/playbooks/compress-extract-files-failed.md | medium |  |
 | Computer Vision cannot be enabled: the current user is not authenticated. | message | activity-packages/cv-activities/playbooks/cv-server-auth-throttling-network.md | medium |  |
 | Computer Vision rate limit exceeded. | message | activity-packages/cv-activities/playbooks/cv-server-auth-throttling-network.md | medium |  |
 | Connection is disabled. Please enable the connection to continue. | message | products/integration-service/playbooks/connector-general-exception.md | high |  |
 | ContextGroundingIndex not found | message | products/agents/playbooks/context-grounding-index-not-found.md | high |  |
 | ContinueOnError = true | state | activity-packages/cv-activities/playbooks/cv-silent-failures-and-false-results.md | medium | on the CV activity or the CVScope — every exception swallowed to default output; the real error is in the Trace.TraceError line |
-| could not be created | message | activity-packages/sap-bapi-activities/playbooks/sap-bapi-not-found.md | medium | as 'Function: <name> could not be created' — BAPI/RFC function metadata lookup failed; NOT the connection-level 'Connection could not be created.' (sap-connection-failed) |
 | could not be found on this account. | message | activity-packages/o365-activities/playbooks/mail-folder-not-found.md | high |  |
 | Could not cast or convert from System.String | message | activity-packages/web-activities/playbooks/deserialize-type-mismatch.md | medium |  |
-| Could not establish a connection with the Autopilot service | message | products/studio/playbooks/studio-autopilot-unavailable.md | medium |  |
 | Could not establish trust relationship for the SSL/TLS secure channel | message | activity-packages/web-activities/playbooks/http-request-connection-failure.md | medium |  |
 | Could not extract an object Id from the Url | message | activity-packages/gsuite-activities/playbooks/invalid-or-null-input.md | medium |  |
 | Could not find a machine with Unattended or NonProduction runtimes in the current folder | message | products/maestro/playbooks/no-suitable-runtime-machine.md | high |  |
@@ -209,10 +215,7 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Could not find a part of the path | message | activity-packages/word-activities/playbooks/word-scope-file-path-not-found.md | medium | folder segment of the Word document path missing — relative path / mapped drive / bad concatenation |
 | Could not find an asset with this name | message | activity-packages/system-activities/playbooks/get-asset-not-found.md | high |  |
 | Could not find any enabled consumption pools | message | activity-packages/ui-automation/playbooks/healing-agent-no-license.md | high | App Insights / backend logs — heals not allocated to this tenant or pool not enabled |
-| Could not find file | message | activity-packages/pdf-activities/playbooks/pdf-file-not-found-or-not-pdf.md | high | PDF activity pre-parse ArgumentException — the single input file is missing on the robot host; the same string on Word Application Scope belongs to word-activities |
 | Could not find file | message | activity-packages/word-activities/playbooks/word-scope-file-path-not-found.md | medium | Word Application Scope document path does not resolve on the robot host |
-| Could not find one or more of the specified files | message | activity-packages/pdf-activities/playbooks/pdf-file-not-found-or-not-pdf.md | high |  |
-| Could not find Orchestrator Folder | message | activity-packages/intelligent-ocr-activities/playbooks/du-storage-or-taxonomy-missing.md | medium |  |
 | Could not find table. Cell targeting supports only tables as target | message | activity-packages/cv-activities/playbooks/cv-cell-targeting-failures.md | high |  |
 | Could not find target application. | message | activity-packages/ui-automation/playbooks/application-not-found.md | high |  |
 | Could not find the asset | message | activity-packages/system-activities/playbooks/get-asset-not-found.md | high |  |
@@ -225,10 +228,9 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Could not start executor | message | products/orchestrator/playbooks/job-faulted-logon-failure.md | medium |  |
 | Could not uniquely identify the user-interface element for this action. | message | activity-packages/ui-automation/playbooks/ambiguous-selector.md | high |  |
 | Couldn't find any user with unattended robot permissions in the current folder | message | products/maestro/playbooks/unattended-robot-permissions.md | high |  |
-| Couldn't find path | message | activity-packages/intelligent-ocr-activities/playbooks/du-storage-or-taxonomy-missing.md | medium | as 'Couldn't find path <path> in bucket <bucket>' — taxonomy/model blob missing from the storage bucket |
-| Couldn't retrieve a tenant key. | message | activity-packages/intelligent-ocr-activities/playbooks/du-not-enabled-or-tenant-key.md | medium |  |
 | CvElementExistsWithDescriptor Result = false with the element plainly present | state | activity-packages/cv-activities/playbooks/cv-silent-failures-and-false-results.md | medium | false negative — closed/minimized window or failed screenshot surfaces as ElementNotFoundException and is converted to false by design |
 | CvGetTextWithDescriptor completed without faulting but Result is empty / null / stale / partial | state | activity-packages/cv-activities/playbooks/cv-get-text-empty-or-wrong-result.md | medium | the defining no-fault signature — MethodType (OCR vs ClipboardRow/ClipboardAll) splits the branches |
+| dailyLimitExceeded | error-code | activity-packages/gsuite-activities/playbooks/transient-and-timeout-errors.md | medium |  |
 | DAP-GE- | error-code-prefix | products/integration-service/playbooks/connector-general-exception.md | high |  |
 | DAP-GE-3000 | error-code | products/integration-service/playbooks/connector-general-exception.md | high | Failed to retrieve connection — detail names invalid/no-access, missing Connections.View permission, or Bad Gateway |
 | DAP-GE-3005 | error-code | products/integration-service/playbooks/connector-general-exception.md | high | connection exists and is bound correctly but is disabled |
@@ -243,9 +245,7 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Data.Allowed.AgentService == 0 | state | activity-packages/ui-automation/playbooks/healing-agent-no-license.md | high | uip or licenses info with LicensedFeatures: [] — no HA entitlement on the tenant |
 | Descriptor or InputRegion is required | message | activity-packages/cv-activities/playbooks/cv-scope-setup-failures.md | medium |  |
 | Descriptor value: | message | activity-packages/cv-activities/playbooks/cv-invalid-descriptor.md | high | always the last line of the composite message — names the offending Descriptor argument expression |
-| Destination folder should not be the parent of source folder. | message | activity-packages/system-activities/playbooks/file-folder-operation-failed.md | medium |  |
 | Destination should be a folder. | message | activity-packages/classic-activities/playbooks/file-operation-failed.md | medium |  |
-| Digitization failed with status | message | activity-packages/pdf-activities/playbooks/pdf-read-ocr-no-engine.md | high |  |
 | DocumentFormat.OpenXml.OpenXmlPackageException | exception | activity-packages/excel-activities/playbooks/read-range-null-reference.md | low | OpenXML provider failure — workbook structural corruption or unsupported OpenXML feature |
 | does not exist in the workbook | message | activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md | medium | modern Use Excel File family wording of the same sheet-name mismatch |
 | does not have the required permissions | message | activity-packages/system-activities/playbooks/get-asset-permission-denied.md | high |  |
@@ -260,12 +260,10 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | ElementNotSetException | exception | activity-packages/cv-activities/playbooks/cv-action-failed-after-find.md | medium | remapped from UninitializedNodeException after the find succeeded — post-find action failure, not the scope-entry variant |
 | ElementOperationException | exception | activity-packages/classic-activities/playbooks/ui-element-interaction-failed.md | medium |  |
 | Encountered errors while trying to kill a process | message | activity-packages/classic-activities/playbooks/kill-process-failed.md | low |  |
-| endpoint is null or empty | message | activity-packages/ocr-activities/playbooks/ocr-endpoint-and-authentication.md | medium |  |
 | Error converting value | message | activity-packages/web-activities/playbooks/deserialize-type-mismatch.md | medium |  |
 | Error evaluating expression in activity inputs for element | message | products/maestro/playbooks/expression-evaluation-errors.md | high |  |
 | Error initializing Python engine | message | activity-packages/python-activities/playbooks/load-script-failures.md | medium | engine init at the scope layer (L1b-L1e: bitness, Library path, unsupported version, missing .NET Desktop Runtime); see also python-scope-architecture-version-mismatch.md |
 | Error initializing the Python engine | message | activity-packages/python-activities/playbooks/python-scope-architecture-version-mismatch.md | medium |  |
-| Error initiating connection | message | activity-packages/terminal-activities/playbooks/terminal-session-connection-failed.md | medium |  |
 | Error invoking Python method | message | activity-packages/python-activities/playbooks/invoke-python-method-pipe-is-broken.md | medium |  |
 | Error invoking the python method | message | activity-packages/python-activities/playbooks/invoke-method-failures.md | medium | wrapper around a Python-side exception raised inside the invoked function |
 | Error loading the python script | message | activity-packages/python-activities/playbooks/load-script-failures.md | medium | script-layer failure executing the module body (L2: syntax error, top-level exception, failed import) |
@@ -273,16 +271,13 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Error opening document, make sure Word application is installed. If already installed, an Office Repair may be required. | message | activity-packages/word-activities/playbooks/word-com-start-background-session0.md | medium | full two-clause text on COM start in Session 0 / Background Process; first clause alone → word-scope-com-not-installed.md |
 | Error opening workbook. Make sure Excel is installed. | message | activity-packages/excel-activities/playbooks/excel-application-card-failures.md | medium | Excel genuinely absent or install broken on a card/scope needing COM (branch 1); Excel confirmed installed with inner 0x8002801D/0x80040154 → excel-application-scope-failures.md |
 | Error opening workbook. Make sure Excel is installed. | message | activity-packages/excel-activities/playbooks/excel-application-scope-failures.md | medium | host DOES have Excel — inner COMException 0x8002801D TYPE_E_LIBNOTREGISTERED / 0x80040154 means broken COM registration (branch 1); no Excel install at all → excel-application-card-failures.md |
-| Error waiting for connection | message | activity-packages/terminal-activities/playbooks/terminal-session-connection-failed.md | medium |  |
 | Error while sending request. | message | activity-packages/cv-activities/playbooks/cv-server-auth-throttling-network.md | medium |  |
 | Error_400 | message | products/maestro/playbooks/generic-error-400.md | low | error name with no specifics — errorDetails empty or non-actionable |
-| ErrorEmptyBapi | message-key | activity-packages/sap-bapi-activities/playbooks/sap-bapi-not-found.md | medium |  |
 | ErrorInvalidIdMalformed | error-code | activity-packages/o365-activities/playbooks/mail-message-not-found.md | high |  |
 | ErrorInvalidMailboxItemId | error-code | activity-packages/o365-activities/playbooks/mail-message-not-found.md | high |  |
 | ErrorInvalidRecipients | error-code | activity-packages/o365-activities/playbooks/send-mail-rejected.md | medium |  |
 | ErrorItemNotFound | error-code | activity-packages/o365-activities/playbooks/mail-message-not-found.md | high |  |
 | ErrorMessageSizeExceeded | error-code | activity-packages/o365-activities/playbooks/send-mail-rejected.md | medium |  |
-| ErrorMsgRfcFunctionNotCreated | message-key | activity-packages/sap-bapi-activities/playbooks/sap-bapi-not-found.md | medium |  |
 | ErrorSendAsDenied | error-code | activity-packages/o365-activities/playbooks/send-mail-rejected.md | medium |  |
 | Excel Application Scope not found | message | activity-packages/excel-activities/playbooks/delete-range-failures.md | medium |  |
 | Excel File path is empty or not set | message | activity-packages/excel-activities/playbooks/excel-application-card-failures.md | medium |  |
@@ -300,15 +295,12 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Failed | state | products/orchestrator/playbooks/queue-items-failing.md | medium | queue item status, not job state — multiple distinct error types may be present across items |
 | Failed opening the Excel file. Possible reasons: file is corrupt, already used by another process or password protected. | message | activity-packages/excel-activities/playbooks/excel-application-scope-failures.md | medium |  |
 | Failed to apply | message | products/maestro/playbooks/autopilot-429.md | high | Autopilot for Maestro surface — backend/LLM Gateway rate limiting |
-| Failed to consume the requested number of pages | message | activity-packages/intelligent-ocr-activities/playbooks/du-license-or-endpoint-rejected.md | medium |  |
 | Failed to evaluate the input collection variable | message | products/maestro/playbooks/variable-expression-errors.md | medium | designer-surface variant — swimlane drag/drop cleared references; marker runtime failures → marker-invalid-cast.md |
 | Failed to evaluate the input collection variable for the marker element | message | products/maestro/playbooks/marker-invalid-cast.md | high | with inner InvalidCastException System.Object[] to ExpressionList — JS 'Items' expression bug |
 | Failed to evaluate the input collection variable for the marker element | message | products/maestro/playbooks/multi-instance-parallel.md | medium | general marker input issues — batch over 50 items, non-array collection, NoneType properties; JS Object[] cast → marker-invalid-cast.md |
 | Failed to execute IS call to | message | products/agents/playbooks/is-invalid-credentials.md | high | with HTTP Status: 401 - Unauthorized — for 404 Invalid Element Instance see is-invalid-element-instance.md |
 | Failed to execute IS call to | message | products/agents/playbooks/is-invalid-element-instance.md | high | with HTTP Status: 404 - Not Found — for 401 Unauthorized see is-invalid-credentials.md |
 | Failed to execute IS Event call | message | products/agents/playbooks/is-connection-disabled.md | medium | with HTTP Status: 403 - Forbidden on an agent toolCall span |
-| Failed to execute rest call. | message | activity-packages/system-activities/playbooks/download-file-failed.md | medium |  |
-| Failed to fetch Document Understanding projects list | message | activity-packages/intelligent-ocr-activities/playbooks/du-not-enabled-or-tenant-key.md | medium |  |
 | Failed to load library (ErrorCode: 126) | message | activity-packages/database-activities/playbooks/execute-non-query-failures.md | medium |  |
 | Failed to navigate to the specified URL. | message | activity-packages/ui-automation/playbooks/browser-navigation-failed.md | medium |  |
 | Failed to open the indicated local URL. | message | activity-packages/ui-automation/playbooks/browser-navigation-failed.md | medium | local file:// URL on a Chromium browser without the Allow-access-to-file-URLs extension permission |
@@ -324,19 +316,22 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | File not found: | message | activity-packages/gsuite-activities/playbooks/drive-file-not-found.md | high |  |
 | File should have a name: | message | activity-packages/o365-activities/playbooks/download-file-conversion-or-destination.md | high |  |
 | FileNotFoundError | message | activity-packages/python-activities/playbooks/working-folder-relative-path.md | medium | Python-side, referencing a relative path — CWD is the robot per-package folder, not the project; the activities themselves succeed |
-| FileSystemException | exception | activity-packages/system-activities/playbooks/file-folder-operation-failed.md | medium |  |
+| FileNotFoundError | exception | activity-packages/python-activities/playbooks/working-folder-relative-path.md | medium | Python exception class, raised script-side on a relative path while the UiPath activities succeed — CWD is the robot per-package folder, not the project |
 | Folder does not exist or the user does not have access to the folder | message | activity-packages/system-activities/playbooks/get-asset-folder-scope-mismatch.md | high | raised by Get Asset/Credential inside an RPA job — executing robot's folder scope; surfaced by a Maestro instance → maestro folder-not-accessible.md |
 | Folder does not exist or the user does not have access to the folder | message | products/maestro/playbooks/folder-not-accessible.md | high | surfaced by a Maestro instance calling Orchestrator (HTTP 400/403, code #1100); raised by Get Asset/Credential inside an RPA job → system-activities get-asset-folder-scope-mismatch.md |
-| Folder path is missing. Provide either a folder path or a folder resource. | message | activity-packages/system-activities/playbooks/file-folder-operation-failed.md | medium |  |
 | Folder path must contain at least one segment. | message | activity-packages/o365-activities/playbooks/create-folder-invalid-path.md | high |  |
 | Folders cannot be downloaded with this activity. | message | activity-packages/o365-activities/playbooks/download-file-conversion-or-destination.md | high |  |
 | Foreground job requires an unattended robot to be defined on your user | message | products/maestro/playbooks/foreground-unattended-robot.md | high |  |
 | Format of the initialization string does not conform to specification starting at index | message | activity-packages/database-activities/playbooks/connect-to-database-failures.md | medium |  |
-| from storage bucket | message | activity-packages/intelligent-ocr-activities/playbooks/du-storage-or-taxonomy-missing.md | medium | as 'Could not load the <x> from storage bucket <b> and path <p>' — results/taxonomy blob load failure |
+| GmailException | exception | activity-packages/gsuite-activities/playbooks/get-newest-email-not-found.md | high | generic Gmail exception — this claim is the empty-result fault from GetNewestEmailConnections or a NewEmailReceived / EmailSent trigger debug run |
+| GSuiteException | exception | activity-packages/gsuite-activities/playbooks/add-sheet-name-conflict.md | high | generic GSuite package exception — this claim is the AddSheetConnections duplicate sheet-name fault (ConflictResolution = Fail) |
+| GSuiteException | exception | activity-packages/gsuite-activities/playbooks/drive-multiple-items-name-conflict.md | high | generic GSuite package exception — this claim is the Drive ConflictResolution name-conflict lookup fault (Create/Copy/Move/Rename/Upload/Create Spreadsheet/Create Document) |
 | guardrailEvaluation | message | products/agents/playbooks/guardrail-violation.md | high | span type carrying guardrailName/action/validationResult — also toolGuardrailEvaluation |
 | has no attribute | message | activity-packages/python-activities/playbooks/invoke-method-failures.md | medium | Python AttributeError — the Name property does not match a module-level def (M1: typo, case mismatch, nested, or __main__-guarded) |
 | Healing agent configuration. | message | activity-packages/ui-automation/playbooks/healing-agent-orch-issues.md | high | benign Info-level config read on every run — zero consumption |
 | Healing Agent settings | message | activity-packages/ui-automation/playbooks/healing-agent-orch-issues.md | high | reworded variant of the benign config-read Info line |
+| HealingAgent | error-code | activity-packages/ui-automation/playbooks/healing-agent-no-license.md | high | operation code in the robot log line / backend licenseCode — regular Heals pool requested (release ProcessType is not TestAutomationProcess) |
+| HealingAgent.Test | error-code | activity-packages/ui-automation/playbooks/healing-agent-no-license.md | high | operation code / licenseCode — Test Heals pool requested (release ProcessType = TestAutomationProcess); Flex tenants cannot assign Test Heals |
 | hidden rows | message | activity-packages/excel-activities/playbooks/append-range-failures.md | medium | append region intersects hidden rows on the target sheet (package v2.8.5+); hidden rows inside a Write Range rectangle → write-range-failures.md |
 | hidden rows | message | activity-packages/excel-activities/playbooks/write-range-failures.md | medium | hidden rows/columns inside the Write Range target rectangle (package v2.8.5+, branch 4); append region intersecting hidden rows → append-range-failures.md |
 | hit the maximum number of words it is able to identify | message | activity-packages/cv-activities/playbooks/cv-server-auth-throttling-network.md | medium | covers the cloud (MaxOCRCloud) and local-server (MaxOCR) word-limit variants — thrown even on HTTP 200 |
@@ -345,22 +340,18 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Ignore empty source | message | activity-packages/excel-activities/playbooks/write-range-failures.md | medium | BusinessException — source DataTable has 0 rows with ExcludeHeaders=False (branch 3) |
 | Illegal characters in path | message | activity-packages/excel-activities/playbooks/excel-application-card-failures.md | medium |  |
 | Index was outside the bounds of the array. | message | products/maestro/playbooks/index-out-of-bounds.md | low |  |
-| Information about tenant | message | activity-packages/intelligent-ocr-activities/playbooks/du-not-enabled-or-tenant-key.md | medium | as 'Information about tenant <id> couldn't be retrieved.' — tenant metadata lookup failed |
 | Input collection for the marker element must not be null | message | products/maestro/playbooks/marker-input-null.md | high |  |
 | Input does not conform to schema | message | products/maestro/playbooks/input-schema-mismatch.md | high |  |
 | Input validation failed | message | products/agents/playbooks/input-schema-validation-failure.md | high | Variant B error prefix — caller payload fails the input schema at invocation time |
 | InRegion is bound | state | activity-packages/cv-activities/playbooks/cv-silent-failures-and-false-results.md | medium | bypasses CV detection entirely — CvElementExistsWithDescriptor always returns True; Click/Type fire at raw coordinates |
-| installed in order to use local server mode | message | activity-packages/ocr-activities/playbooks/ocr-engine-config-and-dependencies.md | medium |  |
 | Insufficient funds: Your account doesn't have enough credits for execution | message | products/maestro/playbooks/insufficient-funds.md | high |  |
 | Insufficient information | message | products/agents/playbooks/llm-insufficient-information.md | medium | detail field of the error JSON on a completion or agentRun span — names the missing context |
 | Insufficient privileges to complete the operation. | message | activity-packages/o365-activities/playbooks/insufficient-graph-scope.md | high |  |
 | IntegrationService.Activities.SWEntities | message | products/integration-service/playbooks/connector-null-reference.md | medium | stack fragment — ForEach enumerating a null connector List/Get output |
 | Internal server error occurred. Please try again later. | message | activity-packages/gsuite-activities/playbooks/transient-and-timeout-errors.md | medium |  |
-| Invalid API key specified | message | activity-packages/ocr-activities/playbooks/ocr-endpoint-and-authentication.md | medium | OCRException from a UiPath OCR engine call (OCRResultCode UiPathOCRInvalidApiKey); on the DU Digitize pipeline the same string arrives wrapped in AggregateException — see intelligent-ocr du-license-or-endpoint-rejected |
 | Invalid asset type | message | activity-packages/system-activities/playbooks/get-asset-wrong-activity-type.md | high |  |
 | Invalid authentication credentials. | message | activity-packages/gsuite-activities/playbooks/connection-and-auth-failures.md | medium |  |
 | Invalid cell number | message | activity-packages/cv-activities/playbooks/cv-cell-targeting-failures.md | high |  |
-| Invalid CJK server configuration. Neither async nor sync endpoints are enabled. | message | activity-packages/ocr-activities/playbooks/ocr-endpoint-and-authentication.md | medium |  |
 | Invalid column number | message | activity-packages/cv-activities/playbooks/cv-cell-targeting-failures.md | high |  |
 | Invalid Credential Store configuration | message | activity-packages/system-activities/playbooks/get-asset-external-vault-failure.md | medium |  |
 | invalid credentials | message | products/llm-gateway/playbooks/byo-connection-dead.md | high | vendor-surfaced wording on an LLM call that previously worked |
@@ -368,15 +359,13 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Invalid Element Instance Id provided. | message | products/agents/playbooks/is-invalid-element-instance.md | high | on an agent toolCall span (agent trace) — for the Maestro/IS activity surface see integration-service-404.md |
 | Invalid Element Instance Id provided. | message | products/maestro/playbooks/integration-service-404.md | medium | surfaced through a Maestro IS call; in an agent run's trace spans → products/agents is-invalid-element-instance.md |
 | Invalid filter clause: | message | activity-packages/o365-activities/playbooks/mail-invalid-odata-query.md | high |  |
-| Invalid image dpi | message | activity-packages/pdf-activities/playbooks/pdf-read-ocr-no-engine.md | high |  |
-| Invalid input stream | message | activity-packages/pdf-activities/playbooks/pdf-corrupt-or-image-input.md | medium |  |
 | Invalid or empty shortcut sequence. | message | activity-packages/ui-automation/playbooks/activity-configuration-error.md | high |  |
 | Invalid Organization or User secret, or invalid Element token provided. | message | products/agents/playbooks/is-invalid-credentials.md | high |  |
 | Invalid Query. Please use OData format for filter queries. | message | activity-packages/o365-activities/playbooks/mail-invalid-odata-query.md | high |  |
 | Invalid row number | message | activity-packages/cv-activities/playbooks/cv-cell-targeting-failures.md | high |  |
 | InvalidCastException | exception | products/maestro/playbooks/marker-invalid-cast.md | high | System.Object[] to ExpressionList on a multi-instance marker |
 | InvalidNodeException | exception | activity-packages/ui-automation/playbooks/element-found-not-actionable.md | medium |  |
-| is compressed in an unsupported format | message | activity-packages/system-activities/playbooks/compress-extract-files-failed.md | medium |  |
+| IOException | exception | activity-packages/excel-activities/playbooks/lookup-range-file-locked.md | medium | generic .NET IO class (leaf form) — on Lookup Range or its Excel Application Scope / Use Excel File, the workbook file handle is held by another process; Read Range family full lock-owner chain → read-range-file-locked.md |
 | is invalid or you do not have access | message | products/integration-service/playbooks/connection-invalid.md | high | connection missing, cross-workspace, disabled, or caller lacks permissions — when raised as DAP-GE-3000 on a connector activity see connector-general-exception.md |
 | is invalid or you do not have access to it | message | activity-packages/gsuite-activities/playbooks/connection-and-auth-failures.md | medium |  |
 | is locked for editing by | message | activity-packages/excel-activities/playbooks/lookup-range-file-locked.md | medium |  |
@@ -398,9 +387,11 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | maxFileSizeExceeded | error-code | activity-packages/o365-activities/playbooks/upload-file-quota-or-size.md | medium |  |
 | Maximum stream size exceeded. | message | activity-packages/o365-activities/playbooks/upload-file-quota-or-size.md | medium |  |
 | may not be null or empty. | message | activity-packages/classic-activities/playbooks/add-queue-item-failed.md | medium | tail of the 'Queue name' validation message — empty/null QueueName input |
+| Microsoft.Graph.ServiceException | exception | activity-packages/o365-activities/playbooks/request-throttled.md | high | generic Graph SDK exception from legacy (non-Connections) O365 activities — this claim is the raw throttle wording / 429; 5xx or timeout wording → transient-service-error.md |
+| Microsoft.Graph.ServiceException | exception | activity-packages/o365-activities/playbooks/transient-service-error.md | medium | generic Graph SDK exception from legacy (non-Connections) O365 activities — this claim is the raw 5xx / timeout wording; throttle wording / 429 → request-throttled.md |
 | Missing output variables | message | products/maestro/playbooks/variable-expression-errors.md | medium |  |
-| missing required field: channel | message | activity-packages/slack-activities/playbooks/slack-api-error.md | medium |  |
 | Missing value for required parameter | message | products/maestro/playbooks/missing-required-parameter.md | high |  |
+| ModuleNotFoundError | exception | activity-packages/python-activities/playbooks/load-script-failures.md | medium | Python exception class — top-level import missing from the interpreter at the scope's Path during Load Python Script (L2a); lazy import inside a called function → invoke-method-failures.md |
 | ModuleNotFoundError: No module named | message | activity-packages/python-activities/playbooks/load-script-failures.md | medium | top-level import missing from the interpreter at the scope's Path (L2a); lazy import inside a called function → invoke-method-failures.md |
 | Multiple items with the name | message | activity-packages/gsuite-activities/playbooks/drive-multiple-items-name-conflict.md | high | GSuiteException from a Drive activity's ConflictResolution lookup — not for DownloadAttachmentsConnections (local path conflict); the same wording from O365 downloads → download-multiple-items-name-conflict.md (o365) |
 | Multiple items with the name | message | activity-packages/o365-activities/playbooks/download-multiple-items-name-conflict.md | high | Office365Exception from a download activity — conflict is in the LOCAL destination folder; same wording from GSuite Drive → drive-multiple-items-name-conflict.md (gsuite) |
@@ -421,58 +412,49 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | No email matching the filter criteria, received in the last 1 hour has been found | message | activity-packages/o365-activities/playbooks/get-newest-email-no-match.md | high | Office365Exception from O365 GetNewestEmail (also WaitForEmailReceived / NewEmailReceived sample lookups); the identical sentence as a GmailException is the Gmail trigger debug run → get-newest-email-not-found.md (gsuite) |
 | No email matching the filter criteria, sent in the last 1 hour has been found | message | activity-packages/gsuite-activities/playbooks/get-newest-email-not-found.md | high |  |
 | No email matching the search criteria has been found | message | activity-packages/gsuite-activities/playbooks/get-newest-email-not-found.md | high |  |
-| No file detected in | message | activity-packages/system-activities/playbooks/download-file-failed.md | medium |  |
 | No File events found | message | products/maestro/playbooks/no-message-events.md | high | OneDrive/SharePoint file trigger variant |
-| No files to compress. | message | activity-packages/system-activities/playbooks/compress-extract-files-failed.md | medium |  |
 | No host is available on the machine template assigned for this job | message | products/orchestrator/playbooks/job-pending-no-host.md | high |  |
-| No image input was provided. Bind one of Image or ImageFile. | message | activity-packages/ocr-activities/playbooks/ocr-input-and-runtime.md | medium |  |
-| No license exist for this installation | message | products/studio/playbooks/studio-autopilot-unavailable.md | medium |  |
 | No Message events found | message | products/maestro/playbooks/no-message-events.md | high |  |
-| No OCR Engine assigned. | message | activity-packages/pdf-activities/playbooks/pdf-read-ocr-no-engine.md | high |  |
 | No package resource with type 'Property' and key 'EMAIL_RECEIVED' was found | message | products/maestro/playbooks/deployment-email-received.md | high |  |
 | No row in column | message | activity-packages/cv-activities/playbooks/cv-cell-targeting-failures.md | high | row-search value matched no cell in the search column |
-| No such bucket named | message | activity-packages/intelligent-ocr-activities/playbooks/du-storage-or-taxonomy-missing.md | medium |  |
 | No such host is known | message | activity-packages/web-activities/playbooks/http-request-connection-failure.md | medium | DNS failure on modern .NET (targetFramework Windows, .NET 6+) |
 | NodeNotFoundException | exception | activity-packages/ui-automation/playbooks/scope-container-wrong-page.md | medium | closest matches in the exception belong to a different page/locale — enclosing scope container attached wrong; the inner selector itself is correct |
 | NodeNotFoundException | exception | activity-packages/ui-automation/playbooks/selector-failure-healing-disabled.md | high | Healing Agent disabled — AutopilotForRobots Enabled: false or HealingEnabled: false (or field absent) |
 | NodeNotFoundException | exception | activity-packages/ui-automation/playbooks/selector-failure-healing-fix.md | high | HA enabled with recovery data present (healing-fixes.json entry or InferredRecoveryInfo/RecoveryInfo in uia/*.json) |
 | NodeNotFoundException | exception | activity-packages/ui-automation/playbooks/selector-failure-manual.md | medium | HA enabled but no fix produced, or source code available for manual selector analysis |
 | NodeNotFoundException | exception | activity-packages/ui-automation/playbooks/timeout-issue.md | low | element never appeared within the wait — activity duration close to the configured timeout |
-| Not any kind of host is specified | message | activity-packages/sap-bapi-activities/playbooks/sap-connection-failed.md | medium |  |
 | not found against object of type ExpressionDictionary | message | products/maestro/playbooks/expression-evaluation-errors.md | high |  |
-| not_in_channel | message | activity-packages/slack-activities/playbooks/slack-api-error.md | medium |  |
 | Object reference not set to an instance of an object | message | activity-packages/mail-activities/playbooks/send-outlook-mail-failures.md | medium | at Send Outlook Mail — null To/Subject/Body or empty attachment path (branch 3) |
 | Object reference not set to an instance of an object | message | activity-packages/system-activities/playbooks/get-asset-activity-bug-silent-failure.md | medium | same downstream-consumer discriminator as the exception signature — the faulting activity is not the Get Asset itself |
-| Object reference not set to an instance of an object | message | activity-packages/workflowevents-activities/playbooks/handle-app-request-null-reference.md | medium | at HandleAppRequest — failure is in the App-invoked workflow's execution, not the channel; downstream consumer of a null Get Asset output → get-asset-activity-bug-silent-failure.md |
 | Object reference not set to an instance of an object | message | runtime-exceptions/playbooks/null-reference-exception.md | medium | member access on a null variable/expression in the user's workflow logic; upstream Get Asset silent-null → system-activities get-asset-activity-bug-silent-failure.md |
-| OCR timeout exceeded | message | activity-packages/ocr-activities/playbooks/ocr-input-and-runtime.md | medium |  |
+| Office365Exception | exception | activity-packages/o365-activities/playbooks/create-folder-invalid-path.md | high | generic O365 package exception — this claim is the Create Folder (CreateFolderConnections) input-validation family: null/empty name, path, or parent folder, empty or whitespace path segments, or a file occupying a segment |
+| Office365Exception | exception | activity-packages/o365-activities/playbooks/download-file-conversion-or-destination.md | high | generic O365 package exception — this claim is the download/export surface on DownloadFileConnections / DownloadFile / ExportAsPdf: folder given where a file is required, unsupported PDF conversion source, bad local destination, or an unresolvable shared item's parent |
+| Office365Exception | exception | activity-packages/o365-activities/playbooks/download-multiple-items-name-conflict.md | high | generic O365 package exception — this claim is the local-destination name conflict on download activities (DownloadEmailConnections / DownloadFileConnections / DownloadEmailAttachments with ConflictResolution = Fail) |
+| Office365Exception | exception | activity-packages/o365-activities/playbooks/get-newest-email-no-match.md | high | generic O365 package exception — this claim is the GetNewestEmail empty-result fault (no email matched the configured filter) |
+| Office365Exception | exception | activity-packages/o365-activities/playbooks/item-name-already-exists.md | high | generic O365 package exception — this claim is the remote OneDrive/SharePoint/Excel name conflict (Create/Copy/Move/Rename/Upload/Create Workbook/Add Sheet/Rename Sheet with ConflictBehavior = Fail) |
 | One or more errors occurred | message | activity-packages/python-activities/playbooks/invoke-method-failures.md | medium | on Invoke Python Method with a Python traceback naming a line inside the function (M4); at Python Scope open → python-scope-architecture-version-mismatch.md; at script load → load-script-failures.md |
 | One or more errors occurred | message | activity-packages/python-activities/playbooks/load-script-failures.md | medium | at Load Python Script — wrapper around a script-layer load failure (L2); at engine init → python-scope-architecture-version-mismatch.md; on Invoke Python Method → invoke-method-failures.md |
 | One or more errors occurred | message | activity-packages/python-activities/playbooks/python-scope-architecture-version-mismatch.md | medium | at Python Scope open, no Python traceback — engine init: Target bitness, Version, Library path, or missing .NET Desktop Runtime |
 | OpenMode=Never | state | activity-packages/ui-automation/playbooks/application-not-found.md | high | gating condition — the scope was told not to launch the app |
 | options can be set | message | activity-packages/classic-activities/playbooks/ui-activity-configuration-error.md | high | tail of 'Only one of the {0} and {1} options can be set.' — two mutually exclusive options enabled |
 | Orchestrator information is not available | message | activity-packages/system-activities/playbooks/get-asset-network-connectivity.md | low |  |
-| OrchestratorHttpException | exception | activity-packages/system-activities/playbooks/queue-transaction-activity-failed.md | medium |  |
 | OutRegion = (0,0,0,0) | state | activity-packages/cv-activities/playbooks/cv-action-failed-after-find.md | medium | no error but empty OutRegion — click/clipboard failure swallowed post-find (window moved, focus stolen, input blocked) |
 | OutRegion = (0,0,0,0) | state | activity-packages/cv-activities/playbooks/cv-silent-failures-and-false-results.md | medium | default empty Rectangle output after a swallowed exception (ContinueOnError or Element Exists conversion) — downstream consumers get garbage |
 | outside the range: 0 to | message | activity-packages/gsuite-activities/playbooks/invalid-or-null-input.md | medium | covers 'RelativeRowIndex <i> outside the range: 0 to <n>.' and 'RelativeColumnIndex <i> outside the range: 0 to <n>.' from Write Row/Column overwrite bounds |
 | Package entry points definition is invalid | message | products/maestro/playbooks/deployment-datetime-input.md | high | deployment fails after adding DateTime input parameters to a BPMN start event |
-| Page range is incorrect. | message | activity-packages/pdf-activities/playbooks/pdf-invalid-page-range.md | high |  |
 | Pending | state | products/orchestrator/playbooks/job-pending-no-host.md | high | assigned template currently has zero connected runtimes (robotVersions empty) — if a runtime IS connected, see job-pending-stale-dispatch.md |
 | Pending | state | products/orchestrator/playbooks/job-pending-stale-dispatch.md | high | no-host-family PendingReasons.Errors BUT robotVersions populated AND JobHistory contains only the original Pending entry |
 | Pending | state | products/orchestrator/playbooks/robot-credentials.md | high | with PendingReason RobotNoMatchingUsernames or TemplateNoLicense — robot/machine configuration, not host availability |
 | Permission to the resource was denied. | message | activity-packages/gsuite-activities/playbooks/connection-and-auth-failures.md | medium |  |
 | Pipe is broken | message | activity-packages/python-activities/playbooks/invoke-python-method-pipe-is-broken.md | medium | Python host process died — missing pip module in the scope's interpreter, unhandled script exception, hard exit, or stdout flood |
-| please install the UiPath.CoreIPC package | message | activity-packages/ocr-activities/playbooks/ocr-engine-config-and-dependencies.md | medium |  |
 | Please make sure you have UiPath.ComputerVision.LocalServer package installed | message | activity-packages/cv-activities/playbooks/cv-scope-setup-failures.md | medium |  |
 | Please select an account. | message | activity-packages/o365-activities/playbooks/application-scope-misconfigured.md | medium |  |
 | Possible loop detected | message | products/maestro/playbooks/loop-detected.md | high |  |
 | Programmatic access to Office VBA project is denied | message | activity-packages/excel-activities/playbooks/invoke-vba-trust-access.md | high |  |
 | Programmatic access to Visual Basic Project is not trusted | message | activity-packages/excel-activities/playbooks/invoke-vba-trust-access.md | high |  |
 | provider is not registered on the local machine | message | activity-packages/database-activities/playbooks/connect-to-database-failures.md | medium |  |
-| Queue Name is required. | message | activity-packages/system-activities/playbooks/queue-transaction-activity-failed.md | medium |  |
 | quotaLimitReached | error-code | activity-packages/o365-activities/playbooks/upload-file-quota-or-size.md | medium |  |
-| Reason is required when Status is Failed | message | activity-packages/system-activities/playbooks/queue-transaction-activity-failed.md | medium |  |
+| rateLimitExceeded | error-code | activity-packages/gsuite-activities/playbooks/transient-and-timeout-errors.md | medium |  |
 | Reason: Invalid image reference or value | message | activity-packages/cv-activities/playbooks/cv-invalid-descriptor.md | high |  |
 | Reason: Target must be set | message | activity-packages/cv-activities/playbooks/cv-invalid-descriptor.md | high |  |
 | Recommendations for resolution or self-healing procedures have been quickly generated | message | activity-packages/ui-automation/playbooks/healing-agent-orch-issues.md | high | email/in-app Notification Summary, Component = Healing Agent — real HA event |
@@ -493,13 +475,9 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Retrieving the COM class factory for component with CLSID {000209FF-0000-0000-C000-000000000046} failed | message | activity-packages/word-activities/playbooks/word-scope-com-not-installed.md | high | CLSID of Word.Application — COM class factory unavailable |
 | Retrieving the COM class factory for component with CLSID {00024500-0000-0000-C000-000000000046} failed | message | activity-packages/excel-activities/playbooks/lookup-range-excel-not-installed.md | high |  |
 | RobotNoMatchingUsernames | error-code | products/orchestrator/playbooks/robot-credentials.md | high | robot user account does not match any machine user mapping |
-| Rotation angle is not supported | message | activity-packages/ocr-activities/playbooks/ocr-input-and-runtime.md | medium |  |
 | Running | state | products/maestro/playbooks/service-task-child-job-faulted.md | high | instance stuck Running with an Open incident — not a plain long-runner |
 | Running | state | products/orchestrator/playbooks/job-stuck.md | low | unusually long with no progress visible in job traces — distinct from the Pending-state playbooks |
 | RuntimeTimeoutException | exception | activity-packages/ui-automation/playbooks/timeout-issue.md | low |  |
-| SAP.Middleware.Connector.RfcCommunicationException | exception | activity-packages/sap-bapi-activities/playbooks/sap-connection-failed.md | medium |  |
-| SAP.Middleware.Connector.RfcConfigurationException | exception | activity-packages/sap-bapi-activities/playbooks/sap-connection-failed.md | medium |  |
-| SAP.Middleware.Connector.RfcLogonException | exception | activity-packages/sap-bapi-activities/playbooks/sap-connection-failed.md | medium |  |
 | Scrolled the entire screen, but element was not found | message | activity-packages/cv-activities/playbooks/cv-scroll-search-failures.md | medium | hardcoded English, never localized — the word Scrolled is the discriminator from plain Element not found |
 | Searched element Target or Input UI Element must be set when Scroll type is set to Until element is found. | message | activity-packages/ui-automation/playbooks/activity-configuration-error.md | high |  |
 | SelectorNotFoundException | exception | activity-packages/classic-activities/playbooks/ui-element-not-found.md | medium | faulting activity is a CLASSIC UI activity (Click, Type Into, Attach — UiPath.Core.Activities); modern N-prefixed activities → ui-automation selector-failure playbooks (Healing Agent applies there, never to classic) |
@@ -508,43 +486,35 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | SelectorNotFoundException | exception | activity-packages/ui-automation/playbooks/selector-failure-healing-fix.md | high | HA enabled with recovery data present (healing-fixes.json entry or InferredRecoveryInfo/RecoveryInfo in uia/*.json) |
 | SelectorNotFoundException | exception | activity-packages/ui-automation/playbooks/selector-failure-manual.md | medium | HA enabled but no fix produced, or source code available for manual selector analysis |
 | Server or OCR engine is required. | message | activity-packages/cv-activities/playbooks/cv-scope-setup-failures.md | medium |  |
-| Server response: Invalid API key specified | message | activity-packages/intelligent-ocr-activities/playbooks/du-license-or-endpoint-rejected.md | medium |  |
 | Server URL is empty and UseLocalServer option is false | message | activity-packages/cv-activities/playbooks/cv-server-auth-throttling-network.md | medium |  |
-| Service URL is empty. | message | activity-packages/system-activities/playbooks/queue-transaction-activity-failed.md | medium |  |
-| SignalR connection did not establish within 60 seconds | message | activity-packages/workflowevents-activities/playbooks/app-request-trigger-connection-lost.md | medium |  |
-| SignalR: Invalid SessionId | message | activity-packages/workflowevents-activities/playbooks/initialize-hub-connection-aggregate-failure.md | medium |  |
-| Source folder is missing. | message | activity-packages/system-activities/playbooks/file-folder-operation-failed.md | medium |  |
 | storageQuotaExceeded | error-code | activity-packages/gsuite-activities/playbooks/upload-storage-quota-exceeded.md | high |  |
 | Strings.NodeNotFoundMultipleMatches | message-key | activity-packages/ui-automation/playbooks/ambiguous-selector.md | high |  |
 | Sub or Function not defined | message | activity-packages/excel-activities/playbooks/invoke-vba-code-file-path.md | medium | raised while compiling the injected module — code file malformed or statements outside a procedure block; file compiles but the named entry point does not resolve → invoke-vba-entry-method-name.md |
 | Sub or Function not defined | message | activity-packages/excel-activities/playbooks/invoke-vba-entry-method-name.md | high | at Application.Run — the named entry point is not a top-level Public Sub/Function in the loaded file; compile failure of the file itself → invoke-vba-code-file-path.md |
 | Success | state | activity-packages/database-activities/playbooks/start-transaction-failures.md | medium | job green but database unchanged/partial (child fault swallowed, no rollback — branch 1) or no in-scope activity logs at all (v1.5.0 body-skip — branch 2) |
-| System.AggregateException | exception | activity-packages/intelligent-ocr-activities/playbooks/du-license-or-endpoint-rejected.md | medium | Digitize Document via UiPath Document OCR — inner message carries 'Server response: <detail> Error:<code>' from PageDigitizer.ApplyOcr; route on the server response, not the wrapper |
-| System.AggregateException | exception | activity-packages/slack-activities/playbooks/connection-resolution-failure.md | medium | on a Slack Integration Service activity — inner is a ConnectionException (or a transient 503 RemoteException) at connection resolution; other connector activity stacks → connector-aggregate-exception.md |
 | System.AggregateException | exception | activity-packages/web-activities/playbooks/net-http-request-aggregate-failure.md | medium | on UiPath.Web.Activities.NetHttpRequest (modern HTTP Request) — async pipeline wrapper; the InnerException is the real cause |
-| System.AggregateException | exception | activity-packages/workflowevents-activities/playbooks/initialize-hub-connection-aggregate-failure.md | medium | at InitializeHubConnection in a Studio Web app-workflow run — SignalR hub bootstrap failed; unwrap the inner exception; connector activity stacks → connector-aggregate-exception.md |
 | System.AggregateException | exception | products/integration-service/playbooks/connector-aggregate-exception.md | low | async wrapper on a connector activity stack — the real error is InnerExceptions[0]; route on the inner exception |
 | System.ArgumentException | exception | activity-packages/cv-activities/playbooks/cv-scope-setup-failures.md | medium | scope-entry fault before any child CV activity ran — LocalServer missing or local-server prerequisite; the faulted activity in XAML is the CV Screen Scope itself |
 | System.ArgumentException | exception | activity-packages/cv-activities/playbooks/cv-server-auth-throttling-network.md | medium | built by CVSessionData.Compute / ToErrorMessageWithCode() with [Error code: N] text — surfaces lazily on a child's first refresh, not at scope entry |
+| System.ArgumentException | exception | activity-packages/database-activities/playbooks/connect-to-database-failures.md | medium | on Connect to Database with initialization-string / invalid-connection-string wording (branch 1) — the class alone is too generic to route on; CV scope/server ArgumentException → cv-activities playbooks |
 | System.ArgumentNullException | exception | activity-packages/cv-activities/playbooks/cv-action-failed-after-find.md | medium | parameter name Secure — CV Type Into with a null SecureString, thrown before any keystroke |
 | System.ArgumentNullException | exception | activity-packages/o365-activities/playbooks/copy-item-argument-null.md | high | raw, from legacy O365 CopyItem with Parameter 'DriveItem' — upstream lookup left the DriveItem input null |
 | System.ArgumentNullException | exception | activity-packages/web-activities/playbooks/deserialize-null-input.md | high | on DeserializeJson — input guard for null/empty JsonString; parameter name 'JSON string' |
 | System.ArgumentNullException | exception | runtime-exceptions/playbooks/argument-null-exception.md | medium | user-code activity stack, not a UiPath framework namespace — a null argument passed by the user's workflow logic |
-| System.Compression.Sys.ExtractFailed | error-code | activity-packages/system-activities/playbooks/compress-extract-files-failed.md | medium |  |
 | System.DllNotFoundException | exception | activity-packages/database-activities/playbooks/execute-non-query-failures.md | medium |  |
 | System.IndexOutOfRangeException | exception | products/maestro/playbooks/index-out-of-bounds.md | low |  |
 | System.InvalidCastException | exception | activity-packages/excel-activities/playbooks/excel-application-scope-failures.md | medium | cast of System.__ComObject to a Microsoft.Office.Interop.Excel interface fails with E_NOINTERFACE — COM add-in clash (branch 3); marshaling EntryMethodParameters on Invoke VBA → invoke-vba-parameter-formatting.md |
 | System.InvalidCastException | exception | activity-packages/excel-activities/playbooks/invoke-vba-parameter-formatting.md | medium | marshaling EntryMethodParameters into Application.Run — expression is not an IEnumerable<Object>; QueryInterface E_NOINTERFACE on System.__ComObject → excel-application-scope-failures.md |
 | System.InvalidCastException | exception | activity-packages/mail-activities/playbooks/send-outlook-mail-failures.md | medium | binding the Outlook COM server at Send Outlook Mail — Outlook not installed / bitness mismatch / corrupted Office registry (branch 1) |
-| System.InvalidOperationException | exception | activity-packages/workflowevents-activities/playbooks/app-request-trigger-connection-lost.md | medium | at AppRequestTrigger — SignalR client driven in a non-connected/disposed state; discriminator is the faulted activity |
+| System.InvalidOperationException | exception | activity-packages/database-activities/playbooks/connect-to-database-failures.md | medium | on Connect to Database with the ACE/Jet OLE DB provider-not-registered wording (branch 2) — the class alone is too generic to route on |
 | System.InvalidOperationException | exception | products/orchestrator/playbooks/foreground-already-running.md | medium | only with the foreground-process-already-running message — the class alone is too generic to route on |
 | System.IO.DirectoryNotFoundException | exception | activity-packages/excel-activities/playbooks/read-range-file-not-found.md | medium | at Excel workbook open — a segment of the WorkbookPath's parent path does not exist (wrong CWD, unmapped drive, unreachable share) |
 | System.IO.FileNotFoundException | exception | activity-packages/excel-activities/playbooks/read-range-file-not-found.md | medium | at Excel workbook open — configured WorkbookPath's parent directory exists but the file does not |
+| System.IO.FileNotFoundException | exception | activity-packages/gsuite-activities/playbooks/invalid-or-null-input.md | medium | generic .NET exception — this claim is a GSuite activity's local path miss (legacy SendEmail attachment, upload source, service-account key file); at Excel workbook open → read-range-file-not-found.md (excel) |
 | System.IO.IOException | exception | activity-packages/excel-activities/playbooks/read-range-file-locked.md | medium | on Read Range / Excel read-write family or the surrounding scope — cannot acquire the workbook file; pass-through .NET IO message names the path |
+| System.IO.IOException | exception | activity-packages/excel-activities/playbooks/write-cell-failures.md | medium | on Write Cell — file lock or Classic Workbook Write Cell racing an open Excel scope on the same path (branch 1); Read Range surface → read-range-file-locked.md |
 | System.IO.IOException | exception | activity-packages/python-activities/playbooks/invoke-python-method-pipe-is-broken.md | medium | generic .NET — surfaces as 'RemoteException wrapping System.IO.IOException: Pipe is broken' on Invoke Python Method / Run Python Script |
-| System.IO.IOException | exception | activity-packages/workflowevents-activities/playbooks/app-request-trigger-connection-lost.md | medium | at AppRequestTrigger — SignalR/RobotJS transport dropped while awaiting an App request; discriminator is the faulted activity |
 | System.IO.PipeException | exception | activity-packages/python-activities/playbooks/invoke-method-failures.md | medium | mid-call on Invoke Python Method — oversized return payload or destabilized engine (M5); 'Pipe is broken' wording → invoke-python-method-pipe-is-broken.md |
-| System.Net.Http.HttpRequestException | exception | activity-packages/system-activities/playbooks/download-file-failed.md | medium | raw transport failure on Download File from URL (DNS/connection refused/TLS), often wrapping a SocketException; inner exception of NetHttpRequest's AggregateException → net-http-request-aggregate-failure.md |
 | System.Net.Http.HttpRequestException | exception | activity-packages/web-activities/playbooks/net-http-request-aggregate-failure.md | medium | inner exception of NetHttpRequest's AggregateException — transport/HTTP failure after retries (DNS, connection refused, TLS, exhausted status retries) |
 | System.Net.WebException | exception | activity-packages/web-activities/playbooks/http-request-connection-failure.md | medium | on UiPath.Web.Activities.HttpClient — status / DNS / connection / TLS failure; message 'The operation has timed out.' → http-request-timeout.md |
 | System.NullReferenceException | exception | activity-packages/cv-activities/playbooks/cv-scope-setup-failures.md | medium | raw, no message — a child CV activity executed outside a CV Screen Scope at runtime (design-time validation bypassed) |
@@ -557,23 +527,19 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | System.NullReferenceException | exception | activity-packages/o365-activities/playbooks/legacy-mail-null-reference.md | medium | raw, with stack frames in UiPath.MicrosoftOffice365.Activities.Mail.* (legacy) — Connections activities remap it to 'The object used in the activity does not exist.' |
 | System.NullReferenceException | exception | activity-packages/python-activities/playbooks/invoke-method-failures.md | medium | on Invoke Python Method — Instance not bound to a successful Load Python Script result (M6) |
 | System.NullReferenceException | exception | activity-packages/system-activities/playbooks/get-asset-activity-bug-silent-failure.md | medium | thrown by a DOWNSTREAM consumer of a value an upstream Get Asset / Get Orchestrator Asset produced as null/empty with NO error of its own — check UiPath.System.Activities version (22.10.x Ctrl+K bug); plain null in user workflow logic → runtime-exceptions null-reference-exception.md |
-| System.NullReferenceException | exception | activity-packages/terminal-activities/playbooks/terminal-session-null-reference.md | medium | attributed to UiPath.Terminal.Activities.TerminalSession, usually with no terminal-specific message — most often a masked connect failure (scope cleanup calls Shutdown() on a null connection) |
 | System.NullReferenceException | exception | activity-packages/web-activities/playbooks/deserialize-null-input.md | high | on DeserializeJsonArray — no null-input guard, a null JsonString hits JArray.Parse directly |
 | System.NullReferenceException | exception | activity-packages/web-activities/playbooks/http-client-null-reference.md | medium | on UiPath.Web.Activities.HttpClient — a request input (EndPoint, header, cookie, parameter, body) resolved null during request building; no HTTP status or transport phrase in the message |
-| System.NullReferenceException | exception | activity-packages/workflowevents-activities/playbooks/handle-app-request-null-reference.md | medium | faulted activity is HandleAppRequest in a UiPath-App-invoked job — the NRE is raised inside the App-invoked workflow or by a null App input argument; generic in-workflow NRE → null-reference-exception.md |
 | System.NullReferenceException | exception | products/integration-service/playbooks/connector-null-reference.md | medium | on or just after a connector activity — stack shows a ForEach over an IntegrationService SWEntities output; for user-code NREs see null-reference-exception.md |
 | System.NullReferenceException | exception | runtime-exceptions/playbooks/null-reference-exception.md | medium | user-code workflow stack, not a UiPath package namespace — on a connector activity (SWEntities ForEach) see connector-null-reference.md; null traces back to an upstream Get Asset/Get Credential that logged no error → system-activities get-asset-activity-bug-silent-failure.md |
 | System.OutOfMemoryException | exception | activity-packages/excel-activities/playbooks/write-range-failures.md | medium | oversized DataTable written in one call via Excel COM (branch 5) |
 | System.Reflection.TargetInvocationException | exception | activity-packages/excel-activities/playbooks/read-range-null-reference.md | low | reflection wrapper from Excel Read Range parsing — unwrap the InnerException and re-categorize |
 | System.Reflection.TargetInvocationException | exception | activity-packages/word-activities/playbooks/replace-text-version-mismatch.md | medium | design-time — Studio errors on dropping Replace Text / opening the workflow; Studio vs UiPath.Word.Activities version mismatch |
+| System.Runtime.InteropServices.COMException | exception | activity-packages/excel-activities/playbooks/write-cell-failures.md | medium | on Write Cell — protected sheet or read-only workbook (branch 5); Word Export to PDF surface → export-pdf-com-hang.md |
 | System.Runtime.InteropServices.COMException | exception | activity-packages/word-activities/playbooks/export-pdf-com-hang.md | medium | at Export to PDF / Save Document as PDF — orphaned WINWORD.EXE or locked input document; 'Command failed' on open with a SharePoint link → word-open-sharepoint-url-com-command-failed.md |
 | System.Runtime.InteropServices.COMException | exception | activity-packages/word-activities/playbooks/word-open-sharepoint-url-com-command-failed.md | medium | message 'Command failed' faulting on Documents.Open — FilePath is a SharePoint/OneDrive sharing link; at Export to PDF with an orphaned/locked WINWORD.EXE → export-pdf-com-hang.md |
 | System.Threading.Tasks.TaskCanceledException | exception | activity-packages/web-activities/playbooks/net-http-request-aggregate-failure.md | medium | inner exception of NetHttpRequest's AggregateException — request exceeded TimeoutInMiliseconds |
 | System.TimeoutException | exception | activity-packages/gsuite-activities/playbooks/connection-and-auth-failures.md | medium | GSuite auth-phase only — 'Authentication attempt took longer than <N> seconds' wording during connection/OAuth token acquisition; per-request timeouts cancel as 'A task was canceled.' instead |
-| System.TimeoutException | exception | activity-packages/sap-bapi-activities/playbooks/sap-connection-failed.md | medium | SAP Application Scope / RFC connection or call timed out — needs the SAP BAPI scope context; SAP host unreachable, down, or saturated |
 | System.TimeoutException | exception | activity-packages/web-activities/playbooks/http-request-timeout.md | medium | on legacy .NET Framework HttpClient when RestSharp reports TimedOut; modern .NET surfaces WebException with the same message |
-| System.TimeoutException | exception | activity-packages/workflowevents-activities/playbooks/app-request-trigger-connection-lost.md | medium | at AppRequestTrigger in a UiPath-App-invoked job — App↔robot SignalR channel never connected; HTTP-request timeouts → http-request-timeout.md |
-| System.Utilities.Sys.HttpError | error-code | activity-packages/system-activities/playbooks/queue-transaction-activity-failed.md | medium |  |
 | System.Xml.XmlException | exception | activity-packages/web-activities/playbooks/deserialize-malformed-input.md | high | raised by DeserializeXml (XDocument.Parse) — input string is not valid XML |
 | Table does not have any column with column name containing | message | activity-packages/cv-activities/playbooks/cv-cell-targeting-failures.md | high |  |
 | Table only contains | message | activity-packages/cv-activities/playbooks/cv-cell-targeting-failures.md | high | covers the columns / rows / cell-number out-of-range variants |
@@ -581,7 +547,6 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | TargetNotFoundBrowserBlockedException | exception | activity-packages/ui-automation/playbooks/element-found-not-actionable.md | medium |  |
 | TemplateNoHostsAvailable | error-code | products/orchestrator/playbooks/job-pending-stale-dispatch.md | high | stale dispatch-time snapshot — template currently reports a connected runtime (robotVersions populated) |
 | TemplateNoLicense | error-code | products/orchestrator/playbooks/robot-credentials.md | high | machine template has zero Unattended runtime slots allocated |
-| Terminal host process path not found | message | activity-packages/terminal-activities/playbooks/terminal-session-connection-failed.md | medium |  |
 | The action is not allowed by the system. | message | activity-packages/o365-activities/playbooks/insufficient-graph-scope.md | high |  |
 | The app or user has been throttled. | message | activity-packages/o365-activities/playbooks/request-throttled.md | high |  |
 | The application called an interface that was marshalled for a different thread | message | activity-packages/word-activities/playbooks/word-export-pdf-com-wrong-thread.md | medium |  |
@@ -599,32 +564,20 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | The file appears to be corrupted | message | activity-packages/word-activities/playbooks/word-scope-file-corrupted.md | medium |  |
 | The file is read-only | message | activity-packages/word-activities/playbooks/replace-text-file-locked.md | medium | read-only attribute or locked target when the Word scope persists the edit |
 | The file limit for this shared drive has been exceeded. | message | activity-packages/gsuite-activities/playbooks/upload-storage-quota-exceeded.md | high |  |
-| The file list must contain at least two files | message | activity-packages/pdf-activities/playbooks/pdf-file-not-found-or-not-pdf.md | high |  |
 | The folder does not exist | message | activity-packages/mail-activities/playbooks/move-outlook-mail-failures.md | medium | deterministic every-run at Move — destination folder path / Account mismatch (branch 2) |
-| The folder was not found at the provided path. Verify that the path is correct. | message | activity-packages/system-activities/playbooks/file-folder-operation-failed.md | medium |  |
 | The identified element does not belong to the target application/browser. | message | activity-packages/ui-automation/playbooks/wrong-target-application.md | high |  |
-| The image list contains files with unsupported extensions | message | activity-packages/pdf-activities/playbooks/pdf-corrupt-or-image-input.md | medium |  |
-| The image list must contain at least one image | message | activity-packages/pdf-activities/playbooks/pdf-corrupt-or-image-input.md | medium |  |
-| The input file does not have a .PDF extension | message | activity-packages/pdf-activities/playbooks/pdf-file-not-found-or-not-pdf.md | high |  |
-| The input PDF file is not encrypted with a user password, yet a password was supplied | message | activity-packages/pdf-activities/playbooks/pdf-encrypted-or-wrong-password.md | high |  |
 | The job's associated process could not be found | message | products/maestro/playbooks/process-not-found-404.md | high |  |
-| The local directory path | message | activity-packages/intelligent-ocr-activities/playbooks/du-storage-or-taxonomy-missing.md | medium |  |
 | The macro ' | message | activity-packages/excel-activities/playbooks/invoke-vba-entry-method-name.md | high |  |
 | The message filter indicated that the application is busy | message | activity-packages/word-activities/playbooks/replace-text-com-busy.md | medium | at Replace Text / Read Text inside a Word scope — WINWORD.EXE busy, locked, or stalled on a hidden modal dialog |
 | The network path was not found | message | activity-packages/excel-activities/playbooks/read-range-file-not-found.md | medium | UNC workbook path — share unreachable from the Robot host |
 | The object used in the activity does not exist. | message | activity-packages/gsuite-activities/playbooks/invalid-or-null-input.md | medium |  |
-| The OCR service call timed out | message | activity-packages/ocr-activities/playbooks/ocr-endpoint-and-authentication.md | medium |  |
 | The operation failed | message | activity-packages/mail-activities/playbooks/move-outlook-mail-failures.md | medium | intermittent at Move Outlook Mail Message — COM session loss (branch 1); followed by 'An object could not be found' → delete-outlook-mail-failures.md |
 | The operation failed. An object could not be found. | message | activity-packages/mail-activities/playbooks/delete-outlook-mail-failures.md | medium | stale message reference — item moved/deleted between Get and Delete (branch 1) |
 | The operation has timed out | message | activity-packages/mail-activities/playbooks/delete-outlook-mail-failures.md | medium | at Delete Outlook Mail — COM blocked by a modal programmatic-access dialog or privilege mismatch (branch 4); on Get → get-outlook-mail-failures.md |
 | The operation has timed out | message | activity-packages/mail-activities/playbooks/get-outlook-mail-failures.md | medium | at Get Outlook Mail Messages — large folder vs TimeoutMS (branch 2); on Delete → delete-outlook-mail-failures.md |
 | The operation has timed out | message | activity-packages/web-activities/playbooks/http-request-timeout.md | medium | on HttpClient exceeding TimeoutMS — surfaces as WebException on modern .NET, TimeoutException on legacy; match the message, not the type |
 | The Outlook application is not running | message | activity-packages/mail-activities/playbooks/get-outlook-mail-failures.md | medium | COM session broken / no running Outlook for the Robot's user (branch 3) |
-| The password is incorrect. | message | activity-packages/pdf-activities/playbooks/pdf-encrypted-or-wrong-password.md | high |  |
 | The process cannot access the file because it is being used by another process | message | activity-packages/word-activities/playbooks/replace-text-file-locked.md | medium | Word scope save — Auto Save racing another access, a concurrent job, or a sync/AV client holding the handle |
-| The provided file path is invalid | message | activity-packages/pdf-activities/playbooks/pdf-file-not-found-or-not-pdf.md | high |  |
-| The provided page number is invalid | message | activity-packages/pdf-activities/playbooks/pdf-invalid-page-range.md | high |  |
-| The Range argument does not have a valid format | message | activity-packages/pdf-activities/playbooks/pdf-invalid-page-range.md | high |  |
 | The range is invalid | message | activity-packages/excel-activities/playbooks/delete-range-failures.md | medium |  |
 | The remote name could not be resolved | message | activity-packages/web-activities/playbooks/http-request-connection-failure.md | medium | DNS failure on legacy .NET Framework |
 | The remote server returned an error | message | activity-packages/web-activities/playbooks/http-request-connection-failure.md | medium |  |
@@ -634,15 +587,12 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | The resource could not be found. | message | activity-packages/o365-activities/playbooks/mail-message-not-found.md | high | raised by a Mail activity that addresses a specific message ID — folder-argument activities → mail-folder-not-found, Drive activities → drive-item-not-found |
 | The resource was not found. | message | activity-packages/gsuite-activities/playbooks/drive-file-not-found.md | high |  |
 | The Select methods only work on editable text | message | activity-packages/cv-activities/playbooks/cv-get-text-empty-or-wrong-result.md | medium | design-time warning — clipboard mode on a non-editable target |
-| The selected connection is no longer valid. Please use another connection or create a new one. | message | activity-packages/slack-activities/playbooks/connection-resolution-failure.md | medium |  |
-| The server didn't respond within the specified timeout value | message | activity-packages/system-activities/playbooks/download-file-failed.md | medium |  |
 | The server is unable to process the current request. | message | activity-packages/o365-activities/playbooks/transient-service-error.md | medium |  |
 | The service is currently unavailable. Please try again later. | message | activity-packages/gsuite-activities/playbooks/transient-and-timeout-errors.md | medium |  |
 | The sheet with the name | message | activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md | medium | legacy Excel Application Scope family — configured SheetName matches no sheet in the workbook; the write-side playbooks pivot here for the same signature |
 | The Size property has an invalid size of 0 | message | activity-packages/database-activities/playbooks/execute-non-query-failures.md | medium |  |
 | The source file does not exist. | message | activity-packages/classic-activities/playbooks/file-operation-failed.md | medium |  |
 | The specified Computer Vision server | message | activity-packages/cv-activities/playbooks/cv-server-auth-throttling-network.md | medium | covers the 403 variant with the server name and the 502/503/504/408 could-not-be-reached variant |
-| The specified existing connection is disconnected | message | activity-packages/terminal-activities/playbooks/terminal-session-connection-failed.md | medium |  |
 | The specified folder does not exist | message | activity-packages/mail-activities/playbooks/get-outlook-mail-failures.md | medium | at Get Outlook Mail Messages — MailFolder/Account not resolved (branch 1); intermittent / unattended-only on Move → move-outlook-mail-failures.md |
 | The specified folder does not exist | message | activity-packages/mail-activities/playbooks/move-outlook-mail-failures.md | medium | intermittent or unattended-only at Move — COM session loss (branch 1); deterministic on Get → get-outlook-mail-failures.md |
 | The specified item name already exists. | message | activity-packages/o365-activities/playbooks/item-name-already-exists.md | high |  |
@@ -651,7 +601,6 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | The specified Python path is not valid | message | activity-packages/python-activities/playbooks/python-path-not-valid.md | high | at Python Scope open — Path points at python.exe or the WindowsApps Store alias instead of the install folder |
 | The specified shared item does not exist. | message | activity-packages/o365-activities/playbooks/drive-item-not-found.md | high |  |
 | The string argument cannot be empty | message | activity-packages/excel-activities/playbooks/delete-range-failures.md | medium |  |
-| The supplied password does not grant the permissions (owner rights) to change the password. | message | activity-packages/pdf-activities/playbooks/pdf-encrypted-or-wrong-password.md | high |  |
 | The target container does not have any items. | message | activity-packages/ui-automation/playbooks/select-item-no-items.md | medium |  |
 | The target element is disabled. Operation canceled. | message | activity-packages/ui-automation/playbooks/disabled-element.md | high |  |
 | The target Element was not specified for this activity | message | activity-packages/classic-activities/playbooks/ui-activity-configuration-error.md | high |  |
@@ -662,16 +611,11 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | The UI element is invalid. Make sure the target application is open and the element is on the screen. | message | activity-packages/ui-automation/playbooks/element-found-not-actionable.md | medium |  |
 | The UiElement is not initialized | message | activity-packages/classic-activities/playbooks/ui-activity-configuration-error.md | high |  |
 | The unattended robot has the wrong machine credentials to execute the job | message | products/orchestrator/playbooks/robot-credentials.md | high |  |
-| The user and owner passwords must not coincide! | message | activity-packages/pdf-activities/playbooks/pdf-encrypted-or-wrong-password.md | high |  |
 | The user does not have sufficient permissions for the file. | message | activity-packages/gsuite-activities/playbooks/connection-and-auth-failures.md | medium |  |
 | The user has reached their quota limit. | message | activity-packages/o365-activities/playbooks/upload-file-quota-or-size.md | medium |  |
 | The user's Drive storage quota has been exceeded. | message | activity-packages/gsuite-activities/playbooks/upload-storage-quota-exceeded.md | high |  |
-| There was an error connecting to terminal | message | activity-packages/terminal-activities/playbooks/terminal-session-connection-failed.md | medium |  |
 | There was an error on the email server. Please try modifying your Query or Top values to continue. | message | activity-packages/o365-activities/playbooks/transient-service-error.md | medium |  |
 | This action would increase the number of cells in the workbook above the limit of 10000000 cells | message | activity-packages/gsuite-activities/playbooks/sheets-cell-limit-exceeded.md | high |  |
-| This feature has been disabled by your organization | message | products/studio/playbooks/studio-autopilot-unavailable.md | medium |  |
-| This version of the OCR.Activities package is incompatible with | message | activity-packages/ocr-activities/playbooks/ocr-engine-config-and-dependencies.md | medium |  |
-| Timeout must be a number greater than 0. | message | activity-packages/ocr-activities/playbooks/ocr-engine-config-and-dependencies.md | medium |  |
 | Timeout period elapsed prior to completion of the operation | message | activity-packages/database-activities/playbooks/execute-query-failures.md | medium |  |
 | TimeoutException | exception | activity-packages/ui-automation/playbooks/timeout-issue.md | low | classic activities — ambiguous; only follow this playbook if the faulted activity is a UI automation type |
 | Too many requests. | message | activity-packages/o365-activities/playbooks/request-throttled.md | high |  |
@@ -683,7 +627,6 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | UiElementNotFoundException | exception | activity-packages/ui-automation/playbooks/selector-failure-manual.md | medium | HA enabled but no fix produced, or source code available for manual selector analysis |
 | UiNodeHasNoItemsException | exception | activity-packages/ui-automation/playbooks/select-item-no-items.md | medium |  |
 | UiNodeUninitializedElementException | exception | activity-packages/ui-automation/playbooks/element-found-not-actionable.md | medium |  |
-| UiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException | exception | activity-packages/slack-activities/playbooks/slack-api-error.md | medium | on a Slack Integration Service activity — the ProviderMessage JSON 'error' field names the Slack-side cause |
 | UiPath.ConnectionClient.Contracts.ConnectionHttpException | exception | activity-packages/gsuite-activities/playbooks/connection-and-auth-failures.md | medium | GSuite token fetch / Integration Service connection resolution — on O365 Mail triggers → email-trigger-connection-event-failure.md (o365) |
 | UiPath.ConnectionClient.Contracts.ConnectionHttpException | exception | activity-packages/o365-activities/playbooks/email-trigger-connection-event-failure.md | medium | from an O365 Mail trigger (NewEmailReceived / EmailSent) event, sample lookup, or token fetch — Office365Exception may carry the identical message; on GSuite activities → connection-and-auth-failures.md (gsuite) |
 | UiPath.Core.Activities.OrchestratorCommunicationException | exception | activity-packages/system-activities/playbooks/get-asset-robot-not-authenticated.md | medium |  |
@@ -692,48 +635,31 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | UiPath.CV.ElementNotFoundException | exception | activity-packages/cv-activities/playbooks/cv-element-not-found.md | medium | plain parameterless Element not found after TimeoutMS exhausts — no cell sentence, no Scrolled prefix; timeout expiry surfaces as this, NOT TimeoutException |
 | UiPath.CV.ElementNotFoundException | exception | activity-packages/cv-activities/playbooks/cv-scroll-search-failures.md | medium | message contains the Scrolled-the-entire-screen literal and ScrollDirection != None — scroll-search exhausted, not a plain find timeout |
 | UiPath.CV.InvalidDescriptorException | exception | activity-packages/cv-activities/playbooks/cv-invalid-descriptor.md | high |  |
-| UiPath.DocumentProcessing.Contracts.Extensions.InvalidPageRangeException | exception | activity-packages/pdf-activities/playbooks/pdf-invalid-page-range.md | high |  |
-| UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException | exception | activity-packages/pdf-activities/playbooks/pdf-encrypted-or-wrong-password.md | high | read/extract activity on an encrypted PDF — message 'The password is incorrect.' |
 | UiPath.Excel.BusinessException | exception | activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md | medium | with sheet-name wording — see message signature; other BusinessException wordings → write-cell-failures.md / write-range-failures.md / append-range-failures.md / delete-range-failures.md |
+| UiPath.Excel.BusinessException | exception | activity-packages/excel-activities/playbooks/write-cell-failures.md | medium | on Write Cell — wrong-format/Excel-busy (branches 2/3) or invalid cell reference (branch 6) wordings; sheet-name wording → read-range-sheet-not-found.md |
 | UiPath.Excel.ExcelException | exception | activity-packages/excel-activities/playbooks/read-range-null-reference.md | low | provider wrapper for in-activity parsing failures; with sheet-name wording 'does not exist in the workbook' → read-range-sheet-not-found.md |
-| UiPath.IntegrationCore.Utilities.ConnectionException | exception | activity-packages/slack-activities/playbooks/connection-resolution-failure.md | medium |  |
 | UiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException | exception | products/integration-service/playbooks/connector-general-exception.md | high |  |
 | UiPath.IntegrationService.Activities.Runtime.Exceptions.RuntimeException | exception | products/integration-service/playbooks/connector-runtime-exception.md | high |  |
-| UiPath.IntelligentOCR.Exceptions.DocumentRejectedByUserException | exception | activity-packages/intelligent-ocr-activities/playbooks/du-document-rejected.md | medium |  |
 | UiPath.Ipc.RemoteException | exception | products/integration-service/playbooks/connector-remote-exception.md | medium | connector failure only when the faulted activity is a connector activity AND the unwrapped inner message is token/auth, transport, or downstream HTTP |
-| UiPath.PDF.ImageToPdfException | exception | activity-packages/pdf-activities/playbooks/pdf-corrupt-or-image-input.md | medium |  |
-| UiPath.PDF.PdfException | exception | activity-packages/pdf-activities/playbooks/pdf-corrupt-or-image-input.md | medium | reader-level parse failure ('Invalid input stream', no inner PdfIncorrectPasswordException) — corrupt/truncated/non-PDF bytes |
-| UiPath.SAP.BAPI.SapBapiExceptions.UnSupportedBapiException | exception | activity-packages/sap-bapi-activities/playbooks/sap-unsupported-bapi.md | high |  |
-| UiPath.SmartData.Utils.DocumentUnderstandingClient.DUApiException | exception | activity-packages/intelligent-ocr-activities/playbooks/du-license-or-endpoint-rejected.md | medium |  |
-| UiPath.Terminal.Data.TerminalConnectionException | exception | activity-packages/terminal-activities/playbooks/terminal-session-connection-failed.md | medium |  |
 | UiPath.UIAutomationNext.Exceptions.NodeAmbiguousException | exception | activity-packages/ui-automation/playbooks/ambiguous-selector.md | high |  |
 | UiPath.UIAutomationNext.Exceptions.UiAutomationException | exception | activity-packages/ui-automation/playbooks/click-coordinate-off-screen.md | high | message is the outside-of-screen-bounds literal; inner COMException HRESULT 0x800402bd — element was located, coordinate rejected |
 | UiPath.UIAutomationNext.Exceptions.UiNodeDisabledElementException | exception | activity-packages/ui-automation/playbooks/disabled-element.md | high |  |
 | UiPath.UIAutomationNext.Exceptions.VerifyActivityExecutionException | exception | activity-packages/ui-automation/playbooks/verify-execution-failure.md | high |  |
 | UiPath.Word.WordException | exception | activity-packages/word-activities/playbooks/word-com-start-background-session0.md | medium | COM-start fault on an unattended/background run — stack through WordAppHelpers.StartNewApplication |
-| UiPathOCRErrorInvalidResponse | error-code | activity-packages/ocr-activities/playbooks/ocr-endpoint-and-authentication.md | medium |  |
-| UiPathOCRInvalidApiKey | error-code | activity-packages/intelligent-ocr-activities/playbooks/du-license-or-endpoint-rejected.md | medium | AggregateException-wrapped 'Server response: ... Error:UiPathOCRInvalidApiKey' on the Digitize Document / DU OCR path; the raw OCR-activity surface is the ocr-activities endpoint/authentication playbook |
-| UiPathOCRInvalidApiKey | error-code | activity-packages/ocr-activities/playbooks/ocr-endpoint-and-authentication.md | medium | raw OCR-activity surface (OCRException, OCRResultCode 99902, HTTP 401); the AggregateException-wrapped Digitize Document surface is intelligent-ocr du-license-or-endpoint-rejected |
 | Unable to cast COM object | message | activity-packages/mail-activities/playbooks/send-outlook-mail-failures.md | medium | Outlook COM bind at Send Outlook Mail (branch 1); Word interop casts name a Microsoft.Office.Interop.Word interface → word-export-pdf-com-wrong-thread.md |
 | Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document' | message | activity-packages/word-activities/playbooks/word-export-pdf-com-wrong-thread.md | medium | _Document cast failing on the export path |
 | Unable to cast object of type | message | activity-packages/excel-activities/playbooks/invoke-vba-parameter-formatting.md | medium |  |
 | Unable to connect to the remote server | message | activity-packages/web-activities/playbooks/http-request-connection-failure.md | medium |  |
-| Unable to find a connection of type | message | activity-packages/slack-activities/playbooks/connection-resolution-failure.md | medium |  |
 | Unable to find the searched element. | message | activity-packages/ui-automation/playbooks/activity-configuration-error.md | high |  |
 | Unable to parse range: | message | activity-packages/gsuite-activities/playbooks/sheets-invalid-range.md | medium |  |
-| Unauthorized - An invalid connection id, and/or Bearer token provided. | message | activity-packages/slack-activities/playbooks/slack-api-error.md | medium |  |
 | UnauthorizedAccessException | exception | activity-packages/classic-activities/playbooks/file-operation-failed.md | medium | generic .NET — discriminator is the faulted file activity (Rename File / Move File / Append Line) |
 | Unexpected character encountered while parsing value | message | activity-packages/web-activities/playbooks/deserialize-malformed-input.md | high |  |
 | Unexpected end of content while loading JArray | message | activity-packages/web-activities/playbooks/deserialize-malformed-input.md | high |  |
 | UninitializedNodeException | exception | activity-packages/classic-activities/playbooks/ui-activity-configuration-error.md | high | the uninitialized node is the scope's context window — wrong selector shape / null window on the scope |
 | Unlicensed version | state | activity-packages/ui-automation/playbooks/healing-agent-orch-issues.md | high | Healing Agent tab banner — preview UIA 24.10.x detecting unlicensed |
-| Unsupported BAPI. Contains nested complex types. | message | activity-packages/sap-bapi-activities/playbooks/sap-unsupported-bapi.md | high |  |
-| Unsupported engine | message | activity-packages/ocr-activities/playbooks/ocr-engine-config-and-dependencies.md | medium |  |
 | Upload failed after | message | activity-packages/gsuite-activities/playbooks/upload-storage-quota-exceeded.md | high |  |
 | Upload session | message | activity-packages/o365-activities/playbooks/upload-file-quota-or-size.md | medium | covers 'Upload session failed.' / 'Upload session incomplete.' / 'Upload session not found.' — broken chunked upload |
-| Usage must be Document. | message | activity-packages/ocr-activities/playbooks/ocr-input-and-runtime.md | medium |  |
-| Usage must be Screen. | message | activity-packages/ocr-activities/playbooks/ocr-input-and-runtime.md | medium |  |
-| users_not_found | message | activity-packages/slack-activities/playbooks/slack-api-error.md | medium |  |
+| userRateLimitExceeded | error-code | activity-packages/gsuite-activities/playbooks/transient-and-timeout-errors.md | medium |  |
 | Value cannot be null | message | runtime-exceptions/playbooks/argument-null-exception.md | medium | typically followed by (Parameter 'paramName') — the parameter name identifies the rejected argument |
 | Value cannot be null. (Parameter 'DriveItem') | message | activity-packages/o365-activities/playbooks/copy-item-argument-null.md | high |  |
 | Value cannot be null. (Parameter 'Folder name') | message | activity-packages/o365-activities/playbooks/create-folder-invalid-path.md | high |  |
@@ -743,9 +669,6 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Value cannot be null. (Parameter 'Secure') | message | activity-packages/cv-activities/playbooks/cv-action-failed-after-find.md | medium |  |
 | Value for property [Movement units] can not be lower than 1. | message | activity-packages/ui-automation/playbooks/activity-configuration-error.md | high |  |
 | Value is 'null' but should be 'object' | message | products/maestro/playbooks/input-schema-mismatch.md | high | optional file/attachment passed as null |
-| was found but it's in use | message | activity-packages/system-activities/playbooks/download-file-failed.md | medium |  |
-| was not in a correct format | message | activity-packages/pdf-activities/playbooks/pdf-invalid-page-range.md | high | generic .NET format wording — only when raised as InvalidPageRangeException from Extract PDF Page Range (unparseable Range string) |
-| was not supplied in activity designer nor in project settings | message | activity-packages/ocr-activities/playbooks/ocr-engine-config-and-dependencies.md | medium |  |
 | Word experienced an error trying to open the file | message | activity-packages/word-activities/playbooks/word-scope-file-corrupted.md | medium |  |
 | WordAppHelpers.StartNewApplication | message | activity-packages/word-activities/playbooks/word-com-start-background-session0.md | medium | stack frame — COM start path, before any Documents.Open |
 | WordDocumentFactory.OpenOrCreateNewDocument | message | activity-packages/word-activities/playbooks/word-open-sharepoint-url-com-command-failed.md | medium | stack frame — open path, not COM start |
@@ -757,9 +680,7 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | You do not have the following labels | message | activity-packages/gsuite-activities/playbooks/invalid-or-null-input.md | medium |  |
 | You must provide a literal value for | message | activity-packages/o365-activities/playbooks/application-scope-misconfigured.md | medium |  |
 | You must provide a value for at least one of the following properties: To, Cc, Bcc | message | activity-packages/gsuite-activities/playbooks/invalid-or-null-input.md | medium |  |
-| You need to specify the files to merge | message | activity-packages/pdf-activities/playbooks/pdf-file-not-found-or-not-pdf.md | high |  |
 | Your connection has been temporarily disabled due to multiple unsuccessful attempts | message | products/agents/playbooks/is-connection-disabled.md | medium |  |
-| Your license could not be validated | message | activity-packages/intelligent-ocr-activities/playbooks/du-license-or-endpoint-rejected.md | medium |  |
 | Your user's monthly Personal Automation quota has been exceeded | message | products/maestro/playbooks/personal-automation-quota.md | high |  |
 | {0002096B-0000-0000-C000-000000000046} | message | activity-packages/word-activities/playbooks/word-export-pdf-com-wrong-thread.md | medium | IID of Microsoft.Office.Interop.Word._Document in the QueryInterface failure |
 
@@ -821,13 +742,6 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 - `activity-packages/gsuite-activities/playbooks/transient-and-timeout-errors.md`: NOT for Authentication attempt took longer than <N> seconds (auth-phase TimeoutException) → connection-and-auth-failures.md
 - `activity-packages/gsuite-activities/playbooks/transient-and-timeout-errors.md`: NOT for Clean 401/403/404 with a definite message → connection-and-auth-failures.md, drive-file-not-found.md
 - `activity-packages/gsuite-activities/playbooks/transient-and-timeout-errors.md`: NOT for The storage quota was exceeded. / Upload failed after <N> bytes → upload-storage-quota-exceeded.md
-- `activity-packages/intelligent-ocr-activities/playbooks/du-document-rejected.md`: NOT for DUApiException / tenant / storage errors → du-license-or-endpoint-rejected.md, du-not-enabled-or-tenant-key.md, du-storage-or-taxonomy-missing.md
-- `activity-packages/intelligent-ocr-activities/playbooks/du-license-or-endpoint-rejected.md`: NOT for Failed to fetch Document Understanding projects list / Couldn't retrieve a tenant key → du-not-enabled-or-tenant-key.md
-- `activity-packages/intelligent-ocr-activities/playbooks/du-license-or-endpoint-rejected.md`: NOT for No such bucket / Could not load from storage bucket → du-storage-or-taxonomy-missing.md
-- `activity-packages/intelligent-ocr-activities/playbooks/du-not-enabled-or-tenant-key.md`: NOT for DUApiException with an HTTP status → du-license-or-endpoint-rejected.md
-- `activity-packages/intelligent-ocr-activities/playbooks/du-not-enabled-or-tenant-key.md`: NOT for No such bucket / Could not find Orchestrator Folder → du-storage-or-taxonomy-missing.md
-- `activity-packages/intelligent-ocr-activities/playbooks/du-storage-or-taxonomy-missing.md`: NOT for DUApiException (HTTP status) → du-license-or-endpoint-rejected.md
-- `activity-packages/intelligent-ocr-activities/playbooks/du-storage-or-taxonomy-missing.md`: NOT for Failed to fetch Document Understanding projects list / Couldn't retrieve a tenant key → du-not-enabled-or-tenant-key.md
 - `activity-packages/o365-activities/playbooks/application-scope-misconfigured.md`: NOT for Messages carrying a Graph result (403/404/429/503 or AADSTS token errors) → insufficient-graph-scope.md, request-throttled.md, transient-service-error.md, authentication-token-invalid.md
 - `activity-packages/o365-activities/playbooks/authentication-token-invalid.md`: NOT for Authenticated caller lacking Graph permission (403 wording) → insufficient-graph-scope.md
 - `activity-packages/o365-activities/playbooks/authentication-token-invalid.md`: NOT for Pre-authentication configuration faults (asset / 'You must provide a value') → application-scope-misconfigured.md
@@ -860,30 +774,9 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 - `activity-packages/o365-activities/playbooks/upload-file-quota-or-size.md`: NOT for The resource could not be found. → drive-item-not-found.md
 - `activity-packages/o365-activities/playbooks/upload-file-quota-or-size.md`: NOT for The specified item name already exists. → item-name-already-exists.md
 - `activity-packages/o365-activities/playbooks/upload-file-quota-or-size.md`: NOT for Too many requests. / The app or user has been throttled. → request-throttled.md
-- `activity-packages/pdf-activities/playbooks/pdf-corrupt-or-image-input.md`: NOT for Could not find file / does not have a .PDF extension → pdf-file-not-found-or-not-pdf.md
-- `activity-packages/pdf-activities/playbooks/pdf-corrupt-or-image-input.md`: NOT for PdfException with inner PdfIncorrectPasswordException (encrypted PDF) → pdf-encrypted-or-wrong-password.md
-- `activity-packages/pdf-activities/playbooks/pdf-encrypted-or-wrong-password.md`: NOT for Could not find file / does not have a .PDF extension → pdf-file-not-found-or-not-pdf.md
-- `activity-packages/pdf-activities/playbooks/pdf-encrypted-or-wrong-password.md`: NOT for PdfException 'Invalid input stream' (no password inner exception) → pdf-corrupt-or-image-input.md
-- `activity-packages/pdf-activities/playbooks/pdf-file-not-found-or-not-pdf.md`: NOT for The password is incorrect (encrypted PDF) → pdf-encrypted-or-wrong-password.md
-- `activity-packages/pdf-activities/playbooks/pdf-file-not-found-or-not-pdf.md`: NOT for UiPath.PDF.PdfException 'Invalid input stream' (file opened but corrupt) → pdf-corrupt-or-image-input.md
-- `activity-packages/pdf-activities/playbooks/pdf-invalid-page-range.md`: NOT for Could not find file / does not have a .PDF extension → pdf-file-not-found-or-not-pdf.md
-- `activity-packages/pdf-activities/playbooks/pdf-invalid-page-range.md`: NOT for PdfException (encrypted/corrupt file) → pdf-encrypted-or-wrong-password.md or pdf-corrupt-or-image-input.md
-- `activity-packages/pdf-activities/playbooks/pdf-read-ocr-no-engine.md`: NOT for Could not find file / does not have a .PDF extension → pdf-file-not-found-or-not-pdf.md
 - `activity-packages/python-activities/playbooks/invoke-method-failures.md`: NOT for engine-init / script-load faults (Error initializing Python engine, top-level ModuleNotFoundError, syntax error) → load-script-failures.md
 - `activity-packages/python-activities/playbooks/python-path-not-valid.md`: NOT for engine-init errors (One or more errors occurred / Error initializing the Python engine) → python-scope-architecture-version-mismatch.md
-- `activity-packages/sap-bapi-activities/playbooks/sap-bapi-not-found.md`: NOT for Connection could not be created / RfcConfigurationException / TimeoutException → sap-connection-failed.md
-- `activity-packages/sap-bapi-activities/playbooks/sap-bapi-not-found.md`: NOT for Unsupported BAPI. Contains nested complex types. → sap-unsupported-bapi.md
-- `activity-packages/sap-bapi-activities/playbooks/sap-connection-failed.md`: NOT for Function: <name> could not be created / BAPI name is null or empty → sap-bapi-not-found.md
-- `activity-packages/sap-bapi-activities/playbooks/sap-connection-failed.md`: NOT for Unsupported BAPI. Contains nested complex types. → sap-unsupported-bapi.md
-- `activity-packages/sap-bapi-activities/playbooks/sap-unsupported-bapi.md`: NOT for Connection could not be created / RfcConfigurationException / TimeoutException → sap-connection-failed.md
-- `activity-packages/sap-bapi-activities/playbooks/sap-unsupported-bapi.md`: NOT for Function: <name> could not be created / BAPI name is null or empty → sap-bapi-not-found.md
-- `activity-packages/slack-activities/playbooks/connection-resolution-failure.md`: NOT for BusinessActivityExecutionException (connection resolved, Slack rejected the call) → slack-api-error.md
-- `activity-packages/slack-activities/playbooks/slack-api-error.md`: NOT for AggregateException wrapping a ConnectionException (failure at connection resolution) → connection-resolution-failure.md
-- `activity-packages/system-activities/playbooks/file-folder-operation-failed.md`: NOT for classic Rename/Move File / Append Line messages ('The source file does not exist.', 'File cannot be null') → classic-activities file-operation-failed.md
 - `activity-packages/system-activities/playbooks/get-asset-robot-not-authenticated.md`: NOT for HTTP 403 'not authorized' (permission/RBAC) → get-asset-permission-denied.md
-- `activity-packages/system-activities/playbooks/queue-transaction-activity-failed.md`: NOT for classic Add Queue Item ('Queue name may not be null or empty', reserved-character/duplicate keys) → add-queue-item-failed.md
-- `activity-packages/terminal-activities/playbooks/terminal-session-connection-failed.md`: NOT for bare NullReferenceException from TerminalSession → terminal-session-null-reference.md
-- `activity-packages/terminal-activities/playbooks/terminal-session-null-reference.md`: NOT for TerminalConnectionException / connect-time message surfaced directly → terminal-session-connection-failed.md
 - `activity-packages/ui-automation/playbooks/ambiguous-selector.md`: NOT for Absent HA recovery data for this fault is expected (HA bypasses NodeAmbiguousException) — not no-recovery-data.md
 - `activity-packages/ui-automation/playbooks/ambiguous-selector.md`: NOT for NodeNotFoundException / SelectorNotFoundException / UiElementNotFoundException (zero matches) → selector-failure-manual.md
 - `activity-packages/ui-automation/playbooks/application-not-found.md`: NOT for App missing and OpenMode != Never (launch attempted) → application-open-failed.md
@@ -922,9 +815,6 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 - `activity-packages/word-activities/playbooks/word-com-start-background-session0.md`: NOT for faults on Documents.Open with COMException 'Command failed' → word-open-sharepoint-url-com-command-failed.md
 - `activity-packages/word-activities/playbooks/word-com-start-background-session0.md`: NOT for wrong-thread cast 0x8001010E on a child activity → word-export-pdf-com-wrong-thread.md
 - `activity-packages/word-activities/playbooks/word-open-sharepoint-url-com-command-failed.md`: NOT for wrong-thread cast 0x8001010E on a child activity → word-export-pdf-com-wrong-thread.md
-- `activity-packages/workflowevents-activities/playbooks/app-request-trigger-connection-lost.md`: NOT for AggregateException at InitializeHubConnection → initialize-hub-connection-aggregate-failure.md
-- `activity-packages/workflowevents-activities/playbooks/app-request-trigger-connection-lost.md`: NOT for NullReferenceException at HandleAppRequest → handle-app-request-null-reference.md
-- `activity-packages/workflowevents-activities/playbooks/handle-app-request-null-reference.md`: NOT for SignalR / transport fault at AppRequestTrigger → app-request-trigger-connection-lost.md
 - `products/integration-service/playbooks/connector-aggregate-exception.md`: NOT for inner GeneralException (DAP-GE) → connector-general-exception.md
 - `products/integration-service/playbooks/connector-aggregate-exception.md`: NOT for inner Ipc/CoreIpc RemoteException → connector-remote-exception.md
 - `products/integration-service/playbooks/connector-aggregate-exception.md`: NOT for inner NullReferenceException → connector-null-reference.md

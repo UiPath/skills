@@ -13,6 +13,18 @@ signatures:
   - kind: message
     value: "because it is being used by another process"
     note: "on Write Cell — external locker (→ read-range-file-locked.md) or Classic Workbook Write Cell racing an open Excel scope on the same path (branch 1)"
+  - kind: exception
+    value: "System.IO.IOException"
+    note: "on Write Cell — file lock or Classic Workbook Write Cell racing an open Excel scope on the same path (branch 1); Read Range surface → read-range-file-locked.md"
+  - kind: exception
+    value: "UiPath.Excel.BusinessException"
+    note: "on Write Cell — wrong-format/Excel-busy (branches 2/3) or invalid cell reference (branch 6) wordings; sheet-name wording → read-range-sheet-not-found.md"
+  - kind: exception
+    value: "System.Runtime.InteropServices.COMException"
+    note: "on Write Cell — protected sheet or read-only workbook (branch 5); Word Export to PDF surface → export-pdf-com-hang.md"
+  - kind: error-code
+    value: "0x800A03EC"
+    note: "on Write Cell — COMException near Worksheet.Protect, protected target (branch 5)"
 exclusions:
   - "BusinessException 'The sheet with the name ... does not exist' → read-range-sheet-not-found.md"
 ---
