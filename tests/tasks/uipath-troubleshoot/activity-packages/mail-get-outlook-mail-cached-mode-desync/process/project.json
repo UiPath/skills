@@ -1,7 +1,7 @@
 {
   "name": "ComplianceMailExport",
   "projectId": "d4e5f6a7-b8c9-4d01-e2f3-a4b5c6d7e809",
-  "description": "Reads the Inbox via Get Outlook Mail Messages and exports it. Reproduces a Cached Exchange Mode desync: the job ends Successful with no error, but the activity returns only the locally cached subset of the Inbox because the account's Offline Settings window is restricted.",
+  "description": "Reads the Inbox via Get Outlook Mail Messages and exports it.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Mail.Activities": "[1.18.3]",

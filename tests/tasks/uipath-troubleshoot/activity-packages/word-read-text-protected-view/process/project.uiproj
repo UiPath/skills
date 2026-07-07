@@ -1,6 +1,6 @@
 {
   "Name": "InboundDocReader",
   "ProjectType": "Process",
-  "Description": "Reproduces a Read Text failure where Word opens an email-sourced document in Protected View (Mark-of-the-Web), blocking the read.",
+  "Description": "Opens an inbound Word document and reads its full text for downstream processing.",
   "MainFile": "Main.xaml"
 }

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the COM/RPC-across-scopes (branch 3) of the excel-activities/excel-application-card-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (COMException RPC_E_DISCONNECTED 0x80010108 on UseExcelFile_2) → jobs logs (UseExcelFile_1 opened+closed EXCEL.EXE cleanly; UseExcelFile_2 attempted to attach to PID that no longer exists; no Excel Process Scope wrapping the sequence) → workflow source (two sequential Use Excel File cards with ReadFormatting=True COM-forcing, no outer Excel Process Scope). The missing Excel Process Scope is the smoking gun.",
+  "_doc": "Synthetic fixture set for the Use Excel File multi-quarter report scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {"match": "or folders list --output json", "file": "3dec41f0e2.json"},
     {"match": "or folders list --output json", "file": "3dec41f0e2.json"},

@@ -1,7 +1,7 @@
 {
   "name": "ContractMerge",
   "projectId": "e6f7a8b9-c0d1-4193-2e3f-405162738495",
-  "description": "Reproduces a Replace Text file-lock failure: Use Word File with Auto Save edits the same shared file every loop iteration, so a save races another access and faults with IOException (being used by another process).",
+  "description": "Iterates over a recipient list and personalizes a contract Word document by replacing the recipient placeholder for each one.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

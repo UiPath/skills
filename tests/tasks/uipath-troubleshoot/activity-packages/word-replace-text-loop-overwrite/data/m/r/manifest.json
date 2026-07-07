@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures for replace-text-loop-overwrite. The job SUCCEEDS but later rows are unchanged (placeholder consumed by the first in-place edit), so there is no faulted job.",
+  "_doc": "Synthetic fixture set for the Replace Text loop-overwrite scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

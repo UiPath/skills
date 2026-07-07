@@ -1,7 +1,7 @@
 {
   "name": "ExcelWriteCellProcess",
   "projectId": "a4b5c6d7-8192-43a0-94c5-22bb2222dded",
-  "description": "Repro: Excel Write Cell; Value is a formula with semicolon parameter separators (=SUM(A1;A10)). Exercises branch 2 of the write-cell-failures playbook.",
+  "description": "Writes a SUM total formula into cell D1 of the 'Sales' sheet in the sales workbook at C:\\Robot\\Data\\sales-2026-05.xlsx via Write Cell inside a Use Excel File scope.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.24.7]",

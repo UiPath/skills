@@ -1,7 +1,7 @@
 {
   "name": "NDAFiller",
   "projectId": "f6a7b8c9-d0e1-4193-a4b5-c6d7e8f90304",
-  "description": "Reproduces a Word Application Scope hang where Word blocks on a background password prompt for a protected document, so the job never completes and is eventually stopped.",
+  "description": "Fills an NDA document by opening it and replacing the counterparty placeholder with the counterparty name via Word activities.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

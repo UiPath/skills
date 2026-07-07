@@ -1,6 +1,6 @@
 {
   "Name": "StoredProcWriteBack",
   "ProjectType": "Process",
-  "Description": "Reproduces an Execute Non Query failure: a stored procedure with an Output parameter whose Size=0, invoked over an ODBC provider, throws 'The Size property has an invalid size of 0'.",
+  "Description": "Finalizes an order by calling the usp_FinalizeOrder stored procedure over an ODBC connection via Execute Non Query and reading back its output parameter.",
   "MainFile": "Main.xaml"
 }

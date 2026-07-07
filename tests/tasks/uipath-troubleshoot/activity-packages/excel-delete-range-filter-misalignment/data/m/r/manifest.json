@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the filter-misalignment (branch 5) of the excel-activities/delete-range-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (the VISIBLE fault is a Throw 'Customer CUST-9001 missing from post-delete data' — NOT a Delete Range exception) → jobs logs (decisive: an active AutoFilter on column Status hiding rows where Status='Archived', Delete Range on A10:D20 completed successfully, downstream Read Range returned fewer rows than expected, CUST-9001 not found in post-delete data) → workflow source. The agent must trace backward from Throw_1 through the AutoFilter Trace line to identify Delete Range as the silent corruption origin.",
+  "_doc": "Synthetic fixture set for the Delete Range customer-list cleanup scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {"match": "or folders list --output json", "file": "2e39ca11ce.json"},
     {"match": "or folders list --output json", "file": "2e39ca11ce.json"},

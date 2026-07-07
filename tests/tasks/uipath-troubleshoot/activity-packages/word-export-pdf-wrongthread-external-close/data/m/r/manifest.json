@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures for export-pdf-wrongthread-external-close. Save Document as PDF faults with InvalidCastException / RPC_E_WRONG_THREAD (0x8001010E) because Word Application Scope attached to an already-open external WINWORD.EXE that the user closed mid-run before the export. The job log shows the attach warning + the mid-run-close warning; the workflow itself is structurally correct.",
+  "_doc": "Synthetic fixture set for the export-pdf wrongthread-external-close scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

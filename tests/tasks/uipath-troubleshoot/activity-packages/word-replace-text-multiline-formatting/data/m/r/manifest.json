@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures for replace-text-multiline-formatting. The job SUCCEEDS; the address block is inserted but collapses to one line because the Replace value carries Environment.NewLine. No faulted job.",
+  "_doc": "Synthetic fixture set for the Replace Text multiline-formatting scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

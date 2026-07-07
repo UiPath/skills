@@ -1,7 +1,7 @@
 {
   "name": "BulkDocPdf",
   "projectId": "e5f6a7b8-c9d0-4b3c-9e5f-607182930415",
-  "description": "Reproduces a Save Document as PDF COM wrong-thread fault (0x8001010E RPC_E_WRONG_THREAD) where a Parallel between scope-open and the export runs the export on a non-creator thread, off the STA that owns the document.",
+  "description": "Opens an invoice Word document and saves it as a PDF in the output folder while logging the export.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

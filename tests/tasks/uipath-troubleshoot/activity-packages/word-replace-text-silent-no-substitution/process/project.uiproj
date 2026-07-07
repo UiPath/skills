@@ -1,6 +1,6 @@
 {
   "Name": "OnboardingLetter",
   "ProjectType": "Process",
-  "Description": "Reproduces a Replace Text silent no-substitution: the job succeeds but the placeholder is left unchanged because it is split across Word XML runs in the template.",
+  "Description": "Generates an onboarding letter by inserting the employee name into the placeholder in the offer template.",
   "MainFile": "Main.xaml"
 }

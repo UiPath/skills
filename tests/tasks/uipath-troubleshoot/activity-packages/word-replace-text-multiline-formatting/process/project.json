@@ -1,7 +1,7 @@
 {
   "name": "AddressBlockFill",
   "projectId": "d4e5f6a7-b8c9-4193-8a0b-5e6f70819203",
-  "description": "Reproduces a Replace Text multi-line formatting issue: the Replace value carries Environment.NewLine breaks, so the inserted address block collapses to a single line / loses paragraph formatting.",
+  "description": "Fills the recipient address block into the address template to produce an addressed document.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

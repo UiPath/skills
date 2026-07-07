@@ -1,6 +1,6 @@
 {
   "Name": "AssetLookupRunner",
   "ProjectType": "Process",
-  "Description": "Reproduces a Get Credential failure caused by an AssetName typo (myHiddenAset vs myHiddenAsset).",
+  "Description": "Retrieves a credential asset from Orchestrator and logs the result.",
   "MainFile": "Main.xaml"
 }
