@@ -12,7 +12,7 @@ description: >
   OR migrate to Workbook activities / Modern OpenXML Use Excel File
   (if it doesn't).
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, excel-application-card, excel-not-installed]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

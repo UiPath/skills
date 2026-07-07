@@ -10,7 +10,7 @@ description: >
   playbook, identify the case-mismatch branch, and recommend either
   matching the casing in the workflow or forcing the COM provider.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, read-range, sheet-not-found, case-mismatch]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

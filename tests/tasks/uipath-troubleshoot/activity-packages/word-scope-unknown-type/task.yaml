@@ -7,7 +7,7 @@ description: >
   Success = agent matches the word-scope-cannot-create-unknown-type playbook
   AND recommends restoring/pinning the UiPath.Word.Activities version on the
   robot feed and republishing, not editing workflow logic.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, word-application-scope, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

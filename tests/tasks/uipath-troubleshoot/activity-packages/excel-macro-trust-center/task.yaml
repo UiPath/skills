@@ -10,7 +10,7 @@ description: >
   Trust Center settings; agent must hand the user host-side
   inspection commands. Remote-user framing.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, execute-macro, trust-center, needs-host]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

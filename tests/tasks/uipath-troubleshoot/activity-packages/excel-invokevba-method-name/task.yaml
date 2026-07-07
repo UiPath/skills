@@ -5,7 +5,7 @@ description: >
   Sub declared in macro.txt (Sub ProcessInvoices). Success = agent matches
   the invoke-vba-entry-method-name playbook AND identifies the typo against
   the correctly-spelled Sub in the code file.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, excel-activities, invoke-vba, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

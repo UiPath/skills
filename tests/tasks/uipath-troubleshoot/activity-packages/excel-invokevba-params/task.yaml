@@ -6,7 +6,7 @@ description: >
   workflow passes a one-element array. Success = agent matches the
   invoke-vba-parameter-formatting playbook AND identifies the arity
   mismatch between the XAML and the Sub signature in macro.txt.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, excel-activities, invoke-vba, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

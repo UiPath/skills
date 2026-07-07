@@ -9,7 +9,7 @@ description: >
   service account), and recommend the appropriate resolution path (raise the
   time budget OR fix the workflow to fit the budget).
 
-tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose, faulted-jobs, job-killed, exit-code-0x40010004]
+tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
 
 agent:
   type: claude-code

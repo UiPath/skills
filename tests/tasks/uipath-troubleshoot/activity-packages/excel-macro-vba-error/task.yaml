@@ -10,7 +10,7 @@ description: >
   HRESULT + inner-message evidence, and recommend opening the
   workbook in the VBA editor to fix the macro's logic.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, execute-macro, vba-error]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

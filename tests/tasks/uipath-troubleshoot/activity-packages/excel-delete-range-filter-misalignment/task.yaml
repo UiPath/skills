@@ -13,7 +13,7 @@ description: >
   filter before Delete Range, refactoring to in-memory DataTable
   operations, or deleting by content-based key.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, delete-range, filter-misalignment]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

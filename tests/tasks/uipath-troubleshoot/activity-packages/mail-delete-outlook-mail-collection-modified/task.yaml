@@ -9,7 +9,7 @@ description: >
   delete-outlook-mail-failures playbook Branch 2 AND recommends iterating a
   .ToList() copy / backwards by index, or Move-then-delete in a second pass -
   NOT merely wrapping the loop in a Try Catch.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

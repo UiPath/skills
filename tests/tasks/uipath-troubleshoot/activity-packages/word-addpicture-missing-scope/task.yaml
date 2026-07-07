@@ -12,7 +12,7 @@ description: >
   playbook (missing-scope branch / C1), identify from the workflow source
   that Add Picture is not nested in the scope body, and recommend moving
   it inside the Use Word File scope, then re-validating.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, word-activities, add-picture, missing-scope]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

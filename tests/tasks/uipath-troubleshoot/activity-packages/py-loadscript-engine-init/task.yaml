@@ -9,7 +9,7 @@ description: >
   AND recommends setting the Library path to the matching pythonXX.dll for
   Python > 3.9 and/or verifying the interpreter bitness, without fabricating
   host actions.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, python-activities, python-scope]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

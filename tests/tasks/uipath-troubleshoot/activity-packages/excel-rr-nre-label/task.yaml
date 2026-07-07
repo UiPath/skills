@@ -12,7 +12,7 @@ description: >
   source + the job-log Trace entry naming the label, and recommend
   granting Robot user permission or removing the label.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, read-range, null-reference, sensitivity-label]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

@@ -13,7 +13,7 @@ description: >
   robot-credentials.md) and recommend connecting/assigning a machine to the
   folder's template. Re-triggering will NOT help because there is no host
   to accept the job.
-tags: [uipath-troubleshoot, orchestrator, e2e, faithful-replay, pending-job, no-host, mode:diagnose]
+tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
 
 agent:
   type: claude-code

@@ -12,7 +12,7 @@ description: >
   NOT branch 3, by noting the activity is NOT inside a loop and the
   Value is a formula with `;` separators.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, write-cell, formula-syntax]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

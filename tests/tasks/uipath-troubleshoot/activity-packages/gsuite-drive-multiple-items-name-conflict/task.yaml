@@ -12,7 +12,7 @@ description: >
   activity's ConflictResolution could not resolve to a single item — a
   name-ambiguity conflict, NOT a 404/resource-not-found, connection/auth,
   invalid-range, or transient failure.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, faithful-replay, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 # Inherits from experiments/default.yaml: model, permission_mode, plugins
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides

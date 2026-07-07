@@ -14,7 +14,7 @@ description: >
   need UI interaction. Trigger-sequencing or "Run only one job at a
   time" would mask the misconfiguration.
 
-tags: [uipath-troubleshoot, orchestrator, e2e, faulted-jobs, foreground-already-running, misconfigured-foreground, rpa, mode:diagnose]
+tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

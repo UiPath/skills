@@ -13,7 +13,7 @@ description: >
   ImagePath from the workflow source AND the literal
   "UiPath.Core.Image" filename in the resolved path, and recommend
   saving the image to disk with Save Image and passing the path.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, word-activities, add-picture, image-variable]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

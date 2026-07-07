@@ -7,7 +7,7 @@ description: >
   reading the .doc through a Use Word File (Interop reads both formats) or
   converting it to .docx first, not blaming a missing/corrupt file or the
   file path.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, read-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

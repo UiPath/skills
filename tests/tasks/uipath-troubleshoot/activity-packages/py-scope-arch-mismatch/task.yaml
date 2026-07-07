@@ -14,7 +14,7 @@ description: >
   playbook, identify the bitness mismatch, and recommend setting Target to
   x64.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, python-activities, python-scope, architecture-mismatch]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

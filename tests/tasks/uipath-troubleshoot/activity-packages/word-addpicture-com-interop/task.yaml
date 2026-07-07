@@ -16,7 +16,7 @@ description: >
   online repair of Office to re-register the COM libraries (and/or fix
   bitness, kill orphaned WINWORD.EXE, or migrate to file-based Word
   Document activities).
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, word-activities, add-picture, com-interop]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

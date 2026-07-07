@@ -7,7 +7,7 @@ description: >
   the word-scope-file-corrupted playbook AND recommends clearing the locked
   Word session (Kill Process WINWORD before the scope) and saving to a new
   file instead of overwriting the template, without fabricating host actions.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, word-application-scope, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

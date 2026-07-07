@@ -10,7 +10,7 @@ description: >
   evidence, and recommends aligning versions via Manage Packages
   (downgrade the package or upgrade Studio) - NOT the runtime
   "cannot create unknown type" package-restore fix.
-tags: [uipath-troubleshoot, rpa, e2e, orchestrator, word-activities, replace-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

@@ -14,7 +14,7 @@ description: >
   for #REF!, check file size). No host-side byte-dump or tool
   execution by the agent.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, read-range, null-reference, opaque, needs-inspection]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

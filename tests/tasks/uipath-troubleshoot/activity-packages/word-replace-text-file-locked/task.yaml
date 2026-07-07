@@ -7,7 +7,7 @@ description: >
   process"). Success = agent matches the replace-text-file-locked playbook AND
   recommends unchecking Auto Save and/or writing to a distinct output path per
   iteration (or clearing the lock), not blaming Word or the document content.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, replace-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

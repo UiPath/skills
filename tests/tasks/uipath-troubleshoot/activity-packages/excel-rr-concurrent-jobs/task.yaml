@@ -9,7 +9,7 @@ description: >
   serialization (single-instance via lock asset, single-performer queue,
   or non-overlapping trigger windows).
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, read-range, file-locked, concurrent-jobs]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

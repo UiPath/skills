@@ -12,7 +12,7 @@ description: >
   workflow source AND the resolved-path prefix in the error, and
   recommend anchoring the path to an absolute base.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, read-range, file-not-found, relative-path]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

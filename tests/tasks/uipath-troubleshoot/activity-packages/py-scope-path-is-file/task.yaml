@@ -12,7 +12,7 @@ description: >
   identify the file-vs-folder mistake, and recommend stripping \python.exe
   to the containing folder.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, python-activities, python-scope, path-not-valid]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

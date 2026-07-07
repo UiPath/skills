@@ -12,7 +12,7 @@ description: >
   or persisting the drive mapping for the Robot user. No host-side
   byte-dump or tool execution is attempted by the agent.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, read-range, file-not-found, unmapped-drive]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

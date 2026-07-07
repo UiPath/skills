@@ -6,7 +6,7 @@ description: >
   REGDB_E_CLASSNOTREG (0x80040154). Success = agent matches the
   word-scope-com-not-installed playbook AND recommends installing desktop Word
   OR fixing the Office/robot bitness mismatch, without fabricating host actions.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, word-application-scope, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

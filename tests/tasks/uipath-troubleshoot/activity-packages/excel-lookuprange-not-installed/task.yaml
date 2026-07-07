@@ -6,7 +6,7 @@ description: >
   faults with REGDB_E_CLASSNOTREG (0x80040154). Success = agent matches the
   lookup-range-excel-not-installed playbook AND recommends installing Excel
   OR migrating to the Workbook Read Range + Lookup Data Table path.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, excel-activities, lookup-range, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

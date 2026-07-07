@@ -11,7 +11,7 @@ description: >
   (inherits the scope's DebuggerApi) or to DebuggerApi explicitly. Valid
   InteractionMode enum values: SameAsCard, HardwareEvents, Simulate,
   DebuggerApi, WindowMessages — ChromiumAPI is NOT valid.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, faithful-replay, faulted-jobs, ui-automation]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

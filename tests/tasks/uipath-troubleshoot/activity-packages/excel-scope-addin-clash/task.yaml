@@ -13,7 +13,7 @@ description: >
   not-installed and lock, and recommend disabling the offending add-in
   (COM Add-ins UI or LoadBehavior=0) with /safe confirmation.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, excel-application-scope, com-addin-clash]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

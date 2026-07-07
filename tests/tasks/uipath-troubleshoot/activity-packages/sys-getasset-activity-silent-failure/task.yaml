@@ -10,7 +10,7 @@ description: >
   populate its outputs, then connect that to the documented package-
   version bug.
 
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, system-activities, get-asset, activity-bug-silent-failure, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

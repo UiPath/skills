@@ -8,7 +8,7 @@ description: >
   replace-text-silent-no-substitution playbook AND recommends retyping the
   placeholder cleanly in one run (or an in-code string replace), NOT treating
   the successful job as healthy or blaming a crash/lock.
-tags: [uipath-troubleshoot, rpa, e2e, orchestrator, word-activities, replace-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

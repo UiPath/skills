@@ -8,7 +8,7 @@ description: >
   skipped playbook AND recommends updating UiPath.Word.Activities to a version
   that covers headers/footers/text boxes, not treating the green job as
   healthy or blaming the template/Search value.
-tags: [uipath-troubleshoot, rpa, e2e, orchestrator, word-activities, replace-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

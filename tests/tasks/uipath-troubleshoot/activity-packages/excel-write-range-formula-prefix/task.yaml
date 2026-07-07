@@ -13,7 +13,7 @@ description: >
   sanitization fix (apostrophe escape, prefix-stripping, or OpenXML
   provider switch) — NOT the Try-Catch-and-continue anti-pattern.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, write-range, formula-prefix]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

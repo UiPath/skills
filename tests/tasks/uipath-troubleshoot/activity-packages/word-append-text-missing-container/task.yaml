@@ -7,7 +7,7 @@ description: >
   append-text-missing-container playbook AND recommends nesting Append Text in
   a Word Application Scope / Use Word File OR using the standalone Word
   Document Append Text that takes a file path, not blaming the file/document.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, append-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

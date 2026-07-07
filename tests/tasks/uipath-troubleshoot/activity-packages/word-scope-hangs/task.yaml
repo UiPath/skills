@@ -8,7 +8,7 @@ description: >
   playbook AND recommends surfacing/clearing the blocking dialog (run Word
   visible to observe it, supply the password / clear the prompt) without
   fabricating host actions.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, word-application-scope, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

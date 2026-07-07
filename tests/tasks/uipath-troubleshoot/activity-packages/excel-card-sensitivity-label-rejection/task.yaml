@@ -12,7 +12,7 @@ description: >
   recommend configuring SensitivityLabel + SensitivityOperation
   (typically Keep) — NOT the package-downgrade anti-pattern.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, excel-application-card, sensitivity-label]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

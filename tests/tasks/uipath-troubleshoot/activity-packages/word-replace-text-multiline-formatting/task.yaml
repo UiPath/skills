@@ -9,7 +9,7 @@ description: >
   Environment.NewLine into Replace — use Bookmarks / Form Fields + Set Bookmark
   Text (or insert paragraph breaks via the Word object model) for multi-line
   content, not treating the green job as healthy.
-tags: [uipath-troubleshoot, rpa, e2e, orchestrator, word-activities, replace-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

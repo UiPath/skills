@@ -5,7 +5,7 @@ description: >
   being disabled on the robot machine. Success = agent matches the
   invoke-vba-trust-access playbook AND tells the user to enable the Trust
   Center toggle, without attempting host-side commands the user cannot run.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, excel-activities, invoke-vba, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

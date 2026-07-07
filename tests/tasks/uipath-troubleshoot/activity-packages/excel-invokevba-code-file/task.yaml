@@ -5,7 +5,7 @@ description: >
   statements at the top level (no Sub or Function wrapper). Success = agent
   matches the invoke-vba-code-file-path playbook AND identifies the missing
   Sub block in macro.txt against the Main.xaml CodeFilePath.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, excel-activities, invoke-vba, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

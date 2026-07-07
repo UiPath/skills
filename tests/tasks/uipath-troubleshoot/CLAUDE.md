@@ -205,7 +205,7 @@ Must include `uipath-troubleshoot` AND at least one product/domain tag from this
 | `llm-gateway` | LLM Gateway (model routing, BYO connections, product LLM configurations) |
 | `data-fabric` | Data Fabric tables, entities |
 | `api-workflow` | API workflow artifacts |
-| `orchestrator` | Orchestrator-only failures with no workflow execution involved (e.g., licensing, machine state, asset/queue admin) |
+| `orchestrator` | Orchestrator control-plane failures — job/robot lifecycle (pending, faulted, killed, foreground-slot), logon/credentials, queues, licensing, machine state — diagnosed via `uip or`. Not tied to a single activity package. Add `rpa` too when an RPA process's execution is directly involved (e.g. foreground-slot, job-killed). |
 
 **Tag ↔ group agreement.** The domain tag MUST match the [group folder](#scenario-grouping): every `activity-packages/*` scenario carries `rpa`; `products/orchestrator` → `orchestrator`; `products/integration-service` → `integration-service`; `products/maestro` → `maestro`. `--group` adds the matching tag automatically.
 
