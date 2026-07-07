@@ -6,7 +6,7 @@ Ready-to-use boilerplate for a new UiPath Coded Web App (Vite + React + TypeScri
 
 Files are grouped below by path. When a file differs between the two paths, its variants appear as `Q6 = no (bare Tailwind)` / `Q6 = yes (apollo-wind)` subsections; a single block means the file is shared verbatim. The only real divergence is the component layer: Q6 = yes adds `@uipath/apollo-wind` components, Apollo design tokens, and a light/dark theme toggle; Q6 = no leaves bare Tailwind so you bring your own component library.
 
-The substitution table in [Step 4.5](../../references/create-web-app.md#45--write-project-files-from-templates) says which subsection to use per path.
+The substitution table in [Step 5.1](../../references/create-web-app.md#51--write-project-files-from-templates) says which subsection to use per path.
 
 ---
 
