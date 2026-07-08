@@ -113,7 +113,7 @@ Fix:
 
 ## Post-presentation actions
 
-Branches B, C, E (the switch-to-OCR fix), and G edit user workflow files (the `RefreshBefore` / `MethodType` / `Scroll`-related properties of the CV Get Text activity, or `ScrollOffset` / `DelayScreenshotAfterScroll` / `OCREngine` on the CV Screen Scope). This resolution path is **interactive**. Before any edit, the orchestrator MUST call `AskUserQuestion`.
+Branches B, C, E (the switch-to-OCR fix), and G edit user workflow files (the `RefreshBefore` / `MethodType` / `Scroll`-related properties of the CV Get Text activity, or `ScrollOffset` / `DelayScreenshotAfterScroll` / `OCREngine` on the CV Screen Scope). This resolution path is **interactive**. Before any edit, you MUST call `AskUserQuestion` (approval gate).
 
 Rules the agent MUST follow:
 
