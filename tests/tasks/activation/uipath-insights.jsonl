@@ -2,7 +2,7 @@
 {"id": "uipath-insights-002", "prompt": "What's my job success rate?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-003", "prompt": "Which processes are failing the most?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-004", "prompt": "Why are my automations failing?", "expected_skill": "uipath-insights"}
-{"id": "uipath-insights-005", "prompt": "Show me the failure reasons for my jobs", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-005", "prompt": "What are the top exception types causing job failures this month?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-006", "prompt": "What's the average processing time for my jobs?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-007", "prompt": "Show me job completion trends for the last week", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-008", "prompt": "Are there any stuck or uncompleted jobs right now?", "expected_skill": "uipath-insights"}
@@ -22,4 +22,4 @@
 {"id": "uipath-insights-022", "prompt": "Get the top failures for jobs in folder abc-123", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-023", "prompt": "What's the job timeline looking like for completed runs?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-024", "prompt": "Show me insights on automation health across all folders", "expected_skill": "uipath-insights"}
-{"id": "uipath-insights-025", "prompt": "Which processes have the highest failure rate?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-025", "prompt": "Show me job metrics grouped by folder across all tenants", "expected_skill": "uipath-insights"}

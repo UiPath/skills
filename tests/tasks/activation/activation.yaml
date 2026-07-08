@@ -36,7 +36,7 @@ dataset:
 
 initial_prompt: "${row.prompt}"
 
-# 22 skill_triggered criteria — one per skill. Each derives expected internally
+# 23 skill_triggered criteria — one per skill. Each derives expected internally
 # from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~1100 no
 # per skill) means recall.yes is the meaningful gate; recall.no is trivially high.
 success_criteria:
