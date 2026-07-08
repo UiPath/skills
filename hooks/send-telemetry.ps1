@@ -1,5 +1,10 @@
 # Telemetry hook for the UiPath skills plugin (Claude Code).
 #
+# TWIN SCRIPT: hooks/send-telemetry.sh is the bash twin of this file — any
+# behavioral change here MUST be mirrored there in the same PR (see CLAUDE.md).
+# hooks.json runs whichever twin matches the executing shell via a
+# bash/PowerShell polyglot command.
+#
 # Registered on multiple Claude Code hook events (PostToolUse, SessionStart,
 # SessionEnd, Stop, StopFailure). Reads the hook JSON payload from stdin, maps
 # the event to a canonical eventName, and pipes one flat JSON object to

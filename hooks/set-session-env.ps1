@@ -1,5 +1,8 @@
 # SessionStart step: export the agent's session id to the uip CLI.
 #
+# TWIN SCRIPT: hooks/set-session-env.sh is the bash twin of this file — any
+# behavioral change here MUST be mirrored there in the same PR (see CLAUDE.md).
+#
 # Reads the SessionStart payload on stdin, takes its top-level `session_id`,
 # and appends `export UIPATH_SESSION_ID='<id>'` to $env:CLAUDE_ENV_FILE so
 # every subsequent shell tool subprocess — and therefore every `uip` command

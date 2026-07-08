@@ -1,8 +1,11 @@
 # Detects whether Claude Code has an allowlist for `uip` subcommands.
 # If none is found, prints a one-line nudge pointing at /uipath:install-permissions.
 # Non-blocking — never fails the session, even if detection fails.
-# Runs under Windows PowerShell 5.1 and PowerShell 7+ (pwsh) on
-# Windows, macOS, and Linux.
+# Runs under Windows PowerShell 5.1 and PowerShell 7+ (pwsh).
+#
+# TWIN SCRIPT: hooks/suggest-permissions.sh is the bash twin of this file —
+# any behavioral change here MUST be mirrored there in the same PR (see
+# CLAUDE.md).
 
 $ErrorActionPreference = 'SilentlyContinue'
 

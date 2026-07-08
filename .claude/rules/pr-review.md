@@ -28,8 +28,9 @@ When reviewing or creating pull requests for this repository, enforce these rule
 ### Hook Changes Checklist
 
 - [ ] Script works cross-platform (Windows, macOS, Linux)
-- [ ] Session hooks (`hooks/*.ps1`) use PowerShell syntax compatible with BOTH Windows PowerShell 5.1 and PowerShell 7+ (no `&&`/`||` pipeline chains, no ternary or null-conditional operators)
-- [ ] Session hooks are registered in `hooks/hooks.json` with `"shell": "powershell"`
+- [ ] **Twin updated:** session hooks exist as `.sh` + `.ps1` pairs — a change to one file includes the equivalent change to its twin in the same PR
+- [ ] `.ps1` scripts use PowerShell syntax compatible with BOTH Windows PowerShell 5.1 and PowerShell 7+ (no `&&`/`||` pipeline chains, no ternary or null-conditional operators)
+- [ ] `hooks.json` entries keep the bash/PowerShell polyglot command shape, with no `shell` field, and the bash branch never contains the sequence `#>`
 - [ ] Is safe to run multiple times
 - [ ] Has appropriate timeout configured in hooks.json
 - [ ] Does not hardcode OS-specific paths

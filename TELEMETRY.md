@@ -1,11 +1,12 @@
 # UiPath Skills Plugin Telemetry
 
 Opt-out usage telemetry for the UiPath skills plugin. On by default. One
-emitting hook (`hooks/send-telemetry.ps1`), registered on several Claude Code
-hook events, hands a single flat JSON object to the hidden `uip track` CLI
-command, which forwards it through the CLI's own telemetry tracker as one
-`uip.skills.<event>` Application Insights event. A second, synchronous
-SessionStart step (`hooks/set-session-env.ps1`) exports the agent session id as
+emitting hook (`hooks/send-telemetry.sh` / its PowerShell twin
+`send-telemetry.ps1`), registered on several Claude Code hook events, hands a
+single flat JSON object to the hidden `uip track` CLI command, which forwards
+it through the CLI's own telemetry tracker as one `uip.skills.<event>`
+Application Insights event. A second, synchronous SessionStart step
+(`hooks/set-session-env.sh` / `.ps1`) exports the agent session id as
 `UIPATH_SESSION_ID` so native `uip` command telemetry carries the same
 `session_id` (see [Correlation](#correlation)). No local state file, no
 session daemon — session-level metrics are computed at query time from the
@@ -87,11 +88,12 @@ plugin; everything else exits silently. A call qualifies when:
    envelope fields (see [Events](#events)).
 2. For a qualifying call it derives a small set of low-cardinality fields and
    sanitizes each value (charset + 120-char cap). Field extraction is
-   **region-scoped**: the payload is parsed as real JSON
-   (`ConvertFrom-Json`) and each field is read only from the region it
-   lives in — envelope (top-level keys), `tool_input`, `tool_response`, or
-   `effort`. Free-form customer content embedded in a string (a prompt, a
-   command line, `stdout`) can never false-match an envelope field (see
+   **region-scoped**: each field is read only from the region it lives in —
+   envelope (top-level keys), `tool_input`, `tool_response`, or `effort`
+   (the bash twin walks the JSON with a string-aware `awk` pass; the
+   PowerShell twin parses it with `ConvertFrom-Json`). Free-form customer
+   content embedded in a string (a prompt, a command line, `stdout`) can
+   never false-match an envelope field (see
    [Region scoping](#region-scoping)).
 3. It pipes one flat `key:value` JSON object to `uip track` on stdin, then
    exits 0.
@@ -150,8 +152,9 @@ The payload embeds free-form customer content — prompts, command lines,
 mis-extracts fields when that content happens to contain JSON-shaped text: a
 `stdout` with `"success":false`, an Agent prompt naming `uip solution publish`
 or `.flow"`, a log line with `"resolvedModel":"x"`. To prevent this, the hook
-parses the payload as real JSON (`ConvertFrom-Json`) and reads each field
-**only** from the region where it actually lives:
+reads each field **only** from the region where it actually lives (the bash
+twin via a single string-aware `awk` pass that tracks brace/string nesting;
+the PowerShell twin via a real `ConvertFrom-Json` parse):
 
 | Region | Fields |
 |--------|--------|
@@ -281,7 +284,7 @@ aggregations over events sharing `session_id`:
 
 ### Cross-stream correlation (`UIPATH_SESSION_ID`)
 
-The synchronous SessionStart step (`hooks/set-session-env.ps1`) writes
+The synchronous SessionStart step (`hooks/set-session-env.sh` / `.ps1`) writes
 `export UIPATH_SESSION_ID='<session_id>'` to Claude Code's `CLAUDE_ENV_FILE`,
 so every `uip` command the agent runs inherits it and the CLI stamps the same
 `session_id` on **native command telemetry**
@@ -316,11 +319,15 @@ still carry `session_id` and correlate with each other normally.
   session-outcome metrics keep their `session-end` anchor.
 - **Best-effort delivery:** an event is dropped on failure (no local retry
   queue). Telemetry is for aggregate trends, not exact accounting.
-- **Session id export:** `set-session-env.ps1` is the one synchronous step
-  (it must run before the session's first shell call); it costs a few
-  milliseconds — pure text processing, no network and no `uip` invocation.
-- **Cross-platform:** pure PowerShell (`hooks.json` registers the hooks with
-  `"shell": "powershell"`) — Windows PowerShell 5.1 or PowerShell 7+ on
-  Windows, `pwsh` on macOS/Linux. No `jq`, `node`, or `python` dependency.
-  Requires the `uip` CLI on `PATH` — the plugin's `SessionStart` hook ensures
-  it is installed.
+- **Session id export:** `set-session-env.sh` / `.ps1` is the one synchronous
+  SessionStart step (it must run before the session's first shell call); it
+  costs a few milliseconds — pure text processing, no network and no `uip`
+  invocation.
+- **Cross-platform, zero-install:** the hook ships as twin scripts —
+  `send-telemetry.sh` (bash: macOS, Linux, Windows with Git Bash) and
+  `send-telemetry.ps1` (PowerShell 5.1/7+: Windows without Git Bash). A
+  bash/PowerShell polyglot command in `hooks.json` dispatches to the twin
+  matching the executing shell; the twins are kept behaviorally identical
+  (see CLAUDE.md). No `jq`, `node`, or `python` dependency. Requires the
+  `uip` CLI on `PATH` — the plugin's `SessionStart` hook ensures it is
+  installed.

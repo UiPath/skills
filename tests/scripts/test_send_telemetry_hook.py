@@ -1,4 +1,9 @@
-"""Contract guard for the skills telemetry hook (``hooks/send-telemetry.ps1``).
+"""Contract guard for the skills telemetry hook — BOTH twins
+(``hooks/send-telemetry.sh`` under bash, ``hooks/send-telemetry.ps1`` under
+pwsh). Every test is parametrized over the two implementations, so this suite
+is the executable form of the twin keep-in-sync rule in CLAUDE.md: a
+behavioral change to one twin without the equivalent change to the other
+fails here.
 
 Runs the hook as a subprocess with a stubbed ``uip`` on ``PATH``, pipes a Claude
 Code hook payload on stdin, and asserts the single flat JSON object the hook
@@ -19,10 +24,10 @@ forwards to ``uip track``. Covers:
 The stubbed ``uip`` writes the payload to a capture file and we poll for it
 (the hook is fire-and-forget, so we never parse its stdout).
 
-POSIX-only: the hook runs under ``pwsh`` (preinstalled on GitHub ubuntu
-runners) and the stub is a shebang script invoked via a real ``uip`` name on
-``PATH``. Skipped on native Windows (PATHEXT resolution makes the stub
-unreliable) — CI runs it on ubuntu.
+POSIX-only: the hooks run under ``bash`` and ``pwsh`` (both preinstalled on
+GitHub ubuntu runners) and the stub is a shebang script invoked via a real
+``uip`` name on ``PATH``. Skipped on native Windows (PATHEXT resolution makes
+the stub unreliable) — CI runs it on ubuntu.
 
 Run from repo root:
     pytest tests/scripts/test_send_telemetry_hook.py
@@ -41,12 +46,34 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-HOOK = REPO_ROOT / "hooks" / "send-telemetry.ps1"
+HOOKS_DIR = REPO_ROOT / "hooks"
+
+# One argv per twin. The autouse fixture below parametrizes EVERY test over
+# both, enforcing the keep-in-sync rule (CLAUDE.md).
+TWINS = [
+    pytest.param(["bash", str(HOOKS_DIR / "send-telemetry.sh")], id="bash"),
+    pytest.param(
+        ["pwsh", "-NoProfile", "-File", str(HOOKS_DIR / "send-telemetry.ps1")],
+        id="pwsh",
+    ),
+]
 
 pytestmark = pytest.mark.skipif(
-    sys.platform == "win32" or shutil.which("pwsh") is None,
-    reason="requires pwsh on a POSIX filesystem (CI runs this on ubuntu)",
+    sys.platform == "win32",
+    reason="stub uip requires a POSIX filesystem (CI runs this on ubuntu)",
 )
+
+HOOK_ARGV = None
+
+
+@pytest.fixture(autouse=True, params=TWINS)
+def hook_argv(request):
+    """Select the twin under test; skip if its interpreter is absent."""
+    global HOOK_ARGV
+    argv = request.param
+    if shutil.which(argv[0]) is None:
+        pytest.skip(f"{argv[0]} not available")
+    HOOK_ARGV = argv
 
 
 # ── event-mapping tests ────────────────────────────────────────────────────
@@ -250,7 +277,7 @@ def run_hook(payload, *, telemetry_disabled="0", expect_drop=False):
         env.pop("UIPATH_SESSION_ID", None)
 
         subprocess.run(
-            ["pwsh", "-NoProfile", "-File", str(HOOK)],
+            HOOK_ARGV,
             input=json.dumps(payload),
             text=True,
             env=env,

@@ -32,8 +32,9 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 ├── commands/                  # Plugin-namespaced slash commands shipped to end users
 │   └── *.md                   # Each file becomes /uipath:<filename>
 ├── hooks/                     # Session-initialization hooks
-│   ├── hooks.json             # Hook definitions (SessionStart, etc.)
-│   └── ensure-uip.ps1        # Cross-platform tool installation script (PowerShell 5.1 / pwsh)
+│   ├── hooks.json             # Hook definitions (SessionStart, etc.) — polyglot dispatch
+│   ├── ensure-uip.sh          # Tool installation script (bash twin)
+│   └── ensure-uip.ps1         # Tool installation script (PowerShell twin — keep in sync)
 ├── references/                # Shared documentation and activity references
 │   └── activity-docs/         # Per-package, per-version activity API docs
 ├── skills/                    # Individual skill implementations
@@ -227,8 +228,10 @@ Static files like code templates go in `assets/`:
 
 Hooks are defined in `hooks/hooks.json` and run during plugin lifecycle events (e.g., `SessionStart`).
 
-- Hook scripts are PowerShell (`.ps1`), registered with `"shell": "powershell"` in `hooks.json` — Claude Code resolves `pwsh` (PowerShell 7+) where available and falls back to Windows PowerShell 5.1 on Windows, so hooks run on machines without Git Bash
-- Scripts must work **cross-platform** (Windows, macOS, Linux) and stay compatible with **both** Windows PowerShell 5.1 and PowerShell 7+ — no `&&`/`||` pipeline chains, no ternary/null-conditional operators, no `Get-Content -AsByteStream`
+- **Every session hook ships as twin scripts**: `hooks/<name>.sh` (bash — macOS, Linux, Windows with Git Bash) and `hooks/<name>.ps1` (PowerShell — Windows without Git Bash, or pwsh where installed). No shell ships by default on both Windows and macOS, so both twins are required for zero-install coverage
+- **The twins MUST stay behaviorally identical** — any change to one requires the equivalent change to the other in the same PR. The telemetry contract guards in `tests/scripts/` run both twins against the same assertions
+- `hooks.json` registers one **bash/PowerShell polyglot command** per event (the `` echo `# <#` `` / `exit $? #> > $null` pattern): bash executes the `.sh` branch, PowerShell skips it via the `<# … #>` block comment and executes the `.ps1` branch. Do not add a `shell` field to these entries and never put the sequence `#>` in the bash branch
+- `.ps1` scripts must stay compatible with **both** Windows PowerShell 5.1 and PowerShell 7+ — no `&&`/`||` pipeline chains, no ternary/null-conditional operators
 - Keep hooks idempotent — safe to run multiple times
 - Set appropriate timeouts (default: 180 seconds)
 

@@ -1,8 +1,10 @@
 # Ensures @uipath/cli and @uipath/rpa-tool are installed globally.
 # Runs once per session via the SessionStart plugin hook.
 # If npm is missing, attempts to install Node.js first.
-# Runs under Windows PowerShell 5.1 and PowerShell 7+ (pwsh) on
-# Windows, macOS, and Linux.
+# Runs under Windows PowerShell 5.1 and PowerShell 7+ (pwsh).
+#
+# TWIN SCRIPT: hooks/ensure-uip.sh is the bash twin of this file — any
+# behavioral change here MUST be mirrored there in the same PR (see CLAUDE.md).
 
 $ErrorActionPreference = 'Continue'
 
