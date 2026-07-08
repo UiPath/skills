@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-export-pdf-output-path-format
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose an Export to PDF failure where
   the output path is built by string concatenation WITHOUT a .pdf extension

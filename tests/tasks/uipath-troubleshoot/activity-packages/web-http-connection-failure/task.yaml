@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-web-http-connection-failure
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a CallService job fault
   (System.Net.WebException: No such host is known. (service-endpoint-unavailable.invalid:80)) and match the

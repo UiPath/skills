@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-append-range-hidden-rows-target
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose an Append Range failure
   (BusinessException 'Cannot append to a range that contains hidden
