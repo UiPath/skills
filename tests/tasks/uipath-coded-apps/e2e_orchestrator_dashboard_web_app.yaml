@@ -4,7 +4,7 @@ description: >
   App dashboard that surfaces live Orchestrator state, from scratch. Given
   only a business goal, the agent must scaffold Vite + React, wire the
   `@uipath/uipath-typescript` SDK with subpath imports and constructor DI,
-  configure the SDK scope (uipath.json / legacy .env) to cover Jobs + Queues, configure
+  configure the uipath.json scope to cover Jobs + Queues, configure
   `vite.config.ts` correctly (Rule #9), use `getAppBase()` for any runtime
   asset URLs (Rule #10), build, pack, publish (default Web type), and
   deploy to a fresh per-run Orchestrator folder so `post_run` can clean it
@@ -189,27 +189,27 @@ success_criteria:
 
   # Skill change #1562 (Jul 6) replaced the .env/VITE_UIPATH_* SDK config with
   # uipath.json ({clientId, scope, orgName, tenantName, baseUrl, redirectUri});
-  # the three config criteria below accept EITHER convention so the test grades
-  # the config contract, not which skill version taught it.
+  # the SDK reads only the uipath.json-injected meta tags, so the three config
+  # criteria below grade uipath.json exclusively.
   - type: run_command
-    description: "SDK config exists: uipath.json with a scope field (current convention; clientId may be an empty placeholder or omitted entirely in test tenants, so only scope is required) OR .env/.env.example with VITE_UIPATH_* (legacy)"
-    command: "( F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if 'scope' in d else 1)\" ) || find . \\( -name '.env.example' -o -name '.env' -o -name '.env.local' \\) -not -path '*/node_modules/*' -exec grep -lE '^VITE_UIPATH_' {} + | grep -q ."
+    description: "SDK config exists: uipath.json with a scope field (clientId may be an empty placeholder or omitted entirely in test tenants, so only scope is required)"
+    command: "F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if 'scope' in d else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "SDK scope covers BOTH Jobs and Queues (Rule #16 — mismatched scopes fail silently with 401/403). Reads uipath.json .scope (current) or VITE_UIPATH_SCOPE (legacy)."
-    command: "( F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; s=str(json.load(open('$F')).get('scope','')); sys.exit(0 if ('OR.Jobs' in s and 'OR.Queues' in s) else 1)\" ) || find . \\( -name '.env.example' -o -name '.env' -o -name '.env.local' \\) -not -path '*/node_modules/*' -exec grep -hE \"^VITE_UIPATH_SCOPE=.*OR\\.Jobs.*OR\\.Queues|^VITE_UIPATH_SCOPE=.*OR\\.Queues.*OR\\.Jobs\" {} + 2>/dev/null | grep -q ."
+    description: "uipath.json scope covers BOTH Jobs and Queues (Rule #16 — mismatched scopes fail silently with 401/403)"
+    command: "F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; s=str(json.load(open('$F')).get('scope','')); sys.exit(0 if ('OR.Jobs' in s and 'OR.Queues' in s) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "SDK base URL uses the API subdomain (Rule #8 — api.uipath.com, not cloud.uipath.com). Reads uipath.json .baseUrl (current) or VITE_UIPATH_BASE_URL (legacy)."
-    command: "( F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys,re; b=str(json.load(open('$F')).get('baseUrl','')); sys.exit(0 if re.match(r'https://([\\w-]+\\.)*api\\.uipath\\.com', b) else 1)\" ) || find . \\( -name '.env.example' -o -name '.env' -o -name '.env.local' \\) -not -path '*/node_modules/*' -exec grep -hE \"^VITE_UIPATH_BASE_URL=https://(\\w+\\.)?api\\.uipath\\.com\" {} + 2>/dev/null | grep -q ."
+    description: "uipath.json baseUrl uses the API subdomain (Rule #8 — api.uipath.com, not cloud.uipath.com)"
+    command: "F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys,re; b=str(json.load(open('$F')).get('baseUrl','')); sys.exit(0 if re.match(r'https://([\\w-]+\\.)*api\\.uipath\\.com', b) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.5

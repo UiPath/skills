@@ -70,25 +70,25 @@ success_criteria:
   # Skill change #1562 moved SDK config from .env/VITE_UIPATH_* to uipath.json;
   # debug.md's canonical fixes now say "set baseUrl in uipath.json" / "update
   # the scope field in uipath.json". The regexes accept the current canonical
-  # phrasing, the legacy env-var names, and the specific value — but still
-  # reject vague answers ('check CORS settings', 'check your scopes').
+  # phrasing and the specific value — but still reject vague answers
+  # ('check CORS settings', 'check your scopes') and dead VITE_* env vars.
   - type: json_check
-    description: "Fault A — fix names the API hostname, the baseUrl config field, or the legacy env var (debug.md: 'Set baseUrl in uipath.json to https://api.uipath.com'). NOT just 'cloud.uipath.com' (the wrong value)."
+    description: "Fault A — fix names the API hostname or the baseUrl config field (debug.md: 'Set baseUrl in uipath.json to https://api.uipath.com'). NOT just 'cloud.uipath.com' (the wrong value)."
     path: "diagnosis.json"
     assertions:
       - expression: "faultA.fix"
         operator: regex
-        expected: "(?i)(VITE_UIPATH_BASE_URL|api\\.uipath\\.com|\\bbaseUrl\\b)"
+        expected: "(?i)(api\\.uipath\\.com|\\bbaseUrl\\b)"
     weight: 2.5
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Fault B — fix names the specific OR.Tasks scope, the uipath.json scope field, or the legacy env var (debug.md: 'Update the scope field in uipath.json with the missing scope' — Rule #16). Bare 'scope' with no config location still fails."
+    description: "Fault B — fix names the specific OR.Tasks scope or the uipath.json scope field (debug.md: 'Update the scope field in uipath.json with the missing scope' — Rule #16). Bare 'scope' with no config location still fails."
     path: "diagnosis.json"
     assertions:
       - expression: "faultB.fix"
         operator: regex
-        expected: "(?i)(VITE_UIPATH_SCOPE|OR\\.Tasks|scope[^.;]{0,60}uipath\\.json|uipath\\.json[^.;]{0,60}scope)"
+        expected: "(?i)(OR\\.Tasks|scope[^.;]{0,60}uipath\\.json|uipath\\.json[^.;]{0,60}scope)"
     weight: 2.5
     pass_threshold: 1.0
 
