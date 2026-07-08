@@ -32,10 +32,18 @@ def main():
             f"FAIL: wait-for-connector data.serviceType must be "
             f"'Intsvc.WaitForEvent'; got {svc!r}"
         )
+    context = data.get("context", [])
+    ck_entry = next((c for c in context if c.get("name") == "connectorKey"), None)
+    ck = ck_entry.get("value") if ck_entry else None
+    if ck != "uipath-microsoft-outlook365":
+        sys.exit(
+            f"FAIL: expected connectorKey 'uipath-microsoft-outlook365'; got {ck!r} — "
+            "agent may have resolved against the mock connector"
+        )
     print(
         f"OK: wait-for-connector resolved "
         f"(displayName={task.get('displayName')!r}, "
-        f"serviceType={svc}, typeId + connectionId set)"
+        f"serviceType={svc}, connectorKey={ck!r}, typeId + connectionId set)"
     )
 
 

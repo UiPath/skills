@@ -26,10 +26,18 @@ def main():
             "against a live Integration Service connection on the tenant"
         )
     data = task.get("data") or {}
+    context = data.get("context", [])
+    ck_entry = next((c for c in context if c.get("name") == "connectorKey"), None)
+    ck = ck_entry.get("value") if ck_entry else None
+    if ck != "uipath-salesforce-slack":
+        sys.exit(
+            f"FAIL: expected connectorKey 'uipath-salesforce-slack'; got {ck!r} — "
+            "agent may have resolved against the wrong connector"
+        )
     print(
         f"OK: execute-connector-activity resolved "
         f"(displayName={task.get('displayName')!r}, "
-        f"typeId={str(data.get('typeId'))[:12]}…, connectionId set)"
+        f"typeId={str(data.get('typeId'))[:12]}…, connectionId set, connectorKey={ck!r})"
     )
 
 

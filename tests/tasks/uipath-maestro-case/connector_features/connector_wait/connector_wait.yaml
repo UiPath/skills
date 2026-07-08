@@ -15,9 +15,9 @@ tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-no
 max_iterations: 1
 
 run_limits:
-  task_timeout: 1500
+  task_timeout: 1800
   max_turns: 120
-  turn_timeout: 1500
+  turn_timeout: 1800
 
 initial_prompt: |
   Build a UiPath Case Management solution named "ConnectorWaitCase" containing
@@ -83,6 +83,7 @@ initial_prompt: |
   | Field | Value |
   |---|---|
   | Connector | Microsoft Outlook 365 |
+  | Connector Key | uipath-microsoft-outlook365 |
   | Event | Email Received |
   | Mode | polling |
   ```
