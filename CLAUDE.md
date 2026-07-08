@@ -6,7 +6,7 @@ This repository contains self-contained AI agent skills for UiPath automation de
 
 - **Skills are self-contained.** Each skill under `skills/` must function on its own: it MUST NOT import, inline, or read another skill's files, and MUST still deliver its core value if sibling skills are absent. A skill MAY delegate a task to a sibling skill in this same plugin at runtime (e.g., spawn a subagent that hands an artifact edit to the artifact's owning domain skill) when that work is the sibling's domain — provided the delegation degrades gracefully (the skill still presents an actionable result when the sibling is unavailable).
 - **SKILL.md is the contract.** Every skill folder must have a `SKILL.md` with valid YAML frontmatter. This is the only file the plugin system reads to discover and activate skills.
-- **No build system.** This repo contains only markdown documentation and shell scripts. There is no compilation or packaging step.
+- **No build system.** This repo contains only markdown documentation and scripts (PowerShell session hooks, Python/bash dev tooling). There is no compilation or packaging step.
 
 ## Contribution Rules
 
@@ -27,7 +27,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 | `SKILL.md` | Required. Uppercase. YAML frontmatter + markdown body. |
 | `references/*.md` | Kebab-case. Guides end with `-guide.md`. |
 | `assets/templates/*` | Templates end with `-template.md` or `-template.<ext>`. |
-| `hooks/*.sh` | Must be cross-platform (Windows/macOS/Linux). |
+| `hooks/*.ps1` | Session hooks. Must run under both Windows PowerShell 5.1 and PowerShell 7+ (Windows/macOS/Linux); registered in `hooks/hooks.json` with `"shell": "powershell"`. |
 
 ## When Reviewing or Editing Skills
 

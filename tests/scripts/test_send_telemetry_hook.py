@@ -1,4 +1,4 @@
-"""Contract guard for the skills telemetry hook (``hooks/send-telemetry.sh``).
+"""Contract guard for the skills telemetry hook (``hooks/send-telemetry.ps1``).
 
 Runs the hook as a subprocess with a stubbed ``uip`` on ``PATH``, pipes a Claude
 Code hook payload on stdin, and asserts the single flat JSON object the hook
@@ -16,11 +16,12 @@ forwards to ``uip track``. Covers:
   Codex-only extras are never forwarded;
 * the drop paths — a non-UiPath tool call, an unrecognized event, and opt-out.
 
-The hook forwards in a detached subshell (``( … | uip track & )``), so the
-stubbed ``uip`` writes the payload to a capture file and we poll for it.
+The stubbed ``uip`` writes the payload to a capture file and we poll for it
+(the hook is fire-and-forget, so we never parse its stdout).
 
-POSIX-only: the stub is a ``bash`` script invoked via a real ``uip`` name on
-``PATH``. Skipped on native Windows (Git Bash path translation makes the stub
+POSIX-only: the hook runs under ``pwsh`` (preinstalled on GitHub ubuntu
+runners) and the stub is a shebang script invoked via a real ``uip`` name on
+``PATH``. Skipped on native Windows (PATHEXT resolution makes the stub
 unreliable) — CI runs it on ubuntu.
 
 Run from repo root:
@@ -40,11 +41,11 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-HOOK = REPO_ROOT / "hooks" / "send-telemetry.sh"
+HOOK = REPO_ROOT / "hooks" / "send-telemetry.ps1"
 
 pytestmark = pytest.mark.skipif(
-    sys.platform == "win32" or shutil.which("bash") is None,
-    reason="requires bash on a POSIX filesystem (CI runs this on ubuntu)",
+    sys.platform == "win32" or shutil.which("pwsh") is None,
+    reason="requires pwsh on a POSIX filesystem (CI runs this on ubuntu)",
 )
 
 
@@ -228,8 +229,8 @@ def run_hook(payload, *, telemetry_disabled="0", expect_drop=False):
     """Invoke the hook with a stubbed ``uip``; return the forwarded JSON object
     (parsed) or ``None`` when the hook drops the event.
 
-    The hook pipes to ``uip track`` in a detached subshell, so we poll a capture
-    file. A dropped event never writes it, so ``expect_drop`` polls a short grace
+    The stubbed ``uip`` writes the forwarded payload to a capture file, which we
+    poll. A dropped event never writes it, so ``expect_drop`` polls a short grace
     window instead of the full timeout.
     """
     with tempfile.TemporaryDirectory() as tmp:
@@ -249,7 +250,7 @@ def run_hook(payload, *, telemetry_disabled="0", expect_drop=False):
         env.pop("UIPATH_SESSION_ID", None)
 
         subprocess.run(
-            ["bash", str(HOOK)],
+            ["pwsh", "-NoProfile", "-File", str(HOOK)],
             input=json.dumps(payload),
             text=True,
             env=env,

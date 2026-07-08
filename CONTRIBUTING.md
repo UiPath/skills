@@ -33,7 +33,7 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 │   └── *.md                   # Each file becomes /uipath:<filename>
 ├── hooks/                     # Session-initialization hooks
 │   ├── hooks.json             # Hook definitions (SessionStart, etc.)
-│   └── ensure-uip.sh         # Cross-platform tool installation script
+│   └── ensure-uip.ps1        # Cross-platform tool installation script (PowerShell 5.1 / pwsh)
 ├── references/                # Shared documentation and activity references
 │   └── activity-docs/         # Per-package, per-version activity API docs
 ├── skills/                    # Individual skill implementations
@@ -227,8 +227,8 @@ Static files like code templates go in `assets/`:
 
 Hooks are defined in `hooks/hooks.json` and run during plugin lifecycle events (e.g., `SessionStart`).
 
-- Hook scripts must work **cross-platform** (Windows, macOS, Linux)
-- Use `bash` as the shell — avoid OS-specific commands
+- Hook scripts are PowerShell (`.ps1`), registered with `"shell": "powershell"` in `hooks.json` — Claude Code resolves `pwsh` (PowerShell 7+) where available and falls back to Windows PowerShell 5.1 on Windows, so hooks run on machines without Git Bash
+- Scripts must work **cross-platform** (Windows, macOS, Linux) and stay compatible with **both** Windows PowerShell 5.1 and PowerShell 7+ — no `&&`/`||` pipeline chains, no ternary/null-conditional operators, no `Get-Content -AsByteStream`
 - Keep hooks idempotent — safe to run multiple times
 - Set appropriate timeouts (default: 180 seconds)
 

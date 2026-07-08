@@ -28,7 +28,8 @@ When reviewing or creating pull requests for this repository, enforce these rule
 ### Hook Changes Checklist
 
 - [ ] Script works cross-platform (Windows, macOS, Linux)
-- [ ] Uses `bash` shell syntax (not cmd.exe or PowerShell-specific)
+- [ ] Session hooks (`hooks/*.ps1`) use PowerShell syntax compatible with BOTH Windows PowerShell 5.1 and PowerShell 7+ (no `&&`/`||` pipeline chains, no ternary or null-conditional operators)
+- [ ] Session hooks are registered in `hooks/hooks.json` with `"shell": "powershell"`
 - [ ] Is safe to run multiple times
 - [ ] Has appropriate timeout configured in hooks.json
 - [ ] Does not hardcode OS-specific paths
