@@ -1,0 +1,25 @@
+{"id": "uipath-insights-001", "prompt": "How many jobs ran in the last 24 hours?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-002", "prompt": "What's my job success rate?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-003", "prompt": "Which processes are failing the most?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-004", "prompt": "Why are my automations failing?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-005", "prompt": "Show me the failure reasons for my jobs", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-006", "prompt": "What's the average processing time for my jobs?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-007", "prompt": "Show me job completion trends for the last week", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-008", "prompt": "Are there any stuck or uncompleted jobs right now?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-009", "prompt": "Give me a breakdown of job failures by process", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-010", "prompt": "How healthy are my automations?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-011", "prompt": "Show me job metrics for the Invoice_Processing process", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-012", "prompt": "What are the most common job error messages?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-013", "prompt": "Show me per-process job details", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-014", "prompt": "How many faulted jobs were there in the last 30 days?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-015", "prompt": "Get job failure details for drill-down investigation", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-016", "prompt": "Show me which machines are having the most job failures", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-017", "prompt": "Compare job success rates this week vs last week", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-018", "prompt": "Run uip insights jobs summary for the last 24 hours", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-019", "prompt": "Check the job KPIs on my Insights dashboard", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-020", "prompt": "Show me job performance trends over the past month", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-021", "prompt": "How many jobs are still running or pending?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-022", "prompt": "Get the top failures for jobs in folder abc-123", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-023", "prompt": "What's the job timeline looking like for completed runs?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-024", "prompt": "Show me insights on automation health across all folders", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-025", "prompt": "Which processes have the highest failure rate?", "expected_skill": "uipath-insights"}
