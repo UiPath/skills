@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-export-pdf-com-hang
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose an Export to PDF COM interop
   failure: an orphaned WINWORD.EXE (a Word instance already running on the

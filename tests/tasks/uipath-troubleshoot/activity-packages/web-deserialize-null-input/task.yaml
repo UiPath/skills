@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-web-deserialize-null-input
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a ReadConfig job fault
   (System.ArgumentNullException: Value cannot be null. (Parameter 'JSON string')) and match the

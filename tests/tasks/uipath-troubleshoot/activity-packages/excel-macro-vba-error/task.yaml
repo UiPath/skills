@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-excel-macro-vba-error
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose an Execute Macro failure
   where the macro ran but threw a VBA runtime error inside the
