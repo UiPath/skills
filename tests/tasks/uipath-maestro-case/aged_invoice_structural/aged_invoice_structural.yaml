@@ -23,6 +23,7 @@ tags:
   - feature:case-exit
   - feature:trigger
   - feature:registry
+  - path-to-ga
 
 agent:
   type: claude-code

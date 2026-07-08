@@ -8,7 +8,7 @@ description: >
   skill honors an explicit agent request instead of substituting a deterministic
   Function. Exercises agent resource node discovery and wiring for coded (vs
   low-code) agents.
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, resource]
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, resource, path-to-ga]
 
 run_limits:
   expected_turns: 35

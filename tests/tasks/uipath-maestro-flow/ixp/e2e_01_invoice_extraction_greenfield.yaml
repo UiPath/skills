@@ -10,7 +10,7 @@ description: >
   verifies offline structural correctness only (`uip maestro flow validate`
   exit 0 on the generated flow).
 
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:ixp, connector, feature:http]
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:ixp, connector, feature:http, path-to-ga]
 
 initial_prompt: |
   Build a UiPath Flow that monitors a SharePoint folder for new vendor PDF

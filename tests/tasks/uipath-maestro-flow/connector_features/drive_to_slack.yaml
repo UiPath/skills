@@ -3,7 +3,7 @@ description: >
   E2E cross-connector scenario — downloads a file from Google Drive and posts
   it into a Slack channel via the "Send File to channel" activity. Exercises
   binary file flow between two IS connectors in a single Flow.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, e2e, uipath-google-drive, uipath-salesforce-slack, ipe, mode:build]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, e2e, uipath-google-drive, uipath-salesforce-slack, ipe, mode:build, path-to-ga]
 
 run_limits:
   expected_turns: 49
@@ -38,4 +38,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
-
