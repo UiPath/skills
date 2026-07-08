@@ -1,13 +1,6 @@
-# FOSSA dependency scan for the skills plugin — one stage, one FOSSA project.
-# No build step: this repo is markdown + scripts with no compilation, so FOSSA
-# analyzes dependency manifests directly (root package.json and the
-# uipath-maestro-bpmn validator package.json). Scan scope is controlled by
-# fossa-skills.yml next to this file.
 parameters:
   azureServiceConnection: ''
   poolName: 'Security-Linux'
-  # false: findings only warn (nightly). true: `fossa test` fails the run on
-  # findings — used by the publish.yml release gate.
   blockOnIssue: false
 
 stages:
@@ -19,17 +12,6 @@ stages:
         pool: ${{ parameters.poolName }}
         steps:
           - checkout: self
-          # Fetch the FOSSA API keys directly instead of letting the template's
-          # AzureCLI toggle steps do it: their static arguments (`@("get",
-          # "list")`, `$True`) trip the aka.ms/ado/75787 shell-argument
-          # enforcement that new ADO projects like skills get by default
-          # (AZP_75787_ENABLE_NEW_LOGIC is a locked system variable, so the
-          # documented opt-out is unavailable). skipToggleKvStep below skips
-          # the template's toggle + Key Vault steps; it consumes $(FossaApiKey)
-          # from this task instead. Relies on the vault firewall staying open
-          # (defaultAction: Allow) — if runs start failing here with a network
-          # authorization error, the vault was locked down and the agent IP
-          # needs whitelisting (the skipped toggle script used to do that).
           - task: AzureKeyVault@2
             displayName: '[FOSSA] Download secrets from devopsprodauthtokenswekv'
             inputs:
