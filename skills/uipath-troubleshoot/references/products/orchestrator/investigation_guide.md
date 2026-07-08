@@ -1,13 +1,8 @@
 # Orchestrator Investigation Guide
 
-## Output Capture Pattern
+## Output Capture
 
-Every `uip` data-gathering command below assumes two patterns to keep the agent's context lean AND preserve an audit trail:
-
-1. **Filter at the source with `--output-filter`** — only pull the fields you actually need. Do NOT fetch the full response and truncate the output with `[:3000]` or similar post-hoc slicing — that silently drops information.
-2. **Save AND inspect in one call with `| tee`** — pipe the filtered response through `tee` to `.local/investigations/raw/<command>.json`. The response is visible in the tool result for immediate use AND saved on disk for later re-reads. **Run `mkdir -p .local/investigations/raw` once before the first fetch — `tee` does not create the directory and will otherwise drop the file silently.**
-
-Reference shape:
+Follow the generic guide § Output Capture (filter at source; `| tee` for small/filtered results, `>` + selective read-back for heavy/unfilterable ones; filter-failure fallback; anti-patterns). Orchestrator-specific filter expressions appear inline in each command below. Reference shape:
 
 ```
 uip or jobs list --folder-key <key> --state Faulted \
@@ -16,16 +11,7 @@ uip or jobs list --folder-key <key> --state Faulted \
   | tee .local/investigations/raw/triage-jobs-list.json
 ```
 
-**Filter-failure fallback.** If `--output-filter '<jsonpath>'` returns an empty result, an error, or a shape the agent cannot interpret (likely cause: a field name in the documented filter has drifted from the current CLI response schema), retry the SAME command ONCE without `--output-filter` to see the actual response shape. Use that unfiltered response for the current call, and note the stale filter in your evidence summary so the discrepancy gets fixed in the guide. Do NOT silently swallow filter errors — they mean the documented filter is stale.
-
-Anti-patterns — do NOT do these:
-
-- `uip <cmd> --output json > file.json` — redirect alone hides stdout; the agent then needs an extra turn running `python -c "json.load(...)"` just to see what it fetched.
-- `uip <cmd> --output json | head -c 3000` or any byte/character slice — truncation silently drops fields that may be required by the playbook downstream.
-- Fetching the unfiltered full response when only 2–3 fields are needed — bloats the agent's context and the cache-read budget on every subsequent turn.
-- Inventing JSONpath field names on the fly. Use only the filter expressions documented in this guide for each command. If a documented filter fails, apply the filter-failure fallback above — do NOT guess different field names.
-
-If the CLI's `--output-filter` cannot express the shape you need, see `scripts/` for skill-provided filter helpers, OR fetch with a minimal field set first and only re-fetch with more fields when a specific gap forces it.
+If `--output-filter` cannot express the shape you need, see `scripts/` for skill-provided filter helpers, or fetch a minimal field set first and re-fetch more only when a gap forces it.
 
 ## Data Correlation
 
@@ -92,7 +78,7 @@ If data doesn't match: **discard it**. Do NOT fetch details for jobs or items fr
 
 ## Job Data Bundle
 
-For every job under investigation, gather these in order. Follow the Output Capture Pattern above — pipe through `tee` and filter at the source.
+For every job under investigation, gather these in order. Follow the generic guide § Output Capture — filter at the source, `tee` the filtered results, `>` the dense/unfiltered ones (e.g. traces).
 
 1. **Job details** — state, input/output arguments, timing, machine info, error details
    ```
@@ -115,9 +101,9 @@ For every job under investigation, gather these in order. Follow the Output Capt
 4. **Job traces** — execution traces (activity states, variable snapshots, execution path). Available for all job types.
    ```
    uip or jobs traces <key> --output json \
-     | tee .local/investigations/raw/triage-job-traces.json
+     > .local/investigations/raw/triage-job-traces.json
    ```
-   Traces are dense; consider filtering by activity name or error attribute when re-fetching for hypothesis testing.
+   Traces are dense and unfiltered — redirect with `>` (not `tee`) so the full body stays out of context, then read back only the activity/error entries you need. Filter by activity name or error attribute when re-fetching for hypothesis testing.
 
 This is the baseline. Domain-specific data gathering builds on it — see the investigation guide for each matched domain (UI Automation, Integration Service, Maestro) for additional steps after the baseline.
 

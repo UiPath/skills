@@ -13,6 +13,21 @@ Before using any fetched data, verify it matches the user's reported problem:
 
 If the data doesn't match: **discard it**. Do NOT use unrelated data as a proxy. Report the mismatch and ask for clarification.
 
+## Output Capture
+
+Every `uip` data-gathering command follows two patterns — lean context AND an audit trail:
+
+1. **Filter at the source with `--output-filter`** — pull only the fields you need. Do NOT fetch the full response and slice it (`[:3000]` etc.); that silently drops information.
+2. **Capture to `raw/`, matching the tool to the payload size:**
+   - **Small / filtered result** → `| tee .local/investigations/raw/<command>.json`: saves the file AND echoes the (already-small) result for immediate use the same turn.
+   - **Heavy or unfilterable result** (dense traces, full logs/stacks, `errorDetails`, or the fallback below) → `> .local/investigations/raw/<command>.json`, then read back only the fields/lines you need. Do NOT `tee` a full unfiltered response — it loads the whole body into context.
+
+   `raw/` must already exist (create it at investigation start); neither `tee` nor `>` creates it.
+
+**Filter-failure fallback.** If `--output-filter` returns empty, an error, or an uninterpretable shape (usually a field name that drifted from the current CLI schema), retry the SAME command ONCE without `--output-filter` to see the actual shape. Capture that unfiltered retry with `>` (not `tee`) and read back only the fields you need; note the stale filter in your evidence summary. Do NOT silently swallow filter errors.
+
+**Anti-patterns:** `tee`-ing a full unfiltered response (dumps the whole body into context — use `>` + selective read-back); `| head -c N` or byte/character slicing (drops required fields); fetching the unfiltered full response when 2–3 fields suffice (bloats context); inventing JSONpath field names (use only documented filters; on failure apply the fallback above).
+
 ## Interpreting Query Results
 
 - **Empty results or 404** — before concluding an entity doesn't exist, verify the container (folder, tenant, instance) is still accessible. If the container was deleted or returns 404, all scoped queries are unreliable. Widen the search (different folder, broader time window, different state filters) or flag as a data gap and ask the user. Never treat empty results from an inaccessible container as proof of absence.
