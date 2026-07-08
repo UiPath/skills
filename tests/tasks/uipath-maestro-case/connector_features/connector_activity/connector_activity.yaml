@@ -1,0 +1,142 @@
+task_id: skill-case-single-connector-activity
+description: >
+  Build a Case Management definition from an sdd.md whose only task is an
+  `execute-connector-activity` (one of the 2 previously-untested task types).
+  Exercises the connector-activity plugin: registry pull, activity-type-id
+  lookup, connection resolution via `case spec --input-details`, and direct
+  caseplan.json write of a resolved `type: "execute-connector-activity"` node
+  (real `data.typeId` + `data.connectionId`, no fabricated IDs). Stops at
+  validate + resolution assertions — NOT debug: executing a connector activity
+  has real side effects (Rule 12), so this task verifies the BUILD, not runtime.
+  Requires cloud auth + a healthy Integration Service connection for the named
+  connector on the test tenant.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, connector, feature:connector-activity]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 120
+  turn_timeout: 1800
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "ConnectorActivityCase"
+  containing a project also named "ConnectorActivityCase" from the sdd.md below.
+  Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — ConnectorActivityCase
+
+  Single-stage, single-task case exercising the connector-activity task plugin.
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | ConnectorActivityCase |
+  | Case Description | Single-node case that posts a Slack message via a connector activity. |
+  | Case Identifier | Prefix: CAC, Type: constant |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Notify (`notify`)
+  **Type:** Stage
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once |
+  |---|---------|-----------|------|----------|---------------|
+  | 1 | `notify.postMessage` | Post Slack message | execute-connector-activity | Yes | No |
+
+  ##### Task 1.1: Post Slack message (`notify.postMessage`)
+
+  **Type:** execute-connector-activity
+  **Description:** Post a message to a Slack channel via the Slack connector.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Connector | Slack |
+  | Connector Key | uipath-salesforce-slack |
+  | Activity | Send Message to a Channel |
+  | Inputs | channel: "#general", text: "Case started" |
+  ```
+
+  Resolve the connector activity against the Integration Service registry and a
+  live Slack connection on the tenant. Treat the generated tasks.md plan as
+  pre-approved — do NOT block on the HARD STOP / AskUserQuestion approval steps.
+  Do NOT run `uip maestro case debug` (a connector activity executes for real).
+  Do NOT ask for approval, confirmation, or feedback. Build end-to-end in a
+  single pass and finish with `uip maestro case validate` passing on the
+  resulting caseplan.json.
+
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pulled the case registry before resolving the connector"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+registry\s+pull'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the connector spec to resolve typeId/connectionId"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+spec'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate ConnectorActivityCase/ConnectorActivityCase/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Caseplan has a RESOLVED execute-connector-activity task (real typeId + connectionId, not a skeleton)"
+    command: "python3 $TASK_DIR/check_connector_activity.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

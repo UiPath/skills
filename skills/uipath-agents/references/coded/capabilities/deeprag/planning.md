@@ -11,7 +11,7 @@ Pick this when:
 
 Confirm DeepRAG is the right mode first — see [../../../context-grounding-patterns.md](../../../context-grounding-patterns.md).
 
-For Studio Web Agent Builder → [../../lowcode/capabilities/built-in-tools/deeprag/planning.md](../../lowcode/capabilities/built-in-tools/deeprag/planning.md).
+For Studio Web Agent Builder → [../../../lowcode/capabilities/built-in-tools/deeprag/planning.md](../../../lowcode/capabilities/built-in-tools/deeprag/planning.md).
 
 ## Inputs You Need Before Building
 

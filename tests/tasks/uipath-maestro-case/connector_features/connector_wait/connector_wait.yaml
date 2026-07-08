@@ -1,0 +1,135 @@
+task_id: skill-case-connector-wait-trigger
+description: >
+  Build a Case Management definition from an sdd.md whose stage contains a
+  `wait-for-connector` task (the 2nd previously-untested task type) that
+  suspends until an external Integration Service connector event arrives.
+  Exercises the connector-trigger plugin: `case spec --type trigger
+  --input-details`, and direct caseplan.json write of a resolved
+  `type: "wait-for-connector"` node (`data.serviceType:
+  "Intsvc.WaitForEvent"`, real `data.typeId` + `data.connectionId`). Stops at
+  validate + resolution assertions — NOT debug: a wait-for-connector suspends
+  waiting for a real event and validate cannot catch a mis-bound connector rule
+  (the skill's documented silent-failure surface). Requires cloud auth + a
+  healthy Integration Service connection for the named connector.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, connector, feature:connector-trigger]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 120
+  turn_timeout: 1800
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "ConnectorWaitCase" containing
+  a project also named "ConnectorWaitCase" from the sdd.md below. Write the
+  sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — ConnectorWaitCase
+
+  Single-stage case that suspends on an external connector event.
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | ConnectorWaitCase |
+  | Case Description | Case that waits for an inbound Outlook 365 email before completing. |
+  | Case Identifier | Prefix: CWC, Type: constant |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Await Reply (`awaitReply`)
+  **Type:** Stage
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once |
+  |---|---------|-----------|------|----------|---------------|
+  | 1 | `awaitReply.waitForEmail` | Wait for reply email | wait-for-connector | Yes | No |
+
+  ##### Task 1.1: Wait for reply email (`awaitReply.waitForEmail`)
+
+  **Type:** wait-for-connector
+  **Description:** Suspend until an email is received on the Outlook 365 mailbox.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Connector | Microsoft Outlook 365 |
+  | Connector Key | uipath-microsoft-outlook365 |
+  | Event | Email Received |
+  | Mode | polling |
+  ```
+
+  Resolve the connector event against the Integration Service registry and a
+  live Outlook 365 connection on the tenant. Treat the generated tasks.md plan
+  as pre-approved — do NOT block on the HARD STOP / AskUserQuestion approval
+  steps. Do NOT run `uip maestro case debug` (a wait-for-connector suspends on a
+  real event). Do NOT ask for approval, confirmation, or feedback. Build
+  end-to-end in a single pass and finish with `uip maestro case validate`
+  passing on the resulting caseplan.json.
+
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the connector-trigger spec to resolve typeId/connectionId"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+spec'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate ConnectorWaitCase/ConnectorWaitCase/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Caseplan has a RESOLVED wait-for-connector task (serviceType Intsvc.WaitForEvent, real typeId + connectionId, not a skeleton)"
+    command: "python3 $TASK_DIR/check_connector_wait.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120
