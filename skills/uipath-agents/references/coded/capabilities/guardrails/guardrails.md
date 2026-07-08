@@ -337,7 +337,9 @@ On resume: **Approve** continues (with the reviewer's optional edit applied); **
 
 ---
 
-## Verify Guardrails Are Actually Wired (mandatory after writing)
+## Verify Guardrails Are Actually Wired (mandatory after writing for LangChain ML guardrails)
+
+> **Skip this entire section for deterministic guardrails** (`UiPathDeterministicGuardrailMiddleware` / `CustomValidator`). They run inline with no adapter registration and no LLM wrapping. For deterministic guardrails, grep-verify the class name and rule keyword are present in the file — that is sufficient.
 
 **Syntactically valid ≠ active.** Because importing from the wrong module bypasses the framework adapter and makes guardrails silently no-op (see [Imports Pattern](#imports-pattern)), `ast.parse` passing tells you nothing about whether a single guardrail will ever fire. After writing, prove the wiring at runtime.
 
@@ -379,7 +381,7 @@ For non-LangChain frameworks, there is no published adapter yet, so the decorato
 6. **Respect scope and stage constraints from the docs** — each middleware class has specific allowed scopes and stages; never apply a guardrail at a scope or stage the docs say it doesn't support.
 7. **Only add imports you use** — merge new names into any existing `from uipath_langchain.guardrails import (...)` block (LangChain) or `from uipath.platform.guardrails import (...)` block (every other framework).
 8. **For LangChain / LangGraph agents, import guardrail symbols from `uipath_langchain.guardrails`, not `uipath.platform.guardrails`.** Both expose the same names, but only `uipath_langchain.guardrails` registers the LangChain adapter as an import side effect; without it the decorator/middleware never wraps the LLM/tool/agent and every guardrail silently no-ops with no error or log. For any other framework (LlamaIndex, OpenAI Agents, plain Python), import from `uipath.platform.guardrails` — no framework adapter is published yet. See [Imports Pattern](#imports-pattern).
-9. **Verify wiring at runtime after writing (LangChain only)** — confirm the LangChain adapter is registered (`len(_adapters) >= 1`) and the decorated object is wrapped (`type(llm).__name__ == "_GuardedLLM"`, or `_GuardedTool` for tools). `ast.parse` is not enough; a silently-unwrapped guardrail passes syntax but never fires. For frameworks without an adapter, this wrap-check does not apply — invoke the validator directly to confirm it runs. See [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing).
+9. **Verify wiring at runtime after writing (LangChain only)** — confirm the LangChain adapter is registered (`len(_adapters) >= 1`) and the decorated object is wrapped (`type(llm).__name__ == "_GuardedLLM"`, or `_GuardedTool` for tools). `ast.parse` is not enough; a silently-unwrapped guardrail passes syntax but never fires. For frameworks without an adapter, this wrap-check does not apply — invoke the validator directly to confirm it runs. **For `UiPathDeterministicGuardrailMiddleware` / `CustomValidator`, skip both runtime checks — grep-verify the class name and rule keyword are present in the file instead.** See [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails).
 10. **Entity/threshold values must match the docs exactly** — use enum member names, not raw strings; use only allowed threshold values.
 11. **Deterministic guardrails run locally** — no backend API call, no tenant availability check needed.
 12. **Do not duplicate existing guardrails** — read the agent code first and skip if the same guardrail is already configured.

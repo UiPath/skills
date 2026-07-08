@@ -90,3 +90,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV DOTNET_ROOT=/usr/share/dotnet \
     DOTNET_NOLOGO=1 \
     DOTNET_CLI_TELEMETRY_OPTOUT=1
+
+# Pre-install Python packages needed by coded-agent sandbox fixtures so agents
+# don't trigger a live uv-sync download (which takes 1-2 min and causes retry
+# loops in the turn timeline). uipath-langchain is declared in the
+# SimpleCodedAgent fixture's pyproject.toml but has no pre-built venv.
+RUN pip install --no-cache-dir "uipath-langchain>=0.9.26"

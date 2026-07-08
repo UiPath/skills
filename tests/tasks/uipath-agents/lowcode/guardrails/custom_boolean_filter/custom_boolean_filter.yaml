@@ -12,6 +12,9 @@ description: >
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
 max_iterations: 1
 
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+
 sandbox:
   template_sources:
     - type: template_dir
@@ -25,6 +28,9 @@ initial_prompt: |
   tool output so it does not leak downstream — don't block the run, just filter
   that field out. Add a guardrail on the "Send message to channel" tool that does
   this, and validate when you are done.
+
+  The project is already at the path given above — start working directly without
+  searching or exploring the directory first.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -56,6 +62,6 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
-  expected_turns: 16
+  expected_turns: 24
   max_turns: 40
   turn_timeout: 1200
