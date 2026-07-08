@@ -1,0 +1,6 @@
+{
+  "Result": "Failure",
+  "Code": "ConnectionNotEnabled",
+  "Message": "Connection '989fd9d2-4b07-443e-86e3-ed6f1b00079b' is not enabled (status: Failed).",
+  "Instructions": "Run 'uip is connections edit <connection-id>' to re-authenticate, or 'uip is connections create <connector-key>' to create a new connection."
+}

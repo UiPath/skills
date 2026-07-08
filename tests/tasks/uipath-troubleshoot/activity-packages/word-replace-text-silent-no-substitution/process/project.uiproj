@@ -1,0 +1,6 @@
+{
+  "Name": "OnboardingLetter",
+  "ProjectType": "Process",
+  "Description": "Generates an onboarding letter by inserting the employee name into the placeholder in the offer template.",
+  "MainFile": "Main.xaml"
+}

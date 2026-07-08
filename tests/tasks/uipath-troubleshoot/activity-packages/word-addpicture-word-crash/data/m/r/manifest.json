@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Word Add Picture word-crash scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Open-ended natural-language query; proxy to the real uip CLI per troubleshoot test rules."
+    },
+    {
+      "match": "or folders list",
+      "file": "ce587f2a7b.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "f160025a12.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "88a092496d.json"
+    },
+    {
+      "match": "or jobs history",
+      "file": "cd2a0f832f.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "6618893ff1.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Excel Read Range daily-import scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "858738168e.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "858738168e.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json",
+      "file": "d9bd348e9d.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json",
+      "file": "d9bd348e9d.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --output json",
+      "file": "cec128c294.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --output json",
+      "file": "cec128c294.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --process-name \"ExcelDailyImport\" --output json",
+      "file": "cec128c294.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --process-name ExcelDailyImport --output json",
+      "file": "cec128c294.json"
+    },
+    {
+      "match": "or jobs get \"cc333333-4444-5555-6666-777788889999\" --output json",
+      "file": "d0ed234d13.json"
+    },
+    {
+      "match": "or jobs get cc333333-4444-5555-6666-777788889999 --output json",
+      "file": "d0ed234d13.json"
+    },
+    {
+      "match": "or jobs get \"dd444444-5555-6666-7777-888899990000\" --output json",
+      "file": "30c10560f1.json"
+    },
+    {
+      "match": "or jobs get dd444444-5555-6666-7777-888899990000 --output json",
+      "file": "30c10560f1.json"
+    },
+    {
+      "match": "or jobs history \"cc333333-4444-5555-6666-777788889999\" --output json",
+      "file": "d13289c93f.json"
+    },
+    {
+      "match": "or jobs history cc333333-4444-5555-6666-777788889999 --output json",
+      "file": "d13289c93f.json"
+    },
+    {
+      "match": "or jobs logs \"cc333333-4444-5555-6666-777788889999\" --output json",
+      "file": "dde283e718.json"
+    },
+    {
+      "match": "or jobs logs cc333333-4444-5555-6666-777788889999 --output json",
+      "file": "dde283e718.json"
+    },
+    {
+      "match": "or jobs logs \"dd444444-5555-6666-7777-888899990000\" --output json",
+      "file": "6c8b4e8b2a.json"
+    },
+    {
+      "match": "or jobs logs dd444444-5555-6666-7777-888899990000 --output json",
+      "file": "6c8b4e8b2a.json"
+    },
+    {
+      "match": "or triggers list --folder-key \"f0011111-2222-3333-4444-555566667777\" --output json",
+      "file": "d1082fb9ed.json"
+    },
+    {
+      "match": "or triggers list --folder-key f0011111-2222-3333-4444-555566667777 --output json",
+      "file": "d1082fb9ed.json"
+    }
+  ]
+}

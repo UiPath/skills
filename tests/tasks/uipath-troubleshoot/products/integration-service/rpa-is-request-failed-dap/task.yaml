@@ -1,0 +1,100 @@
+task_id: skill-troubleshoot-rpa-is-request-failed-dap
+description: >
+  Faithful replay of a real UiPath troubleshooting investigation. The agent
+  runs the uipath-troubleshoot skill against a uip CLI mock whose
+  responses are the verbatim sub-agent outputs from the real session.
+  Success = the agent reaches the same root cause as RESOLUTION.md.
+tags: [uipath-troubleshoot, integration-service, rpa, e2e, faithful-replay, mode:diagnose]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../_shared/mock_template
+    - type: template_dir
+      path: data
+  mock_path_dirs:
+    - m
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  I have deployed a new solution under this folder uipath-rpa-isActivities/RequestFailed_DAPRuntime and recently I run one job there but it failed, can you help me in troubleshooting the error i am getting there
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent reached the same root cause and fix as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md). Grade ONLY the agent's
+      final user-facing response and tool calls — NOT any internal files it
+      may have written under .local/investigations/.
+
+      DIMENSION A -- Correct root cause
+        The agent's final answer must identify that the "Create Ticket"
+        Integration Service connector activity failed because the provider
+        (Freshdesk) returned HTTP 403 access_denied (DAP-RT-1101) — i.e. the
+        connection authenticated but the underlying account lacks permission
+        to create tickets. It must NOT mislabel this as a credential/auth
+        failure (401), a connection-resolution failure, or a bad-record (404).
+
+      DIMENSION B -- Correct fix
+        The agent recommends granting the Freshdesk account the ticket-create
+        permission/role (or widening the connection scope) AND re-authenticating
+        the connection, consistent with RESOLUTION.md.
+
+      Penalize fabrication: invented assets, queues, policies, or error codes
+      not grounded in the evidence the mock returned.
+
+      SCORING RUBRIC (single score):
+        1.0  Both dimensions correct: right 403/permission root cause AND fix.
+        0.8  Both substantially correct, minor omissions.
+        0.5  Only one dimension correct.
+        0.2  Recognized an Integration Service failure but neither the 403
+             permission cause nor the fix.
+        0.0  Wrong conclusion, fabricated cause, or got blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+# Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the troubleshooting flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

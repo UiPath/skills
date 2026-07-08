@@ -1,0 +1,5 @@
+{
+  "Result": "Failure",
+  "Message": "HTTP 404: Connection [989fd9d2-4b07-443e-86e3-ed6f1b00079b] is invalid or you do not have access to it",
+  "Instructions": "Run 'uip is connections edit <connection-id>' to re-authenticate, or 'uip is connections create <connector-key>' to create a new connection."
+}

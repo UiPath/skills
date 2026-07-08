@@ -1,0 +1,6 @@
+{
+  "Name": "BatchLetterFill",
+  "ProjectType": "Process",
+  "Description": "Opens a Word letter template and replaces the client-name placeholder with the target client value.",
+  "MainFile": "Main.xaml"
+}

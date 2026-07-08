@@ -1,0 +1,6 @@
+{
+  "Name": "MonthlyReportFiller",
+  "ProjectType": "Process",
+  "Description": "Opens a monthly report template and fills in the report month by replacing placeholder text via Word activities.",
+  "MainFile": "Main.xaml"
+}
