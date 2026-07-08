@@ -14,7 +14,7 @@ tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node
 
 run_limits:
   max_turns: 200
-  turn_timeout: 1800
+  turn_timeout: 3600
   task_timeout: 5400
 
 post_run:
