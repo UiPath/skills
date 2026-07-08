@@ -176,6 +176,39 @@ Per product:
 
 Graceful degrade: if the AOps guides are unavailable, present the ⚙ list (setting, expected, current) and tell the user to set each value on the product's deployed policy in Automation Ops — never leave the manual settings as a dead-end suggestion.
 
+### User-facing output (shape to follow)
+
+Ask for values — known recommended value → offer to confirm it; org-specific gate → ask for the value. Never show policy ids or CLI:
+
+```
+3 settings need a value only you can set — I'll update the existing ISO 42001 policies in place.
+
+1. Studio Web — Publish Outside Personal Workspace  (AI system deployment · High)
+   Recommended: Development only · currently: Anywhere        → set to recommended? (yes / other)
+2. Workflow Analyzer — Required Packages  (Processes for responsible AI design · High)
+   Requires a mandated package list · currently: not set      → which packages?
+3. Model Governance — Third-Party AI Providers Allowlist  (Suppliers · Medium)
+   Requires approved providers only · currently: All providers → which providers?
+```
+
+Review gate before applying:
+
+```
+Will change (3 existing policies — no re-apply of the standard):
+  Studio Web      · Publish Outside Personal Workspace → Development only
+  Studio          · Required Packages                  → <user packages>
+  AI Trust Layer  · Third-Party AI Providers Allowlist → <user providers>
+Proceed? (y/n)
+```
+
+Receipt + re-check after applying:
+
+```
+✅ 3 settings configured on <tenantName> · by you · <date>
+Clauses fully covered: 9 / 15  (was 7)  ·  Suppliers 2/5 → 3/5
+Remaining gaps: ask 'What does [clause] require?'
+```
+
 ## Never cache
 
 Always run fresh before presenting a posture plan. Coverage reflects live tenant state.
