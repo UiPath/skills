@@ -29,7 +29,7 @@ Agentic orchestration platform built on Orchestrator. BPMN-based process design 
 
 ## Integration Service
 
-Connector platform for third-party integrations (Salesforce, Outlook, SAP, Slack, etc.). Manages OAuth connections, exposes activities for automations and BPMN processes, and provides event-based triggers. Issues here involve connection failures, expired authentication, triggers not firing, and operation errors. Connection errors from Integration Service often surface through Maestro or Orchestrator as the calling product. Also covers the runtime exceptions thrown by the connector activities (`ConnectorActivity`, `ConnectorTriggerActivity`, `ConnectorHttpActivity`): `GeneralException`/`RuntimeException` with `DAP-GE-*`/`DAP-RT-*` codes, and `UiPath.Ipc`/`UiPath.CoreIpc` `RemoteException`.
+Connector platform for third-party integrations (Salesforce, Outlook, SAP, Slack, etc.). Manages OAuth connections, exposes activities for automations and BPMN processes, and provides event-based triggers. Issues here involve connection failures, expired authentication, triggers not firing, and operation errors. Connection errors from Integration Service often surface through Maestro or Orchestrator as the calling product. Also covers the runtime exceptions thrown by the connector activities (`ConnectorActivity`, `ConnectorTriggerActivity`, `ConnectorHttpActivity`): `GeneralException`/`RuntimeException` with `DAP-GE-*`/`DAP-RT-*` codes, and `UiPath.Ipc`/`UiPath.CoreIpc` `RemoteException` — plus the `CNS…` error codes returned by the Connection Service HTTP API (connections/connectors/triggers CRUD, permissions, event callbacks, Solutions installs).
 
 Namespaces: `UiPath.IntegrationService.Activities`, `UiPath.IntegrationService.Activities.Runtime.Exceptions`
 
@@ -37,6 +37,7 @@ CLI: `uip is --help`
 
 - [products/integration-service/overview.md](./products/integration-service/overview.md) — Product overview, connectors, connections, and CLI commands
 - [products/integration-service/dap-error-codes-reference.md](./products/integration-service/dap-error-codes-reference.md) — DAP runtime error-code catalog, telemetry customEvent fields, retry semantics, code → playbook map
+- [products/integration-service/cns-error-codes-reference.md](./products/integration-service/cns-error-codes-reference.md) — CNS (Connection Service API) error-code catalog: wire format, fault buckets, overloaded-code traps, retry semantics, code → playbook map
 - [products/integration-service/summary.md](./products/integration-service/summary.md) — All playbooks for Integration Service issues
 
 ## Agents

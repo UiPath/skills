@@ -1,0 +1,12 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-08T05:30:11.542Z",
+      "Message": "Create Contact: Failed to retrieve connection. Consider using a different connection. - Connection [5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4] is not in an authorized state. Please re-authenticate the connection to continue. Error code: DAP-GE-3000.\nin Main.xaml\n    at ConnectorActivity \"Create Contact\"\n    at Sequence \"Sequence\"\n    at Main \"Main\"\n\n--- .NET stack trace ---\nUiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken cancellationToken)\n--- inner ---\nUiPath.ConnectionClient.Contracts.ConnectionHttpException: Connection Service error reported: [StatusCode: BadRequest, ErrorCode: \"CNS1008\", ErrorReason: \"{\\\"error\\\":\\\"invalid_grant\\\",\\\"error_description\\\":\\\"expired access/refresh token\\\"}\", TraceId: \"3c5e7a9b1d2f46a8c0b2d4f6a8c0e1b3\"]",
+      "ProcessName": "LeadImport"
+    }
+  ]
+}

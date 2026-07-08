@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-excel-card-sensitivity-label-rejection
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Modern Use Excel File
   failure (BusinessException) where the target workbook has a

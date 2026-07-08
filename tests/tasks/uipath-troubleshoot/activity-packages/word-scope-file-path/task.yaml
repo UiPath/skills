@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-word-file-path
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Word Application Scope
   FileNotFoundException where a relative document path (Output\OfferLetter.docx)

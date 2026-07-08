@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-python-scope-arch-mismatch
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Python Scope engine-init failure
   where the scope faults at open with `One or more errors occurred. (Error

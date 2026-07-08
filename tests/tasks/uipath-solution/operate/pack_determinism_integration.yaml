@@ -1,0 +1,46 @@
+task_id: skill-platform-solution-pack-determinism-integration
+description: >
+  Integration test: pack the same solution twice and confirm the two packages
+  are structurally identical — same file list and same metadata, ignoring the
+  per-pack `packageVersionKey` GUID and zip timestamps. Catches build
+  nondeterminism that would mask regressions in other tests. Purely local: no
+  tenant, no login, no packages published. Uses the committed fixture at
+  tests/fixtures/solutions/e2e-stub-solution.
+tags: [uipath-solution, integration, mode:build, lifecycle:generate, solution]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Use the `uipath-solution` skill.
+
+  I want to be sure packing a solution is reproducible — packing the same source
+  twice should give structurally identical packages. There's a ready solution at
+  `$SKILLS_REPO_PATH/tests/fixtures/solutions/e2e-stub-solution`.
+
+  Pack it twice into two separate output folders in your working directory, then
+  compare the two packages and confirm they carry the same files and metadata (a
+  regenerated id or a timestamp differing is fine). Write your comparison to
+  `diff.txt`.
+
+  Don't ask for approval, don't pause.
+
+success_criteria:
+  - type: run_command
+    description: "uip solution pack is structurally deterministic (file list + metadata)"
+    command: "python3 $TASK_DIR/check_pack_determinism.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent wrote its pack comparison"
+    path: "diff.txt"
+    weight: 1.0
+    pass_threshold: 1.0

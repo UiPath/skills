@@ -4,7 +4,7 @@ description: >
   queries the BillingDisputeERP and BillingDisputeCRM entities as parallel
   branches joined by a merge, then computes an invoice overcharge; graded by
   validate plus one flow debug run against seeded tenant data.
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, connector]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, connector, path-to-ga]
 
 run_limits:
   max_turns: 120

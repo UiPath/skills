@@ -68,12 +68,16 @@ you pass win, unspecified keys are kept, and per-method visibility is deep-merge
 `--type` is required only for a NEW field, optional on a merge.
 
 Core: `name`, `type` (string/integer/number/boolean/date/date-time/object/array),
-`displayName`, `nativeType`, `format`, `description`, `sampleValue`, `primaryKey`
-(`--primary-key`), `sortOrder` (`--sort-order`), `enum` (`--enum '[{"value":"active"}]'`),
-`mask` (`--mask`), `custom`. **`enum` MUST be the object form `[{"value":"x"}]`** — the server
-SR marshaller rejects a bare string array `["x"]` at PUBLISH time even though `validate` passes.
-The CLI auto-normalizes a bare `--enum '["a","b"]'` to the object form, but hand-edited SR/`state
-patch` enums must use `[{"value":…}]`.
+`displayName`, `nativeType` (`--native-type`), `format`, `description`, `sampleValue`,
+`defaultValue` (`--default-value`, scalar or JSON), `primaryKey` (`--primary-key`),
+`sortOrder` (`--sort-order`), `enum` (`--enum`), `enhancedEnum` (`--enhanced-enum`),
+`custom`. **`mask` is a date/number FORMAT PATTERN string** (e.g. `yyyy-MM-dd'T'HH:mm:ssZ`),
+NOT a boolean — set it with `--mask <pattern>`. **`enum` MUST end up as the object form `[{"value":"x"}]`** — the
+server SR marshaller rejects a bare string array `["x"]` at PUBLISH time. Both `--enum` and
+`--fields-file` auto-normalize a bare `["a","b"]` to the object form; and `validate` now FLAGS a
+bare/`!{value}` enum still sitting in an SR (e.g. from a hand `state patch`), so it no longer
+slips through to a publish failure. `--enhanced-enum '[{"name":"Label","value":"V"}]'` writes
+labelled options.
 
 **Method visibility** (`field.method` object) controls request/response per method:
 ```json
@@ -85,13 +89,17 @@ patch` enums must use `[{"value":…}]`.
 Set it with the visibility flags. `--method` is REPEATABLE and the flags
 (`--request`/`--response`/`--required`/`--request-curated`/`--response-curated`) apply to
 EVERY listed method: `--method GET --method POST --response` makes the field a response on
-both. Properties: `response`, `request`, `required`, `requestCurated`, `responseCurated`,
+both. For DIFFERENT visibility per method in one call, use the inline form —
+`--method 'GET=response,response-curated' --method 'POST=request,required'` — and prefix a
+flag with `!` to UNSET it on a merge (`--method 'GET=!request'` writes `request: false`
+over an accidental `true`; no `state patch` needed). Bare and inline `--method` forms mix.
+Properties: `response`, `request`, `required`, `requestCurated`, `responseCurated`,
 `designOverrides`. `requestCurated`/`responseCurated` gate a field's visibility INSIDE a
 curated activity (plain `request`/`response` is not enough); auto-curation sets them from
 the field's request/response side.
 
 **Searchable**: `searchable` (`--searchable`), `searchableOperators`
-(`--searchable-operators '=,!=,like,>,<,>=,<=,in'`), `searchableNames`.
+(`--searchable-operators '=,!=,like,>,<,>=,<=,in'`), `searchableNames` (`--searchable-names`).
 
 **design** object (`--design-position primary|secondary|none`, `--component`, `--hidden`):
 `position`, `component` (FolderPicker, Button, Connectors, Resources, Fields, Processes,
@@ -99,8 +107,40 @@ Queues), `hidden` (what `--hidden` writes — the field-level key is `design.hid
 `isHidden`), `loadByDefault`, `isMultiSelect`, `enableUserOverride`, `dictionaryWidget`,
 `solutionResourceKind`, `fieldActions` (cascading show/hide based on another field's value).
 
-**reference** object (lookup dropdown): `{ "lookupNames": ["name"], "lookupValue": "id",
-"path": "/accounts" }` — set via `state patch` (no field flag).
+**reference** object (lookup dropdown): `{ "objectName": "accounts", "path": "/accounts",
+"lookupValue": "id", "lookupNames": ["name"] }` — set with `--reference '<json>'` (or `state
+patch`). `objectName` + `path` are REQUIRED (`validate` and `--reference` both enforce it).
+
+## Bulk field authoring — `--fields` / `--fields-file`
+`activity create --fields '<json-array>'` (inline) or `--fields-file <path>` seeds the whole
+field schema in one shot. Two shapes are accepted: an ARRAY of field objects
+(`[{ "name": "email", ... }]`), OR a name→spec OBJECT map (`{ "email": { ... } }`) where the KEY
+is the field name — the exact shape a standard-resource stores `fields` under, so you can paste a
+real connector's `fields: {…}` object VERBATIM. Each field object uses the SAME keys as above
+(`name` required in the array form; `type` optional — defaults to `string`). This path is **validated and
+normalized before anything is written** (same engine as `field create`): a bad shape fails
+fast with a `ValidationError` listing EVERY problem, rather than silently authoring a broken
+SR that only fails at publish. Specifically it:
+- normalizes a bare `enum: ["a","b"]` → `[{"value":"a"},…]`;
+- accepts per-method visibility under `method` (canonical) OR `methods` (alias) — but not both;
+- requires `objectName`+`path` on a `reference`; requires `name`+`value` on each `enhancedEnum`;
+- checks `design.position` ∈ {primary,secondary,none} and that boolean flags are booleans;
+- REJECTS unknown top-level keys (typo guard) and duplicate field names.
+Example element: `{ "name": "status", "type": "string", "enum": ["open","closed"],
+"searchable": true, "method": { "GET": { "response": true } } }`. `--fields`/`--fields-file`
+carry the full property set (enum, enhancedEnum, reference, searchable*, primaryKey,
+sortOrder, defaultValue, design, …) — none are dropped.
+
+The schema is OPEN: recognized keys are listed by `activity field schema`, but connectors
+carry a vendor long tail (`refName`, `searchableDisplayName`, `isHidden`, …) — those pass
+through with a WARNING, not an error, so real fields are never blocked. Only true
+publish‑breakers hard‑fail: missing `name`, duplicate names, both `method`+`methods`, a
+non‑object `method` map.
+
+Don't guess the shape: `activity field schema` prints the exact accepted keys, types,
+visibility methods, and a copy‑pasteable **valid** example (no connector needed). To
+bulk‑add fields to an EXISTING activity, re‑run `activity create --name <same>
+--fields-file <path>` — it MERGES fields into the existing SR (existing fields kept).
 
 ## Rules
 1. Field dict key MUST equal `field.name`. 2. `fields` is top-level. 3. Only methods in

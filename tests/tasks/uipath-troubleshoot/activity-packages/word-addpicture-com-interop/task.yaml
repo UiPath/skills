@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-word-addpicture-com-interop
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Word "Add Picture"
   (WordAddImage) failure that is ENVIRONMENTAL, not a source defect.
