@@ -1,5 +1,20 @@
 ---
 confidence: medium
+signatures:
+  - kind: error-code
+    value: "CNS1005"
+  - kind: error-code
+    value: "CNS2000"
+  - kind: error-code
+    value: "CNS1015"
+  - kind: error-code
+    value: "CNS1019"
+  - kind: error-code
+    value: "CNS1024"
+  - kind: error-code
+    value: "CNS1029"
+  - kind: error-code
+    value: "CNS2011"
 ---
 
 # Connection Service — Event Callback Processing Failed (CNS1005, CNS2000, CNS1015–CNS1019, CNS1024, CNS1029, CNS2011)

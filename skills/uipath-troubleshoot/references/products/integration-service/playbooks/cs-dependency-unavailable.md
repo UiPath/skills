@@ -1,5 +1,24 @@
 ---
 confidence: high
+signatures:
+  - kind: error-code
+    value: "CNS2003"
+  - kind: error-code
+    value: "CNS2005"
+  - kind: error-code
+    value: "CNS2006"
+  - kind: error-code
+    value: "CNS2007"
+  - kind: error-code
+    value: "CNS2009"
+  - kind: error-code
+    value: "CNS2010"
+  - kind: error-code
+    value: "CNS2012"
+  - kind: error-code
+    value: "CNS1042"
+  - kind: error-code
+    value: "CNS1101"
 ---
 
 # Connection Service — Internal / Dependency Failure (CNS2003, CNS2005, CNS2006, CNS2007, CNS2009, CNS2010, CNS2012, CNS1042, CNS1101)

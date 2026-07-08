@@ -1,5 +1,20 @@
 ---
 confidence: high
+signatures:
+  - kind: error-code
+    value: "CNS1043"
+  - kind: error-code
+    value: "CNS1046"
+  - kind: error-code
+    value: "CNS1047"
+  - kind: error-code
+    value: "CNS3001"
+  - kind: error-code
+    value: "CNS1044"
+    note: "raw Connection Service API surface; inside a GSuite activity ConnectionHttpException → gsuite connection-and-auth-failures.md"
+  - kind: error-code
+    value: "CNS1045"
+    note: "raw Connection Service API surface; inside a GSuite activity ConnectionHttpException → gsuite connection-and-auth-failures.md"
 ---
 
 # Connection Service — Permission / Authorization Denied (CNS1045, CNS1044, CNS1046, CNS1047, CNS1043, CNS3001)

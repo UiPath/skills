@@ -192,8 +192,69 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | Cannot run the macro | message | activity-packages/excel-activities/playbooks/invoke-vba-entry-method-name.md | high | Invoke VBA at Application.Run — EntryMethodName does not resolve (typo, appended parentheses, Private/nested Sub) while the code file itself compiles; code-file load/compile failure → invoke-vba-code-file-path.md; Execute Macro surface → execute-macro-failures.md |
 | Cannot save the document because it is read-only | message | activity-packages/word-activities/playbooks/replace-text-file-locked.md | medium |  |
 | Cannot send input to UI element because it is outside of screen bounds. | message | activity-packages/ui-automation/playbooks/click-coordinate-off-screen.md | high |  |
-| CNS1044 | error-code | activity-packages/gsuite-activities/playbooks/connection-and-auth-failures.md | medium |  |
-| CNS1045 | error-code | activity-packages/gsuite-activities/playbooks/connection-and-auth-failures.md | medium |  |
+| CNS1000 | error-code | products/integration-service/playbooks/cs-connection-not-found.md | high |  |
+| CNS1001 | error-code | products/integration-service/playbooks/cs-connector-unavailable.md | high |  |
+| CNS1002 | error-code | products/integration-service/playbooks/cs-connector-unavailable.md | high |  |
+| CNS1003 | error-code | products/integration-service/playbooks/cs-connection-not-found.md | high |  |
+| CNS1004 | error-code | products/integration-service/playbooks/cs-connector-unavailable.md | high |  |
+| CNS1005 | error-code | products/integration-service/playbooks/cs-events-callback-failed.md | medium |  |
+| CNS1006 | error-code | products/integration-service/playbooks/cs-connection-not-found.md | high |  |
+| CNS1007 | error-code | products/integration-service/playbooks/cs-operation-conflict.md | high |  |
+| CNS1008 | error-code | products/integration-service/playbooks/cs-connection-not-authenticated.md | high |  |
+| CNS1014 | error-code | products/integration-service/playbooks/cs-trigger-operation-failed.md | high |  |
+| CNS1015 | error-code | products/integration-service/playbooks/cs-events-callback-failed.md | medium |  |
+| CNS1019 | error-code | products/integration-service/playbooks/cs-events-callback-failed.md | medium |  |
+| CNS1020 | error-code | products/integration-service/playbooks/cs-trigger-operation-failed.md | high |  |
+| CNS1021 | error-code | products/integration-service/playbooks/cs-connection-not-authenticated.md | high |  |
+| CNS1024 | error-code | products/integration-service/playbooks/cs-events-callback-failed.md | medium |  |
+| CNS1025 | error-code | products/integration-service/playbooks/cs-trigger-operation-failed.md | high |  |
+| CNS1029 | error-code | products/integration-service/playbooks/cs-events-callback-failed.md | medium |  |
+| CNS1038 | error-code | products/integration-service/playbooks/cs-operation-conflict.md | high |  |
+| CNS1039 | error-code | products/integration-service/playbooks/cs-trigger-operation-failed.md | high |  |
+| CNS1042 | error-code | products/integration-service/playbooks/cs-dependency-unavailable.md | high |  |
+| CNS1043 | error-code | products/integration-service/playbooks/cs-permission-denied.md | high |  |
+| CNS1044 | error-code | activity-packages/gsuite-activities/playbooks/connection-and-auth-failures.md | medium | surfaced inside a GSuite activity ConnectionHttpException; raw Connection Service API surface → cs-permission-denied.md |
+| CNS1044 | error-code | products/integration-service/playbooks/cs-permission-denied.md | high | raw Connection Service API surface; inside a GSuite activity ConnectionHttpException → gsuite connection-and-auth-failures.md |
+| CNS1045 | error-code | activity-packages/gsuite-activities/playbooks/connection-and-auth-failures.md | medium | surfaced inside a GSuite activity ConnectionHttpException; raw Connection Service API surface → cs-permission-denied.md |
+| CNS1045 | error-code | products/integration-service/playbooks/cs-permission-denied.md | high | raw Connection Service API surface; inside a GSuite activity ConnectionHttpException → gsuite connection-and-auth-failures.md |
+| CNS1046 | error-code | products/integration-service/playbooks/cs-permission-denied.md | high |  |
+| CNS1047 | error-code | products/integration-service/playbooks/cs-permission-denied.md | high |  |
+| CNS1049 | error-code | products/integration-service/playbooks/cs-connection-not-found.md | high |  |
+| CNS1050 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1055 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1056 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1057 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1058 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1059 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1060 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1061 | error-code | products/integration-service/playbooks/cs-connection-not-authenticated.md | high |  |
+| CNS1063 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1064 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1065 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1066 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1067 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1068 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1069 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1070 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1071 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1072 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1074 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium |  |
+| CNS1075 | error-code | products/integration-service/playbooks/cs-connector-unavailable.md | high | 409 ConnectorNotDeployed on a direct Connection Service call; inside a Solutions package install/validation flow → cs-solutions-install-failed.md |
+| CNS1075 | error-code | products/integration-service/playbooks/cs-solutions-install-failed.md | medium | surfaced as a per-resource ValidationError during a Solutions package install/validation; on a direct Connection Service call → cs-connector-unavailable.md |
+| CNS1101 | error-code | products/integration-service/playbooks/cs-dependency-unavailable.md | high |  |
+| CNS2000 | error-code | products/integration-service/playbooks/cs-events-callback-failed.md | medium |  |
+| CNS2003 | error-code | products/integration-service/playbooks/cs-dependency-unavailable.md | high |  |
+| CNS2004 | error-code | products/integration-service/playbooks/cs-trigger-operation-failed.md | high |  |
+| CNS2005 | error-code | products/integration-service/playbooks/cs-dependency-unavailable.md | high |  |
+| CNS2006 | error-code | products/integration-service/playbooks/cs-dependency-unavailable.md | high |  |
+| CNS2007 | error-code | products/integration-service/playbooks/cs-dependency-unavailable.md | high |  |
+| CNS2009 | error-code | products/integration-service/playbooks/cs-dependency-unavailable.md | high |  |
+| CNS2010 | error-code | products/integration-service/playbooks/cs-dependency-unavailable.md | high |  |
+| CNS2011 | error-code | products/integration-service/playbooks/cs-events-callback-failed.md | medium |  |
+| CNS2012 | error-code | products/integration-service/playbooks/cs-dependency-unavailable.md | high |  |
+| CNS2045 | error-code | products/integration-service/playbooks/cs-connector-unavailable.md | high |  |
+| CNS3001 | error-code | products/integration-service/playbooks/cs-permission-denied.md | high |  |
+| CNS3002 | error-code | products/integration-service/playbooks/cs-operation-conflict.md | high |  |
 | Collection was modified; enumeration operation may not execute | message | activity-packages/mail-activities/playbooks/delete-outlook-mail-failures.md | medium | Delete runs inside a For Each over the live message list (branch 2) |
 | Column not found: | message | activity-packages/gsuite-activities/playbooks/invalid-or-null-input.md | medium |  |
 | COMException | exception | activity-packages/cv-activities/playbooks/cv-action-failed-after-find.md | medium | raw driver exception with NO UiPath.CV.* type and no CV resource key — the find already passed; no *_ComputerVision dump exists for the run |
@@ -426,6 +487,7 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | not found against object of type ExpressionDictionary | message | products/maestro/playbooks/expression-evaluation-errors.md | high |  |
 | Object reference not set to an instance of an object | message | activity-packages/mail-activities/playbooks/send-outlook-mail-failures.md | medium | at Send Outlook Mail — null To/Subject/Body or empty attachment path (branch 3) |
 | Object reference not set to an instance of an object | message | activity-packages/system-activities/playbooks/get-asset-activity-bug-silent-failure.md | medium | same downstream-consumer discriminator as the exception signature — the faulting activity is not the Get Asset itself |
+| Object reference not set to an instance of an object | message | activity-packages/workflowevents-activities/playbooks/handle-app-request-null-reference.md | medium | at HandleAppRequest — failure is in the App-invoked workflow's execution, not the channel; downstream consumer of a null Get Asset output → get-asset-activity-bug-silent-failure.md |
 | Object reference not set to an instance of an object | message | runtime-exceptions/playbooks/null-reference-exception.md | medium | member access on a null variable/expression in the user's workflow logic; upstream Get Asset silent-null → system-activities get-asset-activity-bug-silent-failure.md |
 | Office365Exception | exception | activity-packages/o365-activities/playbooks/create-folder-invalid-path.md | high | generic O365 package exception — this claim is the Create Folder (CreateFolderConnections) input-validation family: null/empty name, path, or parent folder, empty or whitespace path segments, or a file occupying a segment |
 | Office365Exception | exception | activity-packages/o365-activities/playbooks/download-file-conversion-or-destination.md | high | generic O365 package exception — this claim is the download/export surface on DownloadFileConnections / DownloadFile / ExportAsPdf: folder given where a file is required, unsupported PDF conversion source, bad local destination, or an unresolvable shared item's parent |
@@ -487,12 +549,15 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | SelectorNotFoundException | exception | activity-packages/ui-automation/playbooks/selector-failure-manual.md | medium | HA enabled but no fix produced, or source code available for manual selector analysis |
 | Server or OCR engine is required. | message | activity-packages/cv-activities/playbooks/cv-scope-setup-failures.md | medium |  |
 | Server URL is empty and UseLocalServer option is false | message | activity-packages/cv-activities/playbooks/cv-server-auth-throttling-network.md | medium |  |
+| SignalR connection did not establish within 60 seconds | message | activity-packages/workflowevents-activities/playbooks/app-request-trigger-connection-lost.md | medium |  |
+| SignalR: Invalid SessionId | message | activity-packages/workflowevents-activities/playbooks/initialize-hub-connection-aggregate-failure.md | medium |  |
 | storageQuotaExceeded | error-code | activity-packages/gsuite-activities/playbooks/upload-storage-quota-exceeded.md | high |  |
 | Strings.NodeNotFoundMultipleMatches | message-key | activity-packages/ui-automation/playbooks/ambiguous-selector.md | high |  |
 | Sub or Function not defined | message | activity-packages/excel-activities/playbooks/invoke-vba-code-file-path.md | medium | raised while compiling the injected module — code file malformed or statements outside a procedure block; file compiles but the named entry point does not resolve → invoke-vba-entry-method-name.md |
 | Sub or Function not defined | message | activity-packages/excel-activities/playbooks/invoke-vba-entry-method-name.md | high | at Application.Run — the named entry point is not a top-level Public Sub/Function in the loaded file; compile failure of the file itself → invoke-vba-code-file-path.md |
 | Success | state | activity-packages/database-activities/playbooks/start-transaction-failures.md | medium | job green but database unchanged/partial (child fault swallowed, no rollback — branch 1) or no in-scope activity logs at all (v1.5.0 body-skip — branch 2) |
 | System.AggregateException | exception | activity-packages/web-activities/playbooks/net-http-request-aggregate-failure.md | medium | on UiPath.Web.Activities.NetHttpRequest (modern HTTP Request) — async pipeline wrapper; the InnerException is the real cause |
+| System.AggregateException | exception | activity-packages/workflowevents-activities/playbooks/initialize-hub-connection-aggregate-failure.md | medium | at InitializeHubConnection in a Studio Web app-workflow run — SignalR hub bootstrap failed; unwrap the inner exception; connector activity stacks → connector-aggregate-exception.md |
 | System.AggregateException | exception | products/integration-service/playbooks/connector-aggregate-exception.md | low | async wrapper on a connector activity stack — the real error is InnerExceptions[0]; route on the inner exception |
 | System.ArgumentException | exception | activity-packages/cv-activities/playbooks/cv-scope-setup-failures.md | medium | scope-entry fault before any child CV activity ran — LocalServer missing or local-server prerequisite; the faulted activity in XAML is the CV Screen Scope itself |
 | System.ArgumentException | exception | activity-packages/cv-activities/playbooks/cv-server-auth-throttling-network.md | medium | built by CVSessionData.Compute / ToErrorMessageWithCode() with [Error code: N] text — surfaces lazily on a child's first refresh, not at scope entry |
@@ -507,6 +572,7 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | System.InvalidCastException | exception | activity-packages/excel-activities/playbooks/invoke-vba-parameter-formatting.md | medium | marshaling EntryMethodParameters into Application.Run — expression is not an IEnumerable<Object>; QueryInterface E_NOINTERFACE on System.__ComObject → excel-application-scope-failures.md |
 | System.InvalidCastException | exception | activity-packages/mail-activities/playbooks/send-outlook-mail-failures.md | medium | binding the Outlook COM server at Send Outlook Mail — Outlook not installed / bitness mismatch / corrupted Office registry (branch 1) |
 | System.InvalidOperationException | exception | activity-packages/database-activities/playbooks/connect-to-database-failures.md | medium | on Connect to Database with the ACE/Jet OLE DB provider-not-registered wording (branch 2) — the class alone is too generic to route on |
+| System.InvalidOperationException | exception | activity-packages/workflowevents-activities/playbooks/app-request-trigger-connection-lost.md | medium | at AppRequestTrigger — SignalR client driven in a non-connected/disposed state; discriminator is the faulted activity |
 | System.InvalidOperationException | exception | products/orchestrator/playbooks/foreground-already-running.md | medium | only with the foreground-process-already-running message — the class alone is too generic to route on |
 | System.IO.DirectoryNotFoundException | exception | activity-packages/excel-activities/playbooks/read-range-file-not-found.md | medium | at Excel workbook open — a segment of the WorkbookPath's parent path does not exist (wrong CWD, unmapped drive, unreachable share) |
 | System.IO.FileNotFoundException | exception | activity-packages/excel-activities/playbooks/read-range-file-not-found.md | medium | at Excel workbook open — configured WorkbookPath's parent directory exists but the file does not |
@@ -514,6 +580,7 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | System.IO.IOException | exception | activity-packages/excel-activities/playbooks/read-range-file-locked.md | medium | on Read Range / Excel read-write family or the surrounding scope — cannot acquire the workbook file; pass-through .NET IO message names the path |
 | System.IO.IOException | exception | activity-packages/excel-activities/playbooks/write-cell-failures.md | medium | on Write Cell — file lock or Classic Workbook Write Cell racing an open Excel scope on the same path (branch 1); Read Range surface → read-range-file-locked.md |
 | System.IO.IOException | exception | activity-packages/python-activities/playbooks/invoke-python-method-pipe-is-broken.md | medium | generic .NET — surfaces as 'RemoteException wrapping System.IO.IOException: Pipe is broken' on Invoke Python Method / Run Python Script |
+| System.IO.IOException | exception | activity-packages/workflowevents-activities/playbooks/app-request-trigger-connection-lost.md | medium | at AppRequestTrigger — SignalR/RobotJS transport dropped while awaiting an App request; discriminator is the faulted activity |
 | System.IO.PipeException | exception | activity-packages/python-activities/playbooks/invoke-method-failures.md | medium | mid-call on Invoke Python Method — oversized return payload or destabilized engine (M5); 'Pipe is broken' wording → invoke-python-method-pipe-is-broken.md |
 | System.Net.Http.HttpRequestException | exception | activity-packages/web-activities/playbooks/net-http-request-aggregate-failure.md | medium | inner exception of NetHttpRequest's AggregateException — transport/HTTP failure after retries (DNS, connection refused, TLS, exhausted status retries) |
 | System.Net.WebException | exception | activity-packages/web-activities/playbooks/http-request-connection-failure.md | medium | on UiPath.Web.Activities.HttpClient — status / DNS / connection / TLS failure; message 'The operation has timed out.' → http-request-timeout.md |
@@ -529,6 +596,7 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | System.NullReferenceException | exception | activity-packages/system-activities/playbooks/get-asset-activity-bug-silent-failure.md | medium | thrown by a DOWNSTREAM consumer of a value an upstream Get Asset / Get Orchestrator Asset produced as null/empty with NO error of its own — check UiPath.System.Activities version (22.10.x Ctrl+K bug); plain null in user workflow logic → runtime-exceptions null-reference-exception.md |
 | System.NullReferenceException | exception | activity-packages/web-activities/playbooks/deserialize-null-input.md | high | on DeserializeJsonArray — no null-input guard, a null JsonString hits JArray.Parse directly |
 | System.NullReferenceException | exception | activity-packages/web-activities/playbooks/http-client-null-reference.md | medium | on UiPath.Web.Activities.HttpClient — a request input (EndPoint, header, cookie, parameter, body) resolved null during request building; no HTTP status or transport phrase in the message |
+| System.NullReferenceException | exception | activity-packages/workflowevents-activities/playbooks/handle-app-request-null-reference.md | medium | faulted activity is HandleAppRequest in a UiPath-App-invoked job — the NRE is raised inside the App-invoked workflow or by a null App input argument; generic in-workflow NRE → null-reference-exception.md |
 | System.NullReferenceException | exception | products/integration-service/playbooks/connector-null-reference.md | medium | on or just after a connector activity — stack shows a ForEach over an IntegrationService SWEntities output; for user-code NREs see null-reference-exception.md |
 | System.NullReferenceException | exception | runtime-exceptions/playbooks/null-reference-exception.md | medium | user-code workflow stack, not a UiPath package namespace — on a connector activity (SWEntities ForEach) see connector-null-reference.md; null traces back to an upstream Get Asset/Get Credential that logged no error → system-activities get-asset-activity-bug-silent-failure.md |
 | System.OutOfMemoryException | exception | activity-packages/excel-activities/playbooks/write-range-failures.md | medium | oversized DataTable written in one call via Excel COM (branch 5) |
@@ -540,6 +608,7 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 | System.Threading.Tasks.TaskCanceledException | exception | activity-packages/web-activities/playbooks/net-http-request-aggregate-failure.md | medium | inner exception of NetHttpRequest's AggregateException — request exceeded TimeoutInMiliseconds |
 | System.TimeoutException | exception | activity-packages/gsuite-activities/playbooks/connection-and-auth-failures.md | medium | GSuite auth-phase only — 'Authentication attempt took longer than <N> seconds' wording during connection/OAuth token acquisition; per-request timeouts cancel as 'A task was canceled.' instead |
 | System.TimeoutException | exception | activity-packages/web-activities/playbooks/http-request-timeout.md | medium | on legacy .NET Framework HttpClient when RestSharp reports TimedOut; modern .NET surfaces WebException with the same message |
+| System.TimeoutException | exception | activity-packages/workflowevents-activities/playbooks/app-request-trigger-connection-lost.md | medium | at AppRequestTrigger in a UiPath-App-invoked job — App↔robot SignalR channel never connected; HTTP-request timeouts → http-request-timeout.md |
 | System.Xml.XmlException | exception | activity-packages/web-activities/playbooks/deserialize-malformed-input.md | high | raised by DeserializeXml (XDocument.Parse) — input string is not valid XML |
 | Table does not have any column with column name containing | message | activity-packages/cv-activities/playbooks/cv-cell-targeting-failures.md | high |  |
 | Table only contains | message | activity-packages/cv-activities/playbooks/cv-cell-targeting-failures.md | high | covers the columns / rows / cell-number out-of-range variants |
@@ -815,6 +884,9 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 - `activity-packages/word-activities/playbooks/word-com-start-background-session0.md`: NOT for faults on Documents.Open with COMException 'Command failed' → word-open-sharepoint-url-com-command-failed.md
 - `activity-packages/word-activities/playbooks/word-com-start-background-session0.md`: NOT for wrong-thread cast 0x8001010E on a child activity → word-export-pdf-com-wrong-thread.md
 - `activity-packages/word-activities/playbooks/word-open-sharepoint-url-com-command-failed.md`: NOT for wrong-thread cast 0x8001010E on a child activity → word-export-pdf-com-wrong-thread.md
+- `activity-packages/workflowevents-activities/playbooks/app-request-trigger-connection-lost.md`: NOT for AggregateException at InitializeHubConnection → initialize-hub-connection-aggregate-failure.md
+- `activity-packages/workflowevents-activities/playbooks/app-request-trigger-connection-lost.md`: NOT for NullReferenceException at HandleAppRequest → handle-app-request-null-reference.md
+- `activity-packages/workflowevents-activities/playbooks/handle-app-request-null-reference.md`: NOT for SignalR / transport fault at AppRequestTrigger → app-request-trigger-connection-lost.md
 - `products/integration-service/playbooks/connector-aggregate-exception.md`: NOT for inner GeneralException (DAP-GE) → connector-general-exception.md
 - `products/integration-service/playbooks/connector-aggregate-exception.md`: NOT for inner Ipc/CoreIpc RemoteException → connector-remote-exception.md
 - `products/integration-service/playbooks/connector-aggregate-exception.md`: NOT for inner NullReferenceException → connector-null-reference.md
@@ -847,6 +919,14 @@ The signature table is generated from playbook frontmatter — edit playbooks, t
 - activity-packages/word-activities/playbooks/replace-text-multiline-formatting.md
 - activity-packages/word-activities/playbooks/replace-text-silent-no-substitution.md
 - activity-packages/word-activities/playbooks/word-scope-hangs-background-prompt.md
+- products/integration-service/playbooks/activity-configuration-corrupt.md
+- products/integration-service/playbooks/connection-not-resolved.md
+- products/integration-service/playbooks/http-client-exception.md
+- products/integration-service/playbooks/missing-required-input.md
+- products/integration-service/playbooks/request-failed.md
+- products/integration-service/playbooks/response-mapping-mismatch.md
+- products/integration-service/playbooks/token-refresh-failed.md
+- products/integration-service/playbooks/trigger-execution-failed.md
 - products/integration-service/playbooks/trigger-not-firing.md
 - products/llm-gateway/playbooks/byo-routing-bypassed.md
 - products/maestro/playbooks/agent-traces-disappearing.md

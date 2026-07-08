@@ -24,8 +24,10 @@ signatures:
     value: "is invalid or you do not have access to it"
   - kind: error-code
     value: "CNS1044"
+    note: "surfaced inside a GSuite activity ConnectionHttpException; raw Connection Service API surface → cs-permission-denied.md"
   - kind: error-code
     value: "CNS1045"
+    note: "surfaced inside a GSuite activity ConnectionHttpException; raw Connection Service API surface → cs-permission-denied.md"
 exclusions:
   - "The storage quota was exceeded. / Upload failed after <N> bytes (403 quota, not authorization) → upload-storage-quota-exceeded.md"
   - "The resource was not found. (404) → drive-file-not-found.md"
