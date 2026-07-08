@@ -1,0 +1,28 @@
+name: Validate Signature Index
+
+on:
+  pull_request:
+    paths:
+      - 'skills/uipath-troubleshoot/references/**'
+      - 'scripts/build-signature-index.py'
+      - '.github/workflows/validate-signature-index.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-index:
+    runs-on: ubuntu-latest
+    name: Validate playbook signatures & routing index
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Lint playbook signature frontmatter
+        run: python3 scripts/build-signature-index.py
+
+      - name: Check signature index is current
+        run: python3 scripts/build-signature-index.py --check-index
