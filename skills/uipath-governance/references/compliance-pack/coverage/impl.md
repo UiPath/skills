@@ -81,8 +81,8 @@ ISO 42001 Posture — <tenantName>  ·  <date>
 
 SUMMARY
 ┌─────────────────────────┬──────────────────────────────────────┐
-│ Overall coverage        │ <inPlaceCount> / <totalCount> settings  (<pct>%)  │
-│ Clauses fully covered   │ <clausesInPlace> / <totalClauses>                │
+│ Overall coverage        │ <appliedControlCount> / <checkableControlCount> settings  (<pct>%)  │
+│ Clauses fully covered   │ <clausesFullyDeployed> / <totalClauses>          │
 │ Clauses with gaps       │ <clausesWithGaps> / <totalClauses>               │
 ├─────────────────────────┼──────────────────────────────────────┤
 │ 🔴 High impact gaps     │ <highGapCount> settings Not Applied  across <highClauseCount> clauses  │
@@ -102,7 +102,7 @@ DETAILS
 
 Needs Configuration  (<N> of <total>)
 
-  <clauseName>                                       <inPlace>/<total> <bar>
+  <clauseName>                                       <deployedControlCount>/<checkableControlCount> <bar>
   ┌───────────────────────────────────┬─────────────────────┬────────┐
   │ Setting                           │ Recommendation      │ Impact │
   ├───────────────────────────────────┼─────────────────────┼────────┤
