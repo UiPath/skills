@@ -2,7 +2,7 @@
 
 ## Output Capture
 
-Follow the generic guide § Output Capture (filter at source + `| tee`, filter-failure fallback, anti-patterns). Orchestrator-specific filter expressions appear inline in each command below. Reference shape:
+Follow the generic guide § Output Capture (filter at source; `| tee` for small/filtered results, `>` + selective read-back for heavy/unfilterable ones; filter-failure fallback; anti-patterns). Orchestrator-specific filter expressions appear inline in each command below. Reference shape:
 
 ```
 uip or jobs list --folder-key <key> --state Faulted \
@@ -78,7 +78,7 @@ If data doesn't match: **discard it**. Do NOT fetch details for jobs or items fr
 
 ## Job Data Bundle
 
-For every job under investigation, gather these in order. Follow the Output Capture Pattern above — pipe through `tee` and filter at the source.
+For every job under investigation, gather these in order. Follow the generic guide § Output Capture — filter at the source, `tee` the filtered results, `>` the dense/unfiltered ones (e.g. traces).
 
 1. **Job details** — state, input/output arguments, timing, machine info, error details
    ```
@@ -101,9 +101,9 @@ For every job under investigation, gather these in order. Follow the Output Capt
 4. **Job traces** — execution traces (activity states, variable snapshots, execution path). Available for all job types.
    ```
    uip or jobs traces <key> --output json \
-     | tee .local/investigations/raw/triage-job-traces.json
+     > .local/investigations/raw/triage-job-traces.json
    ```
-   Traces are dense; consider filtering by activity name or error attribute when re-fetching for hypothesis testing.
+   Traces are dense and unfiltered — redirect with `>` (not `tee`) so the full body stays out of context, then read back only the activity/error entries you need. Filter by activity name or error attribute when re-fetching for hypothesis testing.
 
 This is the baseline. Domain-specific data gathering builds on it — see the investigation guide for each matched domain (UI Automation, Integration Service, Maestro) for additional steps after the baseline.
 

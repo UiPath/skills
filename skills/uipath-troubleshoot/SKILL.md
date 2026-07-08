@@ -133,7 +133,10 @@ Read files from paths in `state.json`:
 
 ### Raw Data Rule
 
-- **Capture with `| tee`, not `>`:** pipe each fetch through `tee` — `uip ... --output json | tee .local/investigations/raw/{filename}.json`. `tee` saves the file AND keeps the response in the tool result, so you read the fields you need the same turn. A bare `>` redirect hides stdout (an extra turn to inspect) and, in some sandboxes, a standalone write to `raw/` is denied — `tee` avoids both. Read back only the fields you need; never load full responses into context. The raw file is the record. Filtering + fallback: generic guide § Output Capture.
+- **Capture to `raw/`, keep only needed fields in context** — match the tool to the payload:
+  - **Filtered / small response:** set `--output-filter` to pull the 2–3 fields you need, then `tee` — `uip ... --output json --output-filter '<expr>' | tee .local/investigations/raw/{filename}.json`. Filtering first means only those fields reach the tool result, so `tee`'s echo does NOT violate "don't keep raw responses in context" above.
+  - **Heavy / unfilterable response** (dense traces, full logs/stacks, `errorDetails`, or the filter-failure fallback that drops `--output-filter`): redirect with `>`, then read back only the specific fields/lines you need — `uip ... --output json > .local/investigations/raw/{filename}.json`. Do NOT `tee` an unfiltered response — that dumps the whole body into context.
+  - The raw file is always the record. Filtering + fallback: generic guide § Output Capture.
 - Evidence files reference raw files via `raw_data_ref`.
 - Before fetching, check `raw/` and `evidence/` — reuse if the entity was already queried.
 
