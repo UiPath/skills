@@ -28,9 +28,9 @@ uip gov compliance-packs state coverage tenant $tenantId <packId> --output json 
 
 CLI output is **PascalCase**. Field names below are exactly as returned by `state coverage`.
 
-`Data.DeploymentPolicies[].Status`:
-- `"new"` — this product's settings are not yet configured; `state enable` will configure them — display as **Not Applied** to the user
-- `"in-place"` — settings already deployed; no change needed — display as **Applied** to the user
+`Data.DeploymentPolicies[].Status` (product-grain; INTERNAL — never rendered to the user, never projected onto settings):
+- `"new"` — this product has ≥1 gap · `"in-place"` — this product fully satisfied
+- Used only for the all-applied check (`Summary.NewCount == 0`); the user-facing posture is driven entirely by clauses + per-setting `controls[]`.
 
 `Data.Clauses[].Status` (per-control rollup):
 - `"fully-deployed"` — every checkable setting satisfied — display as **Applied** (✓)
@@ -56,8 +56,6 @@ CLI output is **PascalCase**. Field names below are exactly as returned by `stat
 
 `Data.PackId` / `ScopeLevel` / `ScopeTargetId` — identify the pack + tenant scope (internal; the user sees the tenant NAME from auth context, not the id).
 
-Product display names come from `catalog.Data.DeploymentPolicies[].ProductDisplayName` (join by `ProductIdentifier`), NOT from the coverage payload.
-
 ## Posture plan presentation
 
 Build the per-setting table directly from `coverage.Data.Clauses[].controls[]` — do NOT derive setting state from product status:
@@ -69,7 +67,12 @@ Per-clause counts come from the clause's own `controls[]` (or `deployedControlCo
 
 For each ⚙ `manual` control, look up its `Data.Clauses[].manualConfigChecks[]` entry (match on `controlDisplayName`) and show what to change: **expected** value vs **currently** deployed value. This is the actionable detail — surface it, don't stop at the ⚙ marker.
 
-Product coverage is a real secondary section, not just an internal signal: render `Data.DeploymentPolicies[]` (per-product ✓ Applied / ✗ Not Applied) with the `Data.Summary.InPlaceCount / DeploymentPolicyCount` headline — it is the grain `state enable` / apply operates on. Never project product status onto individual settings.
+**Next-action suggestion (state-aware).** Choose the call-to-action from `Data.Summary.ClauseSummary` — NEVER suggest (re)applying a pack that is already enabled:
+- **Nothing applied yet** (`FullyDeployedCount == 0 && PartiallyDeployedCount == 0` — pack not enabled): the ONLY case where you suggest applying. Offer `'Apply ISO 42001 settings'`, `'Apply High impact ISO 42001 settings'`, or `'Apply only <specific area> settings'`.
+- **Already applied, gaps remain** (`FullyDeployedCount > 0 || PartiallyDeployedCount > 0` — pack enabled, `state enable` already ran): do NOT suggest reapplying the standard or applying a subset. Point the user ONLY at the residual manual settings: `'Configure the manual ISO 42001 settings'` — the ⚙ items with expected/actual in DETAILS ARE the to-do list. Any remaining ✗ `not-deployed` settings must be set in their product's own settings; reapplying the pack will not set them.
+- **All applied** (`PartiallyDeployedCount == 0 && NotDeployedCount == 0`): see [All settings applied](#all-settings-applied) — nothing to apply.
+
+Never render product coverage — product grain is internal only.
 
 **Graceful degrade:** if `Clauses[].controls` is absent (older CLI/server), fall back to the clause-grain view (`Clauses[].Status` fully/partially/not-deployed) and add a one-line note that per-setting detail needs an updated `uip` CLI. Never fabricate per-setting state.
 
@@ -109,8 +112,7 @@ SUMMARY
 │ Quickest win            │ <clauseName with fewest gaps AND ≥1 High setting>│
 └─────────────────────────┴──────────────────────────────────────┘
 
-Fix all gaps with: 'Apply ISO 42001 settings'
-Fix priority gaps: 'Apply High impact ISO 42001 settings'
+<call-to-action — from "Next-action suggestion (state-aware)": Apply CTAs ONLY when nothing is applied yet; otherwise 'Configure the manual ISO 42001 settings'>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DETAILS
@@ -142,16 +144,9 @@ Applied  (<N> of <total>)  ✓
 └────────────────────────────────────────┴──────────┘
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Product coverage  (<inPlaceCount> / <deploymentPolicyCount> products Applied)
-  ✓ <productDisplayName>   Applied       [DeploymentPolicies[].status == "in-place"]
-  ✗ <productDisplayName>   Not Applied   [DeploymentPolicies[].status == "new"]
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Configure all <N> remaining settings? (y/n)
-Or ask: 'Just fix the High impact gaps'
-        'Apply only <specific area> settings'
-        'What does [clause name] require?'
+Next action (state-aware — see "Next-action suggestion"):
+  · pack already enabled / partial gaps → 'Configure the manual ISO 42001 settings'   ·   'What does [clause name] require?'
+  · nothing applied yet                 → 'Apply ISO 42001 settings' (y/n)   ·   'Just fix the High impact gaps'   ·   'Apply only <specific area> settings'
 ```
 
 ## All settings applied
@@ -160,7 +155,7 @@ If `Summary.NewCount == 0` (every product in-place) — equivalently `Summary.Cl
 
 ```
 All ISO 42001 recommended settings are Applied on <tenantName>.
-<deploymentPolicyCount> / <deploymentPolicyCount> products  ·  <fullyDeployedCount> / <totalClauses> clauses fully deployed ✓
+<fullyDeployedCount> / <totalClauses> clauses fully deployed  ·  all settings Applied ✓
 
 To remove them: 'Remove ISO 42001 settings'
 ```
