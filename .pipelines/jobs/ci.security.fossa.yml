@@ -19,10 +19,29 @@ stages:
         pool: ${{ parameters.poolName }}
         steps:
           - checkout: self
+          # Fetch the FOSSA API keys directly instead of letting the template's
+          # AzureCLI toggle steps do it: their static arguments (`@("get",
+          # "list")`, `$True`) trip the aka.ms/ado/75787 shell-argument
+          # enforcement that new ADO projects like skills get by default
+          # (AZP_75787_ENABLE_NEW_LOGIC is a locked system variable, so the
+          # documented opt-out is unavailable). skipToggleKvStep below skips
+          # the template's toggle + Key Vault steps; it consumes $(FossaApiKey)
+          # from this task instead. Relies on the vault firewall staying open
+          # (defaultAction: Allow) — if runs start failing here with a network
+          # authorization error, the vault was locked down and the agent IP
+          # needs whitelisting (the skipped toggle script used to do that).
+          - task: AzureKeyVault@2
+            displayName: '[FOSSA] Download secrets from devopsprodauthtokenswekv'
+            inputs:
+              azureSubscription: ${{ parameters.azureServiceConnection }}
+              keyVaultName: devopsprodauthtokenswekv
+              SecretsFilter: 'FossaApiKey,FossaApiIntegrationKey'
+              RunAsPreJob: false
           - template: Security/fossa.steps.yml@fossa
             parameters:
               OS: 'linux'
               azureSubscription: ${{ parameters.azureServiceConnection }}
+              skipToggleKvStep: true
               blockOnIssue: ${{ parameters.blockOnIssue }}
               FOSSAFlags: '--branch "$(Build.SourceBranch)" --revision "$(Build.SourceVersion)-$(Build.BuildId)" --project "Skills" --config ".pipelines/jobs/fossa-skills.yml"'
               FOSSATestFlags: '--revision "$(Build.SourceVersion)-$(Build.BuildId)" --project "Skills"'
