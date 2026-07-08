@@ -192,8 +192,8 @@ success_criteria:
   # the three config criteria below accept EITHER convention so the test grades
   # the config contract, not which skill version taught it.
   - type: run_command
-    description: "SDK config exists: uipath.json with clientId+scope fields (current convention) OR .env/.env.example with VITE_UIPATH_* (legacy)"
-    command: "( F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if 'clientId' in d and 'scope' in d else 1)\" ) || find . \\( -name '.env.example' -o -name '.env' -o -name '.env.local' \\) -not -path '*/node_modules/*' -exec grep -lE '^VITE_UIPATH_' {} + | grep -q ."
+    description: "SDK config exists: uipath.json with a scope field (current convention; clientId may be an empty placeholder or omitted entirely in test tenants, so only scope is required) OR .env/.env.example with VITE_UIPATH_* (legacy)"
+    command: "( F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if 'scope' in d else 1)\" ) || find . \\( -name '.env.example' -o -name '.env' -o -name '.env.local' \\) -not -path '*/node_modules/*' -exec grep -lE '^VITE_UIPATH_' {} + | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
