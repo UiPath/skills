@@ -156,7 +156,9 @@ tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
 
 ## Mock dispatch precedence
 
-The shared `m/uip` dispatcher walks the manifest's `rules` array (first match wins). Each rule has one of:
+The shared `m/uip` dispatcher walks the manifest's `rules` array (first match wins). Matching is token-aware (order-independent, quotes stripped, `--flag=value` split, `--output <v>` ignored) with a substring fallback — see the module docstring in `_shared/mock_template/m/uip`. Authoring consequences: list specific rules before generic ones (a rule with fewer tokens matches a superset of invocations), and prefer dropping volatile flags (e.g. `-f` vs `--folder-key`) from match strings when the remaining tokens are unique. Shadow audit: for rules i < j in one manifest, if tokens(match_i) ⊆ tokens(match_j) and they serve different files/exit codes, rule j is unreachable for its canonical invocation.
+
+Each rule has one of:
 
 - `file: <path>` — return the canned response under `r/<file>`.
 - `passthrough: true` — proxy to the real `uip` CLI installed on the host. Use this for open-ended commands like `docsai ask` whose query strings vary between runs. Responses are cached to the sandbox's `r/_cache/<key>.json` for in-run reuse; the cache is **not** persisted to the source — every run hits the live CLI on its first call for each unique query.
