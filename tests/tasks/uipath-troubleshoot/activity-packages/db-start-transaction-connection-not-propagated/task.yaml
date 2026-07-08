@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-start-transaction-connection-not-propagated
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath diagnostic agent must diagnose an OrderSettlementTxn process that
   faults in Orchestrator on every run. A Start Transaction

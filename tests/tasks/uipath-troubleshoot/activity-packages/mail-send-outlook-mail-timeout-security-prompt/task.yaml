@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-send-outlook-mail-timeout-security-prompt
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Send Outlook Mail Message
   failure where the activity times out / hangs (System.TimeoutException

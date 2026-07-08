@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-invokevba-code-file
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose an Invoke VBA failure caused by
   the external code file referenced by CodeFilePath containing bare VBA

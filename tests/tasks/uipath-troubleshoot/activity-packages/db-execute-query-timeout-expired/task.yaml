@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-execute-query-timeout-expired
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath diagnostic agent must diagnose an Execute Query failure that
   faults on every Orchestrator run because the query exceeds the
