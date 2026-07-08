@@ -4,7 +4,7 @@ description: >
   Flow that normalizes a messy invoice number and queries the BillingDisputeERP
   Data Service entity; graded by validate plus three flow debug runs over
   malformed inputs.
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, connector]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, connector, path-to-ga]
 
 run_limits:
   max_turns: 120

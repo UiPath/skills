@@ -10,7 +10,7 @@ description: >
   are replaced by `core.control.end` nodes that RETURN the resolution as flow
   outputs instead of sending mail. Graded by flow validate, a structural check,
   and one flow debug run.
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, node:inline-agent, node:ixp, connector]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, node:inline-agent, node:ixp, connector, path-to-ga]
 
 run_limits:
   max_turns: 200
