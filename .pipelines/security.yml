@@ -50,6 +50,15 @@ parameters:
     type: boolean
     default: false
 
+variables:
+  # AzureCLI@2's shell-argument validation (aka.ms/ado/75787) hard-errors on
+  # the fossa template's static toggle args (`@("get", "list")`, `$True`) in
+  # this project — new ADO projects get the enforcement default while older
+  # projects (e.g. StudioWeb, same template/task/pool) still run legacy
+  # warning mode. The flagged arguments are template literals with no
+  # untrusted input, so downgrading back to a warning is safe.
+  AZP_75787_ENABLE_NEW_LOGIC: false
+
 resources:
   repositories:
     - repository: fossa
