@@ -32,30 +32,41 @@ CLI output is **PascalCase**. Field names below are exactly as returned by `stat
 - `"new"` — this product's settings are not yet configured; `state enable` will configure them — display as **Not Applied** to the user
 - `"in-place"` — settings already deployed; no change needed — display as **Applied** to the user
 
-`Data.Clauses[].Status`:
-- `"needs-policies"` — at least one contributing policy is `"new"` — display as **Needs Manual Configuration** to the user
-- `"in-place"` — all contributing policies already deployed — display as **Applied** to the user
+`Data.Clauses[].Status` (per-control rollup):
+- `"fully-deployed"` — every checkable setting satisfied — display as **Applied** (✓)
+- `"partially-deployed"` — some but not all satisfied — display as **Partially Applied** (◐)
+- `"not-deployed"` — none satisfied — display as **Not Applied** (✗)
+
+`Data.Clauses[].controls[]` (per-setting; present on updated CLI) — the truthful per-setting view:
+- `controlDisplayName` — setting name
+- `productIdentifier` — owning product
+- `impact` — `"High"` / `"Medium"` / `"Low"`
+- `recommendedSetting` — the recommended value
+- `status` — `"applied"` (✓) / `"not-applied"` (✗) / `"needs-manual-config"` (⚙, admin must set a value)
 
 `Data.Summary.NewCount` — if 0, all recommended settings are already configured.
 
 ## Posture plan presentation
 
-Join coverage API data with catalog data to resolve setting names and clause names:
-- `coverage.Data.DeploymentPolicies[].Status` — `"new"` or `"in-place"` per product
-- `catalog.Data.Clauses[].EditorialPolicies[].ProductIdentifier` — maps settings to products
-- Setting is Applied (✓) if its product's `Status == "in-place"`
-- Setting is Not Applied (✗) if its product's `Status == "new"`
+Build the per-setting table directly from `coverage.Data.Clauses[].controls[]` — do NOT derive setting state from product status:
+- ✓ Applied — `control.status == "applied"`
+- ✗ Not Applied — `control.status == "not-applied"`
+- ⚙ Needs Manual Configuration — `control.status == "needs-manual-config"`
+
+Per-clause counts come from the clause's own `controls[]` (or `deployedControlCount` / `checkableControlCount`). Product coverage (`DeploymentPolicies[].Status`) is a secondary, product-grain signal only — never project it onto individual settings.
+
+**Graceful degrade:** if `Clauses[].controls` is absent (older CLI/server), fall back to the clause-grain view (`Clauses[].Status` fully/partially/not-deployed) and add a one-line note that per-setting detail needs an updated `uip` CLI. Never fabricate per-setting state.
 
 Progress bar: `▓` per configured setting, `░` per gap, max 5 chars (e.g. 2/5 = `▓▓░░░`, 4/4 = `▓▓▓▓▓`).
 
-**Biggest risk area:** clause with most ✗ High-impact settings.
-**Quickest win:** clause with only 1-2 gap settings AND at least one is High impact.
+**Biggest risk area:** clause with the most `not-applied` High-impact controls (`controls[].status == "not-applied" && impact == "High"`).
+**Quickest win:** clause with the fewest non-applied controls (`not-applied` + `needs-manual-config`) AND at least one is High impact.
 
 Terminology rules:
 - Use "settings" NOT "controls" in output
 - Use plain-English clause names (from `clauses[].clauseName`) in headlines; clause IDs (e.g. A.6.2.8) as secondary reference in DETAILS only
 - Use `controls[].displayName` as setting name, NOT product identifiers
-- **NEVER write raw API status strings** (`in-place`, `new`, `not-deployed`, `fully-deployed`, `needs-policies`) in user-facing display output (posture_plan.txt, chat responses, report summaries) — translate EVERY occurrence before writing
+- **NEVER write raw API status strings** — product `in-place`/`new`; clause `fully-deployed`/`partially-deployed`/`not-deployed`; control `applied`/`not-applied`/`needs-manual-config` — in user-facing display output (posture_plan.txt, chat responses, report summaries) — translate EVERY occurrence before writing
   - `"in-place"` → **Applied** (or ✓)
   - `"new"` → **Not Applied** (or ✗)
 - **`coverage.json` is an internal session file** — save it as the raw `--output json` CLI response. Raw API values (`"in-place"`, `"new"`) are CORRECT and expected in this file. Do NOT translate status values when writing coverage.json.
@@ -96,8 +107,10 @@ Needs Configuration  (<N> of <total>)
   │ Setting                           │ Recommendation      │ Impact │
   ├───────────────────────────────────┼─────────────────────┼────────┤
   │ ✗ <controlDisplayName>            │ <recommendedSetting>│ High   │
+  │ ⚙ <controlDisplayName>            │ <recommendedSetting>│ Medium │
   │ ✓ <controlDisplayName>            │ Applied             │ Medium │
   └───────────────────────────────────┴─────────────────────┴────────┘
+  Marker = `control.status`: ✓ applied · ✗ not-applied · ⚙ needs-manual-config
 
   [repeat per clause with gaps]
 
@@ -136,6 +149,7 @@ Always run fresh before presenting a posture plan. Coverage reflects live tenant
 
 ## Anti-patterns
 
-- **Writing raw API status strings in user-facing display output** — `in-place`, `new`, `not-deployed`, `fully-deployed`, `needs-policies` must NEVER appear in user-facing display output (posture_plan.txt, chat responses, report summaries). Translate every status before writing. `coverage.json` is an internal session file — raw API values are correct there.
+- **Writing raw API status strings in user-facing display output** — product `in-place`/`new`; clause `fully-deployed`/`partially-deployed`/`not-deployed`; control `applied`/`not-applied`/`needs-manual-config` — must NEVER appear in user-facing display output (posture_plan.txt, chat responses, report summaries). Translate every status before writing. `coverage.json` is an internal session file — raw API values are correct there.
 - **Partial translation** — translating the summary section but leaving raw values in the DETAILS or verification section. ALL sections must use the translated labels.
 - **Quoting API values for context** — avoid notes like "Status is still 'new'". Rephrase to "AI Trust Layer shows as Not Applied" instead.
+- **Deriving per-setting state from product status** — use `Clauses[].controls[].status` (`applied`/`not-applied`/`needs-manual-config`). Never mark a setting Applied because its product is `in-place`.
