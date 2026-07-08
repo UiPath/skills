@@ -5,7 +5,7 @@
     {
       "match": "or licenses info",
       "file": "947f74b847.json",
-      "_doc": "Deterministic discriminator for healing-agent-no-license.md cause #1: Allowed.AgentService=0 AND LicensedFeatures=[] with SubscriptionPlan='ENTERPRISE'. Catches any `or licenses info` variant the agent issues (with/without --output json)."
+      "_doc": "Deterministic discriminator for healing-agent-no-license.md cause #7 (pool exhausted): Allowed.AgentService=5000 AND Used.AgentService=5000 (Used >= Allowed) with LicensedFeatures=[\"HealingAgent\"] — entitlement present but allocation consumed. Catches any `or licenses info` variant the agent issues (with/without --output json)."
     },
     {
       "match": "or folders list",
@@ -67,7 +67,7 @@
     {
       "pattern": "or licenses info",
       "min": 1,
-      "description": "Agent reads tenant license to discriminate the playbook cause (#1 missing entitlement vs #7 exhausted) — Allowed.AgentService=0, LicensedFeatures=[] confirms #1 (playbook step 5)."
+      "description": "Agent reads tenant license to discriminate the playbook cause (#1 missing entitlement vs #7 exhausted) — Allowed.AgentService=5000 with Used.AgentService>=Allowed and LicensedFeatures=[\"HealingAgent\"] confirms #7 pool exhausted (playbook step 5)."
     },
     {
       "pattern": "or jobs healing-data d2c90d73",

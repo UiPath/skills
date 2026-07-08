@@ -14,7 +14,7 @@
       "Unattended": 1,
       "Development": 0,
       "Headless": 0,
-      "AgentService": 0,
+      "AgentService": 5000,
       "StudioPro": 0,
       "BusinessRule": 0,
       "Agent": 0,
@@ -33,7 +33,7 @@
       "Unattended": 1,
       "Development": 0,
       "Headless": 0,
-      "AgentService": 0,
+      "AgentService": 5000,
       "StudioPro": 0,
       "BusinessRule": 0,
       "Agent": 0,
@@ -42,6 +42,8 @@
       "AppTest": 0,
       "PerformanceTest": 0
     },
-    "LicensedFeatures": []
+    "LicensedFeatures": [
+      "HealingAgent"
+    ]
   }
 }

@@ -1,13 +1,14 @@
-task_id: skill-troubleshoot-healing-agent-invalid-license
+task_id: skill-troubleshoot-healing-agent-pool-exhausted
 description: >
-  Faithful replay of a real UiPath diagnostic investigation where the
-  Healing Agent refused to recover a faulted UI Automation activity
-  because the tenant has no Healing Agent entitlement
-  (Allowed.AgentService=0, LicensedFeatures=[]). The agent runs the
-  uipath-troubleshoot skill against a uip CLI mock whose responses are
-  the verbatim sub-agent outputs from the real session. Success = the
-  agent matches the healing-agent-no-license playbook AND identifies
-  cause #1 (missing tenant entitlement) as RESOLUTION.md does.
+  UiPath troubleshoot investigation where the Healing Agent refused to
+  recover a faulted UI Automation activity because the tenant's Heals
+  consumable pool is EXHAUSTED — the tenant IS entitled
+  (Allowed.AgentService=5000, LicensedFeatures include HealingAgent) but has
+  fully consumed the allocation for the period (Used.AgentService=5000, i.e.
+  Used >= Allowed). The agent runs the uipath-troubleshoot skill against a uip
+  CLI mock. Success = the agent matches the healing-agent-no-license playbook
+  AND identifies cause #7 (pool exhausted) — recommending replenishing Heals /
+  waiting for the billing reset, NOT acquiring a missing entitlement.
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
@@ -15,9 +16,9 @@ agent:
 
 run_limits:
   expected_turns: 300
-  task_timeout: 2400
+  task_timeout: 5400
   max_turns: 60
-  turn_timeout: 1800
+  turn_timeout: 3600
 
 sandbox:
   template_sources:
