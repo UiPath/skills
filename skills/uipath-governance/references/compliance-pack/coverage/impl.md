@@ -42,16 +42,16 @@ CLI output is **PascalCase**. Field names below are exactly as returned by `stat
 - `productIdentifier` — owning product
 - `impact` — `"High"` / `"Medium"` / `"Low"`
 - `recommendedSetting` — the recommended value
-- `status` — `"applied"` (✓) / `"not-applied"` (✗) / `"needs-manual-config"` (⚙, admin must set a value)
+- `status` — `"deployed"` (✓ Applied) / `"not-deployed"` (✗ Not Applied) / `"manual"` (⚙ Needs Manual Configuration — admin must set a value)
 
 `Data.Summary.NewCount` — if 0, all recommended settings are already configured.
 
 ## Posture plan presentation
 
 Build the per-setting table directly from `coverage.Data.Clauses[].controls[]` — do NOT derive setting state from product status:
-- ✓ Applied — `control.status == "applied"`
-- ✗ Not Applied — `control.status == "not-applied"`
-- ⚙ Needs Manual Configuration — `control.status == "needs-manual-config"`
+- ✓ Applied — `control.status == "deployed"`
+- ✗ Not Applied — `control.status == "not-deployed"`
+- ⚙ Needs Manual Configuration — `control.status == "manual"`
 
 Per-clause counts come from the clause's own `controls[]` (or `deployedControlCount` / `checkableControlCount`). Product coverage (`DeploymentPolicies[].Status`) is a secondary, product-grain signal only — never project it onto individual settings.
 
@@ -59,14 +59,14 @@ Per-clause counts come from the clause's own `controls[]` (or `deployedControlCo
 
 Progress bar: `▓` per configured setting, `░` per gap, max 5 chars (e.g. 2/5 = `▓▓░░░`, 4/4 = `▓▓▓▓▓`).
 
-**Biggest risk area:** clause with the most `not-applied` High-impact controls (`controls[].status == "not-applied" && impact == "High"`).
-**Quickest win:** clause with the fewest non-applied controls (`not-applied` + `needs-manual-config`) AND at least one is High impact.
+**Biggest risk area:** clause with the most `not-deployed` High-impact controls (`controls[].status == "not-deployed" && impact == "High"`).
+**Quickest win:** clause with the fewest unapplied controls (`not-deployed` + `manual`) AND at least one is High impact.
 
 Terminology rules:
 - Use "settings" NOT "controls" in output
 - Use plain-English clause names (from `clauses[].clauseName`) in headlines; clause IDs (e.g. A.6.2.8) as secondary reference in DETAILS only
 - Use `controls[].displayName` as setting name, NOT product identifiers
-- **NEVER write raw API status strings** — product `in-place`/`new`; clause `fully-deployed`/`partially-deployed`/`not-deployed`; control `applied`/`not-applied`/`needs-manual-config` — in user-facing display output (posture_plan.txt, chat responses, report summaries) — translate EVERY occurrence before writing
+- **NEVER write raw API status strings** — product `in-place`/`new`; clause `fully-deployed`/`partially-deployed`/`not-deployed`; control `deployed`/`not-deployed`/`manual` — in user-facing display output (posture_plan.txt, chat responses, report summaries) — translate EVERY occurrence before writing
   - `"in-place"` → **Applied** (or ✓)
   - `"new"` → **Not Applied** (or ✗)
 - **`coverage.json` is an internal session file** — save it as the raw `--output json` CLI response. Raw API values (`"in-place"`, `"new"`) are CORRECT and expected in this file. Do NOT translate status values when writing coverage.json.
@@ -110,7 +110,7 @@ Needs Configuration  (<N> of <total>)
   │ ⚙ <controlDisplayName>            │ <recommendedSetting>│ Medium │
   │ ✓ <controlDisplayName>            │ Applied             │ Medium │
   └───────────────────────────────────┴─────────────────────┴────────┘
-  Marker = `control.status`: ✓ applied · ✗ not-applied · ⚙ needs-manual-config
+  Marker = `control.status`: ✓ deployed · ✗ not-deployed · ⚙ manual
 
   [repeat per clause with gaps]
 
@@ -149,7 +149,7 @@ Always run fresh before presenting a posture plan. Coverage reflects live tenant
 
 ## Anti-patterns
 
-- **Writing raw API status strings in user-facing display output** — product `in-place`/`new`; clause `fully-deployed`/`partially-deployed`/`not-deployed`; control `applied`/`not-applied`/`needs-manual-config` — must NEVER appear in user-facing display output (posture_plan.txt, chat responses, report summaries). Translate every status before writing. `coverage.json` is an internal session file — raw API values are correct there.
+- **Writing raw API status strings in user-facing display output** — product `in-place`/`new`; clause `fully-deployed`/`partially-deployed`/`not-deployed`; control `deployed`/`not-deployed`/`manual` — must NEVER appear in user-facing display output (posture_plan.txt, chat responses, report summaries). Translate every status before writing. `coverage.json` is an internal session file — raw API values are correct there.
 - **Partial translation** — translating the summary section but leaving raw values in the DETAILS or verification section. ALL sections must use the translated labels.
 - **Quoting API values for context** — avoid notes like "Status is still 'new'". Rephrase to "AI Trust Layer shows as Not Applied" instead.
-- **Deriving per-setting state from product status** — use `Clauses[].controls[].status` (`applied`/`not-applied`/`needs-manual-config`). Never mark a setting Applied because its product is `in-place`.
+- **Deriving per-setting state from product status** — use `Clauses[].controls[].status` (`deployed`/`not-deployed`/`manual`). Never mark a setting Applied because its product is `in-place`.
