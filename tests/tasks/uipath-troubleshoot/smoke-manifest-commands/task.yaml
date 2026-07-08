@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-smoke-manifest-commands
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   Verify every uip subcommand mocked in any diagnostic scenario's manifest is
   a real subcommand in the locally installed uip CLI. Catches fixture drift
