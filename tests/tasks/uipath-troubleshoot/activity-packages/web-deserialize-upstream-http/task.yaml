@@ -1,9 +1,12 @@
-task_id: skill-troubleshoot-web-deserialize-jsonarray-malformed
+task_id: skill-troubleshoot-web-deserialize-upstream-http
 description: >
-  UiPath troubleshoot agent must diagnose a ParseList job fault
-  (Newtonsoft.Json.JsonReaderException: Unexpected character encountered while parsing value: n. Path '', line 0, position 0.) and match the
-  activity-packages/web-activities/playbooks/deserialize-malformed-input.md playbook.
-  Replayed from a real staging faulted job.
+  UiPath troubleshoot agent must diagnose a ParseDocument job fault where an upstream
+  HttpClient GET returns an HTML error page (leading '<') whose Result is deserialized
+  without a StatusCode check: Newtonsoft.Json.JsonReaderException "Unexpected character ... <".
+  Must reach the upstream-HTTP branch of
+  activity-packages/web-activities/playbooks/deserialize-malformed-input.md — root cause is the
+  HTTP call returning a non-2xx/HTML body; fix is to guard on StatusCode / investigate the endpoint,
+  NOT to fix a literal or swap the deserializer.
 
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
@@ -33,7 +36,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My last job in folder Shared just faulted. Job key 1150d469-f4dc-44fc-b39e-c89aaa5db3f9. Why
+  My last job in folder Shared just faulted. Job key 9937b232-5a94-44ab-8aee-ce6ea52d3bb4. Why
   did it fail and how do I fix it?
 
   The project source for the failing process is at ./WebApiClient/ in the

@@ -1,5 +1,5 @@
 <Activity x:Class="Wf_ParseList" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Sequence DisplayName="Parse List">
-    <ui:DeserializeJsonArray JsonString="not a json array" DisplayName="Deserialize JSON Array" />
+    <ui:DeserializeJsonArray JsonString="{&quot;orderId&quot;:1044,&quot;customer&quot;:&quot;Contoso Ltd&quot;,&quot;status&quot;:&quot;open&quot;}" DisplayName="Deserialize JSON Array" />
   </Sequence>
 </Activity>

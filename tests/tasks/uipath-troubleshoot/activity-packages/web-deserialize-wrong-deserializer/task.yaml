@@ -1,9 +1,11 @@
-task_id: skill-troubleshoot-web-deserialize-xml-malformed
+task_id: skill-troubleshoot-web-deserialize-wrong-deserializer
 description: >
-  UiPath troubleshoot agent must diagnose a ParseDocument job fault
-  (System.Xml.XmlException: Data at the root level is invalid. Line 1, position 1.) and match the
-  activity-packages/web-activities/playbooks/deserialize-malformed-input.md playbook.
-  Replayed from a real staging faulted job.
+  UiPath troubleshoot agent must diagnose a ParseList job fault where a valid JSON
+  object is passed to Deserialize JSON Array (which requires a JSON array):
+  Newtonsoft.Json.JsonReaderException "Error reading JArray ... not an array: StartObject".
+  Must reach the wrong-deserializer branch of
+  activity-packages/web-activities/playbooks/deserialize-malformed-input.md and recommend
+  Deserialize JSON (object) instead of Deserialize JSON Array — NOT a malformed/garbage-input fix.
 
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
@@ -33,7 +35,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My last job in folder Shared just faulted. Job key 9937b232-5a94-44ab-8aee-ce6ea52d3bb4. Why
+  My last job in folder Shared just faulted. Job key 1150d469-f4dc-44fc-b39e-c89aaa5db3f9. Why
   did it fail and how do I fix it?
 
   The project source for the failing process is at ./WebApiClient/ in the

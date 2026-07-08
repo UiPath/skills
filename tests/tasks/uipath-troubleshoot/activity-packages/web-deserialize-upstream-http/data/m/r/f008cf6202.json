@@ -11,7 +11,7 @@
     "Source": "Manual",
     "SourceType": "Manual",
     "BatchExecutionKey": "c1281713-e159-46d5-82cc-f0d7ce1981be",
-    "Info": "Data at the root level is invalid. Line 1, position 1.\r\n\r\nin Wf_ParseDocument.xaml\r\n    at DeserializeXml \"Deserialize XML\"\r\n    at Sequence \"Parse Document\"\r\n    at Wf_ParseDocument \"Wf_ParseDocument\"\r\n\r\nSystem.Xml.XmlException: Data at the root level is invalid. Line 1, position 1.\r\n   at System.Xml.XmlTextReaderImpl.Throw(Exception e)\r\n   at System.Xml.XmlTextReaderImpl.Throw(String res, String arg)\r\n   at System.Xml.XmlTextReaderImpl.ParseRootLevelWhitespace()\r\n   at System.Xml.XmlTextReaderImpl.ParseDocumentContent()\r\n   at System.Xml.Linq.XDocument.Load(XmlReader reader, LoadOptions options)\r\n   at System.Xml.Linq.XDocument.Parse(String text, LoadOptions options)\r\n   at UiPath.Web.Activities.DeserializeXml.Execute(CodeActivityContext context)\r\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)",
+    "Info": "Unexpected character encountered while parsing value: <. Path '', line 0, position 0.\r\n\r\nin Wf_ParseDocument.xaml\r\n    at DeserializeJson \"Deserialize JSON\"\r\n    at Sequence \"Parse Document\"\r\n    at Wf_ParseDocument \"Wf_ParseDocument\"\r\n\r\nNewtonsoft.Json.JsonReaderException: Unexpected character encountered while parsing value: <. Path '', line 0, position 0.\r\n   at Newtonsoft.Json.JsonTextReader.ParseValue()\r\n   at Newtonsoft.Json.Linq.JObject.Load(JsonReader reader, JsonLoadSettings settings)\r\n   at Newtonsoft.Json.Linq.JObject.Parse(String json, JsonLoadSettings settings)\r\n   at UiPath.Web.Activities.DeserializeJson.Execute(CodeActivityContext context)\r\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)",
     "CreationTime": "2026-06-23T17:36:33.247Z",
     "ReleaseName": "ParseDocument",
     "Type": "Unattended",
@@ -39,4 +39,3 @@
     "Id": 67889406
   }
 }
-
