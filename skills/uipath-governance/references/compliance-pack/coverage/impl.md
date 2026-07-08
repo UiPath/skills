@@ -69,7 +69,7 @@ For each ⚙ `manual` control, look up its `Data.Clauses[].manualConfigChecks[]`
 
 **Next-action suggestion (state-aware).** Choose the call-to-action from `Data.Summary.ClauseSummary` — NEVER suggest (re)applying a pack that is already enabled:
 - **Nothing applied yet** (`FullyDeployedCount == 0 && PartiallyDeployedCount == 0` — pack not enabled): the ONLY case where you suggest applying. Offer `'Apply ISO 42001 settings'`, `'Apply High impact ISO 42001 settings'`, or `'Apply only <specific area> settings'`.
-- **Already applied, gaps remain** (`FullyDeployedCount > 0 || PartiallyDeployedCount > 0` — pack enabled, `state enable` already ran): do NOT suggest reapplying the standard or applying a subset. Point the user ONLY at the residual manual settings: `'Configure the manual ISO 42001 settings'` — the ⚙ items with expected/actual in DETAILS ARE the to-do list. Any remaining ✗ `not-deployed` settings must be set in their product's own settings; reapplying the pack will not set them.
+- **Already applied, gaps remain** (`FullyDeployedCount > 0 || PartiallyDeployedCount > 0` — pack enabled, `state enable` already ran): do NOT suggest reapplying the standard or applying a subset. Point the user ONLY at the residual manual settings: `'Configure the manual ISO 42001 settings'` — the ⚙ items with expected/actual in DETAILS ARE the to-do list. When the user accepts, hand off to the AOps plugin to update the existing pack policy — see [Configuring manual settings (AOps handoff)](#configuring-manual-settings--aops-handoff). Any remaining ✗ `not-deployed` settings must be set in their product's own settings; reapplying the pack will not set them.
 - **All applied** (`PartiallyDeployedCount == 0 && NotDeployedCount == 0`): see [All settings applied](#all-settings-applied) — nothing to apply.
 
 Never render product coverage — product grain is internal only.
@@ -161,6 +161,20 @@ To remove them: 'Remove ISO 42001 settings'
 ```
 
 Do NOT call `state enable` in this case.
+
+## Configuring manual settings — AOps handoff
+
+When the user accepts `'Configure the manual ISO 42001 settings'` (offered ONLY in the already-applied / partial state), hand off to this skill's AOps policy mechanic to update the EXISTING deployed policy. Do NOT re-enable the pack (`state enable`) and do NOT create a new policy — the pack already deployed one policy per product; a `manual` setting is just an org-specific formData key on that policy that automation could not fill. This mutation happens on the **AOps branch** (Critical Rule 3: one branch per mutation).
+
+Each ⚙ setting is a `Data.Clauses[].manualConfigChecks[]` entry: `{ productIdentifier, key, expected, actual }`. Group them by `productIdentifier` — one policy per product, updated once.
+
+Per product:
+1. **Resolve the pack's policy id for the product.** `uip gov aops-policy deployment tenant get <TENANT_ID> --output json` → the `TenantPolicies[]` entry whose `ProductIdentifier` matches → its `PolicyIdentifier`. Cross-check it belongs to the pack against `state get tenant <TENANT_ID> <packId>` `Policies[].ExternalPolicyId`.
+2. **Collect the org-specific value(s).** `expected` is a predicate (`{eq}`/`{gte}`/`{lte}`/`{contains}`); `manual` means the concrete value is org-specific (an allowlist, a package set, a threshold). Ask the user, and confirm the value satisfies `expected`.
+3. **Update via the AOps plugin.** Follow [`../../aops-policy/aops-policy-manage-guide.md`](../../aops-policy/aops-policy-manage-guide.md): `aops-policy get <PolicyIdentifier>` → set each `key` in the returned formData to the collected value (build `--input` per [`../../aops-policy/configure-aops-policy-data-guide.md`](../../aops-policy/configure-aops-policy-data-guide.md)) → `aops-policy update` (**full replacement** — pass every existing field back: `--name`, `--product-name`, `--description`, `--priority`, `--availability`, `--input`, per [`../../aops-policy/aops-policy-commands.md`](../../aops-policy/aops-policy-commands.md)). Never call `state enable`.
+4. **Receipt + confirm.** Show a post-update receipt (Critical Rule 6), then re-run coverage; each fixed ⚙ setting should flip to ✓ (`controls[].status == "deployed"`).
+
+Graceful degrade: if the AOps guides are unavailable, present the ⚙ list (setting, expected, current) and tell the user to set each value on the product's deployed policy in Automation Ops — never leave the manual settings as a dead-end suggestion.
 
 ## Never cache
 
