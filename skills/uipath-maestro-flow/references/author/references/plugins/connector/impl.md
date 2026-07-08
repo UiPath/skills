@@ -188,6 +188,8 @@ The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** 
 
 ### Step 5b — Wire outputs from previous nodes
 
+**Get `<field>` from the node's output schema, not by guessing.** The `registry get --connection-id` call in Step 3 returns `outputDefinition.fields` alongside the input fields — read the output side too. A wrong path passes `validate` and faults only at `debug`, often at a downstream node ([node-output-wiring.md — Know the Field Path Before You Reference It](../../../../shared/node-output-wiring.md#know-the-field-path-before-you-reference-it)).
+
 When a connector node's input field needs a value produced by an upstream node (e.g. the `Id` returned by a Create activity becomes the `recordId` for a Get-by-Id activity), the value MUST use the canonical expression form:
 
 ```
