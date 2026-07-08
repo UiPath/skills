@@ -29,9 +29,6 @@ initial_prompt: |
   that field out. Add a guardrail on the "Send message to channel" tool that does
   this, and validate when you are done.
 
-  The project is already at the path given above — start working directly without
-  searching or exploring the directory first.
-
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
   implementation. Complete the entire task end-to-end in a single pass.
