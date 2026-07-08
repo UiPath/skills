@@ -22,7 +22,7 @@ Every `uip` data-gathering command follows two patterns — lean context AND an 
    - **Small / filtered result** → `| tee .local/investigations/raw/<command>.json`: saves the file AND echoes the (already-small) result for immediate use the same turn.
    - **Heavy or unfilterable result** (dense traces, full logs/stacks, `errorDetails`, or the fallback below) → `> .local/investigations/raw/<command>.json`, then read back only the fields/lines you need. Do NOT `tee` a full unfiltered response — it loads the whole body into context.
 
-   `raw/` must already exist (create it at investigation start); neither `tee` nor `>` creates it.
+   Run `mkdir -p .local/investigations/raw` once before the first fetch — neither `tee` nor `>` creates the directory and will otherwise drop the file silently.
 
 **Filter-failure fallback.** If `--output-filter` returns empty, an error, or an uninterpretable shape (usually a field name that drifted from the current CLI schema), retry the SAME command ONCE without `--output-filter` to see the actual shape. Capture that unfiltered retry with `>` (not `tee`) and read back only the fields you need; note the stale filter in your evidence summary. Do NOT silently swallow filter errors.
 
