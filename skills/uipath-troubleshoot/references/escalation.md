@@ -27,7 +27,7 @@ Eliminate items: {to_eliminate list — you MUST attempt every one; elimination 
 
 Rules:
 1. Run ONLY uip commands documented in the playbook's ## Investigation section or the product overview's CLI section ({overview path}). No --help discovery, no guessed flags, no REST/curl workarounds.
-2. Redirect every CLI response: `uip ... --output json > .local/investigations/raw/h{n}-{command-name}.json`. Read back only needed fields. Before fetching, check .local/investigations/raw/ — reuse existing fetches of the same entity.
+2. Redirect every CLI response: `uip ... --output json > .local/investigations/raw/h{n}-{command-name}.json`. Read back only needed fields. Before fetching, check .local/investigations/raw/ — reuse existing fetches of the same entity. (Probes deliberately use `>` uniformly — narrower than Invariant 4's conditional `tee` — to keep probe context minimal.)
 3. Every datum must match the reported entity, folder/tenant, and time window. Empty ≠ absent — verify the container exists. Live state ≠ historical state for incidents older than 24h.
 4. Max 2 retries per command; after 3 distinct command failures, stop and report the failures.
 5. Data unavailable → report the gap. Never invent or substitute.
