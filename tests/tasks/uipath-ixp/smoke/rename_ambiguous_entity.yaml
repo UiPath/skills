@@ -1,0 +1,70 @@
+task_id: skill-ixp-rename-ambiguous-entity-smoke
+description: >
+  Smoke: ambiguity guard (ACTV-88672). The workspace has a project TITLED
+  "subscriptions", a field group NAMED "subscriptions", and a field NAMED
+  "subscriptions"; the prompt asks to "rename subscriptions into Test
+  Invoice" with no disambiguating context. The only correct move is to ask
+  which entity is meant — written to clarification.txt, since the harness
+  is non-interactive — and run NO rename. Renaming (or delete/recreating)
+  any of the three entities is a silent guess and fails.
+
+  clarification.txt is not a self-report: it is the ask-behavior under
+  test (a question in lieu of acting, the only observable form of asking
+  in a non-interactive run), not a claim about work performed. The
+  deterministic core is the command_not_executed guards.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
+initial_prompt: |
+  My IXP workspace has a project titled "subscriptions" (Name:
+  subscriptions-4c1d9e2a-ixp). Its taxonomy contains a field group named
+  "subscriptions", and that group contains a field named "subscriptions".
+
+  Rename subscriptions into "Test Invoice".
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - I am not available to answer questions interactively. If you need
+    information from me before proceeding, write your question to
+    `clarification.txt` and stop — I'll respond asynchronously.
+
+success_criteria:
+  - type: file_exists
+    description: "Agent asked instead of acting: clarification.txt was written"
+    path: "clarification.txt"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The question surfaces the three-way collision — names the project, the group, and the field as candidates"
+    path: "clarification.txt"
+    includes: ["project", "group", "field"]
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT silently guess an entity: no rename ran (projects update-title / groups rename / fields rename)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+(projects\s+update-title|groups\s+rename|fields\s+rename)\b'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT rename via delete/recreate either"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+(projects|groups|fields)\s+delete\b'
+    weight: 1.0
+    pass_threshold: 1.0
