@@ -63,7 +63,7 @@
 /tests/tasks/uipath-agents/lowcode/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-agents/coded/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 # Guardrails in lowcode/conversational (more specific than /lowcode/conversational/ above — wins via last-match)
-/tests/tasks/uipath-agents/lowcode/conversational/guardrail_custom_tool/ @apetraru-uipath @valentinabojan @ctiliescuuipath
+/tests/tasks/uipath-agents/lowcode/conversational/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
 # Functions skill (Python Coded Functions — Phase 1; JS HTTP/background Phase 2/3)
 /skills/uipath-functions/ @AlexBizon @UiPath/team-coded-agents
