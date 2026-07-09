@@ -554,7 +554,7 @@ For every unique connection used in the flow, `node configure` appends **two ent
 | Field | Value |
 |-------|-------|
 | `id` | Unique string within the file. Descriptive (e.g. `bJiraConn`) or short random (e.g. `bKEFLMRB2`). |
-| `name` (connection binding) | The IS connection name (e.g. `"chandu.lella@uipath.com #3"`). `uip maestro flow node configure` fetches this from IS automatically — this is the supported path. The placeholder form `"<CONNECTOR_KEY> connection"` appears in the table for reference only (e.g. when inspecting a flow whose bindings have not yet been configured); it must match the definition's `model.context[].connection` placeholder (without the `<bindings.` prefix and `>` suffix). |
+| `name` (connection binding) | `"<CONNECTOR_KEY> connection"` — must match the definition's `model.context[].connection` placeholder (the `<bindings.…>` inner text). Matching is name-only (rule above). `node configure` writes it. NOT the IS connection display name / email — a display-name value silently faults at debug with `102010 'Connection' has an invalid GUID value: '<bindings.<CONNECTOR_KEY> connection>'`. |
 | `name` (folder binding) | Literal `"FolderKey"` — matches `<bindings.FolderKey>`. |
 | `type` | Always `"string"`. |
 | `resource` | Always `"Connection"` — capital C, case-sensitive. |
