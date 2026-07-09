@@ -172,7 +172,21 @@ if a dependent path's `{token}` or a rule's `refFieldName` names nothing on the 
 escape hatch — an array of `{ actionType: show|hide|required|optional, rules: [{ type:"field",
 refFieldName:"<other>", refFieldValues:["card"], isCleared:false }] }`. Use `refFieldValues:["*"]`
 for "any value", `isCleared:true` to fire when the ref field is empty; multiple rules in one action
-are ANDed.
+are ANDed. **`--depends-on` vs `--field-actions`:** use `--depends-on` for a dependent dropdown
+(show once the parent has ANY value — it hard-codes `["*"]`); use `--field-actions` when the child
+should appear only for a SPECIFIC parent value (e.g. `refFieldValues:["task"]`).
+
+**Dropdowns on path / query params** work identically — the same flags exist on `activity param
+create`. For a **path variable** just pass `--type path`: the CLI auto-encodes it as `type:"query"`
++ `vendorType:"path"` when the variable isn't a segment of the flat internal path (element-service
+interpolates it into the vendor path — a literal `type:"path"` there would 400). Example — a `boardId`
+path-param dependent dropdown scoped by `projectId`:
+
+```
+activity param create --resource cards --method POST --name boardId --type path \
+  --reference-object boards --reference-path "/projects/{projectId}/boards" \
+  --lookup-value id --lookup-names id,name --display-pattern "{name}" --depends-on projectId
+```
 
 ## Bulk field authoring — `--fields` / `--fields-file`
 `activity create --fields '<json-array>'` (inline) or `--fields-file <path>` seeds the whole
