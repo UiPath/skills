@@ -57,7 +57,7 @@ Projects and solutions store connection references as JSON files. The location d
 
 Each `<connector-key>` subfolder contains one JSON file per connection, named after the connection's `resource.name` (typically the owner's email or username).
 
-**When investigating, glob `**/connection/<connector-key>/*.json` from the project root** — that catches all three layouts in one read. Do NOT assume the standalone path; solutions are common and the resource file may be several directories deep under `resources/`.
+**When investigating, glob `**/connection/<connector-key>/*.json` from the working-directory root** (the solution root when the project sits in a solution) — that catches all three layouts in one read. Do NOT assume the standalone path; solutions are common and the resource file may be several directories deep under `resources/`.
 
 Key fields:
 
