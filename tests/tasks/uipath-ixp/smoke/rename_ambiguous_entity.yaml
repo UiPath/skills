@@ -18,9 +18,10 @@ description: >
   Guards grade the mock's calls.log (actual uip executions) via
   file_contains excludes, NOT command_not_executed regexes over Bash call
   text — a correct clarification legitimately QUOTES the candidate rename
-  commands, which a text regex would false-match. A harness-integrity
-  criterion pins the mock's logging sink so the excludes cannot pass
-  vacuously if the log is ever re-pointed.
+  commands, which a text regex would false-match. The discovery criterion
+  doubles as the positive control: it proves executed reads land in the
+  graded file, so re-pointing the mock's log sink fails the test rather
+  than making the excludes pass vacuously.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
 run_limits:
@@ -60,13 +61,6 @@ success_criteria:
     path: "mocks/calls.log"
     includes: ["ixp projects list", "ixp projects get-taxonomy"]
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Harness integrity: the sandbox's uip mock still logs invocations to the graded calls.log (the guards below are vacuous if the sink moves)"
-    path: "mocks/uip"
-    includes: ['>> "$(dirname "$0")/calls.log"']
-    weight: 1.0
     pass_threshold: 1.0
 
   - type: file_contains
