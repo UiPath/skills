@@ -559,6 +559,19 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   - Use optional chaining: `$context?.outputs?.Javascript_1?.items`
   - Ensure object literals have unique keys
 
+### Failed cloud run after publish (job faulted in Orchestrator)
+
+- **Symptom:** The workflow passed `validate` and `run --no-auth` locally, packed, published, and deployed — but a triggered cloud run faults. Local re-runs still pass.
+- **Cause:** Faults that only surface in cloud — real vendor responses, connection auth/token state, trigger payload shape, tenant/folder scoping — none of which the local runtime exercises.
+- **Fix:** Diagnose from the deployed job, not the local file:
+  ```bash
+  uip or jobs get <jobId> --output json      # status + fault summary
+  uip or jobs logs <jobId> --output json     # execution logs for the run
+  uip or jobs traces <jobId> --output json   # span-level execution trace
+  uip traces spans --output json             # trace spans across runs
+  ```
+  Map the surfaced error back to a fix with the category order below (Structure > Expression > Activity Config > Logic). If the fault is a 401 / `ConnectionNotEnabled`, `uip is connections ping <uuid>` the bound connection first. Full operate + diagnose command map: [operating-published-workflows.md](operating-published-workflows.md). For deep, multi-signal root-cause (what changed, cross-run comparison, incident correlation), hand off to **uipath-troubleshoot**.
+
 ---
 
 ## Packaging Errors
