@@ -2,6 +2,8 @@
 
 Trust the SDD. Emit inputs/outputs exactly as declared. There is no `caseplan.json` yet — all validation happens during [implementation](impl-json.md).
 
+The planner's job is to preserve the SDD's executable data contract. If a task's detail block declares an input or output row, that row must survive into `tasks.md` even when the task is unresolved and also using the placeholder wiring-notes path. Do not summarize, rename, or omit domain-bearing rows just because a later validator can infer some schema from `tasks describe`; rows such as `priorityScore`, `slaTier`, `financeDecision`, or `selectedPaymentMethod` are routing data, not annotations.
+
 ## Discovering Input/Output Names
 
 1. **SDD per-task tables** — primary source. Each task lists input/output field names, types, and variable bindings.
@@ -29,6 +31,8 @@ Trust the SDD. Emit inputs/outputs exactly as declared. There is no `caseplan.js
 
    `<case variable> = <expression>`. Expression can be a plain literal string/number/bool, a `=js:` computation, or a `=vars.X.Y` variable reference. Target case variable MUST exist in the Case Variables table.
 
+   If several tasks assign the same case variable, keep every `=` row in `tasks.md`, but plan a unique output label for each assignment during implementation (for example `caseStatusRegistered`, `caseStatusClosed`). The Scenario E JSON shape intentionally has no `var` owner, so repeated case-variable assignments do not trip the validator's duplicate-output check.
+
    **Dot-path support** on the left side of `->`: full paths like `response.message.ts`, `response.data.user.email`, `Error.code` are emitted as-is. Array indexing (`items[0]`) is NOT supported in v1 — fall back to consuming the array variable and using `=js:` expressions downstream.
 
    **Bare-name outputs** (no operator): emits an auto-mint entry that references a **top-level** Step 0 schema entry (e.g., `Error` or a pre-expanded shortcut like Slack's `ts`). `id = var = value = camelCase(entry name)`. Source is the entry's pre-populated value verbatim. For non-top-level fields, use the `->` operator with the full path instead.
@@ -37,7 +41,7 @@ Trust the SDD. Emit inputs/outputs exactly as declared. There is no `caseplan.js
      - Error            # bare — references top-level Error entry; produces vars.error (source = entry's =Error)
    ```
 
-3. **Unresolved taskTypeId** — `tasks describe` unavailable. Follow [placeholder-tasks](../../../placeholder-tasks.md) — omit `inputs:`/`outputs:`, capture wiring intent in a fenced code block.
+3. **Unresolved taskTypeId** — `tasks describe` unavailable. Follow [placeholder-tasks](../../../placeholder-tasks.md) — keep the SDD-declared `inputs:`/`outputs:` rows as unverified intent and also capture the same wiring in a fenced code block for the later attach/upgrade pass.
 
 Do not fabricate names not in the SDD or `tasks describe`. Validation of variable existence happens at planning time (Phase 2) for `=` rows (target must exist in Case Variables); at implementation time (Phase 3) for `->` rows (deferred to io-binding validator).
 
@@ -55,7 +59,7 @@ For the full notation and expression prefixes, see [bindings-and-expressions.md]
 
 > **Note:** task INPUT bindings still use `<-` for cross-task references (`input <- "Stage"."Task".output`) — this is the planner-side notation for "this input value comes from another task's output." Task OUTPUT bindings use `->` for extract (`Field -> caseVar`) and `=` for set/compute/copy. Different directional conventions because inputs read from somewhere; outputs write to somewhere.
 
-Record discovered outputs on each task entry (`outputs: kycResult, riskScore, error`) so downstream cross-task references can be validated during implementation.
+Record discovered outputs on each task entry (`outputs: kycResult, riskScore, error`) so downstream cross-task references can be validated during implementation. When the SDD declares output operators (`Field -> caseVar` or `caseVar = expression`), record those operator rows, not just the discovered bare output names; implementation needs the operator and target variable to write the correct `task.data.outputs[]` shape.
 
 > **Planner emits SDD-natural form; impl applies the per-sink canonical wrap.** Values in `tasks.md` use the natural prefix notation shown above — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<-`. The implementation step rewrites each value to its canonical sink form when constructing `caseplan.json` (e.g., `=js:(vars.X)` for connector body fields, `=js:metadata.X` for `=metadata` references in any sink that runs the JS evaluator). Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 

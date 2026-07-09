@@ -43,7 +43,7 @@ An exact-name match with `Resource.Source == "local"` means the agent **already 
 
 > **Build it inline first (creatable kind).** At the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) the user may pick **Create** to build the missing agent as an in-solution sibling — see [§ Creating an Agent inline](#creating-an-agent-inline). This fallback applies only when the user declines/skips Create, the build fails, or the CLI lacks `registry --local`.
 
-Mark `<UNRESOLVED: agent "<name>" in folder "<folder>" not found in registry>`. Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
+Mark `<UNRESOLVED: agent "<name>" in folder "<folder>" not found in registry>`. Preserve any SDD-declared `inputs:` and `outputs:` rows as unverified intent, and also capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). Execution creates a placeholder task with no resource binding; best-effort I/O rows are written only when declared — see [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 ## Creating an Agent inline
 

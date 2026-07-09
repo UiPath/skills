@@ -43,7 +43,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 - Root case — `caseplan.json` with top-level fields + `metadata` block populated (name, `metadata.caseIdentifier`, empty `nodes[]`, empty `edges[]`).
 - Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared at top-level `variables`.
 - Stages — all StageIds generated and captured.
-- Edges — none authored; `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 3).
+- Edges — default `schema.edges: []`. Stage transitions are condition-driven (written in Phase 3); if local `validate` requires legacy topology, Phase 4 derives minimal compatibility edges from those conditions.
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
 - Entry-points input/output — `entry-points.json` `input`/`output` schemas refreshed from the declared In/Out arguments (Step 6.3, per [entry-points-sync.md](entry-points-sync.md)). Makes the Phase-2 publish-for-review contract correct; idempotent.
 
@@ -53,7 +53,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 |---|---|---|
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs and task-specific scalar fields (e.g. `action`'s `taskTitle`/`priority`/`recipient`/`labels`) populated per plugin — these are final at Step 2; only input `value`s defer to Phase 3. |
 | Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data.typeId` + `data.connectionId` set. `data.inputs` omitted or empty. **No `case spec` call in Phase 2** — schema discovery is deferred to Phase 3. |
-| Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Placeholder task per Rule 8 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
+| Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Placeholder task per Rule 8 of `SKILL.md` — no resource IDs or bindings; `data: {}` when no SDD I/O rows exist, otherwise best-effort `data.inputs[]` / `data.outputs[]` from declared rows. Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
 | `agent` / `api-workflow` built inline | Built + bound in Phase 1 at the Rule 17 gate | **Not a placeholder** — fully resolved task (name+folder binding, `resourceKey="solution_folder.<name>"`, **`folderPath` binding `default` = `""`** — co-located runtime folder; `solution_folder` stays only in `resourceKey`). Phase 2 treats it like any resolved resource. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery). |
 
 ### What does NOT get written in Phase 2
@@ -225,12 +225,12 @@ For further authoring changes (add task, tweak condition, etc.), user updates `s
 
 ## Placeholder tasks — unchanged semantics
 
-Placeholder tasks (empty `data: {}` for unresolved resources) behave the same in all phases. Phase 2 creates them; Phase 3 does **not** upgrade them to typed tasks — upgrading requires user to register missing resource externally. See [placeholder-tasks.md](placeholder-tasks.md).
+Placeholder tasks (no resource IDs for unresolved resources, optionally carrying best-effort SDD I/O rows) behave the same in all phases. Phase 2 creates them; Phase 3 does **not** upgrade them to typed tasks — upgrading requires user to register missing resource externally. See [placeholder-tasks.md](placeholder-tasks.md).
 
 > **Agents / API workflows built inline are not placeholders.** When the user picks **Create** at the Rule 17 gate, Phase 1 builds the resource (a side effect — spawns a sub-agent invoking `uipath-agents` / `uipath-api-workflow`, registers the sibling, binds it) so it enters Phase 2 as a fully resolved task. Phase 3 never upgrades it (nothing to upgrade). Only resources the user declined/skipped or whose build failed become placeholders. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery).
 
 Phase 3 still wires placeholder TaskIds into:
-- Task-entry conditions that reference the placeholder.
+- Task-entry conditions that reference the placeholder. Prefer writing placeholder task `entryConditions[]` during Step 9 with the task node; Step 10 only adds rows whose referenced IDs were unavailable earlier or repairs missing rows.
 - Stage-exit `selected-tasks-completed` rules that include the placeholder.
 
 It does **not** write `data.inputs` / `data.outputs` for placeholders. Input binding deferred to user's post-build upgrade pass.

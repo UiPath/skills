@@ -31,6 +31,10 @@ Solution setup (`uip solution init`) and project registration (`uip solution pro
 
 See [`planning.md`](planning.md) for how these fields are sourced from `sdd.md`.
 
+If `tasks.md` T01 description includes tenant data-object names, preserve it
+verbatim in top-level `description`. Do not summarize away snake_case object
+names; there is no separate schema field for them.
+
 ## § Scaffold — write project boilerplate
 
 Runs before § Write caseplan.json. Writes 5 static JSON files directly. All substitution is name-for-name — no subprocess.
@@ -259,4 +263,3 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
 If any check fails, halt and report — do not proceed to downstream plugins.
 
 **Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, so the case cannot be entered). Validation runs once after the full build (SKILL.md Anti-patterns — "Do NOT validate after each command"). Pre-build validate is informational only, regardless of schema.
-

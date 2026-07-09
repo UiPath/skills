@@ -57,6 +57,7 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 ## T05: Declare In-argument "applicantName"
 - category: In
 - type: string
+- description: "Applicant display name supplied by the external caller."
 - sourceTriggers: T03            # single T-number; omit to bind the primary trigger (T02)
 - default: ""
 - verify: inputs[] formal slot + inputOutputs[] companion (elementId = id-map[T03].id) + that trigger node's outputs[] bridge written.
@@ -64,6 +65,7 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 ## T06: Declare Variable "subject"
 - category: Variable
 - type: string
+- description: "Email subject captured from the trigger response."
 - sourceTrigger: T02
 - sourceField: response.subject
 - verify: inputOutputs[] entry (id=subject, elementId="root"); trigger T02's outputs[] carries Pattern C wire (source="=response.subject", var=id="subject"); no inputs[] entry.
@@ -80,12 +82,21 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 ## T08: Declare Variable "caseStatus"
 - category: Variable
 - type: string
+- description: "Lifecycle state tracked inside the case."
 - default: "Open"
 - verify: inputOutputs[] entry (id=caseStatus, elementId="root", default="Open"); no trigger output entries.
+
+## T08b: Declare Variable "expenseDocuments"
+- category: Variable
+- type: jsonSchema
+- description: "Companion tenant data object expense_documents associated with the expense request."
+- sourceObject: expense_documents
+- verify: inputOutputs[] entry preserves description and sourceObject exactly; no trigger output entries unless the row also declares sourceTrigger(s).
 
 ## T09: Declare Out-argument "finalDecision"
 - category: Out
 - type: string
+- description: "Final decision returned to the caller."
 - producedBy: T15.outputs.finalDecision   # informational reference to the producing task T-entry
 - verify: outputs[] formal entry (var=finalDecision); companion in inputOutputs[] ALWAYS emitted (with default="" when Default empty); io-binding validator confirms producer task output has id=finalDecision.
 ```
@@ -99,6 +110,10 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 - `sourceFields` — per-trigger payload paths (Variable only). Single-trigger form is `<path>`; multi-trigger form is a YAML-style sub-block with one `T<N>: <path>` per line. Empty on `In` rows.
 - `default` — initial value (string-encoded for non-string types). Drives the `default` field on the companion `inputOutputs[]` entry.
 - `producedBy` — informational only (for Out-args). The io-binding validator confirms the named task actually exists with a matching output.
+- `description` — copy the SDD Description cell verbatim. It is traceability metadata and is emitted onto root variable entries by [`impl-json.md`](impl-json.md); do not summarize or drop domain terms.
+- `sourceObject` — optional literal tenant data-object name when the SDD Description or Section 4 Tenant Data Objects ties this variable to a named object such as `expense_documents` or `expense_comments`. Keep the literal `snake_case` value; do not camelCase it.
+
+**Traceability is load-bearing.** Literal tenant data-object names in SDD descriptions and Section 4 (for example `expense_requests`, `expense_documents`, `expense_comments`) must survive into `tasks.md` and then `caseplan.json`. Variable IDs may be camelCase for runtime (`expenseDocuments`), but the original `snake_case` object name must remain in `description` and, when known, `sourceObject`.
 
 **`verify` text — use exact terms from [`impl-json.md` § Pattern shapes](impl-json.md):**
 

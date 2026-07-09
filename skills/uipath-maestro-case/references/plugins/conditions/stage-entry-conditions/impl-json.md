@@ -2,7 +2,7 @@
 
 > **Phase split.** Phase 3 only. Phase 2 does not write conditions. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Write the stage-entry condition directly to the target stage's `data.entryConditions[]`. No CLI command needed.
+Write the stage-entry condition directly to the target stage's `data.entryConditions[]`. No CLI command needed. Do not put stage conditions on the stage node itself.
 
 ## Condition JSON Shape
 
@@ -27,6 +27,8 @@ Write the stage-entry condition directly to the target stage's `data.entryCondit
 
 Rules use DNF — outer array is OR, inner array is AND.
 
+The key is literally `rules`. Do not rename it to `andGroup`, and do not rename rule objects' `rule` key to `ruleType`; those names only appear in validator internals.
+
 > **One row = one condition object.** Each entry-condition row in tasks.md/SDD maps to a **separate** object in `entryConditions[]`. Never merge multiple rows into a single condition's `rules` AND group.
 
 ## Procedure
@@ -34,7 +36,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 1. Generate condition ID: `Condition_` + 6 alphanumeric chars
 2. Generate rule ID: `Rule_` + 6 alphanumeric chars
 3. Locate the target stage in `schema.nodes` by ID
-4. Initialize `stageNode.data.entryConditions = []` if absent (regular Stage is created without this key — see [`../../stages/impl-json.md`](../../stages/impl-json.md))
+4. Initialize `stageNode.data.entryConditions = []` if absent (regular Stage is created without this key — see [`../../stages/impl-json.md`](../../stages/impl-json.md)). If a previous edit wrote `stageNode.entryConditions`, move those objects into `stageNode.data.entryConditions` and delete the top-level key before validating.
 5. Read `rule-type` and `is-interrupting` from tasks.md; pick the recipe below
 6. Set `displayName`: use tasks.md `display-name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `stageNode.data.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
 7. Append the condition object to `stageNode.data.entryConditions[]`. **When the table has multiple rows, repeat steps 1–7 once per row** — append one condition object per row. Never fold multiple rows into a single condition's `rules` group.
@@ -60,6 +62,8 @@ Rules use DNF — outer array is OR, inner array is AND.
 ```
 
 Swap `rule` to `selected-stage-completed` when completion semantics are required.
+
+For `selected-stage-exited`, verify the referenced source stage already has at least one `data.exitConditions[]` entry with `marksStageComplete: false`. If it does not, add the missing source-stage exit condition first through the stage-exit-conditions plugin. The supporting non-completing exit must be mutually exclusive with the source stage's completing exit; do not add another ungated `required-tasks-completed` exit. Use a gated `selected-tasks-completed` when a decider task is available, `wait-for-connector` when the exit is event-driven, or `adhoc` when the route is a pure case-state signal. Gate the normal completing exit with the inverse expression when needed.
 
 ### user-selected-stage — target of a `wait-for-user` exit
 

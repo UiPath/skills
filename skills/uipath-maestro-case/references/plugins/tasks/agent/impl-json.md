@@ -57,7 +57,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
    **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is the `tasks describe` output (Step 0 above).
 4. Append to target stage's `tasks[laneIndex][]`
 
-> Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
+> Add task `entryConditions[]` during the Step 9 task write when referenced TaskIds are already known; Step 10 only repairs or adds rows that could not be written yet. Input value bindings still happen in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
 
 ## Post-Write Verification
 

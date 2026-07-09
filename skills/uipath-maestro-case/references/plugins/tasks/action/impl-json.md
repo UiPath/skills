@@ -30,11 +30,13 @@
 
 ## Action-Specific Fields
 
-> **Unresolved → `"data": {}`.** When `action-app-id` is `<UNRESOLVED>` (or `action-apps-index.json` returned 0 nodes), the entire shape collapses to `"data": {}`. **No exception** for `taskTitle`, `priority`, `recipient`, `labels`, `name`, `folderPath`, `inputs`, `outputs`, or optional `actionCatalogName` — omit every `data.*` key. See [placeholder-tasks.md](../../../placeholder-tasks.md).
+> **Unresolved → placeholder `data`.** When `action-app-id` is `<UNRESOLVED>` (or `action-apps-index.json` returned 0 nodes), omit resource-bound fields (`name`, `folderPath`, catalog/resource binding, unresolved recipient IDs, labels tied to the action app). Preserve `taskTitle` / `priority` when already known from the SDD and preserve any SDD-declared `inputs` / `outputs` as best-effort unverified rows. If no such rows or scalar fields exist, `data: {}` is valid. See [placeholder-tasks.md](../../../placeholder-tasks.md).
+
+**Validator title key.** The only action-title key is `data.taskTitle`. Do not add top-level `title`, `data.title`, or `data.task-title`; those do not satisfy the validator's "action task with no title" error.
 
 | Field | Notes |
 |---|---|
-| `data.taskTitle` | Required on **resolved** action tasks — validator rejects empty. Placeholders omit it (along with every other `data.*` action-specific key); see [placeholder-tasks.md](../../../placeholder-tasks.md). |
+| `data.taskTitle` | Required on **resolved** action tasks — validator rejects empty. For placeholders, include it only when the SDD/planning already supplied a title or when placeholder `inputs`/`outputs` are present; see [placeholder-tasks.md](../../../placeholder-tasks.md). |
 | `data.priority` | `"Low"` \| `"Medium"` (default) \| `"High"` \| `"Critical"` |
 | `data.recipient` | `ActionTaskAssignee` object: `{ "Type": <int>, "Value": "<id-or-email>" }`. See fallback below for unresolved-UUID handling. |
 | `data.actionCatalogName` | **Optional.** Must bind to an existing action catalog resource. Omit unless tasks.md references a known catalog. |
@@ -72,7 +74,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
    **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is the `tasks describe` output (Step 0 above).
 5. Append to target stage's `tasks[laneIndex][]`
 
-> Entry conditions added in Step 10. Only `data.inputs[].value` is deferred to Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md); the scalar `data.*` fields above are final at Step 2.
+> Add task `entryConditions[]` during the Step 9 task write when referenced TaskIds are already known; Step 10 only repairs or adds rows that could not be written yet. Only `data.inputs[].value` is deferred to Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md); the scalar `data.*` fields above are final at Step 2.
 
 ## Post-Write Verification
 

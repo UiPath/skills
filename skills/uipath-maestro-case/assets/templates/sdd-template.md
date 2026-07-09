@@ -50,8 +50,8 @@ build the case in the Case Designer without guessing.
 
    *Stage exit:*
    - `Marks Stage Complete: Yes` → WHEN MUST be `required-tasks-completed` (typical) or `wait-for-connector` (stage completes when the bound connector event arrives). **NEVER** `required-stages-completed` or `selected-tasks-completed(...)`.
-   - `Marks Stage Complete: No` (routing / divergent exits) → WHEN may be `selected-tasks-completed("TaskA")`, `wait-for-connector`, etc.
-   - Same stage may carry one completion exit (`Yes` + `required-tasks-completed` / `wait-for-connector`) plus zero or more routing exits (`No` + `selected-tasks-completed` / `wait-for-connector`).
+   - `Marks Stage Complete: No` (routing / divergent exits) → WHEN may be `selected-tasks-completed("TaskA")`, `adhoc`, `wait-for-connector`, etc.
+   - Same stage may carry one completion exit (`Yes` + `required-tasks-completed` / `wait-for-connector`) plus zero or more routing exits (`No` + `selected-tasks-completed` / `adhoc` / `wait-for-connector`).
 
    *Case exit (preferred pattern: one row, `Yes` + `required-stages-completed`):*
    - `Marks Case Complete: Yes` → WHEN MUST be `required-stages-completed` or `wait-for-connector`. **NEVER** `selected-stage-completed(...)` / `selected-stage-exited(...)`.
@@ -123,7 +123,7 @@ The generated SDD must start with:
       - [Stage 2: {Name}](#stage-2-{slug}) — {N} tasks
       ...
    3. [Personas & App Views](#section-3-personas--app-views) — {N} Personas, Process App Views
-   4. [Integrations](#section-4-integrations) — IS Connectors, API Workflows, Agents, Processes & RPA, Child Cases, External Agents
+   4. [Integrations](#section-4-integrations) — IS Connectors, API Workflows, Agents, Processes & RPA, Child Cases, External Agents, Tenant Data Objects
    ```
    Anchor slugs must match the actual heading text: lowercase, spaces→hyphens, strip special chars (e.g., `### Stage 1: Request Intake & Triage` → `#stage-1-request-intake--triage`).
 
@@ -213,6 +213,10 @@ DO NOT include in Configuration:
 > `Manual` just because the eval sandbox or current tenant may not have the
 > object provisioned. Planning/implementation preserve unresolved event triggers
 > as placeholders.
+>
+> **Companion data objects:** if the user names supporting tenant objects such
+> as `expense_documents` or `expense_comments`, preserve those literal names in
+> Section 4 Tenant Data Objects even when they are not triggers.
 
 ### Case Exit Conditions
 
@@ -311,6 +315,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 ### Stage {N}: {Stage Name}
 
 > **Heading form:** a **primary** stage uses `### Stage {N}: {Stage Name}` (N = main-flow sequence number); a **secondary** stage uses `### Secondary Stage: {Stage Name}` instead (no number). Both render a `case-management:Stage` node — the kind is set by the `**Stage Kind:**` field below.
+> A happy-path terminal such as `Approved`, `Paid`, `Completed`, `Closed`, or `Funded` is still a primary numbered stage when it represents successful completion of the main flow. Reserve `### Secondary Stage:` for alternate / exception / optional lanes such as `Rejected`, `Withdrawn`, `Cancelled`, `Remediation`, or `Escalation`.
 
 **Type:** Stage
 **Stage Kind:** {primary \| secondary} _(secondary stages use the `### Secondary Stage:` heading AND set `secondary`; primary stages use `### Stage {N}:` and OMIT this line — default = primary)_
@@ -336,11 +341,11 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > **WHEN ↔ Marks Stage Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-tasks-completed` (or `required-stages-completed`); `No` row MAY use `selected-tasks-completed(...)`. Mixing is invalid.
 > Completion (`Yes`) and routing (`No`) rows share this one table. **Regular stage-to-stage routing is expressed by the destination stages' Entry Conditions** (`selected-stage-completed("This Stage")` / `selected-stage-exited("This Stage")`) — one stage can fan out to N stages, each declaring it as their entry trigger. `return-to-origin` returns to the origin stage automatically.
-> **Exception carve-out:** to route this stage INTO a decision/signal-routed exception lane, add a gated divert row here — `Marks Stage Complete: No`, `selected-tasks-completed("<decider>")`, `IF =js:(<signal> === <exception-value>)`, `exit-only`, with `exitToStageId` → the secondary stage — AND gate this stage's `Yes` completion row with the inverse `IF`. The lane returns via `return-to-origin`. Omitting the divert row → dual-fire or deadlock. See sdd-generation-rules § Logical integrity step 5.
+> **Exception carve-out:** to route this stage INTO a decision/signal-routed exception lane, add a gated divert row here — `Marks Stage Complete: No`, `selected-tasks-completed("<decider>")` when a decider task exists or `adhoc` for a pure case-state signal, `IF =js:(<signal> === <exception-value>)`, `exit-only`, optionally with `exitToStageId` → the secondary stage — AND gate this stage's `Yes` completion row with the inverse `IF`. The lane returns via `return-to-origin`. Omitting the divert row → dual-fire or deadlock. See sdd-generation-rules § Logical integrity step 5.
 
 | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
 |------|-----|-----------|---------------------|--------------|
-| {`required-tasks-completed` or `wait-for-connector` for Yes; `selected-tasks-completed("TaskName")` or `wait-for-connector` for No} | {conditionExpression, or "—" if none} | {exit-only \| return-to-origin \| wait-for-user} | {Yes \| No} | {optional label, or "—" → defaults to `Complete Rule {N}` (Marks Complete = Yes) / `Exit Rule {N}` (No)} |
+| {`required-tasks-completed` or `wait-for-connector` for Yes; `selected-tasks-completed("TaskName")`, `adhoc`, or `wait-for-connector` for No} | {conditionExpression, or "—" if none} | {exit-only \| return-to-origin \| wait-for-user} | {Yes \| No} | {optional label, or "—" → defaults to `Complete Rule {N}` (Marks Complete = Yes) / `Exit Rule {N}` (No)} |
 
 > If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 
@@ -605,3 +610,13 @@ The runtime engine resolves the binding when the task completes, writing the res
 | Agent | Service Type | Endpoint | Used By Tasks |
 |-------|-------------|----------|---------------|
 | {agent name} | {CrewAI \| Salesforce \| ServiceNow \| Custom \| ...} | {endpoint URL or reference} | {comma-separated task names} |
+
+### Tenant Data Objects
+
+> Tenant case-entities / business data objects named by the user. Preserve
+> literal object names exactly, including companion objects that do not start the
+> case.
+
+| Object Name | Role | Used By / Notes |
+|-------------|------|-----------------|
+| {object name, e.g., expense_requests} | {trigger \| companion files \| comments \| audit \| reference data} | {how the case reads/writes or links to it} |

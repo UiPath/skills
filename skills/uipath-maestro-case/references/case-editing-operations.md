@@ -14,7 +14,7 @@ When editing `caseplan.json` directly, the agent is responsible for these mechan
 | ID generation | Generate IDs per the ID Generation section below using the `prefixedId(prefix, count)` algorithm |
 | `elementId` on tasks | Compute and write `${stageId}-${taskId}` on every task |
 | Stage data fields | Emit `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` on every new Stage node. Do NOT emit `style`, `measured`, `width`, `zIndex`, or `position` — see Layout fields below (Rule 18/19) |
-| Edges | Not authored — `schema.edges` stays `[]`. No edge handles, no edge objects, no cleanup needed on stage removal |
+| Edges | Conditions are authoritative. `schema.edges` defaults to `[]`; when local `validate` reports legacy incoming-edge/topology errors, emit only the minimal compatibility edges derived from existing entry/exit conditions (see [implementation.md Step 8](implementation.md#step-8--compatibility-edges-validator-driven)). |
 | Root-level bindings cleanup | Prune entries from top-level `bindings` no longer referenced by any task |
 | Lane array expansion | Ensure `stageNode.data.tasks` is expanded to include `laneIndex` before pushing |
 | `id-map.json` sidecar | Initialize on T01 (case plugin); append per plugin as IDs are generated; flush to disk at end of run (or after each plugin for durability) |
@@ -29,7 +29,7 @@ The following Pre-flight Checklist items become **NOOPs** because layout state l
 
 - **Item 3 (Stage render fields)** — do NOT emit `style`, `measured`, `width`, `zIndex` on Stage nodes. nodes carry `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` only.
 - **Item 4 (Position computation)** — do NOT compute or emit `position.x`, `position.y` on Stage nodes (or Trigger nodes). FE auto-layouts on canvas load.
-- **Edges** — none are authored (`schema.edges` stays `[]`), so there are no edge `data.waypoints` to emit; skill emits empty `layout: {}` regardless.
+- **Edges** — no edge route is authored independently. If compatibility edges are emitted for validator parity, they still omit `data.waypoints`; skill emits empty `layout: {}` regardless.
 
 Skill emits empty `layout: {}` at top level — never populates `layout.nodes` or `layout.edges`. Layout authoring is a canvas-time concern, not a skill concern.
 
@@ -52,11 +52,11 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 4. **Primary Stage vs Secondary Stage at creation time.** Both are `case-management:Stage` nodes; a secondary stage is distinguished by `data.stageType: "secondary"`. Primary stages (no `data.stageType`) are written without `entryConditions` / `exitConditions` keys. Secondary stages (`data.stageType: "secondary"`) initialize both as empty arrays at creation time. Primary stages acquire those keys later when the condition plugins write them. Do not emit empty arrays on primary Stage.
 
-5. **Edges are not authored (RETIRED).** `schema.edges` stays `[]` — do not construct edge handles or append edge objects. Stage transitions derive from entry/exit conditions.
+5. **Edges are compatibility-only.** Do not author edge-only routes. `schema.edges` defaults to `[]`; append edge objects only when `validate` requires the compatibility pass, and derive them from existing entry/exit conditions.
 
-6. **Edge type inference (RETIRED).** No edges are written, so there is no edge type to infer. (Was: Trigger source → `TriggerEdge`, else `Edge`.)
+6. **Edge type inference (compatibility only).** Default `edges` is `[]`. If compatibility edges are required by `validate`, infer edge type mechanically: Trigger source → `TriggerEdge`, Stage source → `Edge`; no other edge sources are valid.
 
-7. **Every regular stage has at least one entry condition.** With edges retired, stage entry conditions are the sole reachability contract — orphan stages don't execute. The first stage carries `case-entered`; every other regular stage carries `selected-stage-completed` / `selected-stage-exited` naming a reachable predecessor. When adding a stage, also plan its entry condition (Step 10).
+7. **Every regular stage has at least one entry condition.** Entry conditions are the execution reachability contract — orphan stages don't execute, even if a compatibility edge exists. The first stage carries `case-entered`; every other regular stage carries `selected-stage-completed` / `selected-stage-exited` naming a reachable predecessor. When adding a stage, also plan its entry condition (Step 10).
 
 8. **One task per lane (default).** Increment `laneIndex` per task within a stage starting at 0. Expand `stageNode.data.tasks` to cover the lane index before pushing. **Exception:** within a `runs-sequentially` group, tasks meant to run in parallel share the same `laneIndex` (shared lane = parallel siblings inside the sequential group, semantic). Solo runs-sequentially tasks still get own lane.
 
@@ -241,9 +241,11 @@ Rule_   + "jdBFrJ"  → "Rule_jdBFrJ"
 4. Append the node to `schema.nodes` (stages use `.unshift()` in the CLI — prepend — but either position works for the frontend; prepend to match CLI output exactly).
 5. Edit `caseplan.json` — narrow slice targeting `schema.nodes`. Never whole-file Write.
 
-### Add an edge — RETIRED
+### Add an edge — compatibility only
 
-The skill does not author edges. `schema.edges` stays `[]`. To make a stage reachable, add a `stage-entry-conditions` rule on the target stage (Step 10), not an edge.
+Do not use edges to make a stage reachable. Add a `stage-entry-conditions` rule on the target stage (Step 10), plus a source-stage exit condition when the source diverges. If `validate` later requires legacy topology, add only the derived compatibility edge described in [implementation.md Step 8](implementation.md#step-8--compatibility-edges-validator-driven).
+
+For stage-to-stage compatibility edges, include `type: "case-management:Edge"` and `data: { "label": "<source>-><target>", "parentElement": { "id": "root", "type": "case-management:root" }, "rules": <copied DNF rules> }`. Copy the target stage entry condition's rules. Do not copy a source stage exit condition's rules onto the edge when the same rules already live in `stage.data.exitConditions[]`; validation flags that as a duplicate outgoing edge. `data.rules` is required for validator compatibility; `rules: []` is acceptable only when the source has one outgoing compatibility edge and no target entry rule exists. Trigger-to-stage compatibility edges use `type: "case-management:TriggerEdge"`.
 
 ### Add a task to a stage
 
@@ -267,7 +269,7 @@ Details per plugin — see [bindings-and-expressions.md](bindings-and-expression
 1. Read `caseplan.json`.
 2. Remove the node from `schema.nodes` by ID.
 3. **If the deleted node is a stage with successors, repoint them — do NOT skip.** Edges are retired, so a successor reaches only via an entry-condition rule naming the deleted stage in `selectedStageId`. Find every stage whose `data.entryConditions[].rules[][]` has a `selected-stage-completed` / `selected-stage-exited` rule with `selectedStageId == <removedStageId>`, and repoint each to a surviving predecessor (the deleted stage's own predecessor, or `case-entered` if the deleted stage was first). Leaving them unrepointed orphans every successor — the case can validate structurally yet the successors never execute. Inverse of § Insert a stage between two existing stages.
-4. Edges are not authored — `schema.edges` is `[]`, nothing to remove. (Defensive: if an imported file has a stray edge referencing the removed node's ID, drop it.)
+4. Remove any edge referencing the deleted node. This is defensive for imported files and required when the file has validator compatibility edges.
 5. **If the deleted node is a Trigger, prune its `entry-points.json` entry.** Triggers live in `schema.nodes`, so trigger removal routes here — but every trigger plugin mandates a matching `entry-points.json` entry ([manual/impl-json.md § Recipe — entry-points.json](plugins/triggers/manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints), timer, event). Remove the entry whose `filePath` ends in `#<removedTriggerId>` from `entry-points.json.entryPoints`. Leaving it orphans a `#<triggerId>` fragment pointing at a node that no longer exists.
 6. **If the deleted node is a Trigger with In-args / trigger outputs, run the variable cascade.** An In-arg emits three entries keyed by the trigger ([global-vars/impl-json.md § In argument](plugins/variables/global-vars/impl-json.md)): the formal slot in `root.inputs[]` (`elementId == <triggerId>`), the companion in `root.inputOutputs[]` (`elementId == "root"`), and the bridge on `triggerNode.data.uipath.outputs[]`. The bridge dies with the node, but the formal slot and companion survive — leaving every `=vars.<name>` consumer reading undefined (`validate` does not catch dangling `=vars.*`). For the deleted trigger:
    - Prune `root.inputs[]` entries with `elementId == <removedTriggerId>`.
@@ -328,9 +330,9 @@ Remove a plain completion / exit rule from `metadata.caseExitRules[]`. **Guard: 
 3. Remove the condition object from `metadata.caseExitRules[]` (DNF removal per § Delete a condition rule steps 2–3). Connector-bound case-exit rules also run the connector cascade (steps 4–6).
 4. Edit — narrow slice targeting `metadata.caseExitRules`. Never whole-file Write. Validate at the section boundary.
 
-### Delete an edge — defensive only
+### Delete an edge — compatibility cleanup only
 
-The skill never creates edges, so `schema.edges` should already be `[]`. If a stray edge is found (e.g., in an imported file): Read, filter `schema.edges` by the edge ID, Edit the narrow slice. Never whole-file Write.
+If a stale imported or compatibility edge is found: Read, filter `schema.edges` by the edge ID, Edit the narrow slice. Never whole-file Write. Also update the underlying entry/exit condition if the route itself should change; deleting the edge alone only changes canvas/validator topology.
 
 ---
 
@@ -472,9 +474,9 @@ An exception (secondary) stage is **not** a distinct node type — it is a regul
 4. `isInterrupting` is **not** part of this delta — it lives on the entry-condition *rule*, not the stage node. Leave it alone.
 5. Edit — narrow slice targeting that node's `data.stageType` key (and any reworked entry condition). Never whole-file Write. Validate at the section boundary.
 
-### Re-wire a stage transition — RETIRED (no edges)
+### Re-wire a stage transition — conditions first
 
-Transitions are not edges. To change where a stage flows, edit the relevant stage's entry/exit conditions (the target stage's `stage-entry-conditions` rule, and the source's `stage-exit-conditions` when it diverges). See the conditions plugins.
+Transitions are condition-driven. To change where a stage flows, edit the relevant stage's entry/exit conditions (the target stage's `stage-entry-conditions` rule, and the source's `stage-exit-conditions` when it diverges). Then refresh compatibility edges from those conditions if the file carries them.
 
 ---
 

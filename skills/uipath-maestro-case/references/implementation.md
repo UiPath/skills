@@ -114,17 +114,51 @@ For each stage in `tasks.md §4.4`, execute per [`plugins/stages/impl-json.md`](
 
 `isRequired` from `tasks.md` is planning-only metadata; it is not written into the stage node. It is consumed later by case-exit-conditions with `rule-type: required-stages-completed` (Step 10).
 
-## Step 8 — (RETIRED — no edges)
+## Step 8 — Compatibility edges (validator-driven)
 
-Edges are retired; there is no edge-building step. `schema.edges` stays `[]`. Stage transitions are expressed as entry/exit conditions, written in Phase 3 Step 10. The case start comes from the first stage's `case-entered` entry condition, not a Trigger→stage edge.
+Stage transitions are expressed as entry/exit conditions, written in Phase 3 Step 10. Conditions are authoritative; edge objects must never introduce a route that is not already present in conditions.
 
-For multi-trigger cases, add the additional triggers via the appropriate trigger plugin (Step 6.1) — no edge wiring is needed; any trigger entering the case activates the first stage's `case-entered` condition.
+Default build: keep `schema.edges` as `[]`.
+
+Compatibility build: if the installed `uip maestro case validate` reports legacy topology errors such as a stage having no incoming edges, write minimal edge objects derived mechanically from the current `caseplan.json`. Do not write bare edges. A `case-management:Edge` without `data.rules` is invalid and can crash full validation with `Cannot read properties of undefined (reading 'rules')`.
+
+1. For each regular stage whose entry condition has `case-entered`, add one `case-management:TriggerEdge` from the primary trigger node to that stage.
+2. For each stage entry rule `selected-stage-completed` / `selected-stage-exited` with `selectedStageId = <sourceStageId>`, add one `case-management:Edge` from `<sourceStageId>` to the stage that owns the entry condition. This includes secondary stages (`data.stageType: "secondary"`); they still need incoming compatibility topology when local `validate` requires edges. Copy that target entry condition's DNF `rules` group onto `edge.data.rules`.
+3. Treat `exitToStageId` as an exit-condition route, not the default source for compatibility edges. Add an exit-derived edge only if validate still reports missing topology after entry-derived edges, and only when there is no target entry condition that can supply the same source→target edge. Do **not** copy the source exit condition's `rules` onto the edge; validation treats identical exit rules and edge rules as a duplicate outgoing transition.
+4. Deduplicate by `(source, target, type)`. Do not add edges for `return-to-origin`, `wait-for-connector`, `user-selected-stage`, or `wait-for-user` unless an explicit `exitToStageId` still lacks any entry-derived compatibility edge.
+5. For a `selected-stage-exited` entry route, validate the referenced source stage has a mutually exclusive non-completing exit condition (`marksStageComplete: false`) for that route. For every secondary stage that is entered by compatibility topology, validate it also has at least one completing exit (`marksStageComplete: true`) so `validate` does not reject it as non-completable.
+
+Edge object shape:
+
+```json
+{
+  "id": "edge_<short-readable-slug>",
+  "type": "case-management:Edge",
+  "source": "<sourceNodeId>",
+  "target": "<targetStageId>",
+  "sourceHandle": "<sourceNodeId>____source____right",
+  "targetHandle": "<targetStageId>____target____left",
+  "data": {
+    "label": "<source label>-><target label>",
+    "parentElement": { "id": "root", "type": "case-management:root" },
+    "rules": [[{ "...": "copy the target entry condition rule that justifies this route" }]]
+  }
+}
+```
+
+Use `type: "case-management:TriggerEdge"` when the source is a trigger. Stage-to-stage `case-management:Edge` objects MUST include the full `data` object shown above, especially `data.rules`, even though the real transition rules live on stage entry/exit conditions; the local validator reads that array while validating edge enums. `rules: []` is allowed only when that source node has exactly one outgoing compatibility edge and no target entry rule exists. If the same source has multiple outgoing edges, empty `rules` makes them duplicate unconditional transitions and validation fails; copy the discriminating target entry-condition rules instead. Never copy a source stage's exit-condition rules onto the edge when those rules already live in `stage.data.exitConditions[]`; full validation flags that as "exit condition duplicates outgoing edge." Do not emit `data.waypoints`, node positions, or layout fields; Rule 18 still applies. Re-run `uip maestro case validate <Solution>/<Project>/caseplan.json --output json` after writing compatibility edges.
+
+For multi-trigger cases, add triggers via the appropriate trigger plugin (Step 6.1). Compatibility edges still only connect the primary trigger to the `case-entered` stage; any trigger fire activates the same entry condition at runtime.
 
 ## Step 9 — Add tasks (Phase 2 shape, gather-then-write)
 
 **Phase A — gather.** For each non-connector task in `tasks.md §4.6`, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` and collect the input schema in reasoning. Connector tasks (`connector-activity`, `connector-trigger`) skip the gather — `case spec` defers to Phase 3 Step 9.7. Unresolved tasks skip too — they become placeholders per Step 9.1. **Inline-built siblings (agent / api-workflow, Rule 17 Create) also skip the gather** — they were resolved + bound in Phase 1 with I/O read from the sibling's on-disk `entry-points.json`; their `taskTypeId` is a local audit-only key with no tenant resource, so tenant `tasks describe` does not apply. See the per-type Built-inline notes: [`plugins/tasks/agent/impl-json.md`](plugins/tasks/agent/impl-json.md), [`plugins/tasks/api-workflow/impl-json.md`](plugins/tasks/api-workflow/impl-json.md).
 
-**Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per task in §4.6 order, appending the task node to its stage's `data.tasks` lane per the matching plugin's `impl-json.md`. **Capture each `TaskId`** — cross-task references and conditions in Phase 3 need it. Skip the re-Read between sibling Edits. One validate at section end.
+**Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per task in §4.6 order, appending the task node to its stage's `data.tasks[laneIndex][]` lane per the matching plugin's `impl-json.md`. `data.tasks` is always a 2D `Task[][]` array. Never append a task object directly to `data.tasks`; a flat task array silently passes CLI validation with zero buildable tasks. **Capture each `TaskId`** — cross-task references and conditions in Phase 3 need it. Skip the re-Read between sibling Edits. One validate at section end.
+
+**Task-entry fast path.** During the same Step 9 task write, initialize each task's `entryConditions[]` from any `tasks.md §4.7` Task-entry rows whose referenced task ids are already known. The common first-task `current-stage-entered` row and prior-sibling `selected-tasks-completed` rows should be written now, as a sibling of `data`, not deferred to a separate late pass. If a Task-entry row references a task id not known yet, leave only that row for Step 10. This keeps large plans from reaching full validate with "task has no entry condition" simply because the agent ran out of turns before a second pass.
+
+**Output-owner fast path.** While writing `data.outputs[]`, maintain a global pool of every emitted output `id` / `var` across tasks, triggers, connector-bound rules, and root variables. Never emit two task or rule outputs with the same `var`, even when multiple SDD rows target the same semantic case variable. For repeated `Field -> caseVar` rows, keep the first JSON output owner for that case variable; later producers must either use a truly unique task-local output owner if downstream consumers reference that later task specifically, or remain in `tasks.md`/wiring notes as an unresolved update for the real resource upgrade. Do not ship duplicate `var` owners just to preserve repeated audit/status rows; `uip maestro case validate` rejects them.
 
 Per-class shape inside each Edit:
 
@@ -132,26 +166,26 @@ Per-class shape inside each Edit:
 |---|---|
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | Full `data.inputs[]` schema from the Phase A gather. Each input's `value` is `""`. Outputs populated per plugin. |
 | Connector (`connector-activity`, `connector-trigger`) | `data.typeId` + `data.connectionId` set. `data.inputs` omitted. **Do NOT call `case spec` in Phase 2** — schema discovery happens in Phase 3. |
-| Unresolved (any class) | Placeholder task per Step 9.1 — empty `data: {}` plus action-only extras. |
+| Unresolved (any class) | Placeholder task per Step 9.1 — no resource IDs or bindings; `data: {}` when no SDD I/O rows exist, otherwise best-effort `data.inputs[]` / `data.outputs[]` from the task entry. For unresolved `action` tasks with any `data` content, include non-empty `data.taskTitle` copied from tasks.md/SDD or the task display name. |
 
-**Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md).
+**Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). Task-entry conditions are not input bindings; write the safe fast-path rows above as soon as TaskIds are available.
 
 On context-compaction mid-gather: re-Read `caseplan.json`, scan for §4.6 tasks not yet appended, re-run Phase A for those only.
 
-**Pass `lane: <n>` on every task** (or the plugin's equivalent JSON field). Default: increment per task within a stage starting at 0 — lane is FE-layout-only for these tasks. **Exception:** parallel members of a `runs-sequentially` group share the same `lane` (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get own lane.
+**Pass `lane: <n>` on every task** (or the plugin's equivalent JSON field). Default: increment per task within a stage starting at 0 — lane is FE-layout-only for these tasks. To write lane `n`, ensure `stage.data.tasks[n]` exists as an array, then push the task into that inner array. Default one-task-per-lane shape is `[[task0], [task1], [task2]]`, not `[task0, task1, task2]`. **Exception:** parallel members of a `runs-sequentially` group share the same `lane` (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get own lane.
 
 ### Step 9.1 — Placeholder tasks for unresolved resources
 
 When a task entry's `taskTypeId` (or `typeId` / `connectionId` for connector tasks) is `<UNRESOLVED: …>`, create a **placeholder task** instead of halting. See [placeholder-tasks.md](placeholder-tasks.md) for the canonical reference.
 
-For every task class (process / agent / rpa / action / api-workflow / case-management / connector-activity / connector-trigger): follow the Unresolved Fallback section of the matching `plugins/tasks/<type>/planning.md` and write a task with `type` + `displayName` + `id` + `elementId` + `isRequired`, `data: {}`, and no `taskTypeId` / `connectionId` keys directly to `caseplan.json` per `plugins/tasks/<type>/impl-json.md`.
+For every task class (process / agent / rpa / action / api-workflow / case-management / connector-activity / connector-trigger): follow the Unresolved Fallback section of the matching `plugins/tasks/<type>/planning.md` and write a task with `type` + `displayName` + `id` + `elementId` + `isRequired`, no `taskTypeId` / `connectionId` / resource binding keys, and placeholder `data` per [placeholder-tasks.md](placeholder-tasks.md).
 
-**Skip all input binding for placeholder tasks** — they have no input schema. Capture the intended wiring from the fenced `wiring notes` code block in `tasks.md` into the completion report so the user knows what to hook up after registering the resource.
+**Skip schema-driven input binding for placeholder tasks** — they have no input schema. Preserve any SDD-declared rows already copied into `data.inputs[]` / `data.outputs[]`, and capture the fenced `wiring notes` block in the completion report so the user knows what to verify after registering the resource. For placeholder action tasks, `data.taskTitle` is the exact validator key; if the placeholder has `inputs[]` or `outputs[]`, set `data.taskTitle` to the planned `task-title` or the task's `displayName`.
 
 Placeholder tasks integrate with the rest of the graph:
 - **Task-entry conditions** use the captured placeholder `TaskId` normally.
 - **Stage-exit `selected-tasks-completed`** rules reference placeholder `TaskId`s normally.
-- **Cross-task variable bindings** are deferred — the user binds them after attaching the real resource.
+- **Cross-task variable bindings** are preserved as best-effort `=vars.<name>` values when they can be resolved from existing variables; schema verification and resource-specific binding are deferred until the user attaches the real resource.
 
 ## Step 9.4 — Regenerate bindings_v2.json (batch)
 
@@ -218,7 +252,7 @@ On context-compaction mid-gather: re-Read `caseplan.json`, scan for connector ta
 
 ## Step 9.8 — Bind task input/output values (per-task Edit batch)
 
-One Read of `caseplan.json` at Step 9.8 entry. Then **one Edit per task** replacing that task's full `data.inputs` array. Skip the re-Read between sibling Edits. Skip placeholder tasks entirely — they have no inputs.
+One Read of `caseplan.json` at Step 9.8 entry. Then **one Edit per resolved task** replacing that task's full `data.inputs` array. Skip the re-Read between sibling Edits. For placeholder tasks, do not run schema matching; preserve any best-effort rows already written from the SDD/task entry.
 
 Per-task composition (in reasoning, before that task's Edit) per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md):
 
@@ -237,7 +271,7 @@ One Read of `caseplan.json` at Step 10 entry. Group `tasks.md §4.7` entries by 
 |---|---|---|
 | Stage entry | one stage | `nodes[stage].data.entryConditions` |
 | Stage exit | one stage | `nodes[stage].data.exitConditions` |
-| Task entry | one task | `data.entryConditions` on the task object |
+| Task entry | one task | `entryConditions` on the task object, as a sibling of `data` |
 | Case exit | root | `metadata.caseExitRules` |
 
 Skip the re-Read between sibling Edits. One validate at section end. Per-scope composition rules live in the matching plugin's `impl-json.md`:
@@ -250,6 +284,12 @@ Skip the re-Read between sibling Edits. One validate at section end. Per-scope c
 > **Connector-bound rules need a CLI gather.** A `wait-for-connector` rule in any scope is NOT a pure JSON write — it requires a `uip maestro case spec --type trigger` call (like Step 9.7 connector tasks) to mint its `uipath` block, plus root bindings + IS-cache + deferred `bindings_v2` sync. Gather per `(scope, target)`, then write. See [connector-trigger-common.md § Target: connector-bound condition rule](connector-trigger-common.md#target-connector-bound-condition-rule). Full `validate` flags a missing `rule.uipath`/`context` (`connector activity missing`), not its internals.
 
 > **Step 10 ends with a `bindings_v2` sync.** After all connector rules across the 4 scopes are written, run the third batched `bindings_v2.json` regeneration + IS-cache population — see [bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run) (point 3). Without this third sync, rule-introduced Connection/Folder bindings + IS-cache entries don't land until the post-Phase-3 catch-all and `resource refresh` misses them.
+
+> **Do not chase `andGroup`.** Public caseplan JSON condition objects use the key `rules`, not `andGroup`, and rule objects use `rule`, not `ruleType`. If `uip maestro case validate` reports `andGroup is not iterable`, do not rename fields. Re-read the written condition arrays and fix malformed DNF shape (`rules` must be `Rule[][]`), wrong attachment paths, or duplicate/overwritten `metadata`.
+>
+> **Selected-stage-exited requires a source exit.** In the same Step 10 batch that writes a stage-entry rule `selected-stage-exited("<source>")`, ensure the source stage has a mutually exclusive non-completing exit (`marksStageComplete: false`) whose `conditionExpression` matches that route. If a specific decider task is available, use `selected-tasks-completed` + the gate. If the route is only expressed as a case-state signal, use an `adhoc` rule with the same `conditionExpression`. Full validate rejects the target entry with "references stage X, which has no non-completing exit condition" until this source exit exists.
+>
+> **Do not whole-file rewrite Phase 3 after compaction.** If a large caseplan causes a compaction or long generation pause, resume with narrow Edits by target array (`task.entryConditions`, `stage.data.entryConditions`, `stage.data.exitConditions`, `metadata.caseExitRules`, `metadata.slaRules`). Whole-file rewrites tend to reintroduce already-fixed shape errors and consume turns.
 
 ## Step 11 — SLA and escalation (per-target Edit batch)
 

@@ -22,7 +22,7 @@ If `~/.uip/case-resources/typecache-activities-index.json` does not exist, run `
 
 Read `~/.uip/case-resources/typecache-activities-index.json` directly. Match on `displayName` or `connectorKey` + operation description from sdd.md. Record `uiPathActivityTypeId`.
 
-**No match (Scenario A — connector not found).** A 0-match inside the existing cache is gated by Rule 17 — run the [registry-discovery.md § MUST Confirm Before Placeholder Fallback](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) AskUserQuestion (`Force pull` / `Skip and use placeholders`) for the lookup batch before any fallback. Only after the user picks `Skip`: mark `type-id` `<UNRESOLVED: no typecache activity for <query>>`, skip § 2 (no `activity-type-id` to pass to `get-connection`), and fall through to § Unresolved Fallback (placeholder task, `data: {}`). Continue planning — do not halt ([planning.md § 3.4](../../../planning.md)).
+**No match (Scenario A — connector not found).** A 0-match inside the existing cache is gated by Rule 17 — run the [registry-discovery.md § MUST Confirm Before Placeholder Fallback](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) AskUserQuestion (`Force pull` / `Skip and use placeholders`) for the lookup batch before any fallback. Only after the user picks `Skip`: mark `type-id` `<UNRESOLVED: no typecache activity for <query>>`, skip § 2 (no `activity-type-id` to pass to `get-connection`), and fall through to § Unresolved Fallback (placeholder task, no connector identity, best-effort I/O only when SDD rows exist). Continue planning — do not halt ([planning.md § 3.4](../../../planning.md)).
 
 ### 2. Resolve the connection
 
@@ -203,5 +203,5 @@ Two entry paths: **Scenario A** — connector not found in TypeCache ([§ 1 No-m
 
 If the connector or connection cannot be resolved:
 - Mark `type-id` or `connection-id` with `<UNRESOLVED: reason>`
-- Omit `input-values:` entirely — no schema to wire against
-- Execution creates a placeholder task (display-name + type only) per [placeholder-tasks.md](../../../placeholder-tasks.md)
+- Preserve any SDD-declared `inputs:` / `outputs:` rows as unverified intent, but omit connector-specific `input-values:` and `filter:` because there is no connector schema to validate against
+- Execution creates a placeholder task with no connector identity; best-effort I/O rows are written only when declared per [placeholder-tasks.md](../../../placeholder-tasks.md)

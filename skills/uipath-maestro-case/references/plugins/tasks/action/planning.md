@@ -21,7 +21,7 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 
 ## Task Title Fallback
 
-`task-title` is what the user sees in the Actions app. Required on resolved action tasks (placeholders skip — see § Unresolved Fallback). Derive in this order:
+`task-title` is what the user sees in the Actions app. Required on resolved action tasks and preserved on placeholders when known from the SDD or when the placeholder carries any `inputs:` / `outputs:` rows. Derive in this order:
 
 1. SDD has an explicit title or question field → use it
 2. SDD has a Description → summarize into a short, concise title
@@ -40,7 +40,9 @@ See [registry-discovery.md](../../../registry-discovery.md#cli-search-gaps) for 
 
 ## Unresolved Fallback
 
-Mark `<UNRESOLVED: action-app "<deploymentTitle>" in folder "<folder>" not found in action-apps-index.json>`. Emit only structural fields — drop every action-specific line (`task-title`, `priority`, `recipient`, `inputs`, `outputs`). See [placeholder-tasks.md](../../../placeholder-tasks.md) for the full placeholder entry shape and wiring-block convention.
+Mark `<UNRESOLVED: action-app "<deploymentTitle>" in folder "<folder>" not found in action-apps-index.json>`. Preserve structural fields, `task-title` / `priority` when already known from the SDD, and any SDD-declared `inputs:` / `outputs:` rows as unverified intent; omit only resource-bound fields such as `action-app-id`, `name`, `folderPath`, catalog/resource binding, and unresolved recipient IDs. See [placeholder-tasks.md](../../../placeholder-tasks.md) for the full placeholder entry shape and wiring-block convention.
+
+At JSON write time, `task-title` maps to **`data.taskTitle` exactly**. Do not write top-level `title`, `data.title`, or `data.task-title`; the validator's "action task with no title" error is satisfied by non-empty `data.taskTitle`.
 
 ## Recipient Handling
 

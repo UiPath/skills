@@ -98,7 +98,7 @@ For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** pe
 }
 ```
 
-Append the task to the target stage's `tasks[]` array. Default: own task set (one task per lane). **Exception:** if this task is a parallel member of a `runs-sequentially` group, push into the shared lane of that group (shared lane = parallel siblings inside the sequence, semantic).
+Append the task to the target stage's `tasks[laneIndex][]` inner array. Default: own task set (one task per lane). Never append directly to `data.tasks`; it is `Task[][]`, so the default shape is `[[task0], [task1]]`. **Exception:** if this task is a parallel member of a `runs-sequentially` group, push into the shared lane of that group (shared lane = parallel siblings inside the sequence, semantic).
 
 ### Step 8 — Append root-level bindings
 

@@ -49,5 +49,5 @@ Two entry paths: **Scenario A** — connector not found in TypeCache ([connector
 
 If the connector or connection cannot be resolved:
 - Mark `type-id` or `connection-id` with `<UNRESOLVED: reason>`
-- Omit `input-values:` and `filter:`
-- Execution creates a placeholder task (display-name + type only) per [placeholder-tasks.md](../../../placeholder-tasks.md)
+- Preserve any SDD-declared `inputs:` / `outputs:` rows as unverified intent, but omit connector-specific `input-values:` and `filter:` because there is no connector schema to validate against
+- Execution creates a placeholder task with no connector identity; best-effort I/O rows are written only when declared per [placeholder-tasks.md](../../../placeholder-tasks.md)

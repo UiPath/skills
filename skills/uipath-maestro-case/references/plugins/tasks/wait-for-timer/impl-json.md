@@ -32,7 +32,7 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
 
 1. Generate task ID: `t` + 8 alphanumeric chars (unique across all tasks)
 2. Generate elementId: `<stageId>-<taskId>`
-3. Write the task with `"data": {}` to the target stage's `tasks[]` array (in its own task set)
+3. Write the task with `"data": {}` to the target stage's `tasks[laneIndex][]` inner array (in its own lane by default). Never append directly to `data.tasks`; it is `Task[][]`.
 
 ```json
 {

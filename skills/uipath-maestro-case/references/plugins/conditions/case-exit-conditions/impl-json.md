@@ -5,6 +5,8 @@
 Write the case-exit condition directly into `metadata.caseExitRules[]` in `caseplan.json`. No CLI command needed.
 
 > **Destination + field name.** Array key is `caseExitRules`, lives under `metadata.caseExitRules` (top-level `metadata`). Plugin folder name `case-exit-conditions` follows the *concept*; the on-disk field is `caseExitRules`. Do NOT place at the JSON top level.
+>
+> **Public condition key.** Case exit condition objects use `rules: Rule[][]`, never `andGroup`, and their rule objects use `rule`, never `ruleType`. If validate mentions `andGroup`, check DNF shape and destination path; do not rename the JSON fields.
 
 ## Condition JSON Shape
 

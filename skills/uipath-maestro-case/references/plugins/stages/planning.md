@@ -1,6 +1,6 @@
 # stages — Planning
 
-A stage node inside the case. Stages contain tasks and connect via entry/exit conditions (edges are retired). Two variants (`stage` and `secondary`) share the same plugin.
+A stage node inside the case. Stages contain tasks and connect via entry/exit conditions. Edges, when present for local validator compatibility, are derived later from those conditions. Two variants (`stage` and `secondary`) share the same plugin.
 
 ## Terminology
 
@@ -25,14 +25,14 @@ Otherwise default to a regular stage.
 
 When ambiguous, use **AskUserQuestion** with both options + "Something else".
 
-### Wiring constraints (reachability — edges retired)
+### Wiring constraints (reachability — conditions first)
 
-No stage of either variant has edges. Reachability is expressed entirely through stage entry/exit conditions:
+No stage of either variant is made reachable by an edge alone. Reachability is expressed through stage entry/exit conditions:
 
 - **Regular stage** — reached via a **non-interrupting** entry condition: `case-entered` for the first stage, or `selected-stage-completed` / `selected-stage-exited` naming a predecessor. Every regular stage MUST have ≥1 entry condition, or it is orphaned and unreachable. See [stage-entry-conditions plugin](../conditions/stage-entry-conditions/planning.md).
 - **Secondary stage** — reached via an **interrupting** entry condition (fires on case state), and exits via a `return-to-origin` exit condition back to the stage it came from. See [stage-exit-conditions plugin](../conditions/stage-exit-conditions/planning.md).
 
-Do NOT create edges for any stage. If the sdd.md describes a stage "connected via an arrow / edge" to another, model it as the target stage's entry condition (plus a source-stage exit condition when the source diverges). Onward flow from a secondary stage uses `return-to-origin`, letting the origin stage's own entry/exit conditions carry the case forward.
+Do NOT plan edges for any stage. If the sdd.md describes a stage "connected via an arrow / edge" to another, model it as the target stage's entry condition (plus a source-stage exit condition when the source diverges). Onward flow from a secondary stage uses `return-to-origin`, letting the origin stage's own entry/exit conditions carry the case forward. If local `validate` later requires edges, execution derives compatibility edges from these authored conditions.
 
 ## Required Fields from sdd.md
 

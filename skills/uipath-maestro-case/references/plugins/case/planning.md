@@ -18,6 +18,14 @@ Always. This plugin is invoked for the very first T-entry (`T01`) in every `task
 | `directly-pass-task-outputs` | sdd.md (default `true`) | Passes task outputs through messages instead of shared variables, avoiding parallel-task race conditions. `false` only if sdd.md explicitly requests shared-variable passing. |
 | `description` | sdd.md case description |  |
 
+**Preserve tenant data-object names in the description.** If the SDD names
+tenant case-entities / data objects in Case Triggers or Section 4 Tenant Data
+Objects, carry the literal names into the T01 `description` (append a short
+sentence such as `Tenant data objects: expense_requests, expense_documents,
+expense_comments.`). The case schema has no dedicated data-object inventory
+field, so the root description is the audit surface that keeps `caseplan.json`
+traceable to the tenant data model.
+
 ## identifier-type Guidance
 
 - `constant` — **Default.** Use when sdd.md does not mention external identifier sources. The identifier is a fixed 2-4 char prefix; runtime emits `<prefix>-<generated>`.

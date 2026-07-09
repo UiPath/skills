@@ -255,6 +255,10 @@ Free-floating annotation node. Ignored at execution time; surfaced only in the a
 
 All conditions share the same shape but attach at different levels. Per-level field tables and `--rule-type` semantics live in the corresponding condition plugin's `impl-json.md`.
 
+> **Public key is always `rules`.** The on-disk caseplan condition shape uses `rules: Rule[][]` for stage-entry, stage-exit, task-entry, and `metadata.caseExitRules` entries. Never rename this key to `andGroup` or `ruleType`. Some validator stack traces mention an internal `andGroup`; treat that as an implementation detail and instead verify that every `rules` value is a two-dimensional DNF array like `[[{ "rule": "case-entered" }]]`.
+
+> **Attachment paths are not interchangeable.** Stage conditions live inside `stageNode.data.entryConditions[]` / `stageNode.data.exitConditions[]`. Task entry conditions live on the task object as `task.entryConditions[]`, as a sibling of `task.data`. Case exit conditions live under `metadata.caseExitRules[]`.
+
 ### EntryCondition (stage-level)
 
 | Field | Type | Description |
@@ -291,7 +295,7 @@ See `metadata.caseExitRules` in §1.
 
 ## 4. edges (two types, discriminated on `type`)
 
-> **The skill does not author edges — `edges` stays `[]`.** Stage transitions derive entirely from `entryConditions` / `exitConditions` (§3); the case start derives from the first stage's `case-entered` entry condition, not a `TriggerEdge`. The structures below are **reference-only** — the empty `edges[]` array remains in the schema for frontend compatibility, and the FE auto-derives canvas connectors from the conditions. The two edge shapes are documented here only so a canvas-round-tripped file (where the FE may have materialized edges) is still readable.
+> **Conditions are authoritative.** Stage transitions derive from `entryConditions` / `exitConditions` (§3); edges must never introduce a route that the conditions do not already express. Default authoring keeps `edges: []`. If the installed `uip maestro case validate` rejects an edge-less graph with legacy incoming-edge/topology errors, emit minimal compatibility edges derived mechanically from those same conditions (see [implementation.md Step 8](implementation.md#step-8--compatibility-edges-validator-driven)). The two edge shapes below are the only allowed compatibility shapes.
 
 ### a) TriggerEdge — `"case-management:TriggerEdge"`
 
@@ -321,9 +325,15 @@ Connects Stage → Stage. Transition conditions live on the source stage's `exit
   "target": "Stage_cD4mNt",
   "sourceHandle": "Stage_aB3kL9____source____right",
   "targetHandle": "Stage_cD4mNt____target____left",
-  "data": { "label": "Approved" }
+  "data": {
+    "label": "Approved",
+    "parentElement": { "id": "root", "type": "case-management:root" },
+    "rules": [[{ "id": "Rule_q1w2e3", "rule": "selected-stage-completed", "selectedStageId": "Stage_aB3kL9" }]]
+  }
 }
 ```
+
+`data.rules` is required on compatibility `case-management:Edge` objects even when transition logic lives on stage conditions. The local validator reads `edge.data.rules`; omitting it can crash validation with `Cannot read properties of undefined (reading 'rules')`. Prefer copying the DNF rule group from the target stage entry condition that justified the edge. Do not copy a source stage exit condition's rules onto an edge when those rules already live in `stage.data.exitConditions[]`; full validation flags that as "exit condition duplicates outgoing edge." Use `rules: []` only when that source stage has exactly one outgoing compatibility edge and no target entry rule exists; multiple outgoing edges with identical empty rules validate as duplicate unconditional transitions.
 
 **Handle format:** `<nodeId>____source____<direction>` or `<nodeId>____target____<direction>` — exactly **four underscores** on each side of `source` / `target`. Directions: `right`, `left`, `top`, `bottom`. Defaults used by the CLI: source=`right`, target=`left`.
 
@@ -542,4 +552,4 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 }
 ```
 
-`edges` is empty: the skill authors no edges. The case starts because `Stage_aB3kL9` carries a `case-entered` entry condition (added by the stage-entry-conditions plugin), not because a `TriggerEdge` connects the trigger to it.
+`edges` is empty in the canonical condition-driven form. The case starts because `Stage_aB3kL9` carries a `case-entered` entry condition (added by the stage-entry-conditions plugin). If local `validate` requires compatibility topology, Step 8 derives a `TriggerEdge` from that same condition.

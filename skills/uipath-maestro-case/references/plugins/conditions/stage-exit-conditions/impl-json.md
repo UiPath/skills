@@ -2,7 +2,7 @@
 
 > **Phase split.** Phase 3 only. Phase 2 does not write conditions. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Write the stage-exit condition directly to the target stage's `data.exitConditions[]`. No CLI command needed.
+Write the stage-exit condition directly to the target stage's `data.exitConditions[]`. No CLI command needed. Do not put stage conditions on the stage node itself.
 
 ## Condition JSON Shape
 
@@ -24,12 +24,14 @@ Write the stage-exit condition directly to the target stage's `data.exitConditio
 
 Rules use DNF — outer array is OR, inner array is AND.
 
+The key is literally `rules`. Do not rename it to `andGroup`, and do not rename rule objects' `rule` key to `ruleType`; those names only appear in validator internals.
+
 ## Procedure
 
 1. Generate condition ID: `Condition_` + 6 alphanumeric chars
 2. Generate rule ID: `Rule_` + 6 alphanumeric chars
 3. Locate the target stage in `schema.nodes` by ID
-4. Initialize `stageNode.data.exitConditions = []` if absent (regular Stage is created without this key — see [`../../stages/impl-json.md`](../../stages/impl-json.md))
+4. Initialize `stageNode.data.exitConditions = []` if absent (regular Stage is created without this key — see [`../../stages/impl-json.md`](../../stages/impl-json.md)). If a previous edit wrote `stageNode.exitConditions`, move those objects into `stageNode.data.exitConditions` and delete the top-level key before validating.
 5. Read `type`, `exit-to-stage`, `marks-stage-complete`, and `rule-type` from tasks.md; pick the recipe below
 6. Set `displayName`: use tasks.md `display-name` if present; else default by `marks-stage-complete`: `true` → `Complete Rule {N}`, `false` → `Exit Rule {N}`. `N` = 1-based index **within the same label kind** — at append time, count existing entries in `stageNode.data.exitConditions[]` whose `marksStageComplete` equals this condition's value, then `N = count + 1`. FE numbers complete and exit rules with independent counters — do NOT use the array's overall length. Never emit a blank or omitted `displayName`.
 7. Append the condition object to `stageNode.data.exitConditions[]`
@@ -74,6 +76,24 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 
 **Rule output binding.** If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) **as the last step — after rule write, before root bindings**. `elementId` stays `<stageId>-<ruleId>` on every output entry. Skip when the rule has no `uipath.outputs[]` (stub placeholder).
 
+### adhoc — case-state signal exit
+
+Use `adhoc` for a non-completing source-stage exit when a secondary lane's `selected-stage-exited` entry is gated only by case state and there is no specific decider task to name.
+
+```json
+"type": "exit-only",
+"marksStageComplete": false,
+"rules": [[
+  {
+    "id": "Rule_xxxxxx",
+    "rule": "adhoc",
+    "conditionExpression": "=js:vars.priorityScore >= 80"
+  }
+]]
+```
+
+Pair it with the target secondary stage's `selected-stage-exited("<source>")` entry using the same `conditionExpression`, and gate the source stage's normal completing exit with the inverse when that normal path would otherwise dual-fire.
+
 ### wait-for-user — manual decision gate
 
 ```json
@@ -115,6 +135,8 @@ To route the **origin** stage into a decision/signal-routed exception lane (the 
 
 The exception lane's entry is `selected-stage-exited("<origin>") + IF =js:(vars.<signal> === <exception-value>)`, `Interrupting: Yes`, exiting via `return-to-origin`. The two origin exits MUST be mutually exclusive: an ungated completion → dual-fire (next stage + lane both enter); a gated completion with no divert → deadlock (escalate path has no exit). `<signal>` is read directly from the producing task's output (no §1.5 relay var). See [`sdd-generation-rules.md` § Logical integrity step 5](../../../sdd-generation-rules.md#logical-integrity--stage-graph).
 
+For every secondary stage (`data.stageType: "secondary"`), write at least one `marksStageComplete: true` exit condition in addition to any `return-to-origin` / interrupt routing. Local `validate` rejects a secondary stage that can be entered but never completes.
+
 ## Rule-Type × marksStageComplete Matrix
 
 | `marksStageComplete` | `rule` | Required extra field |
@@ -122,6 +144,7 @@ The exception lane's entry is `selected-stage-exited("<origin>") + IF =js:(vars.
 | `true` | `required-tasks-completed` | — |
 | `true` | `wait-for-connector` | `uipath` connector configuration |
 | `false` | `selected-tasks-completed` | `selectedTasksIds` (array) |
+| `false` | `adhoc` | `conditionExpression` |
 | `false` | `wait-for-connector` | `uipath` connector configuration |
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. Use bare `=js:<expr>` (no outer parens); for combined boolean expressions wrap each sub-clause in parens: `=js:(vars.X === 'foo') && (vars.Y > 5)`. **Use strict `===` / `!==`, never loose `==` / `!=` — normalize SDD shorthand like `approved == true` to `=js:vars.approved === true` (do not transcribe `==` verbatim).** Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).

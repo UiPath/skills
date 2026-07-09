@@ -39,9 +39,9 @@ For RPA robot tasks specifically, prefer [rpa](../rpa/planning.md). For Coded wo
 If no match is found across both cache files after `registry pull`:
 
 - Mark the task line: `<UNRESOLVED: process "<name>" in folder "<folder>" not found in registry>`
-- Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1).
+- Preserve any SDD-declared `inputs:` and `outputs:` rows as unverified intent, and also capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1).
 - Continue planning for remaining tasks.
-- Execution creates a placeholder task (empty `data: {}`, no bindings). See [placeholder-tasks.md](../../../placeholder-tasks.md).
+- Execution creates a placeholder task with no resource binding; best-effort I/O rows are written only when declared. See [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 ## tasks.md Entry Format
 

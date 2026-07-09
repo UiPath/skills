@@ -1,8 +1,8 @@
 # task-entry-conditions — Implementation (Direct JSON Write)
 
-> **Phase split.** Phase 3 only. Phase 2 does not write conditions. See [`../../../phased-execution.md`](../../../phased-execution.md).
+> **Phase split.** Prefer writing task-entry conditions during the Step 9 task write as soon as the referenced TaskIds are known. Step 10 is the repair/additional pass for rows whose referenced IDs were unavailable earlier or for connector-bound task-entry rules that need Phase 3 spec gathering. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Write the task-entry condition directly to the target task's `entryConditions[]`. No CLI command needed.
+Write the task-entry condition directly to the target task's `entryConditions[]`. No CLI command needed unless the rule is connector-bound. This is a task envelope field: it is a sibling of `task.data`, never `task.data.entryConditions`.
 
 ## Condition JSON Shape
 
@@ -26,13 +26,25 @@ Write the task-entry condition directly to the target task's `entryConditions[]`
 
 Rules use DNF — outer array is OR, inner array is AND.
 
+The key is literally `rules`. Do not rename it to `andGroup`, and do not rename rule objects' `rule` key to `ruleType`; those names only appear in validator internals.
+
+Task-entry conditions also require the same **two-dimensional** DNF shape as stage and case conditions:
+
+```json
+// WRONG — one-dimensional; validate reports "entry condition with no rules"
+{ "rules": [ { "id": "r1", "rule": "current-stage-entered" } ] }
+
+// RIGHT
+{ "rules": [[ { "id": "r1", "rule": "current-stage-entered" } ]] }
+```
+
 ## Procedure
 
 1. Generate condition ID: `c` + 8 alphanumeric chars
 2. Generate rule ID: `r` + 8 alphanumeric chars
 3. Locate the target stage in `schema.nodes` by ID
 4. Locate the target task inside `stageNode.data.tasks[lane][index]` (search every lane until the task ID is found)
-5. Initialize `task.entryConditions = []` if absent
+5. Initialize `task.entryConditions = []` if absent. If a previous edit wrote `task.data.entryConditions`, move those objects to `task.entryConditions` and delete the nested key before validating. During Step 9, include these rows in the same task-object write where possible; during Step 10, merge with existing rows rather than replacing already-correct Step 9 rows.
 6. Read `rule-type` from tasks.md; pick the recipe below
 7. Set `displayName`: use tasks.md `display-name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `task.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
 8. Append the condition object to `task.entryConditions[]`
