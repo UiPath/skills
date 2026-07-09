@@ -23,21 +23,22 @@ The user reviews structure first, then attaches real resources once they exist.
 | `isRequired`, `shouldRunOnlyOnce` | ✓ | ✓ | ✓ |
 | `data.typeId` (connector) / `data.name` + `data.folderPath` = `=bindings.<id>` (non-connector) | real ID | **key omitted** | fake ID |
 | `data.connectionId` (connector) | real UUID | **key omitted** | fake UUID |
-| `data.inputs[]` value JSON (connector) | real values | **omitted** | `{}` |
-| Input / output variable bindings | real JSON edits via `io-binding` plugin | **skipped entirely** (no `data.inputs[]` to edit) | edits targeting nonexistent input names |
+| `data.inputs[]` / `data.outputs[]` | schema-verified rows | best-effort SDD rows when declared; omitted only when no SDD row exists | fabricated schema fields or fake connector bodies |
+| Input / output variable bindings | real JSON edits via `io-binding` plugin | unverified intent rows from SDD; no schema-specific enrichment | edits targeting invented resource schemas |
 | Task-entry conditions | ✓ | ✓ | ✓ |
 | Referenced by stage-exit `selected-tasks-completed` | ✓ | ✓ | ✓ |
 
-**Mocks are forbidden for tasks** because Case's typed cross-task outputs reject references to non-existent output schemas at validation time. A fabricated task-type-id causes `uip maestro case validate` to emit errors about unknown bindings. A placeholder sidesteps this by having no bindings at all — clean validation, clear `<UNRESOLVED>` markers in `tasks.md`, explicit upgrade path.
+**Mocks are forbidden for tasks** because Case's typed cross-task outputs reject references to non-existent output schemas at validation time. A fabricated task-type-id causes `uip maestro case validate` to emit errors about unknown bindings. A placeholder sidesteps this by having no resource identity at all — clean validation, clear `<UNRESOLVED>` markers in `tasks.md`, preserved SDD data intent, and an explicit upgrade path.
 
 ## When a Placeholder Is Created
 
 During **execution** (Phase 2, Step 9), for any `tasks.md` entry whose `taskTypeId`, `typeId`, or `connectionId` is `<UNRESOLVED: …>`:
 
 1. Skip the schema fetch (`uip maestro case spec` / `uip maestro case tasks describe`).
-2. Write the task JSON node with structural fields only — no `taskTypeId` / `connectionId` / `inputs` / `outputs` keys (see JSON Shape below).
-3. Skip the `io-binding` plugin entirely for that task (see [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md) — placeholder tasks log a `SKIPPED` severity entry and move on, because there is no `data.inputs[]` schema to write into).
-4. Generate and capture the `TaskId` normally — task-entry conditions and stage-exit rules still reference it.
+2. Write the task JSON node with structural fields and no resource identity — no `taskTypeId`, `connectionId`, folder binding, or connector context.
+3. If the SDD/task entry declared `inputs:` or `outputs:`, preserve those rows as best-effort `data.inputs[]` / `data.outputs[]` using planner-known names, values, types, and the task `elementId`. If no rows were declared, leave `data: {}`.
+4. Skip schema validation/enrichment for that task in `io-binding`; placeholder rows are unverified intent until the resource resolves.
+5. Generate and capture the `TaskId` normally — task-entry conditions and stage-exit rules still reference it.
 
 ## JSON Shape
 
@@ -65,7 +66,7 @@ A placeholder task in `caseplan.json.nodes[<stage>].data.tasks[<lane>][]`:
 }
 ```
 
-Note the empty `data: {}` — no `taskTypeId`, no folder path, no input/output wiring. The shape is uniform across classes: connector placeholders use `type` `execute-connector-activity` / `wait-for-connector`; action placeholders too — no exception for `data.taskTitle` or other action-specific keys.
+The example uses `data: {}` because no SDD I/O rows were declared. When rows exist, `data.inputs[]` / `data.outputs[]` may carry best-effort intent, but the placeholder still has no `taskTypeId`, folder path, connector `typeId`, or `connectionId`. The shape is uniform across classes: connector placeholders use `type` `execute-connector-activity` / `wait-for-connector`; action placeholders too — no exception for `data.taskTitle` or other action-specific keys.
 
 ### In-stage timer
 
@@ -81,12 +82,16 @@ When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit
 
 ## `tasks.md` Planning-Entry Shape
 
-A placeholder-bound entry keeps every structural field and moves the lost wiring into a fenced code block the user will act on later:
+A placeholder-bound entry keeps every structural field and preserves declared `inputs:` / `outputs:` rows, then repeats them in a fenced code block the user will verify after attaching the real resource:
 
 ````markdown
 ## T20: Add process task "Validate Submission Completeness" to "Submission Review"
 - taskTypeId: <UNRESOLVED: process-index.json empty in tenant>
 - folder-path: <UNRESOLVED>
+- inputs:
+  - sourceDocs <- "Submission Review"."Fetch Submission from U Submit".submissionData
+- outputs:
+  - submissionComplete
 - runOnlyOnce: false
 - isRequired: true
 - order: after T19
@@ -100,8 +105,8 @@ wiring notes (user must attach after publishing the process):
 ````
 
 Rules:
-- **Omit `inputs:` and `outputs:` lines** — no schema to wire against.
-- **Capture the intended wiring in a fenced ```` ```text ```` code block** so the user sees the mapping when they upgrade. **Do not start wiring lines with `#`** — they would render as markdown H1 headings; the fenced code block renders as preformatted text.
+- **Keep SDD-declared `inputs:` and `outputs:` lines** even though there is no schema to verify them against yet. Copy them into placeholder `data.inputs[]` / `data.outputs[]` as best-effort intent only when the JSON row stays structurally valid.
+- **Capture the same intended wiring in a fenced ```` ```text ```` code block** so the user sees what must be verified when they upgrade. **Do not start wiring lines with `#`** — they would render as markdown H1 headings; the fenced code block renders as preformatted text.
 - **Keep every other field** — order, verify, is-required, run-only-once, display-name.
 
 ## What Validation Catches
@@ -209,7 +214,7 @@ The user uses the placeholder/external lists to drive external resource creation
 ## Anti-Patterns
 
 - **Do NOT fabricate a task-type-id to silence the warning.** Validation will pass but runtime will fail with binding errors.
-- **Do NOT partially bind inputs on a placeholder.** A placeholder has no `data.inputs[]` to edit — the io-binding plugin logs a `SKIPPED` entry and moves on. Half-bound placeholders are harder to upgrade than bare ones.
+- **Do NOT fabricate schema fields on a placeholder.** Preserve only rows the SDD/task entry declared. If no row was declared, leave the corresponding `data.inputs[]` / `data.outputs[]` array absent.
 - **Do NOT skip task-entry conditions on placeholders.** Conditions are structural; they work on the TaskId and must be created so the workflow order is visible in review.
 - **Do NOT create placeholders for timer tasks.** Timers have no registry dependency — use the full `wait-for-timer` plugin.
 - **Do NOT create a placeholder for an agent or API workflow the user chose to build inline.** It is built + bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a resolved task, not a placeholder.

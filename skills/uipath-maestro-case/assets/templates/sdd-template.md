@@ -311,6 +311,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 ### Stage {N}: {Stage Name}
 
 > **Heading form:** a **primary** stage uses `### Stage {N}: {Stage Name}` (N = main-flow sequence number); a **secondary** stage uses `### Secondary Stage: {Stage Name}` instead (no number). Both render a `case-management:Stage` node — the kind is set by the `**Stage Kind:**` field below.
+> A happy-path terminal such as `Approved`, `Paid`, `Completed`, `Closed`, or `Funded` is still a primary numbered stage when it represents successful completion of the main flow. Reserve `### Secondary Stage:` for alternate / exception / optional lanes such as `Rejected`, `Withdrawn`, `Cancelled`, Remediation, or Escalation.
 
 **Type:** Stage
 **Stage Kind:** {primary \| secondary} _(secondary stages use the `### Secondary Stage:` heading AND set `secondary`; primary stages use `### Stage {N}:` and OMIT this line — default = primary)_

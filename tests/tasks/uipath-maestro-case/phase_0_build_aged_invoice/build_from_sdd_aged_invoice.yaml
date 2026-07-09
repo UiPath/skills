@@ -36,6 +36,8 @@ sandbox:
       path: fixtures
 
 initial_prompt: |
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
   I have an approved SDD for our AgedInvoicePayment case-management solution -
   it's saved as `sdd.md` in this folder. Build a UiPath Case Management solution
   named "AgedInvoicePayment" containing a project also named
