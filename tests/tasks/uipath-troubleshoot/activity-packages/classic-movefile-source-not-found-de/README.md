@@ -1,6 +1,6 @@
 # Classic MoveFile Source Not Found — de-DE localized canary
 
-Locale-robustness canary for the signature-index routing design: identical scenario to
+Locale-robustness canary for the grep-based playbook routing design: identical scenario to
 `classic-movefile-source-not-found`, but every agent-visible .NET framework message in the
 fixtures is localized to German (de-DE robot host), as real non-English Windows hosts emit.
 Exception class names (`System.IO.FileNotFoundException`) and stack frames stay invariant,
