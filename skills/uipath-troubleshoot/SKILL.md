@@ -6,170 +6,101 @@ when_to_use: "User asks why something failed, broke, stopped, hung, was stuck, r
 
 # UiPath Troubleshooting Agent
 
-Orchestrate a hypothesis-driven troubleshooting investigation: manage the phase loop, delegate to sub-agents, present findings.
+Investigate directly in this context: anchor the entity, extract signals, route to a playbook by grepping the playbook corpus, walk its decision tree, verify, present. Spawn subagents only when an escalation trigger fires (§7).
 
-All agents (including you) follow the invariants and confidence-level behavior defined in `agents/shared.md` (§ Invariants, § Confidence-Level Behavior).
+## 1. Invariants
 
-## 1. Critical Rules
+ALL phases. Never override.
 
-1. **You NEVER run uip commands, query endpoints, or read reference docs.** Sub-agents do everything else.
-2. **You NEVER confirm/eliminate hypotheses yourself.** Always spawn a tester.
-3. **You own all decisions:** phase transitions, root cause vs. symptom classification, when to present resolution.
-4. **You present the presenter's output verbatim.** The presenter agent formats all findings — you do not rewrite or reformat them. The one exception: you parse and act on the `## Post-presentation actions` block (see §6).
-5. **Test hypotheses one at a time, sequentially.** Never spawn parallel testers.
-6. **When you need user input, use `AskUserQuestion`.** Do not proceed until the user responds.
+1. **No fabrication.** Data unavailable → say so. Never invent data or substitute unrelated data.
+2. **Correlation.** Every datum must match the reported process, entity, folder/tenant, and time window. Discard evidence that fails correlation. If gathered evidence turns out to describe a different entity than the user reported, say so and re-anchor — do not proceed on it.
+3. **No CLI discovery.** Run only uip commands documented in a product overview's CLI section, a matched playbook's `## Investigation` section, or an investigation guide. No guessed names or flags, no `--help` exploration, no raw REST/curl workarounds. Empty results from documented commands are evidence; results from undocumented commands are contract violations.
+4. **Raw-data rule.** Capture every CLI response to `.local/investigations/raw/{command-name}.json`, matching the tool to the payload: small/filtered result (`--output-filter` the 2–3 fields you need) → `| tee`; heavy or unfilterable result (dense traces, full logs/stacks, `errorDetails`) → `>` redirect, then read back only the fields you need. Never `tee` an unfiltered response. Full pattern + filter-failure fallback: generic guide § Output Capture. Before fetching, check `raw/` — reuse prior fetches of the same entity. Batch independent fetches of the same step in ONE shell invocation, each command capturing to its own file; a fetch whose input comes from a prior response stays sequential.
+5. **Retry caps.** Max 2 retries per unique command (3 attempts). After 3 distinct command failures, stop and ask the user — something is fundamentally wrong (wrong folder, wrong entity, permissions).
+6. **Empty ≠ absent.** Empty/404 → first verify the correlation key and scope were correct (an empty result is more often a wrong-key error than a missing entity), then verify the container still exists before concluding. Deleted/inaccessible container = data gap, not proof of absence. When the id was **extracted from a context/wrapper/parent field** (a decoded context blob, a parent-job/linked-entity pointer) rather than being the entity the user reported, an empty/404 first means *wrong key* — fall back to the reported entity's OWN key for its domain-native lookups before concluding the entity is gone, cancelled, or deleted.
+7. **Live ≠ historical.** Current snapshots (machine status, licenses, connections) cannot prove what happened during incidents older than 24h — context only.
+8. **Symptom ≠ cause.** A matching error string confirms the playbook *match*, not the *cause*. The §6 checklist gates every conclusion.
+9. **No inference from undocumented fields.** Behavior not in a playbook or docsai result → flag as unverified, don't guess.
+10. **Approval gate.** Diagnosis is autonomous; **modifying user source files requires explicit approval via `AskUserQuestion`**. On decline or non-answer: do not edit. If AskUserQuestion is unavailable, present the proposed edit as text and stop.
+11. **No ad-hoc code execution.** Playbook-provided diagnostic snippets are recommendations for the user unless the playbook says to run them. Shell for file I/O and uip is fine.
 
-## 2. Investigation State
+**Tools:** uip CLI (json by default in non-interactive mode). Documentation search: `uip docsai ask "<question>" --source docs` (product docs) or `--source technical_solution_articles` (support KB — known bugs, workarounds).
 
-All state lives in `.local/investigations/` (relative to working directory). Schemas in `schemas/`.
+**State:** `.local/investigations/raw/` (full CLI responses — create at start) and `.local/investigations/notes.md` (running log: anchor, signals, playbook matches, branch decisions with rejecting data, checklist verdicts, escalation record). No other state files.
 
-| File | Purpose | Writers |
-|------|---------|---------|
-| `state.json` | Scope, phase, matched playbooks | triage, orchestrator |
-| `hypotheses.json` | All hypotheses + status | generator, tester, orchestrator |
-| `evidence/*.json` | Interpreted summaries | triage, tester |
-| `raw/*.json` | Full raw CLI/API responses | triage, tester |
-| `scope-check.json` | Domain expansion verdict | scope-checker |
-| `depth-check.json` | Depth-gate verdict on confirmed root causes | depth-verifier |
-| `needs_input.json` | User-input request (sub-agent halts; orchestrator reads it, asks via `AskUserQuestion`) | triage, generator, tester |
+**Progress:** track phases with TaskCreate/TaskUpdate, subjects tailored to the user's problem.
 
-Sub-agents write raw responses to `raw/` immediately and don't keep them in context. You read evidence summaries, not raw files.
+## 2. Anchor & primary evidence
 
-## 3. Phase State Machine
+1. **Classify (system, entity) from the user's message.** Cross-check against `references/summary.md` domains.
+2. **Branch on anchor presence:**
+   - **Anchored** — user named a concrete locator (id/key, process/package/queue/folder name, instance/incident id, specific error code/message), or the working directory contains a recognisable UiPath project at top level (`project.json`, `agent.json`, `caseplan.json`). Run the first locator command documented in the system's `investigation_guide.md`; if the system has no guide, proceed with the user-supplied signals to §3–§4 — the matched playbook's `## Investigation` supplies the commands.
+   - **No anchor** — ask via `AskUserQuestion`, offering plausible anchor candidates. Do NOT broad-scan, do NOT fetch a placeholder entity, do NOT enumerate folders/queues hoping to find the right one. A bounded locate pass only if the user explicitly authorizes a scan — then confirm the candidate with them.
+3. **Entity-instance selection** when a query yields multiple candidates (several faulted jobs, incidents): filter by the user-named or directory-implied anchor and take the most recent match; if candidates span multiple plausible anchors, ask — do not default; fall back to most-recent-overall only with user-authorized scan.
+4. **Fetch the primary entity and its error surface** per the domain's `investigation_guide.md` when the domain has one (always also read `references/investigation_guide.md` for generic Data Correlation and Output Capture rules). Gather only what routes: entity headline, error message, exception class, error code, activity/package namespace from error logs. Deeper data (full traces, healing data, secondary entities, pings) waits until a playbook's `## Investigation` asks for it.
 
-Update `state.json.phase` at each transition:
+## 3. Extract signals
 
-| Phase | Entry condition | Next |
-|-------|----------------|------|
-| `triage` | User describes problem (or new data arrives) | `hypotheses` |
-| `hypotheses` | Triage complete, playbooks matched | `test` |
-| `test` | Hypotheses ready, testing next in confidence order | `evaluate` |
-| `evaluate` | Tester returns verdict | `deepen`, `test`, or `depth_check` |
-| `deepen` | Confirmed symptom needs sub-hypotheses | `hypotheses` (re-invoke generator) |
-| `depth_check` | Hypothesis confirmed as root cause | `resolution` (verified), `test` (one re-round), or halt (write `needs_input.json`) |
-| `resolution` | Depth check verified, or all hypotheses exhausted | `complete` |
-| `complete` | Findings presented to user | — |
+From the raw responses, record in notes.md one line per observed fact: exception class (FQN + leaf), friendly message / resource key, error code, HTTP status, faulting activity + owning package namespace, entity states, cross-product entity keys, package versions. Field locations per signal kind: see the cheatsheet in `references/investigation_guide.md` § Signal-Extraction Cheatsheet.
 
-## 4. Investigation Flow
+**Unwrap wrappers at extraction time.** `System.AggregateException` and "One or more errors occurred" are async wrappers — the inner exception is the routable signal. Extract inner exception class, message, and error code before routing. Same for `--->`-chained inner exceptions in stacks.
 
-### TRIAGE
+**Localized error text.** Host-side messages (.NET framework, Office/COM) localize with the robot's system language; playbooks store canonical English. Route on language-invariant signals first — exception class/FQN, error codes, resource keys, HTTP status, API state enum values (these never localize). If a message fragment is non-English, grep the playbooks with its canonical English wording (translate before grepping) and record the original text plus locale in notes.md.
 
-1. **Spawn triage** (`agents/triage.md`). Pass the user's problem **as-is** — do NOT pre-classify or constrain scope.
-2. **Sanity gate.** Verify triage evidence relates to the reported problem (process/entity/time window). If it's about a different entity: discard, inform the user, re-spawn or ask for clarification.
-3. **Scope check.** Spawn scope-checker (`agents/scope-checker.md`); read its `scope-check.json`. Missing domains (`missing_domains`) → `AskUserQuestion` whether to expand; if approved, re-spawn triage with them. Unnecessary domains (`unnecessary_domains`) → remove from `state.json.scope.domain`.
-4. **User input.** If triage returned `needs_user_input: true`, ask via `AskUserQuestion`, then **continue the existing triage agent** via `SendMessage` — do NOT spawn a fresh one (a fresh spawn re-discovers everything from scratch). Re-spawn only if the answer fundamentally changes scope (different product/entity type).
+## 4. Route
 
-**Never skip the hypothesis loop.** Even conclusive-looking triage evidence proceeds through GENERATE → TEST → EVALUATE. Triage classifies and gathers data — it does not determine root cause; a non-obvious cause surfaces only in the test cycle.
+Grep the playbook corpus for each extracted signal — fixed-string, filenames only (`grep -rlF "<signal>" references/ --include="*.md"`): leaf exception class, error code, message fragments, resource keys. Signals are verbatim — a shorter fragment beats a guessed-case variant. Prefer hits under `*/playbooks/`; never read directories wholesale — open only the hits' `## Context` sections to check fit.
 
-### GENERATE HYPOTHESES
+- **One dominant playbook** — most distinct signal hits; ties break by reading each hit's `## Context` and keeping the one whose preconditions fit the evidence; honor a playbook's explicit redirects to sibling playbooks. → Load ONLY that playbook + its domain's `investigation_guide.md` (if the domain has one). Go to §5.
+- **Cross-domain signal** — evidence carries a key/ID/exception belonging to another product (e.g., an Excel fault wrapping an Integration Service connection error, an Orchestrator job spawned by a Maestro instance). → Follow the chain **one hop**: fetch the linked entity's error surface, extract its signals, re-grep. The upstream playbook drives the resolution; the downstream domain contributes a propagation fix (`references/presenting.md`). Deeper than one hop → escalate.
+- **Fault signal but no grep hit** — map the faulting activity/exception namespace to its owning domain (`references/summary.md`) and check that domain's `summary.md` for a family playbook covering the activity. One dominant family playbook → proceed to §5 with it. Still nothing → escalate.
+- **No match, or an escalation trigger (§7) fires** → load `references/escalation.md`. For silent failures (no fault signal anywhere: job Successful but wrong output, hang, stuck state), enter via the no-signature routing table in `references/summary.md`.
 
-Spawn hypothesis generator (`agents/hypothesis-generator.md`). Behavior varies by confidence level per the table in shared.md.
+## 5. Walk the playbook
 
-### TEST HYPOTHESES
+1. Read the playbook's `## Context` fully; confirm its signature actually fits the evidence (a contradicted core precondition = wrong playbook → back to §4 with that match excluded, recorded in notes.md).
+2. Execute its `## Investigation` steps in decision-tree order; stop at the first matching branch. Record in notes.md the datum that rejects each rejected branch.
+3. Ordering rules: most-specific branch first; run elimination checks, not just confirmation (fetch what would DISPROVE the branch); never conclude on a propagation/persistence/state-transition pattern while an upstream "why did that state occur" is unanswered — trace one hop upstream first.
+4. **Source-required playbooks** (evidence lives only in workflow source, e.g. `VerifyOptions`, selectors, `project.json` pins): CHECK THE WORKING DIRECTORY TOP LEVEL FIRST — one listing; if it contains the project (`project.json` + the workflow named in the activity stack), use it without asking. A playbook-named file not at its standalone path may sit in the other layout — resolve both (solution wrapper at the working-directory root / one level up from the named project dir) per generic guide § Locating Project Source & Resource Files before treating it as missing; absence from one layout is not absence. Only if neither layout resolves, ask for the project path via `AskUserQuestion` — one question naming the files needed. This precedence overrides any playbook wording that says to ask first. Extract the verbatim attribute values the playbook lists; do not paraphrase.
+5. **For large result sets**, summarize at write-time — group by type, count patterns, extract samples. Never slice raw responses with arbitrary limits.
 
-Test every hypothesis sequentially (highest confidence first). For each, spawn hypothesis tester (`agents/hypothesis-tester.md`).
+## 6. Verification checklist — mandatory before presenting
 
-### EVALUATE (after each test)
+Write the answers in notes.md; do not skip items, do not present without them:
 
-**Validate:** Reject and re-spawn if `elimination_checks` are missing/incomplete. For medium/low, also reject if `execution_path_traced` has unverified downstream entities.
+1. **Cause named:** quote ONE item verbatim from the playbook's "What can cause it" list — not a category, not a vague generalization.
+2. **Evidence pinned:** cite ≥1 datum (raw file + field) that singles out this cause from each sibling cause in the same list. Symptom-level data fitting several causes is not enough.
+3. **Runtime evidence:** for runtime failures, ≥1 cited datum from runtime/platform data (logs, job records, instance state, incidents) that passes correlation. Design-time evidence alone (source files, manifests) proves a defect exists, not that it caused this failure. Every runtime query empty while the user reports active failures = CONTRADICTION — wrong scope; re-verify or ask, never conclude. If the contradiction persists and the user cannot be asked, present the contradiction itself as the finding (runtime evidence unreachable — root cause unconfirmed) — never re-attribute the failure to a design-time observation.
+4. **Resolution aligned:** the fix is the playbook's `## Resolution` branch keyed to that exact cause.
+5. **Causal precedence:** list every event the conclusion treats as given and answer "why did that occur?" — each answered by evidence, explained by the named cause, or explicitly out of scope. An upstream event may be ruled **out of scope ONLY if no documented command** (a matched playbook's `## Investigation` or an investigation guide) can retrieve the record that explains it; if such a command exists, running it is mandatory before concluding. A persistence/state-transition story (cancelled, stopped, orphaned, disconnected, timed-out) presupposes an upstream condition and is **never** the root cause while the record explaining it is reachable and unqueried; unexplained upstream → not root cause.
+6. **Fix scope:** every proposed fix traces to the confirmed cause. A property or code path the failing run never evaluated cannot be asserted as a defect from source reading alone — and a defect claim that rests on how the platform parses or evaluates source syntax (expression bindings, escaping, argument direction) is unverified until confirmed against a playbook or documentation. Surface such suspicions as clearly-labeled unverified observations OUTSIDE the fix list — labeling one a "separate observation" while still listing it as a fix or offering to apply it violates this rule. The same gate applies to solutions: a fix must not presuppose infrastructure or mechanisms absent from the evidence (e.g., do not prescribe wiring an input to an Orchestrator asset unless an asset appears in the evidence) — prescribe the minimal evidence-supported fix; alternatives go as labeled options.
 
-**Reactive scope check:** If evidence references entities/errors from an out-of-scope domain, spawn scope-checker and act on its `scope-check.json` (`missing_domains` / `unnecessary_domains`). Otherwise skip.
+Any check fails → ONE targeted re-fetch for the missing datum. Still failing →
 
-**Classify and act:**
+- **Diagnostic-recommendation terminal** (legitimate outcome, not failure): when evidence cannot separate sibling causes and the playbook provides a discriminating diagnostic (e.g., a byte-compare snippet), present at reduced confidence with that diagnostic as the primary deliverable — never silently pick a branch.
+- Otherwise, or if a §7 trigger fires → escalate.
 
-Before classifying as **explains-WHY**, apply the upstream-cause gate. The mechanism (explicit-event check + implicit-presupposition check) is owned by the depth-verifier — see [`agents/depth-verifier.md` § Causal precedence](agents/depth-verifier.md). Orchestrator decision rule: if the gate identifies any upstream condition that has a `pending` or `supported` sibling hypothesis answering it, classify the current hypothesis as **describes-WHAT** regardless of evidence strength.
+## 7. Escalation triggers
 
-**Sibling-precedence backstop** (orchestrator-only — siblings are visible here, not to the depth-verifier): if the candidate root cause is a persistence, propagation, cleanup, or state-transition pattern AND any sibling hypothesis is `pending` AND that sibling questions whether the underlying state has its own originating fault, the sibling MUST be tested before the candidate can be classified as **explains-WHY**. Stopping at the first confirmed hypothesis is incorrect when that hypothesis is downstream.
+Load `references/escalation.md` when ANY of:
 
-- **Eliminated / Inconclusive** → record, test next hypothesis
-- **Confirmed — explains WHY** (and passes upstream-cause gate) → root cause. Go to DEPTH CHECK (do **not** jump straight to Resolution). Multiple confirmed root causes: depth-check each before skipping the rest.
-- **Confirmed — describes WHAT only** → symptom. Re-invoke generator with `trigger: "deepening"` and `parent_hypothesis`.
-- **All playbook hypotheses eliminated** → re-invoke generator with `trigger: "scope_adjustment"` and eliminated IDs to produce from docsai (every matched playbook — all confidence levels — was already drafted in the single round).
+1. **No playbook grep match** — silent failure, hang, wrong results, nothing greppable.
+2. **≥2 co-equal matches** with distinct, independent signatures (different activities/error codes, neither upstream of the other).
+3. **Cross-domain chain deeper than one hop**, or the one-hop follow contradicts the original match.
+4. **Decision tree exhausted** — every branch rejected, or a discriminator stays inconclusive after its named evidence is gathered.
+5. **Checklist fails after the re-fetch** and no diagnostic-recommendation terminal applies.
+6. **Evidence or new user data contradicts the matched playbook's core precondition.**
 
-**Co-equal-roots guard.** Before applying any "skip remaining" exit after a confirmed+verified root cause, check `state.json.matched_playbooks`. If two or more playbooks are present at the same highest confidence level AND they correspond to **distinct, independent** error signatures (different activities, different error codes, neither upstream of the other), every pending hypothesis sourced from those playbooks MUST be tested before stopping. Do not exit on the first confirmed root cause when triage found multiple co-equal roots — you will under-report and miss fixes the user has to make. Only after each co-equal hypothesis is tested (confirmed, eliminated, or inconclusive) and depth-checked when confirmed do you proceed to Resolution.
+Escalation = 2–4 parallel read-only probe subagents (one per candidate playbook + one "origin is upstream/elsewhere") + your adjudication + a conditional fresh-eyes verifier. Protocol, prompt templates, and spawn budget: `references/escalation.md`. No subagent-spawning tool in this harness → same protocol, probes executed serially in this context (`references/escalation.md` § Serial fallback).
 
-### DEPTH CHECK (after a hypothesis is confirmed as root cause)
+## 8. Present
 
-Spawn the depth-verifier sub-agent (`agents/depth-verifier.md`). Pass it the
-confirmed hypothesis ID(s), `state.json` path, and the matched playbook path.
-The verifier reads `hypotheses.json`, the playbook's `## Context` cause
-list ("What can cause it") and `## Resolution` section, and the evidence
-files, then writes
-`.local/investigations/depth-check.json` with one of:
+Load `references/presenting.md` and follow it: fixes assembled for the root-cause domain and every propagation domain, every step source-cited, entity display names from raw data, the investigation summary table, and interactive resolutions (Healing Agent apply-flow) executed under the §1 approval gate.
 
-- `verdict: "verified"` — the confirmed hypothesis names a specific cause
-  from the playbook, has cause-specific evidence (not just symptom-level),
-  and recommends the matching resolution branch. Proceed to **Resolution**.
-- `verdict: "shallow"` — one or more depth dimensions are missing.
-  Inspect `gaps`. Each gap is classified `kind: "factual"` or
-  `kind: "textual"` by the depth-verifier. Routing rule:
-  - **If ANY gap has `kind: "factual"`** — spawn ONE additional
-    hypothesis-tester round on the same hypothesis to gather the
-    missing evidence, then re-spawn the depth-verifier. Stop after one
-    re-round. After that, either declare medium-confidence and proceed
-    to Resolution with the gaps surfaced to the user, or — if the gap
-    is a genuine data limitation — write `needs_input.json` and stop.
-  - **If ALL gaps are `kind: "textual"`** — do NOT spawn the tester.
-    Re-running the tester cannot fix narrative-level issues (paraphrase
-    looseness, wrong resolution branch picked) since those are the
-    *generator's* output, not the tester's. Accept the confirmed
-    hypothesis at `confidence: medium` and proceed to Resolution.
-    Surface the textual gaps in the presenter's output so the user
-    sees them.
+## 9. New data from the user
 
-**Symptom ≠ cause** (shared.md invariant #9): a symptom-level match confirms the playbook *match*, not the *cause*. The depth-verifier enforces this gate — do not skip it.
+New data mid-investigation (error messages, job IDs, logs) → re-run §2–§4 on it. If the new signals contradict the current match, that is trigger 6. Never patch new data into a concluded narrative.
 
-### NEW DATA FROM USER
+## 10. Completion
 
-If the user provides new data at any point (error messages, job IDs, logs, screenshots), go back to TRIAGE. Re-spawn triage with the new data. Do NOT patch new data into an in-progress investigation.
-
-## 5. Evaluation Rules
-
-**Root cause vs. symptom:** A finding that explains WHY the failure occurs is a root cause. A finding that describes WHAT happened (but not why) is a symptom — deepen it.
-
-**When to stop testing:**
-- High-confidence root cause confirmed → DEPTH CHECK; if verified AND no other co-equal-confidence playbook is still pending (see Co-equal-roots guard above), skip remaining hypotheses and go to Resolution. If co-equal playbooks remain pending, continue testing them first.
-- Medium/low root cause confirmed → DEPTH CHECK; if verified, ask user if they want to continue
-- All hypotheses exhausted (eliminated or inconclusive) → go to Resolution with "no root cause" outcome (no depth check needed when there is nothing to gate)
-
-## 6. Resolution
-
-Spawn the presenter agent (`agents/presenter.md`) with the confirmed hypothesis IDs and **all domains from `state.json.scope.domain`**. Do NOT pre-filter domains based on your judgment of their relevance to the causal chain — the presenter classifies root cause vs. propagation domains and searches docsai for each. Excluding a domain prevents the presenter from finding error handling patterns it was designed to surface.
-
-The presenter:
-- Assembles fixes from playbook `## Resolution` sections across all domains in the causal chain
-- Searches docsai for error handling and propagation patterns for every propagation domain
-- Applies all presentation rules (entity names from raw data, display names, UI labels)
-- Gates every fix step against documented sources
-
-Present the presenter's output verbatim to the user. After presenting:
-
-**Execute Post-presentation actions FIRST.** If the presenter's output has a `## Post-presentation actions` section, run every action in order before any generic follow-up. For each action:
-
-1. Print the "Print as plain text" block exactly as written, separate from the question (raw XML/selectors render poorly inside `AskUserQuestion` options/previews).
-2. Print the warning string verbatim if non-empty.
-3. Call `AskUserQuestion` with the action's question and options. Ask the project path (or other missing input the action declares) in the same call.
-4. If the user accepts, execute the "On user accept" procedure exactly as written — do not improvise. If it references a sub-skill (e.g., `uia-improve-selector`), follow its USAGE.md; otherwise apply the documented direct-edit path and run any validation command listed.
-5. If the user declines, stop the action; do not modify files. Move to the next.
-6. If the action's `Status` is `blocked` (missing evidence), surface it as a follow-up instead of asking the user to approve an incomplete fix — name the missing evidence field and the agent that should have populated it.
-
-Do NOT skip the Post-presentation actions block when:
-- The matched playbook was downgraded from `high` to `medium` by depth-check (the resolution procedure is preserved across confidence downgrades — see `agents/depth-verifier.md` on textual gaps).
-- The depth-verifier flagged a cause-name mismatch (textual gap). A reclassified cause does NOT invalidate the playbook's interactive resolution; both can be reported together.
-- The recovered/recommended data was produced in a recommendation-only or unproven mode (`InferredRecoveryInfo`, `RecoverySuccessful: false`). The action carries a warning string for exactly this case — present it and let the user decide.
-
-Only after all actions are complete (accepted, declined, or surfaced as blocked) proceed to the generic follow-up:
-
-**If root cause found** — offer to help implement any further changes or clean up `.local/investigations/`.
-
-**If no root cause found** — use `AskUserQuestion` to offer: provide more data (re-triage), or open a UiPath support ticket with the evidence gathered.
-
-## 7. Operational Details
-
-**Spawning:** Read agent files just-in-time — only `agents/shared.md` + the specific agent file when you're about to spawn. Include full instructions and context in the prompt.
-
-**Reasoning effort:** Where the spawn tool exposes a reasoning-effort parameter, set it per role. `low` for the mechanical step-followers — triage, hypothesis-tester, presenter — they execute documented playbook/investigation steps and do not need deep reasoning. `high` for the judgment roles — hypothesis-generator, scope-checker, depth-verifier.
-
-**Progress:** Use `TaskCreate`/`TaskUpdate` for each phase. Tailor subjects to the user's problem.
-
-**Cleanup:** After investigation completes, offer to delete or preserve `.local/investigations/`.
+After presenting and finishing any interactive actions: offer follow-up help and offer to delete or preserve `.local/investigations/`. If no root cause was found, offer via `AskUserQuestion`: provide more data (re-anchor) or open a UiPath support ticket with the evidence gathered.

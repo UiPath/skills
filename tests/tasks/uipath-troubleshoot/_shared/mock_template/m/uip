@@ -36,13 +36,30 @@ Each rule has one of:
       committed alongside fixtures so tests stay reproducible offline.
 
 Dispatch precedence:
-    1. First matching rule (substring; first match wins).
+    1. First matching rule (first match wins).
     2. `unmocked_default` — if set, return its `response` + `exit_code`.
     3. Otherwise, error on stderr (legacy behavior).
 
-Matching is plain substring on `" ".join(argv[1:])`. List specific
-patterns before generic ones. A passthrough rule with `match: "docsai ask"`
-is the typical way to proxy open-ended natural-language commands.
+Matching (see `_rule_matches`) is token-aware, with a plain-substring
+fallback. A rule matches an invocation when EITHER:
+
+    a. every whitespace token of `match` is present among the invocation's
+       tokens (order-independent), OR
+    b. `match` is a literal substring of `" ".join(argv[1:])` (legacy).
+
+Tokens are normalized before comparison: surrounding quotes are stripped
+(`"<uuid>"` == `<uuid>`) and `--flag=value` is split into `--flag value`.
+This makes rules robust to:
+    - flag reordering  (`--folder-key K --state Faulted`
+                         matches `--state Faulted --folder-key K`)
+    - extra trailing flags (a `--output json` the rule omits)
+    - shell-quoted job keys recorded into a manifest match string
+      (a historical generate_scenario.py quirk).
+
+List specific patterns before generic ones — first match still wins, and a
+generic rule with fewer tokens will match a superset of invocations. A
+passthrough rule with `match: "docsai ask"` is the typical way to proxy
+open-ended natural-language commands.
 """
 
 import hashlib
@@ -82,6 +99,67 @@ def _log_call(args: str, rule: dict | None, exit_code: int, error: str | None = 
             f.write(json.dumps(record) + "\n")
     except OSError:
         pass
+
+
+# Pure-formatting flags that never change WHICH resource an invocation
+# addresses. Dropped from both the match string and the invocation before
+# token comparison, so a rule and an invocation that differ only by an
+# `--output json` (present on one side, absent on the other) still match.
+# `--output` takes a value (`--output json`), so its following token is
+# dropped too.
+_NOISE_VALUE_FLAGS = {"--output"}
+
+
+def _tokenize(s: str) -> list[str]:
+    """Split a command string into normalized tokens.
+
+    Normalization:
+        - surrounding single/double quotes stripped from each token, so a
+          manifest match of `or jobs get "<uuid>"` tokenizes identically to
+          the shell-stripped invocation `or jobs get <uuid>`.
+        - `--flag=value` split into two tokens (`--flag`, `value`) so the
+          equals-form and space-form of a flag compare equal.
+        - pure-formatting flags in `_NOISE_VALUE_FLAGS` (and their values)
+          dropped, so `--output json` never affects matching.
+    """
+    tokens: list[str] = []
+    for raw in s.split():
+        if raw.startswith("-") and "=" in raw:
+            flag, _, val = raw.partition("=")
+            tokens.append(flag.strip("\"'"))
+            if val:
+                tokens.append(val.strip("\"'"))
+        else:
+            tokens.append(raw.strip("\"'"))
+
+    # Drop noise value-flags and the value token that follows each.
+    cleaned: list[str] = []
+    skip_next = False
+    for tok in tokens:
+        if skip_next:
+            skip_next = False
+            continue
+        if tok in _NOISE_VALUE_FLAGS:
+            skip_next = True
+            continue
+        cleaned.append(tok)
+    return cleaned
+
+
+def _rule_matches(match: str, args: str, arg_tokens: set[str]) -> bool:
+    """Return True when `match` matches the invocation `args`.
+
+    Token-subset first (order-independent, quote/flag-normalized), then a
+    plain-substring fallback so any rule that matched under the old
+    substring dispatcher keeps matching. Additive by construction: this
+    never matches fewer invocations than the legacy substring test.
+    """
+    if not match:
+        return False
+    match_tokens = _tokenize(match)
+    if match_tokens and all(t in arg_tokens for t in match_tokens):
+        return True
+    return match in args
 
 
 def _err(payload: dict, code: int) -> int:
@@ -185,9 +263,9 @@ def main(argv: list[str]) -> int:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 
     # 1. First matching rule wins.
+    arg_tokens = set(_tokenize(args))
     for rule in manifest.get("rules", []):
-        match = rule.get("match", "")
-        if not match or match not in args:
+        if not _rule_matches(rule.get("match", ""), args, arg_tokens):
             continue
         if rule.get("passthrough"):
             return _passthrough(args, argv, rule)

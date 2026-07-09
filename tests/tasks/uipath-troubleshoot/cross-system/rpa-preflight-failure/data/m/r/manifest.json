@@ -19,15 +19,15 @@
       "file": "59305d0a92.json"
     },
     {
-      "match": "or jobs list --folder-key \"7f984a6b-1138-40fb-b48e-2c3ddf02b8f0\" --state Faulted --output json",
+      "match": "or jobs list --folder-key 7f984a6b-1138-40fb-b48e-2c3ddf02b8f0 --state Faulted",
       "file": "bf63839a62.json"
     },
     {
-      "match": "or jobs get \"3ecaa4ef-a1ab-4376-ae06-d3b942362e6f\" --output json",
+      "match": "or jobs get 3ecaa4ef-a1ab-4376-ae06-d3b942362e6f",
       "file": "14d1c186b6.json"
     },
     {
-      "match": "or jobs logs \"3ecaa4ef-a1ab-4376-ae06-d3b942362e6f\" --level Error --output json",
+      "match": "or jobs logs 3ecaa4ef-a1ab-4376-ae06-d3b942362e6f --level Error",
       "file": "2ccf867f3a.json"
     },
     {

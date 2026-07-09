@@ -7,10 +7,6 @@
       "file": "f5d1ebe209.json"
     },
     {
-      "match": "or folders list --output json",
-      "file": "869f58b55e.json"
-    },
-    {
       "match": "or jobs list --folder-key \"a1b2c3d4-e5f6-7890-1234-56789abcdef0\" --state Faulted --output json",
       "file": "e9b4a8abc2.json"
     },

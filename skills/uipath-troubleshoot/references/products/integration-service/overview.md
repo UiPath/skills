@@ -50,12 +50,14 @@ Projects and solutions store connection references as JSON files. The location d
 | Layout | Path pattern |
 |--------|--------------|
 | Standalone project | `<project-root>/connection/<connector-key>/<owner>.json` |
-| Solution (single folder) | `<project-root>/resources/solution_folder/connection/<connector-key>/<owner>.json` |
-| Solution (multi-folder) | `<project-root>/resources/<folder-name>/connection/<connector-key>/<owner>.json` |
+| Solution (single folder) | `<solution-root>/resources/solution_folder/connection/<connector-key>/<owner>.json` |
+| Solution (multi-folder) | `<solution-root>/resources/<folder-name>/connection/<connector-key>/<owner>.json` |
+
+> In a solution, `resources/` sits at the **solution root, beside the project folder** — not inside it. A glob rooted at the project folder will miss it; search the project folder's parent as well.
 
 Each `<connector-key>` subfolder contains one JSON file per connection, named after the connection's `resource.name` (typically the owner's email or username).
 
-**When investigating, glob `**/connection/<connector-key>/*.json` from the project root** — that catches all three layouts in one read. Do NOT assume the standalone path; solutions are common and the resource file may be several directories deep under `resources/`.
+**When investigating, glob `**/connection/<connector-key>/*.json` from the working-directory root** (the solution root when the project sits in a solution) — that catches all three layouts in one read. Do NOT assume the standalone path; solutions are common and the resource file may be several directories deep under `resources/`.
 
 Key fields:
 
