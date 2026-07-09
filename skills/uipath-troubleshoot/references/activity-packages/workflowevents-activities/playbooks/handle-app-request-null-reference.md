@@ -1,14 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "System.NullReferenceException"
-    note: "faulted activity is HandleAppRequest in a UiPath-App-invoked job — the NRE is raised inside the App-invoked workflow or by a null App input argument; generic in-workflow NRE → null-reference-exception.md"
-  - kind: message
-    value: "Object reference not set to an instance of an object"
-    note: "at HandleAppRequest — failure is in the App-invoked workflow's execution, not the channel; downstream consumer of a null Get Asset output → get-asset-activity-bug-silent-failure.md"
-exclusions:
-  - "SignalR / transport fault at AppRequestTrigger → app-request-trigger-connection-lost.md"
 ---
 
 # Handle Apps Request — Null Reference (NullReferenceException)

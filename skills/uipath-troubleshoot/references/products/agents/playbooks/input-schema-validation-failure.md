@@ -1,18 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "agent.json failed schema validation"
-    note: "Variant A — agent configuration schema"
-  - kind: message
-    value: "Agent configuration invalid"
-    note: "Variant A error prefix — faults before any LLM call"
-  - kind: message
-    value: "Input validation failed"
-    note: "Variant B error prefix — caller payload fails the input schema at invocation time"
-  - kind: message
-    value: "Data failed json schema validation"
-    note: "Variant B — names the offending field and type code inline"
 ---
 
 # Input Schema Validation Failure

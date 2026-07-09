@@ -1,6 +1,5 @@
 ---
 confidence: medium
-silent: true
 ---
 
 # Read Text — Standalone System Activity Fails on Legacy .doc Files

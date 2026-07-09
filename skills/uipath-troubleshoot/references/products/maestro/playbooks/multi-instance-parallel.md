@@ -1,11 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "Failed to evaluate the input collection variable for the marker element"
-    note: "general marker input issues — batch over 50 items, non-array collection, NoneType properties; JS Object[] cast → marker-invalid-cast.md"
-exclusions:
-  - "JS expression InvalidCastException → marker-invalid-cast.md"
 ---
 
 # Multi-Instance Parallel Marker Issues

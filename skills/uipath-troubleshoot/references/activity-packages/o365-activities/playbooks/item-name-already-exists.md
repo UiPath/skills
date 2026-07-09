@@ -1,13 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "The specified item name already exists."
-  - kind: exception
-    value: "Office365Exception"
-    note: "generic O365 package exception — this claim is the remote OneDrive/SharePoint/Excel name conflict (Create/Copy/Move/Rename/Upload/Create Workbook/Add Sheet/Rename Sheet with ConflictBehavior = Fail)"
-exclusions:
-  - "Multiple items with the name <name> found in the specified folder. (local destination conflict) → download-multiple-items-name-conflict.md"
 ---
 
 # O365 — The specified item name already exists

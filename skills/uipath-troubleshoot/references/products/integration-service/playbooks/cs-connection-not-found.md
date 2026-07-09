@@ -1,14 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: error-code
-    value: "CNS1006"
-  - kind: error-code
-    value: "CNS1000"
-  - kind: error-code
-    value: "CNS1049"
-  - kind: error-code
-    value: "CNS1003"
 ---
 
 # Connection Service — Connection Not Found / Invalid (CNS1006, CNS1000, CNS1049, CNS1003)

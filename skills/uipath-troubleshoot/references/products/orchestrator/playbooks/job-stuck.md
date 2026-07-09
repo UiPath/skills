@@ -1,9 +1,5 @@
 ---
 confidence: low
-signatures:
-  - kind: state
-    value: "Running"
-    note: "unusually long with no progress visible in job traces — distinct from the Pending-state playbooks"
 ---
 
 # Job Stuck in Running

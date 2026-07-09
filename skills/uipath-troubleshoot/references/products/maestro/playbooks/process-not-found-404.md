@@ -1,14 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "The job's associated process could not be found"
-  - kind: error-code
-    value: "170007"
-    note: "OrchestratorRpaJobFailedToStart — failure at job-start time"
-  - kind: http-status
-    value: "404"
-    note: "from Orchestrator at job start — stale ReleaseKey/binding; IS-call 404 → integration-service-404.md; attachment → attachment-not-found.md"
 ---
 
 # Job's Associated Process Not Found (404)

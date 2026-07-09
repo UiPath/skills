@@ -1,11 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "Attachment not found"
-    note: "general file-input mishandling — variable vs argument, connector File-type bugs; retention-deleted job → attachment-not-found.md"
-exclusions:
-  - "attachment orphaned by job retention policy → attachment-not-found.md"
 ---
 
 # File Handling Issues

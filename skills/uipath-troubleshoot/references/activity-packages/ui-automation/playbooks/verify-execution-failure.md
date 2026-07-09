@@ -1,21 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: exception
-    value: "UiPath.UIAutomationNext.Exceptions.VerifyActivityExecutionException"
-  - kind: message-key
-    value: "ExceptionCheckActivity"
-    note: "generic assertion failure — NOT the TypeInto-specific keys"
-  - kind: message-key
-    value: "ExceptionVerificationTargetNotFoundOrInvalid"
-  - kind: message-key
-    value: "ExceptionVerificationImageCouldNotBeRetrieved"
-  - kind: message-key
-    value: "ExceptionVerificationTextNotSupported"
-  - kind: message-key
-    value: "ExceptionRecoveredButValidationFailed"
-exclusions:
-  - "ExceptionCheckActivityPassword / ExceptionCheckActivityTypeInto / ExceptionCheckActivityTypeIntoWithSpecialKeys / ExceptionCheckActivityTypeIntoInputDisappeared — NTypeInto text-mismatch keys, separate planned playbook (not yet authored)"
 ---
 
 # Verify Execution Failure — Post-Action Assertion Did Not Hold

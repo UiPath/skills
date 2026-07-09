@@ -1,14 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "Multiple items with the name"
-    note: "Office365Exception from a download activity — conflict is in the LOCAL destination folder; same wording from GSuite Drive → drive-multiple-items-name-conflict.md (gsuite)"
-  - kind: exception
-    value: "Office365Exception"
-    note: "generic O365 package exception — this claim is the local-destination name conflict on download activities (DownloadEmailConnections / DownloadFileConnections / DownloadEmailAttachments with ConflictResolution = Fail)"
-exclusions:
-  - "The specified item name already exists. (remote OneDrive/SharePoint/Excel conflict) → item-name-already-exists.md"
 ---
 
 # O365 — Multiple items with the same name in the specified local folder

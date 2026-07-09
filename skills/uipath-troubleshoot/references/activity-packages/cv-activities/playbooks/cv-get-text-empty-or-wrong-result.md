@@ -1,16 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: state
-    value: "CvGetTextWithDescriptor completed without faulting but Result is empty / null / stale / partial"
-    note: "the defining no-fault signature — MethodType (OCR vs ClipboardRow/ClipboardAll) splits the branches"
-  - kind: message
-    value: "The Select methods only work on editable text"
-    note: "design-time warning — clipboard mode on a non-editable target"
-exclusions:
-  - "Activity threw ElementNotFoundException (descriptor never matched) → cv-element-not-found.md"
-  - "Activity threw a server/OCR error with an error code → cv-server-auth-throttling-network.md"
-  - "Activity threw Scrolled the entire screen, but element was not found → cv-scroll-search-failures.md"
 ---
 
 # CV Get Text returns empty, stale, or wrong text (OCR mode and clipboard mode)

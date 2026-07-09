@@ -1,16 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "No email matching the search criteria has been found"
-  - kind: message
-    value: "No email matching the filter criteria, received in the last 1 hour has been found"
-    note: "GmailException from the Gmail NewEmailReceived trigger in debug/test mode; the identical sentence as an Office365Exception → get-newest-email-no-match.md (o365)"
-  - kind: message
-    value: "No email matching the filter criteria, sent in the last 1 hour has been found"
-  - kind: exception
-    value: "GmailException"
-    note: "generic Gmail exception — this claim is the empty-result fault from GetNewestEmailConnections or a NewEmailReceived / EmailSent trigger debug run"
 ---
 
 # GSuite Gmail — no email matched the filter (Get Newest Email or trigger debug run)

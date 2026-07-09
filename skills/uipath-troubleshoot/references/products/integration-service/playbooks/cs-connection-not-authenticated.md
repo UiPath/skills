@@ -1,12 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: error-code
-    value: "CNS1008"
-  - kind: error-code
-    value: "CNS1021"
-  - kind: error-code
-    value: "CNS1061"
 ---
 
 # Connection Service — Connection Not in Authorized State (CNS1008, CNS1021, CNS1061)

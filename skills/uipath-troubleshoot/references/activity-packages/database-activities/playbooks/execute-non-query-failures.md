@@ -1,16 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "The Size property has an invalid size of 0"
-  - kind: message
-    value: "Execute Non Query: A database error occurred"
-  - kind: message
-    value: "CommandText property has not been initialized"
-  - kind: message
-    value: "Failed to load library (ErrorCode: 126)"
-  - kind: exception
-    value: "System.DllNotFoundException"
 ---
 
 # Execute Non Query Failures

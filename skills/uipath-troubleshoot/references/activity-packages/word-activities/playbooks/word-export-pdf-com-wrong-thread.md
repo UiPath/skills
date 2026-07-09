@@ -1,17 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: error-code
-    value: "0x8001010E"
-    note: "RPC_E_WRONG_THREAD live cast at Save Document as PDF / a child of Word Application Scope — external/attached Word or off-STA thread; crash-aftermath variant → word-com-interop-failures.md"
-  - kind: message
-    value: "Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'"
-    note: "_Document cast failing on the export path"
-  - kind: message
-    value: "The application called an interface that was marshalled for a different thread"
-  - kind: message
-    value: "{0002096B-0000-0000-C000-000000000046}"
-    note: "IID of Microsoft.Office.Interop.Word._Document in the QueryInterface failure"
 ---
 
 # Word Application Scope — Save Document as PDF COM Wrong-Thread (0x8001010E RPC_E_WRONG_THREAD)

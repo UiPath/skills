@@ -1,18 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: exception
-    value: "SelectorNotFoundException"
-    note: "HA enabled with recovery data present (healing-fixes.json entry or InferredRecoveryInfo/RecoveryInfo in uia/*.json)"
-  - kind: exception
-    value: "UiElementNotFoundException"
-    note: "HA enabled with recovery data present (healing-fixes.json entry or InferredRecoveryInfo/RecoveryInfo in uia/*.json)"
-  - kind: exception
-    value: "ElementNotInteractableException"
-    note: "HA enabled with recovery data present (healing-fixes.json entry or InferredRecoveryInfo/RecoveryInfo in uia/*.json)"
-  - kind: exception
-    value: "NodeNotFoundException"
-    note: "HA enabled with recovery data present (healing-fixes.json entry or InferredRecoveryInfo/RecoveryInfo in uia/*.json)"
 ---
 
 # Selector Failure — Healing Agent Recovery Data Available

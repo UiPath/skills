@@ -1,14 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: exception
-    value: "System.ArgumentNullException"
-    note: "raw, from legacy O365 CopyItem with Parameter 'DriveItem' — upstream lookup left the DriveItem input null"
-  - kind: message
-    value: "Value cannot be null. (Parameter 'DriveItem')"
-exclusions:
-  - "Value cannot be null. (Parameter '<localized property>') from a Connections activity → create-folder-invalid-path.md"
-  - "The resource could not be found. → drive-item-not-found.md"
 ---
 
 # O365 Files — Copy Item null DriveItem input

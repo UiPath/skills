@@ -1,22 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "Too many requests."
-  - kind: message
-    value: "The app or user has been throttled."
-  - kind: message
-    value: "(HTTP Status Code: TooManyRequests) Batching request failed with an unknown reason."
-    note: "throttled sub-request inside a batch — other statuses in the same batching sentence route to transient-service-error.md"
-  - kind: http-status
-    value: "429"
-    note: "Microsoft Graph rate limit on an O365 activity; Autopilot for Maestro 429 → autopilot-429.md (products/maestro)"
-  - kind: exception
-    value: "Microsoft.Graph.ServiceException"
-    note: "generic Graph SDK exception from legacy (non-Connections) O365 activities — this claim is the raw throttle wording / 429; 5xx or timeout wording → transient-service-error.md"
-exclusions:
-  - "The server is unable to process the current request. (503) / request timeouts → transient-service-error.md"
-  - "The app or user has exceeded the allowed quota. (storage/quota limit) → upload-file-quota-or-size.md"
 ---
 
 # O365 — Throttling / rate limit (429)

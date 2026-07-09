@@ -1,12 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: error-code
-    value: "CNS3002"
-  - kind: error-code
-    value: "CNS1007"
-  - kind: error-code
-    value: "CNS1038"
 ---
 
 # Connection Service — Conflict / Duplicate (CNS3002, CNS1007, CNS1038)

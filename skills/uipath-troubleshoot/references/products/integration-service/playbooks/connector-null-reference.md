@@ -1,12 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "System.NullReferenceException"
-    note: "on or just after a connector activity — stack shows a ForEach over an IntegrationService SWEntities output; for user-code NREs see null-reference-exception.md"
-  - kind: message
-    value: "IntegrationService.Activities.SWEntities"
-    note: "stack fragment — ForEach enumerating a null connector List/Get output"
 ---
 
 # Connector Activity — NullReferenceException

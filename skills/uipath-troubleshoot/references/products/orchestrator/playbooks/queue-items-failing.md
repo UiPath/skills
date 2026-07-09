@@ -1,9 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: state
-    value: "Failed"
-    note: "queue item status, not job state — multiple distinct error types may be present across items"
 ---
 
 # Queue Items Failing

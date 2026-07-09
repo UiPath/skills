@@ -1,17 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: error-code
-    value: "CNS1001"
-  - kind: error-code
-    value: "CNS1002"
-  - kind: error-code
-    value: "CNS1004"
-  - kind: error-code
-    value: "CNS2045"
-  - kind: error-code
-    value: "CNS1075"
-    note: "409 ConnectorNotDeployed on a direct Connection Service call; inside a Solutions package install/validation flow → cs-solutions-install-failed.md"
 ---
 
 # Connection Service — Connector Unavailable (CNS1001, CNS1002, CNS1004, CNS1075, CNS2045)

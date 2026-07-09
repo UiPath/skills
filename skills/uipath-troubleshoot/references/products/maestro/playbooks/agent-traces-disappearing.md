@@ -1,6 +1,5 @@
 ---
 confidence: high
-silent: true
 ---
 
 # Agent Traces Disappearing

@@ -1,13 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "UiPath.ConnectionClient.Contracts.ConnectionHttpException"
-    note: "from an O365 Mail trigger (NewEmailReceived / EmailSent) event, sample lookup, or token fetch — Office365Exception may carry the identical message; on GSuite activities → connection-and-auth-failures.md (gsuite)"
-exclusions:
-  - "No email matching the filter criteria, received in the last 1 hour has been found → get-newest-email-no-match.md"
-  - "The resource could not be found. after the event was retrieved → mail-folder-not-found.md, mail-message-not-found.md"
-  - "Token / AADSTS / No default connection messages without a ConnectionHttpException → authentication-token-invalid.md"
 ---
 
 # O365 — Email trigger fails to retrieve connection event data

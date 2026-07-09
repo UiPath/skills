@@ -1,18 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: error-code
-    value: "102002"
-    note: "IntSvcOperationFailed — connection is active but the specific operation fails; auth-shaped details → connection-auth-expired.md"
-  - kind: error-code
-    value: "102003"
-    note: "IntSvcBadRequest"
-  - kind: error-code
-    value: "102004"
-    note: "IntSvcMethodNotSupported"
-  - kind: error-code
-    value: "102010"
-    note: "IntSvcArgumentsError"
 ---
 
 # Operation Failed

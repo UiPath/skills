@@ -1,24 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "System.InvalidCastException"
-    note: "binding the Outlook COM server at Send Outlook Mail — Outlook not installed / bitness mismatch / corrupted Office registry (branch 1)"
-  - kind: message
-    value: "Unable to cast COM object"
-    note: "Outlook COM bind at Send Outlook Mail (branch 1); Word interop casts name a Microsoft.Office.Interop.Word interface → word-export-pdf-com-wrong-thread.md"
-  - kind: message
-    value: "Library not registered"
-    note: "COMException binding Outlook COM at Send Outlook Mail (branch 1); Word type-library variant carries 0x8002801D → word-com-interop-failures.md"
-  - kind: error-code
-    value: "TYPE_E_LIBNOTREGISTERED"
-    note: "Outlook COM type library not registered (branch 1)"
-  - kind: exception
-    value: "System.NullReferenceException"
-    note: "raised at Send Outlook Mail — uninitialized To/Subject/Body variable or empty attachment path (branch 3)"
-  - kind: message
-    value: "Object reference not set to an instance of an object"
-    note: "at Send Outlook Mail — null To/Subject/Body or empty attachment path (branch 3)"
 ---
 
 # Send Outlook Mail Message Failures

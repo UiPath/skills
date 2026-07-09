@@ -1,11 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "ContextGroundingIndex not found"
-  - kind: error-code
-    value: "AGENT_RUNTIME.UNEXPECTED_ERROR"
-    note: "generic runtime code — routable here only with the ContextGroundingIndex not found detail"
 ---
 
 # Context Grounding Index Not Found

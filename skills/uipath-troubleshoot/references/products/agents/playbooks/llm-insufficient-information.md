@@ -1,9 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "Insufficient information"
-    note: "detail field of the error JSON on a completion or agentRun span — names the missing context"
 ---
 
 # LLM Call Failed — Insufficient Information in Prompt

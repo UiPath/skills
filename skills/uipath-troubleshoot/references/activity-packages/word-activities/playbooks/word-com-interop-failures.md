@@ -1,24 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: error-code
-    value: "0x8002801D"
-    note: "TYPE_E_LIBNOTREGISTERED on Word COM startup, any Word activity (E1); 'make sure Word application is installed' wording → word-scope-com-not-installed.md"
-  - kind: error-code
-    value: "0x80040154"
-    note: "REGDB_E_CLASSNOTREG on Word COM startup (E1) — sibling of 0x8002801D; scope-level not-installed message → word-scope-com-not-installed.md"
-  - kind: error-code
-    value: "0x8001010A"
-    note: "RPC_E_SERVERCALL_RETRYLATER — Word busy/blocked (E3), any Word activity; at Replace Text / Read Text → replace-text-com-busy.md"
-  - kind: error-code
-    value: "0x80010001"
-    note: "RPC_E_CALL_REJECTED — Word busy/blocked (E3); at Replace Text → replace-text-com-busy.md"
-  - kind: error-code
-    value: "0x80010100"
-    note: "RPC_E_SYS_CALL_FAILED — Word busy/blocked (E3)"
-  - kind: error-code
-    value: "0x8001010E"
-    note: "RPC_E_WRONG_THREAD as aftermath of a WINWORD.EXE crash mid-operation (E4); live wrong-thread cast at Save Document as PDF → word-export-pdf-com-wrong-thread.md"
 ---
 
 # Word COM / Office Interop Failures & Word Process Crashes

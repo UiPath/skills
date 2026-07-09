@@ -1,14 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "No Message events found"
-  - kind: message
-    value: "No File events found"
-    note: "OneDrive/SharePoint file trigger variant"
-  - kind: http-status
-    value: "400"
-    note: "at a Message Start/Receive Event with the no-events wording — other named 400s route to their specific playbooks"
 ---
 
 # No Message Events Found (400)

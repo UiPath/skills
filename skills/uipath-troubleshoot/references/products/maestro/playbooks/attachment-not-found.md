@@ -1,12 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "Attachment not found"
-    note: "file access fails after job retention deleted the owning job — process initially worked"
-  - kind: http-status
-    value: "404"
-    note: "on file/attachment access after retention elapsed — not an IS-call or job-start 404"
 ---
 
 # Attachment Not Found After Job Retention

@@ -1,20 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: error-code
-    value: "TemplateNoHostsAvailable"
-    note: "stale dispatch-time snapshot — template currently reports a connected runtime (robotVersions populated)"
-  - kind: error-code
-    value: "DynamicJobConnectedMachinesInvalid"
-    note: "no-host-family PendingReasons code captured at dispatch, no longer describing current state"
-  - kind: error-code
-    value: "DynamicJobConnectedMachinesWindowsRobotVersionInvalid"
-    note: "no-host-family PendingReasons code captured at dispatch, no longer describing current state"
-  - kind: state
-    value: "Pending"
-    note: "no-host-family PendingReasons.Errors BUT robotVersions populated AND JobHistory contains only the original Pending entry"
-exclusions:
-  - "template has no connected runtime (robotVersions empty) → job-pending-no-host.md"
 ---
 
 # Job Pending — Stale Dispatch-Time PendingReasons

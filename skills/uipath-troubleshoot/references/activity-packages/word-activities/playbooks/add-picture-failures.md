@@ -1,8 +1,5 @@
 ---
 confidence: medium
-silent: true
-exclusions:
-  - "Word COM HRESULTs (0x8002801D / 0x8001010A / 0x8001010E) — environmental C2 surface → word-com-interop-failures.md"
 ---
 
 # Add Picture (WordAddImage) Failures

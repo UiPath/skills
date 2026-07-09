@@ -1,14 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "The process cannot access the file because it is being used by another process"
-    note: "Word scope save — Auto Save racing another access, a concurrent job, or a sync/AV client holding the handle"
-  - kind: message
-    value: "The file is read-only"
-    note: "read-only attribute or locked target when the Word scope persists the edit"
-  - kind: message
-    value: "Cannot save the document because it is read-only"
 ---
 
 # Replace Text in Document — File Lock / "File is Read-Only" on Save

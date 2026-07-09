@@ -1,15 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "UiPath.Excel.BusinessException"
-    note: "with sheet-name wording — see message signature; other BusinessException wordings → write-cell-failures.md / write-range-failures.md / append-range-failures.md / delete-range-failures.md"
-  - kind: message
-    value: "The sheet with the name"
-    note: "legacy Excel Application Scope family — configured SheetName matches no sheet in the workbook; the write-side playbooks pivot here for the same signature"
-  - kind: message
-    value: "does not exist in the workbook"
-    note: "modern Use Excel File family wording of the same sheet-name mismatch"
 ---
 
 # Read Range — Sheet With The Specified Name Does Not Exist

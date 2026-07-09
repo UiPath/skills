@@ -1,21 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "The resource could not be found."
-    note: "raised by a Mail activity that addresses a specific message ID — folder-argument activities → mail-folder-not-found, Drive activities → drive-item-not-found"
-  - kind: message
-    value: "The specified object was not found in the store."
-  - kind: error-code
-    value: "ErrorItemNotFound"
-  - kind: error-code
-    value: "ErrorInvalidMailboxItemId"
-  - kind: error-code
-    value: "ErrorInvalidIdMalformed"
-  - kind: message
-    value: "Id is malformed."
-exclusions:
-  - "The resource could not be found. from activities taking a MailFolder argument and no message ID → mail-folder-not-found.md"
 ---
 
 # O365 Mail — Message not found

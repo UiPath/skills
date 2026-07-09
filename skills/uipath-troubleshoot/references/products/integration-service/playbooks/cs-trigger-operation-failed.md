@@ -1,16 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: error-code
-    value: "CNS1020"
-  - kind: error-code
-    value: "CNS1014"
-  - kind: error-code
-    value: "CNS1025"
-  - kind: error-code
-    value: "CNS1039"
-  - kind: error-code
-    value: "CNS2004"
 ---
 
 # Connection Service — Trigger Management Failed (CNS1020, CNS1014, CNS1025, CNS1039, CNS2004)

@@ -1,14 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "ActivityTimeoutException"
-    note: "element/state waits (Wait UI Element Appear, any classic UI activity) — for image-based waits see image-target-not-found.md"
-  - kind: message
-    value: "Activity timeout exceeded"
-    note: "same discriminator — faulted activity is an element/state wait, not an image activity"
-exclusions:
-  - "Wait Image Vanish / image still matching on screen → image-target-not-found.md"
 ---
 
 # UI Activity Timeout — Element or State Never Reached

@@ -1,9 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "System.Runtime.InteropServices.COMException"
-    note: "at Export to PDF / Save Document as PDF — orphaned WINWORD.EXE or locked input document; 'Command failed' on open with a SharePoint link → word-open-sharepoint-url-com-command-failed.md"
 ---
 
 # Export to PDF — COM Interop Hang / Crash / COMException

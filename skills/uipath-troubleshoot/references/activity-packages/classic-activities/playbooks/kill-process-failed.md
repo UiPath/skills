@@ -1,8 +1,5 @@
 ---
 confidence: low
-signatures:
-  - kind: message
-    value: "Encountered errors while trying to kill a process"
 ---
 
 # Kill Process Failed

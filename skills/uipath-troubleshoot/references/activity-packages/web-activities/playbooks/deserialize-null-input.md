@@ -1,14 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: exception
-    value: "System.ArgumentNullException"
-    note: "on DeserializeJson — input guard for null/empty JsonString; parameter name 'JSON string'"
-  - kind: message
-    value: "Value cannot be null. (Parameter 'JSON string')"
-  - kind: exception
-    value: "System.NullReferenceException"
-    note: "on DeserializeJsonArray — no null-input guard, a null JsonString hits JArray.Parse directly"
 ---
 
 # Deserialize — Null / Empty Input

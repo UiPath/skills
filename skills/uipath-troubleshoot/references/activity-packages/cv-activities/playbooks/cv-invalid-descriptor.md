@@ -1,22 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: exception
-    value: "UiPath.CV.InvalidDescriptorException"
-  - kind: message
-    value: "Invalid Descriptor"
-  - kind: message
-    value: "Reason: Target must be set"
-  - kind: message
-    value: "Reason: Invalid image reference or value"
-  - kind: message
-    value: "Descriptor value:"
-    note: "always the last line of the composite message — names the offending Descriptor argument expression"
-exclusions:
-  - "ElementNotFoundException after a find ran → cv-element-not-found.md"
-  - "CvElementExistsWithDescriptor returned Result = false with no fault → cv-element-not-found.md / cv-silent-failures-and-false-results.md"
-  - "Scope faulted before any descriptor activity ran → cv-scope-setup-failures.md"
-  - "Server-side ArgumentException (auth 401, unreachable, throttling 429, word limits) → cv-server-auth-throttling-network.md"
 ---
 
 # CV — Invalid Descriptor (missing Target, broken image references, parse/evaluation failure)

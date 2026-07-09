@@ -1,11 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "System.NullReferenceException"
-    note: "on UiPath.Web.Activities.HttpClient — a request input (EndPoint, header, cookie, parameter, body) resolved null during request building; no HTTP status or transport phrase in the message"
-exclusions:
-  - "WebException with an HTTP status or transport phrase → http-request-connection-failure.md"
 ---
 
 # HTTP Client — Null Reference (NullReferenceException)

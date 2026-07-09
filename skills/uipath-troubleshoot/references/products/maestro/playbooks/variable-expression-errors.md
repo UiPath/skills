@@ -1,13 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "Missing output variables"
-  - kind: message
-    value: "Assignments are not allowed in expressions"
-  - kind: message
-    value: "Failed to evaluate the input collection variable"
-    note: "designer-surface variant — swimlane drag/drop cleared references; marker runtime failures → marker-invalid-cast.md"
 ---
 
 # Variable and Expression Errors

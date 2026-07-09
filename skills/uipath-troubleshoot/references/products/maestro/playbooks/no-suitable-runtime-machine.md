@@ -1,10 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "Could not find a machine with Unattended or NonProduction runtimes in the current folder"
-  - kind: error-code
-    value: "#2818"
 ---
 
 # No Machine With Unattended/NonProduction Runtimes (409, #2818)

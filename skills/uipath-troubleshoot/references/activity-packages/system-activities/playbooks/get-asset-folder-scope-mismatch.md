@@ -1,15 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: error-code
-    value: "1100"
-  - kind: message
-    value: "Folder does not exist or the user does not have access to the folder"
-    note: "raised by Get Asset/Credential inside an RPA job — executing robot's folder scope; surfaced by a Maestro instance → maestro folder-not-accessible.md"
-  - kind: error-code
-    value: "1101"
-  - kind: message
-    value: "An organization unit is required"
 ---
 
 # Get Asset Failed — Folder Scope Mismatch

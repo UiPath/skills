@@ -1,8 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "btoa is not defined"
 ---
 
 # JS Runtime Discrepancy

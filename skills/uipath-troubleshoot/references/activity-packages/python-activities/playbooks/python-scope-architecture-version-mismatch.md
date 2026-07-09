@@ -1,17 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "One or more errors occurred"
-    note: "at Python Scope open, no Python traceback — engine init: Target bitness, Version, Library path, or missing .NET Desktop Runtime"
-  - kind: message
-    value: "Error initializing the Python engine"
-  - kind: exception
-    value: "BadImageFormatException"
-    note: "generic .NET — here: Target bitness does not match the installed interpreter"
-  - kind: message
-    value: "is not a valid Win32 application"
-    note: "inner error of the bitness mismatch"
 ---
 
 # Python Scope — One or More Errors Occurred / Engine Init (Architecture & Version Mismatch)

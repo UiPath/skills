@@ -1,11 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "Folder does not exist or the user does not have access to the folder"
-    note: "surfaced by a Maestro instance calling Orchestrator (HTTP 400/403, code #1100); raised by Get Asset/Credential inside an RPA job → system-activities get-asset-folder-scope-mismatch.md"
-  - kind: error-code
-    value: "#1100"
 ---
 
 # Folder Does Not Exist or No Access (400, #1100)

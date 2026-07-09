@@ -1,9 +1,5 @@
 ---
 confidence: medium
-silent: true
-exclusions:
-  - "error code 4006 / EMAIL_RECEIVED → deployment-email-received.md"
-  - "Package entry points definition is invalid after adding DateTime inputs → deployment-datetime-input.md"
 ---
 
 # Deployment Failure

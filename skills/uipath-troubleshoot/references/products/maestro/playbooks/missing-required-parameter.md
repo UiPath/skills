@@ -1,11 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "Missing value for required parameter"
-  - kind: http-status
-    value: "400"
-    note: "at activity execution naming a single missing required parameter — broad schema wording → input-schema-mismatch.md; empty errorDetails → generic-error-400.md"
 ---
 
 # Missing Value for Required Parameter (400)

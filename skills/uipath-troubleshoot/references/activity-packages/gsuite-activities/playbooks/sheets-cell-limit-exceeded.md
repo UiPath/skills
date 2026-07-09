@@ -1,11 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "This action would increase the number of cells in the workbook above the limit of 10000000 cells"
-  - kind: http-status
-    value: "400"
-    note: "Google Sheets BadRequest whose message names the 10000000-cell limit; 'Unable to parse range' 400 → sheets-invalid-range.md; Maestro Error_400 → generic-error-400.md (products/maestro)"
 ---
 
 # GSuite Sheets — 10 million cell limit exceeded

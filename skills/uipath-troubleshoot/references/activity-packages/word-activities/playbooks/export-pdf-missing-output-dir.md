@@ -1,12 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "Command Failed"
-    note: "generic Export to PDF / Save Document as PDF failure — most common cause is a missing output directory; lowercase 'Command failed' on Documents.Open → word-open-sharepoint-url-com-command-failed.md"
-exclusions:
-  - "invalid or un-suffixed output path → export-pdf-output-path-format.md"
-  - "busy/locked Word COM session (COMException or hang) → export-pdf-com-hang.md"
 ---
 
 # Export to PDF — "Command Failed" Because the Output Directory Doesn't Exist

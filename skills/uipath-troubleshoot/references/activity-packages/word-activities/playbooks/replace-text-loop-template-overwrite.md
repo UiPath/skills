@@ -1,9 +1,5 @@
 ---
 confidence: medium
-silent: true
-exclusions:
-  - "placeholder split across Word XML runs (fails on every row, including the first) → replace-text-silent-no-substitution.md"
-  - "IOException from Auto Save racing a shared file in a loop → replace-text-file-locked.md"
 ---
 
 # Replace Text in Document — Placeholder Replaced Once, Then Missing in Loop Iterations

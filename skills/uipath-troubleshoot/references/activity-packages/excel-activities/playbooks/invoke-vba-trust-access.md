@@ -1,10 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "Programmatic access to Visual Basic Project is not trusted"
-  - kind: message
-    value: "Programmatic access to Office VBA project is denied"
 ---
 
 # Invoke VBA — Trust Access to VBA Project Denied

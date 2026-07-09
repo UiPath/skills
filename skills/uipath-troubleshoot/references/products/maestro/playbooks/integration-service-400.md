@@ -1,11 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "Request to Integration Services failed with status code '400'"
-  - kind: error-code
-    value: "102003"
-    note: "IntSvcBadRequest"
 ---
 
 # Integration Services 400 — Bad Request to Connector

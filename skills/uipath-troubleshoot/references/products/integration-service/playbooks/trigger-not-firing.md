@@ -1,6 +1,5 @@
 ---
 confidence: medium
-silent: true
 ---
 
 # Trigger Not Firing

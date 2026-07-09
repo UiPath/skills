@@ -1,32 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "System.ArgumentException"
-    note: "built by CVSessionData.Compute / ToErrorMessageWithCode() with [Error code: N] text — surfaces lazily on a child's first refresh, not at scope entry"
-  - kind: message
-    value: "Computer Vision cannot be enabled: the current user is not authenticated."
-  - kind: message
-    value: "The specified Computer Vision server"
-    note: "covers the 403 variant with the server name and the 502/503/504/408 could-not-be-reached variant"
-  - kind: message
-    value: "Computer Vision rate limit exceeded."
-  - kind: message
-    value: "The requested data exceeds the maximum payload accepted by the server."
-  - kind: message
-    value: "hit the maximum number of words it is able to identify"
-    note: "covers the cloud (MaxOCRCloud) and local-server (MaxOCR) word-limit variants — thrown even on HTTP 200"
-  - kind: message
-    value: "Error while sending request."
-  - kind: message
-    value: "Response from server is not valid."
-    note: "generic fall-through masking transport errors — the real cause is in the trace, not the surfaced message"
-  - kind: message
-    value: "Server URL is empty and UseLocalServer option is false"
-exclusions:
-  - "Local-server install/prerequisite errors (LocalServer package missing, VC++ redistributable, AVX2) → cv-scope-setup-failures.md"
-  - "Element not found with no error code (the analysis call succeeded) → cv-element-not-found.md"
-  - "CvElementExistsWithDescriptor returned false — it only swallows not-found; server errors still fault"
 ---
 
 # CV — Server errors: auth (401), unreachable (403/5xx), throttling (429), payload/word limits, network

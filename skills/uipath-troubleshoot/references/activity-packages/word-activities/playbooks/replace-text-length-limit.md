@@ -1,9 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: exception
-    value: "ArgumentException"
-    note: "Search/Replace value over 256 characters on a classic UiPath.Word.Activities version; silent truncation variant shows no exception"
 ---
 
 # Replace Text in Document — Input String Length Limit (256 Characters)

@@ -1,20 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "must be placed inside"
-  - kind: error-code
-    value: "0x800A03EC"
-    note: "on Append Range — sheet name / file extension mismatch (branch 2) or source-vs-target column schema mismatch (branch 5)"
-  - kind: exception
-    value: "System.NullReferenceException"
-    note: "raised at Append Range — source DataTable argument is Nothing (branch 4)"
-  - kind: message
-    value: "hidden rows"
-    note: "append region intersects hidden rows on the target sheet (package v2.8.5+); hidden rows inside a Write Range rectangle → write-range-failures.md"
-exclusions:
-  - "BusinessException 'The sheet with the name ... does not exist' → read-range-sheet-not-found.md"
-  - "IOException 'being used by another process' → read-range-file-locked.md"
 ---
 
 # Append Range Failures

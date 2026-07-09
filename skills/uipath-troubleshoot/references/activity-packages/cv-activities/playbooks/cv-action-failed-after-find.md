@@ -1,28 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "System.ArgumentNullException"
-    note: "parameter name Secure — CV Type Into with a null SecureString, thrown before any keystroke"
-  - kind: message
-    value: "Value cannot be null. (Parameter 'Secure')"
-  - kind: exception
-    value: "ElementNotSetException"
-    note: "remapped from UninitializedNodeException after the find succeeded — post-find action failure, not the scope-entry variant"
-  - kind: message
-    value: "The target Element was not specified for this activity."
-    note: "post-find variant — a child's find succeeded, then the action failed. Scope-entry variant (no child ran) → cv-scope-setup-failures.md"
-  - kind: exception
-    value: "COMException"
-    note: "raw driver exception with NO UiPath.CV.* type and no CV resource key — the find already passed; no *_ComputerVision dump exists for the run"
-  - kind: state
-    value: "OutRegion = (0,0,0,0)"
-    note: "no error but empty OutRegion — click/clipboard failure swallowed post-find (window moved, focus stolen, input blocked)"
-exclusions:
-  - "Element not found / Scrolled the entire screen → cv-element-not-found.md / cv-scroll-search-failures.md"
-  - "Invalid Descriptor → cv-invalid-descriptor.md"
-  - "Server errors during a refresh → cv-server-auth-throttling-network.md"
-  - "Get Text empty in OCR mode (no clicks/clipboard involved) → cv-get-text-empty-or-wrong-result.md"
 ---
 
 # CV — Click/type failed after the element was found (focus, stale coordinates, blocked input, SecureString)

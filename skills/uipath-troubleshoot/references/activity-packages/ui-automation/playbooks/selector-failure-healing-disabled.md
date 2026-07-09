@@ -1,18 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: exception
-    value: "SelectorNotFoundException"
-    note: "Healing Agent disabled — AutopilotForRobots Enabled: false or HealingEnabled: false (or field absent)"
-  - kind: exception
-    value: "UiElementNotFoundException"
-    note: "Healing Agent disabled — AutopilotForRobots Enabled: false or HealingEnabled: false (or field absent)"
-  - kind: exception
-    value: "ElementNotInteractableException"
-    note: "Healing Agent disabled — AutopilotForRobots Enabled: false or HealingEnabled: false (or field absent)"
-  - kind: exception
-    value: "NodeNotFoundException"
-    note: "Healing Agent disabled — AutopilotForRobots Enabled: false or HealingEnabled: false (or field absent)"
 ---
 
 # Selector Failure — Healing Agent Disabled

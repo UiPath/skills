@@ -1,33 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "System.ArgumentException"
-    note: "scope-entry fault before any child CV activity ran — LocalServer missing or local-server prerequisite; the faulted activity in XAML is the CV Screen Scope itself"
-  - kind: message
-    value: "Please make sure you have UiPath.ComputerVision.LocalServer package installed"
-  - kind: message
-    value: "Server or OCR engine is required."
-  - kind: message
-    value: "The target Element was not specified for this activity."
-    note: "scope-entry variant — no child ran; root-selector COMException on a matched window or a genuinely null scope Target. Post-find variant → cv-action-failed-after-find.md"
-  - kind: message
-    value: "requires a processor that accepts AVX2 instructions."
-  - kind: message
-    value: "requires Microsoft Visual C++ Redistributable 2015-2022 for X64."
-  - kind: message
-    value: "Activity is valid only inside a CV Screen Scope"
-  - kind: message
-    value: "Activity can not be in another Screen Scope container"
-  - kind: message
-    value: "Descriptor or InputRegion is required"
-  - kind: exception
-    value: "System.NullReferenceException"
-    note: "raw, no message — a child CV activity executed outside a CV Screen Scope at runtime (design-time validation bypassed)"
-exclusions:
-  - "A child activity started and the find/analysis failed → cv-element-not-found.md / cv-server-auth-throttling-network.md"
-  - "OCR word-limit message (surfaces lazily on the first child's analysis call, not at scope entry) → cv-server-auth-throttling-network.md"
-  - "The target Element was not specified — after a child's find succeeded → cv-action-failed-after-find.md"
 ---
 
 # CV — Screen Scope setup failures (window resolution, local server prerequisites, missing server/OCR config)

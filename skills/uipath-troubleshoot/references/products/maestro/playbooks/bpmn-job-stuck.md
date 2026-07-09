@@ -1,6 +1,5 @@
 ---
 confidence: low
-silent: true
 ---
 
 # BPMN Job Stuck or No Error Reported

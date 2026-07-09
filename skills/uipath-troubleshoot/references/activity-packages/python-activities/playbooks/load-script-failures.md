@@ -1,24 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "The specified Python path is not valid"
-    note: "surfacing at Load Python Script (first scope child) — engine init, scope Path misconfigured (L1a); dedicated diagnostic → python-path-not-valid.md"
-  - kind: message
-    value: "Error initializing Python engine"
-    note: "engine init at the scope layer (L1b-L1e: bitness, Library path, unsupported version, missing .NET Desktop Runtime); see also python-scope-architecture-version-mismatch.md"
-  - kind: message
-    value: "Error loading the python script"
-    note: "script-layer failure executing the module body (L2: syntax error, top-level exception, failed import)"
-  - kind: message
-    value: "ModuleNotFoundError: No module named"
-    note: "top-level import missing from the interpreter at the scope's Path (L2a); lazy import inside a called function → invoke-method-failures.md"
-  - kind: message
-    value: "One or more errors occurred"
-    note: "at Load Python Script — wrapper around a script-layer load failure (L2); at engine init → python-scope-architecture-version-mismatch.md; on Invoke Python Method → invoke-method-failures.md"
-  - kind: exception
-    value: "ModuleNotFoundError"
-    note: "Python exception class — top-level import missing from the interpreter at the scope's Path during Load Python Script (L2a); lazy import inside a called function → invoke-method-failures.md"
 ---
 
 # Load Python Script (LoadScript) Failures

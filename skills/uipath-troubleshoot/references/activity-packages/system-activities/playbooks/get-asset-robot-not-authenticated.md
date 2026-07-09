@@ -1,18 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "You are not authenticated!"
-  - kind: http-status
-    value: "401"
-    note: "on Get Asset/Credential — robot session/token not authenticated; 401 on an IS connection → connection-auth-expired.md"
-  - kind: exception
-    value: "UiPath.Core.Activities.OrchestratorCommunicationException"
-  - kind: error-code
-    value: "0"
-    note: "shared with the 403 permission-denied failure — discriminator is HTTP 401 Unauthorized / 'not authenticated' wording"
-exclusions:
-  - "HTTP 403 'not authorized' (permission/RBAC) → get-asset-permission-denied.md"
 ---
 
 # Get Asset Failed — Robot Not Authenticated

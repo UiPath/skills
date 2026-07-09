@@ -1,18 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "UiPath.Ipc.RemoteException"
-    note: "connector failure only when the faulted activity is a connector activity AND the unwrapped inner message is token/auth, transport, or downstream HTTP"
-  - kind: exception
-    value: "UiPath.CoreIpc.RemoteException"
-    note: "same phenomenon as UiPath.Ipc.RemoteException across two IPC library generations"
-  - kind: message
-    value: "Could not obtain access token."
-  - kind: message
-    value: "The Client ID or Client Secret is incorrect."
-  - kind: message
-    value: "1 or more scope requested are not robot scopes."
 ---
 
 # Connector Activity — RemoteException (Ipc / CoreIpc)

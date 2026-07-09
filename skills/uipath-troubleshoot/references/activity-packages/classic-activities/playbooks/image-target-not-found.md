@@ -1,12 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "ActivityTimeoutException"
-    note: "image activities (Wait Image Vanish) — image never matched or still present; for element/state waits see ui-activity-timeout.md"
-  - kind: message
-    value: "Activity timeout exceeded"
-    note: "same discriminator — faulted activity is image-based"
 ---
 
 # Image Target Not Found / Did Not Vanish

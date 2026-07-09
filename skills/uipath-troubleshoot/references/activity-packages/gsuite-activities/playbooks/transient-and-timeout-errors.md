@@ -1,35 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "Internal server error occurred. Please try again later."
-  - kind: message
-    value: "The service is currently unavailable. Please try again later."
-  - kind: message
-    value: "Network error occurred before reaching the server."
-  - kind: message
-    value: "Request deadline exceeded."
-  - kind: message
-    value: "The current state conflicts with what the request expects."
-  - kind: message
-    value: "limit was exceeded."
-    note: "covers 'The daily limit was exceeded.' / 'The user rate limit was exceeded.' / 'The rate limit was exceeded.' — Google 429 rate/quota reasons, NOT the storage quota ('storage quota was exceeded' → upload-storage-quota-exceeded.md)"
-  - kind: message
-    value: "A task was canceled."
-    note: "GSuite per-request RequestTimeout (HttpClient cancellation) — not a System.TimeoutException, which is auth-phase → connection-and-auth-failures.md"
-  - kind: message
-    value: "An error occurred in the activity."
-    note: "GSuite generic fallback for unmapped Google API errors — read the inner status/reason from the trace before concluding"
-  - kind: error-code
-    value: "dailyLimitExceeded"
-  - kind: error-code
-    value: "userRateLimitExceeded"
-  - kind: error-code
-    value: "rateLimitExceeded"
-exclusions:
-  - "Authentication attempt took longer than <N> seconds (auth-phase TimeoutException) → connection-and-auth-failures.md"
-  - "The storage quota was exceeded. / Upload failed after <N> bytes → upload-storage-quota-exceeded.md"
-  - "Clean 401/403/404 with a definite message → connection-and-auth-failures.md, drive-file-not-found.md"
 ---
 
 # GSuite — Transient service errors, rate limits, and per-request timeouts

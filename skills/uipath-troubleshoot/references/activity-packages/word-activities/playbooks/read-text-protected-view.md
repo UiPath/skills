@@ -1,9 +1,5 @@
 ---
 confidence: medium
-silent: true
-exclusions:
-  - "Protected View blocking a write/save rather than a read → word-scope-file-corrupted.md"
-  - "unattended hang on an invisible Protected View bar → word-scope-hangs-background-prompt.md"
 ---
 
 # Read Text — Protected View Blocks Reading a File From an Untrusted Source

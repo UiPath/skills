@@ -1,18 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "UiPath.Word.WordException"
-    note: "COM-start fault on an unattended/background run — stack through WordAppHelpers.StartNewApplication"
-  - kind: message
-    value: "Error opening document, make sure Word application is installed. If already installed, an Office Repair may be required."
-    note: "full two-clause text on COM start in Session 0 / Background Process; first clause alone → word-scope-com-not-installed.md"
-  - kind: message
-    value: "WordAppHelpers.StartNewApplication"
-    note: "stack frame — COM start path, before any Documents.Open"
-exclusions:
-  - "faults on Documents.Open with COMException 'Command failed' → word-open-sharepoint-url-com-command-failed.md"
-  - "wrong-thread cast 0x8001010E on a child activity → word-export-pdf-com-wrong-thread.md"
 ---
 
 # Word Application Scope — COM Start Fails in Background / Session 0 (unattended)

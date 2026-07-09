@@ -1,27 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "Access token has expired or is not yet valid."
-  - kind: message
-    value: "The caller is not authenticated."
-  - kind: error-code-prefix
-    value: "AADSTS"
-    note: "Entra ID failure at token acquisition — 'A configuration error AADSTS<code> occurred in the activity.'"
-  - kind: message
-    value: "The client did not complete the authentication after"
-    note: "with InteractiveToken authentication wording — mid-run sign-in never completed (unattended/Agent context)"
-  - kind: message
-    value: "Authentication attempt took longer than"
-    note: "Microsoft 365 connection-creation interactive sign-in wizard; same wording in GSuite is the auth-phase TimeoutException → connection-and-auth-failures.md (gsuite)"
-  - kind: message
-    value: "No default connection is available."
-  - kind: message
-    value: "Automation Cloud cannot be reached"
-    note: "in an authentication context — connection could not be resolved; the same message on a mid-run Graph call is transient-service-error"
-exclusions:
-  - "Authenticated caller lacking Graph permission (403 wording) → insufficient-graph-scope.md"
-  - "Pre-authentication configuration faults (asset / 'You must provide a value') → application-scope-misconfigured.md"
 ---
 
 # O365 — Authentication / token invalid (401)

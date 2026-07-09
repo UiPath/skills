@@ -1,23 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "The resource could not be found."
-    note: "raised by a OneDrive/SharePoint Files activity — for Mail activities the same sentence means a missing folder (mail-folder-not-found) or message (mail-message-not-found)"
-  - kind: message
-    value: "Cannot find item configured with connection"
-    note: "O365 Drive item / path form; the same wrapper text on a Mail activity is a mail folder → mail-folder-not-found.md, and on GSuite → drive-file-not-found.md (gsuite)"
-  - kind: message
-    value: "A file with the specified ID does not exist."
-  - kind: error-code
-    value: "itemNotFound"
-    note: "legacy activities — raw Microsoft.Graph.ServiceException with 'Code: itemNotFound'"
-  - kind: message
-    value: "You do not have access to any Drives named"
-  - kind: message
-    value: "The specified shared item does not exist."
-exclusions:
-  - "The resource could not be found. from a Mail activity → mail-folder-not-found.md"
 ---
 
 # O365 Drive — File or folder not found

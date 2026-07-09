@@ -1,16 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "Cannot run the macro"
-    note: "Invoke VBA faulting while loading/compiling the external code file — file missing, wrong encoding, or code not wrapped in Sub/Function; Execute Macro surface → execute-macro-failures.md"
-  - kind: message
-    value: "Sub or Function not defined"
-    note: "raised while compiling the injected module — code file malformed or statements outside a procedure block; file compiles but the named entry point does not resolve → invoke-vba-entry-method-name.md"
-  - kind: message
-    value: "Expected: end of statement"
-  - kind: message
-    value: "Compile error"
 ---
 
 # Invoke VBA — Cannot Run Macro / Code File Unreadable

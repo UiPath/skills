@@ -1,37 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "System.TimeoutException"
-    note: "GSuite auth-phase only — 'Authentication attempt took longer than <N> seconds' wording during connection/OAuth token acquisition; per-request timeouts cancel as 'A task was canceled.' instead"
-  - kind: message
-    value: "Authentication attempt took longer than"
-    note: "GSuite connection/OAuth token acquisition (System.TimeoutException); the same wording on Microsoft 365 is the connection-creation sign-in wizard → authentication-token-invalid.md (o365)"
-  - kind: message
-    value: "Invalid authentication credentials."
-  - kind: message
-    value: "Authentication error: the access token is expired or invalid."
-  - kind: message
-    value: "Permission to the resource was denied."
-  - kind: message
-    value: "The user does not have sufficient permissions for the file."
-  - kind: message
-    value: "The domain administrators have disabled Drive apps."
-  - kind: exception
-    value: "UiPath.ConnectionClient.Contracts.ConnectionHttpException"
-    note: "GSuite token fetch / Integration Service connection resolution — on O365 Mail triggers → email-trigger-connection-event-failure.md (o365)"
-  - kind: message
-    value: "is invalid or you do not have access to it"
-  - kind: error-code
-    value: "CNS1044"
-    note: "surfaced inside a GSuite activity ConnectionHttpException; raw Connection Service API surface → cs-permission-denied.md"
-  - kind: error-code
-    value: "CNS1045"
-    note: "surfaced inside a GSuite activity ConnectionHttpException; raw Connection Service API surface → cs-permission-denied.md"
-exclusions:
-  - "The storage quota was exceeded. / Upload failed after <N> bytes (403 quota, not authorization) → upload-storage-quota-exceeded.md"
-  - "The resource was not found. (404) → drive-file-not-found.md"
-  - "Transient 5xx / rate limit / A task was canceled. → transient-and-timeout-errors.md"
 ---
 
 # GSuite — Connection, authentication, and permission failures

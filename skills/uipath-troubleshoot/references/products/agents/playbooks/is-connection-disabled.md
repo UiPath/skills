@@ -1,14 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "Your connection has been temporarily disabled due to multiple unsuccessful attempts"
-  - kind: message
-    value: "Failed to execute IS Event call"
-    note: "with HTTP Status: 403 - Forbidden on an agent toolCall span"
-  - kind: http-status
-    value: "403"
-    note: "IS connection lockout on an agent toolCall span — OAuth2 authorization-code connections only; vendor-direct LLM-call 403s → byo-connection-dead.md"
 ---
 
 # IS Connection Disabled (403)

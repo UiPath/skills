@@ -1,15 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "The source file does not exist."
-  - kind: message
-    value: "Destination should be a folder."
-  - kind: message
-    value: "File cannot be null"
-  - kind: exception
-    value: "UnauthorizedAccessException"
-    note: "generic .NET — discriminator is the faulted file activity (Rename File / Move File / Append Line)"
 ---
 
 # File Operation Failed — Rename / Move / Append

@@ -1,10 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "does not work with assets of type Credential"
-  - kind: message
-    value: "Invalid asset type"
 ---
 
 # Get Asset Failed — Wrong Activity for Asset Type

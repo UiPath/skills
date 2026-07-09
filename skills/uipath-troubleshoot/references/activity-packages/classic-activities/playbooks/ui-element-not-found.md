@@ -1,11 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "SelectorNotFoundException"
-    note: "faulting activity is a CLASSIC UI activity (Click, Type Into, Attach — UiPath.Core.Activities); modern N-prefixed activities → ui-automation selector-failure playbooks (Healing Agent applies there, never to classic)"
-  - kind: message
-    value: "Cannot find the UI element corresponding to this selector"
 ---
 
 # UI Element Not Found — Classic UI Activity

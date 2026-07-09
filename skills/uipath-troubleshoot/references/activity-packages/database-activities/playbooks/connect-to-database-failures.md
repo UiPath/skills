@@ -1,22 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "Format of the initialization string does not conform to specification starting at index"
-  - kind: message
-    value: "provider is not registered on the local machine"
-  - kind: message
-    value: "because it is being used by another process"
-    note: "Connect to Database against a file-based (ACE OLE DB / ODBC) source — workbook held by another process (branch 3)"
-  - kind: message
-    value: "The type initializer for 'Microsoft.Data.SqlClient.SqlConnection' threw an exception"
-    note: "connection open with empty or SqlClient ProviderName after Windows-Legacy → Windows migration (branch 4); reached through a Start Transaction scope → start-transaction-failures.md"
-  - kind: exception
-    value: "System.ArgumentException"
-    note: "on Connect to Database with initialization-string / invalid-connection-string wording (branch 1) — the class alone is too generic to route on; CV scope/server ArgumentException → cv-activities playbooks"
-  - kind: exception
-    value: "System.InvalidOperationException"
-    note: "on Connect to Database with the ACE/Jet OLE DB provider-not-registered wording (branch 2) — the class alone is too generic to route on"
 ---
 
 # Connect to Database Failures (Excel / Access via OLE DB / ODBC)

@@ -1,13 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: error-code
-    value: "400007"
-    note: "BpmnMarkerInputNullError"
-  - kind: message
-    value: "Input collection for the marker element must not be null"
-exclusions:
-  - "InvalidCastException on JS marker items (400008) → marker-invalid-cast.md"
 ---
 
 # Marker Input Collection Is Null (400007)

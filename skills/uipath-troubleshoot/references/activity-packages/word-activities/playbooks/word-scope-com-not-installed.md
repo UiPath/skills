@@ -1,22 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "Error opening document, make sure Word application is installed"
-    note: "Word Application Scope COM startup — no desktop Word / bitness / damaged registration; unattended Session-0 variant with 'Office Repair may be required' → word-com-start-background-session0.md"
-  - kind: message
-    value: "Could not load file or assembly 'Microsoft.Office.Interop.Word'"
-  - kind: message
-    value: "Retrieving the COM class factory for component with CLSID {000209FF-0000-0000-C000-000000000046} failed"
-    note: "CLSID of Word.Application — COM class factory unavailable"
-  - kind: error-code
-    value: "REGDB_E_CLASSNOTREG"
-    note: "no usable desktop Word for Interop at Word Application Scope startup"
-  - kind: error-code
-    value: "0x80040154"
-    note: "REGDB_E_CLASSNOTREG at Word Application Scope startup — Word missing / bitness / broken registration; package-level decision tree → word-com-interop-failures.md"
-  - kind: message
-    value: "Cannot create an instance of Microsoft.Office.Interop.Word.ApplicationClass"
 ---
 
 # Word Application Scope — Error Opening Document / Word Not Installed (COM Interop)

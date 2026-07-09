@@ -1,13 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: exception
-    value: "UiPath.UIAutomationNext.Exceptions.UiNodeDisabledElementException"
-  - kind: message
-    value: "The target element is disabled. Operation canceled."
-exclusions:
-  - "SelectorNotFoundException / UiElementNotFoundException / NodeNotFoundException (element not found) → selector-failure-manual.md"
-  - "TimeoutException → timeout-issue.md"
 ---
 
 # Disabled Element — AlterIfDisabled Not Enabled

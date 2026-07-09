@@ -1,20 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: exception
-    value: "UiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException"
-  - kind: error-code-prefix
-    value: "DAP-GE-"
-  - kind: error-code
-    value: "DAP-GE-3000"
-    note: "Failed to retrieve connection — detail names invalid/no-access, missing Connections.View permission, or Bad Gateway"
-  - kind: error-code
-    value: "DAP-GE-3005"
-    note: "connection exists and is bound correctly but is disabled"
-  - kind: message
-    value: "Failed to retrieve connection. Consider using a different connection."
-  - kind: message
-    value: "Connection is disabled. Please enable the connection to continue."
 ---
 
 # Connector Activity — GeneralException (DAP-GE)

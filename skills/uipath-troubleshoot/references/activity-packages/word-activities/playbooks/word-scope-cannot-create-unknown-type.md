@@ -1,9 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "Cannot create unknown type '{clr-namespace:UiPath.Word.Activities;assembly=UiPath.Word.Activities}WordApplicationScope'"
-    note: "runtime/load-time missing UiPath.Word.Activities dependency; design-time Studio crash on drop → replace-text-version-mismatch.md"
 ---
 
 # Word Application Scope — "Cannot create unknown type WordApplicationScope"

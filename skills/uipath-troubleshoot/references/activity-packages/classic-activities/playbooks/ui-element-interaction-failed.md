@@ -1,8 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "ElementOperationException"
 ---
 
 # UI Element Interaction Failed — Found but Action Did Not Succeed

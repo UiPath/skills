@@ -1,14 +1,5 @@
 ---
 confidence: low
-signatures:
-  - kind: exception
-    value: "System.AggregateException"
-    note: "async wrapper on a connector activity stack — the real error is InnerExceptions[0]; route on the inner exception"
-exclusions:
-  - "inner GeneralException (DAP-GE) → connector-general-exception.md"
-  - "inner RuntimeException (DAP-RT) → connector-runtime-exception.md"
-  - "inner Ipc/CoreIpc RemoteException → connector-remote-exception.md"
-  - "inner NullReferenceException → connector-null-reference.md"
 ---
 
 # Connector Activity — AggregateException

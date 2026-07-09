@@ -1,35 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "The object used in the activity does not exist."
-  - kind: message
-    value: "Column not found:"
-  - kind: message
-    value: "outside the range: 0 to"
-    note: "covers 'RelativeRowIndex <i> outside the range: 0 to <n>.' and 'RelativeColumnIndex <i> outside the range: 0 to <n>.' from Write Row/Column overwrite bounds"
-  - kind: message
-    value: "Named ranges with cell value are invalid."
-  - kind: message
-    value: "You do not have the following labels"
-  - kind: message
-    value: "Could not extract an object Id from the Url"
-  - kind: message
-    value: "File does not exist:"
-    note: "local filesystem path on a GSuite activity (legacy SendEmail attachment, upload source, service-account key) — the same sentence on an O365 send is a missing attachment → send-mail-rejected.md (o365)"
-  - kind: message
-    value: "You must provide a value for at least one of the following properties: To, Cc, Bcc"
-  - kind: exception
-    value: "System.IO.FileNotFoundException"
-    note: "generic .NET exception — this claim is a GSuite activity's local path miss (legacy SendEmail attachment, upload source, service-account key file); at Excel workbook open → read-range-file-not-found.md (excel)"
-  - kind: exception
-    value: "ArgumentOutOfRangeException"
-    note: "generic .NET exception — this claim is a GSuite Drive by-ID/URL activity given a URL with no extractable ID segment ('Could not extract an object Id from the Url')"
-exclusions:
-  - "Invalid data[0]: Unable to parse range (server-side Google 400) → sheets-invalid-range.md"
-  - "This action would increase the number of cells → sheets-cell-limit-exceeded.md"
-  - "The resource was not found. / Cannot find item configured with connection → drive-file-not-found.md"
-  - "401/403/auth-timeout → connection-and-auth-failures.md"
 ---
 
 # GSuite — Invalid or null activity input (client-side validation)

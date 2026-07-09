@@ -1,13 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: error-code
-    value: "400009"
-    note: "ElementExecutionLoopDetected"
-  - kind: message
-    value: "Possible loop detected"
-  - kind: message
-    value: "Failing the instance to prevent infinite loop"
 ---
 
 # Element Execution Loop Detected (400009)

@@ -1,18 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "The range is invalid"
-  - kind: message
-    value: "The string argument cannot be empty"
-  - kind: message
-    value: "Excel Application Scope not found"
-  - kind: error-code
-    value: "0x800A03EC"
-    note: "on Delete Range — ShiftCells/ShiftOption direction conflicts with merged cells or Excel Tables (branch 3)"
-exclusions:
-  - "file lock 'cannot access the file' / 'used by another process' → read-range-file-locked.md"
-  - "BusinessException 'The sheet with the name ... does not exist' → read-range-sheet-not-found.md"
 ---
 
 # Delete Range Failures

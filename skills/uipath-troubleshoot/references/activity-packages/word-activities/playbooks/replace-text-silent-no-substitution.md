@@ -1,6 +1,5 @@
 ---
 confidence: medium
-silent: true
 ---
 
 # Replace Text in Document — Placeholder Not Replaced (No Error, No Change)

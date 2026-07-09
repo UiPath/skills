@@ -1,6 +1,5 @@
 ---
 confidence: medium
-silent: true
 ---
 
 # Lookup Range — Silent Miss Against a Formula Cell

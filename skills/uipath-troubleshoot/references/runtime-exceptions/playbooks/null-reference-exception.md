@@ -1,12 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "System.NullReferenceException"
-    note: "user-code workflow stack, not a UiPath package namespace — on a connector activity (SWEntities ForEach) see connector-null-reference.md; null traces back to an upstream Get Asset/Get Credential that logged no error → system-activities get-asset-activity-bug-silent-failure.md"
-  - kind: message
-    value: "Object reference not set to an instance of an object"
-    note: "member access on a null variable/expression in the user's workflow logic; upstream Get Asset silent-null → system-activities get-asset-activity-bug-silent-failure.md"
 ---
 
 # Null Reference Exception

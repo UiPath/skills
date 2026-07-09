@@ -1,22 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: state
-    value: "ContinueOnError = true"
-    note: "on the CV activity or the CVScope — every exception swallowed to default output; the real error is in the Trace.TraceError line"
-  - kind: state
-    value: "InRegion is bound"
-    note: "bypasses CV detection entirely — CvElementExistsWithDescriptor always returns True; Click/Type fire at raw coordinates"
-  - kind: state
-    value: "OutRegion = (0,0,0,0)"
-    note: "default empty Rectangle output after a swallowed exception (ContinueOnError or Element Exists conversion) — downstream consumers get garbage"
-  - kind: state
-    value: "CvElementExistsWithDescriptor Result = false with the element plainly present"
-    note: "false negative — closed/minimized window or failed screenshot surfaces as ElementNotFoundException and is converted to false by design"
-exclusions:
-  - "Activity actually threw (ContinueOnError = false, InRegion unbound) → cv-element-not-found.md / cv-server-auth-throttling-network.md / cv-invalid-descriptor.md"
-  - "Get Text wrong text after ruling out ContinueOnError / InRegion / mode mismatch → cv-get-text-empty-or-wrong-result.md"
-  - "Cell descriptor config confirmed as the problem → cv-cell-targeting-failures.md"
 ---
 
 # CV — Silent failures and false results (ContinueOnError swallow, InRegion bypass, ElementExists false-negative/positive)

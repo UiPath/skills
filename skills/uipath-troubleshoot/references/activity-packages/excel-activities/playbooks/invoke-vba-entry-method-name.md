@@ -1,14 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "Cannot run the macro"
-    note: "Invoke VBA at Application.Run — EntryMethodName does not resolve (typo, appended parentheses, Private/nested Sub) while the code file itself compiles; code-file load/compile failure → invoke-vba-code-file-path.md; Execute Macro surface → execute-macro-failures.md"
-  - kind: message
-    value: "Sub or Function not defined"
-    note: "at Application.Run — the named entry point is not a top-level Public Sub/Function in the loaded file; compile failure of the file itself → invoke-vba-code-file-path.md"
-  - kind: message
-    value: "The macro '"
 ---
 
 # Invoke VBA — Entry Method Name Mismatch

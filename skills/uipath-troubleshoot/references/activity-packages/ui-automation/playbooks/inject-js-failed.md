@@ -1,8 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "Required argument 'Script code' was not provided."
 ---
 
 # Inject Js Script — Script Missing or Execution Failed

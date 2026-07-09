@@ -1,12 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "must be placed inside a Use Word File"
-    note: "modern Word-pack Read Text dropped outside its container; App-Integration Append Text variant → append-text-missing-container.md"
-  - kind: message
-    value: "activity is not valid in this context"
-    note: "runtime invalid-context fault on the containerless modern Read Text"
 ---
 
 # Read Text — Activity Outside Its Container (Validation Warning / Runtime Error)

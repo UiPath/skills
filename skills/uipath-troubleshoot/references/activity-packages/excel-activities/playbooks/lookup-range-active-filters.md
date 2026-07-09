@@ -1,6 +1,5 @@
 ---
 confidence: medium
-silent: true
 ---
 
 # Lookup Range — Value Not Found When Active Filters Exist

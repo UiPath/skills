@@ -1,6 +1,5 @@
 ---
 confidence: low
-silent: true
 ---
 
 # Healing Agent — No Recovery Data

@@ -1,12 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "System.NullReferenceException"
-    note: "thrown by a DOWNSTREAM consumer of a value an upstream Get Asset / Get Orchestrator Asset produced as null/empty with NO error of its own — check UiPath.System.Activities version (22.10.x Ctrl+K bug); plain null in user workflow logic → runtime-exceptions null-reference-exception.md"
-  - kind: message
-    value: "Object reference not set to an instance of an object"
-    note: "same downstream-consumer discriminator as the exception signature — the faulting activity is not the Get Asset itself"
 ---
 
 # Get Asset Failed — Activity Bug / Silent Failure

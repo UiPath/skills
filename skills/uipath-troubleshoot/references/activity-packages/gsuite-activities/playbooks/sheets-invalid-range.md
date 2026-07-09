@@ -1,11 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "Unable to parse range:"
-  - kind: http-status
-    value: "400"
-    note: "Google Sheets BadRequest 'Unable to parse range'; cell-limit 400 → sheets-cell-limit-exceeded.md; Maestro Error_400 → generic-error-400.md (products/maestro)"
 ---
 
 # GSuite Sheets — Invalid range / unable to parse range

@@ -1,20 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "SelectorNotFoundException"
-    note: "HA enabled but no fix produced, or source code available for manual selector analysis"
-  - kind: exception
-    value: "UiElementNotFoundException"
-    note: "HA enabled but no fix produced, or source code available for manual selector analysis"
-  - kind: exception
-    value: "ElementNotInteractableException"
-    note: "HA enabled but no fix produced, or source code available for manual selector analysis"
-  - kind: exception
-    value: "NodeNotFoundException"
-    note: "HA enabled but no fix produced, or source code available for manual selector analysis"
-exclusions:
-  - "Scope container attached to a different page/window than the inner selector expects → scope-container-wrong-page.md"
 ---
 
 # Selector Failure — Manual Investigation

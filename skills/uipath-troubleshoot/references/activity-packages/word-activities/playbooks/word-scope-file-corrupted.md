@@ -1,12 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "The file appears to be corrupted"
-  - kind: message
-    value: "Word experienced an error trying to open the file"
-  - kind: message
-    value: "cannot be opened because there are problems with the contents"
 ---
 
 # Word Application Scope — "The file appears to be corrupted"

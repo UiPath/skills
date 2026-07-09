@@ -1,24 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "Value cannot be null. (Parameter 'Folder name')"
-  - kind: message
-    value: "Value cannot be null. (Parameter 'Folder path')"
-  - kind: message
-    value: "Value cannot be null. (Parameter 'Parent folder')"
-  - kind: message
-    value: "Folder path must contain at least one segment."
-  - kind: message
-    value: "cannot have leading or trailing whitespace."
-  - kind: message
-    value: "Cannot create folder path:"
-  - kind: exception
-    value: "Office365Exception"
-    note: "generic O365 package exception — this claim is the Create Folder (CreateFolderConnections) input-validation family: null/empty name, path, or parent folder, empty or whitespace path segments, or a file occupying a segment"
-exclusions:
-  - "The specified item name already exists. → item-name-already-exists.md"
-  - "The resource could not be found. / Cannot find item configured with connection (parent folder does not resolve) → drive-item-not-found.md"
 ---
 
 # O365 Files — Create Folder invalid name or path

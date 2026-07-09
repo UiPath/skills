@@ -1,12 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "System.NullReferenceException"
-    note: "at Lookup Range resolving its target — sheet name absent from the workbook, undefined named range/table, or activity outside any Excel scope"
-exclusions:
-  - "file-in-use wording → lookup-range-file-locked.md"
-  - "Excel is not installed / COM class factory → lookup-range-excel-not-installed.md"
 ---
 
 # Lookup Range — Object Reference Not Set (Sheet or Range Missing / No Scope)

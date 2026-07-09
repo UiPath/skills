@@ -1,12 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: http-status
-    value: "429"
-    note: "Autopilot for Maestro apply-failure — backend/LLM Gateway rate limiting; Microsoft Graph 429 on an O365 activity → request-throttled.md (o365-activities)"
-  - kind: message
-    value: "Failed to apply"
-    note: "Autopilot for Maestro surface — backend/LLM Gateway rate limiting"
 ---
 
 # Autopilot 429 Too Many Requests

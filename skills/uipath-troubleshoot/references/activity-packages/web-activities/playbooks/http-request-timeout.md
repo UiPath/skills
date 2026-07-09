@@ -1,14 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "The operation has timed out"
-    note: "on HttpClient exceeding TimeoutMS — surfaces as WebException on modern .NET, TimeoutException on legacy; match the message, not the type"
-  - kind: exception
-    value: "System.TimeoutException"
-    note: "on legacy .NET Framework HttpClient when RestSharp reports TimedOut; modern .NET surfaces WebException with the same message"
-exclusions:
-  - "NetHttpRequest timeout (AggregateException → TaskCanceledException) → net-http-request-aggregate-failure.md"
 ---
 
 # HTTP Client — Request Timed Out (TimeoutException)

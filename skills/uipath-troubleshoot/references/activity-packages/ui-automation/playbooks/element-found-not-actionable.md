@@ -1,21 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: exception
-    value: "InvalidNodeException"
-  - kind: message
-    value: "The UI element is invalid. Make sure the target application is open and the element is on the screen."
-  - kind: exception
-    value: "UiNodeUninitializedElementException"
-  - kind: message
-    value: "Cannot get the screen rectangle of this UI node."
-  - kind: exception
-    value: "TargetFoundButNotVisibleException"
-  - kind: exception
-    value: "TargetNotFoundBrowserBlockedException"
-exclusions:
-  - "Target found but disabled → disabled-element.md"
-  - "Outside-of-screen-bounds coordinate injection on Hardware Events → click-coordinate-off-screen.md"
 ---
 
 # Element Found But Not Actionable — Stale, Not Visible, or Blocked

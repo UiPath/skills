@@ -1,12 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: http-status
-    value: "401"
-    note: "OAuth token expired / refresh failed on a previously working IS connection — for agent toolCall 401s see is-invalid-credentials.md"
-  - kind: error-code
-    value: "102002"
-    note: "IntSvcOperationFailed with auth-related details on a previously working connection"
 ---
 
 # Connection Authentication Expired

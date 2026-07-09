@@ -1,12 +1,5 @@
 ---
 confidence: medium
-signatures:
-  - kind: message
-    value: "may not be null or empty."
-    note: "tail of the 'Queue name' validation message — empty/null QueueName input"
-  - kind: message
-    value: "is the duplicate of another item name"
-    note: "same key supplied in both ItemInformation and ItemInformationCollection"
 ---
 
 # Add Queue Item Failed

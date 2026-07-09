@@ -1,8 +1,5 @@
 ---
 confidence: medium
-silent: true
-exclusions:
-  - "long replacement text hitting the 256-character input cap → replace-text-length-limit.md"
 ---
 
 # Replace Text in Document — Multi-line Replacement Loses Formatting / Collapses to One Line

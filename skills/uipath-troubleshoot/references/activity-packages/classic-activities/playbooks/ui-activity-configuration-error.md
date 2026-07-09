@@ -1,19 +1,5 @@
 ---
 confidence: high
-signatures:
-  - kind: message
-    value: "options can be set"
-    note: "tail of 'Only one of the {0} and {1} options can be set.' — two mutually exclusive options enabled"
-  - kind: exception
-    value: "ElementNotSetException"
-    note: "leaf reports no target while its own Selector is set — originating fault is the enclosing scope"
-  - kind: message
-    value: "The target Element was not specified for this activity"
-  - kind: exception
-    value: "UninitializedNodeException"
-    note: "the uninitialized node is the scope's context window — wrong selector shape / null window on the scope"
-  - kind: message
-    value: "The UiElement is not initialized"
 ---
 
 # UI Activity Configuration Error — Invalid Property Combination
