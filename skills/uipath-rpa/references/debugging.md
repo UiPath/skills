@@ -10,13 +10,15 @@ Most debugging works on **headless Studio** with no Studio Desktop install: `run
 
 On the headless backend, every debug command **returns at the next stable state** — paused at an activity, suspended on an exception, or completed — carrying `DebugState` / `DebugDetails` in the result, so you always learn where execution stands from the command's own response. See [The stable-state debug loop](#the-stable-state-debug-loop-headless).
 
-**Studio Desktop is required** for any flow that targets the *focused* activity, because focusing goes through `uip rpa focus-activity` and that tool only runs against Studio Desktop:
+**Studio Desktop is required** for any flow that targets the *focused* activity, because focusing goes through `uip rpa focus-activity` and only Studio Desktop has a designer to focus:
 
 | Command | Why it needs Studio Desktop |
 |---------|------------------------------|
-| `debug test-activity` | Operates on the focused activity — requires `focus-activity` first |
-| `debug start-from-here` | Operates on the focused activity — requires `focus-activity` first |
-| `debug toggle-breakpoint` *targeted to a specific activity* | Targeting requires `focus-activity` first. Without focusing, the breakpoint toggles on the whole workflow (still works headless). On headless, prefer `--breakpoints` on `debug start` — it targets specific activities by IdRef with no focusing step |
+| `debug test-activity` | Operates on the focused activity — requires `focus-activity` first. Headless rejects the command |
+| `debug start-from-here` | Operates on the focused activity — requires `focus-activity` first. Headless rejects the command |
+| `debug toggle-breakpoint` | Toggles on the focused activity/line — requires `focus-activity` first. Headless rejects the command; set headless breakpoints with `--breakpoints` on `debug start` (or `debug set-breakpoints` mid-session), which target activities by IdRef with no focusing step |
+
+> **`focus-activity` on headless is a silent no-op** — it returns `success: true` but focuses nothing (there is no designer). Do NOT use it to "target" an activity for a headless debug flow and do not treat its success as confirmation: on headless, the focus-dependent verbs above fail with `Unknown command` regardless, and activity targeting goes through `--breakpoints` instead.
 
 Before invoking any of the above, run `uip rpa studio start --project-dir "<PROJECT_DIR>" --output json` and ensure the project is open in Studio Desktop. See [environment-setup.md § Edge case: requiring Studio Desktop](environment-setup.md#edge-case-requiring-studio-desktop).
 
@@ -60,7 +62,7 @@ The mid-session verbs (`break`, `continue`, `resume`, `continue-retry`, `continu
 | `debug start` | Begin a debug session | Starts execution in debug mode and **returns at the first stable state**: `Paused` at a breakpoint (pass `--breakpoints` to set them), `Suspended` on an unhandled exception, or `Completed` if nothing interrupts the run. The response's `DebugState` / `DebugDetails` say where execution stands; the session stays alive for the mid-session verbs |
 | `debug test-activity` | Test one activity in isolation | Isolates the currently focused activity and executes it in a temporary test workflow. **Requires `focus-activity` first → Studio Desktop required** (see [Studio Desktop vs headless](#studio-desktop-vs-headless)). Use `--input-variables` to set variable values and `--input-arguments` to set argument values |
 | `debug start-from-here` | Debug from a specific activity | Starts a debugging session from the currently focused activity, skipping all preceding activities. **Requires `focus-activity` first → Studio Desktop required** (see [Studio Desktop vs headless](#studio-desktop-vs-headless)). Use `--input-variables` to set variable values and `--input-arguments` to set argument values |
-| `debug toggle-breakpoint` | Set/remove breakpoints | Toggles a breakpoint on the currently focused activity (XAML) or line (.cs). Use `uip rpa focus-activity` to focus beforehand — **activity-targeted toggling requires Studio Desktop**. For XAML, cycles through 3 states: **enabled → disabled → no breakpoint**. For .cs, cycles through 2 states: **breakpoint → no breakpoint**. If no activity/line is focused, toggles on the entire workflow (works on Helm) |
+| `debug toggle-breakpoint` | Set/remove breakpoints interactively (Studio Desktop only) | Toggles a breakpoint on the currently focused activity (XAML) or line (.cs). Use `uip rpa focus-activity` to focus beforehand. For XAML, cycles through 3 states: **enabled → disabled → no breakpoint**. For .cs, cycles through 2 states: **breakpoint → no breakpoint**. **Not available headless** (rejected as an unknown command) — use `--breakpoints` on `debug start` or `debug set-breakpoints` instead |
 | `debug step-over` | Execute one activity and pause | Executes the current activity, then pauses at the next sibling activity. Does not enter child scopes (e.g., stays at the For Each level, doesn't step into its body). Returns the new paused state with locals |
 | `debug step-into` | Drill into child activities | Executes and pauses at the first child activity inside the current scope. Use to enter loops, sequences, Try-Catch blocks, etc. Returns the new paused state with locals |
 | `debug step-out` | Exit the current scope | Continues execution until the current scope completes, then pauses at the parent level. Use to leave a loop body or nested sequence. Returns the new paused state with locals |
@@ -274,7 +276,7 @@ Conditional breakpoints and hit counts work the same way:
 
 Use `debug test-activity` to run just the currently focused activity without executing the entire workflow. Useful for verifying an activity works with specific inputs.
 
-> **Studio Desktop required** — `focus-activity` and `debug test-activity` both rely on it. On a headless-only setup, fall back to a workflow-level `debug start` with a breakpoint placed earlier in the file.
+> **Studio Desktop required** — `focus-activity` and `debug test-activity` both rely on it (headless rejects `debug test-activity`, and `focus-activity` silently no-ops). On a headless-only setup, fall back to `debug start --breakpoints 'workflowFile=<file>,activityIdRef=<IdRef>'` — pause right at the activity, inspect its inputs in `DebugDetails`, then step over it and check the result.
 
 ```bash
 # 1. Focus the activity to test (Studio Desktop required)
@@ -297,7 +299,7 @@ uip rpa debug test-activity \
 
 Use `debug start-from-here` to skip straight to the activity you care about, avoiding stepping through earlier activities.
 
-> **Studio Desktop required** — `focus-activity` and `debug start-from-here` both rely on it. On a headless-only setup, use plain `debug start` with a workflow-level breakpoint near the activity instead.
+> **Studio Desktop required** — `focus-activity` and `debug start-from-here` both rely on it (headless rejects `debug start-from-here`, and `focus-activity` silently no-ops). On a headless-only setup, use `debug start --breakpoints 'workflowFile=<file>,activityIdRef=<IdRef>'` — the run starts from the top, but pauses at the activity you care about with locals in hand.
 
 ```bash
 # 1. Focus the activity to start from (Studio Desktop required)
