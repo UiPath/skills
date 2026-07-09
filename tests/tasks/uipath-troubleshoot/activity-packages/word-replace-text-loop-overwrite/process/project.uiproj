@@ -1,0 +1,6 @@
+{
+  "Name": "BulkOfferLetters",
+  "ProjectType": "Process",
+  "Description": "Generates a personalized offer letter for each recipient by filling the name placeholder in the offer letter template.",
+  "MainFile": "Main.xaml"
+}

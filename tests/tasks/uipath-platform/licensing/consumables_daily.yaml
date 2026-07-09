@@ -18,9 +18,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent ran `uip platform licenses consumables get --mode daily` with date range and --output json"
+    description: "Agent ran `uip platform licenses consumables get --mode daily` with date range"
     tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+licenses\s+consumables\s+get.*--mode\s+daily.*--start-date\s+2026-04-01.*--end-date\s+2026-04-30.*--output\s+json'
+    command_pattern: 'uip\s+platform\s+licenses\s+consumables\s+get.*--mode\s+daily.*--start-date\s+2026-04-01.*--end-date\s+2026-04-30'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

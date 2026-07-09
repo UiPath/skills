@@ -38,7 +38,23 @@
         "systemPrompt": "Write a billing dispute resolution email.",
         "userPrompt": "Write the resolution email from the provided dispute facts.",
         "source": "75b07752-c283-4ede-b4e5-f4961d0dca77",
-        "agentInputVariables": [],
+        "agentInputVariables": [
+          {
+            "id": "customerName",
+            "binding": "=$vars.start.output.customerName",
+            "type": "string"
+          },
+          {
+            "id": "invoiceNumber",
+            "binding": "=$vars.start.output.invoiceNumber",
+            "type": "string"
+          },
+          {
+            "id": "creditAmount",
+            "binding": "=$vars.start.output.creditAmount",
+            "type": "number"
+          }
+        ],
         "agentOutputVariables": [
           {
             "id": "subject",

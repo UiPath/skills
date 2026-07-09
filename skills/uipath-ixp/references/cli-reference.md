@@ -2,7 +2,7 @@
 
 All commands use `uip ixp` prefix. Always append `--output json` when parsing output programmatically.
 
-> **Destructive commands require `-y, --yes`.** Every irreversible `uip ixp` command (all `delete`s and `fields change-type`) gates on `-y/--yes`; the CLI never prompts. `--confirm-data-loss` is accepted but is a **deprecated no-op** — it does NOT satisfy the confirmation, so always pass `-y/--yes`.
+> **Destructive commands require `-y, --yes`.** Every irreversible `uip ixp` command (all `delete`s and `fields change-type`) gates on `-y/--yes`; the CLI never prompts. Always pass `-y/--yes`.
 
 ## Projects
 

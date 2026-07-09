@@ -72,7 +72,7 @@ Fix: precede the scope with `NCheckAppState` waiting for the main-window selecto
 
 ## Post-presentation actions
 
-This resolution path is **interactive** — every recommended fix above ends in a file edit (XAML property change, adding a new activity before the scope, adjusting timeouts). The orchestrator MUST call `AskUserQuestion` at the end of the troubleshooting to (a) print the exact property/file/line to be modified and the before → after value, and (b) ask the user whether to apply the fix. Do not write to the user's source files until that question is answered with explicit approval.
+This resolution path is **interactive** — every recommended fix above ends in a file edit (XAML property change, adding a new activity before the scope, adjusting timeouts). You MUST call `AskUserQuestion` at the end of the troubleshooting to (a) print the exact property/file/line to be modified and the before → after value, and (b) ask the user whether to apply the fix. Do not write to the user's source files until that question is answered with explicit approval.
 
 Rules the agent MUST follow:
 
@@ -80,5 +80,5 @@ Rules the agent MUST follow:
 2. **Never bundle "gather input" with "apply fix" in a single option.** Any option that contains phrasing like "I'll … apply / edit / write the change" alongside an input request must be split into two steps: gather the input, then surface the specific diff and confirm separately.
 3. **Surface the diff before asking.** The apply-fix question must include the file path, the activity `IdRef` or line number, the current value, and the proposed value. Vague approvals ("fix the scope") are not enough — show the concrete edit.
 4. **One question per fix, not one for the whole branch.** If multiple files need editing (e.g., XAML plus an Object Repository `.content` file mirror), list every file in the question or ask file-by-file. Do not silently propagate the same substitution to side-channel files.
-5. The presenter must emit a `## Post-presentation actions` block in its output declaring this interactive step; the orchestrator must execute it before closing the investigation. Do not collapse this into a generic "fix the OpenMode" recommendation — the apply-fix prompt is part of the documented resolution.
+5. Execute this interactive step per `references/presenting.md` § Interactive resolutions before closing the investigation. Do not collapse this into a generic "fix the OpenMode" recommendation — the apply-fix prompt is part of the documented resolution.
 6. **If you cannot obtain interactive approval, do not edit.** When the approval prompt is unavailable or errors in the current environment, fall back to presenting the diff as a recommendation and stop — leave the apply step to the user. Never write to a source file without explicit approval, even when the approval mechanism is unavailable. A recommendation-only close is always acceptable; a silent edit is not.

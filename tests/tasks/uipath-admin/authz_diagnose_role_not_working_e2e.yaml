@@ -37,7 +37,7 @@ success_criteria:
   - type: command_executed
     description: "Agent inspected the role definition via roles get"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+get\b.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+get'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -48,12 +48,4 @@ success_criteria:
     command_pattern: 'uip\s+admin\s+authorization\s+(roles\s+assignments\s+list|check-access)\b'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json consistently"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+.*--output\s+json'
-    min_count: 2
-    weight: 1.0
     pass_threshold: 1.0

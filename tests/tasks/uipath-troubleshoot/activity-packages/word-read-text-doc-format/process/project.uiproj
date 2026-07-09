@@ -1,0 +1,6 @@
+{
+  "Name": "LegacyDocReader",
+  "ProjectType": "Process",
+  "Description": "Reads the text content from a Word document and logs the extracted text.",
+  "MainFile": "Main.xaml"
+}

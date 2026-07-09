@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Execute Query scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "3082b0f837.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"5c7e9a2d-4b8f-4e1c-9a3d-6f2b8c4e1a7d\" --state Faulted --output json",
+      "file": "701dfa3277.json"
+    },
+    {
+      "match": "or jobs list --folder-key 5c7e9a2d-4b8f-4e1c-9a3d-6f2b8c4e1a7d --state Faulted --output json",
+      "file": "701dfa3277.json"
+    },
+    {
+      "match": "or jobs get \"2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b\" --output json",
+      "file": "05ac9f01ab.json"
+    },
+    {
+      "match": "or jobs get 2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b --output json",
+      "file": "05ac9f01ab.json"
+    },
+    {
+      "match": "or jobs logs \"2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b\" --level Error --output json",
+      "file": "46e0925fd5.json"
+    },
+    {
+      "match": "or jobs logs 2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b --level Error --output json",
+      "file": "46e0925fd5.json"
+    },
+    {
+      "match": "or jobs logs \"2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b\" --output json",
+      "file": "16bf822011.json"
+    },
+    {
+      "match": "or jobs logs 2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b --output json",
+      "file": "16bf822011.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}

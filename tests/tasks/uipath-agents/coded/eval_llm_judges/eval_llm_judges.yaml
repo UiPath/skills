@@ -21,18 +21,21 @@ pre_run:
     timeout: 300
 
 initial_prompt: |
-  I want to test that this UiPath coded agent works as it should.
-  Write a couple evaluations backed by LLMs if possible: 
-  one that checks the answer the agent gives back and one that checks
-  the path it took to get there.
-  Save the eval results to `eval-results.json` in the agent project
-  root, next to `pyproject.toml`.
-  
+  Test my UiPath coded agent with a couple of UiPath LLM evaluators - one for
+  the answer, one for the path it took - and run them. Save results to
+  eval-results.json next to pyproject.toml.
 
-  Don't publish, upload, or deploy. Just work through it to the end in
-  one go — only stop if you hit a real blocker.
+  Don't publish, upload, or deploy. Just work through it to the end in one
+  go - only stop if you hit a real blocker.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent ran the eval suite with --no-report"
     tool_name: "Bash"

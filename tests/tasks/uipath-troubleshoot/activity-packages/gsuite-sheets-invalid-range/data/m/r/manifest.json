@@ -1,0 +1,87 @@
+{
+  "version": 2,
+  "_doc": "Verbatim, scrubbed responses captured from the original uipath-troubleshoot session that diagnosed a Faulted GSuite Write Range job in folder Shared. Job/folder keys, the malformed A1 range (Sheet1!A0), and all exception/stack text are preserved exactly; hostname, email, and Windows account were scrubbed (UIP-PW06WJSK -> MOCK-HOST, dan.morosanu@uipath.com -> original_email@test.com, UIPATH\\DAN.MOROSANU -> UIPATH\\REPLACEMENT_USER). First-match-wins: specific patterns precede generic ones. `is connections list` is a DEFENSIVE fixture proving both Shared GSuite connections are valid/Enabled (the fault is NOT a connection problem). `or jobs traces` returns the real non-JSON Failure envelope the live CLI produced (traces unavailable).",
+  "rules": [
+    {
+      "match": "or jobs get d5e0e6b0-55b8-4256-8494-c601cb986dab",
+      "file": "fcf246d14d.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or jobs history d5e0e6b0-55b8-4256-8494-c601cb986dab",
+      "file": "782bacb1c9.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or jobs logs d5e0e6b0-55b8-4256-8494-c601cb986dab",
+      "file": "f31bf1e26d.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or jobs traces d5e0e6b0-55b8-4256-8494-c601cb986dab",
+      "file": "f6b9fc4e33.json",
+      "exit_code": 1
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --state Faulted",
+      "file": "aac6832948.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "file": "aac6832948.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or jobs list",
+      "file": "aac6832948.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or folders list",
+      "file": "897a8be769.json",
+      "exit_code": 0
+    },
+    {
+      "match": "is connections list",
+      "file": "790c63a18f.json",
+      "exit_code": 0
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]",
+    "exit_code": 0,
+    "_doc": "Any command with no matching rule returns an empty JSON array with exit 0, mirroring an empty list result. Keeps the agent from hard-failing on an unrecorded probe."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Agent lists folders to resolve folder Shared to its key (1965a46b-...)."
+    },
+    {
+      "pattern": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --state Faulted",
+      "min": 1,
+      "description": "Agent finds the most-recent Faulted job in Shared (d5e0e6b0 is the latest by StartTime)."
+    },
+    {
+      "pattern": "or jobs get d5e0e6b0-55b8-4256-8494-c601cb986dab",
+      "min": 1,
+      "description": "Agent reads the faulted job's Info, exposing the GSuiteException / Google 400 BadRequest stack and the malformed range Sheet1!A0."
+    },
+    {
+      "pattern": "is connections list",
+      "min": 0,
+      "description": "OPTIONAL — Agent may list connections to rule out a connection/auth problem; the fixture shows both GSuite connections Enabled. Tracked-but-not-required."
+    },
+    {
+      "pattern": "or jobs traces d5e0e6b0-55b8-4256-8494-c601cb986dab",
+      "min": 0,
+      "description": "OPTIONAL — traces are unavailable for this job (non-JSON Failure envelope); tracked-but-not-required."
+    }
+  ]
+}

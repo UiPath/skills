@@ -34,6 +34,8 @@ A request is **single-skill** when:
 
 `uipath-rpa` does not deploy. Deploy to Orchestrator for solution-bundled RPA goes through `uipath-solution` (`uip solution pack/publish/deploy`). For raw single-package Orchestrator ops not wrapped in a `.uipx`, defer to `uipath-platform`.
 
+> **Attended re-auth handoff is inside the RPA build step, not a separate skill.** When the SDD carries a §9 *Interactive Authentication / Re-auth Handoff* subsection (human-only login — hardware token, smart card, biometric), the `uipath-rpa` build task implements the pause/handoff/state-verified-resume per [attended-reauth-pattern-guide.md](attended-reauth-pattern-guide.md). Pass the handoff contract as business intent; do not split it into its own task or describe the activities.
+
 ## Pattern 2 — Flow with local resources
 
 **When it applies:** Flow and the components it orchestrates are peer sibling projects under one `.uipx` solution at the current working directory. **Components here means separate buildable projects** (a standalone RPA `.xaml`/`.cs` process, a coded agent, a coded app) — each scaffolded as a distinct project routed to its own specialist. Inline flow nodes are **not** components (see the blockquote above); `uipath-maestro-flow` authors them itself in steps 1/4. Each component is scaffolded as part of this plan (or replaced by a placeholder contract when not built here). The flow runs locally / publishes to Studio Web per the plan's `Solution scope`.

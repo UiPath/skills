@@ -1,0 +1,44 @@
+task_id: skill-functions-file-attachment-input
+description: >
+  Coded Function that accepts a file attachment as input. Verifies the agent
+  uses `from uipath.platform.attachments import Attachment` on the `Input`
+  model and runs `uip functions init` so `entry-points.json` emits the
+  `x-uipath-resource-kind: JobAttachment` schema that Studio Web and
+  Orchestrator use to render a file picker at runtime.
+tags: [uipath-functions, smoke, mode:build, lifecycle:generate, feature:framework-simple]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  Build a UiPath Coded Function named `attachment-agent` that accepts a file
+  attachment as input and outputs its name and content.
+
+  Not complete until `uip functions init` has generated `entry-points.json`
+  carrying the `x-uipath-resource-kind: JobAttachment` schema for the
+  attachment field.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the project with uip functions new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+functions\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip functions init to generate entry-points.json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+functions\s+init'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Attachment import, Input model, lazy-init, JobAttachment schema"
+    command: "python3 $TASK_DIR/check_file_attachment_input.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

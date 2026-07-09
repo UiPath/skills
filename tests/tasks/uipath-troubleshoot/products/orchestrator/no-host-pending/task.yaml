@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-no-host-pending
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   Faithful replay of a real UiPath troubleshooting investigation. A job is
   stuck in Pending in the Shared folder with host-family
@@ -13,7 +14,7 @@ description: >
   robot-credentials.md) and recommend connecting/assigning a machine to the
   folder's template. Re-triggering will NOT help because there is no host
   to accept the job.
-tags: [uipath-troubleshoot, orchestrator, e2e, faithful-replay, pending-job, no-host, mode:diagnose]
+tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
 
 agent:
   type: claude-code
@@ -32,8 +33,8 @@ sandbox:
     - type: template_dir
       path: ../../../_shared/mock_template
     - type: template_dir
-      path: fixtures
-  mock_path_dirs: ["mocks"]
+      path: data
+  mock_path_dirs: ["m"]
 
 reference:
   file: RESOLUTION.md

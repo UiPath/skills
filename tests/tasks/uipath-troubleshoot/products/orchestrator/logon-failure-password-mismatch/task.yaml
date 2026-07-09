@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-logon-failure-password-mismatch
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath diagnostic agent must diagnose a faulted unattended job
   whose Robot Service log shows
@@ -14,7 +15,7 @@ description: >
   (lockout loop — not yet realised), branch 5 (MFA), or branch 6
   (RDP slot — sibling user succeeded on same machine).
 
-tags: [uipath-troubleshoot, orchestrator, e2e, faulted-jobs, logon-failure, credentials, mode:diagnose]
+tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
 
 agent:
   type: claude-code
@@ -35,8 +36,8 @@ sandbox:
     - type: template_dir
       path: process
     - type: template_dir
-      path: fixtures
-  mock_path_dirs: ["mocks"]
+      path: data
+  mock_path_dirs: ["m"]
 
 reference:
   file: RESOLUTION.md

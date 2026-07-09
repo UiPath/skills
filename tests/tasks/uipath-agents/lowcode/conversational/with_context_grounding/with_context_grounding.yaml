@@ -31,6 +31,10 @@ initial_prompt: |
   index, which is already set up in our tenant, instead of answering
   from general knowledge. The solution should be named "SupportSol".
 
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
 success_criteria:
   - type: command_executed
     description: "Agent created the solution with uip solution new/init"
@@ -56,13 +60,8 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent fetched the index configuration with uip solution resources get"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+get\b'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+  # No `resources get` gate: it's optional — `resources list --kind Index` already
+  # yields the index identity, so a correct artifact needs no `get`.
 
   - type: command_executed
     description: "Agent validated the project"

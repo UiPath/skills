@@ -1,0 +1,6 @@
+{
+  "Name": "BatchLedgerPost",
+  "ProjectType": "Process",
+  "Description": "Posts a ledger batch inside a Start Transaction scope, inserting the batch header and detail rows into LedgerBatchHeader and LedgerBatchDetail within a single transaction.",
+  "MainFile": "Main.xaml"
+}

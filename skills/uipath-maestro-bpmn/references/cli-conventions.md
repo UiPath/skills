@@ -25,6 +25,8 @@ particular, there is **no** `uip maestro bpmn validate` command — see
 [Validation](structural-bpmn.md#validation). Validation is done with the bundled
 offline validator, not a CLI.
 
+> **Don't conclude "it doesn't exist" from truncated discovery output.** A row past a cutoff reads exactly like a missing row. Two cutoffs bite here: `registry list` defaults to **30** — pass `--limit -1` for the full set — and piping `registry search`/`is connections list` through `head`/`tail`/`grep -m`/a pager drops everything past the cap. To check existence, narrow the query (keyword to `registry search`, `--all-folders` to connection lists) rather than capping rows; cap only data already known complete.
+
 ## Output parsing
 
 Whenever a CLI result is parsed programmatically, pass `--output json`. If a

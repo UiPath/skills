@@ -1,0 +1,6 @@
+{
+  "Name": "DailyDigestRunner",
+  "ProjectType": "Process",
+  "Description": "Runs the BuildDigest VBA macro against the DailyDigest workbook via Invoke VBA inside an Excel Process Scope.",
+  "MainFile": "Main.xaml"
+}

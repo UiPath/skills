@@ -197,7 +197,7 @@ The generated SDD must start with:
 
 | Trigger type | What to write |
 |---|---|
-| Event trigger | The operation in business terms (e.g., `Calendar created`, `Email received`). Append a filter expression if the user wants filtering (e.g., `Email received in Inbox; filter: subject contains "URGENT"`). Append a required event-param value only when the user supplies it explicitly (e.g., `Email received in folder "<folder name>"`). |
+| Event trigger | The operation in business terms (e.g., `Calendar created`, `Email received`, `Record created`). For tenant case-entity / business data-object starts, preserve the object name in Source (e.g., `expense_requests`) and write the business event in Configuration (e.g., `Record created`). Append a filter expression if the user wants filtering (e.g., `Email received in Inbox; filter: subject contains "URGENT"`). Append a required event-param value only when the user supplies it explicitly (e.g., `Email received in folder "<folder name>"`). |
 | Timer trigger | Cycle or duration (e.g., `every 24 hours`, `daily at 09:00 UTC`). |
 | Manual | `N/A` or omit. |
 
@@ -206,6 +206,13 @@ DO NOT include in Configuration:
 - Default modes like `polling` vs `webhook` (the skill defaults; the user only overrides when they care).
 - Meta notes like `No required event parameters` or `No user filter` (absence is the default; the skill discovers required params at `case spec` time).
 - Connector activity slug, HTTP method, or any spec-discovered detail.
+
+> **Tenant object starts are still event triggers.** If the user says a case starts
+> when a tenant case-entity / data-object record is created, author
+> `Intsvc.EventTrigger` with that object name as Source. Do NOT downgrade to
+> `Manual` just because the eval sandbox or current tenant may not have the
+> object provisioned. Planning/implementation preserve unresolved event triggers
+> as placeholders.
 
 ### Case Exit Conditions
 
@@ -225,11 +232,11 @@ DO NOT include in Configuration:
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
-| {camelCase name} | {In \| Out \| Variable} | {string \| integer \| float \| double \| boolean \| datetime \| date \| jsonSchema \| file} | {T-number(s) — single `T<N>` or comma-separated CSV when multiple triggers feed the same Variable; empty for pure state / Out-args / In-args} | {single payload path when one trigger; keyed `T<N>: <path>; T<M>: <path>` format when multiple triggers} | {default value or empty} | {what this variable represents} |
+| {camelCase name} | {In \| Out \| Variable} | {string \| integer \| float \| double \| boolean \| datetime \| date \| jsonSchema \| file} | {`Variable`: single `T<N>` or CSV when multiple triggers feed the same slot. `In`: optional single `T<N>` selecting the bound trigger (blank = primary trigger; never CSV). Empty for pure state / Out-args} | {single payload path when one trigger; keyed `T<N>: <path>; T<M>: <path>` when multiple triggers; empty on `In` rows} | {default value or empty} | {what this variable represents} |
 
 **Category semantics (author-facing summary; canonical definition in [`global-vars/impl-json.md` § Pattern shapes by category](../../references/plugins/variables/global-vars/impl-json.md)):**
 
-- **`In`** — formal case argument supplied at case start by an external caller (manual trigger via API) OR initialized from `Default` (event / timer triggers, which have no caller). Works with any trigger type. For event-trigger-payload-extraction (where the value comes from the event's payload), use `Variable` with `sourceTriggers` + `sourceFields` (Use Case 2) instead — that's a different operation. **File-type In-args:** the runtime caller must pre-create the JobAttachment (`POST /odata/Attachments`, then `PUT` the bytes to the returned blob URI) and pass the resulting `{ID, FullName, MimeType, Metadata}` record as the In-arg value plus the attachment ID in `StartProcessDto.Attachments[]`. The Maestro Studio Web "Start case" dialog handles this automatically when the user picks a file; programmatic callers must do it themselves.
+- **`In`** — formal case argument supplied at case start by an external caller (manual trigger via API) OR initialized from `Default` (event / timer triggers, which have no caller). Works with any trigger type. By default an In-arg binds to the primary trigger (T02); to bind it to a specific trigger, put that trigger's single `T<N>` in `sourceTriggers` (one only, never a CSV). `sourceFields` stays empty for `In` rows. For event-trigger-payload-extraction (where the value comes from the event's payload), use `Variable` with `sourceTriggers` + `sourceFields` (Use Case 2) instead — that's a different operation. **File-type In-args:** the runtime caller must pre-create the JobAttachment (`POST /odata/Attachments`, then `PUT` the bytes to the returned blob URI) and pass the resulting `{ID, FullName, MimeType, Metadata}` record as the In-arg value plus the attachment ID in `StartProcessDto.Attachments[]`. The Maestro Studio Web "Start case" dialog handles this automatically when the user picks a file; programmatic callers must do it themselves.
 - **`Out`** — formal case argument returned to the caller at case end. Value comes from a task's Outputs row that targets this Name (the producer) OR from a `Default` value if no task fires. `sourceTriggers` MUST be empty (direction mismatch — values flow case→caller, not trigger→case).
 - **`Variable`** — case-internal state. May be populated by one trigger's payload (single T-number in `sourceTriggers` + single path in `sourceFields`), by multiple triggers' payloads sharing the same slot (CSV in `sourceTriggers` + keyed `T<N>: <path>` format in `sourceFields`), by a task output (use `->` operator in that task's Outputs table — same Name on both sides drives the wiring), or initialized via `Default` only.
 
@@ -255,7 +262,8 @@ If neither holds, the io-binding validator surfaces the misalignment.
 | caseStatus | Variable | string | | | "Open" | Pure case state, initialized at case start |
 | subject | Variable | string | T02 | response.subject | | Populated by event trigger payload at trigger fire |
 | caseStarter | Variable | string | T02, T03 | T02: response.user; T03: response.initiator | | Shared slot — whichever trigger fires populates it |
-| applicantName | In | string | | | | Formal In-arg supplied by API caller (manual trigger) |
+| applicantName | In | string | | | | Formal In-arg supplied by API caller; blank sourceTriggers → bound to primary trigger |
+| reviewerNote | In | string | T03 | | | In-arg bound to the T03 trigger (single T-number; sourceFields stays empty) |
 | finalDecision | Out | string | | | "Pending" | Out-arg; producer is "Approve Decision" task; "Pending" returned if no task fires |
 | reviewCount | Variable | integer | | | 0 | Counter incremented by tasks via `=` operator |
 

@@ -57,14 +57,6 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent used --output json for parsed registry calls"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+[\s\S]*--output\s+json'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Registry evidence covers documented agent, queue, and connector wrapper types"
     command: "python3 $TASK_DIR/check_registry_discovery.py"

@@ -296,6 +296,20 @@ public enum <EnumName>
 |---|---|---|---|---|---|---|
 | 1 | <APP_NAME> | <WEB/DESKTOP/API> | <URL_OR_PROTOCOL_OR_INTEGRATION_SERVICE> | <SOURCE/TARGET/UTILITY> | <READ/WRITE/READ-WRITE/TRANSIENT> | <PER_RUN/PER_ITEM> |
 
+### Interactive Authentication / Re-auth Handoff
+
+<!-- Conditional subsection. Emit/omit rule and guidance: references/attended-reauth-pattern-guide.md, references/pdd-analysis-guide.md. -->
+
+| Field | Value |
+|---|---|
+| **Application** | <APP requiring the human login> |
+| **Factor the robot cannot supply** | <HARDWARE_TOKEN / SMART_CARD / BIOMETRIC / OTP_DEVICE> |
+| **Handoff point** | <process step where the robot pauses for the human> |
+| **Human action** | <what the person does — e.g., insert token, complete portal login> |
+| **Resume condition (state anchor)** | <observable post-login state the robot verifies before continuing — e.g., authenticated URL reached, dashboard element present> |
+| **No-completion behavior** | [DEFAULT] <e.g., wait 5 min, then abort with notification> |
+| **Design shape** | <A: login-before-handoff \| B: mid-run pause + state-aware resume> |
+
 ---
 
 ## 10. Master Project Architecture
@@ -543,6 +557,7 @@ List every prerequisite required on the robot machine before first run:
 - <e.g., Chrome browser + UiPath Chrome Extension>
 - <e.g., Network access to SharePoint / SAP endpoints>
 - <e.g., Certificate trust for internal CAs>
+- <e.g., Human operator present at the machine for an interactive token login>
 
 ### Scalability & Concurrency
 

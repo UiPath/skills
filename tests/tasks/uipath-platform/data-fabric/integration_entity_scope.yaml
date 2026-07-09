@@ -6,60 +6,62 @@ description: >
   folder-scoped entity and confirms it is absent when listing from a
   different folder; and attempts to create an entity with a non-existent
   folder ID and verifies the error. Covers S-SC-01 through S-SC-05.
-tags: [uipath-platform, integration, data-fabric, entity-scope]
-
+tags: [uipath-platform, data-fabric, integration, entity-scope, mode:operate, lifecycle:setup]
 run_limits:
-  expected_turns: 24
-  turn_timeout: 600
+  expected_turns: 25
+  turn_timeout: 1200
 
 initial_prompt: |
-  Use --output json on every uip df command.
+  We already have a tenant-wide list called `CE_TenantScopeTest` (one
+  required name column, up to 100 characters). Please don't recreate
+  it.
 
-  1. Check login: run `uip login status --output json`. From the response
-     note the active tenant ID. Also note at least two folder IDs if
-     available (folder_a_id and folder_b_id). If the tenant has only one
-     folder, record that limitation in the report and skip folder-isolation
-     checks (mark them null).
+  First, take a look at what folders the tenant has. If there are at
+  least two, call them folder A and folder B. If there's only one,
+  just note that — we'll skip the folder-only parts.
 
-  2. List native-only entities. Use "TenantScopeTest" if it already exists.
-     If not, create it with field Name (STRING) — do NOT pass any folder flag
-     (tenant level is the default). Save the entity ID.
+  Walk through these and, for each one, tell me whether the list does
+  or doesn't show up:
 
-  3. Run entities list (--native-only) without a folder flag. Confirm
-     "TenantScopeTest" appears in the response.
+    - Pull the full list of lists without picking a folder. Does
+      `CE_TenantScopeTest` show up?
+    - Pull the lists again, but this time from folder A's context.
+      Does `CE_TenantScopeTest` still show up?
+    - Make a new list called `CE_FolderScopeTest` (one name column)
+      and place it inside folder A specifically.
+    - Pull the lists from folder B's context. Does `CE_FolderScopeTest`
+      show up there?
+    - Try making one more list called `CE_FolderScopeTest_Invalid`
+      inside a folder that doesn't exist (use the folder ID
+      `00000000-0000-0000-0000-000000000000`). Tell me what error
+      comes back.
 
-  4. If folder_a_id is available, run entities list with --folder <folder_a_id>.
-     Confirm "TenantScopeTest" still appears (tenant entities are visible
-     from all folder contexts).
-
-  5. If folder_a_id is available, create a folder-scoped entity "FolderScopeTest"
-     with field Name (STRING) scoped to folder_a_id. Save the entity ID.
-
-  6. If both folder_a_id and folder_b_id are available, run:
-       uip df entities list --native-only --folder <folder_b_id> --output json
-     Confirm "FolderScopeTest" does NOT appear (it is scoped to folder_a only).
-
-  7. Attempt to create an entity with a non-existent folder ID:
-       uip df entities create ... --folder 00000000-0000-0000-0000-000000000000
-     Record the error response.
-
-  Do NOT delete entities — the test harness handles cleanup.
+  Leave the lists in place — I'll clean them up later.
 
 success_criteria:
   - type: command_executed
     description: "Agent verified login status"
     tool_name: "Bash"
     command_pattern: 'uip\s+login\s+status'
-    min_count: 1
+    min_count: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created at least one entity"
+    description: "Agent created the folder-scoped entity (CE_FolderScopeTest) — only fires when the tenant has ≥2 folders; soft assertion since the prompt allows skipping this branch on single-folder tenants"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+create'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create\s+CE_FolderScopeTest'
     min_count: 1
     weight: 2.0
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent must NOT recreate CE_TenantScopeTest (harness pre-seeds it)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create\s+CE_TenantScopeTest'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -71,20 +73,20 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used fieldName key in entities create body"
+    description: "Agent used fieldName key in entities create body (only fires when folder-scoped entity was created; soft on single-folder tenants)"
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+entities\s+create.*fieldName'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Agent used --native-only flag when listing entities"
+    description: "Agent used --native-only flag when listing entities (skill recommendation; soft assertion — cross-scope tests may legitimately list without the filter)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+entities\s+list.*--native-only'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent used --folder flag to test folder-scoped entity listing"
@@ -94,6 +96,69 @@ success_criteria:
     weight: 1.5
     pass_threshold: 0.0
 
+  - type: llm_judge
+    description: "Agent reported the scope visibility observations correctly for each of the 5 asks"
+    include_agent_output: true
+    prompt: |
+      The agent probed entity-scope visibility with these five asks:
+
+        1. `entities list` (no folder) — CE_TenantScopeTest should show up.
+        2. `entities list --folder-key <A>` — CE_TenantScopeTest still shows
+           (tenant entities are visible from every folder context).
+        3. Create `CE_FolderScopeTest` inside folder A.
+        4. `entities list --folder-key <B>` — CE_FolderScopeTest should NOT
+           show up (folder-scoped entities are isolated to their folder).
+        5. Try `entities create CE_FolderScopeTest_Invalid` with the folder
+           ID `00000000-0000-0000-0000-000000000000` — should fail with a
+           folder-not-found error.
+
+      Read the agent's final walk-through. Score 1.0 if the agent
+      reported correct outcomes for at LEAST 4 of the 5 observations
+      (allowing "the tenant only has one folder, skipped folder-B checks"
+      as valid if applicable).
+      Score 0.5 if 2-3 observations are correct.
+      Score 0.0 if the agent claimed the wrong outcome on 3+ observations.
+    weight: 2.5
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  # Schema-only seed for the tenant-level entity (brownfield, persistent).
+  # No records are seeded — the test exercises scope visibility, not record CRUD.
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
+      --entity-name CE_TenantScopeTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/tenant_scope.schema.json
+    timeout: 180
+    fail_on_error: false
+
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
+  # 1. Revert the tenant entity to zero records (no-op in practice since the
+  #    test doesn't insert records, but defensive).
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_TenantScopeTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/tenant_scope.schema.json
+    timeout: 120
+
+  # 2. Delete the per-run folder-scoped entity (greenfield) AND any
+  #    CE_FolderScopeTest_* leftovers (e.g. CE_FolderScopeTest_Invalid from
+  #    step 7 if it landed somewhere).
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderScopeTest"
     timeout: 60

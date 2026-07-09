@@ -2,22 +2,22 @@
 
 ---
 
-**Root Cause:** The `MisconfiguredForeground` workflow is incorrectly
+**Root Cause:** The `ExpenseValidation` workflow is incorrectly
 published as a **foreground** (UI-interactive) process even though its
 `Main.xaml` performs no UI interaction — it only uses `LogMessage`
 and `Delay` activities. When another foreground job
-(`ForegroundHolder`, key `e1f2a3b4-...`) was already running on the
+(`AttendedReportJob`, key `e1f2a3b4-...`) was already running on the
 same Robot session, the Robot rejected the start of
-`MisconfiguredForeground` (key `d1e2f3a4-...`) with
+`ExpenseValidation` (key `d1e2f3a4-...`) with
 `System.InvalidOperationException: A foreground process is already
 running. Only one foreground process can run at a time.` The
 misconfiguration is the actionable defect — the workflow has no
 business holding the foreground slot at all.
 
-**What went wrong:** A `MisconfiguredForeground` job (key
+**What went wrong:** A `ExpenseValidation` job (key
 `d1e2f3a4-b5c6-4789-abcd-ef0123456789`, created
 `2026-05-13T14:20:45.302Z`, started 14:20:45.500Z) faulted ~0.7s
-after start. A `ForegroundHolder` job (key
+after start. A `AttendedReportJob` job (key
 `e1f2a3b4-c5d6-4789-abcd-ef0123456789`, started 14:20:30.000Z) was
 in `Running` state on the same machine (`MOCK-HOST`) and was holding
 the foreground slot.
@@ -36,21 +36,21 @@ the foreground slot.
    Robot session, where it will fault any time another foreground
    job is running.
 
-The `ForegroundHolder` job that triggered this fault is itself a
+The `AttendedReportJob` job that triggered this fault is itself a
 legitimate foreground workload — it stays foreground. The fix targets
-`MisconfiguredForeground` specifically.
+`ExpenseValidation` specifically.
 
 ---
 
 **Evidence:**
 
 ### Orchestrator (Propagation)
-- Failing job: `MisconfiguredForeground` (key `d1e2f3a4-...`) —
+- Failing job: `ExpenseValidation` (key `d1e2f3a4-...`) —
   Faulted at `2026-05-13T14:20:46.218Z` (ran ~0.72s)
 - Failing job type: `Unattended`, `RequiresUserInteraction: true`,
   triggered manually by user `user1` on machine `MOCK-HOST`
 - Folder: `ComputeJobs` (key `b2c3d4e5-f6a7-8901-2345-6789abcdef01`)
-- Concurrent foreground job: `ForegroundHolder` (key `e1f2a3b4-...`)
+- Concurrent foreground job: `AttendedReportJob` (key `e1f2a3b4-...`)
   in `Running` state at the time of failure
   (`StartTime: 2026-05-13T14:20:30.000Z`, EndTime
   `2026-05-13T14:21:30.412Z`)
@@ -67,25 +67,25 @@ legitimate foreground workload — it stays foreground. The fix targets
 
 ### Orchestrator (Triggering Context)
 - Robot Service log at `2026-05-13T14:20:46.190Z`: `[Robot] Cannot
-  start foreground job 'd1e2f3a4-...' (ReleaseName=MisconfiguredForeground).
+  start foreground job 'd1e2f3a4-...' (ReleaseName=ExpenseValidation).
   Another foreground job ('e1f2a3b4-...',
-  ReleaseName=ForegroundHolder, started 2026-05-13T14:20:30.000Z) is
+  ReleaseName=AttendedReportJob, started 2026-05-13T14:20:30.000Z) is
   currently running on this session. Only one foreground process can
   run at a time.`
 
 ---
 
-**Immediate fix — PRIMARY (targeted at MisconfiguredForeground):**
+**Immediate fix — PRIMARY (targeted at ExpenseValidation):**
 
 ### Studio (source — preferred)
-1. Open the `MisconfiguredForeground` project in Studio.
+1. Open the `ExpenseValidation` project in Studio.
 2. Project Settings → **"Starts in Background"** = **Yes**. This sets
    `runtimeOptions.requiresUserInteraction: false` in
    `project.json`.
 3. Republish.
 4. **Why:** The workflow does no UI interaction. Background is the
    correct mode. It no longer consumes the foreground job slot, so
-   it can run concurrently with `ForegroundHolder` (or any other
+   it can run concurrently with `AttendedReportJob` (or any other
    foreground job) without contention.
 5. **Source:**
    `products/orchestrator/playbooks/foreground-already-running.md`
@@ -93,7 +93,7 @@ legitimate foreground workload — it stays foreground. The fix targets
 
 ### Orchestrator (deployment-layer override — alternative)
 - Alternative if a Studio republish is not immediately possible:
-  Orchestrator UI → Processes → `MisconfiguredForeground` → Settings
+  Orchestrator UI → Processes → `ExpenseValidation` → Settings
   → **"Background Process"** = true. This overrides the deployed
   process's foreground attribute without changing the source.
   Eventually flip the source via Studio so the misconfig does not
@@ -105,7 +105,7 @@ legitimate foreground workload — it stays foreground. The fix targets
   scheduled against this process.
 - Enabling "Run only one job at a time" on the Robot — same masking;
   also impacts unrelated workloads.
-- Converting `ForegroundHolder` to background — that workflow
+- Converting `AttendedReportJob` to background — that workflow
   legitimately uses the UI; it's not the misconfigured one.
 
 ---
@@ -148,8 +148,8 @@ legitimate foreground workload — it stays foreground. The fix targets
 
 | # | Hypothesis | Confidence | Status | Root Cause? | Key Evidence | Resolution |
 |---|------------|------------|--------|-------------|--------------|------------|
-| H1 | MisconfiguredForeground is wrongly published as foreground despite having no UI activities; it loses the foreground slot to a legitimate foreground job and faults | High | Confirmed | Yes | `Main.xaml` uses only `LogMessage` + `Delay` (no UI); `project.json` has `requiresUserInteraction: true`; concurrent `ForegroundHolder` job in Running state at failing job's start time; exception message + Robot log explicitly name the blocking job | Set `requiresUserInteraction: false` in `project.json` (Studio: "Starts in Background: Yes"), republish |
-| H2 | Both jobs are legitimate foreground and the right fix is trigger sequencing | Medium | Refuted | No | Refuted by source inspection — `MisconfiguredForeground`'s `Main.xaml` performs no UI work, so it does not need to be foreground in the first place | n/a |
+| H1 | ExpenseValidation is wrongly published as foreground despite having no UI activities; it loses the foreground slot to a legitimate foreground job and faults | High | Confirmed | Yes | `Main.xaml` uses only `LogMessage` + `Delay` (no UI); `project.json` has `requiresUserInteraction: true`; concurrent `AttendedReportJob` job in Running state at failing job's start time; exception message + Robot log explicitly name the blocking job | Set `requiresUserInteraction: false` in `project.json` (Studio: "Starts in Background: Yes"), republish |
+| H2 | Both jobs are legitimate foreground and the right fix is trigger sequencing | Medium | Refuted | No | Refuted by source inspection — `ExpenseValidation`'s `Main.xaml` performs no UI work, so it does not need to be foreground in the first place | n/a |
 | H3 | Missing unattended robot configuration (sibling `#1230` playbook) | Low | Refuted | No | The error is `System.InvalidOperationException` (Robot-side guard), not HTTP 409 / `#1230` | n/a |
 
 ---

@@ -1,0 +1,95 @@
+task_id: skill-troubleshoot-uia-application-not-found
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
+description: >
+  UiPath troubleshooting agent must triage a Use Application scope failure
+  where the target desktop app is not running and the scope's OpenMode is set
+  to Never. Orchestrator logs surface UiPath.UIAutomationNext.Exceptions.
+  ApplicationNotFoundException with the message "Could not find target
+  application." Success = agent matches the application-not-found playbook
+  AND identifies the OpenMode=Never property as the gating condition (not a
+  selector-level failure).
+
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 300
+  task_timeout: 4500
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: data
+  mock_path_dirs: ["m"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  The ExpenseImporter unattended job faulted overnight (job key
+  2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091, folder "Finance Automations").
+  It runs the same nightly schedule it has run for months. Can you
+  investigate?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting investigation. Approve
+    every scope expansion it requests so it reaches a root-cause
+    conclusion, but do NOT authorize it to modify any project source
+    files — you will apply any recommended fix yourself in Studio.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, orchestrator, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    # The llm_judge sees only the final turn. If the simulator approves applying the fix, the agent edits Main.xaml in the last turn and its correctly-gated edit is misread as a silent edit. Decline so the agent closes recommendation-only.
+    - "If the agent asks whether to apply, edit, or write the fix to a project source file (e.g. 'shall I apply the fix to Main.xaml?'), DECLINE: tell it not to change any files because you will apply the change yourself in Studio, and ask it to give its final summary — the root cause and the exact property change to make. Never approve a source-file edit."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

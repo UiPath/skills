@@ -190,6 +190,7 @@ Use sparingly — at most one batched prompt in the whole interview. Each row de
 | Field | Why never default |
 |---|---|
 | Trigger type when ANY external system, portal, form, schedule, signup, or inbound event is mentioned | `Timer` / `Connector Event` change generation path. "Vendor signs up" → portal/event, NOT Manual. |
+| Trigger type when a tenant case-entity / data-object record-created start is mentioned | This is an event trigger with the named object as Source. Missing tenant provisioning is handled later as an unresolved placeholder, not by downgrading to Manual. |
 | Task type on ambiguous verbs (`review`, `approve`, `check`, `validate`, `process`, `assess`, `sign off`, `decide`) | `action` (HITL) vs `agent` (LLM) generate different shapes. The verb alone is not enough. |
 | Task type when a **compliance trigger phrase** is in the transcript (ECOA, NCQA, HIPAA, SOC 2, FCRA, FINRA, "licensed X", "fiduciary review", etc.) AND user proposed non-`action` | Tier 2 of the authority hierarchy forces `action`; do not silently accept user's stated type. See [sdd-generation-rules.md § Task-type override priority](sdd-generation-rules.md#task-type-override-priority). |
 | Case exit condition | Wrong exit traps the case open or closes prematurely. |
@@ -207,6 +208,7 @@ These thoughts mean STOP and use AskUserQuestion before continuing:
 | Thought | Reality |
 |---|---|
 | "I'm confident enough about the trigger." | Trigger ≠ Manual the moment a portal, form, schedule, or external system is mentioned. Always-Ask. |
+| "The named data object might not exist in this tenant, so Manual is safer." | Preserve the object as an event trigger. Unresolved resources become placeholders during planning/build. |
 | "The user said 'review' — probably an `action` task." | `review` is on the Always-Ask list. Ask. |
 | "User said 'I'll fix it later' — defaulting is sanctioned." | User-permission to default ≠ permission to skip Ask. Rule 2 locks the file post-Approve. Wrong defaults survive. |
 | "User is in a hurry, don't burn turns." | One Ask costs 30s. One wrong default costs a Phase 4 retry loop. Ask. |
@@ -263,10 +265,10 @@ Run `uip maestro case registry pull` first if cache absent. See [registry-discov
 |---|---|---|
 | `execute-connector-activity` | connector `typeId` + operation (`typecache-activities-index.json`) | a registered IS **connection** (`connectionId`) for that connector |
 | `wait-for-connector` | connector-trigger `typeId` (`typecache-triggers-index.json`) | an IS connection for the inbound event |
-| `agent` | `agentId` (`agent-index.json`) | the agent is **deployed** |
+| `agent` | `agentId` (`agent-index.json`) | the agent is **deployed** — or built inline at the Phase 1 Rule 17 Create gate (in-solution sibling) |
 | `action` (human task / HITL) | `actionAppId` (`action-apps-index.json`) when a deployed Action App matches | else `<UNRESOLVED>` + Rule-8 placeholder — inline JSON-schema authoring is NOT supported by the action plugin |
 | `process` / `rpa` | `processOrchestrationId` (`process-index.json` / `processOrchestration-index.json`) | the process is **published** |
-| `api-workflow` | `apiWorkflowId` (`api-index.json`) | the API workflow is **deployed** |
+| `api-workflow` | `apiWorkflowId` (`api-index.json`) | the API workflow is **deployed** — or built inline at the Phase 1 Rule 17 Create gate (in-solution sibling) |
 | `case-management` | child case (`caseManagement-index.json`) | the child case is **published** |
 
 A *type* match with **no live instance** still ships `<UNRESOLVED>` + a `high` review item — never fabricate IDs (SKILL.md Rule 8). (A connector type can exist in the catalog while the tenant has zero connections — that is still `<UNRESOLVED>`.)
@@ -302,10 +304,10 @@ Per-task AskUserQuestion (4 options max). **When candidate matches differ by fol
 |---|---|
 | `<top match — name · folder · version · type>` | Record selection (incl. chosen folder). |
 | `<second match — name · folder · version · type>` (if available) | Record selection (incl. chosen folder). |
-| `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. |
+| `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. **For an `agent` or `api-workflow`,** Phase 1's Rule 17 gate additionally offers to build it inline as an in-solution sibling ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a no-match resource of these kinds need not stay manual. |
 | `Something else` | Free-text re-search keyword, retry. |
 
-**Empty registry match** across bucket C → AskUserQuestion `Force pull and re-resolve` / `Skip and use placeholders` (Rule 17), applied per batch, not per task. When the user picks `Skip and use placeholders`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
+**Empty registry match** across bucket C → AskUserQuestion `Force pull and re-resolve` / `Skip and use placeholders` — plus, when ≥1 still-empty is an `agent` or `api-workflow` AND the CLI supports `registry --local`, `Create the missing resource(s) inline` (build as in-solution siblings; see [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — per Rule 17, applied per batch, not per task. When the user picks `Skip and use placeholders`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
 
 #### Schema discovery — pull each resolved task's I/O contract
 

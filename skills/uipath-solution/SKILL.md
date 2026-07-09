@@ -53,7 +53,7 @@ All other `solution` subcommands (`pack`, `publish`, `deploy activate/status/uni
 6. **Run `uip solution resources refresh` before `pack` or `upload`.** Bundled artefact files and `userProfile/<userId>/debug_overwrites.json` must reflect current cloud state. Skipping refresh ships stale bindings.
 7. **Coded apps are NOT registered in `.uipx`.** `uip solution project add` does not apply to coded-app directories; they deploy independently via `uip codedapp publish / deploy`. A coded app folder can sit alongside a solution but is not part of its manifest.
 8. **Verify the artifact after every CLI mutation.** Read `project.json`, `.uipx`, or `uip solution deploy status` output — exit codes lie. Verification is additional; it does not replace requested read-only list commands. If the user asks to show or list registered projects, solution resources, packages, deployments, or statuses, run the matching `uip solution ... list/status --output json` command and then inspect files only as a secondary sanity check.
-9. **For multi-environment promotion, the deploy config (`-c <CONFIG_KEY>`) is the environment selector.** Same `.uipx` deploys to dev/staging/prod via different config keys, not different packages.
+9. **For multi-environment promotion, switch tenants with `uip login tenant set <tenant>` and pass a per-environment deploy config via `--config-file <path>`.** The same packed `.uipx` deploys to dev/staging/prod — the environment differs by the target tenant and the config file (generated with `deploy config get`, edited with `config set` / `config link`), not by a different package. There is no `-c <CONFIG_KEY>` flag.
 
 ## Workflow
 
@@ -61,7 +61,7 @@ The typical lifecycle for a UiPath Solution:
 
 ```
 1. init / project add  → Create solution, register projects (.uipx + resources/solution_folder/)
-2. resource refresh    → Sync bundled artefacts and debug overwrites with cloud state
+2. resources refresh   → Sync bundled artefacts and debug overwrites with cloud state
 3. (optional) restore  → Resolve NuGet deps in place (incl. authenticated Orchestrator feeds); login first
 4. pack                → Produce deployable .zip package
 5. login               → uip login (if not already authenticated)
@@ -87,7 +87,7 @@ This skill is the terminal step of an SDD-driven build: after `uipath-planner` p
 | File | Purpose |
 |------|---------|
 | [Solution Overview](references/solution-overview.md) | What a Solution is, `.uipx` manifest, file structure, lifecycle diagram, command tree |
-| [Develop a Solution](references/develop-solution.md) | `uip solution init / project add / import / remove / resource refresh / resource add / resource remove / resource edit`; field-tested gotchas |
+| [Develop a Solution](references/develop-solution.md) | `uip solution init / project add / import / remove / resources refresh / resources add / resources remove / resources edit`; field-tested gotchas |
 | [Pack and Deploy](references/pack-and-deploy.md) | `restore / pack / publish / deploy run`, deploy configs, CI/CD pipeline patterns |
 | [Activate and Manage](references/activate-and-manage.md) | `deploy activate / status / uninstall`, environment management |
 | [Scenarios Index](references/scenarios.md) | Failure modes and edge cases — manual edits, shared resources, virtual resources, name collisions |
@@ -98,6 +98,6 @@ This skill is the terminal step of an SDD-driven build: after `uipath-planner` p
 2. **Editing `resources/solution_folder/` directly.** It is auto-generated and auto-cleaned. Manual edits desync from `.uipx`. Use `uip solution project add/remove` instead.
 3. **Skipping `uip solution resources refresh` before `pack` or `upload`.** Ships stale bindings and debug-overwrite state.
 4. **Adding a coded-app directory via `uip solution project add`.** Coded apps have no `project.uiproj` / `project.json` and are not packed by `uip solution pack`. Deploy them independently via `uip codedapp publish / deploy`.
-5. **Creating a new `.uipx` per environment instead of using deploy configs.** One solution package promotes to dev/staging/prod via different `-c <CONFIG_KEY>` values. Different `.uipx` files per environment defeats version tracking.
+5. **Creating a new `.uipx` per environment instead of using deploy configs.** One packed solution promotes to dev/staging/prod via a per-environment `--config-file` (and `uip login tenant set` to target the tenant). Different `.uipx` files per environment defeats version tracking.
 6. **Using `uip solution upload` (Studio Web) as a deployment path.** Upload is for browser-based debugging only — it does not produce a published package and cannot be promoted via `deploy run`. Use `pack` → `publish` → `deploy run` for real deploys. `upload` also lands the solution in Studio Web's **Cloud workspace** tab — not the Local tab; SW's Local tab is a separate registration not addressable by `uip solution`.
 7. **Trusting exit codes alone after a mutation.** Always read the artefact (`project.json`, `.uipx`, deploy status) — a non-zero exit may indicate partial state and a zero exit can mask warnings.

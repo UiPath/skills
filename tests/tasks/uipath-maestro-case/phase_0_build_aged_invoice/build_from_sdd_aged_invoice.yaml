@@ -1,0 +1,100 @@
+task_id: skill-case-phase-0-build-aged-invoice
+description: >
+  BUILD FROM GENERATED AGED-INVOICE SDD - an approved AgedInvoicePayment
+  sdd.md fixture derived from the PDD-seeded Phase 0 path is staged into the
+  sandbox; the skill uses it as the sole source of truth, proceeds past
+  planning/build approval stops, creates the case-management project, and
+  validates the resulting caseplan.json. Mirrors the employee expense build
+  eval for the larger aged-invoice case.
+tags:
+  - uipath-maestro-case
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+  - feature:phase-0
+  - feature:stages
+  - feature:case-exit
+  - feature:conditions
+  - feature:trigger
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWrite"]
+  sdk_options:
+    max_thinking_tokens: 10000
+
+run_limits:
+  task_timeout: 4200
+  max_turns: 170
+  turn_timeout: 3000
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I have an approved SDD for our AgedInvoicePayment case-management solution -
+  it's saved as `sdd.md` in this folder. Build a UiPath Case Management solution
+  named "AgedInvoicePayment" containing a project also named
+  "AgedInvoicePayment" from this SDD.
+
+  Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0, do
+  not re-interview me, and do not redesign the process. This is intentionally a
+  large over-cap case that we are keeping as one Maestro case. The connector IDs
+  and resource references in the SDD are placeholders where the eval
+  environment does not have tenant-specific registry data; preserve the
+  requested task types and proceed with skeleton/placeholder resource bindings
+  when registry resolution is unavailable.
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Treat all hard stops after the SDD as pre-approved, including Phase 1
+    planning approval and Phase 2 publish-for-review. Choose the continue /
+    skip-publish path and keep going.
+  - Do NOT call AskUserQuestion - it is not available in this harness.
+  - If `uip maestro case registry pull` reports unauthenticated, empty, or
+    missing cache, record that state and proceed without live registry data.
+  - Skip Phase 5 and Phase 6. Do not run `uip maestro case debug` yourself and
+    do not publish to Studio Web.
+  - Finish with `uip maestro case validate AgedInvoicePayment/AgedInvoicePayment/caseplan.json --output json`
+    passing on the resulting caseplan.json.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip maestro case validate on the built aged-invoice case"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+validate[^\n]*AgedInvoicePayment/AgedInvoicePayment/caseplan\.json[^\n]*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the generated AgedInvoicePayment caseplan.json"
+    command: "uip maestro case validate AgedInvoicePayment/AgedInvoicePayment/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "staged sdd.md preserves the PDD-derived aged-invoice design"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/phase_0_to_case/aged_invoice_payment/check_aged_invoice_sdd.py sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "caseplan preserves aged-invoice domain structure, primary chain, exception lanes, task-type mix, triage scoring, Payment Risk gate, and Payment Tracking child case"
+    command: "python3 $TASK_DIR/check_aged_invoice_case.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

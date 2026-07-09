@@ -89,6 +89,7 @@ Locate `entry-points.json` adjacent to `caseplan.json` (same directory). Append 
 - `<caseplan-basename>` — the literal filename of the case file (typically `caseplan.json`), producing a path like `/content/caseplan.json.bpmn#trigger_xxxxxx`.
 - `<UUID v4>` — fresh `crypto.randomUUID()` per write. Non-deterministic; normalizer strips in golden diff.
 - `displayName` matches `node.data.label` (including the `Trigger <N>` default if `displayName` absent).
+- Leave this entry's `input`/`output` schemas (the `entry-points.json` fields above — not the trigger node's I/O) empty here — Step 6.3 back-fills them from the case's In/Out args ([entry-points-sync.md](../../../entry-points-sync.md)).
 
 **Write order:** `caseplan.json` first, then `entry-points.json`. If the second write fails, the skill surfaces the inconsistency to the user rather than silently half-applying.
 
@@ -97,7 +98,7 @@ Locate `entry-points.json` adjacent to `caseplan.json` (same directory). Append 
 - First-trigger path: literal `trigger_1` (no randomness).
 - Secondary path: `trigger_` prefix + 6 random chars per [`case-editing-operations.md § ID Generation`](../../../case-editing-operations.md#id-generation).
 
-Record `T<n> → <triggerId>` in `id-map.json` for downstream cross-reference.
+Record `T<n> → <triggerId>` in `id-map.json` for downstream cross-reference — incl. resolving an In-argument's bound trigger node when its `sourceTriggers` names this timer (or, when this timer is itself the primary trigger T02, an In-arg with blank `sourceTriggers`).
 
 ## Post-write validation
 

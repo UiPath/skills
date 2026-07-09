@@ -1,0 +1,98 @@
+task_id: skill-troubleshoot-export-pdf-wrongthread-session0
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
+description: >
+  UiPath troubleshooting agent must diagnose a Save Document as PDF COM
+  wrong-thread fault: the export faults casting the document to
+  Microsoft.Office.Interop.Word._Document (IID {0002096B-...}) with
+  0x8001010E RPC_E_WRONG_THREAD on an unattended Session-0 / background
+  runtime. Word interop requires an interactive STA; in Session 0 the worker
+  thread cannot own the document proxy. No external Word is involved and the
+  workflow is structurally correct. Success = agent matches the
+  word-export-pdf-com-wrong-thread playbook AND ties the RPC_E_WRONG_THREAD
+  cast to the off-STA / Session-0 run surface (unattended, non-interactive,
+  no external-Word warning), recommending an interactive/attended session or
+  migrating to the System Word (background) activities — without blaming the
+  document or output path.
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 300
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: data
+  mock_path_dirs:
+  - m
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  Our NightlyReportPdf process runs as a scheduled unattended job in
+  Orchestrator (folder "Reports", machine MOCK-HOST) and converts a Word
+  report to PDF. It faults with a COM casting error mentioning a "different
+  thread". The exact same workflow works fine when I run it from Studio on my
+  own machine.
+
+  Pinned faulted job: d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304. Why does it fail
+  unattended but work in Studio, and how do I fix it? Give me the exact steps.
+
+  The project source for the process is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the user who reported the NightlyReportPdf failure. It runs as a
+    scheduled unattended job and faults with a COM casting error about a
+    "different thread", but the same workflow works when you run it from
+    Studio on your own machine. You want a diagnosis plus exact steps.
+  goal: |
+    Let the agent complete its flow; approve scope expansions / clarifications.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and hand you the steps."
+    - "If asked whether the failing run was unattended, say yes - it is the scheduled unattended job; you only run it in Studio yourself when testing."
+    - "If asked whether any Word window was open on the robot host, say no - it is an unattended server with no one logged in interactively."
+    - "Never invent or provide new factual data beyond your initial report and these answers."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

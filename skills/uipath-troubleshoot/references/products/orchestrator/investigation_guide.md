@@ -1,13 +1,8 @@
 # Orchestrator Investigation Guide
 
-## Output Capture Pattern
+## Output Capture
 
-Every `uip` data-gathering command below assumes two patterns to keep the agent's context lean AND preserve an audit trail:
-
-1. **Filter at the source with `--output-filter`** — only pull the fields you actually need. Do NOT fetch the full response and truncate the output with `[:3000]` or similar post-hoc slicing — that silently drops information.
-2. **Save AND inspect in one call with `| tee`** — pipe the filtered response through `tee` to `.local/investigations/raw/<command>.json`. The response is visible in the tool result for immediate use AND saved on disk for the hypothesis-tester to re-read later. **Run `mkdir -p .local/investigations/raw` once before the first fetch — `tee` does not create the directory and will otherwise drop the file silently.**
-
-Reference shape:
+Follow the generic guide § Output Capture (filter at source; `| tee` for small/filtered results, `>` + selective read-back for heavy/unfilterable ones; filter-failure fallback; anti-patterns). Orchestrator-specific filter expressions appear inline in each command below. Reference shape:
 
 ```
 uip or jobs list --folder-key <key> --state Faulted \
@@ -16,16 +11,7 @@ uip or jobs list --folder-key <key> --state Faulted \
   | tee .local/investigations/raw/triage-jobs-list.json
 ```
 
-**Filter-failure fallback.** If `--output-filter '<jsonpath>'` returns an empty result, an error, or a shape the agent cannot interpret (likely cause: a field name in the documented filter has drifted from the current CLI response schema), retry the SAME command ONCE without `--output-filter` to see the actual response shape. Use that unfiltered response for the current call, and note the stale filter in your evidence summary so the discrepancy gets fixed in the guide. Do NOT silently swallow filter errors — they mean the documented filter is stale.
-
-Anti-patterns — do NOT do these:
-
-- `uip <cmd> --output json > file.json` — redirect alone hides stdout; the agent then needs an extra turn running `python -c "json.load(...)"` just to see what it fetched.
-- `uip <cmd> --output json | head -c 3000` or any byte/character slice — truncation silently drops fields that may be required by the playbook downstream.
-- Fetching the unfiltered full response when only 2–3 fields are needed — bloats the agent's context and the cache-read budget on every subsequent turn.
-- Inventing JSONpath field names on the fly. Use only the filter expressions documented in this guide for each command. If a documented filter fails, apply the filter-failure fallback above — do NOT guess different field names.
-
-If the CLI's `--output-filter` cannot express the shape you need, see `scripts/` for skill-provided filter helpers, OR fetch with a minimal field set first and only re-fetch with more fields when a specific gap forces it.
+If `--output-filter` cannot express the shape you need, see `scripts/` for skill-provided filter helpers, or fetch a minimal field set first and re-fetch more only when a gap forces it.
 
 ## Data Correlation
 
@@ -38,17 +24,17 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
    - **(A) User named a folder explicitly in the prompt** (e.g., "the failed job in *Shared*", "in *PurchaseOrderProcessing* folder") → continue with step A below.
    - **(B) User did NOT name a folder** (e.g., "investigate my last failed job", "my automation broke") → **STOP and ask the user. Do NOT run `uip or jobs list` looking for the failed job. Do NOT iterate over folder keys hoping to find it. Do NOT infer the folder from `project.json` — that is a hint to surface in the ask, not a selector to commit on.** Go directly to step B below.
 
-   The above is non-negotiable. The single most expensive triage failure mode is `jobs list` enumeration against arbitrary folders trying to "find" a job whose folder is unspecified — it burns 20–40 turns and an extra subagent dispatch before the orchestrator's sanity gate catches the wrong pick. Asking the user is 2 turns. Always cheaper.
+   The above is non-negotiable. The single most expensive anchoring failure mode is `jobs list` enumeration against arbitrary folders trying to "find" a job whose folder is unspecified — it burns 20–40 turns before the correlation check catches the wrong pick. Asking the user is 2 turns. Always cheaper.
 
    ---
 
    **Step A — User named a folder.** Resolve its key:
    ```
    uip or folders list --output json \
-     --output-filter "[?DisplayName=='<name>'].{Key:Key,FullyQualifiedName:FullyQualifiedName}" \
+     --output-filter "[?Name=='<name>'].{Key:Key,Path:Path,Type:Type}" \
      | tee .local/investigations/raw/triage-folders-list.json
    ```
-   If the result is empty (no folder with that name), write `needs_input.json` listing the available folders and asking the user to confirm the correct one. Do NOT guess. Proceed once the key is resolved.
+   If the result is empty (no folder with that name), ask the user via `AskUserQuestion`, listing the available folders as options to confirm the correct one. Do NOT guess. Proceed once the key is resolved.
 
    ---
 
@@ -57,12 +43,12 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
    1. Run folders list ONCE to get candidates:
       ```
       uip or folders list --output json \
-        --output-filter "[].{Key:Key,DisplayName:DisplayName,FullyQualifiedName:FullyQualifiedName}" \
+        --output-filter "[].{Key:Key,Name:Name,Path:Path,Type:Type}" \
         | tee .local/investigations/raw/triage-folders-list.json
       ```
-   2. Write `needs_input.json` with the candidate folder names as `options`. If `project.json` exists in the working directory and its `name` matches one of the folders, put that folder FIRST in the options list with the label `"<folder> (your current project)"` — surface the hint, do not select for the user. Ask: *"Which folder is the failing job in?"*
-   3. Return to the orchestrator. Do NOT continue with any data fetch.
-   4. On re-spawn with the user's answer, record the chosen folder in `state.json` and proceed to step 2 (Process).
+   2. Ask via `AskUserQuestion` with the candidate folder names as options. If `project.json` exists in the working directory and its `name` matches one of the folders, put that folder FIRST in the options list with the label `"<folder> (your current project)"` — surface the hint, do not select for the user. Ask: *"Which folder is the failing job in?"*
+   3. Do NOT continue with any data fetch until the user answers.
+   4. Record the chosen folder in `.local/investigations/notes.md` and proceed to step 2 (Process).
 
    **Bounded fallback** — applies ONLY when the user explicitly answers step B.3 with "I don't know" / "no preference" / equivalent. Run ONCE without folder filter, pick the most-recent, record the folder, proceed:
    ```
@@ -92,7 +78,7 @@ If data doesn't match: **discard it**. Do NOT fetch details for jobs or items fr
 
 ## Job Data Bundle
 
-For every job under investigation, gather these in order. Follow the Output Capture Pattern above — pipe through `tee` and filter at the source.
+For every job under investigation, gather these in order. Follow the generic guide § Output Capture — filter at the source, `tee` the filtered results, `>` the dense/unfiltered ones (e.g. traces).
 
 1. **Job details** — state, input/output arguments, timing, machine info, error details
    ```
@@ -115,9 +101,9 @@ For every job under investigation, gather these in order. Follow the Output Capt
 4. **Job traces** — execution traces (activity states, variable snapshots, execution path). Available for all job types.
    ```
    uip or jobs traces <key> --output json \
-     | tee .local/investigations/raw/triage-job-traces.json
+     > .local/investigations/raw/triage-job-traces.json
    ```
-   Traces are dense; consider filtering by activity name or error attribute when re-fetching for hypothesis testing.
+   Traces are dense and unfiltered — redirect with `>` (not `tee`) so the full body stays out of context, then read back only the activity/error entries you need. Filter by activity name or error attribute when re-fetching for hypothesis testing.
 
 This is the baseline. Domain-specific data gathering builds on it — see the investigation guide for each matched domain (UI Automation, Integration Service, Maestro) for additional steps after the baseline.
 

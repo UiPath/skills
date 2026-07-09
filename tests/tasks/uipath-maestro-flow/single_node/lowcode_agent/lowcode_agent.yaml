@@ -1,8 +1,13 @@
 task_id: skill-flow-lowcode-agent
 description: >
-  Create a UiPath Flow that uses the CountLetters low-code agent to count the
-  number of r's in 'arrow' and return the answer. Exercises agent resource
-  node discovery and wiring.
+  Create a UiPath Flow that wires in the existing CountLetters low-code agent
+  (published to the tenant) to count the number of r's in 'arrow' and return
+  the answer. The agent already exists, so the skill must DISCOVER it via the
+  registry and wire it as a published agent resource node
+  (uipath.core.agent.{key}) — NOT scaffold a new inline agent
+  (uipath.agent.autonomous). Exercises published agent resource node discovery
+  and wiring. A correct answer from an inline agent does not satisfy the test:
+  the node-type check below requires the published-resource node.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, resource]
 
 run_limits:
@@ -11,8 +16,9 @@ run_limits:
 
 initial_prompt: |
   Create a UiPath Flow project named "CountLettersLowCode" that uses the
-  CountLetters low-code agent to count the number of r's in 'arrow'
-  and return the answer.
+  existing CountLetters low-code agent to count the number of r's in 'arrow'
+  and return the answer. The agent already exists — discover it and wire it
+  in rather than creating a new one.
 
   Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.

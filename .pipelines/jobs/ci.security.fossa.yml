@@ -1,0 +1,29 @@
+parameters:
+  azureServiceConnection: ''
+  poolName: 'Security-Linux'
+  blockOnIssue: false
+
+stages:
+  - stage: Security_FOSSA
+    displayName: FOSSA
+    dependsOn: []
+    jobs:
+      - job: Skills
+        pool: ${{ parameters.poolName }}
+        steps:
+          - checkout: self
+          - task: AzureKeyVault@2
+            displayName: '[FOSSA] Download secrets from devopsprodauthtokenswekv'
+            inputs:
+              azureSubscription: ${{ parameters.azureServiceConnection }}
+              keyVaultName: devopsprodauthtokenswekv
+              SecretsFilter: 'FossaApiKey,FossaApiIntegrationKey'
+              RunAsPreJob: false
+          - template: Security/fossa.steps.yml@fossa
+            parameters:
+              OS: 'linux'
+              azureSubscription: ${{ parameters.azureServiceConnection }}
+              skipToggleKvStep: true
+              blockOnIssue: ${{ parameters.blockOnIssue }}
+              FOSSAFlags: '--branch "$(Build.SourceBranch)" --revision "$(Build.SourceVersion)-$(Build.BuildId)" --project "Skills" --config ".pipelines/jobs/fossa-skills.yml"'
+              FOSSATestFlags: '--revision "$(Build.SourceVersion)-$(Build.BuildId)" --project "Skills"'

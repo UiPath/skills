@@ -1,0 +1,47 @@
+name: $(Date:yyMMdd)$(Rev:.r)-sec
+
+trigger: none
+
+pr: none
+
+schedules:
+  - cron: "0 2 * * *"
+    displayName: Nightly security scan
+    branches:
+      include:
+        - main
+    always: true
+
+parameters:
+  - name: enableFossa
+    displayName: Run FOSSA scan
+    type: boolean
+    default: true
+  - name: azureServiceConnection
+    displayName: Azure connection pointing to Internal-Production-EA
+    type: string
+    default: 'InternalProdEAServiceConnection'
+  - name: poolName
+    displayName: Agent pool
+    type: string
+    default: 'Security-Linux'
+  - name: blockOnIssue
+    displayName: Fail the run when FOSSA finds issues (release gate)
+    type: boolean
+    default: false
+
+resources:
+  repositories:
+    - repository: fossa
+      type: github
+      name: UiPath/AzurePipelinesTemplates
+      ref: refs/tags/uipath.security.fossa.3.1.1
+      endpoint: github.com_UiPath
+
+stages:
+  - ${{ if eq(parameters.enableFossa, true) }}:
+      - template: jobs/ci.security.fossa.yml
+        parameters:
+          azureServiceConnection: ${{ parameters.azureServiceConnection }}
+          poolName: ${{ parameters.poolName }}
+          blockOnIssue: ${{ parameters.blockOnIssue }}

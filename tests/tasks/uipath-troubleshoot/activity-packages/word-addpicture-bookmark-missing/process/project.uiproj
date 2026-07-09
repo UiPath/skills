@@ -1,0 +1,6 @@
+{
+  "Name": "WordTemplateFill",
+  "ProjectType": "Process",
+  "Description": "Opens an offer-letter template and inserts the signature logo image into the document via Word activities.",
+  "MainFile": "Main.xaml"
+}

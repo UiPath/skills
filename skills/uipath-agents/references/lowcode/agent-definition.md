@@ -271,7 +271,7 @@ For conversational, typically general behavior and steps to respond to users. Sh
 
 ### User Message
 
-For autonomous agents, templates input fields into the prompt using `{{input.fieldName}}`. For `job-attachment` fields the token renders metadata only (see § File Attachments).
+For autonomous agents, templates input fields into the prompt using `{{input.fieldName}}`, and agent resources/outputs using `@{ }` expressions (see § contentTokens Construction). For `job-attachment` fields the token renders metadata only (see § File Attachments).
 
 ```json
 {
@@ -292,10 +292,15 @@ For conversational agents, the user-message should be ignored after initializati
 
 Every message needs both `content` (string) and `contentTokens` (array). Keep them in sync.
 
+Three token types: `simpleText`, `variable`, `expression`.
+
 **Rules:**
-1. Text outside `{{ }}` → `{ "type": "simpleText", "rawString": "<text>" }`
-2. Text inside `{{ }}` → `{ "type": "variable", "rawString": "input.fieldName" }` (strip delimiters)
-3. Every segment including whitespace gets its own entry
+1. Text outside `{{ }}` and `@{ }` → `{ "type": "simpleText", "rawString": "<text>" }`
+2. Text inside `{{ }}` → `{ "type": "variable", "rawString": "input.fieldName" }` (strip delimiters; input-field reference)
+3. Text inside `@{ }` → `{ "type": "expression", "rawString": "<expr>" }` (strip delimiters; Studio expression referencing an agent resource or output — see families below)
+4. Every segment including whitespace gets its own entry
+
+`@{ }` (`expression`) references an agent resource or output by family + name — `tools.<Name>`, `contexts.<Name>`, `escalations.<Name>`, or `output.<path>` — with the inner text verbatim as `rawString` (e.g. `@{contexts.Knowledge}` → `rawString: "contexts.Knowledge"`). `{{ }}` (`variable`) is for `inputSchema` fields only; `@{ }` targets are runtime-resolved and must never be declared under `inputSchema.properties`.
 
 **Example — adjacent variables:**
 
@@ -309,9 +314,23 @@ Content: `"{{input.field1}} {{input.field2}}"`
 ]
 ```
 
+**Example — resource reference (`@{ }` expression):**
+
+Reference an agent resource by family + name, e.g. a context (`resources/<Name>/resource.json`) with `@{contexts.<Name>}`.
+
+Content: `"Extract information from the @{contexts.Test} context"`
+
+```json
+"contentTokens": [
+  { "type": "simpleText", "rawString": "Extract information from the " },
+  { "type": "expression", "rawString": "contexts.Test" },
+  { "type": "simpleText", "rawString": " context" }
+]
+```
+
 **Common mistakes:**
 - Forgetting to update contentTokens after editing content
-- Including `{{` or `}}` in the variable rawString
+- Including `{{`/`}}` or `@{`/`}` in the rawString
 - Missing whitespace tokens between adjacent variables
 
 ## entry-points.json

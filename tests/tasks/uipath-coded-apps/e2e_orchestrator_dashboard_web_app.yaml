@@ -1,0 +1,253 @@
+task_id: skill-coded-apps-e2e-orchestrator-dashboard-web-app
+description: >
+  E2E scenario (cloud auth required): agent builds a complete Coded Web
+  App dashboard that surfaces live Orchestrator state, from scratch. Given
+  only a business goal, the agent must scaffold Vite + React, wire the
+  `@uipath/uipath-typescript` SDK with subpath imports and constructor DI,
+  configure the uipath.json scope to cover Jobs + Queues, configure
+  `vite.config.ts` correctly (Rule #9), use `getAppBase()` for any runtime
+  asset URLs (Rule #10), build, pack, publish (default Web type), and
+  deploy to a fresh per-run Orchestrator folder so `post_run` can clean it
+  up. Tests the Web-app lifecycle with deep SDK integration that no smoke
+  or integration test covers.
+tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
+# max_turns 65→85: run 28935883495 exhausted 65 with all lifecycle criteria
+# already passed — ~14 turns went to TaskCreate/TaskUpdate ceremony and a
+# post-deploy nupkg inspection detour, and report.json (the last step) was
+# the casualty. The prompt now writes the report immediately after deploy
+# and bans task-tracking ceremony; the bump is headroom for verbose agents.
+run_limits:
+  expected_turns: 45
+  max_turns: 85
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a UiPath Coded Web App that gives operations engineers a live
+  dashboard of Orchestrator state.
+
+  Business requirements:
+
+  - Two panels:
+    1. **Jobs** — list the currently-running jobs in the active folder
+       (use the SDK's Jobs service). Show one row per job with the
+       process name, started-at timestamp, and status.
+    2. **Queues** — list every queue in the active folder (use the SDK's
+       Queues service). Show one row per queue with the queue name and
+       the number of new + in-progress items.
+  - Both panels use the `@uipath/uipath-typescript` SDK from a Web App
+    (the SDK is initialized at app startup via OAuth — this is a Web app,
+    not an Action app).
+  - The app must be deployable to UiPath Cloud and load correctly from a
+    non-root URL prefix.
+
+  Use the app name `OrchestratorDashboard_<EPOCH>` (Unix epoch seconds
+  suffix) with version `0.1.0`.
+
+  Deploy to a FRESH per-run Orchestrator folder — do NOT reuse `Shared`:
+    1. Create a new folder named `codedapp-e2e-dash-<EPOCH>` via
+       `uip or folders create <name> --output json`. Capture the `Key`
+       from the response.
+    2. Pass that key to `uip codedapp deploy --folder-key <key>` — do NOT
+       let deploy go interactive.
+  This isolates the deployment so `post_run` cleanup can delete the
+  folder afterwards (folder delete cascades to the coded-app deployment).
+
+  IMMEDIATELY after `uip codedapp deploy` succeeds — before ANY further
+  verification, inspection, or cleanup — write `report.json` at the
+  sandbox root with:
+    {
+      "app_name": "<the exact app name you used>",
+      "deployment_id": "<the deploymentId from .uipath/app.config.json (or its systemName if deploymentId is absent)>",
+      "app_url": "<the appUrl from .uipath/app.config.json>",
+      "folder": "<the codedapp-e2e-dash-<EPOCH> folder name you created>"
+    }
+  The `folder` field is REQUIRED — `post_run` reads it to clean up. The
+  run is graded incomplete without `report.json`, no matter how well the
+  deployment went.
+
+  Use `--output json` on every `uip` command. Do not prompt for
+  confirmation — this is an automated test. Do NOT use task-tracking
+  tools (TaskCreate/TaskUpdate) — execute the steps directly; every
+  turn spent on bookkeeping is budget taken from the build.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status before cloud commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked `uip or folders create` in some form (isolated per-run folder for cleanup). Loosened from name-anchored pattern — the actual folder name is graded separately by the report.json check below, and the CLI accepts flag ordering the anchored pattern misses."
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+folders\s+create\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `npm run build` (Rule #3)"
+    tool_name: "Bash"
+    command_pattern: 'npm\s+run\s+build'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp pack`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+pack\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp publish` (Web type — the default; --type Action would be wrong here)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+publish\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT publish with -t Action / --type Action (this is a Web App)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+publish\b.*(?:-t\s+Action|--type\s+Action)'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp deploy` with --folder-key"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+deploy\b.*--folder-key'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "publish wrote a .uipath/app.config.json somewhere in the project tree"
+    command: "find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "app.config.json.appType is Web (default; confirms Action wasn't accidentally used)"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if d.get('appType','Web').lower() == 'web' else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "app.config.json proves a tenant round-trip: deploymentId (fresh deploy) OR systemName (deploy retried after a transient 5xx lands on the CLI upgrade branch, which never writes deploymentId)"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if (d.get('deploymentId') or d.get('systemName')) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "vite.config.{ts,js} was created (anywhere in the project tree)"
+    command: "find . \\( -name 'vite.config.ts' -o -name 'vite.config.js' \\) -not -path '*/node_modules/*' -print -quit | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "vite.config sets base: './' (Rule #9)"
+    command: "F=$(find . \\( -name 'vite.config.ts' -o -name 'vite.config.js' \\) -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && grep -E \"base:[[:space:]]*['\\\"]\\./['\\\"]\" \"$F\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Source files use SDK subpath imports for Jobs AND Queues (Anti-pattern #1 — no package-root imports)"
+    command: "find . \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec grep -lE \"from\\s+['\\\"]@uipath/uipath-typescript/(jobs|queues)['\\\"]\" {} + 2>/dev/null | xargs -r grep -hE \"from\\s+['\\\"]@uipath/uipath-typescript/(jobs|queues)['\\\"]\" | sort -u | wc -l | awk '{ exit ($1 >= 2 ? 0 : 1) }'"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Source files construct Jobs via constructor DI: `new Jobs(...)` (Anti-pattern #2 — never use dot-chain). Split from a combined Jobs|Queues check so each service is graded independently."
+    command: "find . \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec grep -lE 'new\\s+Jobs\\(' {} + | grep -q ."
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Source files construct Queues via constructor DI: `new Queues(...)` (Anti-pattern #2). Closes the gap where one of the two services could silently be missing while the combined-OR check still passed."
+    command: "find . \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec grep -lE 'new\\s+Queues\\(' {} + | grep -q ."
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No source file imports SERVICE CLASSES from the package root (Anti-pattern #1). Root-level `{ UiPath }` / `getAppBase` imports are allowed — the SDK class + app-base helper live at the package root and a Web app's OAuth hook legitimately imports them; only service classes are subpath-only."
+    command: "find . \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec sed 's|//.*||' {} \\; | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b|\\bgetAppBase\\b'"
+    timeout: 15
+    expected_exit_code: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Skill change #1562 (Jul 6) replaced the .env/VITE_UIPATH_* SDK config with
+  # uipath.json ({clientId, scope, orgName, tenantName, baseUrl, redirectUri});
+  # the SDK reads only the uipath.json-injected meta tags, so the three config
+  # criteria below grade uipath.json exclusively.
+  - type: run_command
+    description: "SDK config exists: uipath.json with a scope field (clientId may be an empty placeholder or omitted entirely in test tenants, so only scope is required)"
+    command: "F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if 'scope' in d else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uipath.json scope covers BOTH Jobs and Queues (Rule #16 — mismatched scopes fail silently with 401/403)"
+    command: "F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; s=str(json.load(open('$F')).get('scope','')); sys.exit(0 if ('OR.Jobs' in s and 'OR.Queues' in s) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uipath.json baseUrl uses the API subdomain (Rule #8 — api.uipath.com, not cloud.uipath.com)"
+    command: "F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys,re; b=str(json.load(open('$F')).get('baseUrl','')); sys.exit(0 if re.match(r'https://([\\w-]+\\.)*api\\.uipath\\.com', b) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was written at the sandbox root so post-run cleanup can find the deployed app"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json contains app_name + deployment_id (app_url may be null until the app is activated)"
+    command: "python3 -c \"import json,sys; r=json.load(open('report.json')); sys.exit(0 if r.get('app_name') and r.get('deployment_id') else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json records the codedapp-e2e-dash-* folder name so post_run can clean it up"
+    command: "python3 -c \"import json,sys; f=str(json.load(open('report.json')).get('folder','')); sys.exit(0 if f.startswith('codedapp-e2e-dash-') else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_codedapp_folder.py"
+    timeout: 60

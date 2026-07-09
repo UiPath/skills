@@ -2,12 +2,14 @@ task_id: skill-case-phase-0-expense-reimbursement
 description: >
   Phase 0 INTERVIEW ONLY - simulated interview -> sdd.draft.md for an
   employee expense reimbursement case. Tests whether the Phase 0 interview
-  captures the bug-bash design: expense_requests record-created trigger,
-  expense_documents and expense_comments companion data objects, 7 stages
-  (Submission -> Manager Approval -> Finance Approval -> Payment -> Approved,
-  Rejected, Withdrawn), user-selected Payment entry, terminal Approved /
-  Rejected / Withdrawn outcomes, and the core task-type mix. STOPS at the
-  design document - no tasks.md, no caseplan build.
+  captures the bug-bash design: 5 primary stages in order (Submission ->
+  Manager Approval -> Finance Approval -> Payment -> Approved) plus 2 terminal
+  disposition lanes (Rejected, Withdrawn) modeled as secondary stages,
+  user/finance-selected Payment entry, and the core task-type mix. STOPS at
+  the design document - no tasks.md, no caseplan build. An LLM judge rates
+  design coherence (record-created trigger on expense_requests, companion
+  data objects, full task mix). Third domain alongside candidate_interview
+  and loan_origination.
 tags:
   - uipath-maestro-case
   - integration
@@ -68,6 +70,14 @@ initial_prompt: |
   so don't polish or validate it yet, just capture the design.
 
 success_criteria:
+  # The interview grades the captured DESIGN, in whichever file Phase 0 leaves it:
+  # sdd.draft.md if it stopped at the draft, or sdd.md if it finalized. All
+  # content criteria read whichever exists, so the test does not hinge on the
+  # agent stopping at exactly the draft step. Stage counting follows the sibling
+  # convention (candidate_interview, loan_origination): count PRIMARY stages via
+  # the `### Stage N:` heading, and match terminal/exception lanes by NAME
+  # separately — Rejected/Withdrawn render as `### Secondary Stage:` (no number)
+  # per the skill's stage model, so they are never counted as primary stages.
   - type: run_command
     description: "Phase 0 interview produced a design document (draft or finalized)"
     command: "test -f sdd.draft.md || test -f sdd.md"
@@ -77,24 +87,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "design declares the expense_requests record-created trigger"
-    command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'expense_requests' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'record[- ]created|created.*record|new.*record'"
+    description: "design captures all 5 primary stages (not truncated)"
+    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 5 ]"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "design declares all 3 data objects"
-    command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'expense_requests' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'expense_documents' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'expense_comments'"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "design captures all 7 bug-bash stages (not truncated)"
-    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 7 ] && grep -Eiq 'Submission' \"$f\" && grep -Eiq 'Manager Approval' \"$f\" && grep -Eiq 'Finance Approval' \"$f\" && grep -Eiq 'Payment' \"$f\" && grep -Eiq 'Approved' \"$f\" && grep -Eiq 'Rejected' \"$f\" && grep -Eiq 'Withdrawn' \"$f\""
+    description: "design declares the Rejected and Withdrawn terminal disposition lanes"
+    command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'rejected' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'withdrawn'"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -102,10 +104,18 @@ success_criteria:
 
   - type: run_command
     description: "design models Payment as a user-selected / finance-selected stage"
-    command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'payment.{0,120}(user-selected|selected by user|finance.{0,40}select|stage selection)|user-selected.{0,120}payment'"
+    command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'select.{0,30}payment|payment.{0,30}select'"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "design preserves the expense_requests record-created trigger, companion data objects, and trigger-sourced intake field mappings"
+    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && python3 $TASK_DIR/check_expense_trigger_sdd.py \"$f\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command

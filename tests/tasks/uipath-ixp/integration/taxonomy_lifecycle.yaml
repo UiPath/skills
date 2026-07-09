@@ -28,7 +28,7 @@ initial_prompt: |
   Use the tenant I'm already signed into (check I'm logged in; don't re-authenticate).
   Create the project from the invoices in `./fixtures/` and let IXP auto-suggest the
   taxonomy — I only care about the taxonomy structure here, so don't label or train.
-  Use a unique project title `ixp-it-taxonomy-<random-suffix>` so concurrent runs
+  Use a unique project title `codereval-integ-taxonomy-<random-suffix>` so concurrent runs
   don't collide. Save the suggested taxonomy to `taxonomy_initial.json`.
 
   Then make these exact edits, checking after each that it took:
@@ -45,7 +45,7 @@ initial_prompt: |
     "Adjustments" group.
   - Save the taxonomy again to `taxonomy_final.json`.
 
-  When you're done, delete the project.
+  Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
 success_criteria:
   - type: command_not_executed
@@ -111,11 +111,9 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Deleted the project as cleanup"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\b(?=.*(--yes|-y))'
-    min_count: 1
+  - type: file_exists
+    description: "report.json written for post-run cleanup"
+    path: "report.json"
     weight: 1.0
     pass_threshold: 1.0
 
@@ -179,3 +177,10 @@ success_criteria:
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
+
+# Safety net: delete the project even if the agent's in-band cleanup never ran
+# (crash / MAX_TURNS before the final delete). Reads report.json; idempotent;
+# always exits 0 so it never fails the test.
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/cleanup_project.py"
+    timeout: 60

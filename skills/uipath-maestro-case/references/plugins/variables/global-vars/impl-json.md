@@ -96,9 +96,9 @@ Rationale: the formal In-arg slot id surfaces in the case BPMN as `<uipath:input
 
 ## Inputs the plugin reads at Phase 3 Step 6.2
 
-1. **`tasks.md`** variable T-entries — for category, type, default, sourceTrigger(s), sourceField(s)
+1. **`tasks.md`** variable T-entries — for category, type, default, sourceTrigger(s), sourceField(s). On `Category=In` rows, `sourceTriggers` is a single T-number selecting the bound trigger (blank → primary trigger)
 2. **`tasks/trigger-spec-cache.json`** — for each trigger's `caseShape.outputs[]` (un-minted), keyed by T-number. Written by trigger plugin at Step 6.1; see [`../../triggers/event/impl-json.md` § Step 8](../../triggers/event/impl-json.md) for the writer-side schema. Top-level keys are T-numbers (e.g., `T02`, `T03`); values have `context`, `inputs`, `outputs` from the trigger's `caseShape`, un-minted (no `var` / `id` / `elementId` synthesized).
-3. **`id-map.json`** — for `T<N> → trigger_xxxxxx` lookup when writing trigger.outputs[]
+3. **`id-map.json`** — for `T<N> → trigger_xxxxxx` lookup when writing trigger.outputs[] and resolving an `In`-arg's bound trigger node (row's `sourceTriggers`; blank → `id-map["T02"].id`, the primary trigger)
 4. **`caseplan.json`** — to locate trigger nodes (by triggerId from id-map) and existing root variable arrays
 
 ## Dispatcher — two loops
@@ -116,7 +116,7 @@ For each trigger in `trigger-spec-cache.json`:
 |---|---|---|---|---|---|
 | Not referenced by SDD | (no row) | `{name: <spec.name>, var: <spec.name>, type: <spec.type>, source: <spec.source>, value: <spec.name>}` — `type` and `source` come from the spec entry verbatim (e.g., `type: "jsonSchema"` + `source: "=response"`). **No `id`, no `elementId`** per FE auto-emit convention (`IntsvcActivityPropertiesUtils.tsx:288-302`). Plain-name auto-emit. | — | — | **Required** — `{id: <spec.name>, name: <spec.name>, type: <spec.type>, elementId: <triggerId>, body: <spec.body>}`. For `jsonSchema`-typed entries (e.g., `response`, `Error`), the companion holds the full body schema that the FE picker uses to discover sub-fields. Without it, sub-field picking is broken and the variable can't be selected in connector-task input bindings. |
 | Referenced as `Category=Variable` | row's `sourceField` path | `{name: <last segment of sourceField path>, var: <sdd-name>, type: <sdd-row.type>, source: "=<row.sourceField>", value: <sdd-name>}` (Pattern C wire). **No `id`, no `elementId`** — resolution flows through the companion in `root.inputOutputs[]`, not through this entry. `name` is the spec sub-field segment (e.g., `"Title"` when `sourceField: response.Title`) — matches FE convention where `name` is the display label of the source field. `source` is `=` prepended to the raw `sourceField` value from tasks.md; `type` comes from the SDD row, NOT the spec — author's chosen type wins. | — | — | `{id: <sdd-name>, name: <sdd-name>, type: <sdd-row.type>, elementId: "root", custom: true}` — companion with elementId="root" routes variable to Case Variables panel; `custom: true` marks it user-declared. |
-| Referenced as `Category=In` | — (In doesn't reference a payload field; the value comes from caller or Default at fire) | Bridge entry per § In argument below — `{name: <sdd-name>, type: <sdd-row.type>, source: "=vars.<inputId>", var: <sdd-name>}`. Works on ANY trigger type (manual, timer, event). For event triggers, the bridge propagates the formal slot's `default` to the companion at trigger fire (no caller-override path, but mechanics are identical). | per § In argument below | — | per § In argument below |
+| Referenced as `Category=In` | **Skip here** — `Category=In` is dispatched in Loop B by Category, NEVER by spec-output name-match (even if an In-arg's Name happens to equal a top-level spec name). The bridge + slot + companion bind to the row's `sourceTriggers` trigger (blank → primary T02), not the trigger Loop A is iterating. See Loop B + § In argument. | — (emit nothing) | — | — | — |
 | Referenced as `Category=Out` | — | **REJECT** (direction mismatch — Out-args flow case→caller) | — | — | — |
 
 **File-type carve-out:** when the spec output's `type` is `"file"` (or `"octet-stream"` — normalize to `"file"`), both rows above additionally require:
@@ -148,9 +148,11 @@ root.inputOutputs[]: [
 
 Six entries total: 3 trigger outputs (no id) + 3 companions (with id — resolution surface). The auto-emit companions carry the full body schemas so the FE picker can navigate sub-fields. The Pattern C companion has no body (its type is the primitive `string`).
 
-### Loop B — SDD-only rows (rows with no trigger source)
+### Loop B — non-extraction rows (In / Out / pure-state Variable)
 
-For each variable T-entry in `tasks.md` that has **no `sourceTrigger` / `sourceTriggers` field**:
+For each variable T-entry in `tasks.md` that is **`Category=In`** (any `sourceTriggers` — single or blank), **`Category=Out`**, or a **`Category=Variable`** row with **no `sourceTrigger` / `sourceTriggers` field**:
+
+> **`Category=In` always lands here** — even when it carries a `sourceTriggers` T-number. An In-arg names its bound trigger but extracts no payload field, so it is NEVER a Loop A (Pattern C) row. Only `Variable` rows with `sourceTrigger(s)` go to Loop A.
 
 | SDD row | `root.inputs[]` | `root.outputs[]` | `root.inputOutputs[]` |
 |---|---|---|---|
@@ -159,7 +161,9 @@ For each variable T-entry in `tasks.md` that has **no `sourceTrigger` / `sourceT
 | `Category=Out` (companion ALWAYS emitted — see § Out argument) | — | `{id: v<random8>, name: <sdd-name>, type: <type>, var: <sdd-name>}` (formal-arg pointer) | `{id: <sdd-name>, name: <sdd-name>, type: <type>, default: <value or "">, elementId: "root"}` (no `custom`) |
 | `Category=InOut` | (not supported in v1 — see SDD template) | (not supported in v1) | (not supported in v1) |
 
-> Loop A and Loop B can write the SAME `root.inputOutputs[]` entry when an SDD row appears in both contexts (e.g., a `Category=Variable` row with `sourceTrigger`). Apply dedup by `id`: if an entry with the same `id` already exists from Loop A, do not re-write in Loop B; Phase 2 validator has already confirmed there's no Type/Default conflict.
+> **`<triggerId>` for a `Category=In` row** resolves to `id-map.json[T<N>].id` where `T<N>` is the row's `sourceTriggers` (a single T-number); blank `sourceTriggers` → the primary trigger `id-map["T02"].id`. The formal slot, companion, and bridge all attach to that one trigger node. Full 3-entry shape: § In argument.
+>
+> Loop A and Loop B can write the SAME `root.inputOutputs[]` entry when a `Category=Variable` row appears in both contexts (e.g., a `Variable` with `sourceTrigger`). Apply dedup by `id`: if an entry with the same `id` already exists from Loop A, do not re-write in Loop B; Phase 2 validator has already confirmed there's no Type/Default conflict. `Category=In` rows never straddle the loops — they are emitted solely in Loop B with the In-arg 3-entry shape, never a Pattern-C entry.
 
 ## Pattern shapes by category
 
@@ -218,7 +222,11 @@ Resolver doesn't care that two trigger entries write to the same `vars.caseStart
 
 ### In argument
 
-SDD row: `Category=In`, `triggerRef: T02`. **Works on any trigger type — manual, timer, or event.** For event triggers, the bridge mechanics are identical; the formal slot's `default` propagates to the companion at trigger fire (no caller-override path since events have no API caller, but the structural emission is the same).
+SDD row: `Category=In`, optional `sourceTriggers: T<N>` (a single T-number selecting the bound trigger; blank → primary trigger T02). `sourceFields` is empty for In rows. **Works on any trigger type — manual, timer, or event.** For event triggers, the bridge mechanics are identical; the formal slot's `default` propagates to the companion at trigger fire (no caller-override path since events have no API caller, but the structural emission is the same).
+
+**Trigger resolution.** `<triggerId>` in the entries below = `id-map.json[T<N>].id` for the trigger named by `sourceTriggers`; blank `sourceTriggers` → `id-map["T02"].id` (the primary trigger). Entries 1 (formal slot) and 2 (companion) carry it as `elementId`; entry 3 (bridge) is written on that same trigger node's `data.uipath.outputs[]`. `sourceFields` is not consulted for In.
+
+> **Bare manual bound trigger:** a manual trigger has no `data.uipath` key (its signature — see [`../../triggers/manual/impl-json.md`](../../triggers/manual/impl-json.md)). When the bound trigger is manual (the common case — the primary trigger is usually manual), create `data.uipath = { "outputs": [] }` on that node before appending the bridge. Do NOT add a `serviceType` — its absence is what keeps the trigger manual.
 
 Three entries — formal slot + companion + bridge:
 
@@ -238,7 +246,7 @@ Three entries — formal slot + companion + bridge:
 
 **Why three entries instead of one?** The runtime resolver (`VariablesService.findVariableByVariableId`) is a single string-equality find on `Variable.id`. The caller (or trigger fire for event triggers) writes the formal-arg's value into `vars.v<random8>` at trigger fire (because `inputs[].id` is `v<random8>`); downstream code wants to read it as `=vars.applicantName` (because that's the readable name). There is no automatic forwarding between the two slots — the bridge entry on `triggerNode.outputs[]` executes the copy at fire time: `source: "=vars.v<random8>"` reads the formal slot, `var: "applicantName"` writes to the companion's slot. Without the bridge, `=vars.applicantName` resolves to undefined. The companion's `inputOutputs[]` entry alone declares the *name* in the namespace, but holds no *value* because nobody writes to it.
 
-> **Placeholder trigger interaction:** if the trigger is a placeholder (any type), write entries 1 + 2 only; skip the bridge (entry 3) — the placeholder has no `data.uipath.outputs` array. The placeholder trigger never fires, so the bridge would never execute anyway. **Consequence:** at runtime `vars.<name>` (the companion slot) is undefined — the `default` on the `inputs[]` formal slot does NOT propagate to the companion without the bridge. This is expected: a placeholder case is structurally incomplete and not meant to run until the trigger is resolved. Re-generate from scratch (Rule 6) after the trigger resolves to get the working bridge.
+> **Placeholder trigger interaction:** if the **bound trigger** (the one named by `sourceTriggers`, or the primary trigger when blank) is a placeholder (any type), write entries 1 + 2 only; skip the bridge (entry 3) — the placeholder has no `data.uipath.outputs` array. The placeholder trigger never fires, so the bridge would never execute anyway. **Consequence:** at runtime `vars.<name>` (the companion slot) is undefined — the `default` on the `inputs[]` formal slot does NOT propagate to the companion without the bridge. This is expected: a placeholder case is structurally incomplete and not meant to run until the trigger is resolved. Re-generate from scratch (Rule 6) after the trigger resolves to get the working bridge.
 
 **File-type In-arg carve-out:** when `type === "file"`:
 - Formal slot (entry 1) MUST add `body: <FILE_TYPE_JSON_SCHEMA>` (see [`## file type`](#file-type)) — drives entry-points.json `$ref: "#/definitions/job-attachment"` at packaging
@@ -277,7 +285,7 @@ Same shape regardless of Default presence (two entries):
 
 ### InOut argument
 
-> **NOT supported in v1.** The SDD template's Category enum is `In | Out | Variable` only. If real customer cases require InOut, this section documents the FE-canonical shape for future re-introduction. Skill validators reject `Category=InOut` in v1 (Phase 2 — invalid Category value).
+> **NOT supported in v1.** The SDD template's Category enum is `In | Out | Variable` only. If real customer cases require InOut, this section documents the FE-canonical shape for future re-introduction. Skill validators reject `Category=InOut` in v1 (Phase 2 — invalid Category value). If revived, `<triggerId>` resolves per § In argument (`id-map[<sourceTriggers T-number>].id`; blank → `id-map["T02"].id`).
 
 Combines In + Out. One shared companion serves both:
 
@@ -316,6 +324,8 @@ All logged per [`../../logging/impl-json.md`](../../logging/impl-json.md).
 > |---|---|---|
 > | Category column missing or empty | Phase 2 (planning) | SDD-only structural check; needs no spec data |
 > | `Category=Out` + `sourceTriggers` declared | Phase 2 | Direction mismatch is purely SDD-internal |
+> | `Category=In` + CSV `sourceTriggers` (>1 T-number) | Phase 2 | In binds exactly one trigger; SDD-internal |
+> | `Category=In` + non-empty `sourceFields` | Phase 2 | In extracts no payload field; SDD-internal |
 > | Same-Name pair (any column mismatch) | Phase 2 | Pure SDD consistency check; not re-validated in Phase 3 |
 > | Missing `Type` on In/Out row | Phase 2 | SDD-internal |
 > | `sourceTriggers` references nonexistent T-number | Phase 2 | tasks.md cross-reference, no spec needed |
@@ -326,7 +336,7 @@ All logged per [`../../logging/impl-json.md`](../../logging/impl-json.md).
 >
 > Phase 3 does NOT re-validate the Phase 2 structural checks — they are prerequisite-met by the time Phase 3 runs (Phase 2 rejects before tasks.md is finalized).
 >
-> **`Category=In` on event triggers is ALLOWED** in v1 (per SDD contract). The previous rejection rule for Category=In on event triggers is removed — the structural emission for In (3-entry: formal slot + companion + bridge) is identical regardless of trigger type. For event triggers, the formal slot's `default` propagates through the bridge to the companion at trigger fire; there's no caller-override path, but the mechanics are valid.
+> **`Category=In` on event triggers is ALLOWED** in v1 (per SDD contract). The previous rejection rule for Category=In on event triggers is removed — the structural emission for In (3-entry: formal slot + companion + bridge) is identical regardless of trigger type. For event triggers, the formal slot's `default` propagates through the bridge to the companion at trigger fire; there's no caller-override path, but the mechanics are valid. The bound trigger is the one named by `sourceTriggers` (blank → primary) and may be any type.
 
 ## Custom Outputs (`custom: true` on task.data.outputs[])
 
