@@ -30,11 +30,11 @@ See [Action Node Structure — Adding and editing procedures](../../../../shared
 
 ## Script rules
 
-1. **Top-level body — no `function main()` wrapper.** Node runs the script text directly; a wrapper is never called → `output` null. Read inputs via `$vars.<node>.output`; end with top-level `return {…}`. Not a coded Function: no `main`, no injected args.
+1. **Top-level body — no `function main()` wrapper.** Node runs the `script` text directly (as a function body); a wrapper is never called → `output` null. Read workflow variables via `$vars.<variableId>` and upstream node outputs via `$vars.<nodeId>.output`; end with top-level `return {…}`. Not a coded Function: no `main`, no injected args.
    - Correct: `const n = $vars.ixp1.output.field; return { n };`
    - Wrong: `function main({ ixp1 }) { … }`
 2. **Must `return` an object** — `return { key: value }`, not a bare scalar. The return value becomes `$vars.{nodeId}.output`.
-3. **`$vars` is a global** — use it directly: `return { upper: $vars.input1.toUpperCase() }`
+3. **`$vars` is a global** — use it directly: `return { upper: $vars.customerName.toUpperCase() }`
 4. **JavaScript ES2020 (Jint engine)** — see [variables-and-expressions.md](../../../../shared/variables-and-expressions.md) for supported features and Jint constraints.
 5. **No `console.log`** — `console` is not available. Use `return { debug: value }` to inspect values.
 6. **No external calls** — use the HTTP node or a connector node for API calls.
