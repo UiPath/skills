@@ -11,6 +11,7 @@ description: >
 tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
 
 agent:
+  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
