@@ -5,25 +5,25 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/ensure-uip.sh\"\nexit $? #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/ensure-uip.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }",
+            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/ensure-uip.sh\"\nexit $?\n: <<'POLYEOF' #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/ensure-uip.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
             "timeout": 180,
             "once": true,
             "statusMessage": "Checking uip and rpa-tool installation..."
           },
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/suggest-permissions.sh\"\nexit $? #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/suggest-permissions.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }",
+            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/suggest-permissions.sh\"\nexit $?\n: <<'POLYEOF' #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/suggest-permissions.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
             "timeout": 5,
             "once": true
           },
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/set-session-env.sh\"\nexit $? #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/set-session-env.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }",
+            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/set-session-env.sh\"\nexit $?\n: <<'POLYEOF' #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/set-session-env.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.sh\"\nexit $? #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }",
+            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.sh\"\nexit $?\n: <<'POLYEOF' #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
             "async": true
           }
         ]
@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.sh\"\nexit $? #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }",
+            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.sh\"\nexit $?\n: <<'POLYEOF' #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
             "async": true
           }
         ]
@@ -46,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.sh\"\nexit $? #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }",
+            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.sh\"\nexit $?\n: <<'POLYEOF' #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
             "timeout": 30
           }
         ]
@@ -57,7 +57,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.sh\"\nexit $? #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }",
+            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.sh\"\nexit $?\n: <<'POLYEOF' #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
             "async": true
           }
         ]
@@ -68,7 +68,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.sh\"\nexit $? #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }",
+            "command": "echo `# <#` >/dev/null\nbash \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.sh\"\nexit $?\n: <<'POLYEOF' #> > $null\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.ps1\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
             "async": true
           }
         ]

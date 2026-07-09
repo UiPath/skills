@@ -230,7 +230,19 @@ Hooks are defined in `hooks/hooks.json` and run during plugin lifecycle events (
 
 - **Every session hook ships as twin scripts**: `hooks/<name>.sh` (bash — macOS, Linux, Windows with Git Bash) and `hooks/<name>.ps1` (PowerShell — Windows without Git Bash, or pwsh where installed). No shell ships by default on both Windows and macOS, so both twins are required for zero-install coverage
 - **The twins MUST stay behaviorally identical** — any change to one requires the equivalent change to the other in the same PR. The telemetry contract guards in `tests/scripts/` run both twins against the same assertions
-- `hooks.json` registers one **bash/PowerShell polyglot command** per event (the `` echo `# <#` `` / `exit $? #> > $null` pattern): bash executes the `.sh` branch, PowerShell skips it via the `<# … #>` block comment and executes the `.ps1` branch. Do not add a `shell` field to these entries and never put the sequence `#>` in the bash branch
+- `hooks.json` registers one **bash/PowerShell polyglot command** per event: sh-family shells execute the `.sh` branch and see the PowerShell branch only as heredoc data; PowerShell block-comments the sh branch via `<# … #>` and executes the `.ps1` branch. Canonical shape (replace `<name>`):
+
+  ```
+  echo `# <#` >/dev/null
+  bash "${CLAUDE_PLUGIN_ROOT}/hooks/<name>.sh"
+  exit $?
+  : <<'POLYEOF' #> > $null
+  & "${CLAUDE_PLUGIN_ROOT}/hooks/<name>.ps1"
+  if ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }
+  POLYEOF
+  ```
+
+  Constraints: do not add a `shell` field; never put the sequence `#>` in the sh branch; keep the PowerShell branch inside the `: <<'POLYEOF' … POLYEOF` heredoc — shells that parse the whole command up front (zsh, used by Codex on macOS via `$SHELL -lc`) otherwise fail on PowerShell syntax. Verified under bash, dash (`sh -c`), zsh, and Windows PowerShell 5.1
 - `.ps1` scripts must stay compatible with **both** Windows PowerShell 5.1 and PowerShell 7+ — no `&&`/`||` pipeline chains, no ternary/null-conditional operators
 - Keep hooks idempotent — safe to run multiple times
 - Set appropriate timeouts (default: 180 seconds)
