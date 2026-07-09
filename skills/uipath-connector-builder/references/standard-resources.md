@@ -125,9 +125,10 @@ the field's request/response side.
 
 **design** object (`--design-position primary|secondary|none`, `--component`, `--hidden`):
 `position`, `component` (FolderPicker, Button, Connectors, Resources, Fields, Processes,
-Queues), `hidden` (what `--hidden` writes — the field-level key is `design.hidden`, NOT
-`isHidden`), `loadByDefault`, `isMultiSelect`, `enableUserOverride`, `dictionaryWidget`,
-`solutionResourceKind`, `fieldActions` (cascading show/hide based on another field's value).
+Queues), `isHidden` (what `--hidden` writes — the key shipped connectors use; a dependent
+dropdown's `--depends-on` writes the same key), `loadByDefault`, `isMultiSelect`,
+`enableUserOverride`, `dictionaryWidget`, `solutionResourceKind`, `fieldActions` (cascading
+show/hide based on another field's value).
 
 ### Dropdowns (reference / lookup)
 A dropdown lists rows from a **List resource in this connector** — you choose which field is
