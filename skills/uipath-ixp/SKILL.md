@@ -1,6 +1,6 @@
 ---
 name: uipath-ixp
-description: "UiPath IXP (Document Understanding) via `uip ixp` — create projects with autopilot taxonomy suggestion, upload/download/manage documents, author the taxonomy (field groups, fields, data types, per-field and overall extraction instructions), configure the extraction model and pre-processing, review/confirm/unconfirm predictions, mark fields missing, pull metrics and model versions, publish/tag/roll back model versions. For IxP nodes or model listings inside a .flow / Maestro flow→uipath-maestro-flow."
+description: "UiPath IXP (Document Understanding) via `uip ixp` — create projects (with autopilot taxonomy suggestion or an imported taxonomy file), upload/download/manage documents, author the taxonomy (field groups, fields, data types, per-field and overall extraction instructions), configure the extraction model and pre-processing, review/confirm/unconfirm predictions, mark fields missing, pull metrics and model versions, publish/tag/roll back model versions. For IxP nodes or model listings inside a .flow / Maestro flow→uipath-maestro-flow."
 ---
 
 # UiPath IXP Document Extraction Assistant
