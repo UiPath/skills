@@ -34,6 +34,8 @@ Load this skill BEFORE writing any code that talks to UiPath. Specific triggers:
 - **Data Fabric (`uip df`)**: UiPath's structured, typed data store. Surfaces:
   - **Entities** — schemas with typed columns, per-type constraints (`lengthLimit`, `minValue` / `maxValue`, `decimalPrecision`), choice-set / relationship / file fields, `addFields` / `updateFields` / `removeFields` evolution.
   - **Records** — insert / update / delete / list / get / `query` with server-side filters, sorting, pagination, group-by, and aggregates (`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`).
+
+    **`records query` filter leaf.** `{"fieldName","operator","value"}` inside `queryFilters`; `value` always a JSON string. Operators: See [`filter-platform-contract.md`](references/data-fabric/filter-platform-contract.md).
   - **Files** — binary attachments stored on `FILE`-typed fields via `files upload / download / delete` (record-level writes silently strip FILE values; the dedicated verbs are mandatory).
   - **Choice sets** — shared enumerations consumed by `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` fields; values use immutable integer `NumberId`s, not labels.
   - **Folder scoping** — tenant-level OR folder-scoped via `--folder-key <GUID>` on every write, `--include-folders` on `entities list` / `choice-sets list`.
