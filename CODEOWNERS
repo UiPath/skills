@@ -62,6 +62,8 @@
 # Guardrails tests (folder-level ownership)
 /tests/tasks/uipath-agents/lowcode/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-agents/coded/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
+# Guardrails in lowcode/conversational (more specific than /lowcode/conversational/ above — wins via last-match)
+/tests/tasks/uipath-agents/lowcode/conversational/guardrail_custom_tool/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
 # Functions skill (Python Coded Functions — Phase 1; JS HTTP/background Phase 2/3)
 /skills/uipath-functions/ @AlexBizon @UiPath/team-coded-agents
@@ -100,6 +102,7 @@
 # Case Management skill
 /skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @jundayin
 /tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @jundayin
+/tests/tasks/uipath-maestro-case/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
 # Coded Apps skill
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
@@ -122,6 +125,7 @@
 
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
+/skills/uipath-review/references/agents/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
 
 # Legacy RPA — merged into uipath-rpa
