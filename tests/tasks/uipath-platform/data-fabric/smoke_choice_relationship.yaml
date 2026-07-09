@@ -201,7 +201,5 @@ pre_run:
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeExpense"
     timeout: 120
-    fail_on_error: false
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokePaymentStatus --include-choice-sets"
     timeout: 120
-    fail_on_error: false
