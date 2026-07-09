@@ -28,6 +28,20 @@ Every `uip` data-gathering command follows two patterns — lean context AND an 
 
 **Anti-patterns:** `tee`-ing a full unfiltered response (dumps the whole body into context — use `>` + selective read-back); `| head -c N` or byte/character slicing (drops required fields); fetching the unfiltered full response when 2–3 fields suffice (bloats context); inventing JSONpath field names (use only documented filters; on failure apply the fallback above).
 
+## Signal-Extraction Cheatsheet
+
+Where each signal kind lives (fetch per the domain's `investigation_guide.md`; exact commands are documented there and in playbook `## Investigation` sections):
+
+| Signal kind | Where to find it |
+|---|---|
+| exception (class/FQN) | Job record `Info` field; error-level job logs; trace span error attributes; Maestro incident body. Unwrap `System.AggregateException` / `--->` chains — the INNER exception is the routable signal |
+| message / message-key | Verbatim friendly message in job `Info` / logs; localization resource keys quoted in UIA exception details |
+| error-code | Message text (`DAP-*`, `#NNNN`, `AADSTS*`, HRESULTs like `0x8004027D`); Maestro incident code (e.g. `170002`); job `PendingReasons.ErrorCodes` |
+| http-status | Message text ("Bad Gateway", "429"); trace span attributes |
+| state | Job `State` + `PendingReasons`; Maestro instance status + incident open/closed; connection status |
+| faulting activity + package | `[Name]` prefix in error log message bodies; span names; exception FQN prefix maps to the owning package (see `references/summary.md` domain namespaces) |
+| package versions | `project.json` dependencies (source-required); job record package version fields |
+
 ## Locating Project Source & Resource Files
 
 A UiPath project ships in one of two layouts, and a named source or resource file (workflow, code, manifest, or a connection/asset/queue/bucket resource) may sit in either. Resolve BOTH before concluding a file is absent — this applies to every product, not just the one that named the file:

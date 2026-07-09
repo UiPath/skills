@@ -54,7 +54,7 @@ Then adjudicate per §3 unchanged.
 You (not the probes) decide, in notes.md:
 
 1. **Eliminate first.** A candidate with any contradicted `to_eliminate` item is out — record the disproving datum.
-2. **Upstream precedence.** A propagation/persistence/state-transition candidate cannot win while an upstream "why did the presupposed condition occur" candidate is untested or supported. If the upstream probe surfaced a new domain signal, follow it: re-grep the signature index, and if it matches a new playbook, run that playbook's decision tree (fast-path Phase 4) before concluding.
+2. **Upstream precedence.** A propagation/persistence/state-transition candidate cannot win while an upstream "why did the presupposed condition occur" candidate is untested or supported. If the upstream probe surfaced a new domain signal, follow it: re-grep the playbooks, and if it matches a new playbook, run that playbook's decision tree (fast-path Phase 4) before concluding.
 3. **Runtime-evidence gate.** For runtime failures, the winning candidate needs ≥1 runtime datum (logs, job records, instance state, incidents) that passes correlation. Design-time evidence alone proves a defect exists, not that it caused this failure. All runtime queries empty while the user reports active failures = contradiction — wrong scope; re-verify scope or ask the user, do not conclude.
 4. Apply the SKILL.md verification checklist to the winner.
 

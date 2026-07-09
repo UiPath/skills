@@ -6,7 +6,7 @@ when_to_use: "User asks why something failed, broke, stopped, hung, was stuck, r
 
 # UiPath Troubleshooting Agent
 
-Investigate directly in this context: anchor the entity, extract signals, route to a playbook via the signature index, walk its decision tree, verify, present. Spawn subagents only when an escalation trigger fires (§7).
+Investigate directly in this context: anchor the entity, extract signals, route to a playbook by grepping the playbook corpus, walk its decision tree, verify, present. Spawn subagents only when an escalation trigger fires (§7).
 
 ## 1. Invariants
 
@@ -26,7 +26,7 @@ ALL phases. Never override.
 
 **Tools:** uip CLI (json by default in non-interactive mode). Documentation search: `uip docsai ask "<question>" --source docs` (product docs) or `--source technical_solution_articles` (support KB — known bugs, workarounds).
 
-**State:** `.local/investigations/raw/` (full CLI responses — create at start) and `.local/investigations/notes.md` (running log: anchor, signals, index matches, branch decisions with rejecting data, checklist verdicts, escalation record). No other state files.
+**State:** `.local/investigations/raw/` (full CLI responses — create at start) and `.local/investigations/notes.md` (running log: anchor, signals, playbook matches, branch decisions with rejecting data, checklist verdicts, escalation record). No other state files.
 
 **Progress:** track phases with TaskCreate/TaskUpdate, subjects tailored to the user's problem.
 
@@ -41,20 +41,20 @@ ALL phases. Never override.
 
 ## 3. Extract signals
 
-From the raw responses, record in notes.md one line per observed fact: exception class (FQN + leaf), friendly message / resource key, error code, HTTP status, faulting activity + owning package namespace, entity states, cross-product entity keys, package versions. Field locations per signal kind: see the cheatsheet in `references/signature-index.md`.
+From the raw responses, record in notes.md one line per observed fact: exception class (FQN + leaf), friendly message / resource key, error code, HTTP status, faulting activity + owning package namespace, entity states, cross-product entity keys, package versions. Field locations per signal kind: see the cheatsheet in `references/investigation_guide.md` § Signal-Extraction Cheatsheet.
 
 **Unwrap wrappers at extraction time.** `System.AggregateException` and "One or more errors occurred" are async wrappers — the inner exception is the routable signal. Extract inner exception class, message, and error code before routing. Same for `--->`-chained inner exceptions in stacks.
 
-**Localized error text.** Host-side messages (.NET framework, Office/COM) localize with the robot's system language; the index stores canonical English. Route on language-invariant signals first — exception class/FQN, error codes, resource keys, HTTP status, API state enum values (these never localize). If a message fragment is non-English, grep the index with its canonical English wording (translate before grepping) and record the original text plus locale in notes.md.
+**Localized error text.** Host-side messages (.NET framework, Office/COM) localize with the robot's system language; playbooks store canonical English. Route on language-invariant signals first — exception class/FQN, error codes, resource keys, HTTP status, API state enum values (these never localize). If a message fragment is non-English, grep the playbooks with its canonical English wording (translate before grepping) and record the original text plus locale in notes.md.
 
 ## 4. Route
 
-Grep `references/signature-index.md` (never read it whole) for each extracted signal: leaf exception class, error code, message fragments, resource keys. Check hits' discriminator notes and the Disambiguations section.
+Grep the playbook corpus for each extracted signal — fixed-string, filenames only (`grep -rlF "<signal>" references/ --include="*.md"`): leaf exception class, error code, message fragments, resource keys. Signals are verbatim — a shorter fragment beats a guessed-case variant. Prefer hits under `*/playbooks/`; never read directories wholesale — open only the hits' `## Context` sections to check fit.
 
-- **One dominant playbook** — most distinct signal hits; ties break by index confidence; honor exclusions. → Load ONLY that playbook + its domain's `investigation_guide.md`. Go to §5.
+- **One dominant playbook** — most distinct signal hits; ties break by reading each hit's `## Context` and keeping the one whose preconditions fit the evidence; honor a playbook's explicit redirects to sibling playbooks. → Load ONLY that playbook + its domain's `investigation_guide.md`. Go to §5.
 - **Cross-domain signal** — evidence carries a key/ID/exception belonging to another product (e.g., an Excel fault wrapping an Integration Service connection error, an Orchestrator job spawned by a Maestro instance). → Follow the chain **one hop**: fetch the linked entity's error surface, extract its signals, re-grep. The upstream playbook drives the resolution; the downstream domain contributes a propagation fix (`references/presenting.md`). Deeper than one hop → escalate.
-- **Fault signal but no index hit** — map the faulting activity/exception namespace to its owning domain (`references/summary.md`) and check that domain's `summary.md` for a family playbook covering the activity. One dominant family playbook → proceed to §5 with it. Still nothing → escalate.
-- **No match, or an escalation trigger (§7) fires** → load `references/escalation.md`. For silent failures (no fault signal anywhere: job Successful but wrong output, hang, stuck state), enter via the no-signature routing table in the index.
+- **Fault signal but no grep hit** — map the faulting activity/exception namespace to its owning domain (`references/summary.md`) and check that domain's `summary.md` for a family playbook covering the activity. One dominant family playbook → proceed to §5 with it. Still nothing → escalate.
+- **No match, or an escalation trigger (§7) fires** → load `references/escalation.md`. For silent failures (no fault signal anywhere: job Successful but wrong output, hang, stuck state), enter via the no-signature routing table in `references/summary.md`.
 
 ## 5. Walk the playbook
 
@@ -84,7 +84,7 @@ Any check fails → ONE targeted re-fetch for the missing datum. Still failing �
 
 Load `references/escalation.md` when ANY of:
 
-1. **No signature-index match** — silent failure, hang, wrong results, nothing greppable.
+1. **No playbook grep match** — silent failure, hang, wrong results, nothing greppable.
 2. **≥2 co-equal matches** with distinct, independent signatures (different activities/error codes, neither upstream of the other).
 3. **Cross-domain chain deeper than one hop**, or the one-hop follow contradicts the original match.
 4. **Decision tree exhausted** — every branch rejected, or a discriminator stays inconclusive after its named evidence is gathered.

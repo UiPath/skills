@@ -6,9 +6,7 @@ This document describes how the troubleshooting knowledge base is structured, wh
 
 ```
 references/
-  signature-index.md                    <- Routing entry point. Generated signature→playbook table
-                                           + hand-maintained no-signature routing + signal cheatsheet.
-  summary.md                            <- Domain descriptions and CLI entry points.
+  summary.md                            <- Domain descriptions, CLI entry points, no-signature routing.
   investigation_guide.md                <- Generic investigation rules (all products).
   presenting.md                         <- Resolution formatting, fix assembly, approval gate.
   escalation.md                         <- Competitive-hypothesis protocol (probes, verifier).
@@ -47,7 +45,7 @@ Product-specific display rules for how to format entity names, IDs, and labels i
 
 ### summary.md (required)
 
-The playbook index. Lists all playbooks for this product, organized by confidence level. Human-maintained authoring index — runtime routing uses `references/signature-index.md` instead. Every new playbook must be added here.
+The playbook index. Lists all playbooks for this product, organized by confidence level. Runtime routing greps playbook files directly; this index is the browse and fallback surface (family-playbook routing, escalation, silent failures). Every new playbook must be added here.
 
 ### playbooks/ (required)
 
@@ -85,32 +83,14 @@ All playbooks use the same three headers:
 
 Template: `templates/playbook-template.md`
 
-### Signature Frontmatter
+### Greppable Signatures
 
-Every playbook declares its routable signatures in frontmatter — the canonical source for the generated table in `references/signature-index.md`:
+Routing greps playbook files directly, so a playbook is reachable only if its `## Context` quotes the failure's signals verbatim:
 
-```yaml
----
-confidence: high
-signatures:
-  - kind: exception
-    value: "UiPath.UIAutomationNext.Exceptions.VerifyActivityExecutionException"
-  - kind: message-key
-    value: "ExceptionCheckActivity"
-    note: "generic assertion failure — NOT the TypeInto-specific keys"
-exclusions:
-  - "ExceptionCheckActivityTypeInto* → verify-execution-typeinto.md"
----
-```
-
-Rules:
-
-1. `kind` is one of: `exception` (class FQN or leaf), `message` (verbatim message fragment), `message-key` (localization resource key), `error-code` (exact code), `error-code-prefix` (code family), `http-status`, `state` (entity state / status-field value).
-2. `value` is verbatim from the real failure — copy from `## Context`'s "What this looks like", never paraphrase. Trim placeholder segments.
-3. A (kind, value) pair claimed by two or more playbooks requires a discriminating `note:` on every claim — the lint enforces this.
-4. `exclusions:` records explicit redirects to sibling playbooks (`"X → other-playbook.md"`) — only when the body says so.
-5. A playbook with no crisp machine-matchable signature sets `silent: true` instead (last resort — a distinctive log line or state combination is still a signature). Silent playbooks are reachable only via the index's no-signature routing table.
-6. `confidence` is a cap on root-cause certainty, not a routing rank.
+1. Quote in "What this looks like" the exact strings the real failure produces — exception class (FQN), verbatim message fragments, localization resource keys, error codes, HTTP statuses. Never paraphrase; trim placeholder segments.
+2. When two playbooks share a signal (same exception class, same message), each body must state its discriminator and explicitly redirect to the sibling playbook for the other case ("NOT for X → other-playbook.md").
+3. A playbook with no crisp greppable signal (silent failure, hang, wrong result) is a last resort — a distinctive log line or state combination is still a signature. Such playbooks are reachable only via the no-signature routing table in `references/summary.md` and the domain's `summary.md`.
+4. `confidence` (frontmatter) is a cap on root-cause certainty, not a routing rank.
 
 ### Cross-Product References
 
@@ -118,17 +98,11 @@ Playbooks may reference other product domains (e.g., an Orchestrator playbook me
 
 ## How the Investigator Uses This
 
-1. **Route** — greps `references/signature-index.md` with extracted signals; loads only the matched playbook plus its domain's `investigation_guide.md`.
+1. **Route** — greps the playbook corpus with extracted signals; loads only the matched playbook plus its domain's `investigation_guide.md`.
 2. **Walk** — confirms the match against `## Context`, executes `## Investigation` in decision-tree order, verifies the cause against the "What can cause it" list before presenting.
 3. **Escalate** — on ambiguity, `references/escalation.md` drafts one candidate per plausible playbook; probes gather evidence using only commands documented in the playbook or product overview.
 4. **Investigation guides** (generic + product-specific) define how to verify data correlation before drawing conclusions. Applied regardless of playbook confidence.
 
 ## Creating New Content
 
-Template is in `references/templates/playbook-template.md`. Copy it, set the `confidence` field, declare `signatures:` per the contract above, fill in the sections, and add the entry to the product's `summary.md` (Confidence column must match the frontmatter). Then regenerate the routing table:
-
-```bash
-python3 scripts/build-signature-index.py --write-index
-```
-
-Run without flags first to lint (unroutable playbooks, duplicate signatures without notes, dangling exclusion targets). CI fails the PR if the index is stale.
+Template is in `references/templates/playbook-template.md`. Copy it, set the `confidence` field, quote the failure's verbatim signature strings in `## Context` per Greppable Signatures above, fill in the sections, and add the entry to the product's `summary.md` (Confidence column must match the frontmatter).

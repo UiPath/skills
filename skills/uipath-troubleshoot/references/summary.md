@@ -1,6 +1,6 @@
 # Domain Catalog
 
-Domain descriptions, namespaces, and CLI entry points. Runtime routing starts at [signature-index.md](./signature-index.md) — use this catalog to cross-check a (system, entity) classification, map exception namespaces to owning packages, and browse a domain's playbook index during escalation.
+Domain descriptions, namespaces, and CLI entry points. Runtime routing greps the playbook corpus directly (SKILL.md §4) — use this catalog to cross-check a (system, entity) classification, map exception namespaces to owning packages, browse a domain's playbook index during escalation, and route silent failures via the no-signature table below.
 
 ## Orchestrator
 
@@ -177,3 +177,22 @@ All playbooks use the same headers: `## Context`, `## Investigation` (optional),
 | **Low** | General symptoms → multiple causes | General guidance or absent | Robot unresponsive → could be heartbeat, network, or machine issue |
 
 Template and full guide: [templates/playbook-template.md](./templates/playbook-template.md) | [knowledge-base-guide.md](./knowledge-base-guide.md)
+
+## No-signature routing
+
+For problems with nothing greppable (no exception, no error code — silent failures, hangs, wrong results), map the symptom to a domain, then check that domain's `summary.md` for the matching silent playbook:
+
+| Symptom | Domain | Entry |
+|---|---|---|
+| Job/run Successful but the action had no effect or output is wrong | The acting activity's package (ui-automation, word, excel, gsuite, o365, database) | Activity-level trace logs — look for zero-count lines ("Replaced 0 occurrence"), Simulate/inert-verify configurations, provider quirks |
+| Job stuck Pending | orchestrator | `PendingReasons` on the job record — its error codes ARE greppable signatures; re-grep after fetching |
+| Job/instance stuck Running | orchestrator (plain job) / maestro (BPMN instance) | Child-job states + open incidents; a Maestro instance with an Open incident is blocked until the incident is resolved |
+| Works in Debug, fails deployed | maestro | Debug-vs-deploy silent playbook |
+| Duplicate task/element executions | maestro | Boundary-event silent playbook |
+| Traces/evidence missing or disappearing | maestro / orchestrator retention | Silent playbooks; retention windows |
+| Robot unresponsive, heartbeat gaps | orchestrator | Machine/session state via the orchestrator investigation guide |
+| Hang mid-activity, no fault, no timeout | The activity's package | Package overview "common failure patterns" (e.g., Word background modal dialogs, Python stdout flooding) |
+| Reads/writes the wrong files with no error | The activity's package | Relative-path resolution quirks (e.g., Python per-package WorkingFolder) |
+| Slowness / degradation without errors | Owning product | Product overview + `uip docsai ask` |
+
+Cross-domain rule: the symptom's *reporting* surface is not necessarily the owning domain — extract entity keys from the fetched records and follow them one hop before settling on a domain.
