@@ -16,6 +16,7 @@ What this looks like:
 - `Result` holds text from a **previous** screen state (stale), not the screen as it is now.
 - `Result` is partial — a few words missing, or words half-clipped at the edge of the read region.
 - No error message in the logs for any of the above (silent). The two exception branches below are the exceptions.
+- Design-time warning "The Select methods only work on editable text" — clipboard mode configured on a non-editable target.
 
 What can cause it (ordered most → least common):
 - **OCR scrape failed silently.** `MethodType = OCR`. The OCR engine threw; the failure is caught, traced, and swallowed, producing **zero** OCR words for the region. The activity then composes text from an empty word set → `Result = ""`. No fault is raised.
