@@ -17,6 +17,14 @@ run_limits:
 
 
 initial_prompt: |
+  OFFLINE SMOKE TEST: The `uip` CLI is available but not connected to a live
+  tenant. Every `uip df` command WILL fail with an auth error — that is
+  expected. The criteria grade command SHAPE, not success. Run each command
+  exactly once regardless of errors. Do NOT retry, do NOT attempt to login,
+  do NOT install tools, do NOT troubleshoot. Use `--output json` on all `uip
+  df` calls. Use placeholder IDs (e.g. `emp-rec-500`, `ce-cat-uuid`) where
+  real IDs would come from list/get responses you can't actually read.
+
   Tenant-scoped setup already exists:
     - `CE_SmokeCategories` Data Fabric choice set with travel, meals, lodging
     - `CE_SmokeTags` Data Fabric choice set with urgent, reimbursable, client
