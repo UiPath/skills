@@ -27,7 +27,7 @@ Use the exact CamelCase `Name` (e.g. `BankDetails`). For Create/Update, also run
 
 Author the standard top-level `bindings[]` pair (`ConnectionId` + `FolderKey`) per [parent impl.md § Top-level `bindings[]` shape](../impl.md#top-level-bindings-shape-cli-emitted-reference-only). Data Fabric specifics:
 
-- Connection binding `name` = the IS connection display name (not the `<CONNECTOR_KEY> connection` placeholder), since `node configure` is run with this value pre-resolved.
+- Connection binding `name` = `uipath-uipath-dataservice connection` (the `<CONNECTOR_KEY> connection` convention) — must match the definition's `connection` placeholder in the templates below. NOT the IS connection display name / email: a display-name value silently faults at debug with `102010 'Connection' has an invalid GUID value: '<bindings.uipath-uipath-dataservice connection>'`. (The display name belongs only in `bindings_v2.json`'s `displayName` and the connection resource filename.)
 - Both bindings share the same `resourceKey` = `<connectionId>`.
 
 Add one `definitions[]` entry per activity type used — copy the complete entry from the Definitions Templates section below. The `form` block is required ([parent impl.md § Critical: Connector Definition Must Include `form`](../impl.md#critical-connector-definition-must-include-form)).
@@ -199,7 +199,7 @@ Add one entry per activity type used to `definitions[]` in the `.flow` file (sib
       { "name": "operation",    "type": "string" },
       { "name": "objectName",   "type": "string", "value": "QueryEntityRecordsCurated" },
       { "name": "method",       "type": "string", "value": "POST" },
-      { "name": "connection",   "type": "string", "value": "<bindings.<IS connection Name>>" },
+      { "name": "connection",   "type": "string", "value": "<bindings.uipath-uipath-dataservice connection>" },
       { "name": "folderKey",    "type": "string", "value": "<bindings.FolderKey>" },
       { "name": "activityConfigurationVersion", "type": "string", "value": "v1" },
       { "name": "metadata", "type": "json", "body": { "telemetryData": { "connectorKey": "uipath-uipath-dataservice", "connectorName": "Query Entity Records" }, "inputMetadata": {}, "errorState": { "hasError": false } } }
@@ -264,7 +264,7 @@ Add one entry per activity type used to `definitions[]` in the `.flow` file (sib
       { "name": "operation",    "type": "string" },
       { "name": "objectName",   "type": "string", "value": "CreateEntityRecordCurated" },
       { "name": "method",       "type": "string", "value": "POST" },
-      { "name": "connection",   "type": "string", "value": "<bindings.<IS connection Name>>" },
+      { "name": "connection",   "type": "string", "value": "<bindings.uipath-uipath-dataservice connection>" },
       { "name": "folderKey",    "type": "string", "value": "<bindings.FolderKey>" },
       { "name": "activityConfigurationVersion", "type": "string", "value": "v1" },
       { "name": "metadata", "type": "json", "body": { "telemetryData": { "connectorKey": "uipath-uipath-dataservice", "connectorName": "Create Entity Record" }, "inputMetadata": {}, "errorState": { "hasError": false } } }
@@ -329,7 +329,7 @@ Add one entry per activity type used to `definitions[]` in the `.flow` file (sib
       { "name": "operation",    "type": "string" },
       { "name": "objectName",   "type": "string", "value": "UpdateEntityRecordV2" },
       { "name": "method",       "type": "string", "value": "PUT" },
-      { "name": "connection",   "type": "string", "value": "<bindings.<IS connection Name>>" },
+      { "name": "connection",   "type": "string", "value": "<bindings.uipath-uipath-dataservice connection>" },
       { "name": "folderKey",    "type": "string", "value": "<bindings.FolderKey>" },
       { "name": "activityConfigurationVersion", "type": "string", "value": "v1" },
       { "name": "metadata", "type": "json", "body": { "telemetryData": { "connectorKey": "uipath-uipath-dataservice", "connectorName": "Update Entity Record" }, "inputMetadata": {}, "errorState": { "hasError": false } } }
@@ -394,7 +394,7 @@ Add one entry per activity type used to `definitions[]` in the `.flow` file (sib
       { "name": "operation",    "type": "string" },
       { "name": "objectName",   "type": "string", "value": "DeleteEntityRecordCurated" },
       { "name": "method",       "type": "string", "value": "POST" },
-      { "name": "connection",   "type": "string", "value": "<bindings.<IS connection Name>>" },
+      { "name": "connection",   "type": "string", "value": "<bindings.uipath-uipath-dataservice connection>" },
       { "name": "folderKey",    "type": "string", "value": "<bindings.FolderKey>" },
       { "name": "activityConfigurationVersion", "type": "string", "value": "v1" },
       { "name": "metadata", "type": "json", "body": { "telemetryData": { "connectorKey": "uipath-uipath-dataservice", "connectorName": "Delete Entity Record" }, "inputMetadata": {}, "errorState": { "hasError": false } } }
@@ -459,7 +459,7 @@ Add one entry per activity type used to `definitions[]` in the `.flow` file (sib
       { "name": "operation",    "type": "string" },
       { "name": "objectName",   "type": "string", "value": "GetEntityRecordByIdCurated" },
       { "name": "method",       "type": "string", "value": "GET" },
-      { "name": "connection",   "type": "string", "value": "<bindings.<IS connection Name>>" },
+      { "name": "connection",   "type": "string", "value": "<bindings.uipath-uipath-dataservice connection>" },
       { "name": "folderKey",    "type": "string", "value": "<bindings.FolderKey>" },
       { "name": "activityConfigurationVersion", "type": "string", "value": "v1" },
       { "name": "metadata", "type": "json", "body": { "telemetryData": { "connectorKey": "uipath-uipath-dataservice", "connectorName": "Get Entity Record by ID" }, "inputMetadata": {}, "errorState": { "hasError": false } } }
