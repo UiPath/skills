@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-lookup-not-installed
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a classic Lookup Range failure
   caused by Microsoft Excel not being installed on the robot host: the
