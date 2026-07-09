@@ -90,16 +90,21 @@ uip solution packages list --output json
 
 # Paginate and sort
 uip solution packages list --limit 20 --sort-by "Name" --sort-order "Ascending" --output json
+uip solution packages list --limit 50 --offset 50 --output json   # page 2
 
-# Filter by name (server-side substring match on the package name)
+# Filter by name (server-side substring match on the package name, case-insensitive)
 uip solution packages list --name "Invoice" --output json
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--limit <n>` | Number of results to return | 50 |
+| `--offset <n>` | Number of results to skip (page start) | 0 |
+| `--name <pattern>` | Server-side substring match on the package name | -- |
 | `--sort-by <field>` | Sort field | -- |
 | `--sort-order <dir>` | `Ascending` or `Descending` | -- |
+
+The response's `Pagination` block reports `Total` (all matches on the server) and `HasMore`. If `HasMore` is `true`, re-run with `--offset <previous offset + Returned>` to fetch the next page — a package missing from the first page is not necessarily absent. The list is tenant-scoped: packages published on another tenant of the same organization do not appear; check the active tenant with `uip login status`.
 
 ## Step 5: Download a Package Version
 
