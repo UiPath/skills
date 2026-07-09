@@ -34,7 +34,10 @@ initial_prompt: |
   Important: The uip CLI is available but NOT connected to a live tenant.
   Commands will fail with auth errors — expected and acceptable.
   Run each command exactly once. Do NOT retry. Do NOT login.
-  Do NOT ask for confirmation or approval.
+  Do NOT ask for confirmation or approval. Do NOT skip later steps
+  because an earlier command errored — run the skill's full deploy
+  sequence to the end with the flags you would use against a live
+  tenant; the command transcript is what this exercise checks.
 
 success_criteria:
   # Pack → publish → deploy sequence (commands fail with auth in CI — we check
@@ -48,16 +51,25 @@ success_criteria:
     pass_threshold: 1.0
 
   # Fresh deploy (folderKey null): the agent resolves a folder and deploys with
-  # -n/--name <name> --folder-key <guid>. (On the fresh path the agent derives its own
-  # routing name from the dashboard title, so we assert the deploy shape, not the
-  # exact slug.) Accept both the short -n and long --name flag — the CLI exposes
-  # `-n, --name` and the agent may use either.
+  # -n/--name <name> and --folder-key <value>. (On the fresh path the agent derives
+  # its own routing name from the dashboard title, so we assert the deploy shape,
+  # not the exact slug.) Split into two flag checks because a single regex is
+  # order-sensitive — `deploy --folder-key K -n NAME` is a valid CLI invocation
+  # that the old combined pattern rejected.
   - type: command_executed
-    description: "Agent ran uip codedapp deploy with -n/--name <name> and a resolved --folder-key"
+    description: "Agent ran uip codedapp deploy carrying a -n/--name flag (deploy shape, order-free)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedapp\s+deploy.*(--name|-n)\s+.*--folder-key\s+\S'
+    command_pattern: 'uip\s+codedapp\s+deploy(?=.*\s(--name|-n)\s+\S)'
     min_count: 1
-    weight: 2.0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedapp deploy carrying a --folder-key value (deploy shape, order-free)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy(?=.*--folder-key\s+\S)'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   # Fresh deploy (systemName null): no prior systemName to reuse — agent must NOT

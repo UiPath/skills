@@ -7,6 +7,10 @@
       "file": "525de3e550.json"
     },
     {
+      "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1 --state Running --output json",
+      "file": "6d75a2ad66.json"
+    },
+    {
       "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1 --output json",
       "file": "97259002c9.json"
     },
@@ -19,20 +23,16 @@
       "file": "0e63a71fda.json"
     },
     {
+      "match": "or machines list --all-fields --output json",
+      "file": "684aa172ef.json"
+    },
+    {
       "match": "or machines list --output json",
       "file": "fda63e3155.json"
     },
     {
       "match": "or licenses info --output json",
       "file": "6b61cd95e8.json"
-    },
-    {
-      "match": "or machines list --all-fields --output json",
-      "file": "684aa172ef.json"
-    },
-    {
-      "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1 --state Running --output json",
-      "file": "6d75a2ad66.json"
     }
   ],
   "unmocked_default": {

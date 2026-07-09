@@ -18,6 +18,8 @@ What to look for:
 - Whether the placeholder was edited in place in the template (a tell: it was typed with corrections).
 - Whether part of the placeholder carries different formatting from the rest.
 
+> **Workflow-source guard:** in workflow XAML, an activity attribute value wrapped in square brackets (e.g. `Replace="[employeeName]"`) is an **expression binding** to a variable — correct configuration, not a defect. Never report it as a bug and never propose removing the brackets; stripping them converts the binding into the literal text and BREAKS a working workflow. The defect in this failure class lives in the Word template's XML runs, not in the activity's property syntax.
+
 ## Investigation
 
 1. Confirm the activity reports success and the `Search` value exactly matches the on-screen placeholder (character-for-character, including brackets and case).

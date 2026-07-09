@@ -14,7 +14,7 @@ description: >
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "TodoWrite"]
 
 run_limits:
   expected_turns: 300

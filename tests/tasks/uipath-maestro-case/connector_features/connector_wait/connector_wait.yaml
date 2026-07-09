@@ -31,61 +31,82 @@ initial_prompt: |
 
   ## Section 1: Case Definition
 
-  ### 1.1 Case Metadata
+  ### Case Metadata
+
   | Property | Value |
-  |---|---|
+  |----------|-------|
   | Case Name | ConnectorWaitCase |
   | Case Description | Case that waits for an inbound Outlook 365 email before completing. |
-  | Case Identifier | Prefix: CWC, Type: constant |
+  | Case Identifier | Type: constant. Prefix: CWC |
+  | Priority | Choiceset: Low, Medium, High — Default: Medium |
+  | Case-Level SLA | — |
+  | SLA Type | — |
 
-  ### 1.3 Triggers
-  | Trigger Type | Source | Configuration | Initial Variable Mapping |
-  |---|---|---|---|
-  | manual | User-initiated start of the case | - | - |
+  ### Case Triggers
 
-  ### 1.4 Case Completion Conditions
-  | WHEN | IF | THEN | Marks Case Complete |
-  |---|---|---|---|
-  | required-stages-completed | - | Case marked complete | Yes |
+  | T# | Trigger Type | Source | Configuration |
+  |----|-------------|--------|---------------|
+  | T01 | Manual | User-initiated start of the case | N/A |
+
+  ### Case Exit Conditions
+
+  | WHEN | IF | THEN | Marks Case Complete | Display Name |
+  |------|-----|------|---------------------|--------------|
+  | required-stages-completed | — | Case exited | Yes | Complete Rule 1 |
+
+  ### Case Variables
+
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+  |------|----------|------|----------------|--------------|---------|-------------|
+
+  ---
 
   ## Section 2: Stages & Tasks
 
-  ### Stage 1: Await Reply (`awaitReply`)
+  ### Stage 1: Await Reply
+
   **Type:** Stage
   **Required for Case Completion:** Yes
 
   #### Stage Entry Conditions
-  | WHEN | IF | Interrupting |
-  |---|---|---|
-  | case-entered | - | No |
 
-  #### Stage Completion Conditions
-  | WHEN | IF | Exit Type | Marks Stage Complete |
-  |---|---|---|---|
-  | required-tasks-completed | - | exit-only | Yes |
+  | WHEN | IF | Interrupting | Display Name |
+  |------|-----|-------------|--------------|
+  | case-entered | — | No | Entry Rule 1 |
+
+  #### Stage Exit Conditions
+
+  | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
+  |------|-----|-----------|---------------------|--------------|
+  | required-tasks-completed | — | exit-only | Yes | Complete Rule 1 |
 
   #### Tasks
-  | # | Task ID | Task Name | Type | Required | Run Only Once |
-  |---|---------|-----------|------|----------|---------------|
-  | 1 | `awaitReply.waitForEmail` | Wait for reply email | wait-for-connector | Yes | No |
 
-  ##### Task 1.1: Wait for reply email (`awaitReply.waitForEmail`)
+  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|-----------|------|----------|---------------|---------|-----|
+  | 1 | Wait for reply email | wait-for-connector | Yes | No | system | — |
+
+  ---
+
+  ##### Task 1.1: Wait for reply email
 
   **Type:** wait-for-connector
   **Description:** Suspend until an email is received on the Outlook 365 mailbox.
 
-  **Entry Condition**
+  **Entry Condition:**
 
-  | WHEN | IF |
-  |---|---|
-  | current-stage-entered | - |
+  | WHEN | IF | Display Name |
+  |------|-----|--------------|
+  | current-stage-entered | — | Entry Rule 1 |
 
-  | Field | Value |
-  |---|---|
-  | Connector | Microsoft Outlook 365 |
-  | Connector Key | uipath-microsoft-outlook365 |
-  | Event | Email Received |
-  | Mode | polling |
+  ###### Connector Task Detail (type: `wait-for-connector`)
+
+  **Connector:** Microsoft Outlook 365
+  **Connector Key:** uipath-microsoft-outlook365
+  **Event:** Email Received
+  **Type ID:** d76ca053-6e7e-3472-b98c-3094b802d83c
+  **Connection ID:** dd657127-91f5-4568-a3a3-c024bc03fb0f
+  **Mode:** polling
   ```
 
   Resolve the connector event against the Integration Service registry and a

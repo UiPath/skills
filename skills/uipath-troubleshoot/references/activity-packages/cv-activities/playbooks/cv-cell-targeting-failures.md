@@ -99,7 +99,7 @@ Fix: row indices over scrolled tables are unreliable — the model re-indexes fr
 
 Branches A–E all end in a **workflow source edit** (descriptor `CellExtraInfo` change, `Version` bump, scroll/targeting change). This resolution path is **interactive**.
 
-1. The orchestrator MUST call `AskUserQuestion` before any edit: print the exact file path, the activity `IdRef`, the property (e.g. `Version`, `Descriptor.Target.CellExtraInfo.ColumnIndex`), and the current → proposed value.
+1. You MUST call `AskUserQuestion` before any edit (approval gate): print the exact file path, the activity `IdRef`, the property (e.g. `Version`, `Descriptor.Target.CellExtraInfo.ColumnIndex`), and the current → proposed value.
 2. **Sharing a file path is not approval.** A path the user gave for reading does not authorize editing — issue a separate `AskUserQuestion` before writing.
 3. Never bundle "gather input" with "apply fix" in one option — split into gather, then surface the concrete diff and confirm.
 4. The apply-fix question must show the concrete diff (file, `IdRef`/line, current value, proposed value). Vague approvals are not enough.

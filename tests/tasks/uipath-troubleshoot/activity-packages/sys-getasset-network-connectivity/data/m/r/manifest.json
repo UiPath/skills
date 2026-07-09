@@ -31,6 +31,16 @@
       "file": "6945bfff10.json"
     },
     {
+      "match": "or jobs list --state Faulted --process-name AssetNetworkConnectivity",
+      "file": "6945bfff10.json",
+      "_doc": "Order-tolerant companion: state-first flag order; folder-key-first and process-name-first shapes are covered by the neighboring rules."
+    },
+    {
+      "match": "or jobs list --folder-key 6b9d2c5e-3a4f-4b8c-9d1e-2f3a4b5c6d7e --state Faulted",
+      "file": "6945bfff10.json",
+      "_doc": "Order-tolerant companion without the trailing --output json, so flag-decorated variants still match."
+    },
+    {
       "match": "or jobs get \"8e3f4d5c-2b1a-4c9d-7e6f-1a2b3c4d5e6f\" --output json",
       "file": "ec4ad05227.json"
     },

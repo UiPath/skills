@@ -49,11 +49,19 @@
 # interrupted / resolvedModel are absent and outcome is ok|unknown only.
 # Only derived, low-cardinality, PII-free values ever leave the machine.
 #
+# TWIN SCRIPT: hooks/send-telemetry.ps1 is the PowerShell twin of this file —
+# any behavioral change here MUST be mirrored there in the same PR (see
+# CLAUDE.md). hooks.json runs whichever twin matches the executing shell via a
+# bash/PowerShell polyglot command.
+#
 # Non-blocking by contract: registered as an async hook in hooks.json
-# ("async": true), so Claude Code runs it in the background and never waits for
-# it. Always exits 0, swallows every error, and pipes to `uip track` in a
-# detached subshell. Cross-platform (macOS, Linux, Windows via Git Bash /
-# MSYS). Pure bash + grep/sed/awk — no jq, node, or python.
+# ("async": true) on every event EXCEPT SessionEnd, so Claude Code runs it in
+# the background and never waits for it. SessionEnd is registered
+# SYNCHRONOUSLY (30s timeout): async hooks still running at session teardown
+# are killed after a short grace window, which would silently drop the
+# session-end event. Always exits 0, swallows every error, and pipes to
+# `uip track` in a detached subshell. Cross-platform (macOS, Linux, Windows
+# via Git Bash / MSYS). Pure bash + grep/sed/awk — no jq, node, or python.
 #
 # Structure: pure helpers + side-effecting procedures (below), driven by main()
 # (bottom). Configuration is env only:
