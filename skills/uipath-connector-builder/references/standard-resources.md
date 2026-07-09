@@ -57,6 +57,28 @@ defines `GET`/`GETBYID`); a write-only activity keeps its base path. A per-metho
 is derived from the canonical resource path. Only model GETBYID for TRUE by-id endpoints,
 not a search/list-by-filter endpoint.
 
+### nested / parent-id vendor paths (mid-path `{token}`)
+A path variable is bound on TWO sides: element-side `{name}` in the internal `path`, vendor-side
+`{vendorName}` in the `vendorPath`. When a `{token}` sits **only in the vendor path** — a
+parent-scoped sub-collection like `--vendor-path /issue/{issueId}/comment` whose internal slug is the
+flat `/comments` — it CANNOT be `type:"path"`: element-service looks for the segment in the flat
+element URL, doesn't find it, and 400s **"required parameter '<name>' not found"** at request time
+(reads/writes on comments/transitions/assignee/attachments all fail). `activity create` now emits the
+right shape automatically:
+
+- **query→path (default for a vendor-only token):** internal `/comments`, param
+  `{ name:"issueId", type:"query", vendorName:"issueId", vendorType:"path" }`. Element-service takes the
+  value as a query param and interpolates it into the vendor template. This is how shipped connectors
+  (e.g. Jira `curated_add_comment`) declare parent ids. Callers pass it at run time via
+  `uip is resources run … --query issueId=<id>`.
+- **path→path (token in the internal path):** pass `--resource-path /comments/{id}` so `{id}` is a real
+  element URL segment → `type:"path"`. If the internal and vendor tokens differ in name, the param is
+  `{ name:"id", vendorName:"issueId", type:"path", vendorType:"path" }` (name↔internal, vendorName↔vendor);
+  the CLI can't auto-derive a differing pair, so author it with `activity param create`.
+
+`validate` now flags both failure modes: a `type:"path"` param whose `{name}` is missing from the
+internal path, and a `{token}` in the vendorPath with no param sending it (unbound → 404).
+
 ## metadata.events
 `{ "eventMode": ["polling"] }` — `trigger create` sets this. Full `eventMode` value set:
 [events.md](events.md) §"SR-level event metadata".
@@ -107,9 +129,49 @@ Queues), `hidden` (what `--hidden` writes — the field-level key is `design.hid
 `isHidden`), `loadByDefault`, `isMultiSelect`, `enableUserOverride`, `dictionaryWidget`,
 `solutionResourceKind`, `fieldActions` (cascading show/hide based on another field's value).
 
-**reference** object (lookup dropdown): `{ "objectName": "accounts", "path": "/accounts",
-"lookupValue": "id", "lookupNames": ["name"] }` — set with `--reference '<json>'` (or `state
-patch`). `objectName` + `path` are REQUIRED (`validate` and `--reference` both enforce it).
+### Dropdowns (reference / lookup)
+A dropdown lists rows from a **List resource in this connector** — you choose which field is
+DISPLAYED and which is SENT. A dropdown can live on a **field, a path param, or a query param**, so
+the same flags exist on both `activity field create` and `activity param create`:
+
+```
+--reference-object <name>   target List resource's object name (e.g. teams)
+--reference-path <path>     its list path (e.g. /teams); use {parent} for a dependent dropdown
+--lookup-value <field>      the ONE field sent as the value (e.g. id)
+--lookup-names <csv>        display-candidate fields (e.g. id,displayName)
+--display-pattern <p>       visible label, e.g. "{displayName}" or "{name} - {id}" (combines lookupNames)
+--filter-pattern <p>        server-side type-ahead template with {filter} (optional)
+--load-by-default           populate the list on open;  --multi-select;  --enable-user-override
+```
+
+The reference points at a resource whose GET is `operation:"List"`; `lookupValue`/`lookupNames`
+name fields in that resource's returned records. Raw `--reference '<json>'` (`{objectName,path,
+lookupValue,lookupNames}`) is still accepted as an escape hatch. `objectName`+`path`+`lookupValue`
+are expected; `validate` warns if `lookupValue` is missing.
+
+**Dependent dropdowns** (child list scoped by a parent — e.g. Teams channel depends on team): put
+`{<parentName>}` in the child's `--reference-path` (must equal the parent field/param's name) and
+pass `--depends-on <parentName>`. That injects `design.isHidden` + a show/hide `fieldActions` pair,
+so the child appears only after the parent has a value and its list is filtered by the parent:
+
+```
+activity field create --resource messages --name team_id --reference-object teams \
+  --reference-path /teams --lookup-value id --lookup-names id,displayName \
+  --display-pattern "{displayName}" --load-by-default --method "POST=request,required"
+activity field create --resource messages --name channel_id --depends-on team_id \
+  --reference-object "teams::channels" --reference-path "/teams/{team_id}/channels" \
+  --lookup-value id --lookup-names id,displayName --display-pattern "{displayName}" \
+  --method "POST=request,required"
+```
+
+The parent (`team_id`) must exist as a sibling field/param on the same resource — `validate` warns
+if a dependent path's `{token}` or a rule's `refFieldName` names nothing on the resource.
+
+**Show/hide on a value** (conditional field, not a lookup): `--field-actions '<json>'` is the
+escape hatch — an array of `{ actionType: show|hide|required|optional, rules: [{ type:"field",
+refFieldName:"<other>", refFieldValues:["card"], isCleared:false }] }`. Use `refFieldValues:["*"]`
+for "any value", `isCleared:true` to fire when the ref field is empty; multiple rules in one action
+are ANDed.
 
 ## Bulk field authoring — `--fields` / `--fields-file`
 `activity create --fields '<json-array>'` (inline) or `--fields-file <path>` seeds the whole
