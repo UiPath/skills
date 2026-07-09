@@ -67,24 +67,26 @@ Per-clause counts come from the clause's own `controls[]` (or `deployedControlCo
 
 For each ⚙ `manual` control, look up its `Data.Clauses[].manualConfigChecks[]` entry (match on `controlDisplayName`) and show what to change: **expected** value vs **currently** deployed value. This is the actionable detail — surface it, don't stop at the ⚙ marker.
 
-**Next-action suggestion (state-aware).** Choose the call-to-action from `Data.Summary.ClauseSummary` — NEVER suggest (re)applying a pack that is already enabled:
-- **Nothing applied yet** (`FullyDeployedCount == 0 && PartiallyDeployedCount == 0` — pack not enabled): the ONLY case where you suggest applying. Offer `'Apply ISO 42001 settings'`, `'Apply High impact ISO 42001 settings'`, or `'Apply only <specific area> settings'`.
-- **Already applied, gaps remain** (`FullyDeployedCount > 0 || PartiallyDeployedCount > 0` — pack enabled, `state enable` already ran): do NOT suggest reapplying the standard or applying a subset. Point the user ONLY at the residual manual settings: `'Configure the manual ISO 42001 settings'` — the ⚙ items with expected/actual in DETAILS ARE the to-do list. When the user accepts, hand off to the AOps plugin to update the existing pack policy — see [Configuring manual settings (AOps handoff)](#configuring-manual-settings--aops-handoff). Any remaining ✗ `not-deployed` settings must be set in their product's own settings; reapplying the pack will not set them.
-- **All applied** (`PartiallyDeployedCount == 0 && NotDeployedCount == 0`): see [All settings applied](#all-settings-applied) — nothing to apply.
+**Next-action suggestion (state-aware).** Choose the call-to-action from `Data.Summary.ClauseSummary`, evaluated IN THIS ORDER (first match wins — the cases overlap, so order matters) — NEVER suggest (re)applying a pack that is already enabled:
+1. **All applied** (`PartiallyDeployedCount == 0 && NotDeployedCount == 0`): every clause fully deployed — render the [All settings applied](#all-settings-applied) block instead of the gap template below. Nothing to apply.
+2. **Nothing applied yet** (`FullyDeployedCount == 0 && PartiallyDeployedCount == 0` — pack not enabled): the ONLY case where you suggest applying. Offer `'Apply ISO 42001 settings'`, `'Apply High impact ISO 42001 settings'`, or `'Apply only <specific area> settings'`.
+3. **Already applied, gaps remain** (otherwise — pack enabled, `state enable` already ran, `PartiallyDeployedCount > 0 || NotDeployedCount > 0`): do NOT suggest reapplying the standard or applying a subset. Point the user ONLY at the residual settings that need attention: `'Configure the manual ISO 42001 settings'` — the ⚙ items with expected/actual in DETAILS ARE the to-do list. When the user accepts, hand off to the AOps plugin to update the existing pack policy — see [Configuring manual settings (AOps handoff)](#configuring-manual-settings--aops-handoff). Any remaining ✗ `not-deployed` settings must be set in their product's own settings; reapplying the pack will not set them.
 
 Never render product coverage — product grain is internal only.
 
 **Graceful degrade:** if `Clauses[].controls` is absent (older CLI/server), fall back to the clause-grain view (`Clauses[].Status` fully/partially/not-deployed) and add a one-line note that per-setting detail needs an updated `uip` CLI. Never fabricate per-setting state.
 
-Progress bar: `▓` per configured setting, `░` per gap, max 5 chars (e.g. 2/5 = `▓▓░░░`, 4/4 = `▓▓▓▓▓`).
+Progress bar: 5 cells scaled to the deployed ratio — filled = `round(deployedControlCount / checkableControlCount × 5)` `▓`, remainder `░` (2/5 → `▓▓░░░`, 1/4 → `▓░░░░`, 4/4 → `▓▓▓▓▓`).
 
-**Biggest risk area:** clause with the most `not-deployed` High-impact controls (`controls[].status == "not-deployed" && impact == "High"`).
-**Quickest win:** clause with the fewest unapplied controls (`not-deployed` + `manual`) AND at least one is High impact.
+A setting is a **gap** when its `status != "deployed"` — i.e. both `not-deployed` (✗) and `manual` (⚙) count as gaps in the impact tallies and per-clause counts (a manual setting is not yet applied).
+
+**Biggest risk area:** clause with the most High-impact gap controls (`impact == "High" && status != "deployed"`).
+**Quickest win:** clause with the fewest gap controls (`status != "deployed"`) AND at least one is High impact.
 
 Terminology rules:
 - Use "settings" NOT "controls" in output
 - Use plain-English clause names (from `clauses[].clauseName`) in headlines; clause IDs (e.g. A.6.2.8) as secondary reference in DETAILS only
-- Use `controls[].displayName` as setting name, NOT product identifiers
+- Use `controls[].controlDisplayName` as setting name, NOT product identifiers
 - **NEVER write raw API status strings** — product `in-place`/`new`; clause `fully-deployed`/`partially-deployed`/`not-deployed`; control `deployed`/`not-deployed`/`manual` — in user-facing display output (posture_plan.txt, chat responses, report summaries) — translate EVERY occurrence before writing
   - `"in-place"` → **Applied** (or ✓)
   - `"new"` → **Not Applied** (or ✗)
@@ -92,7 +94,7 @@ Terminology rules:
 - Never say "compliance gaps" — say "settings not yet configured"
 - Never claim the tenant IS compliant
 
-Render the following format:
+Render this gap template ONLY for cases 2 and 3 above (gaps remain). For case 1 (all applied) use the [All settings applied](#all-settings-applied) block instead — never reach this template with zero gaps.
 
 ```
 ISO 42001 Posture — <tenantName>  ·  <date>
@@ -112,7 +114,7 @@ SUMMARY
 │ Quickest win            │ <clauseName with fewest gaps AND ≥1 High setting>│
 └─────────────────────────┴──────────────────────────────────────┘
 
-<call-to-action — from "Next-action suggestion (state-aware)": Apply CTAs ONLY when nothing is applied yet; otherwise 'Configure the manual ISO 42001 settings'>
+<call-to-action per Next-action suggestion (this template only renders for cases 2/3): case 2 (nothing applied) → 'Apply ISO 42001 settings' / 'Apply High impact ISO 42001 settings' / 'Apply only <specific area> settings'; case 3 (enabled, gaps remain) → 'Configure the manual ISO 42001 settings'>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DETAILS
@@ -171,7 +173,7 @@ Each ⚙ setting is a `Data.Clauses[].manualConfigChecks[]` entry: `{ productIde
 Per product:
 1. **Resolve the pack's policy id for the product.** `uip gov aops-policy deployment tenant get <TENANT_ID> --output json` → the `TenantPolicies[]` entry whose `ProductIdentifier` matches → its `PolicyIdentifier`. Cross-check it belongs to the pack against `state get tenant <TENANT_ID> <packId>` `Policies[].ExternalPolicyId`.
 2. **Collect the org-specific value(s).** `expected` is a predicate (`{eq}`/`{gte}`/`{lte}`/`{contains}`); `manual` means the concrete value is org-specific (an allowlist, a package set, a threshold). Ask the user, and confirm the value satisfies `expected`.
-3. **Update via the AOps plugin.** Follow [`../../aops-policy/aops-policy-manage-guide.md`](../../aops-policy/aops-policy-manage-guide.md): `aops-policy get <PolicyIdentifier>` → set each `key` in the returned formData to the collected value (build `--input` per [`../../aops-policy/configure-aops-policy-data-guide.md`](../../aops-policy/configure-aops-policy-data-guide.md)) → `aops-policy update` (**full replacement** — pass every existing field back: `--name`, `--product-name`, `--description`, `--priority`, `--availability`, `--input`, per [`../../aops-policy/aops-policy-commands.md`](../../aops-policy/aops-policy-commands.md)). Never call `state enable`.
+3. **Update via the AOps plugin.** Follow [`../../aops-policy/aops-policy-manage-guide.md`](../../aops-policy/aops-policy-manage-guide.md): `aops-policy get <PolicyIdentifier>` → set each `key` in the returned formData to the collected value (build `--input` per [`../../aops-policy/configure-aops-policy-data-guide.md`](../../aops-policy/configure-aops-policy-data-guide.md)) → `aops-policy update` (**full replacement** — pass `--identifier <PolicyIdentifier>` plus every existing field back: `--name`, `--product-name`, `--description`, `--priority`, `--availability`, `--input` — omitting any clears it, per [`../../aops-policy/aops-policy-commands.md`](../../aops-policy/aops-policy-commands.md)). Never call `state enable`.
 4. **Receipt + confirm.** Show a post-update receipt (Critical Rule 6), then re-run coverage; each fixed ⚙ setting should flip to ✓ (`controls[].status == "deployed"`).
 
 Graceful degrade: if the AOps guides are unavailable, present the ⚙ list (setting, expected, current) and tell the user to set each value on the product's deployed policy in Automation Ops — never leave the manual settings as a dead-end suggestion.
@@ -195,9 +197,9 @@ Review gate before applying:
 
 ```
 Will change (3 existing policies — no re-apply of the standard):
-  Studio Web      · Publish Outside Personal Workspace → Development only
-  Studio          · Required Packages                  → <user packages>
-  AI Trust Layer  · Third-Party AI Providers Allowlist → <user providers>
+  Studio Web — Publish Outside Personal Workspace       → Development only
+  Workflow Analyzer — Required Packages                 → <user packages>
+  Model Governance — Third-Party AI Providers Allowlist → <user providers>
 Proceed? (y/n)
 ```
 
