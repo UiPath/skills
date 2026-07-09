@@ -204,7 +204,7 @@ Use `Edit` to add an edge object to the `edges` array:
 
 ```json
 {
-  "id": "xy-edge__<SOURCE_NODE_ID><SOURCE_PORT>-<TARGET_NODE_ID><TARGET_PORT>",
+  "id": "<UNIQUE_EDGE_ID>",
   "sourceNodeId": "<SOURCE_NODE_ID>",
   "sourcePort": "<SOURCE_PORT>",
   "targetNodeId": "<TARGET_NODE_ID>",
@@ -218,7 +218,7 @@ Use `Edit` to add an edge object to the `edges` array:
 
 **Critical:** for `sourcePort: "error"`, also set `inputs.errorHandlingEnabled: true` on the source node. Without the flag, Studio Web hides the source handle and `uip maestro flow validate` fails.
 
-**Edge ID:** use the CLI form `xy-edge__<sourceNodeId><sourcePort>-<targetNodeId><targetPort>`. Must start with a letter or `_`, never a digit (no bare UUID).
+**Edge ID:** any unique string that starts with a letter or `_`, never a digit (no bare UUID). CLI uses `xy-edge__<sourceNodeId><sourcePort>-<targetNodeId><targetPort>`.
 
 See each plugin's `planning.md` or [file-format.md — Standard ports](../../shared/file-format.md) for port names by node type.
 
