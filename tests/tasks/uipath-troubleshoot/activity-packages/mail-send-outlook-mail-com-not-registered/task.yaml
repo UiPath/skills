@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-send-outlook-mail-com-not-registered
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Send Outlook Mail Message
   failure at the COM layer - "Unable to cast COM object ... to interface

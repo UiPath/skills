@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-replace-text-file-locked
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Replace Text file-lock failure:
   a Use Word File scope with Auto Save enabled edits the same shared file on

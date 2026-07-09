@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-lookup-formula-cells
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a classic Lookup Range silent miss
   caused by the target cell being the computed result of an Excel formula: the

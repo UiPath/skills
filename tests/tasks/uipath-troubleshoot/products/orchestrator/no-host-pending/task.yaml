@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-no-host-pending
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   Faithful replay of a real UiPath troubleshooting investigation. A job is
   stuck in Pending in the Shared folder with host-family
