@@ -11,7 +11,14 @@ description: >
   clarification.txt is not a self-report: it is the ask-behavior under
   test (a question in lieu of acting, the only observable form of asking
   in a non-interactive run), not a claim about work performed. The
-  deterministic core is the command_not_executed guards.
+  deterministic core is the no-mutation guards.
+
+  Guards grade the mock's .calls.log (actual uip executions) via
+  file_contains excludes, NOT command_not_executed regexes over Bash call
+  text — a correct clarification legitimately QUOTES the candidate rename
+  commands (heredoc/prose), which a text regex would false-match. The log
+  is seeded by the mock template so it exists even when no uip call runs;
+  checker is pure Python (no shell), so grading is cross-platform.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -55,16 +62,18 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_not_executed
-    description: "Agent did NOT silently guess an entity: no rename ran (projects update-title / groups rename / fields rename)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+(projects\s+update-title|groups\s+rename|fields\s+rename)\b'
+  - type: file_contains
+    description: "Agent did NOT silently guess an entity: mock call log has no executed rename (projects update-title / groups rename / fields rename)"
+    path: "mocks/.calls.log"
+    includes: ["# seeded by mock_template"]
+    excludes: ["ixp projects update-title", "ixp groups rename", "ixp fields rename"]
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_not_executed
-    description: "Agent did NOT rename via delete/recreate either"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+(projects|groups|fields)\s+delete\b'
+  - type: file_contains
+    description: "Agent did NOT rename via delete/recreate either (no executed delete in the mock call log)"
+    path: "mocks/.calls.log"
+    includes: ["# seeded by mock_template"]
+    excludes: ["ixp projects delete", "ixp groups delete", "ixp fields delete"]
     weight: 1.0
     pass_threshold: 1.0
