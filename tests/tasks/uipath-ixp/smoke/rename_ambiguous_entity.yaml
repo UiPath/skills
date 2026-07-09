@@ -13,7 +13,7 @@ description: >
   in a non-interactive run), not a claim about work performed. The
   deterministic core is the no-mutation guards.
 
-  Guards grade the mock's .calls.log (actual uip executions) via
+  Guards grade the mock's calls.log (actual uip executions) via
   file_contains excludes, NOT command_not_executed regexes over Bash call
   text — a correct clarification legitimately QUOTES the candidate rename
   commands (heredoc/prose), which a text regex would false-match. The log
@@ -63,8 +63,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
+    description: "Harness integrity: the sandbox's uip mock still logs invocations to the graded calls.log (the guards below are vacuous if the sink moves)"
+    path: "mocks/uip"
+    includes: ['>> "$(dirname "$0")/calls.log"']
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
     description: "Agent did NOT silently guess an entity: mock call log has no executed rename (projects update-title / groups rename / fields rename)"
-    path: "mocks/.calls.log"
+    path: "mocks/calls.log"
     includes: ["# seeded by mock_template"]
     excludes: ["ixp projects update-title", "ixp groups rename", "ixp fields rename"]
     weight: 3.0
@@ -72,7 +79,7 @@ success_criteria:
 
   - type: file_contains
     description: "Agent did NOT rename via delete/recreate either (no executed delete in the mock call log)"
-    path: "mocks/.calls.log"
+    path: "mocks/calls.log"
     includes: ["# seeded by mock_template"]
     excludes: ["ixp projects delete", "ixp groups delete", "ixp fields delete"]
     weight: 1.0

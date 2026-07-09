@@ -15,11 +15,18 @@ sandbox:
 
 `mocks/uip` PATH-shadows the real CLI and fails offline with no network call, so
 grading sees the command shape while no real request is made. Each invocation is
-appended to `mocks/.calls.log` (seeded in this template so it always exists) —
+appended to `mocks/calls.log` (seeded in this template so it always exists; not
+dot-prefixed so CI's `upload-artifact` — which skips hidden files — includes it
+in the eval-report artifact) —
 negative guards should assert on that log via `file_contains` `excludes:` rather
 than `command_not_executed` regexes over Bash text, which false-match commands
 merely QUOTED in heredocs, comments, or prose (a clarification question citing a
-candidate command, an explanatory `#` comment naming a forbidden flag). `mocks/curl` does
+candidate command, an explanatory `#` comment naming a forbidden flag).
+
+Log-based guards MUST pair with a harness-integrity criterion asserting
+`mocks/uip` still contains `>> "$(dirname "$0")/calls.log"` — otherwise
+re-pointing the mock's sink makes every excludes guard pass vacuously (the
+seeded file stays clean no matter what the agent executed). `mocks/curl` does
 the same for raw `curl` (a smoke task may hint at a REST call the agent is graded
 for refusing — shadowing `curl` ensures even a disobedient agent can't reach the
 cloud with the harness-injected token). Integration/e2e tasks (which
