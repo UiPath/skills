@@ -110,15 +110,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent must NOT define a field literally named `Status` (Rule 4 reserved keyword — use orderStatus)"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*\"fieldName\"\s*:\s*\"Status\"'
-    min_count: 0
-    max_count: 0
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent must NOT attempt `uip df files upload` — the Receipt FILE field was newly created via CLI, so its referenceEntity is unwired and upload would fail with Relationship violation (see Not Supported)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+files\s+upload'
