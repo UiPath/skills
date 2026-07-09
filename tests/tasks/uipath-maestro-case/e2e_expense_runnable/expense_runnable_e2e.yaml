@@ -1,0 +1,102 @@
+task_id: skill-case-e2e-expense-runnable
+description: >
+  END-TO-END EXECUTION — the bug-bash "Employee Expense Reimbursement" scenario,
+  adapted to run headlessly on the coder-eval tenant with existing generic
+  resources only. A fully-automated 7-stage sdd.md (connector transport re-typed
+  to api-workflow/process; the two human reviews and the finance stage-selection
+  replaced by automated transitions so no HITL blocks debug; escalation timers in
+  seconds; expense_requests event trigger preserved) is staged into the sandbox.
+  The skill builds the case-management solution, validates the caseplan, and the
+  harness runs uip maestro case debug to prove the case executes to
+  finalStatus=Completed across the Submission -> Manager Approval -> Finance
+  Approval -> Payment -> Approved happy path, binding real deployed resources
+  (NameToAgeFixed2, CountLetters, ProcurementProcess, ProjectEuler, CaseTest).
+tags:
+  - uipath-maestro-case
+  - e2e
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+  - feature:stages
+  - feature:conditions
+  - feature:case-exit
+  - feature:trigger
+  - feature:registry
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWrite"]
+  sdk_options:
+    max_thinking_tokens: 10000
+
+run_limits:
+  task_timeout: 4800
+  max_turns: 250
+  turn_timeout: 2700
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I have an approved SDD for our ExpenseReimbursementRunnable case-management
+  solution — it's saved as `sdd.md` in this folder. Build a UiPath Case
+  Management solution named "ExpenseReimbursementRunnable" containing a project
+  also named "ExpenseReimbursementRunnable" from this SDD.
+
+  Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0, do
+  not re-interview me, and do not redesign the process. The SDD already carries
+  resolved resource identities and folders — bind them as written; do not change
+  task types or swap resources.
+
+  Important:
+  - The `uip` CLI is already available and authenticated in the environment.
+  - Treat all hard stops after the SDD as pre-approved, including Phase 1
+    planning approval, Phase 2 publish-for-review, and Phase 5 debug. Choose the
+    continue / skip-publish path and keep going.
+  - Do NOT call AskUserQuestion — it is not available in this harness.
+  - Do NOT run `uip maestro case debug` yourself — the harness runs it.
+  - The task is NOT complete until
+    `uip maestro case validate ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan.json --output json`
+    passes.
+
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip maestro case validate on the built case (advisory — outcome graded below)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+validate[^\n]*ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan\.json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "caseplan encodes the 7-stage expense topology: Submission -> Manager Approval -> Finance Approval -> Payment -> Approved happy path, Rejected/Withdrawn terminal lanes, expense_requests event trigger, the automated task-type mix (api-workflow/agent/process/rpa/wait-for-timer), and the Payment Tracking child case"
+    command: "python3 $TASK_DIR/check_expense_runnable_structure.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "case executes end-to-end: uip solution resources refresh then uip maestro case debug reaches finalStatus=Completed across the automated happy path"
+    command: "python3 $TASK_DIR/check_expense_runnable_debug.py"
+    timeout: 900
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120
