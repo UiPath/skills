@@ -329,5 +329,5 @@ still carry `session_id` and correlate with each other normally.
   bash/PowerShell polyglot command in `hooks.json` dispatches to the twin
   matching the executing shell; the twins are kept behaviorally identical
   (see CLAUDE.md). No `jq`, `node`, or `python` dependency. Requires the
-  `uip` CLI on `PATH` — the plugin's `SessionStart` hook ensures it is
-  installed.
+  `uip` CLI on `PATH` (`npm install -g @uipath/cli`); when the CLI is
+  absent, events are silently dropped — the hook never fails the session.

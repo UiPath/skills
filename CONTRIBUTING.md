@@ -33,8 +33,8 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 │   └── *.md                   # Each file becomes /uipath:<filename>
 ├── hooks/                     # Session-initialization hooks
 │   ├── hooks.json             # Hook definitions (SessionStart, etc.) — polyglot dispatch
-│   ├── ensure-uip.sh          # Tool installation script (bash twin)
-│   └── ensure-uip.ps1         # Tool installation script (PowerShell twin — keep in sync)
+│   ├── send-telemetry.sh      # Telemetry hook (bash twin)
+│   └── send-telemetry.ps1     # Telemetry hook (PowerShell twin — keep in sync)
 ├── references/                # Shared documentation and activity references
 │   └── activity-docs/         # Per-package, per-version activity API docs
 ├── skills/                    # Individual skill implementations
