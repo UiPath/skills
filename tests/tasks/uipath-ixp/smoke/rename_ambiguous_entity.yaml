@@ -1,6 +1,6 @@
 task_id: skill-ixp-rename-ambiguous-entity-smoke
 description: >
-  Smoke: ambiguity guard (ACTV-88672). The workspace has a project TITLED
+  Smoke: ambiguity guard. The workspace has a project TITLED
   "subscriptions", a field group NAMED "subscriptions", and a field NAMED
   "subscriptions"; the prompt asks to "rename subscriptions into Test
   Invoice" with no disambiguating context. The only correct move is to ask
