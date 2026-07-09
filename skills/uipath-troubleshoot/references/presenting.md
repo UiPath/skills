@@ -36,7 +36,7 @@ Do NOT write "No configuration change needed" for a propagation domain. Every do
 
 ### Source gating
 
-Every fix step cites its source (playbook section, docsai result, or evidence file).
+Every fix step cites its source (playbook section, docsai result, or raw data file).
 
 - Preserve docsai URLs — full URL, not just a title.
 - Step with no documented source → drop it, or mark `[Unverified]` visibly.

@@ -34,7 +34,7 @@ This playbook applies whenever HA recovery data is present for the failing activ
 3. Compare failed vs recommended selector and note which attributes changed (text, index, role, ancestry, etc.).
 4. Record the recovery channel, the detection's `InferMethod` / confidence score, and whether self-healing actually applied the fix at runtime (`RecoverySuccessful`). These determine the warning attached to the apply-fix prompt.
 
-Persist the exact failed and recovered selector strings to the evidence file for this hypothesis (e.g., as `failed_selector_xml`, `recovered_partial_selector_xml`, `recovered_fuzzy_partial_selector_xml`). The Resolution phase will read them back to drive the `AskUserQuestion` apply-fix flow — they MUST be present verbatim, not paraphrased.
+Persist the exact failed and recovered selector strings verbatim in notes.md (e.g., as `failed_selector_xml`, `recovered_partial_selector_xml`, `recovered_fuzzy_partial_selector_xml`). The Resolution phase will read them back to drive the `AskUserQuestion` apply-fix flow — they MUST be present verbatim, not paraphrased.
 
 ## Resolution
 

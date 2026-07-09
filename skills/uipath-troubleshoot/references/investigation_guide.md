@@ -77,7 +77,7 @@ Before starting any investigation, establish what the user expects from the trou
 2. **If you cannot infer**, present the user with the options you identified (e.g., "Are you looking for the root cause, a quick fix, or help understanding why this happens intermittently?") and let them choose
 3. **If you have no options**, ask the user directly what outcome they need from this investigation
 
-Do NOT begin triage or hypothesis generation until the expected outcome is clear. It determines what depth of investigation is appropriate and what a useful resolution looks like.
+Do NOT begin the investigation until the expected outcome is clear. It determines what depth of investigation is appropriate and what a useful resolution looks like.
 
 ## Tool Boundary — uip CLI Only
 
