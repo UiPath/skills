@@ -2,9 +2,11 @@ task_id: skill-ixp-taxonomy-edit-chain-smoke
 description: >
   Smoke: agent builds a small taxonomy with `data-types add` then
   `groups add --fields '[…]'` referencing the new type by name.
-  Uses a Choice type — the one `--kind` with no built-in default, so
-  creating it is correct (unlike money/number/date/text/boolean, which
-  must reuse a default — Critical Rule 16 / ACTV-89215).
+  The new type is a money-kind type the agent SHOULD create — not a
+  generic clone of the built-in `Monetary Quantity`, but a reusable
+  concept carrying its own extraction instructions (the value-adding
+  branch of Critical Rule 16 / ACTV-89215; the plain-amount
+  reuse-the-default branch is covered by reuse_default_type.yaml).
   Anti-pattern: `fields add` only edits fields in an existing
   group, so it can't seed a brand-new one.
 
@@ -24,18 +26,22 @@ sandbox:
 
 initial_prompt: |
   On project `my_invoices-f1afa9ef-ixp`, set up the taxonomy for
-  classifying incoming documents:
+  withholding-tax reconciliation:
 
-  1. Create a reusable `Document Category` data type — a Choice type
-     whose values are `Invoice`, `Credit Note`, and `Purchase Order`.
-     The category is inferred from the document's layout, so it need
-     not appear verbatim. Instructions: "The kind of commercial
-     document, inferred from its header and layout."
+  1. The built-in `Monetary Quantity` type is a generic amount
+     extractor with no field-specific guidance. This project needs a
+     reusable money type, `Withholding Tax Amount`, that carries its
+     own extraction instructions so every field using it is steered to
+     the right value. Create it as a money-kind data type with
+     instructions: "A monetary amount representing tax withheld at
+     source and remitted on the payer's behalf — distinct from the
+     invoice total or the sales-tax line. Reuse for every
+     withholding-tax figure in the project."
 
-  2. Create an `Invoice Header` field group with one field — `Category`,
-     which should use the `Document Category` data type — and group
-     instructions "Header fields that classify and summarise the
-     document."
+  2. Create an `Invoice Header` field group with one field — `Tax
+     Withheld`, which should use the `Withholding Tax Amount` data
+     type — and group instructions "Header fields covering the
+     invoice's tax and withholding figures."
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP
@@ -46,13 +52,14 @@ initial_prompt: |
     test.
 
 success_criteria:
-  # Step 1: data-types add for a Choice type. Choice is the only kind
-  # with no built-in default, so creating it is the right call. It
-  # requires --choices and --input-value (the prompt says inferred).
+  # Step 1: data-types add with --kind money AND --instructions (the
+  # tailored guidance is the reason to create it rather than reuse the
+  # default). Money kind does NOT take --input-value (text/choice only
+  # — the CLI rejects it otherwise), so no input-value criterion here.
   - type: command_executed
-    description: "Agent created the Document Category choice type via data-types add --kind choice --choices"
+    description: "Agent created the Withholding Tax Amount money type via data-types add --kind money with tailored --instructions"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+data-types\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*Document Category)(?=.*--kind\s+choice)(?=.*--choices)(?=.*Invoice)(?=.*Credit Note)(?=.*Purchase Order)(?=.*--input-value\s+inferred)(?=.*--instructions).*'
+    command_pattern: 'uip\s+ixp\s+data-types\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--name\s+["'']?Withholding Tax Amount)(?=.*--kind\s+money)(?=.*--instructions).*'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -68,9 +75,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "groups add --fields JSON referenced the Document Category data type for the Category field"
+    description: "groups add --fields JSON referenced the Withholding Tax Amount data type for the Tax Withheld field"
     tool_name: "Bash"
-    command_pattern: '--fields\s+[^|;&]*Category[^|;&]*Document Category'
+    command_pattern: '--fields\s+[^|;&]*Tax Withheld[^|;&]*Withholding Tax Amount'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
