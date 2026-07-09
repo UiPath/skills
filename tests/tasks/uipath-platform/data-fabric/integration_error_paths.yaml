@@ -22,7 +22,7 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  We have a list called `CE_ErrorPathsTest` set up with two rows:
+  We have a UiPath Data Fabric entity called `CE_ErrorPathsTest` set up with two rows:
     - SEED-001, score 10, tag "tag-unique"
     - SEED-002, score 20, tag "tag-other"
 

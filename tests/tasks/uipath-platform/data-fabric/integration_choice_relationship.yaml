@@ -14,7 +14,7 @@ run_limits:
   turn_timeout: 900
 
 initial_prompt: |
-  Build two linked lists — customers and their orders.
+  Build two linked UiPath Data Fabric entities — customers and their orders.
 
   `CE_IntegrationCustomer`:
     - name — required, up to 200 chars

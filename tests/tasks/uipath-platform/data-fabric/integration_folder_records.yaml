@@ -14,7 +14,7 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  We're setting up a small folder-scoped list for a regional-reports test.
+  We're setting up a small folder-scoped UiPath Data Fabric entity for a regional-reports test.
 
   First, take a look at the folders on the tenant. If there are at least
   two, call the first one folder A and the second folder B. If there's

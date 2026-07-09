@@ -20,7 +20,7 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  We have an Inventory list called `CE_IntegrationInventory` set up
+  We have an Inventory UiPath Data Fabric entity called `CE_IntegrationInventory` set up
   and empty. Each row holds a SKU, a Quantity, a UnitCost, an
   Available flag, and a LastRestocked date.
 

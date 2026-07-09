@@ -12,7 +12,7 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  There's a movie entity called `CodeEvalTestEntity` already set up
+  There's a movie UiPath Data Fabric entity called `CodeEvalTestEntity` already set up
   with 20 rows in it. Each movie has a title, a score, an active
   flag, a release date, an email (unique per row), a free-form
   notes column, and a poster image. Please only read from it — don't

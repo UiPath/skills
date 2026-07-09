@@ -21,7 +21,7 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  I need a fresh `CE_LifecycleTest` list built out. Create it with:
+  I need a fresh `CE_LifecycleTest` UiPath Data Fabric entity built out. Create it with:
     - Label — short text, up to 200 chars
     - Score — whole number, 0 to 1000
     - Active — yes/no

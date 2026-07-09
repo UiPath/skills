@@ -14,7 +14,7 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  Sales just sent a messy batch of new SKUs — file is `sales_batch.json`
+  Sales just sent a messy batch of new SKUs to load into a UiPath Data Fabric entity — file is `sales_batch.json`
   in the working directory. Load what you can and tell me what came back
   for each row. For anything the system rejects, capture the actual error
   verbatim — don't guess or rewrite values.

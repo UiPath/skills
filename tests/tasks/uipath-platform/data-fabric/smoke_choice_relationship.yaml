@@ -18,8 +18,8 @@ run_limits:
 
 initial_prompt: |
   Tenant-scoped setup already exists:
-    - `CE_SmokeCategories` dropdown with travel, meals, lodging
-    - `CE_SmokeTags` dropdown with urgent, reimbursable, client
+    - `CE_SmokeCategories` Data Fabric choice set with travel, meals, lodging
+    - `CE_SmokeTags` Data Fabric choice set with urgent, reimbursable, client
     - Employees list at tenant level with an employee `emp-rec-500`
     - Projects list at tenant level
 
