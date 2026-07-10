@@ -188,6 +188,38 @@ activity param create --resource cards --method POST --name boardId --type path 
   --lookup-value id --lookup-names id,name --display-pattern "{name}" --depends-on projectId
 ```
 
+## Authoring for catalogue parity — the curation layer
+Wiring dropdowns is necessary but NOT sufficient to match a catalogue connector's Studio Web UX.
+Benchmarking generated connectors vs catalogue (Gmail/Outlook/OneDrive) showed the dropdown plumbing
+reaches parity, but four things a blind build usually MISSES — do these to close the gap:
+
+1. **Static / enum-backed pickers.** Not every dropdown is backed by a live vendor list — some are a
+   fixed set of literal choices. Two cases:
+   - **Small closed choice** (writeMode, valueInputOption, operation, role/type) → use
+     `--enum '["A","B"]'` or `--enhanced-enum '[{"name":"Label","value":"V"}]'` on **`field create`
+     OR `param create`** (both support it). This renders a static combo directly — do NOT stand up a
+     helper List resource for these. (Catalogue puts `enum`/`enhancedEnum` right on the field/param.)
+   - **Large / shared / vendor-fetched set** (timezones, currencies) → author a small helper List
+     resource holding that set and point a dropdown at it (`--reference-object timezones
+     --reference-path /timezones`). The catalogue adds a `timezones` picker on every calendar /
+     send-mail activity this way.
+2. **Curated responses, not raw vendor JSON.** Don't leave an activity's output as raw vendor field
+   names. Curate it — friendly output field names + a curated subset — via per-field `responseCurated`
+   + `displayName` (e.g. `EventTitle`/`StartDateTime` instead of `subject`/`start`). Set curated
+   visibility in the `--fields-file` method map; both `responseCurated` and the kebab
+   `response-curated` spelling are accepted (normalized).
+3. **Scope pickers on list / read verbs.** A list activity should offer the folder / calendar /
+   parent **scope** as a dropdown, not just a generic `where` / `pageSize`. e.g. Get Email List →
+   an email-folder picker; Get Event List → a calendar picker.
+4. **Field completeness.** Cover the catalogue's fields, not just the obvious ones (e.g. `Importance`
+   / `ReplyTo` on send-email, `ListColumns` on SharePoint list items).
+
+**Known CLI limits (catalogue-only for now — can't reach 100% here):** there is no hierarchical
+**tree-picker** reference type (the OneDrive drive→folder→file browser) and no **merged/combined**
+picker (sheets+tables+named-ranges in one dropdown); the SR-level `type:"curated"` + `section` /
+`category` grouping isn't settable (activities still surface as standalone via
+`metadata.method.<VERB>.curated`). Don't try to hand-fake these — note them as gaps.
+
 ## Bulk field authoring — `--fields` / `--fields-file`
 `activity create --fields '<json-array>'` (inline) or `--fields-file <path>` seeds the whole
 field schema in one shot. Two shapes are accepted: an ARRAY of field objects
