@@ -44,7 +44,7 @@ success_criteria:
   # redundant custom data type for a need a default already covers. Any
   # `data-types add` in this scenario is the mistake.
   - type: command_not_executed
-    description: "Agent did NOT invent a redundant custom data type (Critical Rule 16 — reuse defaults)"
+    description: "Agent did NOT invent a redundant custom data type (Critical Rule 17 — reuse defaults)"
     tool_name: "Bash"
     command_pattern: 'uip\s+ixp\s+data-types\s+add\b'
     weight: 3.0

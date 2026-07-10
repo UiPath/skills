@@ -5,7 +5,7 @@ description: >
   The new type is a money-kind type the agent SHOULD create — not a
   generic clone of the built-in `Monetary Quantity`, but a reusable
   concept carrying its own extraction instructions (the value-adding
-  branch of Critical Rule 16 / ACTV-89215; the plain-amount
+  branch of Critical Rule 17 / ACTV-89215; the plain-amount
   reuse-the-default branch is covered by reuse_default_type.yaml).
   Anti-pattern: `fields add` only edits fields in an existing
   group, so it can't seed a brand-new one.
