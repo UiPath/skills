@@ -156,10 +156,10 @@ pass `--depends-on <parentName>`. That injects `design.isHidden` + a show/hide `
 so the child appears only after the parent has a value and its list is filtered by the parent:
 
 ```
-activity field create --resource messages --name team_id --reference-object teams \
+activity field create --resource messages --name team_id --type string --reference-object teams \
   --reference-path /teams --lookup-value id --lookup-names id,displayName \
   --display-pattern "{displayName}" --load-by-default --method "POST=request,required"
-activity field create --resource messages --name channel_id --depends-on team_id \
+activity field create --resource messages --name channel_id --type string --depends-on team_id \
   --reference-object "teams::channels" --reference-path "/teams/{team_id}/channels" \
   --lookup-value id --lookup-names id,displayName --display-pattern "{displayName}" \
   --method "POST=request,required"
