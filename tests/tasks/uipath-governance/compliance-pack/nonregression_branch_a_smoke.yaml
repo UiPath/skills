@@ -23,6 +23,7 @@ post_run:
 
 initial_prompt: |
   Block ChatGPT (OpenAI provider) for all Studio developers in my tenant.
+  Name the policy exactly `test-nonreg-block-chatgpt` so it is easy to identify.
   Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 

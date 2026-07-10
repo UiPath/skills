@@ -29,6 +29,13 @@ After deleting, the script ALWAYS re-lists the tenant's AOps policies and logs
 what is left (matching leftovers by name, plus the tenant-wide policy count)
 so a CI run's log is enough to validate the cleanup worked.
 
+Known limitation: `aops-policy delete` is blocked while the policy is still
+referenced by a tenant/user/group deployment assignment. The observed debris is
+all UNDEPLOYED (Deployments columns empty in Automation Ops), so a plain delete
+clears it; if a future flow leaves DEPLOYED policies behind, clear the
+assignment first (see cleanup_deployments.py) — the failed delete is logged and
+surfaces in the `remaining` count rather than silently passing.
+
 Always exits 0 — cleanup failures never affect a task's pass/fail result.
 Without live auth every CLI call fails and the script logs + exits cleanly,
 so local runs are unaffected.
