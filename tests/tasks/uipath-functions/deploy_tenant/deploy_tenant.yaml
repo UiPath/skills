@@ -60,10 +60,13 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
-  # Offline: scaffold -> init -> run -> pack + packOptions + data fixture.
-  # No cloud publish (no headless tenant-feed path until uipath/cli#2778),
-  # so this stays deterministic and well under the turn budget.
-  expected_turns: 30
-  max_turns: 50
+  # Offline: scaffold -> init -> run -> pack + packOptions + data fixture +
+  # manual pyproject edits (authors). No cloud publish (no headless tenant-feed
+  # path until uipath/cli#2778). Observed agent runs consistently use 50-71
+  # turns, so max_turns=50 sat on the cliff edge: a slightly slower run tipped
+  # into MAX_TURNS_EXHAUSTED even though the artifact was otherwise correct.
+  # expected_turns/max_turns raised to match observed behavior with headroom.
+  expected_turns: 55
+  max_turns: 90
   turn_timeout: 1500
   task_timeout: 1500

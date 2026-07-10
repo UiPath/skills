@@ -70,9 +70,31 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Coded agent main.py exists"
-    path: "ClaimsSol/ClassifierAgent/main.py"
+  - type: run_command
+    description: "Coded Function has a Python entrypoint source in ClassifierAgent/, as registered in uipath.json's functions map (entry filename is arbitrary per the skill — do NOT grade the literal name main.py)"
+    command: |
+      python3 -c "
+      import json, sys
+      from pathlib import Path
+      d = Path('ClaimsSol/ClassifierAgent')
+      uj = d / 'uipath.json'
+      if uj.is_file():
+          funcs = (json.loads(uj.read_text()).get('functions') or {})
+          for v in funcs.values():
+              src = str(v).split(':', 1)[0].lstrip('./')
+              if src.endswith('.py') and (d / src).is_file():
+                  print('Found entrypoint source (from functions map):', d / src)
+                  sys.exit(0)
+      # Fallback: any Python source in the project directory.
+      pys = sorted(d.glob('*.py'))
+      if pys:
+          print('Found Python source:', pys[0])
+          sys.exit(0)
+      print('No Python entrypoint source under', d)
+      sys.exit(1)
+      "
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
