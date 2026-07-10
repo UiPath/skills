@@ -12,9 +12,9 @@ sandbox:
 
 # Safety net: smoke sandboxes have live tenant auth in CI — the agent's
 # `state disable` is harmless, but a wrong-direction run (state enable /
-# aops-policy create) really mutates the tenant. Sweep after.
+# aops-policy create) really mutates the tenant. Clean up after.
 post_run:
-  - command: 'CLEANUP_NAME_PATTERNS="iso-42001" CLEANUP_DISABLE_PACK=1 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_governance_sweep.py''))"'
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
     timeout: 120
 
 initial_prompt: |

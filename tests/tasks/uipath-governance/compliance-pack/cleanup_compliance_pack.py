@@ -1,44 +1,34 @@
 #!/usr/bin/env python3
-"""Best-effort sweep cleanup for governance test debris on the shared test tenant.
+"""Focused cleanup for ISO 42001 compliance-pack tests on the shared test tenant.
 
-Compliance-pack and AOps smoke tests run with live CLI auth in CI (smoke.yaml /
+Compliance-pack smoke/e2e tasks run with live CLI auth in CI (smoke.yaml /
 nightly.yaml pass UIPATH_CLI_* env auth into every sandbox), so flows the task
-authors assumed would dead-end on auth errors actually create real policies
-(`iso-42001-2023-<clause>-<product>`, "Block ChatGPT ...") and enable the real
-ISO 42001 pack. This script deletes that debris. It is invoked from task
-pre_run/post_run hooks and from the temporary tenant-sweep task.
+prompts assume will dead-end on auth errors actually mutate the real tenant.
+This script undoes ONLY what the compliance-pack tests create:
 
-Configuration via environment variables:
+  1. Disables the `iso-42001-2023` compliance pack state on the login tenant
+     (what the full-apply / `state enable` tasks turn on). Skipped silently if
+     the pack is not active.
+  2. Deletes AOps policies whose name starts with `iso-42001` (the deterministic
+     `iso-42001-2023-<clause>-<product>` namespace the partial-apply flow
+     creates — see partial-apply/impl.md). Scoped by that prefix so it never
+     touches human-named production policies on the tenant.
 
-  CLEANUP_NAME_PATTERNS  comma-separated, case-insensitive SUBSTRING matches
-                         against AOps policy names. Default: "iso-42001".
-                         Every matching policy is deleted — safe only because
-                         the test tenant holds no production policies.
-  CLEANUP_DISABLE_PACK   "1" -> also disable the iso-42001-2023 compliance
-                         pack state on the login tenant (skipped silently if
-                         the pack is not active).
-  CLEANUP_SUMMARY_FILE   optional path; when set, writes a JSON summary
-                         {"patterns", "matched", "deleted", "failed",
-                          "remaining", "remaining_names",
-                          "tenant_policy_count"} where the remaining fields
-                         are recounted from a fresh list AFTER deletion. Lets
-                         a success criterion assert `"remaining": 0`
-                         deterministically.
+It does NOT touch policies outside the ISO 42001 namespace — e.g. the AOps
+"Block ChatGPT" routing tests create their own named policy and are cleaned up
+by cleanup_policy.py keyed to that exact name.
 
-After deleting, the script ALWAYS re-lists the tenant's AOps policies and logs
-what is left (matching leftovers by name, plus the tenant-wide policy count)
-so a CI run's log is enough to validate the cleanup worked.
+After deleting, it re-lists and logs the surviving `iso-42001` policies plus the
+tenant-wide policy count, so a CI run's log alone confirms the cleanup worked.
 
-Known limitation: `aops-policy delete` is blocked while the policy is still
-referenced by a tenant/user/group deployment assignment. The observed debris is
-all UNDEPLOYED (Deployments columns empty in Automation Ops), so a plain delete
-clears it; if a future flow leaves DEPLOYED policies behind, clear the
-assignment first (see cleanup_deployments.py) — the failed delete is logged and
-surfaces in the `remaining` count rather than silently passing.
+Known limitation: `aops-policy delete` is blocked while a policy is still
+referenced by a deployment assignment. Observed debris is all UNDEPLOYED, so a
+plain delete clears it; a blocked delete is logged and shows up in the surviving
+count rather than silently passing.
 
 Always exits 0 — cleanup failures never affect a task's pass/fail result.
-Without live auth every CLI call fails and the script logs + exits cleanly,
-so local runs are unaffected.
+Without live auth every CLI call fails, and the script logs + exits cleanly, so
+local runs are unaffected.
 """
 
 import json
@@ -47,10 +37,11 @@ import os
 import subprocess
 import sys
 
-logging.basicConfig(level=logging.INFO, format="cleanup_governance_sweep: %(message)s")
+logging.basicConfig(level=logging.INFO, format="cleanup_compliance_pack: %(message)s")
 logger = logging.getLogger(__name__)
 
 PACK_ID = "iso-42001-2023"
+POLICY_NAME_PREFIX = "iso-42001"  # compliance-pack partial-apply namespace
 
 
 def run_cli(args, timeout=30):
@@ -129,9 +120,8 @@ def list_policies():
 
     NOTE: for `aops-policy list` the CLI's --offset is a PAGE INDEX, not a row
     offset (verified against the live service: --limit 20 --offset 1 returns
-    rows 21-40, --offset 20 returns nothing). `access-policy list` uses a
-    row-based offset instead — do not copy this loop for that kind.
-    Dedupe by Identifier guards against overlap if the semantics ever change.
+    rows 21-40, --offset 20 returns nothing). Dedupe by Identifier guards
+    against overlap if the semantics ever change.
     """
     page = 20
     page_index = 0
@@ -157,39 +147,23 @@ def list_policies():
     return all_rows
 
 
-def match(rows, patterns):
-    return [r for r in rows
-            if any(p in (r.get("Name") or "").lower() for p in patterns)]
+def iso_policies(rows):
+    return [r for r in rows if (r.get("Name") or "").lower().startswith(POLICY_NAME_PREFIX)]
 
 
 def main():
-    patterns = [p.strip().lower()
-                for p in os.environ.get("CLEANUP_NAME_PATTERNS", "iso-42001").split(",")
-                if p.strip()]
-    summary_file = os.environ.get("CLEANUP_SUMMARY_FILE", "").strip()
-    disable = os.environ.get("CLEANUP_DISABLE_PACK", "").strip() == "1"
+    logger.info("=== Compliance-pack cleanup start (pack=%s, policy prefix=%s) ===",
+                PACK_ID, POLICY_NAME_PREFIX)
 
-    logger.info("=== Sweep start ===")
-    logger.info("Patterns (case-insensitive substring): %s | disable pack: %s | summary file: %s",
-                patterns, disable, summary_file or "(none)")
-
-    if disable:
-        disable_pack()
+    disable_pack()
 
     rows = list_policies()
     if rows is None:
-        logger.warning("Could not list aops-policy (no auth / no connectivity) — nothing swept")
-        if summary_file:
-            with open(summary_file, "w") as f:
-                json.dump({"patterns": patterns, "matched": -1, "deleted": 0,
-                           "failed": ["aops-policy list failed"],
-                           "remaining": -1, "remaining_names": [],
-                           "tenant_policy_count": -1}, f, indent=2)
+        logger.warning("Could not list aops-policy (no auth / no connectivity) — nothing deleted")
         return
 
-    matches = match(rows, patterns)
-    logger.info("Tenant has %d AOps policies; %d match the sweep patterns",
-                len(rows), len(matches))
+    matches = iso_policies(rows)
+    logger.info("Tenant has %d AOps policies; %d in the ISO 42001 namespace", len(rows), len(matches))
     for r in matches:
         logger.info("  matched: %-60s Identifier=%s Priority=%s",
                     r.get("Name", "?"), r.get("Identifier", "?"), r.get("Priority", "?"))
@@ -208,39 +182,27 @@ def main():
             logger.info("  deleted: %s (%s)", name, pid)
             deleted += 1
         else:
-            logger.warning("  DELETE FAILED: %s (%s) -> %s", name, pid, result)
+            logger.warning("  DELETE FAILED (may be deployment-assigned): %s (%s) -> %s",
+                           name, pid, result)
             failed.append(name)
 
-    # Final validation pass: re-list and report what is left on the tenant.
+    # Final validation pass: re-list and report what survived.
     final_rows = list_policies()
     if final_rows is None:
-        logger.warning("Final validation list failed — cannot confirm remaining count")
-        remaining_rows = None
+        logger.warning("Final validation list failed — cannot confirm surviving count")
+        remaining = "?"
     else:
-        remaining_rows = match(final_rows, patterns)
-        logger.info("=== Post-sweep tenant state ===")
-        logger.info("Tenant now has %d AOps policies total; %d still match sweep patterns",
-                    len(final_rows), len(remaining_rows))
-        for r in remaining_rows:
+        surviving = iso_policies(final_rows)
+        remaining = len(surviving)
+        logger.info("=== Post-cleanup tenant state ===")
+        logger.info("Tenant now has %d AOps policies total; %d still in the ISO 42001 namespace",
+                    len(final_rows), remaining)
+        for r in surviving:
             logger.warning("  STILL PRESENT: %-60s Identifier=%s",
                            r.get("Name", "?"), r.get("Identifier", "?"))
 
-    logger.info("=== Sweep done: %d matched, %d deleted, %d failed, %s remaining ===",
-                len(matches), deleted, len(failed),
-                "?" if remaining_rows is None else len(remaining_rows))
-
-    if summary_file:
-        with open(summary_file, "w") as f:
-            json.dump({
-                "patterns": patterns,
-                "matched": len(matches),
-                "deleted": deleted,
-                "failed": failed,
-                "remaining": -1 if remaining_rows is None else len(remaining_rows),
-                "remaining_names": [r.get("Name") for r in (remaining_rows or [])],
-                "tenant_policy_count": -1 if final_rows is None else len(final_rows),
-            }, f, indent=2)
-        logger.info("Summary written to %s", summary_file)
+    logger.info("=== Cleanup done: %d matched, %d deleted, %d failed, %s remaining ===",
+                len(matches), deleted, len(failed), remaining)
 
 
 main()
