@@ -17,6 +17,8 @@ uip rpa analyzer-rules list --project-dir "<PROJECT_DIR>" --scope "<Activity|Wor
 
 Prefer a `--scope` matching what you're authoring — scoped calls return in seconds; unscoped can take a minute+. Apply `error` and `warning` rules; `info` rules are advisory. If you do consult the rules and then add or update a NuGet package, the package-shipped (`MA-*`) rules may have changed with the dependency set.
 
+For coded (`.cs`) workflow files, the four built-in `Coded Workflow`-scope rules (ST-NMG-017, ST-DBP-010, ST-REL-001, ST-USG-017) are all Error severity and enforced by `analyze`, `build`, and `pack` — triggers and fixes: [coded/coding-guidelines.md § Coded Workflow Analyzer Rules](coded/coding-guidelines.md#coded-workflow-analyzer-rules).
+
 Rule prefixes and full schema: [cli-reference.md § analyzer-rules list](cli-reference.md).
 
 ## Fix One Thing at a Time
