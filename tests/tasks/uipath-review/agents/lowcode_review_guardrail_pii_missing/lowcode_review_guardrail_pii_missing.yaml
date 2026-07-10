@@ -16,10 +16,10 @@ agent:
     You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
 
 run_limits:
-  expected_turns: 38
+  expected_turns: 55
   turn_timeout: 1200
   task_timeout: 1500
-  max_turns: 40
+  max_turns: 60
 
 sandbox:
   driver: tempdir
