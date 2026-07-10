@@ -66,6 +66,8 @@ Grep the playbook corpus for each extracted signal — fixed-string, filenames o
 
 ## 6. Verification checklist — mandatory before presenting
 
+**Evidence is decisive.** The conclusion is the cause the correlated evidence singles out — follow it. A plausible-but-unsupported alternative (a source-reading theory, a prior, the cause that is "common in production") NEVER overrides a documented cause the evidence supports; strongest correlated evidence wins over narrative plausibility. When the evidence does NOT single out one cause, do not pick — take the insufficient-evidence path below.
+
 Write the answers in notes.md; do not skip items, do not present without them:
 
 1. **Cause named:** quote ONE item verbatim from the playbook's "What can cause it" list — not a category, not a vague generalization.
@@ -77,9 +79,11 @@ Write the answers in notes.md; do not skip items, do not present without them:
 
 **The checklist gates the output.** Before presenting, re-read your six answers and confirm the final Root Cause and every Fix step are consistent with ALL of them — the cause is quoted verbatim from the playbook's "What can cause it" list (item 1), and no fix exceeds the item-6 scope. A conclusion or fix that contradicts any item is NOT presentable; resolve the contradiction first (re-fetch, re-scope, or downgrade to unconfirmed).
 
-Any check fails → ONE targeted re-fetch for the missing datum. Still failing →
+Any check fails → ONE targeted re-fetch for the missing datum. Still failing → **insufficient evidence: do NOT pick a cause.** Name the surviving candidate causes and, for each, the discriminating signal that would separate them, then:
 
-- **Diagnostic-recommendation terminal** (legitimate outcome, not failure): when evidence cannot separate sibling causes and the playbook provides a discriminating diagnostic (e.g., a byte-compare snippet), present at reduced confidence with that diagnostic as the primary deliverable — never silently pick a branch.
+- **Fetch the discriminator** with a documented command if one exists (the playbook's `## Investigation` usually names it) → re-evaluate.
+- **Ask the user** when the discriminator needs data you cannot fetch: present the candidate causes and, for each, the signal that would confirm it, and call `AskUserQuestion` to supply or confirm that signal — then continue the investigation from their answer. Do not guess in their place.
+- **Diagnostic-recommendation terminal** (only when the user cannot be asked): if the playbook provides a discriminating diagnostic (e.g., a byte-compare snippet), present at reduced confidence with that diagnostic as the primary deliverable — never silently pick a branch.
 - Otherwise, or if a §7 trigger fires → escalate.
 
 ## 7. Escalation triggers
