@@ -11,9 +11,14 @@ Comprehensive guide for UiPath Cloud / Orchestrator / Studio Web / Integration S
 
 ## Route Diagnostic Intent Before Platform Work
 
-Classify the requested **outcome** before running any command. If the user wants a causal explanation for undesirable existing behavior, invoke the `Skill` tool with `skill: uipath-troubleshoot` immediately. Do not fetch preliminary jobs, logs, traces, connections, or resource state first; do not produce a platform-only diagnosis; and do not replace the tool call with a text-only handoff. The troubleshoot skill owns evidence collection and will run the platform reads its investigation requires. If that sibling skill is unavailable, state that the handoff could not run and give the user the concrete entity, scope, and time-window information needed to retry the investigation; do not improvise a platform-only root cause.
+Classify the requested **outcome** before running any command:
 
-Keep the request here when the outcome is an operation or a known correction: inspect current state without asking for a cause, perform CRUD or lifecycle actions, validate an input before applying it, or execute an already-diagnosed platform fix. When a request contains both diagnosis and implementation, troubleshoot first; after it establishes the cause, return here only for the platform mutation that applies the confirmed fix.
+1. **Causal outcome → hand off immediately.** User wants an explanation, diagnosis, or root cause for undesirable existing behavior → invoke the `Skill` tool with `skill: uipath-troubleshoot` before running anything.
+2. **No preliminary fetching.** Do not fetch jobs, logs, traces, connections, or resource state first — the troubleshoot skill owns evidence collection and runs the platform reads its investigation requires.
+3. **No platform-only diagnosis, no text-only handoff.** Never answer a causal question from platform commands alone, and never replace the `Skill` call with prose telling the user to use troubleshoot.
+4. **Operational outcome → stay here.** Inspect current state without a causal question, perform CRUD or lifecycle actions, validate an input before applying it, or execute an already-diagnosed platform fix.
+5. **Mixed request → troubleshoot first.** When a request contains both diagnosis and implementation, hand off for the diagnosis; return here only for the platform mutation that applies the confirmed fix.
+6. **Sibling unavailable → degrade gracefully.** State that the handoff could not run and give the user the concrete entity, scope, and time-window information needed to retry the investigation. Do not improvise a platform-only root cause.
 
 ## Use the CLI. Don't roll your own REST.
 
