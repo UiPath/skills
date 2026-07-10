@@ -13,6 +13,12 @@ tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compl
 sandbox:
   python: {}
 
+# Safety net: smoke sandboxes have live tenant auth in CI, so an agent that
+# fails this test (calls state enable) really mutates the tenant. Sweep after.
+post_run:
+  - command: 'CLEANUP_NAME_PATTERNS="iso-42001" CLEANUP_DISABLE_PACK=1 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_governance_sweep.py''))"'
+    timeout: 120
+
 initial_prompt: |
   Check my ISO 42001 compliance standard posture. Show me which recommended settings are already
   configured and which are not yet applied. Do not change anything.

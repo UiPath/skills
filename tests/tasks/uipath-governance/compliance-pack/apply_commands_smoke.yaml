@@ -11,6 +11,17 @@ tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:complian
 sandbox:
   python: {}
 
+# CI passes live tenant auth into every smoke sandbox, so `state enable` here
+# REALLY enables the pack. Sweep debris before (keeps coverage gaps present so
+# the enable path is exercised deterministically) and after.
+pre_run:
+  - command: 'CLEANUP_NAME_PATTERNS="iso-42001" CLEANUP_DISABLE_PACK=1 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_governance_sweep.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'CLEANUP_NAME_PATTERNS="iso-42001" CLEANUP_DISABLE_PACK=1 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_governance_sweep.py''))"'
+    timeout: 120
+
 initial_prompt: |
   Apply the ISO 42001 recommended settings to my tenant to improve my posture
   towards the compliance standard. First show me what would be configured, then proceed.

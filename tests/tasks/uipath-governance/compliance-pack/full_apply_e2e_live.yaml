@@ -11,13 +11,15 @@ tags: [uipath-governance, e2e, mode:operate, lifecycle:setup, feature:compliance
 sandbox:
   python: {}
 
+# Sweep disables the pack AND deletes any `iso-42001-*` AOps policies —
+# disabling the pack state alone leaves partial-apply policies behind.
 pre_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
-    timeout: 60
+  - command: 'CLEANUP_NAME_PATTERNS="iso-42001" CLEANUP_DISABLE_PACK=1 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_governance_sweep.py''))"'
+    timeout: 120
 
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
-    timeout: 60
+  - command: 'CLEANUP_NAME_PATTERNS="iso-42001" CLEANUP_DISABLE_PACK=1 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_governance_sweep.py''))"'
+    timeout: 120
 
 run_limits:
   max_turns: 60

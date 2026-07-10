@@ -11,6 +11,17 @@ tags: [uipath-governance, smoke, mode:build, lifecycle:setup, feature:compliance
 sandbox:
   python: {}
 
+# CI passes live tenant auth into every smoke sandbox, so the partial-apply
+# flow can REALLY create `iso-42001-2023-*` AOps policies. Sweep before
+# (prevents name-collision suffix churn) and after.
+pre_run:
+  - command: 'CLEANUP_NAME_PATTERNS="iso-42001" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_governance_sweep.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'CLEANUP_NAME_PATTERNS="iso-42001" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_governance_sweep.py''))"'
+    timeout: 120
+
 initial_prompt: |
   I want to make sure all AI model usage in my tenant is logged and traceable for
   our ISO 42001 audit — but only that, don't touch the rest of the standard yet.

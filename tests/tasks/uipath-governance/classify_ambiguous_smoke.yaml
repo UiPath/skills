@@ -16,6 +16,14 @@ description: >
   agent does NOT skip disambiguation.
 tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover]
 
+# CI passes live tenant auth into every smoke sandbox. If the agent fails this
+# test (skips disambiguation and creates the policy), the criterion scores the
+# failure but a real "Block ChatGPT" policy is left on the shared tenant —
+# sweep it after the run.
+post_run:
+  - command: 'CLEANUP_NAME_PATTERNS="chatgpt" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_governance_sweep.py''))"'
+    timeout: 120
+
 run_limits:
   expected_turns: 5
 

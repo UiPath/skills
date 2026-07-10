@@ -1,0 +1,43 @@
+task_id: skill-governance-tenant-sweep-cleanup
+description: >
+  TEMPORARY one-off sweep — DELETE THIS TASK (the whole tenant-sweep/ folder)
+  after one green CI run. Purges accumulated governance-policy debris from the
+  shared test tenant: ~155 `iso-42001-*` AOps policies plus "Block ChatGPT"
+  variants left behind by compliance-pack smoke tasks that ran with live CI
+  auth and no cleanup hooks. The pre_run does the sweep; the success criteria
+  assert the tenant is clean afterwards via the sweep summary JSON. The agent
+  itself does nothing tenant-related.
+tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:compliance]
+
+pre_run:
+  - command: 'CLEANUP_NAME_PATTERNS="iso-42001,chatgpt" CLEANUP_DISABLE_PACK=1 CLEANUP_SUMMARY_FILE="./sweep-summary.json" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_governance_sweep.py''))"'
+    timeout: 600
+
+run_limits:
+  expected_turns: 2
+  max_turns: 5
+
+initial_prompt: |
+  Write a file named done.txt containing exactly the text "sweep complete".
+  Do nothing else — do not run any uip commands, do not read other files.
+
+success_criteria:
+  - type: file_exists
+    description: "Sweep ran and wrote its summary JSON"
+    path: "sweep-summary.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Zero matching governance policies remain on the tenant after the sweep"
+    path: "sweep-summary.json"
+    includes:
+      - '"remaining": 0'
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent completed its trivial task"
+    path: "done.txt"
+    weight: 1.0
+    pass_threshold: 1.0
