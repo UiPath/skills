@@ -68,7 +68,9 @@ Headers/auth on `remote` and `swagger` are payload fields, not scalar flags. Rea
 
 ## Tool Kinds (`uipath`-type servers only)
 
-`uip agenthub mcp-tools create-{is-activity | resource | raw}`. Shared flags: `--mcp <slug>` (parent server), `--name`, `--description`, `--target-identifier <guid>` / `--target-name <name>` (resolve target via RCS — only for non-`activity` categories), `--folder-key <guid>` / `--folder-path <name>` (folder context; the CLI derives the target's folder from `--target-identifier`, so there is **no** `--target-folder-key` flag — do not invent one), `--category`, `--input-schema`, `--output-schema`, `--metadata`, `--continue-on-error` (default) / `--fail-fast`, `--file`/`--body`, `--dry-run`. Differ in metadata shape, discovery path, and validation strictness.
+`uip agenthub mcp-tools create-{is-activity | resource | raw}`. Shared flags: `--mcp <slug>` (parent server), `--name`, `--description`, `--target-identifier <guid>` / `--target-name <name>` (resolve target via RCS — only for non-`activity` categories), `--folder-key <guid>` / `--folder-path <name>` (folder context of the MCP server), `--target-folder-key <guid>` / `--target-folder-path <name>` (CLI ≥ 1.198: the TARGET's folder — IS connection, Orchestrator resource, or raw payload target — when it differs from the server's folder; never both; omitted → the CLI derives the target folder from `--target-identifier` / the RCS candidate, falling back to the server folder), `--category`, `--input-schema`, `--output-schema`, `--metadata`, `--continue-on-error` (default) / `--fail-fast`, `--file`/`--body`, `--dry-run`. Differ in metadata shape, discovery path, and validation strictness.
+
+`--target-folder-*` is also on `mcp-tools update` (retarget a tool to a resource/connection in another folder). An explicit `--target-folder-*` wins over the folder an RCS candidate carries and is injected into `--file`/`--body` payloads (flag beats payload field). `--target-folder-key` must be a GUID; `--target-folder-path` resolves names/fully-qualified paths like `--folder-path`.
 
 | Kind | Discovery | Validation | When to use |
 |------|-----------|------------|-------------|
@@ -89,5 +91,6 @@ Other `mcp-tools` verbs (`list --mcp <slug>`, `get`, `enable`, `disable`, `delet
 - **Slug rejected with validation error** — backend enforces `^[a-z0-9-]+$`, length 3-50 (Critical Rule 1).
 - **`mcp delete <guid>` returns 404** — `mcp delete` looks up by slug, not GUID (Critical Rule 5).
 - **`refresh-tools` returns 202 with a runtime id** — `coded` / `command` refreshes are async (Critical Rule 4). Surface the runtime id; verify via follow-up `mcp-tools list --mcp <slug>`.
+- **`Reason: IsActivityNotAvailable`** (CLI ≥ 1.198) — `create-is-activity` / `candidates --category is-activity` are gated client-side by host where the IS-activity rollout hasn't reached (currently `cloud.uipath.com` prod; alpha/staging are live). Author as `create-resource` / `create-raw`, use an alpha/staging tenant, or re-run with `--force` only when the tenant is enrolled in the rollout.
 
 Tool-kind-specific troubleshooting lives with the workflow that owns it — IS-activity troubleshooting is in [references/is-activity-workflow.md](references/is-activity-workflow.md).
