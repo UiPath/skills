@@ -1,0 +1,91 @@
+task_id: skill-flow-datafabric-e2e-contract-intake-pipeline
+description: >
+  E2E test for the UiPath Data Fabric connector in Maestro Flow. Exercises
+  the full loop: bulk-create 6 contract records in ContractRegistry with
+  priority-based logic, sort-query for the highest-priority record,
+  filter-query for urgent contracts, update a targeted record, then delete
+  all 6 as cleanup.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice, ipe]
+
+run_limits:
+  expected_turns: 60
+  task_timeout: 3600
+  max_turns: 200
+  turn_timeout: 3000
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/contract_registry.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Our legal team needs a UiPath Flow to handle contract intake against the
+  `ContractRegistry` Data Fabric entity (fields: contractTitle STRING,
+  status STRING, priority INTEGER, dueDate DATE, value DECIMAL,
+  isUrgent BOOLEAN).
+
+  Build a Flow that:
+
+  1. Creates 6 contract records. Each has: contractTitle, status='Under Review',
+     a priority between 1 and 6, a dueDate 30 days from today, a value between
+     10,000 and 100,000, and isUrgent=true for any contract with priority 5 or
+     higher.
+  2. Queries all contracts sorted by priority descending and confirms the top
+     result has priority=6.
+  3. Queries for urgent contracts (isUrgent=true) and confirms exactly 2 are
+     returned.
+  4. Updates the priority-6 contract to status='In Review'.
+  5. Deletes all 6 records.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-maestro-flow skill and follow its workflow.
+  The Flow is not complete until `uip maestro flow validate` passes.
+
+success_criteria:
+  - type: command_executed
+    description: "Create Entity Record node added at least 6 times"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.create-entity-record'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Query Entity Records node added at least twice (sort + filter)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.query-entity-records'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Update Entity Record node added at least once"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.update-entity-record'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Delete Entity Record node added at least 6 times (one per created record)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.delete-entity-record'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Flow file was validated"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow ends valid; ContractRegistry pipeline shape verified (6 creates, 2+ queries, 1+ update, 6 deletes)"
+    command: "python3 $TASK_DIR/check_ops_present.py ContractRegistry create-entity-record query-entity-records update-entity-record delete-entity-record"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
