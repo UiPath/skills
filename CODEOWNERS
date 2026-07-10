@@ -79,9 +79,9 @@
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
 
 # Flow skill
-/skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+/skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
 # Flow test tasks (general) — more specific subfolder rules below override this
-/tests/tasks/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+/tests/tasks/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
 
 # Context grounding team — flow plugins (Summarize/Batch Transform) + tasks
 /skills/uipath-maestro-flow/references/author/references/plugins/summarize/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
@@ -89,8 +89,8 @@
 /tests/tasks/uipath-maestro-flow/context-grounding/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
 
 # Maestro BPMN skill
-/skills/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
-/tests/tasks/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+/skills/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
+/tests/tasks/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
 # API Workflow skill
 /skills/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
 /tests/tasks/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
@@ -114,8 +114,8 @@
 
 # Flow skill — plugin guides (away team owned)
 # Add your team here when contributing a new plugin category
-/skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
-/skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
+/skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden @DevMomo
+/skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden @DevMomo
 /skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/ @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
 /tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh
 
