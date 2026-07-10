@@ -15,19 +15,61 @@ ONLY on real defects, never on a different-but-valid layout or naming style.
 
 Critical checks (exit 1):
   1. The ISO 42001 pack id appears somewhere (iso-42001-2023 or iso-42001).
-  2. At least one recognizable posture-count number appears somewhere (named field OR any
-     number nested under a posture/coverage/gap/setting/clause/policy container).
+  2. CROSS-VALIDATION against the real API data: the authoritative posture counts
+     from coverage.json (Data.Summary.NewCount and DeploymentPolicyCount — the raw
+     `state coverage` response, separately validated as real by
+     check_coverage_real_data.py) must BOTH appear as numbers in report.json. This
+     makes report.json non-self-gradeable: the agent cannot fabricate a passing
+     summary without having actually run `state coverage` and transcribed its real
+     numbers. (Replaces the earlier "any posture-ish number exists" check, which an
+     agent could satisfy with invented values.)
   3. If posture shows gaps existed AND there was no backend error → an apply must be tracked
      as performed (the agent must not silently skip applying when gaps exist).
 
 Soft checks (warning, exit 0):
   - No apply-tracking field found at all.
 """
+import glob
 import json
+import os
 import re
 import sys
 
 REPORT = "report.json"
+
+
+def _load_coverage():
+    """Locate + load coverage.json (the real state-coverage API response) and return
+    (new_count, deployment_policy_count), or (None, None, reason) if unavailable.
+
+    Mirrors check_coverage_real_data.py's candidate search so it finds the file
+    wherever the agent saved it (cwd, TASK_DIR, SESSION_TEMP, temp dirs)."""
+    candidates = [
+        "coverage.json",
+        os.path.join(os.environ.get("TASK_DIR", ""), "coverage.json"),
+        os.path.join(os.environ.get("SESSION_TEMP", ""), "coverage.json"),
+        os.path.join(os.environ.get("TMPDIR", ""), "coverage.json"),
+    ]
+    candidates += glob.glob("/tmp/compliance-*/coverage.json")
+    candidates += glob.glob("/tmp/tmp.*/coverage.json")
+    candidates += glob.glob(os.path.join(os.environ.get("HOME", ""), "compliance-*", "coverage.json"))
+    candidates += glob.glob(os.path.join(os.environ.get("TEMP", ""), "compliance-*", "coverage.json"))
+
+    path = next((c for c in candidates if c and os.path.exists(c)), None)
+    if not path:
+        return None, None, "coverage.json not found"
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        return None, None, f"coverage.json unreadable — {e}"
+
+    summary = (data.get("Data") or {}).get("Summary") or (data.get("Data") or {}).get("summary") or {}
+    new_count = summary.get("NewCount", summary.get("newCount"))
+    total = summary.get("DeploymentPolicyCount", summary.get("deploymentPolicyCount"))
+    if new_count is None or total is None:
+        return None, None, "coverage.json missing Summary.NewCount / DeploymentPolicyCount"
+    return new_count, total, None
 
 try:
     with open(REPORT, encoding="utf-8") as f:
@@ -108,7 +150,32 @@ if not pack_ok:
         f"(expected 'iso-42001-2023'; iso-ish strings seen: {sample or 'none'})"
     )
 
-# ── 2. Posture counts appear somewhere ──────────────────────────────────────────
+# ── 2. Cross-validate posture counts against the real coverage.json API data ─────
+# Collect every number anywhere in report.json, then require the authoritative
+# counts from coverage.json to be present — the agent must have transcribed real
+# `state coverage` output, not invented a plausible-looking summary.
+all_report_nums = {v for _, v, _ in _triples
+                   if isinstance(v, (int, float)) and not isinstance(v, bool)}
+cov_new, cov_total, cov_err = _load_coverage()
+if cov_err:
+    failures.append(
+        f"cannot cross-validate report.json against real API data — {cov_err}. "
+        "The full-apply flow must save the state coverage response to coverage.json."
+    )
+else:
+    if cov_new not in all_report_nums:
+        failures.append(
+            f"report.json does not contain the real 'not applied' count from coverage.json "
+            f"(NewCount={cov_new}). Numbers present in report.json: {sorted(all_report_nums)[:12]}. "
+            "The posture counts in report.json must match the live state coverage response."
+        )
+    if cov_total not in all_report_nums:
+        failures.append(
+            f"report.json does not contain the real total from coverage.json "
+            f"(DeploymentPolicyCount={cov_total}). Numbers present: {sorted(all_report_nums)[:12]}."
+        )
+
+# Posture-count buckets below are still needed for the causal apply check (section 4).
 not_applied_vals = _nums_for(
     "notAppliedSettings", "settingsNotApplied", "deploymentPoliciesNew",
     "newCount", "gaps", "totalGaps", "notApplied", "missingSettings",
@@ -122,27 +189,6 @@ total_vals = _nums_for("deploymentPolicyCount", "policyCount", "totalSettings", 
 coverage_vals = _nums_for("coveragePct", "coveragePercentBefore", "coveragePercent", "coverage")
 high_gap_vals = _nums_for("highImpactGapsBefore", "highImpactGaps")
 clause_gap_vals = _nums_for("clausesWithGaps")
-
-posture_nums = (not_applied_vals + applied_vals + total_vals
-                + coverage_vals + high_gap_vals + clause_gap_vals)
-
-# Structural fallback: accept any number nested under (or named like) a posture-ish
-# container, so novel field names the agent invents still count.
-_POSTURE_CONTAINERS = ("posture", "coverage", "gap", "setting", "clause", "policies", "policy",
-                       "summary", "before", "after", "compliance", "result", "score")
-if not posture_nums:
-    posture_nums = [
-        v for nk, v, par in _triples
-        if isinstance(v, (int, float)) and not isinstance(v, bool)
-        and (any(c in nk for c in _POSTURE_CONTAINERS) or any(c in par for c in _POSTURE_CONTAINERS))
-    ]
-
-if not posture_nums:
-    failures.append(
-        "no recognizable posture-count number found anywhere in report.json — "
-        "expected at least one count under a posture/coverage/gap/setting/clause section "
-        "(e.g. newCount / inPlaceCount / settings_not_applied / coverage_pct / clauses_with_gaps)"
-    )
 
 # ── 3. Apply tracking ───────────────────────────────────────────────────────────
 has_apply_tracking = _has_key(
@@ -203,7 +249,7 @@ if failures:
 print(
     "OK: report.json valid — "
     f"pack_id_found={pack_ok}, "
-    f"posture_nums={posture_nums[:8]}, "
+    f"coverage_cross_check: NewCount={cov_new} & DeploymentPolicyCount={cov_total} both present in report.json, "
     f"has_apply_tracking={has_apply_tracking}, "
     f"has_gaps={has_gaps}, "
     f"has_backend_error={has_backend_error}, "

@@ -33,7 +33,10 @@ initial_prompt: |
   output to output.txt as you go. Save the raw posture analysis (state coverage) JSON
   response to coverage.json.
 
-  Save a run summary to report.json with pack identity, posture counts, and whether apply was performed.
+  Save a run summary to report.json with pack identity, the posture counts taken
+  from the state coverage response (how many settings are not yet applied, and the
+  total number of settings), and whether apply was performed. The counts in
+  report.json must match the coverage response.
 
   Important:
   - Always pass --output json.
