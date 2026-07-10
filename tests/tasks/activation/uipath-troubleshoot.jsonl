@@ -55,3 +55,10 @@
 {"id": "uipath-troubleshoot-055", "prompt": "Why did my last job using the Google Workspace connector fail?", "expected_skill": "uipath-troubleshoot"}
 {"id": "uipath-troubleshoot-056", "prompt": "My last Integration Service connector job in folder Shared faulted — figure out what went wrong.", "expected_skill": "uipath-troubleshoot"}
 {"id": "uipath-troubleshoot-057", "prompt": "My last run from the Shared folder ended in Faulted. What caused it?", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-058", "prompt": "Inspect the latest Orchestrator job in Finance and explain what caused it to transition to Faulted.", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-059", "prompt": "The run is green, but the generated document still contains the old values. Trace where the behavior diverged.", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-060", "prompt": "Check this Integration Service connection and determine why unattended executions stopped authenticating even though its current state is Enabled.", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-061", "prompt": "A process that had been stable for months now hangs after deployment. I need the originating cause, not a restart.", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-062", "prompt": "This queue item keeps returning to In Progress after retries. Follow the execution evidence and identify the failure chain.", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-063", "prompt": "The activity only reports AggregateException. Unwrap the inner errors and work out which system actually originated the fault.", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-064", "prompt": "Today's automation produced empty output even though yesterday's run used the same inputs. Use the available platform evidence to isolate what changed.", "expected_skill": "uipath-troubleshoot"}
