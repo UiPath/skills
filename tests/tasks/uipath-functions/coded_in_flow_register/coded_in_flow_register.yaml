@@ -21,10 +21,13 @@ initial_prompt: |
   Create a UiPath solution "ClaimsSol" containing a Flow project
   "ClaimsFlow" and a sibling Coded Function "ClassifierAgent" in its own
   `ClassifierAgent/` subfolder (Python, simple stub — no LLM call needed,
-  just Input/Output Pydantic models). Register the function in the solution,
-  then sync solution resources so it is tracked as a Local resource, and
-  confirm it appears with structured CLI output:
-  `uip solution resources list ... --output json`.
+  just Input/Output Pydantic models). Generate the function's entry points
+  (this is the step that produces `entry-points.json`) before registering it.
+  Register the function in the solution, then sync solution resources so it is
+  tracked as a Local resource, and confirm it appears with structured CLI
+  output: `uip solution resources list ... --output json`.
+
+  The function project is not complete until its `entry-points.json` exists.
 
   Use the Coded Function framework (package: `uipath`) — NOT LangGraph,
   LlamaIndex, or OpenAI Agents. This keeps setup minimal: one lightweight
