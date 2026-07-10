@@ -1,0 +1,50 @@
+task_id: skill-process-mining-smoke-discovery
+description: >
+  Smoke test: agent uses the uipath-process-mining skill to discover the
+  Process Mining command surface — list app templates and process apps via
+  uip pm. The prompt is goal-oriented; the agent must learn the commands
+  from the skill, not from the prompt. Auth errors are expected (no live
+  tenant) and must not trigger retries.
+tags: [uipath-process-mining, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  I want to see what Process Mining resources exist on my tenant. List the
+  available process app templates and the existing process apps (dev stage).
+
+  Use --output json on every command. The CLI is not connected to a live
+  tenant, so commands will fail with auth errors — that's expected. Run each
+  command once and move on. Do NOT retry or attempt to login.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-process-mining skill"
+    skill_name: "uipath-process-mining"
+    expected_skill: "uipath-process-mining"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed app templates"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+app-types\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed process apps"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not attempt a login after the expected auth failures"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+status)'
+    weight: 1.0
+    pass_threshold: 1.0

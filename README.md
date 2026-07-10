@@ -106,6 +106,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-mcp-servers` | In-development |
 | `uipath-planner` | Preview |
 | `uipath-platform` | Preview |
+| `uipath-process-mining` | Preview |
 | `uipath-review` | Preview |
 | `uipath-rpa` | Preview |
 | `uipath-solution` | Preview |

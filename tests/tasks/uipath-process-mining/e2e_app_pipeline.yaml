@@ -1,0 +1,129 @@
+task_id: skill-process-mining-e2e-app-pipeline
+description: >
+  E2E pipeline test: agent uses the uipath-process-mining skill to run the
+  full Process Mining lifecycle against a live tenant — discover an app
+  template, fetch its model, create a process app with a data mapping,
+  upload an event-log CSV, trigger an ingestion, poll for completion, and
+  inspect the dbt transformations. Requires a tenant with Process Mining
+  enabled. Read-mostly: creates one app and one ingestion, never edits
+  transformations of existing apps.
+tags: [uipath-process-mining, e2e, mode:operate]
+
+run_limits:
+  expected_turns: 40
+  max_turns: 40
+
+initial_prompt: |
+  Run a full Process Mining pipeline against the live tenant.
+
+  1. Verify login with `uip login status --output json`. Do NOT re-login —
+     use the active tenant as-is.
+  2. Discover the available process app templates and pick one (prefer a key
+     like `uipath.custom`).
+  3. Fetch the template's model and derive a minimal data mapping plus a
+     matching event-log CSV (columns like Case_ID, Activity, Timestamp)
+     with a handful of rows.
+  4. Create a process app named "CoderEval PM <random suffix>" from that
+     template with your data mapping, and confirm it appears in the app list.
+  5. Upload the event-log CSV to the new app and trigger an ingestion.
+  6. Poll until the ingestion completes (ingestions and builds are
+     asynchronous — allow several minutes), then read its logs.
+  7. List the app's transformation files and fetch the content of one model
+     file.
+
+  The task is not complete until the ingestion has finished (or you have
+  polled at least 10 minutes and report it as still pending) and a
+  transformation file's content has been fetched.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-process-mining skill and follow its
+  workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status first"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered app templates"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+app-types\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched a template model"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+app-types\s+get\s+\S+\s+\S+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a process app from the template with a data mapping"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+create\s+.*--type\s+\S+[\s\S]*--data-mapping\s+\S+'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the app in the app list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uploaded the event-log file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+files\s+upload\s+\S+\s+\S+'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent triggered an ingestion"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+ingestions\s+create\s+\S+'
+    min_count: 1
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read ingestion logs after polling"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+ingestions\s+logs\s+\S+\s+\S+'
+    min_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed the transformation files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+transformations\s+list\s+\S+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched a transformation file's content"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+transformations\s+get\s+\S+\s+\S+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not edit transformations (out of scope for this run)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+transformations\s+update'
+    weight: 1.0
+    pass_threshold: 1.0
