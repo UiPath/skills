@@ -2,7 +2,7 @@ task_id: skill-ixp-reuse-default-type-smoke
 description: >
   Smoke: adding a monetary field, the agent reuses the built-in
   "Monetary Quantity" data type instead of inventing a redundant custom
-  type (e.g. "Currency Amount"). Regression guard for ACTV-89215.
+  type (e.g. "Currency Amount"). 
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -40,9 +40,6 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # Regression guard (the actual ACTV-89215 bug): the agent must NOT create a
-  # redundant custom data type for a need a default already covers. Any
-  # `data-types add` in this scenario is the mistake.
   - type: command_not_executed
     description: "Agent did NOT invent a redundant custom data type (Critical Rule 17 — reuse defaults)"
     tool_name: "Bash"
