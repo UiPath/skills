@@ -108,7 +108,7 @@ Walk the decision tree. Choose the first branch whose evidence holds. Do not app
 
 ## Post-presentation actions
 
-This resolution is **interactive** — every applicable fix edits user source files (the activity `Descriptor`, `TimeoutMS`, `CVScope` `Target`/`OCREngine`/`CvMethod` properties, or adds a readiness/check activity). Before any edit, the orchestrator MUST call `AskUserQuestion`. Rules:
+This resolution is **interactive** — every applicable fix edits user source files (the activity `Descriptor`, `TimeoutMS`, `CVScope` `Target`/`OCREngine`/`CvMethod` properties, or adds a readiness/check activity). Before any edit, you MUST call `AskUserQuestion` (approval gate). Rules:
 
 1. **Sharing a file path is not approval.** A path the user gave for reading the workflow does not authorize editing it. Issue a separate `AskUserQuestion` before any write.
 2. **Never bundle "gather input" with "apply fix" in one option.** Split into two steps: gather the input, then surface the concrete diff and confirm separately.

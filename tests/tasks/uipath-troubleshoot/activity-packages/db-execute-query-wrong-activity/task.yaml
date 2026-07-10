@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-execute-query-wrong-activity
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath diagnostic agent must diagnose a StagingCleanup process that
   faults every night in Orchestrator. The Connect to Database step is

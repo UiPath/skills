@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-replace-text-com-busy
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Replace Text COM-interop
   failure where WINWORD.EXE is busy (another Word instance already running on
