@@ -1,0 +1,46 @@
+task_id: skill-flow-datafabric-smoke-update
+description: >
+  Smoke: Create → UpdateEntityRecordV2 (single-field score change) → Get → Delete.
+  Verifies partial update wiring and update body contains only the target field.
+  Validate-only — no live tenant in sandbox — count enforcement lives in the
+  verifier script (counts nodes in the final .flow, not CLI invocations).
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice, ipe]
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Build a Flow against FlowCodeEvalEntity that:
+
+  1. Creates a record: title="SmokeUpdateTest", score=5.0, viewCount=100, active=false, releaseDate="2022-01-01".
+  2. Updates only the score to 9.0 — the update body should carry score and nothing else.
+  3. Retrieves the record by Id to confirm.
+  4. Deletes the record.
+
+  The Flow is not complete until `uip maestro flow validate` passes.
+
+success_criteria:
+  - type: command_executed
+    description: "Flow validated"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final .flow has Create + Update + Get + Delete DF nodes on FlowCodeEvalEntity"
+    command: "python3 $TASK_DIR/check_ops_present.py FlowCodeEvalEntity create-entity-record update-entity-record get-entity-record-by-id delete-entity-record"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Update node body contains only score (partial-update discipline)"
+    command: "python3 $TASK_DIR/check_smoke_update_partial.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
