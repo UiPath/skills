@@ -111,4 +111,4 @@ uip agent validate "<AGENT_PROJECT_DIR>" --output json
 uip solution upload . --output json
 ```
 
-For a production Orchestrator deployment, use the full solution promotion template in [Project Lifecycle](../../../../../uipath-agents/references/lowcode/project-lifecycle.md#step-5--publish-to-studio-web-or-deploy-to-orchestrator): `uip solution pack . ./dist -v "<version>" --output json`, `uip solution publish ./dist/<SOLUTION_NAME>.<version>.zip --output json`, then `uip solution deploy run --name ... --package-name ... --package-version ... --folder-name ... --parent-folder-path ... --output json`.
+For production Orchestrator deployment, use the solution promotion guidance in [`uipath-agents`](/uipath:uipath-agents): pack, publish, and deploy the solution package.

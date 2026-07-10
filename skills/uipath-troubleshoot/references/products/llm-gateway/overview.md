@@ -50,7 +50,7 @@ Key commands for troubleshooting:
 - `uip llm-configuration byo-connections list --include-connection-details --output json` — tenant audit: every BYO config + the live state of its IS connection
 - `uip llm-configuration byo-connections list-product-configs --product <p> --feature <f> --output json` — confirm the saved mapping still matches the product's current allowed-model catalog
 - `uip llm-configuration byo-connections update <id> --<same-fields>` — idempotent re-write that forces a fresh server-side probe; surfaces current `isAvailable` / `isCompatible`
-- `uip gov aops-policy deployed-policy get <license-type> AITrustLayer <tenant-id> --output json` — get the tenant-effective AI Trust Layer policy when calls are blocked by governance
+- `uip gov aops-policy deployed-policy resolve --product AITrustLayer ... --output json` — resolve the tenant-effective AI Trust Layer policy when calls are blocked by governance
 - `uip traces spans get <trace-id> --output json` — read the actual model + provider invoked on a failing agent call
 
 ## What the CLI does NOT expose
@@ -60,5 +60,5 @@ There is **no** `uip llm-configuration logs`, **no** per-request gateway invocat
 ## See Also
 
 - Configuration reference (Build / Operate / Diagnose flows): [`uipath-platform` → `references/llmgateway/byo-connections.md`](/uipath:uipath-platform)
-- AI Trust Layer policy authoring + `deployed-policy get` diagnostics: [`uipath-governance`](/uipath:uipath-governance)
+- AI Trust Layer policy authoring + `deployed-policy resolve` diagnostics: [`uipath-governance`](/uipath:uipath-governance)
 - Trace inspection for the consuming agent: [`uipath-agents`](/uipath:uipath-agents)

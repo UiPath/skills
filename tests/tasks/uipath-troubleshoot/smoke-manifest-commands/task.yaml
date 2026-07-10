@@ -34,7 +34,7 @@ pre_run:
   # The bare `@uipath/cli` install in CI does NOT auto-list subcommands of
   # uninstalled tools in `--help` output, so the validator below would see
   # `or` / `is` / `maestro` / `docsai` / `traces` / `rpa` / `agent` /
-  # `solution` / `context-grounding` / `gov` / `llm-configuration` as
+  # `solution` / `context-grounding` as
   # unknown until something invokes them. Install eagerly here so the
   # validator's `--help` walk sees the full tree.
   #
@@ -51,8 +51,6 @@ pre_run:
       uip tools install @uipath/agent-tool;
       uip tools install @uipath/solution-tool;
       uip tools install @uipath/context-grounding-tool;
-      uip tools install @uipath/gov-tool;
-      uip tools install @uipath/llmgw-tool;
       uip tools install @uipath/rpa-tool
     timeout: 300
     fail_on_error: false

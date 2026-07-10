@@ -160,8 +160,8 @@ When a BYO LLM configuration is in place but agent / product calls are failing o
 4. **If the call is being rejected at the gateway with a policy-shaped error (vendor blocked, model not allowed), check tenant-wide AI Trust Layer policy.** BYO records what the customer asked for; AI Trust Layer governance can still override at runtime.
 
    ```bash
-   uip gov aops-policy deployed-policy get \
-     "<license-type>" AITrustLayer "<tenant-id>" --output json
+   uip gov aops-policy deployed-policy resolve \
+     --product AITrustLayer --license-type <type> --tenant <name> --output json
    ```
 
    See [uipath-governance](/uipath:uipath-governance) for full AOps policy diagnostics.

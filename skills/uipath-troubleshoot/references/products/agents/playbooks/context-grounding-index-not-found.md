@@ -23,7 +23,7 @@ What can cause it:
 What to look for:
 - The `contextGroundingTool` span appears before the `agentRun` fault — the index lookup happens at tool-call time, not at startup
 - Whether the agent was recently re-deployed or the index was recently modified
-- Authoring reference for the agent-side resource shape: [Context Capability](../../../../../uipath-agents/references/lowcode/capabilities/context/context.md) and [Index Context](../../../../../uipath-agents/references/lowcode/capabilities/context/index.md)
+- For the agent-side context resource shape, use the context capability references in [`uipath-agents`](/uipath:uipath-agents).
 
 ## Investigation
 
@@ -61,6 +61,8 @@ What to look for:
 
 ## Resolution
 
+After any authoring repair, refresh and validate the agent, then refresh and upload the solution as shown below. For production Orchestrator deployment, use the solution promotion guidance in [`uipath-agents`](/uipath:uipath-agents): pack, publish, and deploy the solution package.
+
 **If the index was deleted — re-create it:**
 
   ```bash
@@ -76,8 +78,6 @@ What to look for:
   uip solution upload . --output json
   ```
 
-  For a production Orchestrator deployment, use the full solution promotion template in [Project Lifecycle](../../../../../uipath-agents/references/lowcode/project-lifecycle.md#step-5--publish-to-studio-web-or-deploy-to-orchestrator): `uip solution pack . ./dist -v "<version>" --output json`, `uip solution publish ./dist/<SOLUTION_NAME>.<version>.zip --output json`, then `uip solution deploy run --name ... --package-name ... --package-version ... --folder-name ... --parent-folder-path ... --output json`.
-
 **If the index exists but is in a different folder — re-link the agent:**
 - Edit `<AgentName>/resources/<ContextName>/resource.json`; set `indexName` to the correct index name and `folderPath` to the literal folder path returned by resource discovery.
 - Refresh the agent, then refresh and upload from the solution root:
@@ -88,8 +88,6 @@ What to look for:
   uip solution resources refresh --output json
   uip solution upload . --output json
   ```
-
-  For a production Orchestrator deployment, use the full solution promotion template in [Project Lifecycle](../../../../../uipath-agents/references/lowcode/project-lifecycle.md#step-5--publish-to-studio-web-or-deploy-to-orchestrator): `uip solution pack . ./dist -v "<version>" --output json`, `uip solution publish ./dist/<SOLUTION_NAME>.<version>.zip --output json`, then `uip solution deploy run --name ... --package-name ... --package-version ... --folder-name ... --parent-folder-path ... --output json`.
 
 **If the index reference in `resource.json` is stale or wrong:**
 - Correct the matching context `resource.json` to use the existing index's `indexName` and `folderPath`; do not use the deprecated context-management commands.
@@ -111,8 +109,6 @@ What to look for:
   uip solution resources refresh --output json
   uip solution upload . --output json
   ```
-
-  For a production Orchestrator deployment, use the full solution promotion template in [Project Lifecycle](../../../../../uipath-agents/references/lowcode/project-lifecycle.md#step-5--publish-to-studio-web-or-deploy-to-orchestrator): `uip solution pack . ./dist -v "<version>" --output json`, `uip solution publish ./dist/<SOLUTION_NAME>.<version>.zip --output json`, then `uip solution deploy run --name ... --package-name ... --package-version ... --folder-name ... --parent-folder-path ... --output json`.
 
 **If none of the above — the index exists but the runtime cannot resolve it:**
 - Capture `uip traces spans get <trace-id> --output json` and escalate to the Agents team with the full span output and the index name
