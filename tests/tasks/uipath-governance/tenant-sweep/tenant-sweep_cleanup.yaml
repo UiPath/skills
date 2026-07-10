@@ -10,8 +10,12 @@ description: >
 tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:compliance]
 
 pre_run:
+  # coder_eval caps pre_run/post_run timeout at 300s. If a single sweep can't
+  # clear everything in that budget, the run's `remaining` will be > 0 and the
+  # gate fails — just re-run the task; the sweep is idempotent and each pass
+  # deletes another batch until the tenant is clean.
   - command: 'CLEANUP_NAME_PATTERNS="iso-42001,chatgpt" CLEANUP_DISABLE_PACK=1 CLEANUP_SUMMARY_FILE="./sweep-summary.json" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_governance_sweep.py''))"'
-    timeout: 600
+    timeout: 300
 
 run_limits:
   expected_turns: 2
