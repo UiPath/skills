@@ -9,7 +9,7 @@
     {"fieldName": "active",       "type": "BOOLEAN"},
     {"fieldName": "releaseDate",  "type": "DATE"},
     {"fieldName": "lastUpdated",  "type": "DATETIME"},
-    {"fieldName": "externalId",   "type": "GUID"},
+    {"fieldName": "externalId",   "type": "UUID"},
     {"fieldName": "file1",        "type": "FILE"}
   ]
 }

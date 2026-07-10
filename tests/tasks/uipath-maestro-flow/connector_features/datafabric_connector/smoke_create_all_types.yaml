@@ -3,7 +3,7 @@ description: >
   Smoke: full CRUD lifecycle for the UiPath Data Fabric connector in Maestro
   Flow. Scaffolds a Flow that creates a FlowCodeEvalEntity record populating
   all 8 supported field types (STRING, MULTILINE_TEXT, DECIMAL, INTEGER,
-  BOOLEAN, DATE, DATETIME, GUID), retrieves it by Id, deletes it, then
+  BOOLEAN, DATE, DATETIME, UUID), retrieves it by Id, deletes it, then
   re-Gets the Id (expect 404) and Queries by title (expect 0 results) to
   confirm hard-delete propagates to both endpoints. Validate-only — no live
   tenant in sandbox — presence enforcement lives in the verifier.
@@ -25,7 +25,7 @@ initial_prompt: |
   * active: true (BOOLEAN)
   * releaseDate: "2024-03-10" (DATE)
   * lastUpdated: "2024-03-10T09:00:00" (DATETIME)
-  * externalId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" (GUID)
+  * externalId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" (UUID)
 
   Once created:
   1. Pull the record back by its Id (expansionLevel=1).
