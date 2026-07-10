@@ -78,7 +78,7 @@ Manage the reusable type definitions (entity_defs) that fields reference via `fi
 
 ### Default data types
 
-Every IXP project ships with six built-in data types. **Before `data-types add`, or before choosing a field's `--type` (in `fields add` / `groups add`), check the existing `entity_defs` (`projects get-taxonomy`) and reuse a matching default.** A redundant custom type (e.g. a `Currency Amount` when `Monetary Quantity` already exists) splits annotations across two types and forfeits the default's pre-trained model. Add a new data type only when it carries something no default does — a `Choice`, or a reusable concept that needs its own tailored extraction instructions — not as a clone of a default.
+Every IXP project ships with the built-in data types below (the project's `entity_defs` from `projects get-taxonomy` are the authoritative list). **Before `data-types add`, or before choosing a field's `--type` (in `fields add` / `groups add`), check the existing `entity_defs` and reuse a matching default.** A redundant custom type (e.g. a `Currency Amount` when `Monetary Quantity` already exists) splits annotations across two types and forfeits the default's pre-trained model. Add a new data type only when it carries something no default does — a `Choice`, or a reusable concept that needs its own tailored extraction instructions — not as a clone of a default.
 
 | Default type | `--kind` | `--input-value` | Reuse for |
 |--------------|----------|-----------------|-----------|

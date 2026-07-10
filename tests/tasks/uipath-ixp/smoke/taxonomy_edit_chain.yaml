@@ -28,14 +28,10 @@ initial_prompt: |
   On project `my_invoices-f1afa9ef-ixp`, set up the taxonomy for
   withholding-tax reconciliation:
 
-  1. The built-in `Monetary Quantity` type is a generic amount
-     extractor with no field-specific guidance. This project needs a
-     reusable money type, `Withholding Tax Amount`, that carries its
-     own extraction instructions so every field using it is steered to
-     the right value. Create it as a money-kind data type with
-     instructions: "A monetary amount representing tax withheld at
-     source and remitted on the payer's behalf — distinct from the
-     invoice total or the sales-tax line. Reuse for every
+  1. Create a reusable money-kind data type named `Withholding Tax
+     Amount` with instructions: "A monetary amount representing tax
+     withheld at source and remitted on the payer's behalf — distinct
+     from the invoice total or the sales-tax line. Reuse for every
      withholding-tax figure in the project."
 
   2. Create an `Invoice Header` field group with one field — `Tax
