@@ -35,6 +35,8 @@ run_limits:
   turn_timeout: 2400
 
 initial_prompt: |
+  Before starting, load the uipath-maestro-case skill and run its Phase 0 interview.
+
   We're designing a case-management solution for Employee Expense
   Reimbursement. An employee submits an expense, and the case flows through
   Submission, Manager Approval, Finance Approval, Payment, and then a terminal

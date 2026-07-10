@@ -66,10 +66,11 @@ Before Step 6, seed TodoWrite with the section-level items below. Mark each `in_
 4. Refresh entry-points.json input/output (Step 6.3)
 5. Add stages (Step 7)
 6. Write task shapes (Step 9)
-7. Regenerate bindings_v2.json (Step 9.4)
-8. Skeleton validate + hard stop (Step 9.5)
+7. Add validator graph edges (Step 8)
+8. Regenerate bindings_v2.json (Step 9.4)
+9. Skeleton validate + hard stop (Step 9.5)
 
-(No edge step — edges are retired; stage transitions are condition-driven and written in Phase 3 Step 10.)
+Edges are topology/rendering artifacts required by validation; stage transitions remain condition-driven and are written in Phase 3 Step 10.
 
 **Per-T-entry sub-items.** Inside each section, also seed one TodoWrite item per T-entry the section will Edit (e.g., `T04 stage "Intake"`, `T05 stage "Review"`). Mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit returns success. These per-T-entry items are the audit trail — section-level Edits collapse the file diff, but the todo log preserves T-by-T progress for reviewers (per [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical)).
 
@@ -100,6 +101,8 @@ For each trigger T-entry in `tasks.md §4.3`, open the matching plugin's `impl-j
 
 Each plugin writes one node to `caseplan.json.nodes[]` and appends one entry to `entry-points.json.entryPoints[]` atomically. Capture every `TriggerId` for Step 6.2 — an In-arg's `elementId` resolves to `id-map[<sourceTriggers T-number>].id`, or the primary trigger (T02) when its `sourceTriggers` is blank.
 
+Post-write guard for event triggers: the service marker must be `data.uipath.serviceType == "Intsvc.EventTrigger"` for both resolved and placeholder nodes. A top-level `data.serviceType` does not make the node an event trigger.
+
 ## Step 6.2 — Declare global variables and arguments
 
 For each variable/argument T-entry from `tasks.md §4.2.1`, write entries directly into `caseplan.json` per [`plugins/variables/global-vars/impl-json.md`](plugins/variables/global-vars/impl-json.md). This step populates top-level `variables` (inputs, outputs, inputOutputs) and trigger output mappings. Execute these before adding stages — downstream tasks and conditions reference variables via `=vars.<id>`.
@@ -114,11 +117,15 @@ For each stage in `tasks.md §4.4`, execute per [`plugins/stages/impl-json.md`](
 
 `isRequired` from `tasks.md` is planning-only metadata; it is not written into the stage node. It is consumed later by case-exit-conditions with `rule-type: required-stages-completed` (Step 10).
 
-## Step 8 — (RETIRED — no edges)
+## Step 8 — Add validator graph edges
 
-Edges are retired; there is no edge-building step. `schema.edges` stays `[]`. Stage transitions are expressed as entry/exit conditions, written in Phase 3 Step 10. The case start comes from the first stage's `case-entered` entry condition, not a Trigger→stage edge.
+Write `caseplan.json.edges[]` entries after triggers and stages exist. The current validator requires graph edges even though semantic routing is still expressed by entry/exit conditions.
 
-For multi-trigger cases, add the additional triggers via the appropriate trigger plugin (Step 6.1) — no edge wiring is needed; any trigger entering the case activates the first stage's `case-entered` condition.
+- Add one `case-management:TriggerEdge` from the primary trigger to the first regular stage.
+- Add `case-management:Edge` entries between regular stages for the planned stage-entry transitions.
+- Use handles `${sourceId}____source____right` and `${targetId}____target____left`; keep edge labels descriptive and stable.
+
+For multi-trigger cases, add a `case-management:TriggerEdge` from each case-start trigger to the first regular stage. The first stage still carries `case-entered`; edges satisfy validator topology and Studio Web rendering.
 
 ## Step 9 — Add tasks (Phase 2 shape, gather-then-write)
 
@@ -132,7 +139,7 @@ Per-class shape inside each Edit:
 |---|---|
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | Full `data.inputs[]` schema from the Phase A gather. Each input's `value` is `""`. Outputs populated per plugin. |
 | Connector (`connector-activity`, `connector-trigger`) | `data.typeId` + `data.connectionId` set. `data.inputs` omitted. **Do NOT call `case spec` in Phase 2** — schema discovery happens in Phase 3. |
-| Unresolved (any class) | Placeholder task per Step 9.1 — empty `data: {}` plus action-only extras. |
+| Unresolved (any class) | Placeholder task per Step 9.1 — no resource IDs or bindings; `data: {}` when no SDD I/O rows exist, otherwise best-effort `data.inputs[]` / `data.outputs[]` from the task entry. |
 
 **Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md).
 
@@ -144,14 +151,16 @@ On context-compaction mid-gather: re-Read `caseplan.json`, scan for §4.6 tasks 
 
 When a task entry's `taskTypeId` (or `typeId` / `connectionId` for connector tasks) is `<UNRESOLVED: …>`, create a **placeholder task** instead of halting. See [placeholder-tasks.md](placeholder-tasks.md) for the canonical reference.
 
-For every task class (process / agent / rpa / action / api-workflow / case-management / connector-activity / connector-trigger): follow the Unresolved Fallback section of the matching `plugins/tasks/<type>/planning.md` and write a task with `type` + `displayName` + `id` + `elementId` + `isRequired`, `data: {}`, and no `taskTypeId` / `connectionId` keys directly to `caseplan.json` per `plugins/tasks/<type>/impl-json.md`.
+For every task class (process / agent / rpa / action / api-workflow / case-management / connector-activity / connector-trigger): follow the Unresolved Fallback section of the matching `plugins/tasks/<type>/planning.md` and write a task with `type` + `displayName` + `id` + `elementId` + `isRequired`, no `taskTypeId` / `connectionId` / resource binding keys, and placeholder `data` per [placeholder-tasks.md](placeholder-tasks.md).
 
-**Skip all input binding for placeholder tasks** — they have no input schema. Capture the intended wiring from the fenced `wiring notes` code block in `tasks.md` into the completion report so the user knows what to hook up after registering the resource.
+**Skip schema-driven input binding for placeholder tasks** — they have no input schema. Preserve any SDD-declared rows already copied into `data.inputs[]` / `data.outputs[]`, and capture the fenced `wiring notes` code block in the completion report so the user knows what to verify after registering the resource.
+
+Post-write guard: after placeholder task writes, scan every placeholder whose `tasks.md` entry has `inputs:` or `outputs:`. Those rows must appear in the placeholder's `data.inputs[]` / `data.outputs[]` as best-effort intent before validation. Do not leave `data: {}` on a placeholder that declared mappings such as global variable inputs or cross-task outputs.
 
 Placeholder tasks integrate with the rest of the graph:
 - **Task-entry conditions** use the captured placeholder `TaskId` normally.
 - **Stage-exit `selected-tasks-completed`** rules reference placeholder `TaskId`s normally.
-- **Cross-task variable bindings** are deferred — the user binds them after attaching the real resource.
+- **Cross-task variable bindings** are preserved as best-effort intent when already declared; schema verification and resource-specific binding are deferred until the user attaches the real resource.
 
 ## Step 9.4 — Regenerate bindings_v2.json (batch)
 

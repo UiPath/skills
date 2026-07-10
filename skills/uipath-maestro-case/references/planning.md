@@ -130,11 +130,11 @@ When a resource cannot be resolved (registry gap and no cache match, or missing 
 Otherwise:
 
 1. Mark the line in `tasks.md` with `<UNRESOLVED: <reason>>` in the `taskTypeId` / `typeId` / `connectionId` slot.
-2. **Omit `inputs:` and `outputs:` entirely** on that task entry — there is no schema to wire against. Any input mapping the sdd.md described becomes a fenced ```` ```text ```` code block under the entry with a `wiring notes (user must attach):` header line. **Do not start lines with `#`** — they would render as markdown headings; use a fenced code block instead. Example shape is in [placeholder-tasks.md § `tasks.md` Planning-Entry Shape](placeholder-tasks.md).
+2. Preserve any SDD-declared `inputs:` and `outputs:` rows on that task entry as planner intent. There is no schema to verify yet, so also copy those mappings into a fenced ```` ```text ```` code block under the entry with a `wiring notes (user must verify after attach):` header line. **Do not start lines with `#`** — they would render as markdown headings; use a fenced code block instead. Example shape is in [placeholder-tasks.md § `tasks.md` Planning-Entry Shape](placeholder-tasks.md).
 3. Keep every other structural field (display-name, isRequired, runOnlyOnce, order). Task-entry conditions still emit normally.
 4. **Continue planning — do not halt.**
 
-At execution time, unresolved tasks become **placeholder tasks** in `caseplan.json` (display-name + type only, no task-type-id, no bindings). The workflow graph is still reviewable end-to-end, and the user attaches real resources + bindings externally before runtime. See [placeholder-tasks.md](placeholder-tasks.md).
+At execution time, unresolved tasks become **placeholder tasks** in `caseplan.json` (display-name + type, no task-type-id or resource binding; best-effort SDD I/O rows only when declared). The workflow graph is still reviewable end-to-end, and the user attaches real resources + verifies bindings externally before runtime. See [placeholder-tasks.md](placeholder-tasks.md).
 
 ## Step 4 — Generate tasks.md and registry-resolved.json
 
@@ -282,11 +282,13 @@ Every task entry includes at least:
 
 Additional fields are plugin-specific; read the plugin's `planning.md` before filling the entry.
 
+**Task I/O rows are load-bearing.** For every task whose SDD detail block declares `Inputs` or `Outputs`, copy each row into that task's T-entry. Preserve domain-bearing values and cross-task references such as `priorityScore`, `slaTier`, `financeDecision`, and `selectedPaymentMethod`; do not move them into comments, `verify`, Not Covered, or only top-level Case Variables. Before Step 5 approval, check that every SDD task I/O row has a matching `inputs:` / `outputs:` line in `tasks.md`.
+
 > **No shell commands in task entries.** Each task is a declarative specification. Never write `uip` invocations or any other shell commands inside a task body — the execution phase translates specs into JSON mutations.
 
 > **Record `lane: <n>` per task.** Default: increment within each stage starting at 0 — lane is FE layout only, task ordering comes from task-entry conditions. **Exception:** within a `runs-sequentially` group, tasks meant to run in parallel share the same `lane` (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get own lane.
 
-> **Placeholder shape for unresolved resources.** If `taskTypeId` / `typeId` / `connectionId` is `<UNRESOLVED: …>`, omit `inputs:` and `outputs:` entirely and capture wiring intent in a trailing comment block. Execution creates a bare task node — structural only. See [placeholder-tasks.md](placeholder-tasks.md) for the full pattern and upgrade path.
+> **Placeholder shape for unresolved resources.** If `taskTypeId` / `typeId` / `connectionId` is `<UNRESOLVED: …>`, keep any SDD-declared `inputs:` and `outputs:` rows plus a trailing wiring-notes block. Execution creates a placeholder task node without resource IDs; when rows exist, it carries best-effort `data.inputs[]` / `data.outputs[]` so domain variables remain visible. See [placeholder-tasks.md](placeholder-tasks.md) for the full pattern and upgrade path.
 
 ### 4.7 Configure conditions
 
