@@ -1,6 +1,6 @@
 ---
 name: uipath-review
-description: "UiPath reviewer for agents (agent.json/.py), RPA (.xaml/.cs), flows (.flow), BPMN (.bpmn), coded apps (.uipx) — read-only, structured report with rule IDs. For generic code diffs→code-review. For building/editing→domain skills."
+description: "UiPath read-only reviewer — audit structure, quality, best practices for RPA (.xaml/.cs), agents (.py/agent.json), flows (.flow), BPMN (.bpmn), coded apps, solutions (.uipx). Does NOT edit files. For building/editing→domain skills."
 allowed-tools: Bash, Read, Glob, Grep, WebFetch, AskUserQuestion
 user-invocable: true
 ---
