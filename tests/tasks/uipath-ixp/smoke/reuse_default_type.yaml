@@ -1,0 +1,48 @@
+task_id: skill-ixp-reuse-default-type-smoke
+description: >
+  Smoke: adding a monetary field, the agent reuses the built-in
+  "Monetary Quantity" data type instead of inventing a redundant custom
+  type (e.g. "Currency Amount"). 
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
+initial_prompt: |
+  In the IXP project my_invoices-f1afa9ef-ixp, add a field named
+  "Freight Charge" to the existing "Invoice Header" group — it captures
+  the shipping/freight cost (a dollar amount) shown on the invoice.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # Primary: the field is added reusing the built-in "Monetary Quantity" type.
+  # The skill teaches the six default types, so the agent uses it by name even
+  # though the offline mock can't return the taxonomy.
+  - type: command_executed
+    description: 'Agent added "Freight Charge" reusing the default "Monetary Quantity" type via `fields add`'
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+fields\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["'']?Invoice Header)(?=.*--field\s+["'']?Freight Charge)(?=.*--type\s+["'']?Monetary Quantity).*'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT invent a redundant custom data type (Critical Rule 17 — reuse defaults)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+data-types\s+add\b'
+    weight: 3.0
+    pass_threshold: 1.0
