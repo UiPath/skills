@@ -1,7 +1,7 @@
 ---
 name: uipath-platform
-description: "UiPath platform operations via the uip CLI for Cloud, Orchestrator, Studio Web, Integration Service, Data Fabric, LLM Gateway, and related APIs. Use for current-state inspection, CRUD, lifecycle actions, configuration, audits, and re-probes across auth, tenants, folders, assets, queues, buckets, processes, jobs, machines, identities, connectors/connections, Data Fabric, BYO LLM, traces, and licensing. This skill does not own open-ended causal investigation: when the primary outcome is an explanation, diagnosis, or root cause for undesirable existing behavior, delegate immediately to uipath-troubleshoot before running platform commands, even for a platform resource. For solution lifecycle→uipath-solution; workflow artifacts→their owning domain skill."
-when_to_use: "Trigger for operational intent: authentication; CRUD; lifecycle actions; state inspection; explicit log/trace retrieval without a causal question; schema/query work; configuration; audits; or applying a known platform fix. Do not retain a request whose primary goal is to discover why existing behavior failed, changed, stalled, degraded, lost access, or returned an unexpected result—invoke uipath-troubleshoot directly."
+description: "UiPath platform operations via the uip CLI for Cloud, Orchestrator, Studio Web, Integration Service, Data Fabric, LLM Gateway, and related APIs. Use for current-state inspection, CRUD, lifecycle actions, configuration, audits, and re-probes across auth, tenants, folders, assets, queues, buckets, processes, jobs, machines, identities, connectors/connections, Data Fabric, BYO LLM, traces, and licensing. Load before writing code that calls a UiPath API. For why-it-failed / diagnosis / root-cause→uipath-troubleshoot (even for a platform resource). For `uip solution` lifecycle→uipath-solution; .xaml/.cs→uipath-rpa; .flow→uipath-maestro-flow; .bpmn→uipath-maestro-bpmn; agents (.py/agent.json)→uipath-agents; PDD/SDD→uipath-planner; Test Manager→uipath-test."
+when_to_use: "Trigger for operational intent: authentication; CRUD; lifecycle actions; state inspection; explicit log/trace retrieval without a causal question; schema/query work; configuration; audits; or applying a known platform fix. Do not trigger when the primary goal is to discover why existing behavior failed, changed, stalled, degraded, lost access, or returned an unexpected result→uipath-troubleshoot."
 allowed-tools: Bash, Read, Write, Glob, Grep, Skill
 ---
 
@@ -13,12 +13,10 @@ Comprehensive guide for UiPath Cloud / Orchestrator / Studio Web / Integration S
 
 Classify the requested **outcome** before running any command:
 
-1. **Causal outcome → hand off immediately.** User wants an explanation, diagnosis, or root cause for undesirable existing behavior → invoke the `Skill` tool with `skill: uipath-troubleshoot` before running anything.
-2. **No preliminary fetching.** Do not fetch jobs, logs, traces, connections, or resource state first — the troubleshoot skill owns evidence collection and runs the platform reads its investigation requires.
-3. **No platform-only diagnosis, no text-only handoff.** Never answer a causal question from platform commands alone, and never replace the `Skill` call with prose telling the user to use troubleshoot.
-4. **Operational outcome → stay here.** Inspect current state without a causal question, perform CRUD or lifecycle actions, validate an input before applying it, or execute an already-diagnosed platform fix.
-5. **Mixed request → troubleshoot first.** When a request contains both diagnosis and implementation, hand off for the diagnosis; return here only for the platform mutation that applies the confirmed fix.
-6. **Sibling unavailable → degrade gracefully.** State that the handoff could not run and give the user the concrete entity, scope, and time-window information needed to retry the investigation. Do not improvise a platform-only root cause.
+1. **Causal outcome → hand off immediately.** User wants an explanation, diagnosis, or root cause for undesirable existing behavior → invoke the `Skill` tool with the uipath-troubleshoot skill (use its name exactly as it appears in your available-skills list) before running anything. No preliminary fetching of jobs/logs/traces — troubleshoot owns evidence collection — and never substitute prose telling the user to use troubleshoot for the actual `Skill` call.
+2. **Operational outcome → stay here.** Inspect current state without a causal question, perform CRUD or lifecycle actions, validate an input before applying it, or execute an already-diagnosed platform fix.
+3. **Mixed request → troubleshoot first.** When a request contains both diagnosis and implementation, hand off for the diagnosis; return here only for the platform mutation that applies the confirmed fix.
+4. **Sibling unavailable → degrade gracefully.** State that the handoff could not run and give the user the concrete entity, scope, and time-window information needed to retry the investigation. Do not improvise a platform-only root cause.
 
 ## Use the CLI. Don't roll your own REST.
 
