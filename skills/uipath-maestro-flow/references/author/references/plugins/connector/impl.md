@@ -33,9 +33,6 @@ Connector nodes come in two flavors:
 
 To classify a node, read `Node.form.sections[0].fields[0].componentProps.connectorDetail.configuration` from the `registry get` response, parse it as JSON, and check `activityType`. `"Generic"` → run Step 2a to discover `objectName` (and capture `operation` from the same marker for the `--operation` flag in Step 3). Anything else → skip Step 2a.
 
-### Data Fabric activity version — default to V2 curated
-
-When the `registry search` result for `uipath-uipath-dataservice` surfaces multiple versions of the same operation, **default to the V2 curated node type** — the underlying `is resources` object names end in `Curated` (V2 CRUD) or `V2` (V2 file activities), and the endpoint path starts with `/v2/`. Do NOT reach for a V3-preview equivalent (path starts with `/v3/`, e.g. `QueryEntityRecords_V3`, `EntityTriggers_V3`) unless the user asks it explicitly or asks for a V3-only capability for V3.
 
 ## Critical: Connector Definition Must Include `form`
 
