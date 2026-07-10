@@ -4,7 +4,7 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
 
 ## Prerequisites
 
-1. **coder-eval** — install from public PyPI (creates a local `.venv`, requires Python 3.13+):
+1. **coder-eval** — install from public PyPI, pinned to `.coder-eval-version` (creates a local `.venv`, requires Python 3.13+):
    ```bash
    cd tests
    make install

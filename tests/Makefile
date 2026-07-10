@@ -2,6 +2,7 @@
 
 SKILLS_REPO_PATH ?= $(shell cd .. && pwd)
 VENV := .venv
+CODER_EVAL_VERSION := $(shell tr -d '[:space:]' < .coder-eval-version)
 CODER_EVAL := SKILLS_REPO_PATH=$(SKILLS_REPO_PATH) $(VENV)/bin/coder-eval
 TASKS := $(shell find tasks -name '*.yaml' -type f)
 TASK_PARALLELISM ?= 1
@@ -10,9 +11,9 @@ help:  ## Show available commands
 	@grep -E '^[a-zA-Z0-9_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 	  awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-install:  ## Install coder-eval into local .venv (requires Python 3.13+)
+install:  ## Install coder-eval into local .venv (pinned to .coder-eval-version; requires Python 3.13+)
 	uv venv --python 3.13 $(VENV)
-	uv pip install --python $(VENV)/bin/python coder-eval
+	uv pip install --python $(VENV)/bin/python "coder-eval==$(CODER_EVAL_VERSION)"
 	@echo ""
 	@echo "See https://github.com/UiPath/coder_eval for environment setup (.env, API keys, etc.)"
 
