@@ -143,9 +143,12 @@ The CLI also falls back to the persistent `searchSearchDeployments22` record if 
 ```bash
 uip solution deploy list --output json
 uip solution deploy list --folder-path "Shared" --limit 20 --sort-by "Name" --sort-order "Ascending" --output json
+uip solution deploy list --limit 50 --offset 50 --output json   # page 2
 ```
 
-Options: `--folder-path`, `--limit` (default 50), `--sort-by`, `--sort-order` (`Ascending`/`Descending`).
+Options: `--folder-path`, `--limit` (default 50), `--offset` (default 0), `--sort-by`, `--sort-order` (`Ascending`/`Descending`).
+
+The response's `Pagination` block reports `Total` and `HasMore`; when `HasMore` is `true`, fetch the next page with `--offset`. Note that `--folder-path` filters client-side after the fetch, so with that flag `Returned` counts the filtered rows while `Offset`/`Total` stay server-side — page with `--offset` first, then filter.
 
 ---
 

@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-rpa-job-killed-by-watchdog-account
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath diagnostic agent must diagnose a faulted LongRunningProcess job that
   ended with System.Exception: "Job stopped with an unexpected exit code:
@@ -12,7 +13,6 @@ description: >
 tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

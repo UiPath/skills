@@ -204,7 +204,7 @@ Use `Edit` to add an edge object to the `edges` array:
 
 ```json
 {
-  "id": "<UNIQUE_EDGE_ID>",
+  "id": "edge_<SOURCE_NODE_ID>_<SOURCE_PORT>_<TARGET_NODE_ID>_<TARGET_PORT>",
   "sourceNodeId": "<SOURCE_NODE_ID>",
   "sourcePort": "<SOURCE_PORT>",
   "targetNodeId": "<TARGET_NODE_ID>",
@@ -218,7 +218,7 @@ Use `Edit` to add an edge object to the `edges` array:
 
 **Critical:** for `sourcePort: "error"`, also set `inputs.errorHandlingEnabled: true` on the source node. Without the flag, Studio Web hides the source handle and `uip maestro flow validate` fails.
 
-**Edge ID:** generate a UUID (matches CLI behavior) or use `e-<sourceNodeId>-<targetNodeId>` if uniqueness across the flow is guaranteed. Short, hand-picked names risk collision when the same source/target pair gets a second edge later.
+**Edge ID:** `edge_<SOURCE_NODE_ID>_<SOURCE_PORT>_<TARGET_NODE_ID>_<TARGET_PORT>`.
 
 See each plugin's `planning.md` or [file-format.md — Standard ports](../../shared/file-format.md) for port names by node type.
 

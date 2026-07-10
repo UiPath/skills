@@ -14,7 +14,7 @@ run_limits:
   turn_timeout: 900
 
 initial_prompt: |
-  Build an expense tracker for Finance. Two linked lists.
+  Build an expense tracker for Finance in UiPath Data Fabric — two linked entities.
 
   `CE_E2EEmployee`:
     - name — required, up to 200 chars

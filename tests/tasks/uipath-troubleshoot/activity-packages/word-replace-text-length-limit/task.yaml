@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-replace-text-length-limit
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a classic Replace Text failure
   where the Replace value exceeds the classic activity's hard 256-character
@@ -9,7 +10,6 @@ description: >
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

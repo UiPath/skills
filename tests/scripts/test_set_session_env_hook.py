@@ -1,5 +1,7 @@
-"""Contract guard for the session-env SessionStart step
-(``hooks/set-session-env.sh``).
+"""Contract guard for the session-env SessionStart step — BOTH twins
+(``hooks/set-session-env.sh`` under bash, ``hooks/set-session-env.ps1`` under
+pwsh). Every test is parametrized over the two implementations, enforcing the
+twin keep-in-sync rule in CLAUDE.md.
 
 Runs the hook as a subprocess with a SessionStart payload on stdin and asserts
 what lands in ``CLAUDE_ENV_FILE``. Covers:
@@ -11,7 +13,8 @@ what lands in ``CLAUDE_ENV_FILE``. Covers:
   before being written into the sourced env file;
 * the skip paths — no ``CLAUDE_ENV_FILE``, or a payload without ``session_id``.
 
-POSIX-only, like the send-telemetry guard — CI runs it on ubuntu.
+POSIX-only, like the send-telemetry guard — the hooks run under ``bash`` and
+``pwsh`` (both preinstalled on GitHub ubuntu runners); CI runs it on ubuntu.
 
 Run from repo root:
     pytest tests/scripts/test_set_session_env_hook.py
@@ -28,12 +31,32 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-HOOK = REPO_ROOT / "hooks" / "set-session-env.sh"
+HOOKS_DIR = REPO_ROOT / "hooks"
+
+TWINS = [
+    pytest.param(["bash", str(HOOKS_DIR / "set-session-env.sh")], id="bash"),
+    pytest.param(
+        ["pwsh", "-NoProfile", "-File", str(HOOKS_DIR / "set-session-env.ps1")],
+        id="pwsh",
+    ),
+]
 
 pytestmark = pytest.mark.skipif(
-    sys.platform == "win32" or shutil.which("bash") is None,
-    reason="requires bash on a POSIX filesystem (CI runs this on ubuntu)",
+    sys.platform == "win32",
+    reason="POSIX-only guard (CI runs this on ubuntu)",
 )
+
+HOOK_ARGV = None
+
+
+@pytest.fixture(autouse=True, params=TWINS)
+def hook_argv(request):
+    """Select the twin under test; skip if its interpreter is absent."""
+    global HOOK_ARGV
+    argv = request.param
+    if shutil.which(argv[0]) is None:
+        pytest.skip(f"{argv[0]} not available")
+    HOOK_ARGV = argv
 
 PAYLOAD = {
     "hook_event_name": "SessionStart",
@@ -94,7 +117,7 @@ def test_skips_without_env_file():
         env.pop("CLAUDE_ENV_FILE", None)
         env.pop("UIPATH_SESSION_ID", None)
         subprocess.run(
-            ["bash", str(HOOK)],
+            HOOK_ARGV,
             input=json.dumps(PAYLOAD),
             text=True,
             env=env,
@@ -126,7 +149,7 @@ def run_hook(payload, *, extra_env=None, env_file_content=None):
             env.update(extra_env)
 
         subprocess.run(
-            ["bash", str(HOOK)],
+            HOOK_ARGV,
             input=json.dumps(payload),
             text=True,
             env=env,

@@ -14,8 +14,8 @@ run_limits:
 
 
 initial_prompt: |
-  We have an Expenses list. Each expense has an amount and a `tags`
-  column where you can pick one or more from a fixed dropdown. The
+  We have an Expenses UiPath Data Fabric entity. Each expense has an amount and a `tags`
+  column where you can pick one or more from a fixed UiPath Data Fabric choice set. The
   three tag options are travel, meals, and lodging (in that order —
   travel is 1, meals is 2, lodging is 3).
 
@@ -29,6 +29,7 @@ initial_prompt: |
       combination.
 
   Important:
+  - Do NOT invent operators like `equals`, `contains_any`, or `not_contains`. Use only the operators the uipath-platform skill documents for `records query` filters.
   - The `uip` CLI is available but not connected to a live tenant. Commands
     will fail — that is expected. Run each command exactly once regardless
     of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,

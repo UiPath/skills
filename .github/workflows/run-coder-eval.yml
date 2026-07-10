@@ -48,17 +48,23 @@ on:
         type: string
         default: alpha
       agent:
-        description: 'Agent (codex = gpt-5.4).'
+        description: 'Agent to run.'
         type: choice
         options:
           - claude
           - codex
+          - antigravity
         default: claude
+      # Overrides the model for ANY agent. Blank keeps the per-agent default:
+      # claude → experiment YAML's sonnet (override e.g. opus / haiku),
+      # codex → gpt-5.4, antigravity → gemini-3.1-pro-preview.
+      agent_model:
+        description: 'Model override (blank = default).'
+        type: string
+        default: ''
 
-concurrency:
-  group: run-coder-eval-${{ github.ref }}
-  cancel-in-progress: false
-
+# No concurrency group: this is a manual, on-demand workflow — allow any number
+# of runs (e.g. the same task across claude / codex / antigravity) at once.
 jobs:
   partition:
     runs-on: ubuntu-latest
@@ -173,8 +179,6 @@ jobs:
       # agent runs inside skills-image, so the codex SDK belongs in that image
       # (separate TODO), not on the host CLI.
       - name: Install coder-eval
-        env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system "coder-eval==${{ needs.partition.outputs.coder_eval_version }}"
 
       # Pull the agent image from GHCR (never built from source); the skills
@@ -229,14 +233,14 @@ jobs:
           TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
           E2E_PROCESS_KEY:          ${{ secrets.E2E_PROCESS_KEY }}
           E2E_LONG_PROCESS_KEY:     ${{ secrets.E2E_LONG_PROCESS_KEY }}
-          CODED_APPS_TEST_PROJECT_ID:  ${{ secrets.CODED_APPS_TEST_PROJECT_ID }}
-          CODED_APPS_TEST_SOLUTION_ID: ${{ secrets.CODED_APPS_TEST_SOLUTION_ID }}
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
           TASK_COUNT:               ${{ needs.partition.outputs.linux_count }}
           TASK_PARALLELISM:         ${{ inputs.parallelism }}
           AGENT:                    ${{ inputs.agent }}
+          AGENT_MODEL:              ${{ inputs.agent_model }}
           CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
           CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
+          GEMINI_API_KEY:           ${{ secrets.GEMINI_API_KEY }}
         working-directory: tests
         id: eval
         run: |
@@ -244,11 +248,18 @@ jobs:
           # `parallelism` input default (4) only applies on workflow_dispatch.
           j="${TASK_PARALLELISM:-4}"
           # Agent selection. claude (default) takes the experiment YAML's
-          # claude-code/sonnet config; codex overrides to gpt-5.4 and authenticates
-          # via CODEX_API_KEY/CODEX_BASE_URL. Driver is unchanged (docker here).
+          # claude-code/sonnet config; codex overrides to gpt-5.4 (auth via
+          # CODEX_API_KEY/CODEX_BASE_URL); antigravity overrides to
+          # gemini-3.1-pro-preview (auth via GEMINI_API_KEY; SDK baked into the
+          # agent image). AGENT_MODEL overrides the model for any agent (e.g.
+          # opus / haiku for claude). Driver is unchanged (docker here).
           agent_flags=""
           if [ "$AGENT" = "codex" ]; then
-            agent_flags="--type codex --model gpt-5.4"
+            agent_flags="--type codex --model ${AGENT_MODEL:-gpt-5.4}"
+          elif [ "$AGENT" = "antigravity" ]; then
+            agent_flags="--type antigravity --model ${AGENT_MODEL:-gemini-3.1-pro-preview}"
+          elif [ -n "$AGENT_MODEL" ]; then
+            agent_flags="--model $AGENT_MODEL"
           fi
           echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml $agent_flags -j $j ($TASK_COUNT task files)"
           coder-eval run $TASK_GLOBS \
@@ -345,7 +356,6 @@ jobs:
       - name: Install coder-eval
         shell: bash
         env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
           CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
           AGENT: ${{ inputs.agent }}
         run: |
@@ -358,6 +368,11 @@ jobs:
           if [ "$AGENT" = "codex" ]; then
             uv pip install --system --prerelease=allow --index-strategy unsafe-best-match \
               "openai-codex==0.1.0b3"
+          elif [ "$AGENT" = "antigravity" ]; then
+            # Tempdir driver runs the agent on the host, so the antigravity SDK
+            # (google-antigravity, via the [antigravity] extra) must be installed
+            # here — mirrors the docker path baking it into the agent image.
+            uv pip install --system "coder-eval[antigravity]==${CE_VERSION}"
           fi
 
       - name: Configure NuGet feed for Helm packages
@@ -482,8 +497,10 @@ jobs:
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
           AGENT:                    ${{ inputs.agent }}
+          AGENT_MODEL:              ${{ inputs.agent_model }}
           CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
           CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
+          GEMINI_API_KEY:           ${{ secrets.GEMINI_API_KEY }}
           # Redirect the temp root off the default %TEMP%. On the GH-hosted
           # Windows runner %TEMP% resolves to its 8.3 short form
           # (C:\Users\RUNNER~1\AppData\Local\Temp). coder-eval creates each
@@ -503,11 +520,17 @@ jobs:
           # Create the tilde-free temp root pinned via TMP/TEMP above.
           mkdir -p /c/cetmp
           # Agent selection. claude (default) takes the experiment YAML config;
-          # codex overrides to gpt-5.4 (auth via CODEX_API_KEY/CODEX_BASE_URL).
-          # Driver is unchanged (tempdir here).
+          # codex overrides to gpt-5.4 (auth via CODEX_API_KEY/CODEX_BASE_URL);
+          # antigravity overrides to gemini-3.1-pro-preview (auth via
+          # GEMINI_API_KEY). AGENT_MODEL overrides the model for any agent (e.g.
+          # opus / haiku for claude). Driver is unchanged (tempdir here).
           agent_flags=""
           if [ "$AGENT" = "codex" ]; then
-            agent_flags="--type codex --model gpt-5.4"
+            agent_flags="--type codex --model ${AGENT_MODEL:-gpt-5.4}"
+          elif [ "$AGENT" = "antigravity" ]; then
+            agent_flags="--type antigravity --model ${AGENT_MODEL:-gemini-3.1-pro-preview}"
+          elif [ -n "$AGENT_MODEL" ]; then
+            agent_flags="--model $AGENT_MODEL"
           fi
           overall_exit=0
           for task in $TASK_GLOBS; do

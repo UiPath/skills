@@ -16,7 +16,7 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  I'm setting up two linked lists for a folder-scoped test.
+  I'm setting up two linked UiPath Data Fabric entities for a folder-scoped test.
 
   First, take a look at the folders on the tenant. Pick one and call
   it folder A — that's where these lists will live. If the tenant has

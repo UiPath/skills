@@ -4,16 +4,21 @@ description: >
   App dashboard that surfaces live Orchestrator state, from scratch. Given
   only a business goal, the agent must scaffold Vite + React, wire the
   `@uipath/uipath-typescript` SDK with subpath imports and constructor DI,
-  configure `VITE_UIPATH_SCOPE` to cover Jobs + Queues, configure
+  configure the uipath.json scope to cover Jobs + Queues, configure
   `vite.config.ts` correctly (Rule #9), use `getAppBase()` for any runtime
   asset URLs (Rule #10), build, pack, publish (default Web type), and
   deploy to a fresh per-run Orchestrator folder so `post_run` can clean it
   up. Tests the Web-app lifecycle with deep SDK integration that no smoke
   or integration test covers.
 tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
+# max_turns 65→85: run 28935883495 exhausted 65 with all lifecycle criteria
+# already passed — ~14 turns went to TaskCreate/TaskUpdate ceremony and a
+# post-deploy nupkg inspection detour, and report.json (the last step) was
+# the casualty. The prompt now writes the report immediately after deploy
+# and bans task-tracking ceremony; the bump is headroom for verbose agents.
 run_limits:
   expected_turns: 45
-  max_turns: 65
+  max_turns: 85
   turn_timeout: 1200
 
 initial_prompt: |
@@ -47,17 +52,23 @@ initial_prompt: |
   This isolates the deployment so `post_run` cleanup can delete the
   folder afterwards (folder delete cascades to the coded-app deployment).
 
-  When you finish, write `report.json` at the sandbox root with:
+  IMMEDIATELY after `uip codedapp deploy` succeeds — before ANY further
+  verification, inspection, or cleanup — write `report.json` at the
+  sandbox root with:
     {
       "app_name": "<the exact app name you used>",
       "deployment_id": "<the deploymentId from .uipath/app.config.json (or its systemName if deploymentId is absent)>",
       "app_url": "<the appUrl from .uipath/app.config.json>",
       "folder": "<the codedapp-e2e-dash-<EPOCH> folder name you created>"
     }
-  The `folder` field is REQUIRED — `post_run` reads it to clean up.
+  The `folder` field is REQUIRED — `post_run` reads it to clean up. The
+  run is graded incomplete without `report.json`, no matter how well the
+  deployment went.
 
   Use `--output json` on every `uip` command. Do not prompt for
-  confirmation — this is an automated test.
+  confirmation — this is an automated test. Do NOT use task-tracking
+  tools (TaskCreate/TaskUpdate) — execute the steps directly; every
+  turn spent on bookkeeping is budget taken from the build.
 
 success_criteria:
   - type: command_executed
@@ -187,25 +198,29 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Skill change #1562 (Jul 6) replaced the .env/VITE_UIPATH_* SDK config with
+  # uipath.json ({clientId, scope, orgName, tenantName, baseUrl, redirectUri});
+  # the SDK reads only the uipath.json-injected meta tags, so the three config
+  # criteria below grade uipath.json exclusively.
   - type: run_command
-    description: ".env or .env.example was created with VITE_UIPATH_* config (anywhere in the project tree)"
-    command: "find . \\( -name '.env.example' -o -name '.env' -o -name '.env.local' \\) -not -path '*/node_modules/*' -exec grep -lE '^VITE_UIPATH_' {} + | grep -q ."
+    description: "SDK config exists: uipath.json with a scope field (clientId may be an empty placeholder or omitted entirely in test tenants, so only scope is required)"
+    command: "F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if 'scope' in d else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "VITE_UIPATH_SCOPE covers BOTH Jobs and Queues (Rule #16 — mismatched scopes fail silently with 401/403)"
-    command: "find . \\( -name '.env.example' -o -name '.env' -o -name '.env.local' \\) -not -path '*/node_modules/*' -exec grep -hE \"^VITE_UIPATH_SCOPE=.*OR\\.Jobs.*OR\\.Queues|^VITE_UIPATH_SCOPE=.*OR\\.Queues.*OR\\.Jobs\" {} + 2>/dev/null | grep -q ."
+    description: "uipath.json scope covers BOTH Jobs and Queues (Rule #16 — mismatched scopes fail silently with 401/403)"
+    command: "F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; s=str(json.load(open('$F')).get('scope','')); sys.exit(0 if ('OR.Jobs' in s and 'OR.Queues' in s) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "VITE_UIPATH_BASE_URL uses the API subdomain (Rule #8 — api.uipath.com, not cloud.uipath.com)"
-    command: "find . \\( -name '.env.example' -o -name '.env' -o -name '.env.local' \\) -not -path '*/node_modules/*' -exec grep -hE \"^VITE_UIPATH_BASE_URL=https://(\\w+\\.)?api\\.uipath\\.com\" {} + 2>/dev/null | grep -q ."
+    description: "uipath.json baseUrl uses the API subdomain (Rule #8 — api.uipath.com, not cloud.uipath.com)"
+    command: "F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys,re; b=str(json.load(open('$F')).get('baseUrl','')); sys.exit(0 if re.match(r'https://([\\w-]+\\.)*api\\.uipath\\.com', b) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.5

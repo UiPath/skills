@@ -12,7 +12,7 @@ run_limits:
   max_turns: 30
 
 initial_prompt: |
-  We have a Documents list. One of the rows already has a spot for an
+  We have a Documents UiPath Data Fabric entity. One of the rows already has a spot for an
   Attachment.
 
   Could you:

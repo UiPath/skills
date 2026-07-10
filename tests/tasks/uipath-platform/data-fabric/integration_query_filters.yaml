@@ -12,7 +12,7 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  We have an Orders list called `CE_IntegrationOrders` already loaded
+  We have an Orders UiPath Data Fabric entity called `CE_IntegrationOrders` already loaded
   up with a small set of orders. Each order has a code, a value, and
   a status. Please don't change anything — I just need a handful of
   searches run over it.

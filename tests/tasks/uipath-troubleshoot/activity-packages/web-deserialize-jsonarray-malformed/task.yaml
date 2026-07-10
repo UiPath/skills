@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-web-deserialize-jsonarray-malformed
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a ParseList job fault
   (Newtonsoft.Json.JsonReaderException: Unexpected character encountered while parsing value: n. Path '', line 0, position 0.) and match the
@@ -8,7 +9,6 @@ description: >
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "TodoWrite"]
 
 run_limits:

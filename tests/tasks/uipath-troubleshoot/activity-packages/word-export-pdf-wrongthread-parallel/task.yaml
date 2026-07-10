@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-export-pdf-wrongthread-parallel
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Save Document as PDF COM
   wrong-thread fault: the export faults casting the document to
@@ -15,7 +16,6 @@ description: >
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

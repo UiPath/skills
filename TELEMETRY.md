@@ -1,11 +1,12 @@
 # UiPath Skills Plugin Telemetry
 
 Opt-out usage telemetry for the UiPath skills plugin. On by default. One
-emitting hook (`hooks/send-telemetry.sh`), registered on several Claude Code
-hook events, hands a single flat JSON object to the hidden `uip track` CLI
-command, which forwards it through the CLI's own telemetry tracker as one
-`uip.skills.<event>` Application Insights event. A second, synchronous
-SessionStart step (`hooks/set-session-env.sh`) exports the agent session id as
+emitting hook (`hooks/send-telemetry.sh` / its PowerShell twin
+`send-telemetry.ps1`), registered on several Claude Code hook events, hands a
+single flat JSON object to the hidden `uip track` CLI command, which forwards
+it through the CLI's own telemetry tracker as one `uip.skills.<event>`
+Application Insights event. A second, synchronous SessionStart step
+(`hooks/set-session-env.sh` / `.ps1`) exports the agent session id as
 `UIPATH_SESSION_ID` so native `uip` command telemetry carries the same
 `session_id` (see [Correlation](#correlation)). No local state file, no
 session daemon — session-level metrics are computed at query time from the
@@ -87,14 +88,15 @@ plugin; everything else exits silently. A call qualifies when:
    envelope fields (see [Events](#events)).
 2. For a qualifying call it derives a small set of low-cardinality fields and
    sanitizes each value (charset + 120-char cap). Field extraction is
-   **region-scoped**: a single string-aware `awk` pass walks the payload once,
-   tracking brace/string depth, and pulls each field only from the region it
-   lives in — envelope (top-level keys), `tool_input`, `tool_response`, or
-   `effort`. Free-form customer content embedded in a string (a prompt, a
-   command line, `stdout`) can never false-match an envelope field (see
+   **region-scoped**: each field is read only from the region it lives in —
+   envelope (top-level keys), `tool_input`, `tool_response`, or `effort`
+   (the bash twin walks the JSON with a string-aware `awk` pass; the
+   PowerShell twin parses it with `ConvertFrom-Json`). Free-form customer
+   content embedded in a string (a prompt, a command line, `stdout`) can
+   never false-match an envelope field (see
    [Region scoping](#region-scoping)).
-3. It pipes one flat `key:value` JSON object to `uip track` on stdin, in a
-   detached subshell, then exits 0.
+3. It pipes one flat `key:value` JSON object to `uip track` on stdin, then
+   exits 0.
 4. `uip track` ([UiPath/cli#2600](https://github.com/UiPath/cli/pull/2600),
    extended for lifecycle events in
    [UiPath/cli#2815](https://github.com/UiPath/cli/pull/2815)) reads that
@@ -146,13 +148,13 @@ its own version as `application_Version` and the OS / client context by default.
 ### Region scoping
 
 The payload embeds free-form customer content — prompts, command lines,
-`stdout` / `stderr`, file contents. A grep over the **whole** payload
+`stdout` / `stderr`, file contents. A text scan over the **whole** payload
 mis-extracts fields when that content happens to contain JSON-shaped text: a
 `stdout` with `"success":false`, an Agent prompt naming `uip solution publish`
-or `.flow"`, a log line with `"resolvedModel":"x"`. To prevent this, a single
-string-aware `awk` pass walks the payload once, tracks brace/string nesting
-depth (honoring `\"` and `\\` escapes), and emits each field **only** from the
-region where it actually lives:
+or `.flow"`, a log line with `"resolvedModel":"x"`. To prevent this, the hook
+reads each field **only** from the region where it actually lives (the bash
+twin via a single string-aware `awk` pass that tracks brace/string nesting;
+the PowerShell twin via a real `ConvertFrom-Json` parse):
 
 | Region | Fields |
 |--------|--------|
@@ -213,7 +215,7 @@ attribution all work unchanged. Three differences are handled or accepted:
 
 | Difference | Handling |
 |------------|----------|
-| **Agent spawns.** Codex uses `tool_name: "spawn_agent"` with the spawned type in `tool_input.agent_type` (Claude uses `Agent` + `tool_input.subagent_type`). | Handled. `spawn_agent` is gated like `Agent`; the `awk` normalizes `tool_input.agent_type` → `subagentType`, distinct from the envelope `agent_type` (→ `agentType`). Codex's generic `default` type qualifies, like Claude's `general-purpose`/`claude` |
+| **Agent spawns.** Codex uses `tool_name: "spawn_agent"` with the spawned type in `tool_input.agent_type` (Claude uses `Agent` + `tool_input.subagent_type`). | Handled. `spawn_agent` is gated like `Agent`; extraction normalizes `tool_input.agent_type` → `subagentType`, distinct from the envelope `agent_type` (→ `agentType`). Codex's generic `default` type qualifies, like Claude's `general-purpose`/`claude` |
 | **`tool_response` is a JSON-encoded string,** not an object — even when its content is JSON. So `success` / `interrupted` / `resolvedModel` are absent. | Accepted. `outcome` is `ok` (response present, no failure signal) or `unknown`; it is never `failure`/`interrupted` for Codex. `subagentModel` stays empty. No content is parsed out of the string |
 | **`duration_ms` and `effort.level` are omitted.** | Accepted. `durationMs` → `null` (dropped by the CLI), `effortLevel` → `""`. No latency or effort data for Codex |
 
@@ -282,7 +284,7 @@ aggregations over events sharing `session_id`:
 
 ### Cross-stream correlation (`UIPATH_SESSION_ID`)
 
-The synchronous SessionStart step (`hooks/set-session-env.sh`) writes
+The synchronous SessionStart step (`hooks/set-session-env.sh` / `.ps1`) writes
 `export UIPATH_SESSION_ID='<session_id>'` to Claude Code's `CLAUDE_ENV_FILE`,
 so every `uip` command the agent runs inherits it and the CLI stamps the same
 `session_id` on **native command telemetry**
@@ -304,15 +306,28 @@ still carry `session_id` and correlate with each other normally.
 ## Reliability & performance
 
 - **Non-blocking:** the hook is registered as an async hook in `hooks.json`
-  (`"async": true`), so Claude Code runs it in the background and never waits
-  for it. It pipes to `uip track` in a detached subshell and always exits 0 —
-  it never delays or fails a tool call. `uip track` is itself never-fail (always
-  exits 0, emits nothing when telemetry is off or on any error).
+  (`"async": true`) on every event except `SessionEnd`, so Claude Code runs it
+  in the background and never waits for it — it never delays or fails a tool
+  call. It swallows every error and always exits 0. `uip track` is itself
+  never-fail (always exits 0, emits nothing when telemetry is off or on any
+  error).
+- **`SessionEnd` is synchronous (30s timeout):** async hooks still running at
+  session teardown are killed after a short grace window — shorter than the
+  hook's PowerShell + `uip track` startup — which silently drops the
+  session-end event. Registering it synchronously makes session exit wait for
+  the handoff (typically ~1–2s, capped at 30s), so session-duration and
+  session-outcome metrics keep their `session-end` anchor.
 - **Best-effort delivery:** an event is dropped on failure (no local retry
   queue). Telemetry is for aggregate trends, not exact accounting.
-- **Session id export:** `set-session-env.sh` is the one synchronous step
-  (it must run before the session's first Bash call); it costs a few
-  milliseconds — pure text processing, no network and no `uip` invocation.
-- **Cross-platform:** pure POSIX `bash` + `grep`/`sed`/`awk`, no `jq`
-  dependency (macOS, Linux, Windows Git Bash). Requires the `uip` CLI on `PATH`
-  — the plugin's `SessionStart` hook ensures it is installed.
+- **Session id export:** `set-session-env.sh` / `.ps1` is the one synchronous
+  SessionStart step (it must run before the session's first shell call); it
+  costs a few milliseconds — pure text processing, no network and no `uip`
+  invocation.
+- **Cross-platform, zero-install:** the hook ships as twin scripts —
+  `send-telemetry.sh` (bash: macOS, Linux, Windows with Git Bash) and
+  `send-telemetry.ps1` (PowerShell 5.1/7+: Windows without Git Bash). A
+  bash/PowerShell polyglot command in `hooks.json` dispatches to the twin
+  matching the executing shell; the twins are kept behaviorally identical
+  (see CLAUDE.md). No `jq`, `node`, or `python` dependency. Requires the
+  `uip` CLI on `PATH` (`npm install -g @uipath/cli`); when the CLI is
+  absent, events are silently dropped — the hook never fails the session.

@@ -13,7 +13,7 @@ run_limits:
   max_turns: 60
 
 initial_prompt: |
-  We already have an Employees list. It holds first name, last name, and
+  We already have an Employees UiPath Data Fabric entity. It holds first name, last name, and
   hire date.
 
   Could you help me with this:

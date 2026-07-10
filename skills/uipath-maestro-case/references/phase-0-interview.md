@@ -265,10 +265,10 @@ Run `uip maestro case registry pull` first if cache absent. See [registry-discov
 |---|---|---|
 | `execute-connector-activity` | connector `typeId` + operation (`typecache-activities-index.json`) | a registered IS **connection** (`connectionId`) for that connector |
 | `wait-for-connector` | connector-trigger `typeId` (`typecache-triggers-index.json`) | an IS connection for the inbound event |
-| `agent` | `agentId` (`agent-index.json`) | the agent is **deployed** |
+| `agent` | `agentId` (`agent-index.json`) | the agent is **deployed** — or built inline at the Phase 1 Rule 17 Create gate (in-solution sibling) |
 | `action` (human task / HITL) | `actionAppId` (`action-apps-index.json`) when a deployed Action App matches | else `<UNRESOLVED>` + Rule-8 placeholder — inline JSON-schema authoring is NOT supported by the action plugin |
 | `process` / `rpa` | `processOrchestrationId` (`process-index.json` / `processOrchestration-index.json`) | the process is **published** |
-| `api-workflow` | `apiWorkflowId` (`api-index.json`) | the API workflow is **deployed** |
+| `api-workflow` | `apiWorkflowId` (`api-index.json`) | the API workflow is **deployed** — or built inline at the Phase 1 Rule 17 Create gate (in-solution sibling) |
 | `case-management` | child case (`caseManagement-index.json`) | the child case is **published** |
 
 A *type* match with **no live instance** still ships `<UNRESOLVED>` + a `high` review item — never fabricate IDs (SKILL.md Rule 8). (A connector type can exist in the catalog while the tenant has zero connections — that is still `<UNRESOLVED>`.)
@@ -304,10 +304,10 @@ Per-task AskUserQuestion (4 options max). **When candidate matches differ by fol
 |---|---|
 | `<top match — name · folder · version · type>` | Record selection (incl. chosen folder). |
 | `<second match — name · folder · version · type>` (if available) | Record selection (incl. chosen folder). |
-| `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. **For an `agent`,** Phase 1's Rule 17 gate additionally offers to build it inline as an in-solution sibling ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a no-match agent need not stay manual. |
+| `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. **For an `agent` or `api-workflow`,** Phase 1's Rule 17 gate additionally offers to build it inline as an in-solution sibling ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a no-match resource of these kinds need not stay manual. |
 | `Something else` | Free-text re-search keyword, retry. |
 
-**Empty registry match** across bucket C → AskUserQuestion `Force pull and re-resolve` / `Skip and use placeholders` — plus, when ≥1 still-empty is an `agent` AND the CLI supports `registry --local`, `Create the missing agent(s) inline` (build as in-solution siblings; see [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — per Rule 17, applied per batch, not per task. When the user picks `Skip and use placeholders`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
+**Empty registry match** across bucket C → AskUserQuestion `Force pull and re-resolve` / `Skip and use placeholders` — plus, when ≥1 still-empty is an `agent` or `api-workflow` AND the CLI supports `registry --local`, `Create the missing resource(s) inline` (build as in-solution siblings; see [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — per Rule 17, applied per batch, not per task. When the user picks `Skip and use placeholders`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
 
 #### Schema discovery — pull each resolved task's I/O contract
 

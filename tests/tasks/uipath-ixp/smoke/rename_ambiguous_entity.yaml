@@ -1,0 +1,80 @@
+task_id: skill-ixp-rename-ambiguous-entity-smoke
+description: >
+  Smoke: ambiguity guard, discovery variant. Prompt gives ONLY the ambiguous
+  ask ("rename subscriptions into Test Invoice") — no workspace facts. The
+  overlaid uip mock serves canned JSON: `projects list` shows a project
+  TITLED "subscriptions"; `projects get-taxonomy` shows a field group
+  "subscriptions" containing a field "subscriptions". The agent must
+  discover the collision itself, then ask which entity is meant (written to
+  clarification.txt — the harness is non-interactive) and execute NO
+  rename. Renaming any candidate — or several "to cover all cases" — is a
+  silent guess and fails.
+
+  clarification.txt is not a self-report: it is the ask-behavior under
+  test, not a claim about work performed. The deterministic core is the
+  no-mutation guards, plus a discovery check so a blind generic "which one
+  do you mean?" (asked without looking at the workspace) does not pass.
+
+  Guards grade the mock's calls.log (actual uip executions) via
+  file_contains excludes, NOT command_not_executed regexes over Bash call
+  text — a correct clarification legitimately QUOTES the candidate rename
+  commands, which a text regex would false-match. The discovery criterion
+  doubles as the positive control: it proves executed reads land in the
+  graded file, so re-pointing the mock's log sink fails the test rather
+  than making the excludes pass vacuously.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 8
+
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_ambiguous}
+
+initial_prompt: |
+  In my IXP workspace, rename subscriptions into "Test Invoice".
+
+  Important:
+  - I am not available to answer questions interactively. If you need
+    information from me before proceeding, write your question to
+    `clarification.txt` and stop — I'll respond asynchronously.
+
+success_criteria:
+  - type: file_exists
+    description: "Agent asked instead of acting: clarification.txt was written"
+    path: "clarification.txt"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The question surfaces the discovered three-way collision — names the project, the group, and the field as candidates"
+    path: "clarification.txt"
+    includes: ["project", "group", "field"]
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Discovery actually happened: agent listed projects AND read the taxonomy before asking (a blind generic question can't know the collision)"
+    path: "mocks/calls.log"
+    includes: ["ixp projects list", "ixp projects get-taxonomy"]
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent did NOT silently guess an entity: mock call log has no executed rename (projects update-title / groups rename / fields rename)"
+    path: "mocks/calls.log"
+    includes: ["# seeded by mock_template"]
+    excludes: ["ixp projects update-title", "ixp groups rename", "ixp fields rename"]
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent did NOT rename via delete/recreate either (no executed delete in the mock call log)"
+    path: "mocks/calls.log"
+    includes: ["# seeded by mock_template"]
+    excludes: ["ixp projects delete", "ixp groups delete", "ixp fields delete"]
+    weight: 1.0
+    pass_threshold: 1.0
