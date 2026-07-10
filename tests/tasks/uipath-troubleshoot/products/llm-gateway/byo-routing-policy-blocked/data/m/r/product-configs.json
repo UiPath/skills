@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "ByoProductConfigs",
+  "Data": [
+    {
+      "product": "agents",
+      "operationGroupName": "agenthub-llm-call",
+      "modelsConfigurationOption": "AnyModel",
+      "models": [
+        {
+          "name": "gpt-4o-enterprise",
+          "connectorType": "AzureOpenAi",
+          "apiFlavor": "OpenAiChatCompletions"
+        }
+      ]
+    }
+  ]
+}

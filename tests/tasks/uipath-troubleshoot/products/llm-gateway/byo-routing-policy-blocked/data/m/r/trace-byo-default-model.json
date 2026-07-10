@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "TraceSpans",
+  "Data": [
+    {
+      "spanId": "llm-0004",
+      "traceId": "dddddddddddddddddddddddddddddddd",
+      "name": "llm.completion",
+      "spanType": "completion",
+      "attributes": {
+        "product": "agents",
+        "operationGroupName": "agenthub-llm-call",
+        "model": "platform-default-gpt",
+        "provider": "UiPathDefault",
+        "requestedModel": "gpt-4o-enterprise"
+      }
+    }
+  ]
+}

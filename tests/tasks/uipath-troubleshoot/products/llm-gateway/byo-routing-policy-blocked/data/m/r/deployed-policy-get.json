@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "AopsDeployedPolicyGet",
+  "Data": {
+    "policyIdentifier": "policy-ai-trust-default",
+    "name": "AI Trust Default",
+    "data": {
+      "modelGovernance": {
+        "allowedProviders": [
+          "UiPathDefault"
+        ],
+        "blockedProviders": [
+          "AzureOpenAi"
+        ],
+        "blockedModels": [
+          "gpt-4o-enterprise"
+        ]
+      }
+    }
+  }
+}

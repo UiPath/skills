@@ -1,0 +1,75 @@
+task_id: skill-troubleshoot-agent-llm-insufficient-information
+description: >
+  Faithful replay of an Agents runtime failure where the LLM returns an
+  insufficient-information error because the prompt and caller payload do not
+  provide a required recipient. Covers prompt/input-schema remediation through
+  direct agent.json edits and the current refresh/validate/upload lifecycle.
+tags: [uipath-troubleshoot, agents, e2e, mode:diagnose]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 24
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../_shared/mock_template
+    - type: template_dir
+      path: data
+  mock_path_dirs:
+    - m
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My MailerAgent failed with trace ID cccccccccccccccccccccccccccccccc.
+  The local source is under process/MailerSolution.
+  Diagnose why it failed and recommend the agent.json and lifecycle changes. Do not run live debug or edit files.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the answer identifies insufficient information in the
+      prompt/payload and recommends direct agent.json changes plus current
+      lifecycle commands:
+
+        1.0  Same root cause and fix, including trace parsing, messages[0].content/contentTokens, inputSchema, a presented uip agent debug command, refresh/validate, and solution upload.
+        0.8  Same root cause; misses one lifecycle detail.
+        0.5  Adjacent prompt/input issue but vague.
+        0.2  Recognized an LLM failure only.
+        0.0  Misdiagnosed, blocked, or recommends deprecated uip agent run/input/publish commands.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who owns the failing MailerAgent.
+  goal: |
+    Let the agent complete the diagnosis and provide a remediation plan.
+  constraints:
+    - "If the agent asks where the source code is, say it is under process/MailerSolution."
+    - "If the agent asks whether it can edit files, say no."
+    - "If the agent asks whether it can run uip agent debug, say no and ask it to provide the command instead."
+    - "If the agent asks whether to expand investigation scope, answer yes."
+    - "Keep replies short and do not invent new facts."
+  max_turns: 6

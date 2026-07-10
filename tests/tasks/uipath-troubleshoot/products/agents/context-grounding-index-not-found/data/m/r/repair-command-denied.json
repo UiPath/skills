@@ -1,0 +1,6 @@
+{
+  "Result": "Failure",
+  "Code": "ScenarioRepairCommandDenied",
+  "Message": "This scenario is diagnose-only.",
+  "Instructions": "Do not run mutating repair, upload, publish, or deploy commands in this replay. Provide the exact commands for the user to run instead."
+}

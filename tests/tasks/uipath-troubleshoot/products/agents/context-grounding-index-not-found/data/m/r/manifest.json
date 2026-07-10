@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "_doc": "Agents context grounding index-not-found scenario. First-match-wins; specific lifecycle commands are included to keep command-shape coverage current.",
+  "rules": [
+    {
+      "match": "traces spans get aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "file": "trace-context-index-missing.json"
+    },
+    {
+      "match": "context-grounding list --folder-path Shared/Agents",
+      "file": "context-grounding-list-empty.json"
+    },
+    {
+      "match": "context-grounding create --index-name support-kb-prod --bucket-source support-kb-source --folder-path Shared/Agents",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "context-grounding ingest --index-name support-kb-prod --folder-path Shared/Agents",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "context-grounding retrieve --index-name support-kb-prod --folder-path Shared/Agents",
+      "file": "context-grounding-retrieve.json",
+      "exit_code": 1
+    },
+    {
+      "match": "agent refresh process/SupportSolution/SupportAgent",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "agent validate process/SupportSolution/SupportAgent",
+      "file": "agent-validate.json"
+    },
+    {
+      "match": "solution resources refresh",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "solution upload .",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "solution pack . ./dist --version 1.0.1",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "solution publish ./dist/SupportSolution.1.0.1.zip",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "solution deploy run --name SupportAgent-prod --package-name SupportSolution --package-version 1.0.1 --folder-name Agents --parent-folder-path Shared",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for exploratory read-only commands."
+  },
+  "expected_calls": [
+    {
+      "pattern": "traces spans get aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "min": 1,
+      "description": "Agent inspects trace spans for the failing run."
+    },
+    {
+      "pattern": "context-grounding list --folder-path Shared/Agents",
+      "min": 1,
+      "description": "Agent verifies whether the configured index exists in the deployment folder."
+    }
+  ]
+}

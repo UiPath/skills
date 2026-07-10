@@ -7,7 +7,7 @@ confidence: high
 ## Context
 
 What this looks like:
-- Agent job faults during an IS tool call; `uip agent run status <job-id> --output json` shows `Faulted`
+- A deployed agent job or `uip agent debug` run faults during an IS tool call
 - `uip traces spans get <trace-id> --output json` contains a `toolCall` span whose `ATTRIBUTES.error` contains:
   ```
   {"detail":"Invalid Element Instance Id provided.","message":"Failed to execute IS call to /search: HTTP Status: 404 - Not Found","status":400}
@@ -29,11 +29,13 @@ What to look for:
 
 ## Investigation
 
-1. Get the job trace ID:
+1. Get the spans for the failing run. If you already have a trace ID, use it directly. If you only have an Orchestrator job key, resolve it through traces:
 
    ```bash
-   uip agent run status <job-id> --output json \
-     --output-filter "traceId"
+   uip traces spans get <trace-id> --output json
+
+   # or
+   uip traces spans get --job-key <job-key> --folder-path "<folder-path>" --output json
    ```
 
 2. Pull the faulting `toolCall` span and note the span name:
@@ -73,13 +75,16 @@ What to look for:
 
   Note the new connection ID from the output. The span name from step 2 identifies `<ToolName>`. Update `properties.connection.id`, `properties.connection.name`, and `solutionProperties.resourceKey` in `<agent-path>/resources/<ToolName>/resource.json` to the new connection ID — see [`uipath-agents`](/uipath:uipath-agents) IS tool reference for the full resource shape.
 
-  Validate, refresh, and republish:
+  Refresh, validate, refresh solution resources, and upload from the solution root:
 
   ```bash
-  uip agent validate --output json
-  uip solution resource refresh --output json
-  uip solution publish --output json
+  uip agent refresh "<AGENT_PROJECT_DIR>" --output json
+  uip agent validate "<AGENT_PROJECT_DIR>" --output json
+  uip solution resources refresh --output json
+  uip solution upload . --output json
   ```
+
+  For a production Orchestrator deployment, use the full solution promotion template in [Project Lifecycle](../../../../../uipath-agents/references/lowcode/project-lifecycle.md#step-5--publish-to-studio-web-or-deploy-to-orchestrator): `uip solution pack . ./dist -v "<version>" --output json`, `uip solution publish ./dist/<SOLUTION_NAME>.<version>.zip --output json`, then `uip solution deploy run --name ... --package-name ... --package-version ... --folder-name ... --parent-folder-path ... --output json`.
 
 **If the connection doesn't exist in the target environment — create it first:**
 

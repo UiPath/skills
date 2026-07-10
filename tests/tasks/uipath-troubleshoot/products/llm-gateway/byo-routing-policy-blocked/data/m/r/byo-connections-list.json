@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "ByoConnectionsList",
+  "Data": [
+    {
+      "id": "byo-azure-agents",
+      "product": "agents",
+      "operationGroupName": "agenthub-llm-call",
+      "enabled": true,
+      "connectionId": "aaaaaaaa-0000-4000-8000-000000000001",
+      "connectionState": "Enabled",
+      "llmConfigurations": [
+        {
+          "llmName": "gpt-4o-enterprise",
+          "llmIdentifier": "gpt-4o-enterprise",
+          "connectorType": "AzureOpenAi",
+          "apiFlavor": "OpenAiChatCompletions"
+        }
+      ]
+    }
+  ]
+}

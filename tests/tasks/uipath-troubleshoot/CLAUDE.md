@@ -116,6 +116,8 @@ tests/tasks/uipath-troubleshoot/
 ├── products/
 │   ├── orchestrator/            <scenario>/ …
 │   ├── integration-service/     <scenario>/ …
+│   ├── agents/                  <scenario>/ …
+│   ├── llm-gateway/             <scenario>/ …
 │   └── maestro/                 <scenario>/ …
 ├── runtime-exceptions/          <scenario>/ …
 └── cross-system/                <scenario>/ …   # root cause spans ≥2 systems
@@ -128,6 +130,8 @@ tests/tasks/uipath-troubleshoot/
 | An activity package (Word, Excel, Python, Mail/Outlook, O365, GSuite, Web, CV, System, UI Automation, Classic, Database) | `activity-packages` | `word-` `excel-` `py-` `mail-` `o365-` `gsuite-` `web-` `cv-` `sys-` `uia-` `classic-` `db-` |
 | Orchestrator-only (job/robot/queue/licensing/logon state, no single activity) | `products/orchestrator` | — |
 | Integration Service connectors / connections | `products/integration-service` | — |
+| Agents runtime, agent definitions, agent capabilities | `products/agents` | — |
+| LLM Gateway routing, BYO LLM product configurations, AI Trust Layer policy effects on model routing | `products/llm-gateway` | — |
 | Maestro / BPMN instances | `products/maestro` | — |
 | Generic .NET workflow exception (null-ref, argument-null) not tied to a package | `runtime-exceptions` | — |
 | Root cause genuinely spans ≥2 systems (e.g. an Excel activity failing on an IS connection) | `cross-system` | — |
@@ -209,7 +213,7 @@ Must include `uipath-troubleshoot` AND at least one product/domain tag from this
 | `api-workflow` | API workflow artifacts |
 | `orchestrator` | Orchestrator control-plane failures — job/robot lifecycle (pending, faulted, killed, foreground-slot), logon/credentials, queues, licensing, machine state — diagnosed via `uip or`. Not tied to a single activity package. Add `rpa` too when an RPA process's execution is directly involved (e.g. foreground-slot, job-killed). |
 
-**Tag ↔ group agreement.** The domain tag MUST match the [group folder](#scenario-grouping): every `activity-packages/*` scenario carries `rpa`; `products/orchestrator` → `orchestrator`; `products/integration-service` → `integration-service`; `products/maestro` → `maestro`. `--group` adds the matching tag automatically.
+**Tag ↔ group agreement.** The domain tag MUST match the [group folder](#scenario-grouping): every `activity-packages/*` scenario carries `rpa`; `products/orchestrator` → `orchestrator`; `products/integration-service` → `integration-service`; `products/agents` → `agents`; `products/llm-gateway` → `llm-gateway`; `products/maestro` → `maestro`. `--group` adds the matching tag automatically.
 
 **Multiple tags are encouraged.** A scenario that touches more than one domain carries a tag for each — this is required for `cross-system/` scenarios (e.g. an Excel activity faulting on an IS connection gets `rpa` AND `integration-service`). Add the extra tags by hand after generation; `--group` only seeds the primary one.
 
