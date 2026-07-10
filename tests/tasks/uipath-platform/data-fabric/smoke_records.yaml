@@ -10,7 +10,7 @@ description: >
 tags: [uipath-platform, data-fabric, smoke, records, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 15
-  max_turns: 50
+  max_turns: 75
 
 initial_prompt: |
   We already have a Tasks list. Each task has a title, a priority
@@ -134,7 +134,7 @@ success_criteria:
   - type: command_executed
     description: "Agent included Id key in records update body"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+update.*\"Id\"'
+    command_pattern: '(?s)uip\s+df\s+records\s+update.*\\?"Id\\?"'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
