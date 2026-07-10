@@ -51,12 +51,15 @@ initial_prompt: |
   Important:
   - The `uip` CLI is already available in the environment.
   - Treat all hard stops after the SDD as pre-approved, including Phase 1
-    planning approval, Phase 2 publish-for-review, and Phase 5 publish. Choose
-    the continue / skip-publish path and keep going.
+    planning approval, Phase 2 publish-for-review, and Phase 5 debug. Choose
+    the continue / skip-publish path through Phase 2, then choose the Phase 5
+    "Run debug session" path once.
   - Do NOT call AskUserQuestion - it is not available in this harness.
   - If `uip maestro case registry pull` reports unauthenticated, empty, or
     missing cache, record that state and proceed without live registry data.
-  - Skip Phase 6 entirely. Do not run `uip maestro case debug` yourself.
+  - Before debug, run `uip solution resources refresh --solution-folder ExpenseReimbursement --output json`.
+  - Run `uip maestro case debug ExpenseReimbursement/ExpenseReimbursement --log-level debug --output json`.
+  - Skip Phase 6 entirely. Do not publish to Studio Web.
   - Finish with `uip maestro case validate ExpenseReimbursement/ExpenseReimbursement/caseplan.json --output json`
     passing on the resulting caseplan.json.
 
@@ -91,6 +94,24 @@ success_criteria:
     timeout: 120
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed solution resources before debugging the ExpenseReimbursement case"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+refresh\b(?=.*--solution-folder\s+"?ExpenseReimbursement"?)(?=.*--output\s+json)'
+    min_count: 1
+    require_success: true
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the ExpenseReimbursement case in Studio Web debug runtime"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+debug\b(?=.*"?ExpenseReimbursement/ExpenseReimbursement"?)(?=.*--output\s+json)'
+    min_count: 1
+    require_success: true
+    weight: 4.0
     pass_threshold: 1.0
 
 post_run:
