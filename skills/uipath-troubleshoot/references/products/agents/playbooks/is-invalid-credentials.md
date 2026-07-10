@@ -82,18 +82,16 @@ What to look for:
 
   Note the new connection ID. Update `properties.connection.id`, `properties.connection.name`, and `solutionProperties.resourceKey` in `<agent-path>/resources/<ToolName>/resource.json` to the new connection ID — see [`uipath-agents`](/uipath:uipath-agents) IS tool reference for the full resource shape.
 
-  Refresh, validate, refresh solution resources, and upload from the solution root:
+  Refresh and validate the agent:
 
   ```bash
   uip agent refresh "<AGENT_PROJECT_DIR>" --output json
   uip agent validate "<AGENT_PROJECT_DIR>" --output json
-  uip solution resources refresh --output json
-  uip solution upload . --output json
   ```
 
-  For production Orchestrator deployment, use the solution promotion guidance in [`uipath-agents`](/uipath:uipath-agents): pack, publish, and deploy the solution package.
+  After successful validation, report the result and ask whether the user wants to upload the corrected solution to Studio Web or publish/deploy it to Orchestrator. Do not perform any delivery action without explicit approval.
 
-  > Use this same rebind sequence for all resolution paths that create a new connection.
+  > Use this same rebind, refresh, validate, and approval sequence for all resolution paths that create a new connection.
 
 **If `Org/User secret` invalid — re-authenticate with updated credentials:**
 

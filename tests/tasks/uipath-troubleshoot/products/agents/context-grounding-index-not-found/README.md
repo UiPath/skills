@@ -19,9 +19,9 @@ then recommend the current lifecycle:
 - inspect the trace with `uip traces spans get`
 - inspect the agent-side context `resource.json`
 - recreate or relink the index with `uip context-grounding`
-- run `uip agent refresh` and `uip agent validate`
-- run `uip solution resources refresh` and `uip solution upload`
-- for production Orchestrator deployment, use solution pack/publish/deploy
+- after a resource edit, run `uip agent refresh` and `uip agent validate`
+- after successful validation, ask whether the user wants to upload or
+  publish/deploy the corrected solution
 
 It must not recommend deprecated agent context-management, standalone publish,
 or run-status commands.
@@ -34,4 +34,4 @@ or run-status commands.
 | `context-grounding list --folder-path Shared/Agents` | `context-grounding-list-empty.json` |
 | `context-grounding retrieve` | `context-grounding-retrieve.json` (not found) |
 | `agent validate` | `agent-validate.json` |
-| repair/upload/publish/deploy commands | `repair-command-denied.json` |
+| repair/upload/publish/deploy commands attempted without approval | `repair-command-denied.json` |

@@ -103,12 +103,11 @@ What can cause it:
 
 **Recent rule regression:** Check last-modified date in AgentBuilder or Flow → Guardrails. Restore the prior rule definition or disable the rule temporarily. Document the rollback and review rule scope with the guardrail policy team.
 
-Refresh, validate, and upload after any rule or agent change:
+Refresh and validate after any rule or agent change:
 
 ```bash
 uip agent refresh "<AGENT_PROJECT_DIR>" --output json
 uip agent validate "<AGENT_PROJECT_DIR>" --output json
-uip solution upload . --output json
 ```
 
-For production Orchestrator deployment, use the solution promotion guidance in [`uipath-agents`](/uipath:uipath-agents): pack, publish, and deploy the solution package.
+After successful validation, report the result and ask whether the user wants to upload the corrected solution to Studio Web or publish/deploy it to Orchestrator. Do not perform any delivery action without explicit approval.

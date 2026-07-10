@@ -15,7 +15,7 @@ What this looks like:
 - Full error prefix: `Unexpected Error Details: An unexpected error occurred during agent execution, please try again later or contact your Administrator. Error Details: ContextGroundingIndex not found`
 
 What can cause it:
-- The grounding index referenced in the agent's context `resource.json` was deleted from Context Grounding after the solution was uploaded or published
+- The grounding index referenced in the agent's context `resource.json` was deleted after the solution was uploaded or published
 - The solution was uploaded or published pointing to an index in a different folder or tenant than where it is deployed
 - The `indexName` or `folderPath` in `<AgentName>/resources/<ContextName>/resource.json` does not match any existing index
 - The index was never created — the solution was uploaded or published with a placeholder or stale reference
@@ -61,8 +61,6 @@ What to look for:
 
 ## Resolution
 
-After any authoring repair, refresh and validate the agent, then refresh and upload the solution as shown below. For production Orchestrator deployment, use the solution promotion guidance in [`uipath-agents`](/uipath:uipath-agents): pack, publish, and deploy the solution package.
-
 **If the index was deleted — re-create it:**
 
   ```bash
@@ -71,27 +69,20 @@ After any authoring repair, refresh and validate the agent, then refresh and upl
   uip context-grounding retrieve --index-name "<index-name>" --folder-path "<folder-path>" --output json
   ```
 
-  Ingestion is async: after `ingest`, poll `retrieve` until `last_ingestion_status` is `Successful` before searching — the index is not queryable earlier. If the solution package contains generated index resources, refresh and upload from the solution root so the current index and bucket keys are embedded:
-
-  ```bash
-  uip solution resources refresh --output json
-  uip solution upload . --output json
-  ```
+  Ingestion is async: after `ingest`, poll `retrieve` until `last_ingestion_status` is `Successful` before searching — the index is not queryable earlier. No agent project change or publication is needed when the existing resource reference already names this index and folder; the runtime resolves it directly.
 
 **If the index exists but is in a different folder — re-link the agent:**
 - Edit `<AgentName>/resources/<ContextName>/resource.json`; set `indexName` to the correct index name and `folderPath` to the literal folder path returned by resource discovery.
-- Refresh the agent, then refresh and upload from the solution root:
+- Refresh and validate the agent:
 
   ```bash
   uip agent refresh "<AGENT_PROJECT_DIR>" --output json
   uip agent validate "<AGENT_PROJECT_DIR>" --output json
-  uip solution resources refresh --output json
-  uip solution upload . --output json
   ```
 
 **If the index reference in `resource.json` is stale or wrong:**
 - Correct the matching context `resource.json` to use the existing index's `indexName` and `folderPath`; do not use the deprecated context-management commands.
-- Run the same refresh/validate/resource-refresh/upload sequence above.
+- Run the same refresh/validate sequence above.
 
 **If the index was never created:**
 
@@ -101,14 +92,14 @@ After any authoring repair, refresh and validate the agent, then refresh and upl
   uip context-grounding retrieve --index-name "<index-name>" --folder-path "<folder-path>" --output json
   ```
 
-  After ingestion is `Successful`, add `<AgentName>/resources/<ContextName>/resource.json` using the `contextType: "index"` shape from the Index Context reference, then refresh the agent and upload from the solution root:
+  After ingestion is `Successful`, add `<AgentName>/resources/<ContextName>/resource.json` using the `contextType: "index"` shape from the Index Context reference, then refresh and validate the agent:
 
   ```bash
   uip agent refresh "<AGENT_PROJECT_DIR>" --output json
   uip agent validate "<AGENT_PROJECT_DIR>" --output json
-  uip solution resources refresh --output json
-  uip solution upload . --output json
   ```
+
+After a successful validation of any agent project change, report the result and ask whether the user wants to upload the corrected solution to Studio Web or publish/deploy it to Orchestrator. Do not perform any upload, publish, or deployment action without explicit approval.
 
 **If none of the above — the index exists but the runtime cannot resolve it:**
 - Capture `uip traces spans get <trace-id> --output json` and escalate to the Agents team with the full span output and the index name

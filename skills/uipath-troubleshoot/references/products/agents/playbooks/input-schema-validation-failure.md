@@ -63,18 +63,17 @@ What to look for:
 
 ## Resolution
 
-After any agent definition change, refresh and validate the agent, then upload the solution as shown below. For production Orchestrator deployment, use the solution promotion guidance in [`uipath-agents`](/uipath:uipath-agents): pack, publish, and deploy the solution package.
-
 **Variant A — fix `agent.json`:**
 - Open `agent.json` and locate the field named in the error (e.g., `resources[0].context.settings.folderPathPrefix`)
 - Correct the value to match the expected type (the error states `Input should be an object` / `Input should be a valid string` etc.)
-- Refresh and validate the agent, then upload from the solution root:
+- Refresh and validate the agent:
 
   ```bash
   uip agent refresh "<AGENT_PROJECT_DIR>" --output json
   uip agent validate "<AGENT_PROJECT_DIR>" --output json
-  uip solution upload . --output json
   ```
+
+- After successful validation, report the result and ask whether the user wants to upload the corrected solution to Studio Web or publish/deploy it to Orchestrator. Do not perform any delivery action without explicit approval.
 
 **Variant B — fix the input payload:**
 - If a required field is missing: add it to the invocation call or the `uip agent debug --inputs` payload used for local reproduction
@@ -86,8 +85,9 @@ After any agent definition change, refresh and validate the agent, then upload t
   ```bash
   uip agent refresh "<AGENT_PROJECT_DIR>" --output json
   uip agent validate "<AGENT_PROJECT_DIR>" --output json
-  uip solution upload . --output json
   ```
+
+  After successful validation, report the result and ask whether the user wants to upload or publish/deploy the corrected solution. Do not perform any delivery action without explicit approval.
 
 - Re-invoke with the corrected payload:
 
@@ -95,3 +95,5 @@ After any agent definition change, refresh and validate the agent, then upload t
   uip agent debug "<AGENT_PROJECT_DIR>" \
     --inputs '{"<param-name>": "<value>"}' --output json
   ```
+
+  Run `uip agent debug` only after explicit user approval because it uploads and executes the agent. A payload-only correction does not require publishing or deploying the agent project.

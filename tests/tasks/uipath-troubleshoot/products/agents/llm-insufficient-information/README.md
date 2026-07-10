@@ -17,7 +17,8 @@ provide a recipient.
 
 The expected fix is to edit `agent.json` directly: update
 `messages[0].content`, rebuild `contentTokens`, add an input field such as
-`recipient` when programmatic calls need it, then run refresh/validate and
-solution upload. Local reproduction should be presented as a `uip agent debug`
-command and run only after explicit user approval, because debug uploads and
-executes the agent.
+`recipient` when programmatic calls need it, then run refresh/validate. After
+validation, the agent should ask whether the user wants to upload or
+publish/deploy the correction. Local reproduction should be presented as a
+`uip agent debug` command and run only after explicit user approval, because
+debug uploads and executes the agent.

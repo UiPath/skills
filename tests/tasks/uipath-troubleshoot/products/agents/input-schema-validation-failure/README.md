@@ -16,7 +16,8 @@ running a live debug session during diagnosis.
 
 The agent should diagnose a bad caller payload, show a corrected `uip agent
 debug --inputs` command, and only suggest editing `agent.json` plus
-refresh/validate/upload when the schema itself needs changing.
+refresh/validate when the schema itself needs changing. After validation, it
+should ask whether the user wants to upload or publish/deploy the correction.
 
 It must not use deprecated agent run, input-management, or standalone publish
 commands.

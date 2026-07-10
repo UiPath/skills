@@ -27,23 +27,18 @@ Immediate fix:
 
 2. If `customerEmail` should not be mandatory, edit
    `process/IntakeSolution/IntakeAgent/agent.json`: update
-   `inputSchema.required` and, if needed, `inputSchema.properties`. Then refresh,
-   validate, and upload the solution:
+   `inputSchema.required` and, if needed, `inputSchema.properties`. Then refresh
+   and validate the agent:
 
    ```bash
    uip agent refresh "process/IntakeSolution/IntakeAgent" --output json
    uip agent validate "process/IntakeSolution/IntakeAgent" --output json
-   uip solution upload . --output json
    ```
 
-3. For production Orchestrator deployment after a schema change, pack, publish,
-   and deploy the solution package:
-
-   ```bash
-   uip solution pack . ./dist --version "1.0.1" --output json
-   uip solution publish ./dist/IntakeSolution.1.0.1.zip --output json
-   uip solution deploy run --name IntakeAgent-prod --package-name IntakeSolution --package-version "1.0.1" --folder-name Agents --parent-folder-path Shared --output json
-   ```
+3. After successful validation, report the result and ask whether the user
+   wants to upload the corrected solution to Studio Web or publish/deploy it to
+   Orchestrator. Do not perform any delivery action without explicit approval.
+   A caller-payload-only correction requires no project publication.
 
 Must NOT attribute to: LLM prompt insufficiency, Context Grounding, or an
 Orchestrator job failure. Must NOT use deprecated agent run,

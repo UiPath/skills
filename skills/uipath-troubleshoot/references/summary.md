@@ -44,7 +44,7 @@ CLI: `uip is --help`
 
 Low-code agents built with `uip agent`. Issues here involve LLM call failures, context grounding index misconfigurations, and input schema validation errors. Primary investigation surface: `uip traces spans get <traceId> --output json` — spans carry the full error text including error codes and field-level detail.
 
-CLI: `uip traces spans get`, `uip context-grounding`, `uip agent refresh`, `uip agent validate`, `uip solution resources refresh`, `uip solution upload`, `uip solution publish`, `uip agent debug` (only with explicit user approval)
+CLI: `uip traces spans get`, `uip context-grounding`, `uip agent refresh`, `uip agent validate`, `uip agent debug` (only with explicit user approval because it uploads and executes the agent)
 
 - [products/agents/summary.md](./products/agents/summary.md) — All playbooks for Agents issues
 

@@ -33,23 +33,20 @@ Immediate fix:
    `indexName` and `folderPath` to the existing index. Do not use deprecated
    context-management commands.
 
-3. Refresh and validate the agent, refresh solution resources, then upload the
-   solution:
+3. If relinking changed the agent resource, refresh and validate the agent:
 
    ```bash
    uip agent refresh "process/SupportSolution/SupportAgent" --output json
    uip agent validate "process/SupportSolution/SupportAgent" --output json
-   uip solution resources refresh --output json
-   uip solution upload . --output json
    ```
 
-4. For production Orchestrator deployment, promote the solution package:
+   Recreating the missing index under the existing name and folder does not
+   require an agent project publication.
 
-   ```bash
-   uip solution pack . ./dist --version "1.0.1" --output json
-   uip solution publish ./dist/SupportSolution.1.0.1.zip --output json
-   uip solution deploy run --name SupportAgent-prod --package-name SupportSolution --package-version "1.0.1" --folder-name Agents --parent-folder-path Shared --output json
-   ```
+4. After a successful validation of any agent project change, report the
+   result and ask whether the user wants to upload the corrected solution to
+   Studio Web or publish/deploy it to Orchestrator. Do not perform any delivery
+   action without explicit approval.
 
 Must NOT attribute to: LLM model failure, prompt design, or a generic platform
 outage. The failing span and missing index list identify a Context Grounding

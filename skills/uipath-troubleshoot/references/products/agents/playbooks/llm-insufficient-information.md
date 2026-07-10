@@ -55,17 +55,16 @@ What to look for:
 
 ## Resolution
 
-After any agent definition change, refresh and validate the agent, then upload the solution as shown below. For production Orchestrator deployment, use the solution promotion guidance in [`uipath-agents`](/uipath:uipath-agents): pack, publish, and deploy the solution package.
-
 **If the system prompt is too vague — improve it:**
 - Edit `agent.json` → `messages[0].content` and rebuild its `contentTokens`: add explicit instructions covering the missing context named in the `detail` field; add constraints or clarification prompts (e.g., "If the user does not specify X, ask for clarification before proceeding")
-- Refresh and validate the agent, then upload from the solution root:
+- Refresh and validate the agent:
 
   ```bash
   uip agent refresh "<AGENT_PROJECT_DIR>" --output json
   uip agent validate "<AGENT_PROJECT_DIR>" --output json
-  uip solution upload . --output json
   ```
+
+- After successful validation, report the result and ask whether the user wants to upload the corrected solution to Studio Web or publish/deploy it to Orchestrator. Do not perform any delivery action without explicit approval.
 
 **If a required input is missing from the caller's payload:**
 - Inspect the declared input schema: open `agent.json` locally, check `inputSchema`
@@ -75,10 +74,12 @@ After any agent definition change, refresh and validate the agent, then upload t
   ```bash
   uip agent refresh "<AGENT_PROJECT_DIR>" --output json
   uip agent validate "<AGENT_PROJECT_DIR>" --output json
-  uip solution upload . --output json
   ```
+
+  After successful validation, report the result and ask whether the user wants to upload or publish/deploy the corrected solution. Do not perform any delivery action without explicit approval.
 
 **If the agent is invoked with a sparse programmatic payload:**
 - Ensure all required `inputSchema` fields are populated before calling the deployed agent/API, or before local reproduction with `uip agent debug <AGENT_PROJECT_DIR> --inputs '<json>' --output json`
 - Run `uip agent debug` only after explicit user approval because it uploads the enclosing solution and executes the agent; otherwise provide the command for the user to run
 - Pass missing context as inline input arguments rather than relying on the LLM to infer them
+- A payload-only correction does not require publishing or deploying the agent project

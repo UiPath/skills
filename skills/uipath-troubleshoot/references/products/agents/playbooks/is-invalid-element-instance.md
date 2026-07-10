@@ -75,16 +75,14 @@ What to look for:
 
   Note the new connection ID from the output. The span name from step 2 identifies `<ToolName>`. Update `properties.connection.id`, `properties.connection.name`, and `solutionProperties.resourceKey` in `<agent-path>/resources/<ToolName>/resource.json` to the new connection ID — see [`uipath-agents`](/uipath:uipath-agents) IS tool reference for the full resource shape.
 
-  Refresh, validate, refresh solution resources, and upload from the solution root:
+  Refresh and validate the agent:
 
   ```bash
   uip agent refresh "<AGENT_PROJECT_DIR>" --output json
   uip agent validate "<AGENT_PROJECT_DIR>" --output json
-  uip solution resources refresh --output json
-  uip solution upload . --output json
   ```
 
-  For production Orchestrator deployment, use the solution promotion guidance in [`uipath-agents`](/uipath:uipath-agents): pack, publish, and deploy the solution package.
+  After successful validation, report the result and ask whether the user wants to upload the corrected solution to Studio Web or publish/deploy it to Orchestrator. Do not perform any delivery action without explicit approval.
 
 **If the connection doesn't exist in the target environment — create it first:**
 
@@ -94,7 +92,7 @@ What to look for:
   uip is connections create <connector-key> --output json
   ```
 
-  Then update the `resource.json` and republish using the same sequence above.
+  Then update the `resource.json`, refresh, and validate using the same sequence above. After validation, ask whether the user wants to upload or publish/deploy the corrected solution.
 
 **If the connection appears healthy but the 404 persists — escalate to Integration Service team:**
 

@@ -26,30 +26,24 @@ Immediate fix:
    - add `inputSchema.properties.recipient` and add `recipient` to
      `inputSchema.required` if every programmatic call must include it
 
-2. Reproduce locally with a complete payload only after explicit user approval
-   because debug uploads and executes the agent; otherwise present this command
-   to the user:
+2. Refresh and validate the agent:
+
+   ```bash
+   uip agent refresh "process/MailerSolution/MailerAgent" --output json
+   uip agent validate "process/MailerSolution/MailerAgent" --output json
+   ```
+
+3. After successful validation, report the result. Ask for explicit approval
+   before reproducing locally because debug uploads and executes the agent;
+   otherwise present this command to the user:
 
    ```bash
    uip agent debug "process/MailerSolution/MailerAgent" --inputs '{"task":"send update","recipient":"customer@example.com"}' --output json
    ```
 
-3. Refresh, validate, and upload the solution:
-
-   ```bash
-   uip agent refresh "process/MailerSolution/MailerAgent" --output json
-   uip agent validate "process/MailerSolution/MailerAgent" --output json
-   uip solution upload . --output json
-   ```
-
-4. For production Orchestrator deployment, pack, publish, and deploy the
-   solution package:
-
-   ```bash
-   uip solution pack . ./dist --version "1.0.1" --output json
-   uip solution publish ./dist/MailerSolution.1.0.1.zip --output json
-   uip solution deploy run --name MailerAgent-prod --package-name MailerSolution --package-version "1.0.1" --folder-name Agents --parent-folder-path Shared --output json
-   ```
+4. Ask whether the user
+   wants to upload the corrected solution to Studio Web or publish/deploy it to
+   Orchestrator. Do not perform any delivery action without explicit approval.
 
 Must NOT attribute to: Context Grounding, input JSON syntax, or a missing
 deployment. Must NOT use deprecated agent run, input-management, or standalone
