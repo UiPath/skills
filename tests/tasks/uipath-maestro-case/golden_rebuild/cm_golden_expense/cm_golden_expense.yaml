@@ -131,6 +131,54 @@ success_criteria:
     weight: 5.0
     pass_threshold: 1.0
 
+  # Semantic complement to the deterministic graders (which remain the primary
+  # gates): agent-minted vars.<id> names make dataflow SOURCE-correctness and
+  # gate POLARITY mechanically uncheckable - a judge reading SDD and caseplan
+  # side by side can check both. Requires judge auth (LLMGW_* / ANTHROPIC_API_KEY)
+  # at run time; the PR smoke gate never runs this task (manual tag).
+  - type: llm_judge
+    description: "caseplan semantically implements the SDD's dataflow and gate logic (wiring sources, gate polarity, condition equivalence)"
+    files:
+      - sdd.md
+      - CMGoldenExpense/CMGoldenExpense/caseplan.json
+    max_file_chars: 150000
+    include_agent_output: false
+    prompt: |
+      You are reviewing a UiPath Case Management caseplan.json built from the
+      attached SDD (sdd.md). Deterministic checks have ALREADY verified
+      structure (stages/tasks/types/transitions/case exits), live resource
+      resolution (IDs, connections, no placeholder stubs), input FIELD NAMES,
+      runtime flags, and SLA shape. Do NOT re-judge those.
+
+      Judge ONLY the semantic equivalence the mechanical checks cannot see:
+
+      1. DATAFLOW SOURCES - for each task input the SDD binds (per-task
+         Inputs tables), the caseplan wires it from the SDD-specified source.
+         The build lowers `vars.$xref('Stage','Task','out')` sugar to direct
+         `vars.<id>` references with build-minted ids - that lowering is
+         CORRECT as long as the referenced id is the output of the SDD's
+         source task. Flag: an input bound to the wrong task's output, a
+         hardcoded literal where the SDD requires a cross-task reference, or
+         a dropped binding.
+      2. GATE POLARITY - decision gates fire in the SDD's direction: Stage 2's
+         reject lane exits on rejection (not approval); the Stage 4 rework
+         lane returns to origin on approve and case-exits on reject. An
+         inverted or tautological (`=js:true`) gate is a major flaw.
+      3. CONDITION EQUIVALENCE - each stage/task entry+exit condition matches
+         the SDD's WHEN/IF rows semantically (rule kind + referenced
+         stage/task + IF expression meaning).
+      4. DATAFLOW COMPLETENESS - no task consumes a value that no upstream
+         task or the trigger produces; the trigger's literal seed payload
+         reaches Task 1.1.
+
+      Score 1.0 if dataflow, polarity, and conditions are semantically
+      faithful with no major flaw; 0.5 for minor gaps (one recoverable
+      binding mismatch, a cosmetic condition difference); 0.0 for any
+      inverted gate, wrong-source wiring, or broken dataflow chain.
+    weight: 2.0
+    # 0.7, not 1.0: LLM judges rarely return a perfect 1.0 (phase_0 convention).
+    pass_threshold: 0.7
+
   - type: command_not_executed
     description: "Agent did not run case debug or publish (case suspends; publish is out of scope)"
     tool_name: "Bash"
