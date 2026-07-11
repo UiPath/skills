@@ -24,8 +24,8 @@ install:  ## Install coder-eval into local .venv (requires Python 3.13+; UV_INDE
 	@echo ""
 	@echo "See https://github.com/UiPath/coder_eval for environment setup (.env, API keys, etc.)"
 
-all:  ## Run all tests in a single run (uses the full default budget; excludes manual-tagged tasks)
-	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml --exclude-tags manual -j $(TASK_PARALLELISM) -v
+all:  ## Run all tests in a single run (uses the full default budget)
+	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml -j $(TASK_PARALLELISM) -v
 
 smoke:  ## Run all smoke tests (Linux, docker)
 	$(CODER_EVAL) run $(TASKS) -e experiments/smoke.yaml --tags smoke -j $(TASK_PARALLELISM) -v
@@ -33,8 +33,8 @@ smoke:  ## Run all smoke tests (Linux, docker)
 smoke_rpa:  ## Run all Windows RPA smoke tests (tempdir)
 	$(CODER_EVAL) run $(TASKS) -e experiments/smoke-windows.yaml --tags smoke -j $(TASK_PARALLELISM) -v
 
-e2e:  ## Run all end-to-end tests (excludes manual-tagged tasks — run those via `make tags TAGS=manual`)
-	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml --tags e2e --exclude-tags manual -j $(TASK_PARALLELISM) -v
+e2e:  ## Run all end-to-end tests
+	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml --tags e2e -j $(TASK_PARALLELISM) -v
 
 tags:  ## Run tests matching one or more tags: make tags TAGS="connector-feature" [EXPERIMENT=experiments/default.yaml]
 	@if [ -z "$(TAGS)" ]; then echo "Usage: make tags TAGS=\"tag1 tag2\" [EXPERIMENT=experiments/<file>.yaml]"; exit 2; fi
@@ -49,7 +49,7 @@ sys.exit(0 if matches else 3)'
 	$(CODER_EVAL) run $(TASKS) -e $(or $(EXPERIMENT),experiments/default.yaml) $(foreach t,$(TAGS),--tags $(t)) -j $(TASK_PARALLELISM) -v
 
 # Run all tests for a specific skill: make test-uipath-maestro-flow
-test-%:  ## Run all tests for a specific skill (excludes manual-tagged tasks)
-	$(CODER_EVAL) run $(shell find tasks/$* -name '*.yaml' -type f) -e experiments/default.yaml --exclude-tags manual -j $(TASK_PARALLELISM) -v
+test-%:  ## Run all tests for a specific skill
+	$(CODER_EVAL) run $(shell find tasks/$* -name '*.yaml' -type f) -e experiments/default.yaml -j $(TASK_PARALLELISM) -v
 
 .DEFAULT_GOAL := help
