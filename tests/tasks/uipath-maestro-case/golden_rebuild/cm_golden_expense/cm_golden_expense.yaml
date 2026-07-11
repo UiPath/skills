@@ -21,13 +21,24 @@ description: >
 tags: [uipath-maestro-case, e2e, manual, mode:build, lifecycle:generate, shape:multi-node, connector, resource, feature:approval-gate, feature:escalation]
 max_iterations: 1
 
-# Sized from a measured dry run: the agent stream (one harness "turn") burned
-# 183 SDK turns / 45 min on discovery+resolution alone (~15 s/turn: cache-heavy
-# skill reads + API throttling). Full pipeline needs ~400-600 SDK turns.
+# Sized from measured runs: a healthy full build finishes in ~60 min, but a
+# mid-stream API-limit death (32k output-token cap, context overflow) makes
+# the harness retry with a FRESH session (no resume) - task_timeout must
+# absorb one full cold restart. Launch with CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000
+# so a caseplan-sized extended-thinking response is not fatal (both failure
+# modes observed 2026-07-10).
 run_limits:
-  task_timeout: 9600
+  task_timeout: 14400
   max_turns: 600
   turn_timeout: 9000
+
+# The case skill delegates heavy legs (reference reading, sibling-resource
+# builds) to sub-agents; without Agent the whole build runs inline in one
+# context and dies to "Prompt is too long" (observed 2026-07-10). Extends the
+# experiment's allowed_tools - keep the base list in sync with
+# experiments/default.yaml.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
 
 sandbox:
   template_sources:
