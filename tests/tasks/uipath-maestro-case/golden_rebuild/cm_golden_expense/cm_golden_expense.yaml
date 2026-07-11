@@ -18,7 +18,7 @@ description: >
   reinstall re-mints every ID and renames the folder - re-sweep
   fixtures/sdd.md (the ONE source both the agent and the bindings grader
   read; the grader parses its expectations from that file at grade time).
-tags: [uipath-maestro-case, e2e, manual, mode:build, lifecycle:generate, shape:multi-node, connector, resource, feature:approval-gate, feature:escalation]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, resource, feature:approval-gate, feature:escalation]
 max_iterations: 1
 
 # Sized from measured runs: a healthy full build finishes in ~60 min, but a
