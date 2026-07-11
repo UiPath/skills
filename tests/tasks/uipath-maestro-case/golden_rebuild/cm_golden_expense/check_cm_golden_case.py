@@ -234,6 +234,44 @@ def main():
         _fail("case-level metadata.slaRules missing (1h SLA with escalations)")
     if "song.zhao@uipath.com" not in json.dumps(sla_rules, default=str).lower():
         _fail("SLA escalation notify recipient lost")
+    sla0 = sla_rules[0] if isinstance(sla_rules, list) else sla_rules
+    if not (sla0.get("count") == 1 and sla0.get("unit") == "h"):
+        _fail(
+            "SLA duration lost: expected count=1 unit='h' (1h case SLA); got "
+            f"count={sla0.get('count')!r} unit={sla0.get('unit')!r}"
+        )
+    escalations = sla0.get("escalationRule") or []
+    esc_types = {((e.get("triggerInfo") or {}).get("type")) for e in escalations}
+    if "at-risk" not in esc_types or not esc_types & {"breached", "sla-breached"}:
+        _fail(f"SLA escalations lost: need at-risk + (sla-)breached; got {sorted(esc_types)}")
+    if not any(
+        (e.get("triggerInfo") or {}).get("atRiskPercentage") == 70 for e in escalations
+    ):
+        _fail("SLA at-risk threshold lost: no escalation with atRiskPercentage=70")
+
+    # -- runtime contracts (functional-build facts, run4-oracle-verified) --------
+    # Direct task-output passing is what makes the lowered vars.<id> gates
+    # resolve at runtime; intsvcActivityConfig v2 is the connector-task contract.
+    if (plan.get("metadata") or {}).get("caseDirectlyPassTaskOutputs") is not True:
+        _fail("metadata.caseDirectlyPassTaskOutputs must be true (SDD: task-output passing = Direct)")
+    if (plan.get("metadata") or {}).get("intsvcActivityConfig") != "v2":
+        _fail("metadata.intsvcActivityConfig must be 'v2'")
+
+    # -- dataflow wiring: SDD-pinned input field names survive -------------------
+    # Field NAMES are SDD contract (bindings vary per build - agent-minted var
+    # ids). A build that drops the input wiring entirely still passes every
+    # structural check above; this is what makes it functional.
+    for field, what in [
+        ("expenserequest", "Task 1.1 literal seed input"),
+        ("processexpenserequestin", "Task 1.2 agentic-process input"),
+        ("rpaexpenserequestin", "Task 1.3 RPA input"),
+        ("apiinput1", "Task 2.2 API-workflow input"),
+        ("comment", "HITL action Comment field"),
+    ]:
+        if f'"{field}"' not in raw:
+            _fail(f"dataflow wiring lost: input field {field!r} ({what}) not in caseplan")
+    if "json.stringify" not in raw:
+        _fail("dataflow wiring lost: RPA input's =js:JSON.stringify(...) binding missing")
 
     # -- content fidelity ---------------------------------------------------------
     for needle, what in [

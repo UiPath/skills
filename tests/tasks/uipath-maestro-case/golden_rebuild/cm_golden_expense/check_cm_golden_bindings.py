@@ -129,9 +129,11 @@ def load_artifacts() -> tuple[dict, str, str, str]:
     parts = [caseplan_text]
     project_dir = os.path.dirname(caseplan_path)
     bindings_path = os.path.join(project_dir, "bindings_v2.json")
+    bindings_text = None
     if os.path.exists(bindings_path):
         with open(bindings_path, encoding="utf-8") as f:
-            parts.append(f.read().lower())
+            bindings_text = f.read().lower()
+        parts.append(bindings_text)
     solution_root = os.path.dirname(project_dir)
     for manifest in glob.glob(
         os.path.join(solution_root, "resources", "**", "*.json"), recursive=True
@@ -141,12 +143,12 @@ def load_artifacts() -> tuple[dict, str, str, str]:
                 parts.append(f.read().lower())
         except OSError:
             continue
-    return plan, caseplan_text, "\n".join(parts), solution_root
+    return plan, caseplan_text, "\n".join(parts), solution_root, bindings_text
 
 
 def main():
     expected = parse_fixture()
-    plan, caseplan_text, combined, solution_root = load_artifacts()
+    plan, caseplan_text, combined, solution_root, bindings_text = load_artifacts()
 
     # -- real identities present -------------------------------------------
     missing = [
@@ -220,6 +222,27 @@ def main():
             f"no {app_name}.json manifest under resources/ - solution "
             "resources refresh did not import the app (a stub is acceptable)"
         )
+
+    # -- bindings_v2.json: refresh/deploy binding manifest ------------------------
+    # The functional oracle carries one entry per external resource plus both
+    # connection bindings; refresh and deploy resolve through this file.
+    if bindings_text is None:
+        _fail("bindings_v2.json missing next to caseplan.json")
+    try:
+        bindings_doc = json.loads(bindings_text)
+    except ValueError:
+        _fail("bindings_v2.json is not valid JSON")
+    if not (bindings_doc.get("resources") or []):
+        _fail("bindings_v2.json has no resources[] entries")
+    for kind, ids in (
+        ("connection ID", expected["connection_ids"]),
+    ):
+        absent = sorted(g for g in ids if g not in bindings_text)
+        if absent:
+            _fail(f"{kind}(s) not found in bindings_v2.json: {absent}")
+    app_key = f"{expected['folder']}.{app_name}".lower()
+    if app_key not in bindings_text:
+        _fail(f"bindings_v2.json missing app resourceKey {app_key!r}")
 
     # -- connector tasks: serviceType + connectorKey -------------------------------
     for ttype, svc, key in (
