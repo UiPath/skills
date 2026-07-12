@@ -388,7 +388,7 @@ When the primary product is Agents or Coded Apps and the PDD is missing required
 
 4. Re-run product selection with the fallback as primary
 
-Do not auto-fallback. The user must choose explicitly.
+Do not auto-fallback to a different product — the user must choose product substitution explicitly. But never stall on the question: in autonomous mode, when no answer is available (`AskUserQuestion` unavailable, denied, errors), proceed with the recommended product (option 1), fill each listed gap with `[DEFAULT]` or `[SME REVIEW]`, and record the choice in `## Decisions Made`.
 
 ## Presenting the Recommendation
 

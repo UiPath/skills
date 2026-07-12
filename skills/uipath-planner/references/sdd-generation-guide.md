@@ -44,13 +44,15 @@ Precedence: an explicit user-stated delivery model or a PDD signal **wins over**
 
 **Skip Question 1 symmetrically** when the request already states the execution mode ("autonomous", "don't pause for checkpoints", "interactive review"). When both questions are resolved from context, skip the `AskUserQuestion` call entirely and record both values.
 
+**Rule G-9 — a missing user answer never blocks SDD output.** If `AskUserQuestion` is unavailable, is denied, errors, or no answer arrives, do not stall and do not end the run without an SDD: take the recommended option (option 1 — Autonomous here), resolve the delivery model by precedence (user statement → PDD signal → CLI preflight → `unspecified`, assumed cloud with an `[SME REVIEW]` row), record both values, and continue. G-9 applies to EVERY `AskUserQuestion` in Phase D: default to the recommended option, mark affected items `[SME REVIEW]`, and keep generating.
+
 Record both choices — they go into the SDD's `## Planner Handoff` header (Phase 3 Step 2) and propagate to Lane A (task derivation): execution mode drives task review behavior; delivery model is passed to specialists as a platform constraint.
 
 In **Autonomous** mode:
 - Skip Phase 1 summary presentation (generate internally, do not wait for confirmation) — the `## Recommended Scope` block still persists into the SDD (Phase 3 Step 2 item 3)
 - Skip Phase 2 architecture review (generate, do not wait)
-- Still ask the SME Review resolution question before writing (Step 1.5) — this is a hard blocker
-- Still ask the Agent/Coded App gap-filling question if triggered — this is a hard blocker
+- Still ask the SME Review resolution question before finalizing (Step 1.5) — it patches the already-on-disk SDD; if no answer arrives, apply Rule G-9 (keep the `[SME REVIEW]` markers and proceed)
+- Still ask the Agent/Coded App gap-filling question if triggered; if no answer arrives, apply Rule G-9 (proceed with the recommended product, gaps filled as `[DEFAULT]` / `[SME REVIEW]`)
 - **Insert a "Decisions Made" block** at the top of the SDD (immediately after the Planner Handoff header and before any other section) listing the five highest-leverage architectural picks with one-sentence reasons. See Phase 3 Step 2 item 3 for the exact block format. Do **NOT** use `AskUserQuestion` — the picks are decided autonomously; the block makes them scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document.
 
 In **Interactive** mode:
@@ -214,6 +216,8 @@ Load from the [Template Mapping table in the Product Selection Guide](product-se
 - **Single-product scope:** load the one template matching the Level 1 primary.
 - **Solution scope:** load the solution overview structure PLUS one template per project in the Level 2.5 unified project list. RPA Master Projects share one RPA template file across their sub-projects; unrelated RPA projects each get their own file.
 
+Run the Step 2 item 6 re-run check now (does `<PROCESS_NAME_KEBAB>-sdd.md` already exist from a PREVIOUS run?), then immediately seed the SDD file(s) on disk with the loaded template's full skeleton — see the skeleton-first rule at the top of Phase 3. Do not defer the first write to Phase 3, and do not let a pending question delay it.
+
 ### Step 2: Generate the Architectural Core
 
 The architectural core sections differ per template. For each product, generate these sections in Phase 2:
@@ -304,7 +308,7 @@ Present the architectural core to the user. Wait for approval or adjustments.
 
 > **Progress:** Mark "Generate architecture (Phase 2)" as `completed`. Mark "Generate full SDD (Phase 3)" as `in_progress`.
 
-> **Write early, append incrementally — the file on disk is the deliverable.** Do NOT hold the entire SDD in context and write only at the very end. As soon as Phase 2 has produced the architectural core, write a first valid file: the header + `## Planner Handoff` header **and** the `<!-- planner-handoff:v1 -->` marker + `## Decisions Made` block (autonomous) + the Phase 1 / Phase 2 sections you already have. Then append the remaining Phase 3 sections to that file with follow-up `Edit`/`Write` calls. Rationale: a long autonomous turn can hit the per-turn watchdog mid-generation — an incrementally-written file leaves a gradeable, useful SDD on disk instead of nothing. The Planner Handoff header + marker MUST be in this first write so detection (and grading) works even on a partial file. Step 1.5 (SME resolution) and the Step 2 superset check still run; they patch and verify the already-on-disk file rather than gating the first write.
+> **Skeleton first, fill in place — the file on disk is the deliverable.** Do NOT hold the entire SDD in context and write only at the very end, and do NOT let any pending user question delay the first write. As soon as Phase 2 Step 1 has loaded the template, write the SDD file as the FULL template skeleton: every template H2/H3 heading verbatim, the `## Planner Handoff` header **and** the `<!-- planner-handoff:v1 -->` marker with all 7 fields filled (Step 0 already resolved them), the `## Decisions Made` block (autonomous mode) and `## Recommended Scope` block filled from Phase 1. Then fill each remaining section in place with `Edit` calls as Phase 2/3 content is produced. Rationale: a long autonomous turn can hit the per-turn watchdog mid-generation — a skeleton-seeded file leaves a complete-structured, gradeable SDD on disk instead of nothing, and makes the Step 2 template-superset check pass by construction. Before the Step 2 item 9 summary, sweep the file for leftover template artifacts (`<PLACEHOLDER>` tokens, template instruction comments) and replace each with real content, a `[DEFAULT]`, or an `[SME REVIEW]` row — never ship raw placeholders. Step 1.5 (SME resolution) and the Step 2 superset check patch and verify the already-on-disk file — they never gate the first write.
 
 ### Step 1: Generate Remaining Sections
 
@@ -338,7 +342,7 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 
 > **Progress:** Mark "Generate full SDD (Phase 3)" as `completed`. Mark "Resolve SME review items" as `in_progress`.
 
-Before writing the SDD, collect all `[SME REVIEW]` items. If there are any:
+Before finalizing the SDD, collect all `[SME REVIEW]` items — the skeleton + generated content is already on disk (Phase 3 preamble); this step patches that file and never gates the first write. If there are any:
 
 > **Batching rule — `AskUserQuestion` 4-option cap.** Each `AskUserQuestion` question accepts at most 4 options. If there are 1-4 items, send one question. If there are 5-8 items, send a single `AskUserQuestion` call with **two questions** (each ≤4 options), grouped by SDD section. If there are more than 8 items, send one `AskUserQuestion` call per batch of up to 8 (two questions each), waiting for answers between batches. **Do not flatten >4 items into one question** — the call will fail validation.
 
@@ -356,7 +360,7 @@ Before writing the SDD, collect all `[SME REVIEW]` items. If there are any:
 4. Any items the user explicitly skips remain as `[SME REVIEW]` in the final file (should be rare).
 5. If there are zero `[SME REVIEW]` items, skip this step entirely.
 
-This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker to producing a complete SDD.
+This step runs in BOTH Autonomous and Interactive modes. If `AskUserQuestion` is unavailable, errors, or no answer arrives, apply Rule G-9: keep every item `[SME REVIEW]`, emit the `## Action Required` block (Step 2 item 4), and proceed to Step 2 — an SDD with marked gaps beats no SDD.
 
 ### Step 2: Write the SDD File(s)
 
