@@ -115,7 +115,7 @@ Full procedure: [non-pdd-lane-guide.md](references/non-pdd-lane-guide.md).
 
 ## Output contract — self-check before ending the turn
 
-The deliverable is the file on disk, not the conversation. Before emitting the final summary, check the artifact for each item below and patch any miss in place.
+The deliverable is the file on disk, not the conversation. Before emitting the final summary, check the artifact for each item below and patch any miss in place. One bounded pass: grep-level checks plus targeted `Edit` fixes — never rewrite the file wholesale, and never loop re-verifying.
 
 **Phase D — the SDD file MUST contain:**
 

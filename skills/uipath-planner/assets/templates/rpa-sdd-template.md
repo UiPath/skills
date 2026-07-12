@@ -630,11 +630,13 @@ Implementation tasks **do not live in this SDD** — they live in the planner's 
 
 The build is not finished when the project folder compiles. **The terminal artefact of an SDD-driven build is a packed `.uipx` solution**, not a bare project folder. After the implementation specialist (`uipath-rpa`, `uipath-agents`, etc.) reports its tasks complete, load the **`uipath-solution`** skill and run:
 
+<!-- When generating the SDD, fill every <PLACEHOLDER> argument below with the real solution/project names from this SDD. `./packages` stays literal. A <PLACEHOLDER> left inside this code block is an unfilled-template defect. -->
+
 ```bash
 uip solution init <SOLUTION_NAME>
 uip solution project add <PROJECT_PATH> [--solution-file <SOLUTION_FILE>]    # repeat per project in the unified list
 uip solution resources refresh
-uip solution pack <SOLUTION_DIR> <OUTPUT_DIR>
+uip solution pack <SOLUTION_NAME> ./packages
 ```
 
 For a single-project build, the solution wrap is still required — `uip solution pack` produces a `.uipx` that can be promoted via `uip solution publish` / `uip solution deploy run`. A bare `MyProject/` folder is not deployable through the modern lifecycle and is not the deliverable.
