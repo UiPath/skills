@@ -131,7 +131,7 @@ Walk the project list. For each project, emit task rows per the matched pattern.
 
 ## Step 7 — Write tasks.md
 
-Compose the file using the schema in [plan-and-tasks-format.md](plan-and-tasks-format.md). Header lists Source SDD, SDD scope, Execution autonomy, Generation date. Body is the task list. If regenerating, append the Archive footer for removed tasks.
+**Hard gate — `Read` [plan-and-tasks-format.md](plan-and-tasks-format.md) in this session before the first tasks write — no exceptions, even in autonomous mode.** Compose the file using its exact schema. Header lists Source SDD, SDD scope, `**Execution autonomy:** <autonomous | interactive>` (copied verbatim from the handoff), Generation date. Body is the task list: every task is a `## Task T<N> — <skill-name> — <description>` heading (starting at `## Task T1`) followed by the literal field lines `**Identity:**`, `**Status:**`, `**Blocked by:**`, `**Skill prompt:**` — a prose or phase-style tasks file is a defect regardless of content quality. If regenerating, append the Archive footer for removed tasks.
 
 ## Step 8 — Plan-mode review (interactive autonomy only)
 
@@ -141,7 +141,7 @@ If `Execution autonomy: interactive`, call `EnterPlanMode` with the full tasks.m
 - If the user requests specific changes, incorporate them and re-present (max 3 revisions; after that, proceed with the latest).
 - On approval → `ExitPlanMode` → Step 9.
 
-If `Execution autonomy: autonomous`, skip plan mode. Output a summary instead:
+If `Execution autonomy: autonomous`, skip plan mode — tasks.md is already on disk (Step 7); never re-ask autonomy or wait for approval. Output a summary instead:
 
 ```
 Generated <tasks-file>: <N> tasks.

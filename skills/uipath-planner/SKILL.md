@@ -109,7 +109,7 @@ When triggered: an SDD with the `Planner Handoff` marker is detected (or Phase D
 2. If `<process>-tasks.md` already exists, ask `continue / regenerate` (1 prompt). See [plan-and-tasks-format.md → Regenerate logic](references/plan-and-tasks-format.md#regenerate-logic-pdd-driven-lane-only).
 3. Parse the SDD project list section. Pick the multi-skill pattern.
 4. Ask the UI batch (3 questions, 1 call) only if the SDD's Application Inventory lists UI applications and the answers aren't already resolved.
-5. Derive tasks. Write `<process>-tasks.md` using the exact task-row schema from [plan-and-tasks-format.md](references/plan-and-tasks-format.md) — see the Output contract below.
+5. **Hard gate — `Read` [plan-and-tasks-format.md](references/plan-and-tasks-format.md) before the first tasks write — no exceptions, even in autonomous mode.** Derive tasks. Write `<process>-tasks.md`: header carries `**Execution autonomy:** <autonomous | interactive>` copied verbatim from the handoff; every task is a `## Task T<N> — <skill-name> — <description>` heading (starting at `## Task T1`) followed by the literal field lines `**Identity:**`, `**Status:**`, `**Blocked by:**`, `**Skill prompt:**`, each Skill prompt ending with the anti-hallucination line verbatim. A prose or phase-style tasks file written without Reading the format file in this session is a defect regardless of content quality — see the Output contract below.
 6. If `Execution autonomy: interactive` → `EnterPlanMode` for review. If `autonomous` → emit live tasks directly.
 7. Emit `TaskCreate` calls + `addBlockedBy` edges. Hand off.
 
@@ -119,12 +119,12 @@ Full procedure: [pdd-driven-lane-guide.md](references/pdd-driven-lane-guide.md).
 
 When triggered: no SDD; a document-less multi-project request (the default route when no explicit design/architect language or inline-described process points to Phase D).
 
-1. Step 1 — batched elicitation: bundle generation approach + execution autonomy + project-type fallback (when vague) + Solution scope (when the plan loads `uipath-maestro-flow`) into **one** `AskUserQuestion` call. Drop any question already resolved from context.
+1. Step 1 — batched elicitation: bundle generation approach + execution autonomy + project-type fallback (when vague) + Solution scope (when the plan loads `uipath-maestro-flow`) into **one** `AskUserQuestion` call. Drop any question already resolved from context. If `AskUserQuestion` is unavailable, denied, or errors, do not stall: apply the skip-rule defaults (`simultaneous`, `autonomous`, `RPA workflow (XAML)`) and proceed.
 2. Step 2 — detect multi-skill patterns; emit multi-skill plan if applicable. See [multi-skill-patterns-guide.md](references/multi-skill-patterns-guide.md).
 3. Step 3 — filesystem detection for single-skill plans.
 4. Step 4 UI batch — only when the plan includes UI automation in `uipath-rpa`.
 5. **Hard gate — `Read` [plan-and-tasks-format.md](references/plan-and-tasks-format.md) before the first plan write — no exceptions, even on a fast pass.** Write `YYYY-MM-DD-<feature>.md` to `docs/plans/` (project) or `./plans/` (no project). Every task uses the exact row schema: heading `## Task T<N> — <skill-name> — <description>` where `<skill-name>` is a specialist from the closed list — build tasks for XAML/C# workflows name `uipath-rpa`; the deploy step is its own `uipath-solution` (`.uipx`-bundled) or `uipath-platform` (single non-solution package) task, never left to the build skill. A free-form phase/step plan (generic "Task 1: Solution scaffolding" headings, per-task code snippets, no specialist skill names in task headings) is a defect regardless of content quality.
-6. If explore-first → `EnterPlanMode`. If simultaneous → emit plan as text + live tasks.
+6. The on-disk plan file from step 5 is the deliverable in BOTH modes — write it BEFORE `EnterPlanMode` and before any live tasks. A plan that exists only as conversation text or an `EnterPlanMode` payload is a missing deliverable. If explore-first → write the file, then `EnterPlanMode` with its content. If simultaneous → summarize the on-disk plan + emit live tasks.
 
 Full procedure: [non-pdd-lane-guide.md](references/non-pdd-lane-guide.md).
 
