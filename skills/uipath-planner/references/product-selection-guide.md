@@ -25,6 +25,7 @@ The delivery model (asked or detected at Phase 1 Step 0) and any user-stated pro
 3. **Partial / uncertain → WARN.** Keep the product but attach an explicit warning line naming what is limited or unverified, and apply the verification rule in [platform-availability-guide.md](platform-availability-guide.md) before finalizing the SDD.
 4. **User exclusions are blocks.** When the user excludes a product ("we don't want Maestro"), treat it exactly like a matrix block for the rest of the session: never re-offer it at any level or revision, record the exclusion and its reason in the Recommended Scope summary.
 5. **Never silently substitute.** A blocked product's alternative changes the architecture — present the substitution and its consequence in the summary, not buried in a section.
+6. **Substitutions collapse scope, not multiply it.** When every blocked product's alternative resolves to capabilities of one surviving product (e.g. Coded Apps → RPA + Forms AND Maestro Flow → RPA orchestration on the same Automation Suite engagement), recommend that SINGLE product — one `<PROCESS_NAME_KEBAB>-sdd.md` on its template, not a Solution of substitute projects. In autonomous mode proceed with it directly (Rule G-9); the gated products still appear BY NAME in `Decisions Made` row 1 and the `Blocked by platform:` line.
 
 > Delivery model `unspecified` (user picked "Not sure") gates nothing — proceed assuming Automation Cloud, and carry an `[SME REVIEW]` row stating the assumption and which recommended products would be affected if the customer is actually on Automation Suite or standalone.
 
@@ -58,7 +59,7 @@ A Solution is the correct primary when any of the following applies, even if a s
 
 When any of the above applies, set the default primary to **Solution** and pre-compose the product list from the matched signals. Otherwise default to the highest single-product match.
 
-> **Ambiguous dual-product PDDs:** If exactly two products match with similar strength and no Solution signal applies, mark the higher-priority match as the default single-product recommendation and offer Solution (customize) as an alternative in the recommendation screen. Let the user confirm via `AskUserQuestion`.
+> **Ambiguous dual-product PDDs:** If exactly two products match with similar strength and no Solution signal applies, mark the higher-priority match as the default single-product recommendation and offer Solution (customize) as an alternative in the recommendation screen. Let the user confirm via `AskUserQuestion` — interactive mode only; autonomous mode skips the confirmation and proceeds with the default (Rule G-9).
 
 ### Signals per product
 
@@ -425,7 +426,7 @@ Emit this block as the Phase 1 summary content:
 
 ### Confirmation question
 
-Right after emitting the summary, confirm the scope via `AskUserQuestion` with the numbered-choice format. **The recommended option is always item 1.**
+**Interactive mode only** — autonomous mode skips this question and proceeds with the recommendation (Rule G-9; the SDD's `## Recommended Scope` block is the durable record). In interactive mode, right after emitting the summary, confirm the scope via `AskUserQuestion` with the numbered-choice format. **The recommended option is always item 1.**
 
 > I recommend the following scope for this SDD. Which should I use?
 >

@@ -121,7 +121,7 @@ Record the answers in the tasks.md header for traceability and for the implement
 
 Walk the project list. For each project, emit task rows per the matched pattern. Use the schema in [plan-and-tasks-format.md](plan-and-tasks-format.md). Key rules:
 
-1. **One task per discrete deliverable.** A workflow file → one task. An Orchestrator queue → one task. An asset → one task.
+1. **One task per discrete deliverable.** A workflow file → one task. An Orchestrator queue → one task. An asset → one task. Orchestrator resources (queues, assets, storage buckets) and non-solution single-package deploys route to `uipath-platform` — the build skill never owns them.
 2. **Identity tuple is stable.** `<skill>:<project>:<subject>`. Use kebab-case or PascalCase consistent with the SDD's naming.
 3. **Skill prompt references SDD sections explicitly.** "Implement `Process/CalculateTotal.xaml` per §11 row #3 of `<sdd-path>`. Use exact data field names from §5."
 4. **Anti-hallucination rule appended verbatim** to every Skill prompt.
