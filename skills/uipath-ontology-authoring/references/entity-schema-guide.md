@@ -69,3 +69,7 @@ relationship/mapping targets). A returned row's `FolderId` is the folder's GUID.
 
 - **Business concept with no field** — the author describes something the schema can't back. Flag it; do not invent a column.
 - **Field never described** — a meaningful-looking field the author never mentioned. Ask in business words whether it matters; default to dropping it, not guessing.
+
+> **Data sampling:** when Phase 5 needs record-level facts (value domains, grain,
+> NULL rates), see [data-verification-guide.md](data-verification-guide.md) —
+> discover the record-query commands on the host via `uip df records --help`.

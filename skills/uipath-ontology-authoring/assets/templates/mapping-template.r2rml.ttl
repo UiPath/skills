@@ -1,55 +1,88 @@
-@prefix rr:   <http://www.w3.org/ns/r2rml#> .
-@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
-@prefix :     <http://uipath.com/datafabric/NAME#> .
+# ============================================================================
+# USAGE POLICY  (how to use the constructs; facts live on the OWL properties)
+# ============================================================================
+# SQL DIALECT LIMITS - the query engine REJECTS: CAST(...), and column
+#   arithmetic inside WHERE (filter on plain columns; simple division or
+#   multiplication in SELECT is fine).
+# NEVER append a default LIMIT (no habitual LIMIT 100/10): list questions
+#   return EVERY matching row; LIMIT 1 only for single-answer superlatives.
+# JOIN GRAPH (join only what the question needs):
+#   Order.CustomerId = Customer.Id
+# ROUTING (canonical columns):
+#   <ambiguous phrase> -> <table.column> for <question type>; <other table.column> for <other type>
+# GRAIN DISCIPLINE: <e.g. TableX has ~N dated rows per parent - SELECT DISTINCT the requested column>
+# OUTPUT DISCIPLINE:
+#   answer with ONE final query - never submit exploration results or hard-coded
+#   ids discovered by exploration; no DISTINCT unless uniqueness is asked;
+#   for ranked/ordered asks return ONLY the requested column(s).
+# SUPERLATIVE/COMPARATIVE asks -> ORDER BY the measure, LIMIT 1, deterministic
+#   tie-break; IS NOT NULL only for ascending ranks on nullable measures.
+# LITERALS are case- and format-sensitive - copy exactly as annotated.
+# ============================================================================
 
-# One rr:TriplesMap per selected entity.
-# entity Name = logical table | primary key Id = subject template | field Name = column.
+@prefix rr:     <http://www.w3.org/ns/r2rml#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix onto:   <http://uipath.com/datafabric/NAME#> .
+@prefix map:    <http://uipath.com/datafabric/NAME/mapping#> .
+@prefix uipath: <http://uipath.com/ns/datafabric#> .
 
-:OrderMap a rr:TriplesMap ;
+# One rr:TriplesMap per selected entity — exactly (the tableName+folderPath set
+# is the runtime allow-list). entity Name = logical table | primary key Id =
+# subject template | field Name = bare column. Body comments: titles only.
+
+map:TM_Order a rr:TriplesMap ;
   rr:logicalTable [ rr:tableName "Order" ] ;
+  uipath:folderPath "Shared" ;
   rr:subjectMap [
     rr:template "http://uipath.com/datafabric/NAME/Order/{Id}" ;
-    rr:class    :Order
+    rr:class    onto:Order
   ] ;
 
-  # scalar field
+  # scalar field (bare column name; correct datatype)
   rr:predicateObjectMap [
-    rr:predicate :orderTotal ;
+    rr:predicate onto:order__Total ;
     rr:objectMap [ rr:column "Total" ; rr:datatype xsd:decimal ]
   ] ;
 
   # boolean field
   rr:predicateObjectMap [
-    rr:predicate :isPaid ;
+    rr:predicate onto:order__IsPaid ;
     rr:objectMap [ rr:column "IsPaid" ; rr:datatype xsd:boolean ]
   ] ;
 
-  # choice set field -> integer NumberId (value meanings live in the OFN)
+  # choice-set field -> integer NumberId (label map lives in the OFN comment)
   rr:predicateObjectMap [
-    rr:predicate :status ;
-    rr:objectMap [ rr:column "Status" ; rr:datatype xsd:integer ]
+    rr:predicate onto:order__Stage ;
+    rr:objectMap [ rr:column "Stage" ; rr:datatype xsd:integer ]
   ] ;
 
-  # relationship -> referencing object map, joined on FK -> target Id
+  # FK -> a REAL join (one per foreign key, ALWAYS), wired to the OWL object property
   rr:predicateObjectMap [
-    rr:predicate :placedBy ;
+    rr:predicate onto:order__customer ;
     rr:objectMap [
-      rr:parentTriplesMap :CustomerMap ;
+      rr:parentTriplesMap map:TM_Customer ;
       rr:joinCondition [ rr:child "CustomerId" ; rr:parent "Id" ]
     ]
   ] .
 
-# cross-folder example: if Customer lived in a different folder than Order, the
-# live binding needs the target's folder key. Record it so the mapping is reproducible:
+# cross-folder relationship: the live binding needs the target's folder key —
+# record it so the mapping is reproducible:
 # cross-folder: target Customer lives in folder <FolderB-key> (referenceFolderKey)
 
-:CustomerMap a rr:TriplesMap ;
+map:TM_Customer a rr:TriplesMap ;
   rr:logicalTable [ rr:tableName "Customer" ] ;
+  uipath:folderPath "Shared" ;
   rr:subjectMap [
     rr:template "http://uipath.com/datafabric/NAME/Customer/{Id}" ;
-    rr:class    :Customer
+    rr:class    onto:Customer
   ] ;
   rr:predicateObjectMap [
-    rr:predicate :customerName ;
+    rr:predicate onto:customer__Name ;
     rr:objectMap [ rr:column "Name" ; rr:datatype xsd:string ]
   ] .
+
+# Surgical join addition (IMPROVE mode) — turtle allows re-opening a subject:
+# map:TM_Order rr:predicateObjectMap [
+#     rr:predicate onto:order__district ;
+#     rr:objectMap [ rr:parentTriplesMap map:TM_District ;
+#                    rr:joinCondition [ rr:child "DistrictId" ; rr:parent "Id" ] ] ] .

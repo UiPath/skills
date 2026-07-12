@@ -5,35 +5,70 @@ Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
 Prefix(xsd:=<http://www.w3.org/2001/XMLSchema#>)
 
 Ontology(<http://uipath.com/datafabric/NAME>
-  Annotation(owl:versionInfo "0.1.0")
+  Annotation(owl:versionInfo "1.0.0")
+  Annotation(rdfs:comment "One-paragraph domain summary: what this data is about, distilled from the author's description.")
 
-  # ---- Class (one per selected entity). Meaning from the author. ----
+  # ---- Class (one per selected entity). Label = business phrase; comment = grain + key. ----
   Declaration(Class(:Order))
-  AnnotationAssertion(rdfs:comment :Order "A purchase placed by a customer. Maps Data Fabric entity 'Order'.")
+  AnnotationAssertion(rdfs:label :Order "order")
+  AnnotationAssertion(rdfs:comment :Order "A purchase placed by a customer; ONE row per order, keyed by Id. Maps Data Fabric entity 'Order'.")
 
-  # ---- Scalar attributes (DataProperty). Type from the schema, meaning from the author. ----
-  Declaration(DataProperty(:orderTotal))
-  DataPropertyDomain(:orderTotal :Order)
-  DataPropertyRange(:orderTotal xsd:decimal)
-  AnnotationAssertion(rdfs:comment :orderTotal "Gross amount. Maps Order.Total.")
+  # Grain warning example (fact type 1) — when a class is NOT one-row-per-thing:
+  # AnnotationAssertion(rdfs:comment :TeamAttributes "TIME SERIES: ~5 dated rows per team. A per-team question returns duplicates unless you SELECT DISTINCT the requested column (or filter a date).")
 
-  # Boolean: compare to literal true/false, never 1/0.
-  Declaration(DataProperty(:isPaid))
-  DataPropertyDomain(:isPaid :Order)
-  DataPropertyRange(:isPaid xsd:boolean)
-  AnnotationAssertion(rdfs:comment :isPaid "Maps Order.IsPaid. Compare true/false, never 1/0.")
+  # ---- Scalar attribute. Type from the schema; meaning from the author; values from the DATA. ----
+  Declaration(DataProperty(:order__Total))
+  DataPropertyDomain(:order__Total :Order)
+  DataPropertyRange(:order__Total xsd:decimal)
+  AnnotationAssertion(rdfs:label :order__Total "order total")
+  AnnotationAssertion(rdfs:comment :order__Total "Gross amount of the order. Maps Order.Total.")
 
-  # Choice set: stored as an integer NumberId; value meanings recorded here.
-  Declaration(DataProperty(:status))
-  DataPropertyDomain(:status :Order)
-  DataPropertyRange(:status xsd:integer)
-  AnnotationAssertion(rdfs:comment :status "NumberId. Maps Order.Status. 1=Pending, 2=Shipped, 3=Delivered.")
+  # Value domain example (fact type 2) — exact, complete, case-sensitive, data-verified:
+  Declaration(DataProperty(:order__FundingType))
+  DataPropertyDomain(:order__FundingType :Order)
+  DataPropertyRange(:order__FundingType xsd:string)
+  AnnotationAssertion(rdfs:label :order__FundingType "funding type")
+  AnnotationAssertion(rdfs:comment :order__FundingType "Values: 'Directly funded' | 'Locally funded' | 'Not in CS funding model' (case-sensitive; copy exactly).")
 
-  # ---- Relationship (ObjectProperty). From an FK field; cardinality stated by the author. ----
+  # Code list example (fact type 3) — codes + meanings + the phrase-to-code bridge:
+  Declaration(DataProperty(:order__Status))
+  DataPropertyDomain(:order__Status :Order)
+  DataPropertyRange(:order__Status xsd:string)
+  AnnotationAssertion(rdfs:label :order__Status "order status")
+  AnnotationAssertion(rdfs:comment :order__Status "'A' = finished, no problems | 'B' = finished, not paid | 'C' = running, OK | 'D' = running, in debt. 'Running' means status IN ('C','D').")
+
+  # Format/scale example (fact type 4) + NULL-with-condition (see guide §4):
+  Declaration(DataProperty(:order__Score))
+  DataPropertyDomain(:order__Score :Order)
+  DataPropertyRange(:order__Score xsd:integer)
+  AnnotationAssertion(rdfs:label :order__Score "score")
+  AnnotationAssertion(rdfs:comment :order__Score "NULL for ~600 rows. NULLs sort last in DESC, so highest-score queries need no filter; add IS NOT NULL only when ranking ascending / asking for the lowest.")
+
+  # Choice set: stored as an integer NumberId; label map recorded (data-verified via choice-sets list-values):
+  Declaration(DataProperty(:order__Stage))
+  DataPropertyDomain(:order__Stage :Order)
+  DataPropertyRange(:order__Stage xsd:integer)
+  AnnotationAssertion(rdfs:label :order__Stage "stage")
+  AnnotationAssertion(rdfs:comment :order__Stage "NumberId. Maps Order.Stage. 1=Pending, 2=Shipped, 3=Delivered.")
+
+  # Boolean: compare true/false, never 1/0.
+  Declaration(DataProperty(:order__IsPaid))
+  DataPropertyDomain(:order__IsPaid :Order)
+  DataPropertyRange(:order__IsPaid xsd:boolean)
+  AnnotationAssertion(rdfs:label :order__IsPaid "is paid")
+  AnnotationAssertion(rdfs:comment :order__IsPaid "Maps Order.IsPaid. Compare true/false, never 1/0.")
+
+  # ---- Relationship (ObjectProperty) — one per FK, with domain/range (QL-legal). ----
   Declaration(Class(:Customer))
-  AnnotationAssertion(rdfs:comment :Customer "A buyer. Maps Data Fabric entity 'Customer'.")
-  Declaration(ObjectProperty(:placedBy))
-  ObjectPropertyDomain(:placedBy :Order)
-  ObjectPropertyRange(:placedBy :Customer)
-  AnnotationAssertion(rdfs:comment :placedBy "Each order is placed by one customer. Maps Order FK -> Customer. 'Exactly one' is QL-inexpressible; recorded here.")
+  AnnotationAssertion(rdfs:label :Customer "customer")
+  AnnotationAssertion(rdfs:comment :Customer "A buyer; ONE row per customer, keyed by Id. Maps Data Fabric entity 'Customer'.")
+
+  Declaration(ObjectProperty(:order__customer))
+  ObjectPropertyDomain(:order__customer :Order)
+  ObjectPropertyRange(:order__customer :Customer)
+  AnnotationAssertion(rdfs:label :order__customer "placed by")
+  AnnotationAssertion(rdfs:comment :order__customer "Each order is placed by one customer. FK: Order.CustomerId -> Customer.Id. 'Exactly one' is QL-inexpressible; recorded here.")
+
+  # Lookalike disambiguation example (fact type 6) — say which phrase maps where:
+  # AnnotationAssertion(rdfs:comment :league__name "The LEAGUE's name (e.g. 'Italy Serie A'). Not the country name - that is :country__name.")
 )
