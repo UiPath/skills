@@ -94,7 +94,7 @@ When triggered: an SDD with the `Planner Handoff` marker is detected (or Phase D
 2. If `<process>-tasks.md` already exists, ask `continue / regenerate` (1 prompt). See [plan-and-tasks-format.md → Regenerate logic](references/plan-and-tasks-format.md#regenerate-logic-pdd-driven-lane-only).
 3. Parse the SDD project list section. Pick the multi-skill pattern.
 4. Ask the UI batch (3 questions, 1 call) only if the SDD's Application Inventory lists UI applications and the answers aren't already resolved.
-5. Derive tasks. Write `<process>-tasks.md`.
+5. Derive tasks. Write `<process>-tasks.md` using the exact task-row schema from [plan-and-tasks-format.md](references/plan-and-tasks-format.md) — see the Output contract below.
 6. If `Execution autonomy: interactive` → `EnterPlanMode` for review. If `autonomous` → emit live tasks directly.
 7. Emit `TaskCreate` calls + `addBlockedBy` edges. Hand off.
 
@@ -112,6 +112,25 @@ When triggered: no SDD; a document-less multi-project request (the default route
 6. If explore-first → `EnterPlanMode`. If simultaneous → emit plan as text + live tasks.
 
 Full procedure: [non-pdd-lane-guide.md](references/non-pdd-lane-guide.md).
+
+## Output contract — self-check before ending the turn
+
+The deliverable is the file on disk, not the conversation. Before emitting the final summary, check the artifact for each item below and patch any miss in place.
+
+**Phase D — the SDD file MUST contain:**
+
+1. `## Planner Handoff` table with all 7 rows carrying resolved values — never `<placeholder>` tokens. The `**Execution autonomy**` and `**Delivery model**` rows must be present and filled; Delivery model carries the resolved value (e.g. `automation-suite 2024.10`), not a generic label.
+2. `## Decisions Made` (autonomous mode) whose row 1 is **Platform constraints**: the delivery model plus every Constraint-Gate-blocked product BY NAME with its alternative (e.g. `automation-suite 2024.10; blocked: Coded Apps → RPA + Forms, Maestro Flow → RPA orchestration`), or `cloud; no products blocked`. Blocked products are reported, never silently dropped.
+3. `## Recommended Scope` block (both modes).
+4. `## Action Required — SME Review Items` block whenever any `[SME REVIEW]` marker remains anywhere in the file.
+5. Every template H2 heading verbatim — `Exception Handling` and `Error Handling` included even when the PDD gives no data for them (fill with `[DEFAULT]` / `[SME REVIEW]` rows; never drop or rename a template section).
+
+**Lane A / Lane B — the tasks/plan file MUST contain:**
+
+1. The full header from plan-and-tasks-format.md — Lane A: `Source SDD`, `SDD scope`, `**Execution autonomy:** <autonomous | interactive>` copied verbatim from the handoff header, `Delivery model`, `Generation date`.
+2. Every task as `## Task T<N> — <skill-name> — <description>` followed by the literal field lines `**Identity:**`, `**Status:**`, `**Blocked by:**`, `**Skill prompt:**` plus checkbox sub-steps. The schema is load-bearing (regeneration and TaskCreate mapping parse it) — a prose or table task list is a defect, not a style choice.
+3. Every Skill prompt ends with the anti-hallucination line verbatim: `Use values, mappings, and structure exactly as documented in the SDD at <sdd-path>. Do not infer or guess.` (Lane B: `...as documented in this plan. Do not infer or guess.`)
+4. One `Testing (MANDATORY)` task per generation skill, placed before any deploy task.
 
 ## Skill capability map
 
