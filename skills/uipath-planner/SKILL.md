@@ -45,6 +45,19 @@ The skill has three paths, decided by the **Entry Guard**:
 11. **The terminal artefact of a Solution build is a packed `.uipx`.** The SDD's §18 Next Steps points the user at the `uipath-solution` skill (`uip solution init` → `project add` per project → `resources refresh` → `pack`). A bare project folder is not the deliverable. Exception: when the Constraint Gate blocks Solutions for the delivery model — standalone, Automation Suite older than 2.2510, or a user exclusion — rewrite §18 to per-package Orchestrator publish routed via `uipath-platform`.
 12. **Never copy SDD architecture into the plan, and never invent selectors or UI targets.** The plan references SDD section paths in skill prompts; it does not duplicate architecture content. Selectors require application inspection at development time — leave them for the specialist.
 
+## Constraint Gate — availability floor (always in force)
+
+Apply BEFORE selecting products or templates — even on a fast pass that reads no other reference file. Full matrix, install-profile prerequisites, and verification rules: [platform-availability-guide.md](references/platform-availability-guide.md). Version order: `2021.10 < 2022.4 < 2023.4 < 2024.10 < 2.2510 < 2.2510.2` (`2.2510` = the 2025.10 line — sorts AFTER every `YYYY.MM` version).
+
+| Delivery model | Blocked products | Design instead |
+|---|---|---|
+| cloud | none | — |
+| automation-suite older than 2.2510 (incl. 2024.10) | **Coded Apps** (cloud-only on every AS version), **Maestro** Flow/BPMN (AS since 2.2510.2), **Agents** (AS since 2.2510.2), **Solutions `.uipx`** (AS since 2.2510), **API Workflows** (AS since 2.2510) | Maestro → Orchestrator queues + dispatcher/performer RPA + Action Center approvals for human gates; Agents → deterministic RPA + HITL escalation; Coded Apps → NO substitute in this toolchain — flag the app touchpoint `[SME REVIEW]`; deploy → per-package Orchestrator publish via `uipath-platform` |
+| automation-suite 2.2510.x | **Coded Apps** (cloud-only) | flag app touchpoint `[SME REVIEW]` |
+| standalone | everything except RPA + Orchestrator (+ Test Manager) | RPA packages + queues/assets/triggers, deployed via `uipath-platform` |
+
+A PDD signal for a blocked product (web dashboard → Coded Apps, orchestration → Maestro) does NOT override the gate: build on the surviving products' scope and template only, name every blocked product with its alternative in `## Decisions Made` row 1 (**Platform constraints**), and record the resolved delivery model in the Planner Handoff `Delivery model` field (e.g. `automation-suite 2024.10`). When gating collapses a multi-product PDD to single-product scope, the Rule 6 filename collapses with it — exactly one `<process-kebab>-sdd.md`, no `*-solution-sdd.md`.
+
 ## Entry Guard
 
 Run this guard before anything else.
@@ -125,6 +138,7 @@ The deliverable is the file on disk, not the conversation. Before emitting the f
 4. `## Action Required — SME Review Items` block whenever any `[SME REVIEW]` marker remains anywhere in the file.
 5. Every H2 heading of the SELECTED product's template verbatim — an Agents SDD carries the agent template's headings (`Agent Overview`, `Agent Framework`, `Tools`, `Memory / RAG`, `Project Structure`), never the RPA numbered set; `Exception Handling` and `Error Handling` (or the product's equivalent) included even when the PDD gives no data for them (fill with `[DEFAULT]` / `[SME REVIEW]` rows; never drop or rename a template section).
 6. The Rule 6 filename — single-product scope is exactly one `<process-kebab>-sdd.md` (a user-specified output path wins); write a `*-solution-sdd.md` set only when the confirmed scope is a multi-project Solution.
+7. No blocked-product template — the SDD is not built on the template (or project structure) of any product the Constraint Gate availability floor blocks for the recorded `Delivery model` (e.g. no Coded Apps or Maestro Flow sections on `automation-suite 2024.10`); blocked products appear only in the Platform constraints row, by name, with their alternatives.
 
 **Lane A / Lane B — the tasks/plan file MUST contain:**
 
