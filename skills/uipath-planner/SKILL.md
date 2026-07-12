@@ -123,7 +123,7 @@ When triggered: no SDD; a document-less multi-project request (the default route
 2. Step 2 — detect multi-skill patterns; emit multi-skill plan if applicable. See [multi-skill-patterns-guide.md](references/multi-skill-patterns-guide.md).
 3. Step 3 — filesystem detection for single-skill plans.
 4. Step 4 UI batch — only when the plan includes UI automation in `uipath-rpa`.
-5. Write `YYYY-MM-DD-<feature>.md` to `docs/plans/` (project) or `./plans/` (no project).
+5. **Hard gate — `Read` [plan-and-tasks-format.md](references/plan-and-tasks-format.md) before the first plan write — no exceptions, even on a fast pass.** Write `YYYY-MM-DD-<feature>.md` to `docs/plans/` (project) or `./plans/` (no project). Every task uses the exact row schema: heading `## Task T<N> — <skill-name> — <description>` where `<skill-name>` is a specialist from the closed list — build tasks for XAML/C# workflows name `uipath-rpa`; the deploy step is its own `uipath-solution` (`.uipx`-bundled) or `uipath-platform` (single non-solution package) task, never left to the build skill. A free-form phase/step plan (generic "Task 1: Solution scaffolding" headings, per-task code snippets, no specialist skill names in task headings) is a defect regardless of content quality.
 6. If explore-first → `EnterPlanMode`. If simultaneous → emit plan as text + live tasks.
 
 Full procedure: [non-pdd-lane-guide.md](references/non-pdd-lane-guide.md).
@@ -150,6 +150,7 @@ The deliverable is the file on disk, not the conversation. Before emitting the f
 3. Every Skill prompt ends with the anti-hallucination line verbatim: `Use values, mappings, and structure exactly as documented in the SDD at <sdd-path>. Do not infer or guess.` (Lane B: `...as documented in this plan. Do not infer or guess.`)
 4. One `Testing (MANDATORY)` task per generation skill, placed before any deploy task.
 5. Lane A: Orchestrator resources the SDD defines (queues, assets, storage buckets) and any non-solution single-package deploy get their own `uipath-platform` tasks — never folded into the build skill's task.
+6. Every generation task heading names its specialist (`uipath-rpa` for XAML/C# workflow builds) and every deploy step is a separate `uipath-solution` (`.uipx`) or `uipath-platform` (non-solution package) task. Grep the file for these skill names before ending the turn — a plan with RPA build work whose task headings never contain `uipath-rpa`, or that leaves deploy to the build skill, fails this contract; patch it in place.
 
 ## Skill capability map
 
