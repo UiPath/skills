@@ -72,6 +72,22 @@ RUN set -euo pipefail && \
     # Solution command group (`uip solution …`) — required by uipath-solution
     # tasks (e.g. skill-solution-deploy-list)
     uip tools install @uipath/solution-tool && \
+    # Action Center command group (`uip tasks …`) — required by uipath-tasks
+    # tasks. Without it every `uip tasks …` call fails with "unknown command
+    # 'tasks'": smoke tasks still grade on command shape, but agents that
+    # probe the CLI improvise off-skill flags (e.g. `--folder-id` instead of
+    # the positional form) and the e2e task cannot run at all.
+    uip tools install @uipath/tasks-tool && \
+    # Insights command group (`uip insights …`) — required by uipath-insights
+    # tasks. Whether it was present used to depend on which VM's docker layer
+    # cache built the image; pin it here so `uip insights jobs …` works on
+    # every build.
+    uip tools install @uipath/insights-tool && \
+    # Functions command group (`uip functions …`) — required by
+    # uipath-functions tasks. Without it agents fall back to `uip codedagent`
+    # or manual scaffolds and fail the command-shape criteria
+    # (skill-functions-in-flow-register fails on every agent).
+    uip tools install @uipath/functions-tool && \
     uip tools list
 
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.
