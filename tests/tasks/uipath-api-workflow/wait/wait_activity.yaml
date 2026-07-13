@@ -6,8 +6,9 @@ description: >
 tags: [uipath-api-workflow, smoke, mode:build, lifecycle:generate]
 
 initial_prompt: |
-  Make a UiPath API Workflow JSON file at Workflow.json that waits ~1 second
-  using a Wait activity, then returns { "done": true }.
+  Author a UiPath API Workflow — in a project named `WaitDone` (its workflow
+  file will be `WaitDone/Workflow.json`) — that waits ~1 second using a Wait
+  activity, then returns { "done": true }.
 
   Validate and run it locally to confirm it completes and returns done; it must
   survive a StudioWeb designer roundtrip.
@@ -15,13 +16,13 @@ initial_prompt: |
 success_criteria:
   - type: file_exists
     description: "Workflow.json was created"
-    path: "Workflow.json"
+    path: "WaitDone/Workflow.json"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Workflow.json is valid JSON"
-    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    command: "python -c \"import json; json.load(open('WaitDone/Workflow.json'))\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -29,7 +30,7 @@ success_criteria:
 
   - type: file_contains
     description: "Uses a Wait activity"
-    path: "Workflow.json"
+    path: "WaitDone/Workflow.json"
     includes:
       - "Wait"
       - "wait"
@@ -38,7 +39,7 @@ success_criteria:
 
   - type: run_command
     description: "Workflow completes after the wait and returns done"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --output json | grep -qi ''"done"'''
+    command: 'uip api-workflow run ./WaitDone/Workflow.json --no-auth --output json | grep -qi ''"done"'''
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

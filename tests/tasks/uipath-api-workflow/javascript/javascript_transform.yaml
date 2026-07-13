@@ -7,7 +7,8 @@ description: >
 tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature:transform]
 
 initial_prompt: |
-  Make a UiPath API Workflow JSON file at Workflow.json that:
+  Author a UiPath API Workflow — in a project named `Shout` (its workflow file
+  will be `Shout/Workflow.json`) — that:
   - Takes a `name` string input
   - Uses a JavaScript activity to upper-case it
   - Returns { "shout": "<UPPERCASED NAME>" }  (e.g. "bob" → "BOB", "ada" → "ADA")
@@ -18,13 +19,13 @@ initial_prompt: |
 success_criteria:
   - type: file_exists
     description: "Workflow.json was created"
-    path: "Workflow.json"
+    path: "Shout/Workflow.json"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Workflow.json is valid JSON"
-    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    command: "python -c \"import json; json.load(open('Shout/Workflow.json'))\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -32,7 +33,7 @@ success_criteria:
 
   - type: file_contains
     description: "Uses a JavaScript activity that returns a value"
-    path: "Workflow.json"
+    path: "Shout/Workflow.json"
     includes:
       - "return"
     weight: 1.0
@@ -40,7 +41,7 @@ success_criteria:
 
   - type: run_command
     description: "Transforms 'bob' -> 'BOB'"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"name":"bob"}'' --output json | grep -q ''BOB'''
+    command: 'uip api-workflow run ./Shout/Workflow.json --no-auth --input-arguments ''{"name":"bob"}'' --output json | grep -q ''BOB'''
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -48,7 +49,7 @@ success_criteria:
 
   - type: run_command
     description: "Transforms 'ada' -> 'ADA' (proves it reads the input, not a constant)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"name":"ada"}'' --output json | grep -q ''ADA'''
+    command: 'uip api-workflow run ./Shout/Workflow.json --no-auth --input-arguments ''{"name":"ada"}'' --output json | grep -q ''ADA'''
     timeout: 60
     expected_exit_code: 0
     weight: 2.0

@@ -7,7 +7,8 @@ description: >
 tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node, node:loop]
 
 initial_prompt: |
-  Make a UiPath API Workflow JSON file at Workflow.json that:
+  Author a UiPath API Workflow — in a project named `MatrixCount` (its workflow
+  file will be `MatrixCount/Workflow.json`) — that:
   - Takes a `matrix` input (an array of arrays of integers)
   - Uses a ForEach inside a ForEach to count every inner element
   - Returns { "cells": <total inner elements> }  (e.g. [[1,2],[3,4,5]] → 5, [[9]] → 1)
@@ -18,13 +19,13 @@ initial_prompt: |
 success_criteria:
   - type: file_exists
     description: "Workflow.json was created"
-    path: "Workflow.json"
+    path: "MatrixCount/Workflow.json"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Workflow.json is valid JSON"
-    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    command: "python -c \"import json; json.load(open('MatrixCount/Workflow.json'))\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -32,7 +33,7 @@ success_criteria:
 
   - type: file_contains
     description: "Contains two ForEach loops (nested)"
-    path: "Workflow.json"
+    path: "MatrixCount/Workflow.json"
     includes:
       - "ForEach"
       - "#Body"
@@ -41,7 +42,7 @@ success_criteria:
 
   - type: run_command
     description: "Counts 5 cells in [[1,2],[3,4,5]] (wrong iterator names would shadow and miscount)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"matrix":[[1,2],[3,4,5]]}'' --output json | grep -qiE ''"cells"[ :]+5'''
+    command: 'uip api-workflow run ./MatrixCount/Workflow.json --no-auth --input-arguments ''{"matrix":[[1,2],[3,4,5]]}'' --output json | grep -qiE ''"cells"[ :]+5'''
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -49,7 +50,7 @@ success_criteria:
 
   - type: run_command
     description: "Counts 1 cell in [[9]] (proves real nested iteration)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"matrix":[[9]]}'' --output json | grep -qiE ''"cells"[ :]+1'''
+    command: 'uip api-workflow run ./MatrixCount/Workflow.json --no-auth --input-arguments ''{"matrix":[[9]]}'' --output json | grep -qiE ''"cells"[ :]+1'''
     timeout: 60
     expected_exit_code: 0
     weight: 2.0

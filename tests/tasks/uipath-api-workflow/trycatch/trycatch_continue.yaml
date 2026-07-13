@@ -7,7 +7,8 @@ description: >
 tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node]
 
 initial_prompt: |
-  Make a UiPath API Workflow JSON file at Workflow.json that:
+  Author a UiPath API Workflow — in a project named `HandleError` (its workflow
+  file will be `HandleError/Workflow.json`) — that:
   - Runs a JavaScript activity that deliberately throws an error
   - Catches it with a TryCatch
   - From the catch branch, returns { "status": "handled" }
@@ -18,13 +19,13 @@ initial_prompt: |
 success_criteria:
   - type: file_exists
     description: "Workflow.json was created"
-    path: "Workflow.json"
+    path: "HandleError/Workflow.json"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Workflow.json is valid JSON"
-    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    command: "python -c \"import json; json.load(open('HandleError/Workflow.json'))\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -32,7 +33,7 @@ success_criteria:
 
   - type: file_contains
     description: "Uses a TryCatch with a catch error variable"
-    path: "Workflow.json"
+    path: "HandleError/Workflow.json"
     includes:
       - "TryCatch"
       - "catch"
@@ -41,7 +42,7 @@ success_criteria:
 
   - type: run_command
     description: "Caught error yields a handled response, run succeeds"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --output json | grep -q ''handled'''
+    command: 'uip api-workflow run ./HandleError/Workflow.json --no-auth --output json | grep -q ''handled'''
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

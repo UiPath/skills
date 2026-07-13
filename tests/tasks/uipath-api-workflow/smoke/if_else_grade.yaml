@@ -8,16 +8,14 @@ description: >
 tags: [uipath-api-workflow, smoke, mode:build, lifecycle:generate, feature:if-else]
 
 initial_prompt: |
-  Make a UiPath API Workflow JSON file at Workflow.json that:
+  Author a UiPath API Workflow — in a project named `GradeCheck` (its workflow
+  file will be `GradeCheck/Workflow.json`) — that:
   - Takes a numeric `score` input
   - Returns { "grade": "PASS" } if score >= 50, else { "grade": "FAIL" }
   - Uses an If activity for the branching
 
-  Test the workflow locally with:
-    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"score":75}' --output json
-    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"score":30}' --output json
-
-  Confirm both runs return Result: "Success" and the correct grade.
+  Test the workflow locally with score 75 and score 30, and confirm both runs
+  return Result: "Success" and the correct grade.
 
   Important:
   - The `uip` CLI is already available.
@@ -28,13 +26,13 @@ initial_prompt: |
 success_criteria:
   - type: file_exists
     description: "Workflow.json was created"
-    path: "Workflow.json"
+    path: "GradeCheck/Workflow.json"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Workflow.json is valid JSON"
-    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    command: "python -c \"import json; json.load(open('GradeCheck/Workflow.json'))\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -42,7 +40,7 @@ success_criteria:
 
   - type: file_contains
     description: "Has WorkflowStart system activity (rule 2)"
-    path: "Workflow.json"
+    path: "GradeCheck/Workflow.json"
     includes:
       - "WorkflowStart"
       - "isTransparent"
@@ -51,7 +49,7 @@ success_criteria:
 
   - type: file_contains
     description: "Uses If wrapper pattern with #Then and #Else branches (rule 7)"
-    path: "Workflow.json"
+    path: "GradeCheck/Workflow.json"
     includes:
       - "If_1#Wrapper"
       - "If_1#Then"
@@ -61,7 +59,7 @@ success_criteria:
 
   - type: file_contains
     description: "Branches end with then:exit (rule 7)"
-    path: "Workflow.json"
+    path: "GradeCheck/Workflow.json"
     includes:
       - '"then": "exit"'
     weight: 1.0
@@ -69,7 +67,7 @@ success_criteria:
 
   - type: file_contains
     description: "Wraps string literals as expressions (rule 5 — StudioWeb roundtrip)"
-    path: "Workflow.json"
+    path: "GradeCheck/Workflow.json"
     includes:
       - "${'PASS'}"
       - "${'FAIL'}"
@@ -78,7 +76,7 @@ success_criteria:
 
   - type: file_contains
     description: "Response activity ends workflow with then:end (rule 15)"
-    path: "Workflow.json"
+    path: "GradeCheck/Workflow.json"
     includes:
       - '"then": "end"'
     weight: 1.0
@@ -86,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "Workflow runs PASS path successfully (score=75 → grade=PASS)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"score":75}'' --output json | grep -q ''"PASS"'''
+    command: 'uip api-workflow run ./GradeCheck/Workflow.json --no-auth --input-arguments ''{"score":75}'' --output json | grep -q ''"PASS"'''
     timeout: 60
     expected_exit_code: 0
     weight: 2.0
@@ -94,7 +92,7 @@ success_criteria:
 
   - type: run_command
     description: "Workflow runs FAIL path successfully (score=30 → grade=FAIL)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"score":30}'' --output json | grep -q ''"FAIL"'''
+    command: 'uip api-workflow run ./GradeCheck/Workflow.json --no-auth --input-arguments ''{"score":30}'' --output json | grep -q ''"FAIL"'''
     timeout: 60
     expected_exit_code: 0
     weight: 2.0

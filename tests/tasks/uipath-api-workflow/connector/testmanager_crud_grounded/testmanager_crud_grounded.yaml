@@ -28,7 +28,9 @@ pre_run:
     timeout: 30
 
 initial_prompt: |
-  Build a UiPath API Workflow that uses the UiPath Test Manager Integration Service connector.
+  Build a UiPath API Workflow — in a project named `TMCrud` (its workflow file
+  will be `TMCrud/Workflow.json`) — that uses the UiPath Test Manager
+  Integration Service connector.
 
   Read seed.json for a unique `name` and a `project_key`, then:
   1. Create a test case with that exact name under that project.
@@ -75,7 +77,7 @@ success_criteria:
 
   - type: file_exists
     description: "Workflow.json was created"
-    path: "Workflow.json"
+    path: "TMCrud/Workflow.json"
     weight: 1.0
     pass_threshold: 1.0
 

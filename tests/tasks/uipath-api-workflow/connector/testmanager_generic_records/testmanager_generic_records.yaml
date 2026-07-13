@@ -16,7 +16,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a UiPath API Workflow that uses the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
+  Build a UiPath API Workflow — in a project named `TMRecords` (its workflow file will be `TMRecords/Workflow.json`) — that uses the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
 
   - Insert a record
   - Get a record
@@ -72,13 +72,13 @@ success_criteria:
 
   - type: file_exists
     description: "Workflow.json was created"
-    path: "Workflow.json"
+    path: "TMRecords/Workflow.json"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: file_check
     description: "Workflow uses the testmanager IntSvc connector"
-    path: "Workflow.json"
+    path: "TMRecords/Workflow.json"
     includes: ["uipath-uipath-testmanager", "UiPath.IntSvc"]
     excludes: ["<REPLACE_WITH_"]
     weight: 2.0

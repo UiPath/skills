@@ -7,8 +7,9 @@ description: >
 tags: [uipath-api-workflow, smoke, mode:build, lifecycle:generate]
 
 initial_prompt: |
-  Make a UiPath API Workflow JSON file at Workflow.json that sets a variable
-  `message` to "ready" and returns { "status": "ready" }.
+  Author a UiPath API Workflow — in a project named `ReadyStatus` (its workflow
+  file will be `ReadyStatus/Workflow.json`) — that sets a variable `message` to
+  "ready" and returns { "status": "ready" }.
 
   Validate it offline (no run needed) and confirm it reports valid. It must
   survive a StudioWeb designer roundtrip.
@@ -16,13 +17,13 @@ initial_prompt: |
 success_criteria:
   - type: file_exists
     description: "Workflow.json was created"
-    path: "Workflow.json"
+    path: "ReadyStatus/Workflow.json"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Workflow.json is valid JSON"
-    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    command: "python -c \"import json; json.load(open('ReadyStatus/Workflow.json'))\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -30,7 +31,7 @@ success_criteria:
 
   - type: file_contains
     description: "Has WorkflowStart system activity (rule 2)"
-    path: "Workflow.json"
+    path: "ReadyStatus/Workflow.json"
     includes:
       - "WorkflowStart"
       - "isTransparent"
@@ -47,7 +48,7 @@ success_criteria:
 
   - type: run_command
     description: "Static validation passes (Status: Valid)"
-    command: 'uip api-workflow validate ./Workflow.json --output json | grep -q ''"Status": "Valid"'''
+    command: 'uip api-workflow validate ./ReadyStatus/Workflow.json --output json | grep -q ''"Status": "Valid"'''
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
