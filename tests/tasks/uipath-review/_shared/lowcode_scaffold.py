@@ -36,12 +36,12 @@ agent-builder low-code agent inside a solution:
 import json
 from pathlib import Path
 
-SOLUTION_ID = "11111111-1111-4111-1111-111111111111"
-PROJECT_ID = "22222222-2222-4222-2222-222222222222"
-ENTRY_POINT_UID = "33333333-3333-4333-3333-333333333333"
-EVAL_SET_ID = "44444444-4444-4444-4444-444444444444"
-EVALUATOR_DEFAULT_ID = "55555555-5555-5555-5555-555555555555"
-EVALUATOR_TRAJ_ID = "66666666-6666-6666-6666-666666666666"
+SOLUTION_ID = "11111111-1111-4111-8111-111111111111"
+PROJECT_ID = "22222222-2222-4222-8222-222222222222"
+ENTRY_POINT_UID = "33333333-3333-4333-8333-333333333333"
+EVAL_SET_ID = "44444444-4444-4444-8444-444444444444"
+EVALUATOR_DEFAULT_ID = "55555555-5555-4555-8555-555555555555"
+EVALUATOR_TRAJ_ID = "66666666-6666-4666-8666-666666666666"
 
 BASELINE_INPUT_SCHEMA = {
     "type": "object",
@@ -59,8 +59,20 @@ BASELINE_OUTPUT_SCHEMA = {
 }
 
 BASELINE_MESSAGES = [
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": "{{input.input}}"},
+    {
+        "role": "system",
+        "content": "You are a helpful assistant.",
+        "contentTokens": [
+            {"type": "simpleText", "rawString": "You are a helpful assistant."},
+        ],
+    },
+    {
+        "role": "user",
+        "content": "{{input.input}}",
+        "contentTokens": [
+            {"type": "variable", "rawString": "input.input"},
+        ],
+    },
 ]
 
 BASELINE_SETTINGS = {
@@ -79,7 +91,16 @@ def _agent_json() -> dict:
         "settings": dict(BASELINE_SETTINGS),
         "inputSchema": json.loads(json.dumps(BASELINE_INPUT_SCHEMA)),
         "outputSchema": json.loads(json.dumps(BASELINE_OUTPUT_SCHEMA)),
+        "metadata": {
+            "storageVersion": "50.0.0",
+            "isConversational": False,
+            "showProjectCreationExperience": False,
+            "targetRuntime": "pythonAgent",
+        },
+        "type": "lowCode",
         "messages": json.loads(json.dumps(BASELINE_MESSAGES)),
+        "guardrails": [],
+        "projectId": PROJECT_ID,
     }
 
 
@@ -198,6 +219,10 @@ def write_baseline_lowcode_agent(
             "type": 5,
             "category": 1,
             "prompt": "Score 0-100 by semantic similarity.",
+            "model": "same-as-agent",
+            "targetOutputKey": "*",
+            "createdAt": "2026-01-01T00:00:00.000Z",
+            "updatedAt": "2026-01-01T00:00:00.000Z",
         },
     )
     _write_json(
@@ -210,6 +235,10 @@ def write_baseline_lowcode_agent(
             "type": 7,
             "category": 3,
             "prompt": "Score 0-100 by trajectory adherence.",
+            "model": "same-as-agent",
+            "targetOutputKey": "*",
+            "createdAt": "2026-01-01T00:00:00.000Z",
+            "updatedAt": "2026-01-01T00:00:00.000Z",
         },
     )
 
