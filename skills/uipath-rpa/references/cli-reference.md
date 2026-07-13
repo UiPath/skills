@@ -93,16 +93,17 @@ When a package is installed, its activity docs land under `{PROJECT_DIR}/.local/
 
 `uip rpa run` runs a workflow with no debugging; the `debug` group drives breakpoints, stepping, and exception handling (see [debugging.md](debugging.md)). For UI automation, prefer `debug start` over `run` so the app is preserved for selector repair on error. Cancel an active run or session with `uip rpa execution cancel`. Pass workflow inputs as repeatable `--input-arguments key=value` pairs (see [Passing structured inputs](#passing-structured-inputs)); discover the remaining flags (log level, skip-build, profiling) via `--help`.
 
-Both `run` and `debug start` return the same envelope: `{Result, Code, Data: {runResult: "<json-string>"}, ...}`. `Data.runResult` is a **JSON string** — parse it separately. It has three fields (plus optional `Profiling`):
+Both `run` and `debug start` return the same envelope: `{Result, Code, Data: {runResult: "<json-string>"}, ...}`. `Data.runResult` is a **JSON string** — parse it separately:
 
-- `Output` — the workflow's own serialized output arguments JSON (`""` for non-`Start*` commands). **Carries the workflow's data, not a verdict.**
-- `HasErrors` — `true` iff execution did not complete successfully (compile/validation failure, unhandled exception, cancellation, or timeout); `false` otherwise.
-- `ErrorMessage` — formatted error chain when `HasErrors: true`; `null` otherwise.
+- `Output` — the workflow's own serialized output arguments JSON, populated when the run completes. **Carries the workflow's data, not a verdict.**
+- `HasErrors` — `true` iff execution finished unsuccessfully (compile/validation failure, unhandled exception that ended the run, cancellation, or timeout); `false` otherwise — including while a debug session is `Suspended` on an exception, since the outcome is not decided yet.
+- `ErrorMessage` — formatted error chain when `HasErrors: true`; on debug responses it may instead carry guidance with `HasErrors: false`; `null` otherwise.
+- `DebugState` / `DebugDetails` — debug sessions only (`null` on plain `run`). Every debug command returns at the next stable state — `Paused` (activity + locals in `DebugDetails`), `Suspended` (exception + locals), `Running` (wait timed out), or `Completed`. See [debugging.md § The stable-state debug loop](debugging.md#the-stable-state-debug-loop-headless).
 - `Profiling.OutputDirectory` — present only when `--profiling` was passed on a start verb and collection succeeded; absolute path to the per-run `*.uistat` files and runtime screenshots. See [debugging.md § Profiling Workflow Performance](debugging.md#profiling-workflow-performance).
 
-Workflow log output (`Log Message`, system traces) does **not** appear in `runResult` — logs stream in real time on a separate channel; the envelope carries only the verdict and output data.
+Workflow log output (`Log Message`, system traces) does **not** appear in `runResult` — logs stream in real time on a separate channel; the envelope carries only the verdict, debug state, and output data.
 
-> **Single source of truth for success/failure: outer `Result` (equivalently `HasErrors` inside `runResult`).** `Result: "Success"` already accounts for compile failures, validation failures, and unhandled exceptions — the CLI propagates them. **DO NOT infer failure from a streamed log entry's `Level`.** A successful workflow may emit `Log Message` at `Error`/`Warning` level as observability — that is workflow data, not a CLI failure. Treating log levels as a verdict flips green runs to "failed" and burns retries.
+> **Single source of truth for success/failure of a completed run: outer `Result` (equivalently `HasErrors` inside `runResult`).** `Result: "Success"` already accounts for compile failures, validation failures, and unhandled exceptions — the CLI propagates them. **DO NOT infer failure from a streamed log entry's `Level`.** A successful workflow may emit `Log Message` at `Error`/`Warning` level as observability — that is workflow data, not a CLI failure. Treating log levels as a verdict flips green runs to "failed" and burns retries. In a debug session, check `DebugState` before `HasErrors` — `Suspended` means an exception awaits your decision while `HasErrors` is still `false`.
 
 ---
 

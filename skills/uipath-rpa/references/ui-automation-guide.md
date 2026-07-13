@@ -274,7 +274,7 @@ Install the UI Library as a package dependency; its descriptors appear under **U
 
 ## Running UI Automation Workflows
 
-**Always use `uip rpa debug start`** (not `uip rpa run`) when running workflows with UI automation. A debug session pauses on error instead of tearing down the application, leaving the UI state available for inspection.
+**Always use `uip rpa debug start`** (not `uip rpa run`) when running workflows with UI automation. A debug session pauses on error instead of tearing down the application, leaving the UI state available for inspection. The command returns as soon as that happens — `DebugState: "Suspended"` with the exception and locals in `DebugDetails` — so act on the response instead of waiting for the run to end (see [debugging.md § The stable-state debug loop](debugging.md#the-stable-state-debug-loop-headless)).
 
 **Every debug run** must follow this procedure to prevent stale windows from accumulating or being reused in a dirty state:
 
