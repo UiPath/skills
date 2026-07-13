@@ -27,6 +27,7 @@ Before reviewing implementation details, verify the right agent type was chosen:
 
 | Check | Severity | How to Verify |
 |---|---|---|
+| `bindings_v2.json` is generated and current | Critical | Run `uip agent refresh ./path --output json` before validation |
 | `agent.json` passes schema validation | Critical | `uip agent validate ./path --output json` |
 | `version` field is set (e.g., `"1.1.0"`) | Critical | Read agent.json |
 | `name` field is set and descriptive | Warning | Read agent.json |

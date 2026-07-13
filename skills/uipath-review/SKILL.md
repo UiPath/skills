@@ -20,8 +20,8 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 
 ## Critical Rules
 
-1. **NEVER modify any files.** This skill is read-only. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-maestro-bpmn, uipath-api-workflow, uipath-coded-apps, uipath-platform, uipath-solution).
-2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa validate` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `validate` catches structural / analyzer issues, `build` catches compile-time issues `validate` misses (unknown member names, invalid enum values, JIT failures). Run `uip agent validate` on agents, `uip maestro flow validate` on flows, `uip maestro bpmn validate` on BPMN processes, `uip api-workflow validate` on API workflows. Report every Error, Warning, and Info result from every command. A review without both `validate` AND `build` (for RPA) is incomplete and may ship broken member references.
+1. **NEVER manually modify any files.** This skill is read-only. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-maestro-bpmn, uipath-api-workflow, uipath-coded-apps, uipath-platform, uipath-solution).
+2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa validate` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `validate` catches structural / analyzer issues, `build` catches compile-time issues `validate` misses (unknown member names, invalid enum values, JIT failures). For low-code agents, run `uip agent refresh` and `uip agent validate`. Run `uip maestro flow validate` on flows, `uip maestro bpmn validate` on BPMN processes, `uip api-workflow validate` on API workflows. Report every Error, Warning, and Info result from every command. A review without both `validate` AND `build` (for RPA) is incomplete and may ship broken member references.
 3. **ALWAYS discover and classify before reviewing.** For solutions: classify every project before reviewing any individual one. For single projects: identify the project type and find the enclosing project directory before reviewing individual files.
 4. **Report severity for every finding.** Use: **Critical** (blocks deployment), **Warning** (should fix), **Info** (improvement opportunity).
 5. **Understand business context first.** Before evaluating optimization, ask or infer what the solution is trying to accomplish. A queue-based architecture is not "better" if the use case processes 5 items/day.
@@ -33,6 +33,7 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 11. **Report rules that could not be applied** (missing tooling, missing file, review CLI unavailable, `status: deferred`) in a dedicated "Rules Skipped" subsection of the report — never silently skip.
 12. **Never invent `rule_id` values.** Every `rule_id` cited in the report MUST appear verbatim in EITHER a loaded judgment-catalog file (`references/agents/agents-*-rules.md`) OR the `uip agent review` / `uip codedagent review` JSON output. `rule_id` is a stable contract identifier — consumers grep for it, dashboards aggregate by it, audits trace it. An invented identifier looks authoritative but cannot be looked up, doesn't aggregate, and produces a different name for the same observation on the next run. If you observe a real issue covered by neither source, the finding is still valid — report it as a normal Critical / Warning / Info finding **without** a `rule_id` (no `` `RULE_ID` `` backtick token in the line). **Before emitting the report, scan every cited `rule_id` and confirm it appears verbatim in a loaded catalog file or the review-CLI output; demote any that don't to `rule_id`-less findings.**
 13. **Grade every agent project by the rubric — derived, never asserted.** For **agent projects** (phase 1), produce a letter grade (`A`/`B`/`C`/`D`/`F`, no `+`/`-`) per agent and overall, computed in Step 4.5 as `min(G_det, G_jud)`. **G_det is read from the review CLI's `Data.Grade` (Step 2.5a) — do not recompute it from finding counts.** G_jud you compute from judgment (architecture scores + Step 2.5b + Step 3). CLI findings already shaped `Data.Grade`; only judgment findings feed G_jud, so each finding lands in exactly one sub-grade. Show the binding constraint for every grade; a grade with no shown derivation is invalid. A security or data-integrity judgment Critical forces **F** regardless of design quality (hard gate, not a blend). The skill grade is always ≤ `Data.Grade` (min only lowers) — report both, never overwrite the CLI grade. Do **not** grade non-agent projects (RPA, flows, coded apps) — that rubric is a future phase. See [references/agents/agent-grading-rubric.md](references/agents/agent-grading-rubric.md).
+14. **Never inspect generated agent runtime artifacts.** The `.agent-builder/` and `.local/build/` directories contain generated output, not authored project source. Exclude these trees from discovery, classification, source-file selection, structural metrics, manual checks, findings, and citations. Do not open or cite their contents even if another tool lists them.
 
 ## Review Workflow
 
@@ -44,10 +45,10 @@ Run this from the directory the user specified (or the current working directory
 
 ```bash
 # Discover solution files, project markers, and documentation
-find . -maxdepth 3 \( -name "*.uipx" -o -name "project.json" -o -name "project.uiproj" -o -name "agent.json" -o -name "*.flow" -o -name "*.bpmn" -o -name "app.config.json" -o -name ".uipath" -o -name "langgraph.json" -o -name "llama_index.json" -o -name "openai_agents.json" -o -name "uipath.json" -o -name "main.py" \) 2>/dev/null
+find . -maxdepth 3 \( -type d \( -name ".agent-builder" -o -path "*/.local/build" \) \) -prune -o \( -name "*.uipx" -o -name "project.json" -o -name "project.uiproj" -o -name "agent.json" -o -name "*.flow" -o -name "*.bpmn" -o -name "app.config.json" -o -name ".uipath" -o -name "langgraph.json" -o -name "llama_index.json" -o -name "openai_agents.json" -o -name "uipath.json" -o -name "main.py" \) -print 2>/dev/null
 
 # Search for PDD or design documents
-find . -maxdepth 3 \( -name "*PDD*" -o -name "*pdd*" -o -name "*Process_Design*" -o -name "*process_design*" -o -name "*Process-Design*" -o -name "*ProcessDesign*" -o -name "*SDD*" -o -name "*Solution_Design*" -o -name "*design_document*" -o -name "*DesignDocument*" -o -name "*requirements*" -o -name "*specification*" \) 2>/dev/null
+find . -maxdepth 3 \( -type d \( -name ".agent-builder" -o -path "*/.local/build" \) \) -prune -o \( -name "*PDD*" -o -name "*pdd*" -o -name "*Process_Design*" -o -name "*process_design*" -o -name "*Process-Design*" -o -name "*ProcessDesign*" -o -name "*SDD*" -o -name "*Solution_Design*" -o -name "*design_document*" -o -name "*DesignDocument*" -o -name "*requirements*" -o -name "*specification*" \) -print 2>/dev/null
 ```
 
 #### 0b. Locate the PDD (Process Design Document)
@@ -205,7 +206,7 @@ If `uip rpa analyze` is not available, `uip rpa validate` includes Workflow Anal
 
 | Project Type | Validation Command | Report All Severities |
 |---|---|---|
-| Agent (Low-Code) | `uip agent validate "<PROJECT_DIR>" --output json` | Yes — errors, warnings, info |
+| Agent (Low-Code) | `uip agent refresh "<PROJECT_DIR>" --output json`, then `uip agent validate "<PROJECT_DIR>" --output json` | Yes — errors, warnings, info |
 | Flow | `uip maestro flow validate "<PROJECT_NAME>.flow" --output json` | Yes — schema errors, reference errors, warnings |
 | Maestro BPMN | `uip maestro bpmn validate "<FILE>.bpmn" --output json` | Yes — model errors, warnings |
 | API Workflow | `uip api-workflow validate "<WORKFLOW_JSON>" --output json` | Yes — schema + semantic errors, warnings |

@@ -2,7 +2,7 @@ task_id: skill-review-agents-lowcode-vague-tool-description
 description: >
   Smoke test for uipath-review on a low-code agent project with an
   injected VAGUE_TOOL_DESCRIPTION violation. pre_run scaffolds a
-  minimal agent then creates `resources/VagueTool/resource.json` with
+  minimal agent then creates `resources/vague_tool/resource.json` with
   an empty `description`. This is the most common real-world
   LLM-quality bug — tools the model can't choose between. The reviewer
   runs `uip agent review --output json` first (Step 2.5a), then applies
@@ -53,6 +53,8 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+validate'
     min_count: 1
+    max_count: 1
+    require_success: true
     weight: 2.0
     pass_threshold: 1.0
 
