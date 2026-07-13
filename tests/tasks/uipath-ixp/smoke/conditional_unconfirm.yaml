@@ -33,7 +33,6 @@ initial_prompt: |
 
   For a data-privacy request, roll back the confirmations on the fields that
   capture a person's name or phone number, so those go back to un-annotated.
-  Leave every other field confirmed.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant in this
