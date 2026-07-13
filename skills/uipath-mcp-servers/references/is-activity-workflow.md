@@ -6,7 +6,7 @@ Wrap an Integration Service connector activity as an MCP tool via `uip agenthub 
 
 ## Availability (rollout gate)
 
-IS-activity MCP tools are rolling out: live on alpha/staging; NOT yet on `cloud.uipath.com` (prod — server-side feature flag per tenant). CLI enforces this: `candidates --category is-activity` and `create-is-activity` fail fast with `Reason: IsActivityNotAvailable` on unavailable hosts. On that error: STOP — do not retry, do not run `create-is-activity` to "confirm" the gate (the error already covers every is-activity verb), do not work around. Tell the user the feature is not yet available on this environment; offer `resource` / `raw` tools instead. Re-run with `--force` ONLY when the user confirms the tenant is enrolled in the rollout. CLI versions without the gate: the create succeeds but yields a dead tool (hidden in UI, not invocable) — apply the same rule manually before authoring: base URL is `cloud.uipath.com` → stop and ask.
+IS-activity MCP tools are rolling out: live on alpha/staging; NOT yet on `cloud.uipath.com` (prod — server-side feature flag per tenant). CLI enforces this: `candidates --category is-activity` and `create-is-activity` fail fast with `Reason: IsActivityNotAvailable` on unavailable hosts. The gate follows the payload, not just the verb: `create-resource` / `create-raw` / `update` carrying an IS-activity payload (`type: 1` + `processType: "Api"`, via `--file`/`--body`) are gated identically — there is no smuggling route. On that error: STOP — do not retry, do not run `create-is-activity` to "confirm" the gate (the error already covers every is-activity verb), do not re-author the same payload through `create-raw` / `update`. Tell the user the feature is not yet available on this environment; offer `resource` / `raw` tools instead — meaning a genuinely different tool kind (Orchestrator resource binding / non-IS raw payload), NOT the IS-activity payload under another verb. Re-run with `--force` (accepted on every gated verb) ONLY when the user confirms the tenant is enrolled in the rollout. CLI versions without the gate: the create succeeds but yields a dead tool (hidden in UI, not invocable) — apply the same rule manually before authoring: base URL is `cloud.uipath.com` → stop and ask.
 
 ## Platform IS references — read by action
 
@@ -14,7 +14,7 @@ In `../../uipath-platform/references/integration-service/`. Each is small. Do NO
 
 | Before this action | First read |
 |---|---|
-| `uip is connections list <key>` for the first time | `connections.md` §`Folder Scoping` (pass `--folder <name-or-key>`) |
+| `uip is connections list <key>` for the first time | `connections.md` §`Folder Scoping` (pass `--all-folders`) |
 | `is resources describe ... -f <parent>=<value>` (any cascade re-run) — **mandatory, incl. curated activities you "know" (Jira `curated_create_issue`)** | `resources.md` §`Parent-Field-Driven Custom Fields` (`-f` shape, `--operation` requirement, `--action` rule, merge semantics) |
 | A `staticValues.<bucket>.<field>` whose describe field has a `.reference` block | `reference-resolution.md` §`Static Reference-Value Labeling` (`designTimeLookups` format + cascade-scope edge cases) |
 | An `inputSchema.properties.<field>` whose `.reference.path` contains `{otherField}` | `reference-resolution.md` §`Field Dependency Chains` (resolve parent first) |
@@ -26,7 +26,7 @@ In `../../uipath-platform/references/integration-service/`. Each is small. Do NO
 ## Critical rules (extend SKILL.md)
 
 1. **Discover before authoring.** `candidates --category is-activity` resolves connector + activity; `is resources describe` pulls field metadata. Compose `metadata` / `inputSchema` / `outputSchema` from the describe response, never from memory — every connector + operation has its own shape.
-2. **Connection is folder-scoped.** `uip is connections list <connector> --folder <name-or-key> --output json` (the unfiltered form silently filters to the current context and may return empty). Pass `--target-identifier <connection-guid>`; `targetFolderKey` then defaults to the MCP server folder. Connection in a different folder → set it explicitly with `--target-folder-path <name>` / `--target-folder-key <guid>` (mirrors `--folder-path` / `--folder-key`, never both); the cross-folder guard allows an explicit target folder. Neither target-folder flag passed and `Reason: CrossFolderConnection` → pick from `Data.candidates`. (`connections.md` §`Folder Scoping` / §`Selecting a Connection`)
+2. **Enumerate connections across ALL folders, then pick.** Discovery: `uip is connections list <connector-key> --all-folders --output json` — one call spanning every folder you can see. Mandatory on EVERY connections listing — including verification when the user already named a connection or folder. Never call the bare form: without `--all-folders` the call silently scopes to the current context and may return empty; `--all-folders` is mutually exclusive with `--folder` / `--folder-key`. Capture each row's folder — the user picks connection + folder together (Pre-flight 1). Pass `--target-identifier <connection-guid>`; `targetFolderKey` then defaults to the MCP server folder. Connection in a different folder → set it explicitly with `--target-folder-path <name>` / `--target-folder-key <guid>` (mirrors `--folder-path` / `--folder-key`, never both); the cross-folder guard allows an explicit target folder. Neither target-folder flag passed and `Reason: CrossFolderConnection` → pick from `Data.candidates`. (`connections.md` §`Folder Scoping` / §`Selecting a Connection`)
 3. **Cascade api-type ObjectActions.** Before the first `-f` cascade re-run you **MUST read `resources.md` §`Parent-Field-Driven Custom Fields`** — the pointers in this rule are a map, not a substitute. Knowing a connector's cascade fields from memory (e.g. Jira `curated_create_issue` = `project.key` + `issuetype.id`) does NOT exempt you: the `-f` shape, `--operation` requirement, `--action` rule, and merge semantics vary per connector and change over time; a shape that "looks right" passes `--dry-run` and fails at runtime. Then: `describe <key> <objectName> --connection-id <id> --operation <op>`; if `requestFields` is short for the operation, re-run with `-f <parent>=<value>` (repeatable). Omit `--action` for Jira `curated_create_issue` Create (passing it → `No api-type ObjectAction matched`); pass `--action` only when describe reports multiple matches. Cascade examples: Jira `curated_create_issue`, Salesforce `query_records`, Dataservice V3.
 4. **Baked static reference values need `designTimeLookups`.** Every `staticValues.<bucket>.<field>` (any bucket — `field` / `query` / `header` / `path`) whose describe field has a `.reference` block MUST emit `designTimeMetadata.designTimeLookups[<dotted-field>] = "<displayName> - <value>"`. Applies to `requestFields[]` and `parameters[]`; NOT to runtime / enum fields — labeling renders only for baked values. (`reference-resolution.md` §`Static Reference-Value Labeling`)
 5. **Stringify `metadata` / `inputSchema` / `outputSchema` as scalars** — SDK types them `string | null`. Build each in a file and pass `--metadata "$(jq -c . metadata.json)"`; do not assemble multi-KB JSON inline, and do not mix `--file` with scalar options (`ConflictingInput`). `--output-schema "{}"` when the activity has no `responseFields` (empty string → `Unexpected end of JSON input`).
@@ -45,7 +45,7 @@ Cascade roots and search references with no user-supplied filter = **hard ask** 
 ## Pre-flight (walk before drafting `--metadata`)
 
 0. **Scope.** Restate server slug, folder, exact tool list (one bullet per `<connector> · <activity> · <op>`), baked statics. Folder: if unnamed, `uip or folders list --output json` → `Shared` (org-default) or `<email>'s workspace` (personal needs `--folder-key <guid>`). Run `mcp-tools list --mcp <slug> --folder-path <name>` first — same name + connector + objectName exists → ask update vs add-new.
-1. **Connection** — Rule 2. Confirm even on a single match (present name / owner / folder, never UUIDs, per `connections.md` §`Selecting a Connection`). N>1 → ASK. Zero in the searched folder → re-run per remaining folder from `uip or folders list --output json` (a connection in ANY folder is usable via Rule 2's target-folder flags) and retry `--refresh`; still zero everywhere → surface a create-connection hint and STOP.
+1. **Connection** — Rule 2: enumerate with `--all-folders` FIRST. Exploring every folder is mandatory before presenting any choice — never ask off a single-folder view. Then ask which connection + folder to use: present name / owner / folder per row, never UUIDs (`connections.md` §`Selecting a Connection`); 2–4 rows → `AskUserQuestion`, more → plain-text top list. Confirm even on a single match. A connection in ANY folder is usable (Rule 2's target-folder flags). Zero across all folders → surface a create-connection hint and STOP.
 2. **Activity disambiguation.** `candidates --category is-activity --connector <key>` returns ≥2 overlapping entries (`send_message_to_channel` vs `_to_user`) → ASK. GET tie-break: `Get…` / `Find…` without an id → `List`; `Get … by …` or path `{id}`/`{key}` → `Retrieve`; unsure → describe without `--operation`, present `Data.availableOperations[]`.
 3. **Reference fields** — the 3-way choice above, per field.
 4. **Required scalar with no enum / reference / description** → STOP, ask (e.g. Slack `UsersByEmail.By`). Do not bake a guess.
@@ -101,6 +101,7 @@ uip or folders list --output json
 
 # 1 — confirm / create the `uipath`-type server (slug ^[a-z0-9-]+$, len 3-50)
 uip agenthub mcp list --folder-path <folder> --output-filter "Data.items[].slug" --output json
+# server folder unknown → uip agenthub mcp list --all-folders --output json (then use its folder on every later call)
 uip agenthub mcp create uipath --name "<display>" --slug <slug> --folder-path <folder> --output json
 
 # 2 — connector key + activity (vendor name ≠ connector key; e.g. Slack → uipath-salesforce-slack)
@@ -114,8 +115,8 @@ uip is resources describe <key> <objectName> --connection-id <id> --operation <o
 # requestFields[] (body), parameters[] (path/query/header), responseFields[] (output).
 # Short requestFields → curated: cascade with -f.  [READ FIRST, mandatory even if you know the fields: resources.md §Parent-Field-Driven Custom Fields]
 
-# 4 — connection folder (may differ from server folder — see step 7 --target-folder-*)        [READ: connections.md §Selecting a Connection + §Folder Scoping]
-uip is connections list <connector-key> --folder <connection-folder-name-or-key> --output json
+# 4 — connections across ALL folders (mandatory even when the user named the connection; folder may differ from server — step 7 --target-folder-*)   [READ: connections.md §Selecting a Connection + §Folder Scoping]
+uip is connections list <connector-key> --all-folders --output json   # never the bare form; present name/owner/folder; user picks connection + folder
 
 # 5 — label every baked static reference value  [READ: reference-resolution.md §Static Reference-Value Labeling]
 uip is resources run list <connector> <reference.objectName> --connection-id <id> --output json
@@ -151,7 +152,7 @@ Skeleton for `--file`: `uip agenthub mcp-tools template is-activity --output jso
 
 ## IS-Activity Troubleshooting
 
-- **`Reason: IsActivityNotAvailable`** — environment not in the is-activity rollout (see §Availability). Stop; offer `resource` / `raw`; `--force` only for rollout-enrolled tenants.
+- **`Reason: IsActivityNotAvailable`** — environment not in the is-activity rollout (see §Availability). Gate follows the payload: also fires on `create-resource` / `create-raw` / `update` carrying an IS-activity payload. Stop; offer `resource` / `raw` (a genuinely different kind, not the same payload re-verbed); `--force` only for rollout-enrolled tenants.
 - **HTTP 400, no detail** — re-run `--dry-run`; CLI surfaces ASP.NET ProblemDetails as an `Errors` field of per-field failures.
 - **404 at runtime** — `metadata.mapping.path` missing a `{token}` from `object.path`. List every placeholder and retry.
 - **`Reason: CrossFolderConnection`** — connection in a different folder than the server. Pass `--target-folder-path <name>` / `--target-folder-key <guid>` for the connection's folder (guard allows an explicit target folder), or pick a `Data.candidates` entry via `--target-identifier <guid>`, or move the connection / server.
@@ -160,7 +161,8 @@ Skeleton for `--file`: `uip agenthub mcp-tools template is-activity --output jso
 - **Form renders raw scalar (`OR`, `3`) instead of a labeled value** — `designTimeLookups[<field>]` missing (Rule 4 / Step 5), then `mcp-tools update <tool-id>`.
 - **`ConflictingInput: Use exactly one of --file, --body, or scalar options.`** — pass schemas as scalars, not `--file`.
 - **`Unexpected end of JSON input` on `--output-schema`** — pass `"{}"` for no-response-body activities.
-- **`connections list <key>` empty in one folder, connection exists elsewhere** — folder-scoped; re-run with `--folder <name-or-key>` of the folder that owns the connection (`uip or folders list --output json` to enumerate). Cross-folder is allowed — reference it via `--target-folder-path` / `--target-folder-key` (Rule 2); do NOT move the connection to the server folder. (`connections.md` §`Folder Scoping`)
+- **`connections list <key>` empty / misses a known connection** — `--all-folders` missing; without it the call silently scopes to the current context. Re-run with `--all-folders` (mutually exclusive with `--folder` / `--folder-key`). Cross-folder is allowed — reference it via `--target-folder-path` / `--target-folder-key` (Rule 2); do NOT move the connection to the server folder. (`connections.md` §`Folder Scoping`)
+- **`Reason: TargetFolderMismatch` / `AmbiguousConnection`** — `--target-name` + explicit `--target-folder-*`: zero / multiple connections for the connector in the requested folder. Pick from `Data.candidates`, re-run with `--target-identifier <conn-guid>`.
 - **403 Forbidden at runtime** — connection scope mismatch; re-authorize via `uip is connections edit <id>` with broader scopes (`connections.md` §`Scope-Related Errors`).
 
 For generic AgentHub-MCP issues (slug regex, folder context, refresh-tools async/sync, `mcp delete` lookup), see SKILL.md §Troubleshooting.
