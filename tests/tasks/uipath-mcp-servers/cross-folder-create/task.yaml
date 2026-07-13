@@ -1,6 +1,6 @@
 task_id: skill-mcp-servers-cross-folder-create
 description: |
-  Wrap Jira `curated_create_issue` Create as an MCP tool on the `test-mcp-skill` AgentHub server when the IS connection lives in a DIFFERENT folder (Finance) than the server (Shared). Exercises the cross-folder path: folder-scoped `is connections list`, explicit `--target-folder-path`/`--target-folder-key` on create (or recovery from `Reason: CrossFolderConnection`). Uses the manifest-driven uip mock — no real tenant call.
+  Wrap Jira `curated_create_issue` Create as an MCP tool on the `test-mcp-skill` AgentHub server when the IS connection lives in a DIFFERENT folder (Finance) than the server (Shared). Exercises the cross-folder path: `is connections list --all-folders` discovery, explicit `--target-folder-path`/`--target-folder-key` on create (or recovery from `Reason: CrossFolderConnection`). Uses the manifest-driven uip mock — no real tenant call.
 tags: [uipath-mcp-servers, smoke, 'mode:build']
 agent:
   type: claude-code
@@ -47,9 +47,22 @@ success_criteria:
   description: create-command resolves the connection's folder explicitly via a target-folder flag
   path: create-command.sh
   includes: [--target-folder]
+# Graded via the mock call log, not command_executed: agents inline multi-KB
+# schemas, pushing --target-folder-* past the 2000-char command_executed
+# truncation window. The log records the executed argv in full.
+- type: run_command
+  description: The executed create-is-activity call carried an explicit --target-folder-path/--target-folder-key (mock call log)
+  command: grep -E 'create-is-activity.*--target-folder-(path|key)' mocks/.calls.jsonl
+  timeout: 30
+  expected_exit_code: 0
+# Advisory (pass_threshold 0): with the connection id+folder handed over in the
+# prompt, agents skip the discovery sweep 2/2 runs — grading it makes the bar
+# unwinnable here. Recorded for convention tracking; the sweep is load-bearing
+# only when the connection folder is unknown.
 - type: command_executed
-  description: Agent ran create-is-activity with an explicit --target-folder-path/--target-folder-key for the cross-folder connection
+  description: Agent enumerated connections across ALL folders before picking (--all-folders sweep)
   tool_name: Bash
-  command_pattern: uip\s+agenthub\s+mcp-tools\s+create-is-activity[\s\S]*--target-folder-(path|key)
+  command_pattern: (uip|\$UIP"?)\s+is\s+connections\s+list[\s\S]*--all-folders
   min_count: 1
+  pass_threshold: 0
 run_limits: {max_turns: 40}
