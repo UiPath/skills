@@ -2,23 +2,20 @@
 
 Fix-one-thing discipline, the validation iteration loop, smoke test procedure, and RPA-specific fix procedures.
 
-## Pre-generation: List Analyzer Rules
+## On demand: List Analyzer Rules
 
-Before creating or editing any workflow file (`.cs` with `[Workflow]`/`[TestCase]`, or `.xaml`), list the enabled Workflow Analyzer rules so generated code satisfies them on the first attempt instead of round-tripping through `validate` fixes:
+`validate` and `build` already enforce the project's enabled Workflow Analyzer rules — violations come back with the rule ID, severity, and recommendation, so the normal authoring loop needs **no** rule pre-fetch. Do NOT run `analyzer-rules list` as an authoring prerequisite: the unscoped call enumerates every rule across every package and can take a minute or more, and most of its output never affects the code you write.
+
+Run it **only on demand**:
+
+1. The **user asks** about the project's best-practice / analyzer rules ("what rules does this project enforce?", "list the analyzer rules", "why is UI-REL-001 firing?").
+2. **Repeated violations of the same rule family** across `validate`/`build` iterations — reading the full rule set (scoped, see below) lets you author against it instead of fixing violations one by one.
 
 ```bash
-uip rpa analyzer-rules list --project-dir "<PROJECT_DIR>" --output json
+uip rpa analyzer-rules list --project-dir "<PROJECT_DIR>" --scope "<Activity|Workflow|Coded Workflow|Project>" --output json
 ```
 
-Apply every rule whose `severity` is `error` or `warning` during authoring. `info` rules are advisory.
-
-**When to run:**
-1. Once at the start of every task that will generate or edit a workflow file.
-2. Re-run after adding or updating a NuGet package — package-shipped rules (`MA-*`) change with the dependency set.
-
-**When NOT to run:**
-1. Pure read-only / Q&A tasks that do not produce or modify workflow files.
-2. Edits that only touch non-workflow files (`project.json`, docs, plain `.cs` source files without workflow attributes).
+Prefer a `--scope` matching what you're authoring — scoped calls return in seconds; unscoped can take a minute+. Apply `error` and `warning` rules; `info` rules are advisory. If you do consult the rules and then add or update a NuGet package, the package-shipped (`MA-*`) rules may have changed with the dependency set.
 
 Rule prefixes and full schema: [cli-reference.md § analyzer-rules list](cli-reference.md).
 
