@@ -166,7 +166,7 @@ Workflow steps, response shape, downstream OR regeneration for coded vs XAML, an
 
 Once targets are registered in the OR (via `uia-configure-target` or indication fallback), attach them to XAML activities per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`. That doc owns the concrete subcommands, flags, and response shapes for both attachment paths.
 
-**Path-choice policy (this skill's scope — which path to take, not how to invoke it).** The attachment guide describes two paths. Follow its fast path:
+**Path-choice policy (this skill's scope — which path to take, not how to invoke it).** The attachment guide describes two paths:
 
 - **Link path — DEFAULT.** Attach OR entries to activities by their `sap2010:WorkflowViewState.IdRef` — screen first, then all element targets in one batched call. The file does not need to be open in Studio.
 - **Embed fallback — per-reference, only on a link failure.** If a link call fails for a specific reference, inline that reference's OR-resolved target XAML as a child of the consuming activity element — scoped to only the failed reference, not the whole screen.
