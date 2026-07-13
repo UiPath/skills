@@ -180,7 +180,7 @@ Two `uip rpa` commands need a running Studio Desktop instance — they have UI s
 | Command | Why it needs Studio |
 |---------|---------------------|
 | `uip rpa files diff` | Opens an interactive diff window in Studio's UI; finishes when the user closes the window. |
-| `uip rpa focus-activity` | Selects/highlights an activity in Studio's active workflow designer. |
+| `uip rpa focus-activity` | Selects/highlights an activity in Studio's active workflow designer. ⚠️ Against headless it **silently succeeds without doing anything** (there is no designer) — a `success: true` from a headless session does NOT mean anything was focused. |
 
 When (and only when) you need to run one of these, ensure Studio Desktop is up:
 
