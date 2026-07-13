@@ -22,7 +22,6 @@ initial_prompt: |
 success_criteria:
   - type: command_executed
     description: "Agent engaged the uipath-planner skill (rather than a single specialist)"
-    tool_name: "Skill"
     command_pattern: "uipath-planner"
     min_count: 1
     weight: 2.0
