@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "_doc": "Error logs for the faulting job. The robot-service entry explicitly attributes the fault to a session-creation TIMEOUT (the create-session call did not complete within the 120s timeout) and notes LSA returned NO logon rejection — the defining contrast with a logon-failure (job-faulted-logon-failure). It also records Robot version 23.4.7, corroborating the < 23.10 known defect.",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-13T02:02:05.390Z",
+      "Message": "Job 'c0ffee01-1111-4222-8333-444455556666' failed to start. Could not start executor. Creating user session timed out.\r\n   at UiPath.Robot.Service.SessionManager.CreateSessionAsync(LogonRequest request)\r\n   at UiPath.Robot.Service.JobManager.StartJobAsync(JobStartRequest request, CancellationToken cancellationToken)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-13T02:02:05.210Z",
+      "Message": "[Robot] Creating a Windows session for UIPATH\\SVC_RECON on RECON-BOT-01 did not complete within the 120s session-creation timeout. The create-session call timed out; LSA returned NO logon rejection (no bad-password, locked, or expired status). Robot version 23.4.7."
+    }
+  ]
+}
