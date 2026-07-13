@@ -67,9 +67,11 @@ success_criteria:
     prompt: |
       The agent worked against a Data Fabric entity whose Body field is
       MULTILINE_MAX. Platform contract: `records list` / `records query`
-      return a size marker string ("HasValue=true Length=N") for such fields;
-      only `records get` returns the full content; server-side filters on the
-      field are rejected with HTTP 400 (FieldNotSearchable).
+      return a size marker string starting "HasValue=true Length=N" (with a
+      trailing hint about Get Entity Record By Id) for such fields; only
+      `records get` returns the full content; server-side filters on the
+      field are rejected with HTTP 400 ("Field 'Body' is of type
+      MULTILINE_MAX and cannot be used in filters.").
 
       Read the agent's final response. Score on three points:
 
