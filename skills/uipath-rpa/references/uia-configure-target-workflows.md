@@ -168,7 +168,7 @@ Once targets are registered in the OR (via `uia-configure-target` or indication 
 
 **Path-choice policy (this skill's scope — which path to take, not how to invoke it).** The attachment guide describes two paths. Follow its fast path:
 
-- **Link path — DEFAULT.** Attach OR entries to activities by their `sap2010:WorkflowViewState.IdRef` — screen first, then all element targets in one batched call. It works first-try on cold, agent-authored XAML; the file does not need to be open in Studio.
+- **Link path — DEFAULT.** Attach OR entries to activities by their `sap2010:WorkflowViewState.IdRef` — screen first, then all element targets in one batched call. The file does not need to be open in Studio.
 - **Embed fallback — per-reference, only on a link failure.** If a link call fails for a specific reference, inline that reference's OR-resolved target XAML as a child of the consuming activity element — scoped to only the failed reference, not the whole screen.
 
 Take the link path first. On a link failure for a reference, drop straight to the embed fallback for that one reference — do not iterate through activity-id / display-name variations (see § CLI Pitfalls). The package attachment guide is source-of-truth when it diverges from this skill (per SKILL.md).
@@ -185,4 +185,4 @@ Runtime symptoms that have wasted entire capture sessions. Canonical flag list, 
 - **Selector resolution rejects bare element refs (`Invalid --refs entry`).** Each ref must be paired with the definition file that owns it.
 - **OR element-creation rejects inline JSON.** The OR CLI consumes pre-written per-element definition files only. Generate the definition files first, then invoke create-elements with their paths.
 - **UIA interact actions reject discovery and global flags (`unknown option`).** Interact subcommands accept only interaction-shape flags. Folder, ref, and project-dir style flags belong to other UIA subcommand families.
-- **A link call may fail on a cold XAML file with `Could not retrieve the activity from the workflow`.** On current packages the link path works first-try on cold, agent-authored XAML; older package versions may still fail on a cold file. Either way the fix is the same: stop after the **first** failure for that reference — do not iterate through activity-id / display-name / property-name variations — and switch to the embed fallback for it (see § Attaching Targets to Workflow Activities). The symptom is not that the activity-id, display name, or reference ID are wrong.
+- **A link call fails with `Could not retrieve the activity from the workflow`.** Not an activity-id / display-name / reference-ID problem — do not iterate on those. Stop after the **first** failure for that reference and use the embed fallback (see § Attaching Targets to Workflow Activities).
