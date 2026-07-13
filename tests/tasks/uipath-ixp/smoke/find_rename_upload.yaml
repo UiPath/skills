@@ -6,7 +6,7 @@ description: >
   `documents upload`. The original (pre-rename) filename must never reach
   an executed uip call.
 
-  Positive name-check and both negative guards grade the mock's .calls.log
+  Positive name-check and both negative guards grade the mock's calls.log
   (actual uip invocations, shell variables expanded) via file_contains — a
   Bash-text regex would miss a filename passed through a variable and
   false-match names merely quoted in comments or prose. The rename-not-copy
@@ -53,7 +53,7 @@ success_criteria:
 
   - type: file_contains
     description: "An executed uip call carried the renamed filename Uploaded_file_25may.png (mock call log; extension preserved)"
-    path: "mocks/.calls.log"
+    path: "mocks/calls.log"
     includes: ["# seeded by mock_template", "Uploaded_file_25may.png"]
     weight: 2.0
     pass_threshold: 1.0
@@ -74,7 +74,7 @@ success_criteria:
 
   - type: file_contains
     description: "Agent did NOT upload under the original (pre-rename) name: no executed uip call references vendor_invoice_scan"
-    path: "mocks/.calls.log"
+    path: "mocks/calls.log"
     includes: ["# seeded by mock_template"]
     excludes: ["vendor_invoice_scan"]
     weight: 3.0
@@ -82,7 +82,7 @@ success_criteria:
 
   - type: file_contains
     description: "Agent did NOT reach for `projects create` (bulk new-project upload) on an existing project"
-    path: "mocks/.calls.log"
+    path: "mocks/calls.log"
     includes: ["# seeded by mock_template"]
     excludes: ["ixp projects create"]
     weight: 1.0
