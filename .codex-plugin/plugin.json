@@ -1,6 +1,6 @@
 {
   "name": "uipath",
-  "version": "1.198.0",
+  "version": "1.198.1",
   "description": "UiPath skills for building, validating, deploying, and operating automations and agents from Codex.",
   "author": {
     "name": "UiPath"
