@@ -6,6 +6,12 @@ description: >
   nondeterminism that would mask regressions in other tests. Purely local: no
   tenant, no login, no packages published. Uses the committed fixture at
   tests/fixtures/solutions/e2e-stub-solution.
+
+  Grading fingerprints the packages the agent produced; it does not re-run
+  `uip solution pack` at grade time (the grading subprocess resolves CLI tool
+  packages from its own environment — on the 2026-07-10 nightly that env had
+  no solution-tool, failing the check for reasons unrelated to determinism).
+  The command_executed criterion pins that the agent really packed twice.
 tags: [uipath-solution, integration, mode:build, lifecycle:generate, solution]
 
 agent:
@@ -31,6 +37,14 @@ initial_prompt: |
   Don't ask for approval, don't pause.
 
 success_criteria:
+  - type: command_executed
+    description: "Agent packed the solution twice with uip solution pack"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+pack'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: run_command
     description: "uip solution pack is structurally deterministic (file list + metadata)"
     command: "python3 $TASK_DIR/check_pack_determinism.py"
