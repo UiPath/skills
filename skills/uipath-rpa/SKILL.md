@@ -113,14 +113,14 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 
 ## Capture-First Fast Path
 
-When the request is "automate this dialog/form" or "build a UI test from these manual steps" — i.e. the bulk of the work is target capture, not coding — **defer authoring-phase prerequisites until target capture is complete**. The capture surface is interactive, app-state-sensitive, and time-bound; project-context discovery and analyzer rules add nothing during capture and steal time from it.
+When the request is "automate this dialog/form" or "build a UI test from these manual steps" — i.e. the bulk of the work is target capture, not coding — **defer authoring-phase prerequisites until target capture is complete**. The capture surface is interactive, app-state-sensitive, and time-bound; project-context discovery adds nothing during capture and steals time from it.
 
 **Fast-path order for capture-first tasks.** Read [ui-automation-guide.md](references/ui-automation-guide.md) and [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) in full first (Rule 7; the second is used in step 3). Then:
 
 1. **Pre-flight Window Baseline** — list top-level windows once; decide whether to launch the app ([§ Pre-flight: Window Baseline](references/ui-automation-guide.md)).
 2. **Inventory targets from manual steps** (Test Manager test case, PDD, or written script). Each "Click X" / "Enter Y" / "Select Z" / "Verify W" step maps to one OR element. Group by screen state ([§ Capturing from Manual Test Steps](references/ui-automation-guide.md)).
 3. **Capture all targets** screen by screen via `uia-configure-target` and screen advancement ([§ Multi-Step UI Flows](references/uia-configure-target-workflows.md)).
-4. **Then enter authoring phase:** project-context discovery (the precondition above), analyzer rules (Critical Rule 3 — Authoring-phase start), write code, validate.
+4. **Then enter authoring phase:** project-context discovery (the precondition above), write code, validate.
 
 Skip this path when the task has no UI surface (data transforms, IS connector calls, headless file/email automation). Also skip it when the task HAS a UI surface but **no live app to capture against** (app not installed, no GUI, capture deferred to a developer) — there is nothing to capture, so use the § Placeholder-Selector Stub Pattern above instead. The Window Baseline does not tell you if the app is installed and has a GUI — validate that separately (e.g. look for the executable on disk) or ask the user.
 
@@ -149,12 +149,12 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
      - **No matches** → fall back to a built-in `--template-id` and tell the user nothing was found.
    - Built-in `--template-id` keywords map without a search: `library` → `LibraryProcessTemplate`, `test automation` / `test project` → `TestAutomationProjectTemplate`, otherwise `BlankTemplate`. When `--template-package-id` is set, `--template-id` is ignored. Full decision flow: [environment-setup.md § Template selection](references/environment-setup.md).
 2a. **Pass `--target-framework` AND `--expression-language` explicitly on every `uip rpa init` — never omit them.** Both are immutable after creation (Rule 23); omitting `--target-framework` silently yields a **Windows** project. Choose framework by where the automation runs: cross-platform / non-Windows runtime (Linux, container, serverless) or Studio Web editing → **`Portable`** (Cross-platform); Windows runtime using Windows-only capabilities (Excel COM, classic Office, WPF / `PresentationFramework`, Windows-only UIA) or Studio Desktop as the edit surface → **`Windows`** (not editable in Studio Web). A request needing *both* a cross-platform runtime and a Windows-only capability is contradictory — surface it, don't silently pick. **Windows - Legacy is a last resort** (explicit ask or hard .NET 4.6.1 need; never inferred from VB.NET or non-"X" classic activities) — create it in Legacy mode, not modern `init`. No signal → `AskUserQuestion` (Windows vs Cross-platform), framed around the runtime host. `--expression-language`: default `VisualBasic`, `CSharp` only on explicit request.
-3. **Phase-gated validation: analyzer rules run at AUTHORING-phase start, not session start.** Three-phase validation:
-   - **Authoring-phase start** (immediately before creating or editing any workflow file — `.cs` with `[Workflow]`/`[TestCase]`, or `.xaml`): `uip rpa analyzer-rules list --project-dir "<PROJECT_DIR>" --output json` to list the enabled Workflow Analyzer rules. Apply every `error` and `warning` rule during authoring so generated code passes `analyze` and `build` on the first attempt. Run once at this point; re-run only when project dependencies change. **DO NOT run at session start** — the call can take a minute or more (use `--scope <Activity|Workflow|Coded Workflow|Project>` to narrow if it times out, see [cli-reference.md § analyzer-rules list](references/cli-reference.md)). For capture-first tasks (target capture from manual test steps, dialog automation), this prerequisite is deferred until capture is complete — see § Capture-First Fast Path below.
-   - **Per-file** (after every create or edit): `uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Catches structural XAML, missing references, analyzer rules, schema violations. Fix one thing per iteration.
+3. **Phase-gated validation.** Two-phase validation:
+   - **Per-file** (after every create or edit): `uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Catches structural XAML, missing references, analyzer-rule violations, schema violations. Fix one thing per iteration.
    - **Project-level build** (after per-file `validate` is clean across all files in the edit session, and before declaring done): `uip rpa build "<PROJECT_DIR>" --output json` until clean. Catches what `validate` misses (unknown members, invalid enums, CacheMetadata / member resolution, attribute-form C# JIT) — full list at [validation-guide.md § Errors `build` catches that `validate` misses](references/validation-guide.md). If `build` errors, identify the offending file from the output and re-run `validate --file-path` on it.
    - **5-attempt cap per loop** — 5 attempts for each file's per-file `validate` loop; a separate 5 attempts for the project-level `build` loop. Fix one root cause per iteration.
    - **Smoke-test shortcut:** A successful `uip rpa run` substitutes for the standalone end-of-session `build` — `run` compiles internally. Prefer `run --skip-build` when `build` has just passed; see [validation-guide.md § Smoke Test](references/validation-guide.md).
+   - **Do NOT run `uip rpa analyzer-rules list` as an authoring prerequisite.** `validate` and `build` already enforce the enabled analyzer rules and report violations with rule IDs and recommendations — pre-fetching the rule list is speculative cost (the unscoped call can take a minute or more). It is an **on-demand** command: run it when the user asks about the project's best-practice/analyzer rules, or when repeated violations of the same rule family suggest authoring against the full rule set. See [validation-guide.md § On demand: List Analyzer Rules](references/validation-guide.md) and [cli-reference.md § analyzer-rules list](references/cli-reference.md).
 
    See [references/validation-guide.md](references/validation-guide.md).
 4. **ALWAYS validate files as you go AND verify the project builds before declaring done.** After every create or edit: per-file `validate` to clean. Project-level `build` runs once at the end of the edit session (or at any compile-verification gate) — not after every Edit, because `build` is project-scoped and rebuilds the entire project regardless of which file changed. `validate` clean alone is not "validated"; it cannot see member or enum errors — the project-level `build` is mandatory before declaring done. See [references/validation-guide.md](references/validation-guide.md).
@@ -209,7 +209,6 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 
 1. **Post-`init` prerequisite batch.** After `uip rpa init` returns, these depend only on the project existing — NOT on each other. Emit them in ONE message:
    - `Read` `project.json` + the scaffolded `Main.xaml`
-   - `uip rpa analyzer-rules list` (Rule 3 authoring-phase prerequisite)
    - `uip rpa packages install` for packages already known from the request
    - `uip rpa activities find` for activities you'll author
 
@@ -372,7 +371,7 @@ Check `expressionLanguage` in `project.json`. VB.NET uses `[brackets]` for expre
 |---------|---------|
 | `activities find --query "<keyword>"` | Discover activities by keyword |
 | `activities get-default-xaml --activity-class-name "<class>"` | Get starter XAML for an activity |
-| `analyzer-rules list --project-dir "<dir>"` | List enabled Workflow Analyzer rules — run before generating |
+| `analyzer-rules list --project-dir "<dir>"` | List enabled Workflow Analyzer rules — on demand only (user asks about project rules, or repeated violations of one rule family); `validate`/`build` enforce the rules without it |
 | `validate --file-path "<file>"` | Per-file static validation (structure, references, analyzer rules) |
 | `build "<PROJECT_DIR>"` | Compile-time validation (member names, enum values, JIT expressions) — run after `validate` is clean |
 
