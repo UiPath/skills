@@ -1,0 +1,62 @@
+task_id: skill-flow-ipe-jira-get-issue
+description: >
+  E2E live Jira coverage — builds a Flow with a manual trigger and an Atlassian
+  Jira "Get Issue" connector node that reads a pre-seeded issue by key, then
+  grades by executing the flow against a real Jira sandbox connection
+  (`flow debug`) and asserting the fetched summary appears in the flow outputs.
+  The issue is created by pre_run (its key + summary are unique per run and land
+  in `seed.json`), so the agent must read the key from the fixture rather than
+  inventing one, and cleanup happens in post_run.
+
+  Tenant prerequisite: a `uipath-atlassian-jira` connection in folder
+  `Shared/uipath-maestro-flow` (currently the single Jira connection there),
+  reaching a project that accepts new issues (default: `CE` / "Coder Eval",
+  issue type Task). Override targets via JIRA_PROJECT_KEY / JIRA_ISSUETYPE_ID /
+  JIRA_CONNECTION_NAME.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, e2e, uipath-atlassian-jira, ipe, mode:build]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 900
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/_jira_shared/seed_jira.py with_issue"
+    timeout: 90
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/_jira_shared/teardown_jira.py"
+    timeout: 120
+
+initial_prompt: |
+  Create a new Flow project called "JiraGetIssue" with a manual trigger.
+  It should read a single Jira issue using the Atlassian Jira "Get Issue"
+  connector activity, and expose the retrieved issue's summary (and status) as
+  flow outputs.
+
+  Read `seed.json` in the current directory for the issue to fetch: use the
+  `issue_key`, `project_key`, and `issuetype_id` exactly as given.
+
+  Use the Atlassian Jira connection available in the `Shared/uipath-maestro-flow`
+  folder. If the Atlassian Jira connector isn't available in your registry,
+  stop rather than falling back to a generic HTTP request.
+
+  Validate the final flow file.
+
+success_criteria:
+  - type: command_executed
+    description: "uip maestro flow validate was called"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "JiraGetIssue checks: valid flow with Jira Get-Issue node referencing the seeded key, debug completes, and outputs carry the seeded summary"
+    command: "python3 $TASK_DIR/check_jira_get_issue.py"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
