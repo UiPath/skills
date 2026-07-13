@@ -23,16 +23,12 @@ ARG CLI_VERSION=alpha
 # `set -euo pipefail` makes any failed tool install abort the build.
 # (Fixes the recurring `check_folder_id_fresh` "No compatible alpha version of
 # '@uipath/orchestrator-tool'" failures in skill-flow-outlook-trigger-inbox.)
+# THROWAWAY-BRANCH OVERRIDE: install @uipath/* from PUBLIC npm. The GH-Packages
+# pin above predates public preview publishing — public npm now carries the
+# full preview line for the CLI AND every tool plugin (verified: cli/orchestrator/
+# maestro tools all publish preview=1.198.0-preview.81). The internal alpha feed
+# is stale (1.197.0-alpha.20260626). NPM_AUTH_TOKEN is unused on this branch.
 RUN set -euo pipefail && \
-    if [ -z "$NPM_AUTH_TOKEN" ]; then \
-      echo "Error: NPM_AUTH_TOKEN must be passed as build arg"; exit 1; \
-    fi && \
-    npmrc="$(npm config get globalconfig)" && \
-    mkdir -p "$(dirname "$npmrc")" && \
-    printf '%s\n' \
-      '@uipath:registry=https://npm.pkg.github.com/' \
-      "//npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}" \
-      > "$npmrc" && \
     npm install -g "@uipath/cli@${CLI_VERSION}" && \
     uip --version && \
     uip tools install @uipath/orchestrator-tool && \
