@@ -36,19 +36,7 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
 6. If **any individual count differs by 60–70% or more** → run the discovery flow below
 7. If all counts are within the threshold → context is fresh, proceed with the skill workflow
 
-**If the file does NOT exist** → run the discovery flow below. **Exception — blank scaffold:** when the project is a blank scaffold (≤2 workflow files total counting `.cs`+`.xaml`, excluding `.local/` and `.codedworkflows/`, AND `project.json` has ≤3 dependencies), skip the discovery agent — there is nothing to discover. Write the stub below to **both** destinations from step 3 of the discovery flow (same markers rule for `AGENTS.md`), filling the first-line metadata with real counts so the staleness check keeps working:
-
-```markdown
-<!-- discovery-metadata: cs=<CS_COUNT> xaml=<XAML_COUNT> deps=<DEPS_COUNT> -->
-# Project Context
-
-- **Project:** <PROJECT_NAME>
-- **Target framework:** <Windows|Portable>
-- **Expression language:** <VisualBasic|CSharp>
-- **Main entry:** <MAIN_FILE>
-- **Dependencies:** <PACKAGE_ID@VERSION, ...>
-- **Conventions:** blank scaffold — no local patterns established yet.
-```
+**If the file does NOT exist** → run the discovery flow below.
 
 **Discovery flow** (used for both missing and stale context):
 1. Spawn the project discovery agent and wait for it to complete. Its definition lives inside this skill at [`agents/uipath-project-discovery-agent.md`](agents/uipath-project-discovery-agent.md). Use whichever spawn mechanism your host supports:
