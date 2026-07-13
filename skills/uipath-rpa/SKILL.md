@@ -36,7 +36,19 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
 6. If **any individual count differs by 60–70% or more** → run the discovery flow below
 7. If all counts are within the threshold → context is fresh, proceed with the skill workflow
 
-**If the file does NOT exist** → run the discovery flow below. **Exception — blank scaffold:** when the project is a blank scaffold (≤2 workflow files total counting `.cs`+`.xaml`, excluding `.local/` and `.codedworkflows/`, AND `project.json` has ≤3 dependencies), skip the discovery agent and write the minimal stub inline per [references/uia-fast-path-guide.md § C](references/uia-fast-path-guide.md) — there is nothing to discover.
+**If the file does NOT exist** → run the discovery flow below. **Exception — blank scaffold:** when the project is a blank scaffold (≤2 workflow files total counting `.cs`+`.xaml`, excluding `.local/` and `.codedworkflows/`, AND `project.json` has ≤3 dependencies), skip the discovery agent — there is nothing to discover. Write the stub below to **both** destinations from step 3 of the discovery flow (same markers rule for `AGENTS.md`), filling the first-line metadata with real counts so the staleness check keeps working:
+
+```markdown
+<!-- discovery-metadata: cs=<CS_COUNT> xaml=<XAML_COUNT> deps=<DEPS_COUNT> -->
+# Project Context
+
+- **Project:** <PROJECT_NAME>
+- **Target framework:** <Windows|Portable>
+- **Expression language:** <VisualBasic|CSharp>
+- **Main entry:** <MAIN_FILE>
+- **Dependencies:** <PACKAGE_ID@VERSION, ...>
+- **Conventions:** blank scaffold — no local patterns established yet.
+```
 
 **Discovery flow** (used for both missing and stale context):
 1. Spawn the project discovery agent and wait for it to complete. Its definition lives inside this skill at [`agents/uipath-project-discovery-agent.md`](agents/uipath-project-discovery-agent.md). Use whichever spawn mechanism your host supports:
@@ -131,8 +143,6 @@ First heavy `uip rpa` call pays a ~22s Studio host cold-start (shared across `va
 ```bash
 uip rpa activities find --query log --output json > /dev/null 2>&1 &
 ```
-
-For UIA fast-path tasks the warm-up is folded into the backgrounded `analyzer-rules list` call ([uia-fast-path-guide.md](references/uia-fast-path-guide.md) step 1) — do not run both.
 
 **Skip** when 0 or 1 heavy `uip rpa` calls are expected (read-only Q&A, single-file inspection) — the warm-up doesn't reclaim its cost.
 
@@ -275,7 +285,6 @@ For UIA fast-path tasks the warm-up is folded into the backgrounded `analyzer-ru
 | **Create/edit Flowchart** | XAML | [xaml/flowchart-guide.md](references/xaml/flowchart-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Create StateMachine** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Create/edit Long Running Workflow (ProcessDiagram)** | XAML | [xaml/long-running-workflow-guide.md](references/xaml/long-running-workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
-| **Speed up single-app UIA target capture** | XAML | [uia-fast-path-guide.md](references/uia-fast-path-guide.md) — capture-efficiency overlay; check its eligibility gate first. Supplements, never replaces, the **Write UI automation** row's full reads |
 | **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
 | **Build multi-screen UIA XAML workflow** | XAML | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md § Multi-Step UI Flows](references/uia-configure-target-workflows.md) |
 | **Share Object Repository selectors across projects (UI Library)** | Both | [ui-automation-guide.md § Object Repository as a Published UI Library](references/ui-automation-guide.md) |
@@ -448,7 +457,6 @@ UIA references live in two locations. Always cite by location so the reader know
 ### In this skill (`references/`, relative to this SKILL.md)
 
 - [ui-automation-guide.md](references/ui-automation-guide.md) — **the entry point for all UIA work** (Rule 7; read in full first). Mode-specific UIA patterns (coded vs XAML), prohibited-tool list, exploration-tool boundaries, Running & debugging procedure.
-- [uia-fast-path-guide.md](references/uia-fast-path-guide.md) — Capture-efficiency overlay for a single-app UIA build: capture orchestration and the blank-scaffold context stub. Supplements the Rule 7 reads; does not replace them.
 - [uia-prerequisites.md](references/uia-prerequisites.md) — Package version requirements, upgrade-consent rules
 - [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target-capture orchestration, multi-step UI flows, indication-fallback routing
 
