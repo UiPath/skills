@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Guard: `uip solution pack` is structurally deterministic.
 
-Fingerprints the two packages the AGENT packed into the working directory and
-asserts they are the same once per-pack volatile values are normalized away.
+Fingerprints the packages the AGENT packed into the working directory (two or
+more — all are compared against the first) and asserts they are the same once
+per-pack volatile values are normalized away.
 Every pack regenerates fresh GUIDs (packageVersionKey, resource keys, the
 files/<guid>/ path segment) and stamps fresh zip timestamps — those are
 expected. Anything else that differs is real build nondeterminism that could
