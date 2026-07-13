@@ -1,16 +1,19 @@
 task_id: skill-ixp-extract-runtime-smoke
 description: >
-  Smoke: agent picks `uip ixp extract <project> <file> --tag <tag>`
-  to run runtime extraction against a published model, and does NOT
-  substitute `labellings get-predictions` (which is for the training
-  set, not a fresh runtime file).
+  Smoke: agent runs runtime extraction against a published model via the
+  async two-step flow — resolve the project Id from the designtime project
+  list, `uip ixp start-extraction <project-id> <file> --tag <tag>` to get an
+  operationId, then `uip ixp get-extracted <project-id> <operation-id> --tag
+  <tag>` to fetch the result. It must NOT use the retired `uip ixp extract`,
+  and must NOT substitute `labellings get-predictions` (which is for the
+  training set, not a fresh runtime file).
 
   Harness is unauthenticated; CLI calls fail with auth/file errors.
   Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:operate, lifecycle:discover]
 
 run_limits:
-  expected_turns: 4
+  expected_turns: 6
 
 initial_prompt: |
   A document automation engineer has a published IXP model on project
@@ -21,33 +24,60 @@ initial_prompt: |
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant
     in this environment. Commands will fail with auth or file errors —
-    that is expected. Run each command once and move on. Do NOT retry or
-    attempt to login.
+    that is expected. Run each command once and move on. Do NOT retry, do
+    NOT loop/poll repeatedly, and do NOT attempt to login.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
+  # Runtime extraction is keyed by the project Id (GUID), not the Name slug.
+  # The agent must resolve it from the designtime project list/get first.
   - type: command_executed
-    description: "Agent ran `uip ixp extract` with a model selector (--tag or --version)"
+    description: "Agent resolved the project Id from the designtime API (`projects list`/`get`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+extract\s+.*--(tag|version)\b'
+    command_pattern: 'uip\s+ixp\s+projects\s+(list|get)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip ixp start-extraction` with `--tag`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+start-extraction\s+.*--tag\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on the extract call"
+    description: "Agent polled the result with `uip ixp get-extracted`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+extract\s+.*--output\s+json'
+    command_pattern: 'uip\s+ixp\s+get-extracted\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on the start-extraction call"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+start-extraction\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
-  # Runtime extraction is `extract`, not `get-predictions` (the latter
-  # returns predictions on already-uploaded training docs). Guard the
-  # agent against substituting the design-time command.
+  # Runtime extraction is start-extraction/get-extracted, not `get-predictions`
+  # (the latter returns predictions on already-uploaded training docs). Guard
+  # the agent against substituting the design-time command.
   - type: command_not_executed
     description: "Agent did NOT use `labellings get-predictions` for a fresh runtime file"
     tool_name: "Bash"
     command_pattern: 'uip\s+ixp\s+labellings\s+get-predictions'
     weight: 1.5
+    pass_threshold: 1.0
+
+  # `uip ixp extract` was split into start-extraction + get-extracted and no
+  # longer exists — the agent must not reach for the retired verb.
+  - type: command_not_executed
+    description: "Agent did NOT use the retired `uip ixp extract`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+extract\b'
+    weight: 1.0
     pass_threshold: 1.0

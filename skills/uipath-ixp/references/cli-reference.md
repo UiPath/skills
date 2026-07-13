@@ -137,34 +137,48 @@ For working with runtime (deployed) IXP models — separate from the training wo
 
 ### Runtime extraction
 
-`uip ixp extract <project-name> <file> (--tag <tag> | --version <N>) --output json` digitizes a document and extracts fields with a **published (deployed) model** — the live runtime path, not the training-data prediction path.
+Runtime extraction runs a **published (deployed) model** on any new file — the live runtime path, not the training-data prediction path. It is an **asynchronous, two-step flow**:
 
-> **`extract` vs `labellings get-predictions`:** `extract` runs the published model on **any new file** you pass (runtime). `labellings get-predictions` returns predictions on documents already **uploaded for training** (design-time). Use `extract` to run a deployed model on a fresh document; use `get-predictions` when labelling/reviewing the training set.
+1. `uip ixp start-extraction <project-id> <file> --tag <tag> --output json` — digitizes the document and kicks off extraction; returns an `operationId` immediately (it does **not** wait for the result).
+2. `uip ixp get-extracted <project-id> <operation-id> --tag <tag> --output json` — fetches the operation by id. Returns whether it is still running, the extracted fields when done, or a failure.
 
-Model selector — **exactly one is required** (mutually exclusive):
+> **Runtime extraction vs `labellings get-predictions`:** `start-extraction`/`get-extracted` run the published model on **any new file** you pass (runtime). `labellings get-predictions` returns predictions on documents already **uploaded for training** (design-time). Use runtime extraction to run a deployed model on a fresh document; use `get-predictions` when labelling/reviewing the training set.
 
-| Flag | Meaning |
-|------|---------|
-| `--tag <tag>` | Published model tag — `live`, `staging`, or a custom tag (see `projects publish --tag`). |
-| `--version <N>` | Trained model version number (non-negative integer, from `projects list-models`). |
+#### Project **Id**, not Name
 
-Polling options (both optional, values in **milliseconds**):
+Unlike every other `uip ixp` command (which take the project `Name` slug — Critical Rule 7), the runtime extraction commands take the project **Id** (a GUID). If you already hold the GUID (the user gave it, or it's in context from an earlier `projects list`), use it directly — no lookup call. Otherwise — the usual case, where the user names a project by **Title or Name** — resolve its `Id` from the designtime project list first:
 
-| Flag | Default | Allowed range | Meaning |
-|------|---------|---------------|---------|
-| `--timeout <ms>` | `600000` (10 min) | `30000`–`1200000` (30 s – 20 min) | Max time to wait for the extraction to finish. |
-| `--poll-interval <ms>` | `5000` (5 s) | `1000`–`60000` (1 s – 60 s) | How often to poll for completion. |
+```bash
+PROJECT_ID=$(uip ixp projects list -l 10000 --output json \
+  | jq -r '.Data.Projects[] | select(.Title=="<title-or-name>" or .Name=="<title-or-name>") | .Id')
+```
 
-Out-of-range or non-numeric values are rejected before any network call (e.g. `--poll-interval must be between 1000 and 60000 ms`).
+Pass `$PROJECT_ID` as `<project-id>` to **both** commands. If the filter returns nothing, the title/name didn't match — list projects and confirm. If it returns **more than one** Id, STOP and ask which project (Critical Rule 16).
+
+#### `--tag` (required)
+
+`--tag` is **required** on both commands — `live` (the default for production), `staging`, or a custom tag (see `projects publish --tag`). Use the **same tag and project-id** for `start-extraction` and every `get-extracted` poll of that operation. (There is no `--version`; runtime extraction is tag-only.)
+
+#### Polling — you drive it
+
+`start-extraction` returns as soon as extraction begins; the CLI no longer waits or polls. **Poll `get-extracted` every 5 seconds until it returns a terminal shape** (finished or failed — below). Do NOT impose an arbitrary time cap: extraction runs server-side and continues whether or not you poll, so quitting early neither cancels it nor makes it finish sooner. If your own turn/time budget runs out before the operation resolves, report the resumable `operationId` (persisted below) and stop — a later session can pick up the same poll. `get-extracted` returns one of three shapes (Code `IxpGetExtracted`):
+
+| State | Envelope | What to do |
+|-------|----------|------------|
+| Still running | `Result: Success`, `Data: { operationId, status }` where `status` is `NotStarted` or `Running`, plus `Instructions` "…still in progress…". | Wait 5 s and poll again. |
+| Finished | `Result: Success`, `Data` is the **array of field groups** (no `status` field). | Done — report the fields. |
+| Failed | `Result: Failure` (model failure, or a digitization/extractor timeout — the backend has **no timeout status**, it surfaces as a failure). | Stop and report the error. |
+
+> The framework operation status is only `NotStarted \| Running \| Failed \| Succeeded` — there is **no `Timeout` status**. When extraction runs too long the backend itself ends the operation as `Failure` (surfaced by `get-extracted`) rather than inventing a distinct timeout state — so the backend owns the timeout, not you. Poll until `get-extracted` is terminal; don't guess a client-side deadline.
+
+#### Store the operationId
+
+Persist the `operationId` under the project working dir so polling can resume in a later session (the pending `get-extracted` response echoes it too):
+
+```bash
+mkdir -p /tmp/ixp/<project-name>/extractions
+```
 
 **File types:** same whitelist as document upload — see [Supported document files](#supported-document-files).
 
-**Output** (Code: `IxpExtract`): `Data` is an array of field groups, each `{ "fieldGroupName": "<name>", "fields": [{ "name": "<field>", "value": "<extracted>" }] }`.
-
-```bash
-uip ixp extract <project-name> "<file>" --tag live --output json
-# pin to a specific trained version instead of a tag:
-uip ixp extract <project-name> "<file>" --version 3 --output json
-# slow/large document — widen the ceiling and poll less often:
-uip ixp extract <project-name> "<file>" --tag live --timeout 1200000 --poll-interval 10000 --output json
-```
+**Output** (Code `IxpGetExtracted`, on completion): `Data` is an array of field groups, each `{ "fieldGroupName": "<name>", "fields": [{ "name": "<field>", "value": "<extracted>" }] }`.
