@@ -10,6 +10,13 @@ tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:complian
 sandbox:
   python: {}
 
+# Safety net: smoke sandboxes have live tenant auth in CI — the agent's
+# `state disable` is harmless, but a wrong-direction run (state enable /
+# aops-policy create) really mutates the tenant. Clean up after.
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
+
 initial_prompt: |
   The ISO 42001 standard is currently applied on my tenant — remove all its recommended settings.
 

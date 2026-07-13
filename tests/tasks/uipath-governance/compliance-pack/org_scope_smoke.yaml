@@ -11,6 +11,16 @@ tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:complian
 sandbox:
   python: {}
 
+# CI passes live tenant auth into every smoke sandbox, so `state enable` here
+# REALLY enables the pack on the login tenant. Clean up compliance-pack debris before and after.
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
+
 initial_prompt: |
   Apply ISO 42001 recommended settings organization-wide to all tenants.
 
