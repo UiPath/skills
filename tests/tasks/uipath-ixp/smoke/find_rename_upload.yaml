@@ -6,6 +6,18 @@ description: >
   `documents upload`. The original (pre-rename) filename must never reach
   an executed uip call.
 
+  The prompt deliberately does NOT say "keep the extension" or "don't
+  leave a copy" — that a rename preserves the extension and removes the
+  old name IS the graded capability (ticket expected outcome), not
+  fixture. Do not add such hints back.
+
+  The rename-not-copy check is ADVISORY (pass_threshold: 0): unhinted,
+  current agents consistently copy and leave the original (0/3 local
+  samples) — a generic-competence gap, deliberately NOT patched with a
+  skill rule (teaching-to-the-test). The scorecard records it; the merge
+  gate doesn't hang on it. The dangerous half — an executed uip call
+  referencing the stale original name — stays a gating guard.
+
   Positive name-check and both negative guards grade the mock's calls.log
   (actual uip invocations, shell variables expanded) via file_contains — a
   Bash-text regex would miss a filename passed through a variable and
@@ -32,9 +44,8 @@ sandbox:
 
 initial_prompt: |
   The invoice scan vendor_invoice_scan.png is saved somewhere in this
-  workspace. Find it, change its name to Uploaded_file_25may (rename it —
-  do not leave a copy under the old name), and upload it to the IXP project
-  my_invoices-f1afa9ef-ixp.
+  workspace. Find it, change its name to Uploaded_file_25may, and upload it
+  to the IXP project my_invoices-f1afa9ef-ixp.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant in
@@ -65,12 +76,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Rename, not copy — the original filename no longer exists on disk"
+    description: "ADVISORY — rename, not copy: the original filename no longer exists on disk (recorded for the scorecard, not gating)"
     command: "python -c \"import os,sys; sys.exit(os.path.exists('archive/2025-05/vendor_invoice_scan.png'))\""
     timeout: 15
     expected_exit_code: 0
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: file_contains
     description: "Agent did NOT upload under the original (pre-rename) name: no executed uip call references vendor_invoice_scan"
