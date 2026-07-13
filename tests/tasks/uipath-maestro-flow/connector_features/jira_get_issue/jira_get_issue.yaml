@@ -10,9 +10,8 @@ description: >
 
   Tenant prerequisite: a `uipath-atlassian-jira` connection in folder
   `Shared/uipath-maestro-flow` (currently the single Jira connection there),
-  reaching a project that accepts new issues (default: `CE` / "Coder Eval",
-  issue type Task). Override targets via JIRA_PROJECT_KEY / JIRA_ISSUETYPE_ID /
-  JIRA_CONNECTION_NAME.
+  reaching the `CE` / "Coder Eval" project (issue type Task). Targets live in
+  the task's `jira_is.py`.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, e2e, uipath-atlassian-jira, ipe, mode:build]
 
 run_limits:
@@ -22,11 +21,11 @@ run_limits:
   turn_timeout: 900
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/_jira_shared/seed_jira.py with_issue"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/jira_get_issue/seed_jira.py"
     timeout: 90
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/_jira_shared/teardown_jira.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/jira_get_issue/teardown_jira.py"
     timeout: 120
 
 initial_prompt: |
