@@ -82,7 +82,7 @@ success_criteria:
   - type: command_executed
     description: "Agent invoked `uip or folders create` in some form (isolated per-run folder for cleanup). Loosened from name-anchored pattern — the actual folder name is graded separately by the report.json check below, and the CLI accepts flag ordering the anchored pattern misses."
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+folders\s+create\b'
+    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+create\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
