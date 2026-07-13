@@ -45,9 +45,13 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+# Branch 1 is the Linux form (sh expands $TASK_DIR, hosts ship python3);
+# branch 2 is the Windows form (cmd expands %TASK_DIR%, venv ships python).
+# TASK_DIR is an env var in the run_command subprocess, so each shell expands
+# its own syntax; the checker is read-only, so the fallback re-run is harmless.
   - type: run_command
     description: "uip solution pack is structurally deterministic (file list + metadata)"
-    command: "python3 $TASK_DIR/check_pack_determinism.py"
+    command: "python3 $TASK_DIR/check_pack_determinism.py || python %TASK_DIR%/check_pack_determinism.py"
     timeout: 120
     expected_exit_code: 0
     weight: 5.0
