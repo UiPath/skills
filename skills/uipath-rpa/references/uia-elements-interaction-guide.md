@@ -69,9 +69,8 @@ control's `items` attribute for its selectable options** (the read verb is in
 - **`items` empty/absent** → not a real option-list control. Fall back to click-to-open + click the
   option (capture both as OR targets), or `TypeInto` for type-ahead / filter combos.
 
-Query `items` to learn the valid values, and query the `selecteditem` / `selecteditems` attribute to
-confirm the result after selecting. `items` may not surface in a bulk attribute dump — read it by
-name (the cli-reference above shows how).
+Read the `items` attribute to learn the valid values, and the `selecteditem` / `selecteditems`
+attribute to confirm the result after selecting (the cli-reference above shows how to read them).
 
 The rule is general: verified against a control with no native `<select>` (a Lightning picklist
 rendered as a `role="combobox"` button) and applies identically to desktop, Java, and SAP option
