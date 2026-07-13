@@ -161,6 +161,8 @@ Respond that the operation is not supported. Do not try to work around it.
 
 20. **`records import` does not support complex field types — surface this to the user before invoking.** `records import` accepts Basic types only — `CHOICE_SET_SINGLE`, `CHOICE_SET_MULTIPLE`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER` are **not supported**. The CSV header is accepted but the column values are ignored (no error, no `ErrorFileLink` entry — `null` in every row, or row failure if the field is `isRequired` without a `defaultValue`). Sequence: (1) run `entities get <entity-id>` and list every field whose type is in the unsupported set above; (2) tell the user verbatim which columns are not supported by import and why; (3) offer the alternative — `records insert --file <json>` with a JSON-array body handles all types except `FILE` (use `files upload` for those — Rule 6). See [`records-query.md` → Writing choice-set and relationship values](records-query.md#writing-choice-set-and-relationship-values) for the value form; (4) only invoke `records import` after the user confirms they accept the unsupported columns being skipped OR want to switch to `records insert`. This is platform behavior, not a bug — do not attempt to work around it.
 
+21. **`MULTILINE_MAX` fields — marker reads, gated writes.** `records list` / `records query` return a size marker (`"HasValue=true Length=N"`) for `MULTILINE_MAX` fields, never the content — full value only via `records get <entity-id> <record-id>`. Never display or persist the marker as data; never echo it back through `records update` (that overwrites the real content with the marker string — omit the key instead). The type takes no filter or sort — 400 `FieldNotSearchable` / `FieldNotSortable`; surface verbatim (Rule 18). Schema creation is tenant-gated by the `MultilineMax` feature flag — a 400 on `entities create` / `addFields` naming this type means the flag is off; report the enablement gap, don't retry or silently substitute `MULTILINE_TEXT`. Full contract: [`entity-schema.md` → MULTILINE_MAX fields](entity-schema.md#multiline_max-fields) + [`records-query.md`](records-query.md#multiline_max-fields--marker-vs-full-content).
+
 ---
 
 ## Tool Version Requirements
@@ -170,6 +172,7 @@ Respond that the operation is not supported. Do not try to work around it.
 | `entities` / `records` CRUD, `query` with filters/sort, `records import`, `files` | `0.9.0+` |
 | Server-side `aggregates` and `groupBy` on `records query` | `1.0.1+` |
 | `--folder-key` threaded through every entity/record/file/choice-set command + `--include-folders` on `entities list` / `choice-sets list` | `1.197.0+` (currently on `alpha` dist-tag; falls into `latest` once promoted — install with `uip tools install @uipath/data-fabric-tool@alpha` until then) |
+| `MULTILINE_MAX` field type (schema create + full-content `records get`) | `1.198.0+` (first version bundling SDK `1.5.2`) |
 
 Upgrade with `uip tools install @uipath/data-fabric-tool@latest` when a feature appears to silently no-op (e.g. aggregate body keys returning raw record lists).
 
@@ -339,6 +342,9 @@ Pass the query body via `--body` or `--file`; pagination uses `--limit` / `--cur
 | `unknown option '--folder-key'` or `unknown option '--include-folders'` | Installed `@uipath/data-fabric-tool` predates `1.197.0` (folder-key fan-out) | Upgrade: `uip tools install @uipath/data-fabric-tool@alpha` until `1.197.0+` is promoted to `latest`. See *Tool Version Requirements* |
 | `--folder-key and --include-folders are mutually exclusive` | Both flags passed on `entities list` / `choice-sets list` | Pick one: `--folder-key <key>` for a single folder, OR `--include-folders` for tenant + every folder you can see |
 | Entity / choice set just created via `--folder-key <X>` doesn't appear in `entities list` / `choice-sets list` | Lists default to tenant-only | Re-run with `--folder-key <X>` (same key) or `--include-folders` |
+| `MULTILINE_MAX` field shows `HasValue=true Length=N` in `records list` / `query` | Expected — list/query return a size marker, not content (Rule 21) | Full value via `records get <entity-id> <record-id>`. Never persist or write back the marker |
+| `entities create` / `addFields` with `MULTILINE_MAX` returns 400 on this tenant | `MultilineMax` feature flag not enabled on the tenant | Surface the enablement gap to the user; don't retry or substitute `MULTILINE_TEXT` without approval (Rule 18) |
+| Filter or sort on a `MULTILINE_MAX` field returns 400 (`FieldNotSearchable` / `FieldNotSortable`) | Type supports no filter/sort operators (Rule 21) | Surface verbatim; offer `records get` + client-side evaluation only with user approval |
 
 ---
 
