@@ -12,7 +12,7 @@ During sdd.md → task.md interpretation, when you need to determine:
 
 Run `uip maestro case registry pull` before any lookups. This populates the local cache at `~/.uip/case-resources/`. All subsequent discovery is done by reading these cache files directly — **do not** rely on `uip maestro case registry search` as the primary discovery method. See the "CLI Search Gaps" section below for the reason.
 
-> **Missing file ≠ empty match.** Before searching any `<type>-index.json`, verify it exists on disk. If it does not, run `uip maestro case registry pull` (not `--force` — a normal pull is enough for first-time population). A missing file **before** a pull is a precondition failure, not a 0-result lookup. **After a successful pull, a still-absent index means the tenant has zero resources of that type — which IS the genuine 0-matches case.** For **non-creatable** types (regular RPA process, agentic processes / Process Orchestration, action, connectors) → proceed to placeholder. For a **creatable** type (`agent`, `api-workflow`), a zero-resource tenant index is the genuine 0-matches case where inline **Create** applies — but **first resolve any in-solution sibling** (a prior run may have already built it; see the per-type pre-gate checks — [agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution), [api-workflow/planning.md](plugins/tasks/api-workflow/planning.md#registry-resolution) — and § Handle Empty Results below). Only a resource absent from **both** the tenant index **and** the local siblings is genuinely empty → feed it to the [Rule 17 / § MUST-Confirm gate](#must-confirm-before-placeholder-fallback) (Create offered), NOT straight to placeholder.
+> **Missing file ≠ empty match.** Before searching any `<type>-index.json`, verify it exists on disk. If it does not, run `uip maestro case registry pull` (not `--force` — a normal pull is enough for first-time population). A missing file **before** a pull is a precondition failure, not a 0-result lookup. **After a successful pull, a still-absent index means the tenant has zero resources of that type — which IS the genuine 0-matches case.** For **non-creatable** types (regular RPA process, agentic processes / Process Orchestration, action, case-management, connectors) → proceed to placeholder. For a **creatable** type (`agent`, `api-workflow`), a zero-resource tenant index is the genuine 0-matches case where inline **Create** applies — but **first resolve any in-solution sibling** (a prior run may have already built it; see the per-type pre-gate checks — [agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution), [api-workflow/planning.md](plugins/tasks/api-workflow/planning.md#registry-resolution) — and § Handle Empty Results below). Only a resource absent from **both** the tenant index **and** the local siblings is genuinely empty → feed it to the [Rule 17 / § MUST-Confirm gate](#must-confirm-before-placeholder-fallback) (Create offered), NOT straight to placeholder.
 
 ## CLI Search Gaps
 
@@ -40,13 +40,13 @@ Options:
   - Create the missing resource(s) inline   # shown ONLY when ≥1 still-empty is an `agent` or `api-workflow` AND the CLI has `registry --local`
       → multi-select which to build as in-solution siblings (agent → uipath-agents,
         api-workflow → uipath-api-workflow); build them (§ Create-on-Missing). Unselected items
-        + all non-creatable empties (regular RPA process, action, connectors, agentic
+        + all non-creatable empties (regular RPA process, action, case-management, connectors, agentic
         processes) → placeholder.
   - Skip and use placeholders
       → proceed to per-plugin Unresolved Fallback paths for the unmatched lookups.
 ```
 
-**Apply once per planning batch, not per-task.** Each option is batch-level — never a per-task yes/no chain. Force pull loops back to this same prompt for whatever stays empty. The **Create** option covers **agents and API workflows only** (never regular RPA process, action apps, connectors, or agentic processes); it appears only when ≥1 still-empty is creatable AND the CLI supports `registry --local` (capability probe — see [§ Create-on-Missing](#create-on-missing-build-and-rediscovery)). When `--local` is absent the gate degrades to Force pull / Skip exactly as before.
+**Apply once per planning batch, not per-task.** Each option is batch-level — never a per-task yes/no chain. Force pull loops back to this same prompt for whatever stays empty. The **Create** option covers **agents and API workflows only** (never regular RPA process, action apps, child cases, connectors, or agentic processes); it appears only when ≥1 still-empty is creatable AND the CLI supports `registry --local` (capability probe — see [§ Create-on-Missing](#create-on-missing-build-and-rediscovery)). When `--local` is absent the gate degrades to Force pull / Skip exactly as before.
 
 **Do NOT pre-judge.** Resource-name heuristics ("looks vendor-specific, won't be in registry anyway", "this is an obvious custom connector") are the user's call to make, not the agent's. Always ask. SKILL.md Rule 17.
 
@@ -69,7 +69,7 @@ Each file is a JSON array of resource entries.
 
 ## Create-on-Missing build and rediscovery
 
-When the user picks **Create** at the gate, the skill builds each selected resource as an **in-solution sibling** (during Phase-1 planning) and wires it in as a normal resolved task — no placeholder. **v1 builds two kinds — `agent` (via `uipath-agents`) and `api-workflow` (via `uipath-api-workflow`)**; the orchestration below is type-agnostic so other non-connector kinds can be enabled later via their own type skill. Connectors, regular RPA process, and agentic processes (Process Orchestration) are never built here.
+When the user picks **Create** at the gate, the skill builds each selected resource as an **in-solution sibling** (during Phase-1 planning) and wires it in as a normal resolved task — no placeholder. **v1 builds two kinds — `agent` (via `uipath-agents`) and `api-workflow` (via `uipath-api-workflow`)**; the orchestration below is type-agnostic so other non-connector kinds can be enabled later via their own type skill. Connectors, regular RPA process, and agentic processes (Process Orchestration) are never built here. Action Apps and child cases are also never built here.
 
 > **Create depends on the type skill being installed.** The build runs in a sub-agent that invokes the resource's type skill (`uipath-agents` / `uipath-api-workflow`). The Step-2 brief instructs the sub-agent: if it cannot locate/load that skill, return `{built:false, error:"skill <name> not installed"}` — do NOT improvise a build. That `built:false` (or a sub-agent that dies) degrades to a placeholder via the per-plugin Failure contract, and §4 rediscovery is the backstop (no exact-name `--local` match → Failure contract regardless of what the sub-agent reports) — Create never hard-fails the run.
 
@@ -160,11 +160,19 @@ Use the component type from the sdd.md to identify the **primary** cache file, t
 
 For types marked "not in cache" (`EXTERNAL_AGENT`, `TIMER`), skip the cache lookup — these have no registry representation. `TIMER` → emit the `wait-for-timer` plugin shape. **`EXTERNAL_AGENT` has no generation plugin here — never write `type: external-agent`; model as `api-workflow` / `execute-connector-activity` per Rule 16.**
 
-**Cross-type fallback:** The sdd.md component type label is not always accurate — the actual registry resource may be stored under a different type. For example, an "RPA" process may appear in `process-index.json`, or an "AGENTIC_PROCESS" might be in `process-index.json` instead of `processOrchestration-index.json`. If the primary cache file yields no match, search **all** cache files listed above for the task name. When a match is found in a different cache file than expected, use that cache file's identifier field and type mapping for the `taskTypeId`, but keep the sdd.md's component type for the JSON `type` field.
+**Cross-type fallback:** The sdd.md component type label is not always accurate — the actual registry resource may be stored under a different type. For example, an "RPA" process may appear in `process-index.json`, or an "AGENTIC_PROCESS" might be in `process-index.json` instead of `processOrchestration-index.json`. If the primary cache file yields no match, search the other cache files using the task's type-specific portable name, preserving the existing fallback behavior. **Exception: do not cross-type-fallback an `action` or `case-management` lookup.** An Action App ID is valid only from `action-apps-index.json`, and a child-case `entityKey` is valid only from `caseManagement-index.json`; a same-named process is not a compatible substitute for either task type.
 
 ### 2. Search by Name and Folder Path
 
-For each task in the sdd.md, extract the **name** and **folder path** from the Process References table, then filter the cache file:
+For each task in the sdd.md, extract its concrete portable name from the type-specific field below. Use the corresponding folder only when it is concrete; `<UNRESOLVED>` means name-only discovery.
+
+| Task type | Portable name query | Folder hint |
+|---|---|---|
+| `process` / `agent` / `rpa` / `api-workflow` | `Resolved Resource` | `Folder Path` |
+| `action` | `Action App: <deploymentTitle>` in `HITL Implementation` | `Deployment Folder` |
+| `case-management` | `Child Case` | `Folder Path` |
+
+The portable name is REQUIRED and never `<UNRESOLVED>`. Do not fall back to the task display name. Then filter the cache file:
 
 ```bash
 cat ~/.uip/case-resources/<type>-index.json | python3 -c "
@@ -187,7 +195,7 @@ for item in data:
 1. **Exact name + exact folder** — strongest match, use directly.
 2. **Exact name, multiple folders** — pick the one matching the sdd.md folder path.
 3. **Exact name, no folder specified in sdd.md** — pick the first exact-name match; note alternatives in `registry-resolved.json`.
-4. **No match in primary cache file** — search all other cache files (the resource may be registered under a different type than expected).
+4. **No match in primary cache file** — apply the compatible cross-type fallback above. For `action` and `case-management`, do not search another cache type; proceed to the empty-result gate.
 
 ### 3. Handle Empty Results
 
@@ -206,10 +214,15 @@ If no match is found across all relevant cache files:
 
 ### 4. Return All Matches
 
-Collect all matching results for the `registry-resolved.json` debug output. Record:
-- The cache file searched
-- All entries that matched the name
-- Which entry was selected and why (folder match, first-match, etc.)
+Collect all matching results for the `registry-resolved.json` debug output. Record Rule 9's exact keys:
+- `stage`: exact SDD stage name
+- `task`: exact SDD task name
+- `taskType`: the SDD schema-kebab task type
+- `cacheFile`: basename of the cache file actually searched
+- `searchQuery`: the concrete type-specific portable name
+- `matches`: the full exact-name objects from that cache (empty array when none)
+- `selected`: the selected full object, or `null` when unresolved
+- `rationale`: why that object was selected, or why no compatible match exists
 
 ## Type Mapping
 
@@ -244,4 +257,4 @@ The discovery result for each match should include the **entity identifier** (th
 
 ### `registry-resolved.json` content discipline
 
-Structured log only — per Rule 9, each entry is `{search query, matches, selected, rationale}`. The file is re-ingested as a perf cache on subsequent runs (planning.md § Phase 0 carryover), so any free-form prose written here gets parroted back into `tasks.md`. `rationale` MUST explain the selection choice (e.g., `"exact name match in caseManagement folder"`); never use it for verify-text drafts, SDD-vs-spec field translations, or downstream-plugin-behavior claims.
+Structured log only — per Rule 9, each entry uses exact keys `{stage, task, taskType, cacheFile, searchQuery, matches, selected, rationale}`. The file may be re-ingested as a performance cache only after association by `stage` + `task` and the strict SDD match in [planning.md § Phase 0 carryover](planning.md#step-2--locate-and-parse-the-design-document); it never overrides the SDD. Any free-form prose written here gets parroted back into `tasks.md`. `rationale` MUST explain the selection choice (e.g., `"exact name match in caseManagement folder"`); never use it for verify-text drafts, SDD-vs-spec field translations, or downstream-plugin-behavior claims.
