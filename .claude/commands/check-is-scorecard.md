@@ -25,7 +25,7 @@ This command is the source of truth for the IS scorecard accuracy rubric. Clone 
 
 ## Phase 0 — Staleness guard (run FIRST, before any check)
 
-The reason this command exists: a stale checkout published diagnose at 17% instead of 46%. Verify the tree is current before comparing anything.
+Verify the tree is current before comparing anything — a stale checkout is the failure this command exists to prevent.
 
 1. Run `git fetch origin main`.
 2. Run `git rev-list --count HEAD..origin/main`.
@@ -37,7 +37,7 @@ The reason this command exists: a stale checkout published diagnose at 17% inste
 1. Resolve the page id: `--doc` if given, else `CONFLUENCE_PAGE_ID`.
 2. Fetch it: `getConfluencePage(cloudId="uipath.atlassian.net", pageId=<id>, contentFormat="html")`. If auth fails, STOP and tell the user to authenticate the Atlassian MCP.
 3. From the returned HTML, extract into named sets:
-   - **`DOC_TASK_IDS`** — every ``code``-wrapped `task_id` in the feature-table "Coded Test Tasks" cells (values matching `skill-[a-z0-9-]+` or `-connector-*`, `-rpa-is-*` shorthands). Record the mode section (Build/Operate/Diagnose) each appears under.
+   - **`DOC_TASK_IDS`** — every backtick-wrapped `task_id` in the feature-table "Coded Test Tasks" cells (values matching `skill-[a-z0-9-]+` or `-connector-*`, `-rpa-is-*` shorthands). Record the mode section (Build/Operate/Diagnose) each appears under.
    - **`DOC_PLAYBOOKS`** — every playbook basename cited (values matching `[a-z-]+` that appear in "Playbook(s)" cells, e.g. `connection-invalid`, `cs-permission-denied`).
    - **`DOC_TALLY`** — the Coverage Summary table: per-mode `Capabilities`, `Direct eval`, and `Eval %` (Build/Operate/Diagnose/Total).
 4. Print a one-line summary: `Parsed doc: <n> task_ids, <n> playbooks, tally B/O/D = …`. If any set is empty, WARN (doc may have been reformatted) but continue.
@@ -66,7 +66,7 @@ The reason this command exists: a stale checkout published diagnose at 17% inste
 ### Check 3 — Doc ↔ scorecard numbers
 
 1. If `tests/reports/coverage.json` exists AND has a `skills.<COVERAGE_KEY>` entry: compare its `mode_coverage.{build,operate,diagnose}.pct` and `overall_pct` against `DOC_TALLY`. Any divergence → FAIL, cite `mode: coverage.json=<x>% vs doc=<y>%`.
-2. If the entry is ABSENT → WARN (not FAIL): `IS not yet registered cross-cutting in /test-coverage; scorecard uses platform-aggregate floor`. Point at the open registry task.
+2. If the entry is ABSENT → WARN (not FAIL): `IS not yet registered as a cross-cutting capability in the coverage report (tests/reports/coverage.json); scorecard uses platform-aggregate floor`. Point at the open registry task.
 3. If `--scorecard <id>` given: fetch that page, find the `SCORECARD_ROW` row, and compare its Build/Operate/Diagnose Eval % cells against `DOC_TALLY`. Divergence → FAIL, cite the cell.
 4. `CHECK3_RESULT` = PASS iff all present comparisons agree; WARN if only the missing-entry condition fired; FAIL on any divergence.
 
@@ -100,4 +100,4 @@ Do NOT mutate anything automatically. Ask ONE question with `AskUserQuestion`:
 > - **Republish Confluence** — push the corrected body to `CONFLUENCE_PAGE_ID` via `updateConfluencePage`.
 > - **Do nothing** — leave everything; report only.
 
-Act only on the chosen option. For "Patch repo doc", edit `REPO_DOC` and show a diff — do not commit or push (leave that to the user). For "Republish", update the page with `includeBody:false` and a version message naming the reconciled checks. Never edit the org scorecard page itself.
+Act only on the chosen option. For "Patch repo doc", edit `REPO_DOC` and show a diff — do not commit or push (leave that to the user). For "Republish", call `updateConfluencePage` passing the corrected page body as the `body` parameter, `includeBody: false` (so the response stays small), and a `versionMessage` naming the reconciled checks. Never edit the org scorecard page itself.
