@@ -50,6 +50,13 @@ REQUIRED_TASK_TYPES = {
 }
 # The automated runnable variant deliberately omits these (no HITL / no live connectors).
 FORBIDDEN_TASK_TYPES = {"action", "execute-connector-activity", "wait-for-connector"}
+REQUIRED_EXTERNAL_BINDINGS = {
+    "Shared/uipath-maestro-case/NameToAgeFixed2.API Workflow": "API Workflow",
+    "Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters": "CountLetters",
+    "Shared/uipath-agents/ProcurementProcess.ProcurementProcess": "ProcurementProcess",
+    "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow": "RPA Workflow",
+    "Shared/uipath-maestro-case/CaseTest.Maestro Case": "Maestro Case",
+}
 
 
 def _fail(msg: str):
@@ -113,12 +120,35 @@ def _assert_bindings_v2_metadata(bindings: dict) -> None:
             )
 
 
+def _assert_required_external_bindings(bindings: dict) -> None:
+    """Ensure aliases from the SDD are not used as deployed resource names."""
+    resources = bindings.get("resources")
+    if not isinstance(resources, list):
+        _fail("bindings_v2.json must contain a resources array")
+    names_by_key = {
+        resource.get("key"): ((resource.get("value") or {}).get("name") or {}).get(
+            "defaultValue"
+        )
+        for resource in resources
+        if isinstance(resource, dict)
+    }
+    for key, expected_name in REQUIRED_EXTERNAL_BINDINGS.items():
+        actual_name = names_by_key.get(key)
+        if actual_name != expected_name:
+            _fail(
+                f"bindings_v2.json must bind {key!r} as deployed name "
+                f"{expected_name!r}; got {actual_name!r}"
+            )
+
+
 def main():
     plan = read_caseplan(EXPECTED_CASEPLAN if os.path.exists(EXPECTED_CASEPLAN) else None)
     if not os.path.exists(EXPECTED_BINDINGS_V2):
         _fail(f"missing required {EXPECTED_BINDINGS_V2}")
     with open(EXPECTED_BINDINGS_V2, encoding="utf-8") as f:
-        _assert_bindings_v2_metadata(json.load(f))
+        bindings = json.load(f)
+    _assert_bindings_v2_metadata(bindings)
+    _assert_required_external_bindings(bindings)
 
     # --- trigger: Manual, so `uip maestro case debug` can start the case headlessly
     triggers = find_triggers(plan)
