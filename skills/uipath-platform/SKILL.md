@@ -2,12 +2,21 @@
 name: uipath-platform
 description: "UiPath platform ops via the uip CLI — use for ANY task hitting UiPath Cloud / Orchestrator / Studio Web / Integration Service / Data Fabric / LLM Gateway. Load BEFORE writing code that calls a UiPath API. Covers auth, folders, assets, queues, storage buckets, libraries, webhooks, triggers, processes, jobs, machines, users, roles, sessions, calendars, IS connectors/connections/activities, Data Fabric entities/records/files/choice-sets (`uip df`), BYO LLM product configurations, context grounding, traces (execution traces and spans + trace feedback / annotation), licensing. For 'why did X fail' / root-cause→uipath-troubleshoot. For `uip solution` lifecycle→uipath-solution. For PDD/SDD design→uipath-planner. For workflow code (.xaml/.cs)→uipath-rpa, .flow (incl. Data Fabric connector nodes)→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn, agents (.py/agent.json)→uipath-agents, Test Manager→uipath-test."
 when_to_use: "User mentions UiPath / Orchestrator / Studio Web / Integration Service / Data Fabric / LLM Gateway / 'uip' CLI / asset / queue / bucket / library / webhook / trigger / connector / connection / tenant / folder / robot / package / entity / record / choice set / trace / span / trace feedback / BYO LLM. Also 'upload to UiPath', 'create asset', 'start job', 'list queues', 'deploy a single package to Orchestrator', 'OAuth2 token', 'list trace spans / add trace feedback', 'create entity', 'add field', 'delete field', 'list entities', 'insert record', 'update record', 'delete record', 'query Data Fabric', 'search records', 'show every <thing> tagged/where', 'filter records by tag/choice/field', 'count by group', 'unique tag combinations', 'group by field', 'aggregate COUNT/SUM/AVG', 'create choice-set', 'create choiceset', 'add choice set values', 'delete choice set', 'upload file attachment', 'import CSV', 'load CSV into entity/list', 'load spreadsheet into entity', 'bulk load records from CSV', 'bulk import from CSV', 'register my own LLM key', 'configure a model substitution', 'my BYO LLM key stopped working / returns errors', 're-probe / audit a BYO configuration', 'uipath.com REST'. For `uip solution` ops or `.uipx` deploys→uipath-solution. For Data Fabric connector nodes inside a `.flow`→uipath-maestro-flow."
-allowed-tools: Bash, Read, Write, Glob, Grep
+allowed-tools: Bash, Read, Write, Glob, Grep, Skill
 ---
 
 # UiPath Platform — uip CLI Assistant
 
 Comprehensive guide for UiPath Cloud / Orchestrator / Studio Web / Integration Service, end-to-end via the `uip` CLI. For `uip solution` lifecycle load [`uipath-solution`](/uipath:uipath-solution); for PDD/SDD design & task planning load [`uipath-planner`](/uipath:uipath-planner).
+
+## Route Diagnostic Intent Before Platform Work
+
+Classify the requested **outcome** before running any command:
+
+1. **Causal outcome → hand off immediately.** User wants an explanation, diagnosis, or root cause for undesirable existing behavior → invoke the `Skill` tool with uipath-troubleshoot (name exactly as it appears in your available-skills list) before running anything. No preliminary job/log/trace fetching — troubleshoot owns evidence collection. Prose telling the user to use troubleshoot is not a substitute for the `Skill` call.
+2. **Operational outcome → stay here.** Inspect current state without a causal question, perform CRUD or lifecycle actions, validate an input before applying it, or execute an already-diagnosed platform fix.
+3. **Mixed request → troubleshoot first.** Hand off the diagnosis; return here only for the platform mutation that applies the confirmed fix.
+4. **Sibling unavailable → degrade gracefully.** State the handoff could not run; give the entity, scope, and time window needed to retry the investigation. Do not improvise a platform-only root cause.
 
 ## Use the CLI. Don't roll your own REST.
 
