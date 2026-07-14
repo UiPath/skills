@@ -48,7 +48,7 @@ PHASE 2 — build-clean (per-project, once per edit session):
     3. EXIT to Smoke Test
 ```
 
-**Why both phases.** `validate` is static analysis: catches structural XAML, missing references, analyzer rules, schema violations. `build` is the compiler: catches **unknown member names** (e.g. `NGetText.Value` when the property is `TextString`), **invalid enum values** (e.g. `Operator="StartsWith"` when the enum has no such member), **member resolution / CacheMetadata failures**, and attribute-form C# expression JIT failures. `validate` returns "no diagnostics found" for these; `build` flags them at compile time. Per-file `validate` plus one end-of-session `build` covers both error classes — trusting only `validate` ships broken workflows.
+**Why both phases.** `validate` is static analysis: catches structural XAML, missing references, analyzer rules, schema violations. `build` is the compiler: catches **unknown member names** (e.g. `NGetText.Value` when the output member is `TextString` (or legacy `Text`)), **invalid enum values** (e.g. `Operator="StartsWith"` when the enum has no such member), **member resolution / CacheMetadata failures**, and attribute-form C# expression JIT failures. `validate` returns "no diagnostics found" for these; `build` flags them at compile time. Per-file `validate` plus one end-of-session `build` covers both error classes — trusting only `validate` ships broken workflows.
 
 **Target the specific file:** `validate --file-path` validates only the file you changed (faster than whole-project). `build` is project-scoped (no `--file-path`); when it errors, the output names the offending file — re-run `validate --file-path` on it as part of Phase 2's fix loop.
 
