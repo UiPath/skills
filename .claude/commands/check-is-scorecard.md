@@ -41,3 +41,22 @@ The reason this command exists: a stale checkout published diagnose at 17% inste
    - **`DOC_PLAYBOOKS`** — every playbook basename cited (values matching `[a-z-]+` that appear in "Playbook(s)" cells, e.g. `connection-invalid`, `cs-permission-denied`).
    - **`DOC_TALLY`** — the Coverage Summary table: per-mode `Capabilities`, `Direct eval`, and `Eval %` (Build/Operate/Diagnose/Total).
 4. Print a one-line summary: `Parsed doc: <n> task_ids, <n> playbooks, tally B/O/D = …`. If any set is empty, WARN (doc may have been reformatted) but continue.
+
+## Phase 2 — Checks 1 & 2 (structural reconciliation)
+
+### Check 1 — Doc ↔ repo evals
+
+1. Build `REPO_TASK_IDS`: for each alias in `TAGS`, run
+   `grep -rlw "<alias>" tests/tasks --include='*.yaml' | grep -v _shared`,
+   then for each file read its `task_id:` and `mode:*` tag. (Note `integration-service` also substring-matches the `integration` tier — require a whole-token match: the tag appears as its own list item or comma-delimited token, NOT inside the word `integration`.)
+2. **Stale citations:** every id in `DOC_TASK_IDS` not in `REPO_TASK_IDS` → FAIL, list them.
+3. **Mode mismatch:** any id whose repo `mode:*` differs from the doc's mode section → FAIL, list `id (doc=<mode>, repo=<mode>)`.
+4. **Un-listed evals:** every id in `REPO_TASK_IDS` not in `DOC_TASK_IDS` → FAIL, list them (doc is missing a real eval). Exclude the false-positive substring matches from step 1's note.
+5. `CHECK1_RESULT` = PASS iff no stale, no mismatch, no un-listed.
+
+### Check 2 — Doc ↔ playbooks
+
+1. Build `REPO_PLAYBOOKS` = basenames (no `.md`) of `*.md` in `PLAYBOOK_DIR`.
+2. **Missing:** every file in `REPO_PLAYBOOKS` not in `DOC_PLAYBOOKS` → FAIL, list them (doc omits a real playbook — neither covered nor gap-listed).
+3. **Phantom:** every name in `DOC_PLAYBOOKS` not in `REPO_PLAYBOOKS` → FAIL, list them (doc cites a playbook that does not exist).
+4. `CHECK2_RESULT` = PASS iff no missing, no phantom. Report `<covered>/<total>` represented.
