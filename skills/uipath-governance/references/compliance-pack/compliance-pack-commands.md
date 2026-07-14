@@ -1,6 +1,6 @@
 # uip gov compliance-pack — CLI Command Reference
 
-Single source of truth for every `uip gov compliance-pack` subcommand. All commands require **tenant-scoped login**: `uip login --tenant <TENANT_NAME>`.
+Single source of truth for every `uip gov compliance-pack` subcommand.
 
 Two types of packs:
 - **Prebuilt** — UiPath-shipped bundles (ISO 42001, HIPAA, SOC 2, ISO 27001). Use `enable`/`disable`.
@@ -80,7 +80,7 @@ uip gov compliance-pack delete <PACK_ID> --output json
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `401 Unauthorized` | Token expired or missing | Run `uip login --tenant <TENANT_NAME>` and retry |
-| `403 Forbidden` | User-scoped login | Run `uip login --tenant <TENANT_NAME>` |
+| `401 Unauthorized` | Token expired or missing | Surface auth error to user |
+| `403 Forbidden` | Insufficient permissions | Surface auth error to user |
 | `pack not found` | Invalid `packId` | Run `list` to confirm available pack IDs |
 | `cannot delete prebuilt pack` | Tried to `delete` a UiPath-shipped pack | Use `disable` instead |

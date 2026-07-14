@@ -42,7 +42,7 @@ Before any capability runs, verify:
 1. `uip login status --output json` returns `Data.Status == "Logged in"`.
 2. `~/.uipath/.auth` exists and `UIPATH_TENANT_ID` is non-empty.
 
-If either fails, halt and ask the user to run `uip login` (or `uip login --authority https://alpha.uipath.com` for non-prod).
+If either fails, halt and surface a `401 / not authenticated` error to the user.
 
 ## Tenant-intent validation (Apply / Advise / Diagnose)
 

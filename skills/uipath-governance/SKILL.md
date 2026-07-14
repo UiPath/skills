@@ -50,8 +50,7 @@ Activate on **any** governance / policy / rule intent — even when the user did
 4. **Each mechanic owns its own Critical Rules.** Once routed, follow the branch's rules — do not relax them from this top level.
 5. **Never apply compliance controls without posture analysis + user confirmation.** Run posture analysis first, show the plan (summary + detail), require `y` before any controls are configured.
 6. **Always show a receipt after any apply.** Present the post-apply report (controls configured, manual steps needed, Applied by / date) so the user has a record. No local file write is needed — the CLI and UiPath platform are the source of truth.
-7. **Always `uip login` before any `uip gov …` command.** `evaluate` (Access) additionally requires tenant-scoped login — see [`access-policy-overview-guide.md` § Critical Rules](./references/access-policy/access-policy-overview-guide.md#critical-rules).
-8. **Never fabricate UUIDs.** Resolve every named user / group / process / agent / flow / robot / tenant via the relevant branch's lookups.
+7. **Never fabricate UUIDs.** Resolve every named user / group / process / agent / flow / robot / tenant via the relevant branch's lookups.
 
 ## Workflow
 

@@ -221,8 +221,8 @@ The calling user (from `uip login`) is the actor; their identity is taken from t
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `401 Unauthorized` | Token expired or missing | Run `uip login`, then retry |
-| `403 Forbidden` | User is not in the org | Check login org context; re-login with the correct tenant |
+| `401 Unauthorized` | Token expired or missing | Surface auth error to user |
+| `403 Forbidden` | User is not in the org | Surface auth error to user |
 | `400 Bad Request` / `Selectors[0].Values is required` | Missing `values: ["*"]` on a selector or executable-rule entry | Add `"values": ["*"]` — required even when `tags` narrow the scope |
 | `400 Bad Request` / unknown `resourceType` or `type` | Enum typo | Use a valid enum value — see [plugins/selector/impl.md](./plugins/selector/impl.md) / [plugins/executable/impl.md](./plugins/executable/impl.md) |
 | `409 Conflict` | Policy name already exists | Choose a different name |
