@@ -497,7 +497,7 @@ Example — copy a value from App A and paste it into App B. Outer card → App 
                 <uix:NApplicationCard.Body>
                     <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
                         <!-- ScopeIdentifier = App A card's ScopeGuid → reads from App A (outer) -->
-                        <uix:NGetText DisplayName="Get value from App A" Text="[out_Value]"
+                        <uix:NGetText DisplayName="Get value from App A" TextString="[out_Value]"
                                       ScopeIdentifier="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
                                       sap2010:WorkflowViewState.IdRef="NGetText_1" Version="V5" />
                         <!-- ScopeIdentifier = App B card's ScopeGuid → pastes into App B (inner) -->

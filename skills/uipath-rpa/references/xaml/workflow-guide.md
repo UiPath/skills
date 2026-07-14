@@ -203,7 +203,7 @@ Edit: file_path=... old_string=<exact text> new_string=<modified text>
 
 ### Step 3.1: Check for Errors
 
-Run both validators per iteration. `validate` catches structural / reference / analyzer issues; `build` catches member-name and enum-value mistakes that `validate` misses (e.g. `NGetText.Value` when the property is `Text`, `Operator="StartsWith"` when the enum has no such member). See [../validation-guide.md § Validation Iteration Loop](../validation-guide.md#validation-iteration-loop) for the canonical loop.
+Run both validators per iteration. `validate` catches structural / reference / analyzer issues; `build` catches member-name and enum-value mistakes that `validate` misses (e.g. `NGetText.Value` when the property is `TextString`, `Operator="StartsWith"` when the enum has no such member). See [../validation-guide.md § Validation Iteration Loop](../validation-guide.md#validation-iteration-loop) for the canonical loop.
 
 ```bash
 uip rpa validate --file-path "Workflows/MyWorkflow.xaml" --output json
