@@ -25,7 +25,7 @@
 |----------|-------|
 | Case Name | AthenaCMEventCase |
 | Case Description | Coordinates three operational stages while an external Case Manager process reacts to business events and task completion. |
-| Case Identifier | Type: external. Source: `=vars.instanceExternalId` |
+| Case Identifier | Type: external. Source: `=vars.InstanceExternalId` |
 | Priority | Choiceset: Normal — Default: Normal |
 | Case-Level SLA | 10 d |
 | SLA Type | time-based |

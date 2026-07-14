@@ -98,6 +98,13 @@ def has_rule(conditions: Iterable[dict], rule_name: str, **expected: object) -> 
     )
 
 
+def has_completing_rule(conditions: Iterable[dict], rule_name: str, mark_field: str) -> bool:
+    return any(
+        condition.get(mark_field) is True and has_rule([condition], rule_name)
+        for condition in conditions
+    )
+
+
 def has_named_variable(plan: dict, name: str) -> bool:
     variables = get_variables(plan)
     return any(
@@ -196,12 +203,10 @@ def main() -> None:
         selectedTasksIds=[tasks["StageATask1"].get("id")],
     ):
         fail("StageATask2 must start after StageATask1 completes")
-    if not has_rule(
+    if not has_completing_rule(
         (stage_b.get("data") or {}).get("exitConditions") or [],
         "required-tasks-completed",
-    ) or not any(
-        condition.get("marksStageComplete") is True
-        for condition in (stage_b.get("data") or {}).get("exitConditions") or []
+        "marksStageComplete",
     ):
         fail("StageB must complete on required-tasks-completed")
     if not has_rule(
@@ -215,18 +220,16 @@ def main() -> None:
         "current-stage-entered",
     ):
         fail("StageCTask1 must start on current-stage-entered")
-    if not has_rule(
+    if not has_completing_rule(
         (stage_c.get("data") or {}).get("exitConditions") or [],
         "required-tasks-completed",
-    ) or not any(
-        condition.get("marksStageComplete") is True
-        for condition in (stage_c.get("data") or {}).get("exitConditions") or []
+        "marksStageComplete",
     ):
         fail("StageC must complete on required-tasks-completed")
-    if not any(
-        has_rule([condition], "required-stages-completed")
-        and condition.get("marksCaseComplete") is True
-        for condition in get_case_exit_conditions(plan)
+    if not has_completing_rule(
+        get_case_exit_conditions(plan),
+        "required-stages-completed",
+        "marksCaseComplete",
     ):
         fail("case must complete on required-stages-completed")
 

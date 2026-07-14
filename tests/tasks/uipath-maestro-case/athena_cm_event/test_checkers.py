@@ -262,6 +262,20 @@ Output: caseManagerDecisions
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("StageCTask3", result.stdout + result.stderr)
 
+    def test_case_checker_rejects_completion_mark_on_a_different_rule(self) -> None:
+        self.write_caseplan()
+        caseplan = self.workdir / "AthenaCMEventCase" / "AthenaCMEventCase" / "caseplan.json"
+        plan = json.loads(caseplan.read_text(encoding="utf-8"))
+        stage_b = next(node for node in plan["nodes"] if node["id"] == "stage-b")
+        stage_b["data"]["exitConditions"][0]["marksStageComplete"] = False
+        stage_b["data"]["exitConditions"].append(
+            {"rules": [[{"rule": "selected-tasks-completed"}]], "marksStageComplete": True}
+        )
+        caseplan.write_text(json.dumps(plan), encoding="utf-8")
+        result = run(CASE_CHECK, self.workdir)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("StageB", result.stdout + result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
