@@ -71,7 +71,7 @@ Which properties exist on a given activity, the `<Activity>.md` lookup order, an
 
 **Author new Get Text activities with `TextString`** (the typed, current-designer property shown above). **When editing an existing workflow,** note that older ones may bind the output to the legacy non-generic `Text` `OutArgument` (`<uix:NGetText.Text>`) instead — both `Text` and `TextString` are real, functional members (the activity writes the scraped text to both at runtime), so a working `Text` binding is valid and should be left as-is, not rewritten to `TextString`. Only `Value` is a genuine unknown member.
 
-**Scoping requirement:** when `NGetText` sits inside `<uix:NApplicationCard.Body><ActivityAction><Sequence>`, the `statusText` variable must be declared on that inner `Sequence.Variables`, not on an outer one crossing the `ActivityAction` boundary — otherwise runtime throws `ThrowIfNotInTree`. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md#throwifnotintree--variable-declared-outside-the-activityaction-scope).
+**Scoping requirement:** when `NGetText` sits inside `<uix:NApplicationCard.Body><ActivityAction><Sequence>`, the `statusText` variable must be declared on that inner `Sequence.Variables`, not on an outer one crossing the `ActivityAction` boundary — otherwise runtime throws `ThrowIfNotInTree`. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md#throwifnotintree-at-runtime--two-causes).
 
 ### Assign with a C# expression
 
