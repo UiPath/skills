@@ -119,6 +119,12 @@ uip maestro case pack ./my-case-project ./dist --name MyCase --version 2.0.0
 
 > `pack` + `uip solution publish` deploys directly to Orchestrator — bypasses Studio Web. Default publish path is `uip solution upload`.
 
+> ⚠️ **Known issue — `pack` fails on v20 caseplans.** `uip maestro case pack` throws
+> `Invalid case plan input — expected { root, nodes, edges }` for a v20 (unified-schema) caseplan,
+> even when `uip maestro case validate` reports Valid. **Workaround:** pack via
+> `uip solution pack <dir> <out>` — handles the v20 transform correctly. This is the recommended
+> path anyway (default publish is `uip solution upload`).
+
 ---
 
 ## uip maestro case validate
