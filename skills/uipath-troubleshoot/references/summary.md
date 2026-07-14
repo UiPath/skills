@@ -42,9 +42,9 @@ CLI: `uip is --help`
 
 ## API Workflows
 
-Studio Web project type for real-time, system-to-system integration over APIs — JSON workflows (Serverless Workflow DSL) run by `uip api-workflow run` and published to Orchestrator as API processes (executions are Orchestrator jobs). No UI automation, no robot, no agent runtime. Issues here involve runtime execution faults (expression errors, `<name> is not defined`, undefined `$context.outputs.<X>`, loop/logic faults), connector-call 401/403/404 in cloud (wrong activity kind, broken/mis-scoped Integration Service connection), designer-roundtrip corruption (runs locally, breaks after a Studio Web save), and pack/publish/deploy failures (including a runtime-only project shape that deploys but won't open in Studio Web). Connection faults surface through Integration Service; job/trigger mechanics through Orchestrator.
+Studio Web project type for real-time, system-to-system integration over APIs — JSON workflows (Serverless Workflow DSL) run by `uip api-workflow run` and published to Orchestrator as API processes (executions are Orchestrator jobs). No UI automation, no robot, no agent runtime. Issues here involve runtime execution faults (expression errors, `<name> is not defined`, undefined `$context.outputs.<Activity>`, loop/logic faults), connector-call 401 in cloud (wrong activity kind, broken/mis-scoped Integration Service connection), designer-roundtrip corruption (runs locally, breaks after a Studio Web save), and pack/publish/deploy failures. Connection faults surface through Integration Service; job/trigger mechanics through Orchestrator.
 
-CLI: `uip api-workflow validate`, `uip api-workflow run --no-auth`, `uip is connections ping`, `uip or jobs get`/`logs`/`traces`, `uip traces spans`
+CLI: `uip api-workflow validate`, `uip api-workflow run --no-auth`, `uip is connections ping`, `uip or jobs get`/`logs`/`traces`, `uip traces spans get`
 
 - [products/api-workflows/overview.md](./products/api-workflows/overview.md) — Product overview, dependencies, evidence surfaces, and fault families
 - [products/api-workflows/summary.md](./products/api-workflows/summary.md) — All playbooks for API Workflow issues
