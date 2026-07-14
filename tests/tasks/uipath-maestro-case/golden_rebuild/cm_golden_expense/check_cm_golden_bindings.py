@@ -247,7 +247,7 @@ def main():
     # -- connector tasks: serviceType + connectorKey -------------------------------
     for ttype, svc, key in (
         ("wait-for-connector", "intsvc.waitforevent", "uipath-http-webhook"),
-        ("execute-connector-activity", "intsvc.activityexecution", "uipath-mock-element"),
+        ("execute-connector-activity", "intsvc.activityexecution", "uipath-microsoft-outlook365"),
     ):
         matches = [t for t in iter_tasks(plan) if t.get("type") == ttype]
         if len(matches) != 1:

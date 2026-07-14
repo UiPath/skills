@@ -336,7 +336,7 @@
 ### Stage 3: Stage 3
 
 **Type:** Stage
-**Description:** External integrations after approval: waits for an inbound HTTP-webhook event, executes a mock connector activity to list records, and starts a child case with the approval comment.
+**Description:** External integrations after approval: waits for an inbound HTTP-webhook event, executes a connector activity to list emails, and starts a child case with the approval comment.
 **Required for Case Completion:** Yes
 
 #### Stage Entry Conditions
@@ -356,7 +356,7 @@
 | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|----------|---------------|---------|-----|
 | 1 | Wait for HTTP Webhook | wait-for-connector | Yes | No | — | — |
-| 2 | List records mock | execute-connector-activity | Yes | No | — | — |
+| 2 | List Emails | execute-connector-activity | Yes | No | — | — |
 | 3 | Start Child Case | case-management | Yes | No | — | — |
 
 ---
@@ -394,10 +394,10 @@
 
 ---
 
-##### Task 3.2: List records mock
+##### Task 3.2: List Emails
 
 **Type:** execute-connector-activity
-**Description:** Executes the Mock connector "List Accounts" operation to list mock account records. The result is not consumed downstream — this task exercises the `execute-connector-activity` step in the flow.
+**Description:** Retrieves a capped list of Inbox emails whose subject contains "urgent". The result is not consumed downstream — this task exercises the `execute-connector-activity` step in the flow.
 
 **Entry Condition:**
 
@@ -409,20 +409,21 @@
 |----------|---------------|----------------|
 | Yes | No | — |
 
-**Connector:** Mock · **Connector Key:** `uipath-mock-element`
-**Connection:** Athena Mock Connector · **Connection ID:** `0bf04385-3d96-4ad9-8d8f-9a51d4ddcb4b`
-**Activity Type ID:** `27f98e6d-cb94-350a-929b-f9689acd5ecb` · **Service Type:** `Intsvc.ActivityExecution`
-**Auth Method:** — (AuthenticateAfterDeployment)
+**Connector:** Microsoft Outlook 365 · **Connector Key:** `uipath-microsoft-outlook365`
+**Connection:** is-sandboxes-test@uipathsandboxes.onmicrosoft.com · **Connection ID:** `dd657127-91f5-4568-a3a3-c024bc03fb0f`
+**Activity Type ID:** `5b154ea8-15bb-30a6-b07d-74a8cd1c1688` · **Service Type:** `Intsvc.ActivityExecution`
+**Auth Method:** OAuth2
 **Account / Endpoint:** —
-**Operation:** Accounts — list (objectName `accounts`, GET `/mock-accounts`)
+**Operation:** Get Email List (objectName `ListEmails`, GET `/ListEmails`)
 **Trigger / Event:** —
 
 **Inputs:**
 
 | Field | Type | Binding |
 |-------|------|---------|
-| pathParameters | json | — |
-| queryParameters | json | — |
+| parentFolderId | string | `"Inbox"` |
+| limit | string | `"10"` |
+| filter | string | `contains(subject,'urgent')` |
 
 **Outputs:** —
 
@@ -437,7 +438,7 @@
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| `selected-tasks-completed("List records mock")` | — | Entry rule 1 |
+| `selected-tasks-completed("List Emails")` | — | Entry rule 1 |
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|
@@ -740,14 +741,14 @@
 
 ## Section 4: Integrations
 
-> All deployed resources below are pre-deployed in the **`Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106`** solution folder and must be resolved within it — each name is unique inside this folder. Connections are existing tenant connections bound by Connection ID: the HTTP Webhook connection `athena-cmgolden-expense-reporting` and the Mock connection `Athena Mock Connector`, both in the solution's deployment folder.
+> All deployed resources below are pre-deployed in the **`Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106`** solution folder and must be resolved within it — each name is unique inside this folder. Connections are existing tenant connections bound by Connection ID: the HTTP Webhook connection `athena-cmgolden-expense-reporting` and the Outlook 365 sandbox connection `is-sandboxes-test@uipathsandboxes.onmicrosoft.com` in the parent `Shared/uipath-maestro-case` folder.
 
 ### Integration Service Connectors
 
 | Connector | Connector Key | System | Connection (ID) | Auth Method | Operations Used | Used By Tasks |
 |-----------|---------------|--------|-----------------|-------------|-----------------|---------------|
 | HTTP Webhook | `uipath-http-webhook` | HTTP Webhook | athena-cmgolden-expense-reporting (`6a817d24-cbbd-4389-b10d-4329214ffb8d`) | AuthenticateAfterDeployment | Event (GENERIC) | Wait for HTTP Webhook; Stage 5 entry rule |
-| Mock | `uipath-mock-element` | Mock | Athena Mock Connector (`0bf04385-3d96-4ad9-8d8f-9a51d4ddcb4b`) | AuthenticateAfterDeployment | Accounts — list (GET /mock-accounts) | List records mock |
+| Microsoft Outlook 365 | `uipath-microsoft-outlook365` | Microsoft Outlook 365 | is-sandboxes-test@uipathsandboxes.onmicrosoft.com (`dd657127-91f5-4568-a3a3-c024bc03fb0f`) | OAuth2 | Get Email List | List Emails |
 
 #### HTTP Webhook
 
@@ -757,13 +758,13 @@
 |-----------|------------------|--------|-------------|---------------|
 | Event (GENERIC) | `773cab30-51dc-3eb4-b19d-720dfa151cc9` | EVENT | body: json | response (request_body: string, request_headers: string) |
 
-#### Mock
+#### Microsoft Outlook 365
 
 **Operations:**
 
 | Operation | Activity Type ID | Method | Input Fields | Output Fields |
 |-----------|------------------|--------|-------------|---------------|
-| Accounts — list | `27f98e6d-cb94-350a-929b-f9689acd5ecb` | GET | pageSize, nextPage (query, both optional; none required) | response (mock account records: AccountNumber, AnnualRevenue, BillingAddress, …) |
+| Get Email List | `5b154ea8-15bb-30a6-b07d-74a8cd1c1688` | GET | parentFolderId (required), limit, filter, unReadOnly, importance, withAttachmentsOnly, includeSubfolders, markAsRead, conversationId | email list: subject, from, receivedDateTime, isRead, … |
 
 ### API Workflows
 
