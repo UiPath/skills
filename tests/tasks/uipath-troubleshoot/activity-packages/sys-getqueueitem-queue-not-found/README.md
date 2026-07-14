@@ -16,9 +16,10 @@ with that name exists anywhere in the tenant, so the lookup 404s and the
 job faults.
 
 This maps to:
-`references/activity-packages/classic-activities/playbooks/add-queue-item-failed.md`
-("If the queue doesn't exist in the job folder" branch) — the queue-404
-family playbook — while
+`references/activity-packages/classic-activities/playbooks/queue-operation-failed.md`
+(the "queue does not exist" / "evidence cannot choose among those
+branches" resolution paths) — the Add/Get Queue Item failure-family
+playbook — while
 `system-activities/playbooks/get-asset-not-found.md` is the near-miss the
 agent must reject (same `Error code: 1002` grep signature, wrong
 activity).

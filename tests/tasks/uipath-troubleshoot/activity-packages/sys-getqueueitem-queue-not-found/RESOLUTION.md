@@ -62,8 +62,10 @@ run time**.
 ---
 
 **Immediate fix** (investigation only — no change executed; source:
-`classic-activities/playbooks/add-queue-item-failed.md § Resolution`,
-branch "If the queue doesn't exist in the job folder"):
+`classic-activities/playbooks/queue-operation-failed.md § Resolution`,
+branches "If the queue name is wrong in source/configuration" / "If the
+intended queue is missing or was deleted", presented conditionally per
+the "If evidence cannot choose among those three branches" guidance):
 
 1. Determine which queue this process is *supposed* to read, then
    **either** create/recreate that queue in the personal workspace
