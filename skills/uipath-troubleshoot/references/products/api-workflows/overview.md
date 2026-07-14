@@ -4,7 +4,7 @@ UiPath **API Workflows** are a Studio Web project type for real-time, system-to-
 
 ## What it depends on
 
-- **Integration Service** — Connector and HTTP activities bind named IS connections for auth (OAuth/API-key/PAT). API Workflows do NOT own connections; a broken/expired/mis-scoped IS connection is a leading cause of cloud-run **401**s. (The connection itself surfaces its broken state as a 404 / `ConnectionNotEnabled` on `uip is connections ping`, not as the runtime status — see [connection-401.md](./playbooks/connection-401.md).)
+- **Integration Service** — Connector and HTTP activities bind named IS connections for auth (OAuth/API-key/PAT). API Workflows do NOT own connections; a broken/expired/mis-scoped IS connection is a leading cause of cloud-run **401**s. (The connection itself surfaces its broken state as `Code: "ConnectionNotEnabled"` on `uip is connections ping`, not as the runtime status — see [connection-401.md](./playbooks/connection-401.md).)
 - **Orchestrator** — package feed, runtime host, trigger surface (HTTP endpoint / schedule / IS event), and the destination for cloud-run logs and traces.
 - **Solutions** — the packaging/versioning/deploy container (`uip solution pack`/`publish`/`deploy`).
 - **Studio Web** — the sole authoring surface; some faults surface only when a workflow is opened/saved in the designer (see the designer-roundtrip playbooks).

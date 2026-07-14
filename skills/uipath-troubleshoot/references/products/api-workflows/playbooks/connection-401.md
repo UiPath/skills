@@ -9,7 +9,7 @@ confidence: medium
 What this looks like:
 - The workflow runs clean locally with `uip api-workflow run` but a Connector/HTTP activity fails once published (or against the real IS proxy)
 - The Integration Service proxy returns **401** `"Invalid Organization or User secret, or invalid Element token provided"`, surfaced in the failing activity's result. (The executor normalizes any 4xx from the proxy to a 400 client-error status on its own error envelope, so triage on the **401 in the result payload**, not the envelope status.)
-- The *connection* behind it, when pinged, reports its broken state as **404** `"Connection [<uuid>] is invalid or you do not have access to it"` and/or `Code: "ConnectionNotEnabled"` — that 404 is the `is connections ping` result, not what the activity returns at run time
+- The *connection* behind it, when pinged, reports its broken state via `Code: "ConnectionNotEnabled"` (and/or a "connection is invalid or you do not have access to it" message) — that is the `is connections ping` result, not what the activity returns at run time
 - A connection binding that is missing entirely fails earlier, locally, as a 400 validation error (`CONNECTION_REQUIRED`) before any proxy call — not a cloud 401
 
 What can cause it:
