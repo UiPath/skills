@@ -18,12 +18,17 @@ sandbox:
   node: {}
 
 pre_run:
+  # App name + routingName carry a per-run EPOCH suffix so repeated runs never
+  # collide on the published package version (name+version) or the fresh-deploy
+  # routing slug. Without this, re-runs publish the SAME app name at 1.0.0, hit
+  # "version already exists", and the agent burns turns looping version bumps.
   - command: |
+      EPOCH=$(date +%s)
       mkdir -p .dashboard dist
       echo "<html></html>" > dist/index.html
-      cat > .dashboard/state.json << 'EOF'
+      cat > .dashboard/state.json <<EOF
       {
-        "app": { "name": "Runtime Compliance Dashboard", "routingName": "runtime-compliance-live", "semver": "1.0.0" },
+        "app": { "name": "Runtime Compliance Dashboard $EPOCH", "routingName": "runtime-compliance-$EPOCH", "semver": "1.0.0" },
         "env": "alpha", "org": "testorg", "tenant": "testTenant",
         "cloudUrl": "https://alpha.uipath.com",
         "widgets": ["policy-denials", "rule-compliance"],
@@ -65,10 +70,14 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # Order/variable-tolerant: agents commonly bind the folder name to a shell var
+  # (FOLDER_NAME="codedapp-govtest-…"; node …/setup-admin-folder.mjs "$FOLDER_NAME"),
+  # so the literal appears BEFORE the script name. Two lookaheads (DOTALL) just
+  # require both tokens present in the same command, in any order.
   - type: command_executed
     description: "Governance provisioning ran against a DISPOSABLE codedapp-govtest-* folder, not the real AdminDashboards"
     tool_name: "Bash"
-    command_pattern: 'setup-admin-folder\.mjs.*codedapp-govtest-'
+    command_pattern: '(?=.*setup-admin-folder\.mjs)(?=.*codedapp-govtest-)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -90,10 +99,14 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
+  # Order/variable-tolerant: agents bind tags to a var (TAGS="governance,dashboard";
+  # deploy … --tags "$TAGS"), so `governance` appears in the assignment, not
+  # literally after --tags. Require a deploy command + a --tags flag + the
+  # governance token anywhere in the same command (DOTALL lookaheads).
   - type: command_executed
     description: "Deploy used governance tags (governance or governance,dashboard)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedapp\s+deploy\b.*--tags\s+"?governance'
+    command_pattern: '(?=.*uip\s+codedapp\s+deploy)(?=.*--tags)(?=.*governance)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
