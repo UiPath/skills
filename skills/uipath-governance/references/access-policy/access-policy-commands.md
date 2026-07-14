@@ -6,7 +6,7 @@ Single source of truth for every `uip gov access-policy` subcommand, its flags, 
 
 The CLI wraps two endpoints:
 - **PAP (Policy Administration Point)** — `list` / `get` / `create` / `update` / `delete` operate on policy records.
-- **PDP (Policy Decision Point)** — `evaluate` asks the service to resolve the effective decision (`Allow` / `Deny` / `NoOp`) for a concrete request context. `evaluate` requires tenant-scoped login.
+- **PDP (Policy Decision Point)** — `evaluate` asks the service to resolve the effective decision (`Allow` / `Deny` / `NoOp`) for a concrete request context. `evaluate` needs an active tenant session.
 
 ---
 
@@ -26,20 +26,7 @@ These flags work the same way on `uip gov access-policy list` and on every `uip 
 
 ## Authentication
 
-Every subcommand requires an active login. Check first:
-
-```bash
-uip login status --output json
-```
-
-If not logged in:
-
-```bash
-uip login                                          # interactive OAuth
-uip login --authority https://alpha.uipath.com     # non-production environments
-```
-
-For `evaluate`, login must target a specific tenant (not just an organization).
+Every subcommand needs an active session. `evaluate` needs a tenant-scoped session (not just org-level).
 
 ### Reading `organizationId` and `tenantId`
 
@@ -163,7 +150,7 @@ Always `get` the policy first and show a summary to the user. Require an explici
 
 Ask the Policy Decision Point (PDP) to resolve the effective decision (`Allow` / `Deny` / `NoOp`) for a request context. Returns the aggregated enforcement, which policies contributed, and evaluation details.
 
-> **Requires tenant-scoped login** — login must target a specific tenant, not just an organization (Critical Rule #12).
+> **Needs tenant-scoped session** — `evaluate` requires a tenant-level session, not just org-level (Critical Rule #12).
 >
 > **User-initiated only.** Do not run `evaluate` automatically after create (Critical Rule #12). Dummy UUIDs with no Resource Catalog tags correctly return `NoOp` and confuse the user into thinking the policy is broken.
 
@@ -230,5 +217,5 @@ The calling user (from `uip login`) is the actor; their identity is taken from t
 | `enforcement: "Deny" not allowed` | The skill emitted `enforcement: "Deny"` — never authorable (Critical Rule #2) | Switch to `enforcement: "Allow"` and reframe Deny intent: ask what should be **allowed** and target that set, or use the `None` operator on tags / values. See [plugins/tags/planning.md — Deny-to-Allow flip](./plugins/tags/planning.md#deny-to-allow-flip). |
 | `ActorRule.Values is required` | Emitted `actorRule` with no entries | Either omit the `actorRule` key, or add entries — see [plugins/actor/impl.md](./plugins/actor/impl.md) |
 | `400 Bad Request` on `actorRule.values[].type: Group` | Server build does not accept `Group` | Enumerate member user UUIDs under `type: User` — see [plugins/actor/impl.md — Debug](./plugins/actor/impl.md#debug) |
-| `evaluate` rejects with tenant-context error | Login is org-scoped, not tenant-scoped | Re-login targeting the specific tenant (Critical Rule #12) |
+| `evaluate` rejects with tenant-context error | Session is org-scoped, not tenant-scoped | Surface auth error to user — needs tenant-scoped session |
 | `unknown flag --resource-identifier` / `--actor-type` / `--actor-identifier` / `--executable-type` / `--executable-identifier` / `--actor-identity-type` | Flags were renamed and `--actor-identity-type` was removed | Use the current set: `--resource-id`, `--actor-process-type`, `--actor-process-id`. For actor identity: omit under a user token (inferred from the bearer); pass `--actor-identity-id <ID>` only under an S2S token. |
