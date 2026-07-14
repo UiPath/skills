@@ -73,20 +73,9 @@ class AthenaCheckersTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary.cleanup()
 
-    def write_sdd(self, path: Path, *, include_router: bool = True) -> None:
-        router = """
-## External Router Decision Table
-
-| Event | Decision |
-|---|---|
-| event1 | Run StageATask1 and StageBTask1 |
-| event2 | Run StageBTask1 |
-| event3 | Run StageBTask2 |
-| event4 | Cancel event1:StageBTask1 |
-| event5 | Run StageCTask2 |
-""" if include_router else ""
+    def write_sdd(self, path: Path) -> None:
         path.write_text(
-            """# Athena CM Event Case
+            """# Athena Event Case
 
 ## Case Arguments
 
@@ -125,12 +114,7 @@ Stage C enters after selected-stage-completed StageB; StageCTask1 uses
 current-stage-entered; Stage C exits on required-tasks-completed. The case
 closes on required-stages-completed.
 
-## Case Manager
-
-Process: CaseManagerProc
-Inputs: caseCurrentExecutionState, caseRulesDecisions, eventPayload
-Output: caseManagerDecisions
-""" + router,
+""",
             encoding="utf-8",
         )
 
@@ -180,7 +164,7 @@ Output: caseManagerDecisions
         for task_id, name in {
             "a1": "StageATask1", "a2": "StageATask2", "b1": "StageBTask1",
             "b2": "StageBTask2", "c1": "StageCTask1", "c2": "StageCTask2",
-            "c3": "StageCTask3", "case_manager": "CaseManagerProc",
+            "c3": "StageCTask3",
         }.items():
             bindings.extend([
                 {"id": f"{task_id}_name", "default": name},
@@ -195,24 +179,6 @@ Output: caseManagerDecisions
                 "caseExitRules": [
                     {"rules": [[{"rule": "required-stages-completed"}]], "marksCaseComplete": True}
                 ],
-                "caseManagerData": {
-                    "enabled": True,
-                    "data": {
-                        "tasks": [[{
-                            "id": "case-manager",
-                            "type": "process",
-                            "data": {
-                                "name": "=bindings.case_manager_name",
-                                "inputs": [
-                                    {"name": "caseCurrentExecutionState"},
-                                    {"name": "caseRulesDecisions"},
-                                    {"name": "eventPayload"},
-                                ],
-                                "outputs": [{"name": "caseManagerDecisions"}],
-                            },
-                        }]],
-                    },
-                },
             },
             "bindings": bindings,
             "variables": {
@@ -245,11 +211,10 @@ Output: caseManagerDecisions
         result = run(SDD_CHECK, self.workdir)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_sdd_checker_rejects_missing_router_table(self) -> None:
-        self.write_sdd(self.workdir / "sdd.md", include_router=False)
+    def test_sdd_checker_accepts_topology_without_external_router(self) -> None:
+        self.write_sdd(self.workdir / "sdd.md")
         result = run(SDD_CHECK, self.workdir)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("router", result.stdout + result.stderr)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_case_checker_accepts_expected_structure(self) -> None:
         self.write_caseplan()

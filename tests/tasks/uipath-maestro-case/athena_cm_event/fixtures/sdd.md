@@ -1,11 +1,10 @@
 # SDD — AthenaCMEventCase
 
-**Case Definition Blueprint** · Athena event-directed Case Manager case
+**Case Definition Blueprint** · Athena event-directed case
 
 > A compact three-stage case plan that receives an external case identity and
-> event payload. The Case Manager process decides which tasks to start or
-> cancel; this case plan supplies the stage, task, and manager interface it
-> requires.
+> event payload. This fixture specifies the supported caseplan topology only:
+> its trigger, stages, tasks, and completion rules.
 
 ## Table of Contents
 
@@ -14,8 +13,6 @@
    - [Stage 1: StageA](#stage-1-stagea) — 2 tasks
    - [Stage 2: StageB](#stage-2-stageb) — 2 tasks
    - [Stage 3: StageC](#stage-3-stagec) — 3 tasks
-3. [Case Manager](#section-3-case-manager)
-4. [External Router Decision Table](#section-4-external-router-decision-table)
 
 ## Section 1: Case Definition
 
@@ -24,7 +21,7 @@
 | Property | Value |
 |----------|-------|
 | Case Name | AthenaCMEventCase |
-| Case Description | Coordinates three operational stages while an external Case Manager process reacts to business events and task completion. |
+| Case Description | Coordinates three operational stages for an event-directed case. |
 | Case Identifier | Type: external. Source: `=vars.InstanceExternalId` |
 | Priority | Choiceset: Normal — Default: Normal |
 | Case-Level SLA | 10 d |
@@ -50,7 +47,7 @@
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
 | InstanceExternalId | In | string | T02 | | | External identifier supplied by the caller. |
-| eventPayload | In | jsonSchema | T02 | | | External event content supplied to the Case Manager. |
+| eventPayload | In | jsonSchema | T02 | | | External event content supplied to the case. |
 
 ## Section 2: Stages & Tasks
 
@@ -122,7 +119,7 @@
 ### Stage 2: StageB
 
 **Type:** Stage
-**Description:** Hosts the Stage B work selected by the Case Manager.
+**Description:** Hosts the Stage B work.
 **Required for Case Completion:** No
 
 #### Stage Entry Conditions
@@ -147,7 +144,7 @@
 ##### Task 2.1: StageBTask1
 
 **Type:** process
-**Description:** Performs a Case Manager-selected Stage B operation.
+**Description:** Performs a Stage B operation.
 
 **Entry Condition:**
 
@@ -269,30 +266,3 @@
 
 **Resolved Resource:** StageCTask3
 **Folder Path:** Shared
-
-## Section 3: Case Manager
-
-The Case Manager is enabled and invokes the process `CaseManagerProc`.
-
-| Direction | Name | Type | Description |
-|-----------|------|------|-------------|
-| Input | caseCurrentExecutionState | object | Current event and case execution state. |
-| Input | caseRulesDecisions | object | Scheduler decisions already applied to the case. |
-| Input | eventPayload | object | Payload from the external event. |
-| Output | caseManagerDecisions | object | Decisions to enter stages, run tasks, or cancel tasks. |
-
-## Section 4: External Router Decision Table
-
-This table describes the external `CaseManagerProc` process boundary. Generate
-only the case plan in this task; do not create, publish, or debug the router.
-
-| Event or completion | Case Manager decision |
-|---------------------|-----------------------|
-| event1 | Run StageATask1 and StageBTask1. |
-| event2 | Run StageBTask1. |
-| event3 | Run StageBTask2. |
-| event4 | Cancel event1:StageBTask1. |
-| event5 | Run StageCTask2. |
-| StageATask1 completed | Run StageATask2. |
-| StageBTask2 completed | Enter StageC and run StageCTask1. |
-| StageCTask2 completed | Run StageCTask3. |

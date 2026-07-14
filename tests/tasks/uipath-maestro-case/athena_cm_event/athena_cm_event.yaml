@@ -1,12 +1,10 @@
 task_id: skill-case-athena-cm-event
 description: >
-  STRUCTURAL BUILD — build the Athena event-directed Case Manager case from a
+  STRUCTURAL BUILD — build the Athena event-directed case from a
   staged approved SDD. The fixture defines an external case identifier and
-  event payload, the Stage A/B/C seven-task topology, its task and stage rules,
-  and the CaseManagerProc input/output contract. The caseplan must validate and
-  pass deterministic fixture and structure graders. No deploy or debug: the
-  five external event decisions belong to a separate router process and cannot
-  be executed headlessly by a caseplan-only test.
+  event payload, and the Stage A/B/C seven-task topology with its task and
+  stage rules. The caseplan must validate and pass deterministic fixture and
+  structure graders. No deploy or debug.
 tags: [uipath-maestro-case, integration, lifecycle:generate, mode:build, shape:multi-node, feature:trigger]
 
 run_limits:
@@ -27,8 +25,8 @@ initial_prompt: |
 
   Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0,
   do not re-interview me, and do not redesign the process. The document's
-  external router decision table describes the separate CaseManagerProc
-  boundary; generate only the case plan, not a router process.
+  fixture is limited to the supported caseplan topology; generate only the
+  case plan.
 
   Important:
   - The `uip` CLI is already available and authenticated in the environment.
@@ -71,7 +69,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "staged sdd.md retains the Athena case, Case Manager, and external-router contract"
+    description: "staged sdd.md retains the Athena caseplan topology contract"
     command: "python3 $TASK_DIR/check_athena_cm_event_sdd.py"
     timeout: 30
     expected_exit_code: 0
@@ -79,7 +77,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "generated caseplan preserves the Athena stage/task rules, external identity, event trigger, and CaseManagerProc contract"
+    description: "generated caseplan preserves the Athena stage/task rules, external identity, and event trigger"
     command: "python3 $TASK_DIR/check_athena_cm_event_case.py"
     timeout: 120
     expected_exit_code: 0

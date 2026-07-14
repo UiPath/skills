@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assert that the staged Athena CM SDD keeps its evaluation-critical contract."""
+"""Assert that the staged Athena SDD keeps its caseplan-critical contract."""
 
 from __future__ import annotations
 
@@ -21,10 +21,6 @@ REQUIREMENTS = {
     "StageCTask1": r"\bStageCTask1\b",
     "StageCTask2": r"\bStageCTask2\b",
     "StageCTask3": r"\bStageCTask3\b",
-    "CaseManagerProc": r"\bCaseManagerProc\b",
-    "case manager execution state": r"\bcaseCurrentExecutionState\b",
-    "case manager rules decisions": r"\bcaseRulesDecisions\b",
-    "case manager output": r"\bcaseManagerDecisions\b",
     "A2 dependency": r"\bselected-tasks-completed\b",
     "Stage C dependency": r"\bselected-stage-completed\b",
     "Stage C task entry": r"\bcurrent-stage-entered\b",
@@ -89,16 +85,7 @@ def main() -> None:
                 f"({required}/{run_once})"
             )
 
-    event_positions = []
-    for event in ("event1", "event2", "event3", "event4", "event5"):
-        match = re.search(rf"\b{event}\b", text, flags=re.IGNORECASE)
-        if not match:
-            fail(f"router decision table is missing {event}")
-        event_positions.append(match.start())
-    if event_positions != sorted(event_positions):
-        fail("router decision table must list event1 through event5 in order")
-
-    print("OK: Athena CM SDD fixture contract preserved")
+    print("OK: Athena SDD caseplan contract preserved")
 
 
 if __name__ == "__main__":

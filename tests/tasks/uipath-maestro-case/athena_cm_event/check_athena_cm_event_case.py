@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Structural grader for the Athena CM event-case plan generated from sdd.md."""
+"""Structural grader for the Athena event caseplan generated from sdd.md."""
 
 from __future__ import annotations
 
@@ -126,32 +126,6 @@ def assert_task_flags(task: dict, task_name: str) -> None:
         )
 
 
-def assert_case_manager(plan: dict) -> None:
-    manager = (plan.get("metadata") or {}).get("caseManagerData") or {}
-    if manager.get("enabled") is not True:
-        fail("metadata.caseManagerData must be enabled")
-    manager_tasks = [
-        task
-        for lane in ((manager.get("data") or {}).get("tasks") or [])
-        for task in lane or []
-    ]
-    if len(manager_tasks) != 1:
-        fail(f"Case Manager must have exactly one process task; got {len(manager_tasks)}")
-    manager_task = manager_tasks[0]
-    if manager_task.get("type") != "process":
-        fail(f"Case Manager task must have type='process'; got {manager_task.get('type')!r}")
-    if "CaseManagerProc" not in task_names(plan, manager_task):
-        fail("Case Manager process must resolve to 'CaseManagerProc'")
-    data = manager_task.get("data") or {}
-    input_names = {item.get("name") for item in data.get("inputs") or []}
-    expected_inputs = {"caseCurrentExecutionState", "caseRulesDecisions", "eventPayload"}
-    if not expected_inputs <= input_names:
-        fail(f"Case Manager inputs missing {sorted(expected_inputs - input_names)}")
-    output_names = {item.get("name") for item in data.get("outputs") or []}
-    if "caseManagerDecisions" not in output_names:
-        fail("Case Manager output must include 'caseManagerDecisions'")
-
-
 def main() -> None:
     if not os.path.isfile(CASEPLAN_PATH):
         fail(f"expected generated caseplan at {CASEPLAN_PATH}")
@@ -233,8 +207,7 @@ def main() -> None:
     ):
         fail("case must complete on required-stages-completed")
 
-    assert_case_manager(plan)
-    print("OK: Athena CM caseplan preserves the staged SDD topology and Case Manager contract")
+    print("OK: Athena caseplan preserves the staged SDD topology")
 
 
 if __name__ == "__main__":
