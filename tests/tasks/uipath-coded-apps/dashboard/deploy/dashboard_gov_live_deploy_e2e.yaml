@@ -1,0 +1,113 @@
+task_id: uipath-coded-apps-dashboard-gov-live-deploy-e2e
+description: >
+  Live governance-mode deploy of a runtime-compliance dashboard into a
+  DISPOSABLE per-run shared folder (codedapp-govtest-<uuid>), NOT the real
+  shared AdminDashboards — because `uip codedapp` has no delete verb, the only
+  teardown is folder-delete, which cascades to the deployed app. Exercises the
+  governance branch end-to-end: provision the disposable folder via
+  setup-admin-folder.mjs, pack -> publish -> deploy with governance tags, and
+  record the folder in report.json so post_run cleans it up.
+tags: [uipath-coded-apps, e2e, dashboard, mode:operate, lifecycle:setup]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+pre_run:
+  - command: |
+      mkdir -p .dashboard dist
+      echo "<html></html>" > dist/index.html
+      cat > .dashboard/state.json << 'EOF'
+      {
+        "app": { "name": "Runtime Compliance Dashboard", "routingName": "runtime-compliance-live", "semver": "1.0.0" },
+        "env": "alpha", "org": "testorg", "tenant": "testTenant",
+        "cloudUrl": "https://alpha.uipath.com",
+        "widgets": ["policy-denials", "rule-compliance"],
+        "deployment": { "systemName": null, "folderKey": null, "folderName": null, "appUrl": null, "pinnedToGovernance": false, "lastDeployedAt": null }
+      }
+      EOF
+    timeout: 15
+    fail_on_error: true
+
+initial_prompt: |
+  Deploy my Runtime Compliance dashboard to Automation Cloud as a governance
+  dashboard, pinned to the Governance UI.
+
+  This dashboard is a governance dashboard, so it needs a governance home
+  folder with elevated access. Do NOT use the real shared AdminDashboards
+  folder for this run — instead provision a fresh per-run shared folder named
+  exactly `codedapp-govtest-<EPOCH>` (substitute a unique value for <EPOCH>)
+  using the skill's governance provisioning script, and deploy into it. This
+  isolates the run so it can be cleaned up afterward.
+
+  IMMEDIATELY after `uip codedapp deploy` succeeds — before any further work —
+  write `report.json` at the sandbox root:
+    {
+      "app_name": "Runtime Compliance Dashboard",
+      "deployment_id": "<systemName or deploymentId from .uipath/app.config.json>",
+      "folder": "<the codedapp-govtest-<EPOCH> folder name you created>"
+    }
+  The `folder` field is REQUIRED — post_run reads it to clean up.
+
+  This is a non-interactive automated test — treat the plan as pre-approved and
+  complete the whole deploy in this same turn. Do NOT wait for confirmation and
+  do NOT ask any question. Before starting, load the uipath-coded-apps skill.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Governance provisioning ran against a DISPOSABLE codedapp-govtest-* folder, not the real AdminDashboards"
+    tool_name: "Bash"
+    command_pattern: 'setup-admin-folder\.mjs.*codedapp-govtest-'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT provision the real shared AdminDashboards folder"
+    tool_name: "Bash"
+    command_pattern: 'setup-admin-folder\.mjs.*AdminDashboards'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the pack -> publish -> deploy sequence"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+(pack|publish|deploy)'
+    min_count: 3
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Deploy used governance tags (governance or governance,dashboard)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy\b.*--tags\s+"?governance'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json records the codedapp-govtest-* folder name so post_run can clean it up"
+    command: "python3 -c \"import json,sys; f=str(json.load(open('report.json')).get('folder','')); sys.exit(0 if f.startswith('codedapp-govtest-') else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_codedapp_folder.py"
+    timeout: 60
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_external_app.py"
+    timeout: 60
