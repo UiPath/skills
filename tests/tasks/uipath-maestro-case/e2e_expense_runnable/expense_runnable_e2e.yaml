@@ -32,7 +32,7 @@ agent:
 
 run_limits:
   task_timeout: 4800
-  max_turns: 250
+  max_turns: 500
   turn_timeout: 2700
 
 sandbox:
