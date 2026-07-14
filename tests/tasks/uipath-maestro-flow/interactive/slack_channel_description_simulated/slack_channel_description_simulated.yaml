@@ -1,0 +1,108 @@
+task_id: flow-slack-channel-description-simulated
+description: >
+  Single-connector Slack flow (read a channel's description and output it),
+  driven by a simulated non-technical user who withholds the channel and project
+  name until asked. Tests the agent's ability to clarify an ambiguous ask before
+  building. Real-Slack, validate-only: builds the uipath-salesforce-slack
+  connector node and validates it, but does NOT run cloud debug — so it needs a
+  live Slack connection to build/validate, and never asserts fetched content.
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, connector, simulation]
+
+run_limits:
+  max_turns: 80
+  task_timeout: 2400
+  turn_timeout: 1200
+
+# No initial_prompt — the simulator generates turn 1 from its persona + goal.
+
+simulation:
+  enabled: true
+
+  persona: |
+    You are a non-technical office manager. You have heard of UiPath but have
+    never built a flow yourself. You speak in plain English, never in code. You
+    are friendly but impatient: if the agent dithers, prod it to just build
+    something. You cannot read or write code — if the agent shows you code, say
+    "I trust you, just make it work."
+
+  goal: |
+    You ultimately want a UiPath Flow that grabs the description text from one of
+    your team's Slack channels and shows it to you. You want it validated before
+    you accept it.
+
+    CRITICAL: do NOT volunteer these details up front. Reveal each fact ONLY if
+    the agent explicitly asks about it:
+      - The project name should be "SlackChannelDescription".
+      - The information you want lives in Slack (if asked where the description
+        should come from).
+      - The specific channel is "#office-bellevue".
+      - The flow should output that channel's description text.
+      - You want the flow validated before you sign off.
+      - You do not require the project to execute before signing off.
+
+    If the agent asks a clarifying question that covers several of these at
+    once, answer only what they asked — do not pre-empt the rest.
+
+  constraints:
+    - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
+    - "Do not mention 'Slack', 'connector', 'channel', 'node', or 'validate' unless the agent brings them up first."
+    - "Do not reveal the channel '#office-bellevue' unless asked which channel."
+    - "Do not reveal the project name 'SlackChannelDescription' unless asked what to name it."
+    - "When you are satisfied that the flow is built and validated, reply with exactly <<<END>>> on its own line."
+
+  max_turns: 14
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+  parallel_trials: true
+
+success_criteria:
+  # Name-agnostic: any .flow the agent built must validate. The exact project
+  # name is scored separately below so a working-but-misnamed flow still earns
+  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  - type: run_command
+    description: "uip flow validate passes (any .flow)"
+    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Mirrors the skills-repo checker (assert_flow_uses_connector_target(
+  # "uipath-salesforce-slack")): a node must target the Slack connector — either
+  # a native uipath.connector.* type or an HTTP-proxy node whose detail carries
+  # targetConnector=uipath-salesforce-slack. The connector key appears in the
+  # node JSON either way. run_debug output is intentionally NOT asserted.
+  - type: run_command
+    description: "Flow uses the Slack connector target (uipath-salesforce-slack)"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/*.flow',recursive=True); assert flows,'No flow file'; f=json.load(open(flows[0])); nodes=f['nodes']; assert any('uipath-salesforce-slack' in json.dumps(x).lower() for x in nodes),'no Slack connector target (uipath-salesforce-slack)'; print('OK')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  # The channel #office-bellevue is a withheld requirement the persona reveals
+  # only when asked which channel. The original grades this at runtime (the
+  # channel's description IS the Bellevue office address); we can't run debug, so
+  # we verify statically that the flow targets that channel. Scored on its own
+  # (partial credit) — a flow that legitimately encodes the channel as an ID
+  # rather than its name should not hard-fail the whole task.
+  - type: run_command
+    description: "Flow targets the #office-bellevue channel (elicited from the user)"
+    command: "python3 -c \"import glob,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(0 if 'office-bellevue' in open(flows[0]).read().lower() else 'flow does not reference the #office-bellevue channel')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The project name is a withheld requirement the agent is expected to elicit
+  # (the persona only reveals it if asked what to name it). Scored on its own so
+  # missing it is a partial deduction, not a total failure of the flow above.
+  - type: run_command
+    description: "Project/flow is named SlackChannelDescription (elicited from the user)"
+    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/SlackChannelDescription.flow',recursive=True) else 'expected a flow named SlackChannelDescription.flow')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

@@ -1,0 +1,100 @@
+task_id: flow-cli-dice-roller-simulated
+description: >
+  Dice-roller flow via CLI mode, but driven by a simulated non-technical user
+  who withholds requirements until asked. Tests the agent's ability to
+  clarify ambiguous asks before building.
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, simulation]
+run_limits:
+  max_turns: 40
+  task_timeout: 2400
+  turn_timeout: 1200
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  system_prompt: |
+    If you're unsure of anything, ask for more information.
+  plugins:
+    - type: local
+      path: "$SKILLS_REPO_PATH"
+
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+# No initial_prompt — the simulator generates turn 1 from its persona + goal.
+
+simulation:
+  enabled: true
+
+  persona: |
+    You are a non-technical operations analyst. You have heard of UiPath but
+    have never built a flow yourself. You speak in plain English, never in code.
+    You are friendly but impatient: if the agent dithers, prod it to just build
+    something. You cannot read or write code — if the agent shows you code, say
+    "I trust you, just make it work."
+
+  goal: |
+    You ultimately want a UiPath Flow project that rolls a single six-sided die
+    and prints the result (a random integer 1-6). You also want the project
+    built via the uip CLI (uip maestro flow node add / edge add), not by hand-editing
+    JSON, and you want it validated with uip maestro flow validate before you accept it.
+
+    CRITICAL: do NOT volunteer these details up front. Reveal each fact ONLY if
+    the agent explicitly asks about it:
+      - The project name should be "DiceRoller".
+      - It should roll a SIX-sided die (1-6), just one die.
+      - It should print / output the rolled number.
+      - You want it built with the uip CLI commands, not by writing JSON.
+      - You want "uip maestro flow validate" to pass before you sign off.
+      - You do not require the project to execute before signing off.
+
+    If the agent asks a clarifying question that covers several of these at
+    once, answer only what they asked — do not pre-empt the rest.
+
+  constraints:
+    - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
+    - "Do not mention 'CLI', 'uip', 'validate', 'node', or 'edge' unless the agent brings them up first."
+    - "Do not reveal the die has six sides unless asked about the number of sides or range."
+    - "Do not reveal the project name 'DiceRoller' unless asked what to name it."
+    - "When you are satisfied that the flow is built and validated, reply with exactly <<<END>>> on its own line."
+
+  max_turns: 12
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+  parallel_trials: true
+
+success_criteria:
+  # Name-agnostic: any .flow the agent built must validate. The exact project
+  # name is scored separately below so a working-but-misnamed flow still earns
+  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  - type: run_command
+    description: "uip flow validate passes (any .flow)"
+    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    timeout: 60
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow has script node with dice logic"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/*.flow',recursive=True); assert flows,'No flow file found'; f=json.load(open(flows[0])); scripts=[n for n in f['nodes'] if n['type']=='core.action.script']; assert len(scripts)>=1,'No script node'; s=scripts[0].get('inputs',{}).get('script',''); assert 'Math.random' in s or 'random' in s.lower(), f'No random logic: {s[:100]}'; print('OK')\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The project name is a withheld requirement the agent is expected to elicit
+  # (the persona only reveals it if asked what to name it). Scored on its own so
+  # missing it is a partial deduction, not a total failure of the flow above.
+  - type: run_command
+    description: "Project/flow is named DiceRoller (elicited from the user)"
+    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/DiceRoller.flow',recursive=True) else 'expected a flow named DiceRoller.flow')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

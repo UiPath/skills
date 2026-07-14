@@ -1,0 +1,99 @@
+task_id: flow-slack-weather-pipeline-simulated
+description: >
+  Multi-step pipeline (Slack → script → HTTP → decision), but driven by a
+  simulated non-technical user who withholds requirements until asked. Tests the
+  agent's ability to clarify an ambiguous, chained ask before building.
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, connector, feature:http, simulation]
+
+run_limits:
+  max_turns: 80
+  task_timeout: 2400
+  turn_timeout: 1200
+
+# No initial_prompt — the simulator generates turn 1 from its persona + goal.
+
+simulation:
+  enabled: true
+
+  persona: |
+    You are a non-technical office manager. You have heard of UiPath but have
+    never built a flow yourself. You speak in plain English, never in code. You
+    are friendly but impatient: if the agent dithers, prod it to just build
+    something. You cannot read or write code — if the agent shows you code, say
+    "I trust you, just make it work."
+
+  goal: |
+    You ultimately want a UiPath Flow that figures out the weather at your office
+    and tells you whether it's warm. You want it validated before you accept it.
+
+    CRITICAL: do NOT volunteer these details up front. Reveal each fact ONLY if
+    the agent explicitly asks about it:
+      - The project name should be "SlackWeatherPipeline".
+      - The office location is NOT typed anywhere — it lives in the description
+        of the "#office-bellevue" Slack channel, which holds the office's full US
+        mailing address (street, optional suite/unit, city, state, ZIP).
+      - The flow must read that Slack channel description and pull out the CITY
+        (the locality — not the street line, not the suite/unit).
+      - It should then look up the current weather for that city from the
+        open-meteo public API.
+      - The rule: if it's above 60 degrees Fahrenheit the flow should output the
+        text 'warm office today', otherwise 'cold office today'.
+      - The verdict must be produced as the flow's actual OUTPUT value (a value
+        the run emits) — just ending on a named branch does not count.
+      - You want the flow validated before you sign off.
+
+    If the agent asks a clarifying question that covers several of these at
+    once, answer only what they asked — do not pre-empt the rest.
+
+  constraints:
+    - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
+    - "Do not mention 'Slack', 'HTTP', 'open-meteo', 'connector', 'validate', 'node', 'script', or 'decision' unless the agent brings them up first."
+    - "Do not reveal where the address lives (the Slack channel description) unless asked where the office location comes from."
+    - "Do not reveal the 60F rule or the exact 'warm/cold office today' wording unless asked about the temperature rule or wording."
+    - "Do not reveal the project name 'SlackWeatherPipeline' unless asked what to name it."
+    - "When you are satisfied that the flow is built and validated, reply with exactly <<<END>>> on its own line."
+
+  max_turns: 16
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+  parallel_trials: true
+
+success_criteria:
+  # Name-agnostic: any .flow the agent built must validate. The exact project
+  # name is scored separately below so a working-but-misnamed flow still earns
+  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  - type: run_command
+    description: "uip flow validate passes (any .flow)"
+    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Mirrors the skills-repo slack_weather checker (check_slack_weather_pipeline.py):
+  #   assert_flow_uses_connector_target("uipath-salesforce-slack")
+  #   + assert_flow_has_api_node_targeting(["open-meteo", "openmeteoapis"])
+  #   + output contains a verdict message.
+  # An API-capable node = type contains core.action.http OR uipath.connector.
+  # Static adaptation: original checks runtime output for ONE verdict
+  # (require_all=False); we assert BOTH verdict strings are authored in the flow.
+  - type: run_command
+    description: "Flow has a Slack connector target, an open-meteo weather node, and both verdict strings"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/*.flow',recursive=True); assert flows,'No flow file'; f=json.load(open(flows[0])); nodes=f['nodes']; api=lambda x:('core.action.http' in str(x.get('type','')).lower() or 'uipath.connector' in str(x.get('type','')).lower()); assert any(api(x) and ('open-meteo' in json.dumps(x).lower() or 'openmeteoapis' in json.dumps(x).lower()) for x in nodes),'no open-meteo weather node'; assert any(('uipath.connector' in str(x.get('type','')).lower() and 'slack' in str(x.get('type','')).lower()) or ('uipath-salesforce-slack' in json.dumps(x).lower()) for x in nodes),'no slack connector target'; s=json.dumps(f).lower(); assert 'warm office today' in s and 'cold office today' in s,'missing verdict text'; print('OK')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  # The project name is a withheld requirement the agent is expected to elicit
+  # (the persona only reveals it if asked what to name it). Scored on its own so
+  # missing it is a partial deduction, not a total failure of the flow above.
+  - type: run_command
+    description: "Project/flow is named SlackWeatherPipeline (elicited from the user)"
+    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/SlackWeatherPipeline.flow',recursive=True) else 'expected a flow named SlackWeatherPipeline.flow')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
