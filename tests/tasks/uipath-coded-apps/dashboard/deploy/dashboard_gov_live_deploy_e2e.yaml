@@ -98,14 +98,19 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "report.json records the codedapp-govtest-* folder name so post_run can clean it up"
-    command: "python3 -c \"import json,sys; f=str(json.load(open('report.json')).get('folder','')); sys.exit(0 if f.startswith('codedapp-govtest-') else 1)\""
-    timeout: 5
-    expected_exit_code: 0
+  - type: command_executed
+    description: "Deploy ran non-interactively into the provisioned folder via --folder-key"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy\b.*--folder-key'
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
+# report.json is written by the agent (see initial_prompt) purely so the
+# post_run cleanup below can find the disposable folder to delete. It is
+# deliberately NOT a success_criterion — the disposable folder name is already
+# graded via the setup-admin-folder.mjs check above, and grading a self-written
+# file is a self-report anti-pattern. post_run reads it as cleanup infra only.
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_codedapp_folder.py"
     timeout: 60
