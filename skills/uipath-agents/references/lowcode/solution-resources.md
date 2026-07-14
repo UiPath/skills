@@ -27,7 +27,7 @@ The `resources/solution_folder/` directory contains JSON resource definitions. W
 
 **Path:** `resources/solution_folder/package/{AgentName}.json`
 
-Links an agent project to its deployable NuGet package. Auto-generated when the agent project is registered with its solution — by `uip agent init` (registers with the parent `.uipx` inside a solution, or auto-scaffolds `<Name>Solution/` and registers when run outside one) or by the `uip solution project add` fallback.
+Links an agent project to its deployable NuGet package. Auto-generated when the agent project is registered with its solution — by `uip agent init` (registers with the parent `.uipx` inside a solution, or auto-scaffolds `<Name>Solution/` and registers when run outside one) or by the `uip solution projects add` fallback.
 
 ```jsonc
 {
@@ -55,7 +55,7 @@ The package `name` becomes part of the package identifier: `{SolutionName}.agent
 
 **Path:** `resources/solution_folder/process/agent/{AgentName}.json`
 
-Makes the agent available as a runnable process in Orchestrator. One file per agent project. Auto-generated when the agent project is registered with its solution — by `uip agent init` (registers with the parent `.uipx` inside a solution, or auto-scaffolds `<Name>Solution/` and registers when run outside one) or by the `uip solution project add` fallback.
+Makes the agent available as a runnable process in Orchestrator. One file per agent project. Auto-generated when the agent project is registered with its solution — by `uip agent init` (registers with the parent `.uipx` inside a solution, or auto-scaffolds `<Name>Solution/` and registers when run outside one) or by the `uip solution projects add` fallback.
 
 ```jsonc
 {

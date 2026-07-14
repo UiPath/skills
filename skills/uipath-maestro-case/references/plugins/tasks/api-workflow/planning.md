@@ -96,13 +96,13 @@ do not ask for approval; do not publish/upload/deploy; do NOT execute the workfl
   `bindings_v2.json`, which the caller's `uip solution resources refresh` (run post-register)
   then catalogues into the solution. Http-kind (`ImplicitConnection`) and pure-compute
   workflows need no connection and no bindings sync.
-  Do NOT register into the solution — the caller registers (via `uip solution project add`).
+  Do NOT register into the solution — the caller registers (via `uip solution projects add`).
   If you cannot locate/load the uipath-api-workflow skill, do NOT improvise a build — return
   { built:false, error:"skill uipath-api-workflow not installed" }.
 Return JSON: { built: bool, path, finalInputs:[{name,type}], finalOutputs:[{name,type}], error? }
 ```
 
-The brief is self-contained — it carries the Step-1b Purpose and the pinned I/O, and no other case context (do not dump `caseplan.json` or sibling tasks). Quote `<WorkflowName>` and paths (SDD-derived). Building runs in a sub-agent; orchestration/parallelism per [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Because the sibling is built **without self-registration**, the **caller registers** each built sibling into the solution `.uipx` (sequential `uip solution project add`, then `resources refresh`) — see [registry-discovery.md § Create-on-Missing, Step 3 — Register](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). This must happen before rediscovery (§4), which reads the `.uipx` `Projects[]`.
+The brief is self-contained — it carries the Step-1b Purpose and the pinned I/O, and no other case context (do not dump `caseplan.json` or sibling tasks). Quote `<WorkflowName>` and paths (SDD-derived). Building runs in a sub-agent; orchestration/parallelism per [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Because the sibling is built **without self-registration**, the **caller registers** each built sibling into the solution `.uipx` (sequential `uip solution projects add`, then `resources refresh`) — see [registry-discovery.md § Create-on-Missing, Step 3 — Register](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). This must happen before rediscovery (§4), which reads the `.uipx` `Projects[]`.
 
 ### Step 3 — Binding (no new field)
 

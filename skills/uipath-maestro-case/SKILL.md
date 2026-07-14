@@ -10,7 +10,7 @@ Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` pl
 
 When `sdd.md` is absent, **Phase 0 interview** generates one interactively (listen → sketch → progressive ask-walk → resolve → approve, with optional HTML preview before handing off). Complex / multi-product cases may still be designed with the same workflow; use `uipath-planner` when the user explicitly requests planning across products.
 
-**Scope:** two journeys — **greenfield** (build a new case from `sdd.md`, user-provided or Phase 0-generated) and **brownfield** (targeted edits to an existing `caseplan.json` — see [references/brownfield.md](references/brownfield.md)). Editing a case that also lives in Studio Web? Brownfield pulls the current server state first (`uip solution download` / `solution project resync`) so re-publish can't silently clobber server-side changes — see [brownfield.md § Pull latest first](references/brownfield.md#pull-latest-first-before-editing).
+**Scope:** two journeys — **greenfield** (build a new case from `sdd.md`, user-provided or Phase 0-generated) and **brownfield** (targeted edits to an existing `caseplan.json` — see [references/brownfield.md](references/brownfield.md)). Editing a case that also lives in Studio Web? Brownfield pulls the current server state first (`uip solution download` / `solution projects resync`) so re-publish can't silently clobber server-side changes — see [brownfield.md § Pull latest first](references/brownfield.md#pull-latest-first-before-editing).
 
 ## When to Use This Skill
 
@@ -96,7 +96,7 @@ Read [references/planning.md](references/planning.md). Produces:
 
 - `tasks/tasks.md` — T-numbered entries (stages → tasks → conditions → SLA)
 - `tasks/registry-resolved.json` — audit trail
-- When the user picks **Create** at the Rule 17 gate, Phase 1 also builds the selected agent(s) / API workflow(s) as in-solution siblings (one sub-agent per resource — `uipath-agents` for agents, `uipath-api-workflow` for API workflows), registers them (`uip solution project add` + `resources refresh`), and binds them as resolved tasks. Registration and `--local` rediscovery need an enclosing solution `.uipx`, so the Create flow **first ensures the solution exists** (`uip solution init` if absent — Phase 2 Step 6.0 then skips its own `init`). See [references/registry-discovery.md § Create-on-Missing](references/registry-discovery.md#create-on-missing-build-and-rediscovery).
+- When the user picks **Create** at the Rule 17 gate, Phase 1 also builds the selected agent(s) / API workflow(s) as in-solution siblings (one sub-agent per resource — `uipath-agents` for agents, `uipath-api-workflow` for API workflows), registers them (`uip solution projects add` + `resources refresh`), and binds them as resolved tasks. Registration and `--local` rediscovery need an enclosing solution `.uipx`, so the Create flow **first ensures the solution exists** (`uip solution init` if absent — Phase 2 Step 6.0 then skips its own `init`). See [references/registry-discovery.md § Create-on-Missing](references/registry-discovery.md#create-on-missing-build-and-rediscovery).
 
 > **`tasks/` is created at the working root, adjacent to `sdd.md` — NEVER inside the solution/project folder (`<Solution>/`).** This holds regardless of where the case file lives: `caseplan.json` sits at `<Solution>/<Project>/caseplan.json`, but the planning artifacts (`tasks.md`, `registry-resolved.json`) stay next to `sdd.md` at the root.
 
