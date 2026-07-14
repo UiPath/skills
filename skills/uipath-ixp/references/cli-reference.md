@@ -139,10 +139,10 @@ For working with runtime (deployed) IXP models — separate from the training wo
 
 Runtime extraction runs a **published (deployed) model** on any new file — the live runtime path, not the training-data prediction path. It is an **asynchronous, two-step flow**:
 
-1. `uip ixp start-extraction <project-id> <file> --tag <tag> --output json` — digitizes the document and kicks off extraction; returns an `operationId` immediately (it does **not** wait for the result).
-2. `uip ixp get-extracted <project-id> <operation-id> --tag <tag> --output json` — fetches the operation by id. Returns whether it is still running, the extracted fields when done, or a failure.
+1. `uip ixp start-extraction <project-id> <file> --tag <tag> --output json` — starts digitizing the document and kicks off extraction against it (the two run in parallel server-side and the results are merged — extraction does **not** wait for digitization to finish); returns an `operationId` immediately (it does **not** wait for the extraction result).
+2. `uip ixp get-extraction-result <project-id> <operation-id> --tag <tag> --output json` — fetches the operation by id. Returns whether it is still running, the extracted fields when done, or a failure.
 
-> **Runtime extraction vs `labellings get-predictions`:** `start-extraction`/`get-extracted` run the published model on **any new file** you pass (runtime). `labellings get-predictions` returns predictions on documents already **uploaded for training** (design-time). Use runtime extraction to run a deployed model on a fresh document; use `get-predictions` when labelling/reviewing the training set.
+> **Runtime extraction vs `labellings get-predictions`:** `start-extraction`/`get-extraction-result` run the published model on **any new file** you pass (runtime). `labellings get-predictions` returns predictions on documents already **uploaded for training** (design-time). Use runtime extraction to run a deployed model on a fresh document; use `get-predictions` when labelling/reviewing the training set.
 
 #### Project **Id**, not Name
 
@@ -157,11 +157,11 @@ Pass `$PROJECT_ID` as `<project-id>` to **both** commands. If the filter returns
 
 #### `--tag` (required)
 
-`--tag` is **required** on both commands — `live` (the default for production), `staging`, or a custom tag (see `projects publish --tag`). Use the **same tag and project-id** for `start-extraction` and every `get-extracted` poll of that operation. (There is no `--version`; runtime extraction is tag-only.)
+`--tag` is **required** on both commands — `live` (the default for production), `staging`, or a custom tag (see `projects publish --tag`). Use the **same tag and project-id** for `start-extraction` and every `get-extraction-result` poll of that operation. (There is no `--version`; runtime extraction is tag-only.)
 
 #### Polling — you drive it
 
-`start-extraction` returns as soon as extraction begins; the CLI no longer waits or polls. **Poll `get-extracted` every 5 seconds until it returns a terminal shape** (finished or failed — below). Do NOT impose an arbitrary time cap: extraction runs server-side and continues whether or not you poll, so quitting early neither cancels it nor makes it finish sooner. If your own turn/time budget runs out before the operation resolves, report the resumable `operationId` (persisted below) and stop — a later session can pick up the same poll. `get-extracted` returns one of three shapes (Code `IxpGetExtracted`):
+`start-extraction` returns as soon as extraction begins; the CLI no longer waits or polls. **Poll `get-extraction-result` every 5 seconds until it returns a terminal shape** (finished or failed — below). Do NOT impose an arbitrary time cap: extraction runs server-side and continues whether or not you poll, so quitting early neither cancels it nor makes it finish sooner. If your own turn/time budget runs out before the operation resolves, report the resumable `operationId` (persisted below) and stop — a later session can pick up the same poll. `get-extraction-result` returns one of three shapes (Code `IxpGetExtractionResult`):
 
 | State | Envelope | What to do |
 |-------|----------|------------|
@@ -169,11 +169,11 @@ Pass `$PROJECT_ID` as `<project-id>` to **both** commands. If the filter returns
 | Finished | `Result: Success`, `Data` is the **array of field groups** (no `status` field). | Done — report the fields. |
 | Failed | `Result: Failure` (model failure, or a digitization/extractor timeout — the backend has **no timeout status**, it surfaces as a failure). | Stop and report the error. |
 
-> The framework operation status is only `NotStarted \| Running \| Failed \| Succeeded` — there is **no `Timeout` status**. When extraction runs too long the backend itself ends the operation as `Failure` (surfaced by `get-extracted`) rather than inventing a distinct timeout state — so the backend owns the timeout, not you. Poll until `get-extracted` is terminal; don't guess a client-side deadline.
+> The framework operation status is only `NotStarted \| Running \| Failed \| Succeeded` — there is **no `Timeout` status**. When extraction runs too long the backend itself ends the operation as `Failure` (surfaced by `get-extraction-result`) rather than inventing a distinct timeout state — so the backend owns the timeout, not you. Poll until `get-extraction-result` is terminal; don't guess a client-side deadline.
 
 #### Store the operationId
 
-Persist the `operationId` under the project working dir so polling can resume in a later session (the pending `get-extracted` response echoes it too):
+Persist the `operationId` under the project working dir so polling can resume in a later session (the pending `get-extraction-result` response echoes it too):
 
 ```bash
 mkdir -p /tmp/ixp/<project-name>/extractions
@@ -181,4 +181,4 @@ mkdir -p /tmp/ixp/<project-name>/extractions
 
 **File types:** same whitelist as document upload — see [Supported document files](#supported-document-files).
 
-**Output** (Code `IxpGetExtracted`, on completion): `Data` is an array of field groups, each `{ "fieldGroupName": "<name>", "fields": [{ "name": "<field>", "value": "<extracted>" }] }`.
+**Output** (Code `IxpGetExtractionResult`, on completion): `Data` is an array of field groups, each `{ "fieldGroupName": "<name>", "fields": [{ "name": "<field>", "value": "<extracted>" }] }`.

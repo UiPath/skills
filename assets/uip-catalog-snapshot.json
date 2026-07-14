@@ -515,7 +515,7 @@
     "ixp fields delete",
     "ixp fields rename",
     "ixp fields update-prompts",
-    "ixp get-extracted",
+    "ixp get-extraction-result",
     "ixp groups",
     "ixp groups add",
     "ixp groups delete",
