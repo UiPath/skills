@@ -45,113 +45,136 @@ success_criteria:
     skill_name: uipath-admin
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-agents activation"
     skill_name: uipath-agents
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-api-workflow activation"
     skill_name: uipath-api-workflow
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-automation-discovery activation"
     skill_name: uipath-automation-discovery
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-coded-apps activation"
     skill_name: uipath-coded-apps
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-functions activation"
     skill_name: uipath-functions
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-troubleshoot activation"
     skill_name: uipath-troubleshoot
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-feedback activation"
     skill_name: uipath-feedback
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-governance activation"
     skill_name: uipath-governance
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-human-in-the-loop activation"
     skill_name: uipath-human-in-the-loop
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-insights activation"
     skill_name: uipath-insights
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-ixp activation"
     skill_name: uipath-ixp
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-maestro-bpmn activation"
     skill_name: uipath-maestro-bpmn
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-maestro-case activation"
     skill_name: uipath-maestro-case
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-maestro-flow activation"
     skill_name: uipath-maestro-flow
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-mcp-servers activation"
     skill_name: uipath-mcp-servers
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-planner activation"
     skill_name: uipath-planner
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-platform activation"
     skill_name: uipath-platform
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-review activation"
     skill_name: uipath-review
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-rpa activation"
     skill_name: uipath-rpa
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-solution activation"
     skill_name: uipath-solution
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-tasks activation"
     skill_name: uipath-tasks
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided
   - type: skill_triggered
     description: "uipath-test activation"
     skill_name: uipath-test
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_when: decided

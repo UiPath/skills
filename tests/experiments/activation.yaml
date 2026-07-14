@@ -7,12 +7,18 @@ description: >
 defaults:
   # Activation is a one-shot decision per prompt — short timeouts are fine.
   run_limits:
-    # Activation is a recognition decision, not a work loop — the agent must
-    # decide from the prompt + skill descriptions alone, with zero sandbox
-    # discovery. 1 turn forces invoke-or-don't on the first response. Higher
-    # limits would let the agent compensate for a weak skill description by
-    # exploring, masking the signal we want to measure.
-    max_turns: 1
+    # Activation is a recognition decision, not a work loop. We give the agent a
+    # small turn budget (3) rather than a hard 1-turn cap, then arm early-stop on
+    # the stacked skill_triggered criteria (stop_when: decided, see the task
+    # file). The "first skill engagement decides" policy means a row is scored
+    # the instant the agent invokes any skill — so a positive row still stops on
+    # turn 1 with the exact verdict a max_turns:1 cap would have produced, while
+    # the extra headroom no longer truncates a correct invocation that the model
+    # emits after a brief reasoning turn. Rows where NO skill is engaged (true
+    # negatives) have no live event to trigger on and run to the cap, so keep it
+    # small. See coder_eval "early stop on criterion".
+    max_turns: 3
+    stop_early: true
     task_timeout: 120
     turn_timeout: 120
 
