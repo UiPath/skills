@@ -67,6 +67,8 @@ What to look for:
   uip context-grounding ingest --index-name "<index-name>" --folder-path "<folder-path>" --output json
   ```
 
+  Ingestion is async: after `ingest`, poll `uip context-grounding retrieve --index-name "<index-name>" --folder-path "<folder-path>" --output json` until `last_ingestion_status` is `Successful` before searching — the index is not queryable earlier.
+
   No agent republish needed — the runtime resolves by name.
 
 **If the index exists but is in a different folder — re-link the agent:**

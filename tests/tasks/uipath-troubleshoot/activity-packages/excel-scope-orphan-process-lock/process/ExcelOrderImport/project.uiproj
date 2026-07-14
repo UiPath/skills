@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelOrderImport",
+  "ProjectType": "Process",
+  "Description": "Reads the 'Orders' sheet from the inbound orders workbook at C:\\Robot\\Data\\orders-inbound.xlsx into a DataTable via Read Range inside an Excel Application Scope.",
+  "MainFile": "Main.xaml"
+}

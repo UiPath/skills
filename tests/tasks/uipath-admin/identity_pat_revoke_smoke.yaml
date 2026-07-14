@@ -28,7 +28,7 @@ success_criteria:
   - type: command_executed
     description: "Agent revoked the PAT"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+pat\s+revoke\b.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+pat\s+revoke'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

@@ -2,7 +2,7 @@
 
 ---
 
-**Root Cause:** Two foreground (UI-interactive) `ForegroundHolder`
+**Root Cause:** Two foreground (UI-interactive) `AttendedReportJob`
 jobs were scheduled against the same Robot session with overlapping
 start times. The earlier job was still in `Running` state when the
 second job tried to start, and the Robot's
@@ -10,15 +10,15 @@ single-foreground-job-per-session guard rejected the second start
 with `System.InvalidOperationException: A foreground process is
 already running. Only one foreground process can run at a time.`
 
-**What went wrong:** A `ForegroundHolder` job (key
+**What went wrong:** A `AttendedReportJob` job (key
 `c0a1b2c3-d4e5-4678-9012-3456789abcde`, started
 `2026-05-12T10:15:00.500Z`) faulted ~0.7s after start because an
-earlier `ForegroundHolder` job (key
+earlier `AttendedReportJob` job (key
 `b0a1b2c3-d4e5-4678-9012-3456789abcde`, started
 `2026-05-12T10:14:50.000Z`) was still running on the same machine
 (`MOCK-HOST`) and still occupied the foreground job slot.
 
-**Why:** `ForegroundHolder` is configured as a foreground process
+**Why:** `AttendedReportJob` is configured as a foreground process
 (`runtimeOptions.requiresUserInteraction: true` in `project.json`,
 echoed as `RequiresUserInteraction: true` on the job record). Its
 workflow holds the slot for ~60s via a `Delay` activity. Two
@@ -36,13 +36,13 @@ the process-start level, not inside the workflow.
 **Evidence:**
 
 ### Orchestrator (Propagation)
-- Failing job: `ForegroundHolder` (key `c0a1b2c3-...`) — Faulted at
+- Failing job: `AttendedReportJob` (key `c0a1b2c3-...`) — Faulted at
   `2026-05-12T10:15:01.218Z` (ran for ~0.72s)
 - Failing job type: `Unattended`, `RequiresUserInteraction: true`,
   triggered manually by user `user1` on machine `MOCK-HOST`
 - Folder: `ForegroundDemo` (key
   `a1b2c3d4-e5f6-7890-1234-56789abcdef0`)
-- Overlapping job in same folder/machine: `ForegroundHolder` (key
+- Overlapping job in same folder/machine: `AttendedReportJob` (key
   `b0a1b2c3-...`) — `Running` at the time the failing job was
   created (`StartTime: 2026-05-12T10:14:50.000Z`, EndTime
   `2026-05-12T10:15:50.412Z` — i.e. still active when the failing
@@ -56,7 +56,7 @@ the process-start level, not inside the workflow.
   `[Robot] Cannot start foreground job 'c0a1b2c3-...'. Another
   foreground job ('b0a1b2c3-...') is currently running on this
   session.`
-- Both jobs reference the same `ReleaseName` (`ForegroundHolder`)
+- Both jobs reference the same `ReleaseName` (`AttendedReportJob`)
   and the same machine — overlap is on a single Robot session, not
   across machines.
 - The Robot's foreground constraint is per-session and is enforced
@@ -90,7 +90,7 @@ the process-start level, not inside the workflow.
    - **Source:**
      `products/orchestrator/playbooks/foreground-already-running.md`
 
-3. Convert `ForegroundHolder` to a background process **if it
+3. Convert `AttendedReportJob` to a background process **if it
    does not actually need UI interaction**.
    - **Why:** The current `Main.xaml` only uses `LogMessage` and
      `Delay` activities — no UI automation. Marking it foreground
@@ -152,7 +152,7 @@ the process-start level, not inside the workflow.
 
 | # | Hypothesis | Confidence | Status | Root Cause? | Key Evidence | Resolution |
 |---|------------|------------|--------|-------------|--------------|------------|
-| H1 | Concurrent foreground job on the same Robot session blocked the second start | High | Confirmed | Yes | Earlier `ForegroundHolder` job (`b0a1b2c3-...`) still Running when failing job (`c0a1b2c3-...`) started; both `RequiresUserInteraction: true`; failing job's Info contains `System.InvalidOperationException: A foreground process is already running.` | Sequence triggers OR enable "Run only one job at a time" OR convert to background |
+| H1 | Concurrent foreground job on the same Robot session blocked the second start | High | Confirmed | Yes | Earlier `AttendedReportJob` job (`b0a1b2c3-...`) still Running when failing job (`c0a1b2c3-...`) started; both `RequiresUserInteraction: true`; failing job's Info contains `System.InvalidOperationException: A foreground process is already running.` | Sequence triggers OR enable "Run only one job at a time" OR convert to background |
 | H2 | Missing unattended robot configuration (sibling `#1230` playbook) | Low | Refuted | No | The error is `System.InvalidOperationException` (Robot-side guard), not HTTP 409 / `#1230`. Unattended robot is correctly configured — the earlier job ran successfully on the same Robot. | n/a |
 
 ---

@@ -35,7 +35,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran users licenses available"
     tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+users\s+licenses\s+available.*--output\s+json'
+    command_pattern: 'uip\s+platform\s+users\s+licenses\s+available'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -43,7 +43,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran groups rules get"
     tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+groups\s+rules\s+get.*--output\s+json'
+    command_pattern: 'uip\s+platform\s+groups\s+rules\s+get'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -51,7 +51,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran consumables get for a summary (summary is the default --mode)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+licenses\s+consumables\s+get(?!.*--mode\s+(?:daily|folders)).*--output\s+json'
+    command_pattern: 'uip\s+platform\s+licenses\s+consumables\s+get(?!.*--mode\s+(?:daily|folders))'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

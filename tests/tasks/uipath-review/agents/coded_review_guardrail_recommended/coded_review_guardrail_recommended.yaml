@@ -1,0 +1,71 @@
+task_id: skill-review-agents-coded-guardrail-recommended
+description: >
+  Integration test for uipath-review on a LangChain coded agent that handles PII
+  (input schema carries `customer_email` and `ssn`) and takes free-text input but
+  wires no guardrail. `uip codedagent review` returns it guardrail-clean, so the
+  reviewer must fetch the live catalog (coded-guardrails-review.md Recommend Mode)
+  and emit `CODED_GUARDRAIL_RECOMMENDED`. Non-gating (integration tag): single-shot
+  catalog-driven judgment. Needs the authed CLI.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover, guardrail]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/coded_review_guardrail_recommended/inject_guardrail_recommended.py"
+    timeout: 30
+
+initial_prompt: |
+  A coded UiPath agent project (LangChain) exists at `CodedAgent`. Review it for
+  issues and save your review report to `./_review_report.md`.
+
+  This is a read-only review — do not modify anything inside `CodedAgent/`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside CodedAgent/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*CodedAgent'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside CodedAgent/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*CodedAgent'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Ran the coded review CLI first (Step 2.5a)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+review'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Fetched the live guardrail catalog (coded-guardrails-review.md Step 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Review report recommends a guardrail (CODED_GUARDRAIL_RECOMMENDED) for the PII/injection exposure"
+    command: "python3 $TASK_DIR/check_coded_review_guardrail_recommended.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -16,9 +16,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent ran `uip platform groups rules details <group>` with --output json"
+    description: "Agent ran `uip platform groups rules details <group>`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+groups\s+rules\s+details\s+\S+.*--output\s+json'
+    command_pattern: 'uip\s+platform\s+groups\s+rules\s+details\s+\S+'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

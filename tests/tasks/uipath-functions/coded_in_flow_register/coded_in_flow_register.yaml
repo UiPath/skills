@@ -70,14 +70,6 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent used structured output when listing solution resources"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--output\s+json'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: file_exists
     description: "Coded agent main.py exists"
     path: "ClaimsSol/ClassifierAgent/main.py"

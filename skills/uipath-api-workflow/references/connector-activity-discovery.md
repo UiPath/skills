@@ -247,7 +247,7 @@ Sample for Outlook `getNewestEmail`:
 
 **Heuristic:** when the stub returns empty `queryParameters`, `pathParameters`, or `bodyParameters` for a non-trivial vendor operation, it's almost certainly the bug — verified-real endpoints (CRUD operations on real objects) very rarely have zero required inputs.
 
-Well-known folder-name shortcuts (e.g. MS Graph's `"inbox"`, `"sentitems"`, `"drafts"`) work for `parentFolderId`-style fields at runtime, but the StudioWeb FolderPicker only displays the friendly name if the value matches a real folder ID from the lookup cache. For exact UI fidelity, fetch the real ID once via `uip is resources execute <connector-key> list <object-name> --connection-id <uuid>` against the `lookup.path` (e.g. `/MailFolders`).
+Well-known folder-name shortcuts (e.g. MS Graph's `"inbox"`, `"sentitems"`, `"drafts"`) work for `parentFolderId`-style fields at runtime, but the StudioWeb FolderPicker only displays the friendly name if the value matches a real folder ID from the lookup cache. For exact UI fidelity, fetch the real ID once via `uip is resources run list <connector-key> <object-name> --connection-id <uuid>` against the `lookup.path` (e.g. `/MailFolders`).
 
 ### Step 4 — Drop into the workflow, replace placeholders, validate
 

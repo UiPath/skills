@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "1f3a5c7e-9b0d-4e2f-8a4b-c6d8e0f2a4b6",
+      "State": "Faulted",
+      "ProcessName": "NewHireDocs",
+      "Source": "Trigger",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "StartTime": "2026-07-08T04:15:02.330Z",
+      "EndTime": "2026-07-08T04:15:09.870Z",
+      "Id": 50264892
+    }
+  ]
+}

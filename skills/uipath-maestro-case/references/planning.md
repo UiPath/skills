@@ -2,6 +2,8 @@
 
 Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Discovers registry resources, resolves task type IDs, produces declarative specification that downstream execution phases (Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Debug → Phase 6 Publish) consume via direct JSON writes to `caseplan.json`. See [implementation.md](implementation.md) for execution detail and [phased-execution.md](phased-execution.md) for phase contracts.
 
+> **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip this planning pipeline — see [brownfield.md](brownfield.md).
+
 > **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file. When SLA escalations are present, also `tasks/recipients-resolved.json` — see [`plugins/sla/planning.md` § Identity Resolution](plugins/sla/planning.md#identity-resolution).
 >
 > **Exit gate:** User must explicitly approve `tasks.md` before Phase 2 begins.
@@ -96,7 +98,7 @@ For every task, trigger, and condition in the sdd.md:
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
 
-> **`agent` — create-on-missing.** An `agent` can be built inline when its registry lookup is empty (user-confirmed at the Rule 17 gate): an in-solution sibling → [plugins/tasks/agent/planning.md § Creating an Agent inline](plugins/tasks/agent/planning.md#creating-an-agent-inline). See [§ 3.4](#34-unresolved-resources). All other kinds (regular RPA `process`, action, connectors, agentic process) use the §3.4 placeholder path.
+> **`agent` & `api-workflow` — create-on-missing.** Both kinds can be built inline at the Rule 17 gate — flow in [§ 3.4](#34-unresolved-resources); type specifics: [agent](plugins/tasks/agent/planning.md#creating-an-agent-inline) / [api-workflow](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline). All other kinds (regular RPA `process`, action, connectors, agentic process) use the §3.4 placeholder path.
 
 ### 3.2 Trigger Type catalog (case-level)
 
@@ -123,7 +125,7 @@ When a resource cannot be resolved (registry gap and no cache match, or missing 
 
 > **Missing connection — offer to create first.** A missing/empty IS connection is not immediately "unresolved". The connector pipeline offers to create one via `uip is connections create` ([connector-integration.md § Step 2](connector-integration.md), [connector-trigger-common.md § Resolve the connection](connector-trigger-common.md#2-resolve-the-connection)). Only after the user **declines** or creation fails does the connection become `<UNRESOLVED>` and fall through to the steps below.
 
-> **Missing agent — offer to create first.** A missing `agent` (no `agent-index.json` match) is not immediately "unresolved". At the Rule 17 empty-lookup gate the skill offers to build it as an in-solution sibling — it spawns a sub-agent that invokes `uipath-agents`, then rediscovers + binds via `registry --local` ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery); specifics in [agent/planning.md § Creating an Agent inline](plugins/tasks/agent/planning.md#creating-an-agent-inline)). Only after the user **declines**/skips, the build fails, or the CLI lacks `registry --local` does it become `<UNRESOLVED>` and fall through to the steps below. Other kinds (regular RPA process, action, connectors, agentic process) have no inline-create path — they fall straight through.
+> **Missing agent or API workflow — offer to create first.** A missing `agent` (no `agent-index.json` match) or `api-workflow` (no `api-index.json` match) is not immediately "unresolved". At the Rule 17 empty-lookup gate the skill offers to build it as an in-solution sibling — it spawns a sub-agent that invokes `uipath-agents` (agent) / `uipath-api-workflow` (API workflow), then rediscovers + binds via `registry --local` ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery); specifics in [agent/planning.md § Creating an Agent inline](plugins/tasks/agent/planning.md#creating-an-agent-inline) / [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline)). Only after the user **declines**/skips, the build fails, or the CLI lacks `registry --local` does it become `<UNRESOLVED>` and fall through to the steps below. Other kinds (regular RPA process, action, connectors, agentic process) have no inline-create path — they fall straight through.
 
 Otherwise:
 

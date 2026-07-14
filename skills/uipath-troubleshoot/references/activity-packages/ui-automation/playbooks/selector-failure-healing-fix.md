@@ -21,7 +21,7 @@ What can cause it:
 - Authoring-time selector mistake against a stable element (typo, wrong attribute value, copy-paste error) — the live element is unchanged but the workflow's selector never matched
 - Element temporarily obscured by a popup or overlapping window (HA may emit a `dismiss-popup` fix instead of `update-target`)
 
-This playbook applies whenever HA recovery data is present for the failing activity, regardless of which specific cause above produced the failure. The cause label affects the user-facing narrative; the **remediation procedure (present HA's recommendation, ask whether to apply it) is the same for all of them** and is the authoritative resolution path even when the cause is later refined (e.g., depth-verifier identifies an authoring typo rather than UI drift).
+This playbook applies whenever HA recovery data is present for the failing activity, regardless of which specific cause above produced the failure. The cause label affects the user-facing narrative; the **remediation procedure (present HA's recommendation, ask whether to apply it) is the same for all of them** and is the authoritative resolution path even when the cause is later refined (e.g., verification identifies an authoring typo rather than UI drift).
 
 ## Investigation
 
@@ -34,7 +34,7 @@ This playbook applies whenever HA recovery data is present for the failing activ
 3. Compare failed vs recommended selector and note which attributes changed (text, index, role, ancestry, etc.).
 4. Record the recovery channel, the detection's `InferMethod` / confidence score, and whether self-healing actually applied the fix at runtime (`RecoverySuccessful`). These determine the warning attached to the apply-fix prompt.
 
-Persist the exact failed and recovered selector strings to the evidence file for this hypothesis (e.g., as `failed_selector_xml`, `recovered_partial_selector_xml`, `recovered_fuzzy_partial_selector_xml`). The orchestrator's Resolution phase will read them back to drive the `AskUserQuestion` apply-fix flow — they MUST be present verbatim, not paraphrased.
+Persist the exact failed and recovered selector strings verbatim in notes.md (e.g., as `failed_selector_xml`, `recovered_partial_selector_xml`, `recovered_fuzzy_partial_selector_xml`). The Resolution phase will read them back to drive the `AskUserQuestion` apply-fix flow — they MUST be present verbatim, not paraphrased.
 
 ## Resolution
 
@@ -42,4 +42,4 @@ Follow the fix-application procedures in [interpretations/healing-agent-data.md]
 - For `update-target` (self-healing) or `InferredRecoveryInfo.RecoveredTarget` (recommendation-only): use `uia-improve-selector` skill if available, otherwise direct XAML edit. When the data is `InferredRecoveryInfo` or `RecoverySuccessful: false`, attach the runtime-not-validated warning to the apply-fix prompt.
 - For `dismiss-popup` / `RecoveredExternally`: create a Click activity before the failing activity, validate the workflow compiles.
 
-This resolution path is **interactive** — it requires `AskUserQuestion` to be called by the orchestrator at the end of the troubleshooting to (a) print the Failed / Recovered Partial / Recovered Fuzzy selectors as plain text, (b) ask the user whether to apply the fix and which selector variant. The presenter must emit a `## Post-presentation actions` block declaring this interactive step; the orchestrator must execute it before closing the investigation. Do not collapse this into a generic "fix the selector" recommendation — the recovered selector text and the apply-fix prompt are part of the documented resolution.
+This resolution path is **interactive** — it requires `AskUserQuestion` to be called at the end of the troubleshooting to (a) print the Failed / Recovered Partial / Recovered Fuzzy selectors as plain text, (b) ask the user whether to apply the fix and which selector variant. Execute this interactive step per `references/presenting.md` § Interactive resolutions before closing the investigation. Do not collapse this into a generic "fix the selector" recommendation — the recovered selector text and the apply-fix prompt are part of the documented resolution.

@@ -43,7 +43,7 @@ After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`.
 }
 ```
 
-> **Inline-built agent sibling exception — the one resource where the shape's `<folderPath binding default>` placeholder does NOT take the caseplan default.** `value.folderPath.defaultValue` is **`"solution_folder"`** (resource identity), NOT the caseplan `folderPath` binding `default` (which is `""` for an inline sibling). `bindings_v2.json` keeps the `solution_folder` sentinel while the caseplan runtime `folderPath` stays `""` — they are intentionally decoupled. `value.name.defaultValue` and `metadata.subType` (`"Agent"`) follow the caseplan binding as usual. Full rationale: the inline-built-sibling decoupling blockquote later in this file.
+> **Inline-built sibling exception (agent / api-workflow) — the one case where the shape's `<folderPath binding default>` placeholder does NOT take the caseplan default.** `value.folderPath.defaultValue` is **`"solution_folder"`** (resource identity), NOT the caseplan `folderPath` binding `default` (which is `""` for an inline sibling). `bindings_v2.json` keeps the `solution_folder` sentinel while the caseplan runtime `folderPath` stays `""` — they are intentionally decoupled. `value.name.defaultValue` and `metadata.subType` (`"Agent"` / `"Api"` per kind) follow the caseplan binding as usual. Full rationale: the inline-built-sibling decoupling blockquote later in this file.
 
 ### Connector resource entry
 
@@ -126,12 +126,12 @@ With `bindings_v2.json` and IS cache in place, `uip solution resources refresh` 
 
 All three required for `uip solution upload` and `uip maestro case debug` to work without "Resource is not configured" warnings.
 
-> **Inline-built agent siblings — `bindings_v2` identity and the caseplan runtime `folderPath` are DECOUPLED.** This is the one case where `bindings_v2.json` does NOT mirror the caseplan binding's `folderPath`. Keep the **resource identity** at the `solution_folder` sentinel everywhere it belongs — `bindings_v2.json` `key` (`"solution_folder.<name>"`) and `value.folderPath.defaultValue` (`"solution_folder"`), plus the caseplan `resourceKey` and the `resources/solution_folder/…` path. **BUT the caseplan task's `folderPath` binding `default` MUST be `""`** (co-located runtime folder), NOT the sentinel — `"solution_folder"` there fails at invocation with `folder not exist`. Prerequisite for deploy/debug: the sibling registered in the `.uipx`. Full rationale (deploy provisioning, runtime invocation): [agent/planning.md § Creating an Agent inline → Step 3 Binding](plugins/tasks/agent/planning.md#creating-an-agent-inline).
+> **Inline-built siblings (agent / api-workflow) — `bindings_v2` identity and the caseplan runtime `folderPath` are DECOUPLED.** This is the one case where `bindings_v2.json` does NOT mirror the caseplan binding's `folderPath`. Keep the **resource identity** at the `solution_folder` sentinel everywhere it belongs — `bindings_v2.json` `key` (`"solution_folder.<name>"`) and `value.folderPath.defaultValue` (`"solution_folder"`), plus the caseplan `resourceKey` and the `resources/solution_folder/…` path. **BUT the caseplan task's `folderPath` binding `default` MUST be `""`** (co-located runtime folder), NOT the sentinel — `"solution_folder"` there fails at invocation with `folder not exist`. Prerequisite for deploy/debug: the sibling registered in the `.uipx`. Full rationale (deploy provisioning, runtime invocation): [agent/planning.md § Creating an Agent inline → Step 3 Binding](plugins/tasks/agent/planning.md#creating-an-agent-inline) / [api-workflow/planning.md § Step 3 Binding](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline).
 
 ---
 
 ## Cleanup on task or rule removal
 
-When any task or connector condition rule is removed and its root bindings are pruned (per [case-editing-operations.md](case-editing-operations.md) § Delete a node / § Delete a connector condition rule):
+When any task or connector condition rule is removed and its root bindings are pruned (per [case-editing-operations.md](case-editing-operations.md) § Delete a node / § Delete a condition rule / § Delete a task):
 
 1. After pruning root bindings, regenerate `bindings_v2.json` from the updated array.

@@ -1,0 +1,6 @@
+{
+  "Name": "PyDataTransform",
+  "ProjectType": "Process",
+  "Description": "Loads and runs a Python data-transformation script inside a Python Scope on the robot host.",
+  "MainFile": "Main.xaml"
+}

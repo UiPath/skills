@@ -1,6 +1,0 @@
-{
-  "Name": "ReportAppender",
-  "ProjectType": "Process",
-  "Description": "Reproduces an Append Text 'Archive file cannot be size zero' failure caused by a 0-byte .docx that is not a valid OpenXML package.",
-  "MainFile": "Main.xaml"
-}

@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelPayrollProcess",
+  "ProjectType": "Process",
+  "Description": "Builds the payroll rows for the run and appends them to the payroll workbook via Append Range.",
+  "MainFile": "Main.xaml"
+}

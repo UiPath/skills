@@ -1,0 +1,46 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Excel Read Range file-not-found scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "858738168e.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "858738168e.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json",
+      "file": "6774b2d6cd.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json",
+      "file": "6774b2d6cd.json"
+    },
+    {
+      "match": "or jobs get \"ee555555-aaaa-bbbb-cccc-dddddddddddd\" --output json",
+      "file": "372fef8cc1.json"
+    },
+    {
+      "match": "or jobs get ee555555-aaaa-bbbb-cccc-dddddddddddd --output json",
+      "file": "372fef8cc1.json"
+    },
+    {
+      "match": "or jobs history \"ee555555-aaaa-bbbb-cccc-dddddddddddd\" --output json",
+      "file": "a77f0a54d6.json"
+    },
+    {
+      "match": "or jobs history ee555555-aaaa-bbbb-cccc-dddddddddddd --output json",
+      "file": "a77f0a54d6.json"
+    },
+    {
+      "match": "or jobs logs \"ee555555-aaaa-bbbb-cccc-dddddddddddd\" --output json",
+      "file": "4789cfae97.json"
+    },
+    {
+      "match": "or jobs logs ee555555-aaaa-bbbb-cccc-dddddddddddd --output json",
+      "file": "4789cfae97.json"
+    }
+  ]
+}

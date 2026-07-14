@@ -14,7 +14,7 @@ Usage:
         --transcript <claude code jsonl> \
         [--resolution <RESOLUTION.md>] \
         [--scenario-name <slug>] \
-        --group <group folder, e.g. activity-packages/word-activities> \
+        --group <group folder, e.g. activity-packages, products/orchestrator> \
         [--output <dir>] \
         [--scrub-map <json>] \
         [--apply]
@@ -25,6 +25,7 @@ Read tests/tasks/uipath-troubleshoot/CLAUDE.md before invoking this.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import shutil
@@ -105,9 +106,9 @@ sandbox:
     - type: template_dir
       path: {shared_prefix}_shared/mock_template
 {process_source_block}    - type: template_dir
-      path: fixtures
-  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
-  mock_path_dirs: ["mocks"]
+      path: data
+  # Prepend ./m to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["m"]
 
 reference:
   file: RESOLUTION.md
@@ -181,10 +182,10 @@ agent reached a verified resolution. The fixtures are the verbatim
 
 | Layer | Source |
 |---|---|
-| `mocks/uip` + `mocks/uip.cmd` | shared from the suite `_shared/mock_template/` (manifest-driven Python dispatcher) |
+| `m/uip` + `m/uip.cmd` | shared from the suite `_shared/mock_template/` (manifest-driven Python dispatcher) |
 | `process/` | frozen snapshot of the failing UiPath project |
-| `fixtures/mocks/responses/*.json` | real stdout extracted verbatim from the session transcript |
-| `fixtures/mocks/responses/manifest.json` | dispatch table mapping each command pattern to its recorded fixture |
+| `data/m/r/*.json` | real stdout extracted verbatim from the session transcript (filename = sha1[:10] of args; short to keep Windows paths under MAX_PATH) |
+| `data/m/r/manifest.json` | dispatch table mapping each command pattern to its recorded fixture |
 
 ## Success criteria
 
@@ -423,7 +424,7 @@ def _build_manifest_rules(uip_calls: list[dict]) -> tuple[list[dict], dict[str, 
         args = call["args"]
         if args in fixture_by_args:
             continue
-        slug = _slugify(args)[:60] or "call"
+        slug = hashlib.sha1(args.encode("utf-8")).hexdigest()[:10]
         candidate = f"{slug}.json"
         n = 2
         while candidate in used_filenames:
@@ -706,8 +707,8 @@ def render_dry_run(plan: dict) -> str:
     out.append(f"  {base / 'task.yaml'}                             ({len(plan['task_yaml'])} bytes)")
     out.append(f"  {base / 'README.md'}                             ({len(plan['readme_md'])} bytes)")
     out.append(f"  {base / 'RESOLUTION.md'}                         ({len(plan['resolution_md'])} bytes)")
-    out.append(f"  {base / 'fixtures' / 'mocks' / 'responses' / 'manifest.json'}")
-    out.append(f"  {base / 'fixtures' / 'mocks' / 'responses' / '<rule>.json'} x {len(plan['fixtures'])}")
+    out.append(f"  {base / 'data' / 'm' / 'r' / 'manifest.json'}")
+    out.append(f"  {base / 'data' / 'm' / 'r' / '<hash>.json'} x {len(plan['fixtures'])}")
     out.append(f"  {base / 'process' / '<files>'} x {len(plan['project_files'])}")
     out.append("")
     out.append("(dry-run — no files written. Pass --apply to write.)")
@@ -725,7 +726,7 @@ def apply_plan(plan: dict) -> None:
     (base / "README.md").write_text(plan["readme_md"], encoding="utf-8")
     (base / "RESOLUTION.md").write_text(plan["resolution_md"], encoding="utf-8")
 
-    fixtures_dir = base / "fixtures" / "mocks" / "responses"
+    fixtures_dir = base / "data" / "m" / "r"
     fixtures_dir.mkdir(parents=True, exist_ok=True)
     (fixtures_dir / "manifest.json").write_text(
         json.dumps(plan["manifest"], indent=2) + "\n", encoding="utf-8"
@@ -753,11 +754,14 @@ def main(argv: list[str]) -> int:
         "--group",
         default=None,
         help=(
-            "Group folder under tests/tasks/uipath-troubleshoot/ the scenario belongs to, "
-            "mirroring references/ — e.g. activity-packages/word-activities, products/orchestrator, "
-            "runtime-exceptions, cross-system. Sets placement, the depth-correct _shared path, and "
-            "the default product/domain tag (rpa for activity packages; orchestrator/integration-service/"
-            "maestro for products)."
+            "Group folder under tests/tasks/uipath-troubleshoot/ the scenario belongs to — "
+            "e.g. activity-packages, products/orchestrator, runtime-exceptions, cross-system. "
+            "Sets placement, the depth-correct _shared path, and the default product/domain tag "
+            "(rpa for activity packages; orchestrator/integration-service/maestro for products). "
+            "Activity-package scenarios are FLAT under activity-packages/ (no per-package subfolder) "
+            "and the --scenario-name MUST be prefixed with the short package token "
+            "(db, cv, excel, gsuite, mail, o365, py, sys, uia, web, word, classic) to keep paths "
+            "short for Windows MAX_PATH — e.g. db-execute-query-timeout-expired, uia-node-not-found."
         ),
     )
     parser.add_argument("--output", default=None)

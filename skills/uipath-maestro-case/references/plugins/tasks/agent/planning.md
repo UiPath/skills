@@ -25,7 +25,7 @@ Pick this plugin when the sdd.md describes a task as `AGENT` — an AI agent tha
 1. **Primary cache file:** `agent-index.json`.
 2. **Identifier field:** `entityKey`.
 3. **Cross-type fallback.** Agents are occasionally registered in `processOrchestration-index.json` when wrapped in an agentic process — search both if the primary yields no match.
-4. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > **no match**. An exact-name hit in a **different** folder — including a child of the sdd.md folder (which only seeds the lookup and **may be a parent/truncated path**, see field table) — is an **exact name only** match: **resolve it** (bind `folder-path` to the registry entry's full path per step 5). Do NOT treat a folder difference as no-match or fall through to the Create gate; the gate (step 5 / [§ in-solution check](#no-tenant-index-match--check-in-solution-siblings-before-the-gate)) is for when **no** registry entry has the name at all.
+4. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > **no match**. An exact-name hit in a **different** folder — including a child of the sdd.md folder (which only seeds the lookup and **may be a parent/truncated path**, see field table) — is an **exact name only** match: **resolve it** (bind `folder-path` to the registry entry's full path per step 5). Do NOT treat a folder difference as no-match or fall through to the Create gate — the gate is only for names **no** registry entry carries at all. A true no-match runs the [§ in-solution check](#no-tenant-index-match--check-in-solution-siblings-before-the-gate) first, then the Rule 17 gate; only a task left unresolved after the gate falls back to the sdd.md folder (step 5).
 5. **`folder-path` = the SELECTED entry's `folders[0].fullyQualifiedName`** (not the sdd.md "Folder" — see the field table above). Fall back to the sdd.md folder only when there is no registry match (Unresolved path).
 6. **Discover inputs/outputs** via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md). For agents with multiple elements, also pass `--element-id` when invoking describe (see [case-commands.md § uip maestro case tasks](../../../case-commands.md)).
 
@@ -41,7 +41,7 @@ An exact-name match with `Resource.Source == "local"` means the agent **already 
 
 ## Unresolved Fallback
 
-> **Build it inline first (agent only).** At the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) the user may pick **Create** to build the missing agent as an in-solution sibling — see [§ Creating an Agent inline](#creating-an-agent-inline). This fallback applies only when the user declines/skips Create, the build fails, or the CLI lacks `registry --local`.
+> **Build it inline first (creatable kind).** At the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) the user may pick **Create** to build the missing agent as an in-solution sibling — see [§ Creating an Agent inline](#creating-an-agent-inline). This fallback applies only when the user declines/skips Create, the build fails, or the CLI lacks `registry --local`.
 
 Mark `<UNRESOLVED: agent "<name>" in folder "<folder>" not found in registry>`. Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
 
@@ -78,7 +78,7 @@ Rules:
 
 ### Step 2 — Hand the builder a self-contained brief
 
-```
+```text
 Build a UiPath agent by following the uipath-agents skill. Non-interactive:
 do not ask for approval; do not publish/upload/deploy.
   Solution dir:     <abs path to the solution>
@@ -120,7 +120,7 @@ Delivery: a **coded** sibling delivered via **`uip solution upload`** then **ins
 
 Mirrors [connector-integration.md § Creating a Connection](../../../connector-integration.md#creating-a-connection) step 4. If a build sub-agent returns `built:false` (or dies), show its `error` verbatim, then AskUserQuestion: `Retry create` / `Skip (defer)`. On `Skip` or repeated failure, fall to the Unresolved Fallback above (placeholder + completion-report note) and finish planning — never halt. A verify-time I/O mismatch is a **warning**, not a failure: rewire matched fields, report missing/extra, continue.
 
-> **"Already exists" is NOT a failure** (idempotency residual). If a build reports the project directory already exists / `agent init` fails *"directory exists / not empty"* or `project add` returns *"Project name already exists"*, the sibling was built by an interrupted prior run but wasn't surfaced by the pre-gate local check (it was never registered in the `.uipx`, so `--local` didn't see it). Do **not** route to Retry/Skip — instead register it (`uip solution project add`, if not already registered), then rediscover + bind (Step 3/4). It's already built.
+> **"Already exists" is NOT a failure** — an interrupted prior run already built the sibling; adopt it per [registry-discovery.md § Create-on-Missing → 3b](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Agent tokens for that procedure: init verb `uip agent init`; kind markers `Category: "agent"` (registered) / `agent.json` on disk (unregistered).
 
 ## tasks.md Entry Format
 

@@ -13,11 +13,10 @@ run_limits:
   expected_turns: 8
 
 initial_prompt: |
-  Audit the AOps governance deployment state for groups. Run these
-  queries:
-  1. List every governance group that has policy assignments
-  2. Fetch assignments for group ID
-     `00000000-0000-0000-0000-0000000000b2`
+  I need to see which AOps governance policy deployments are assigned
+  at the group scope. List all group-level deployments, then fetch
+  the deployment details for group ID
+  `00000000-0000-0000-0000-0000000000b2`.
 
   If the list command fails, still run the get command with the
   placeholder group ID.
@@ -25,16 +24,21 @@ initial_prompt: |
   Save all command output to ./output.txt.
 
   Important:
-  - The `uip` CLI is available but is NOT connected to a live governance
-    tenant in this environment. Commands will fail with auth errors — that
-    is expected. Run each command once, capture both stdout and stderr to
-    ./output.txt (use `> output.txt 2>&1` for the first command and
-    `>> output.txt 2>&1` for subsequent ones), and move on. Do NOT retry
-    or attempt to login.
+  - The `uip` CLI is available but is not connected to a live tenant.
+    Commands WILL fail with auth errors — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
   - Use --output json on every uip gov aops-policy command.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-governance skill"
+    skill_name: "uipath-governance"
+    expected_skill: "uipath-governance"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent invoked deployment group list"
     tool_name: "Bash"
@@ -49,14 +53,6 @@ success_criteria:
     command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+group\s+get\b'
     min_count: 1
     weight: 2.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+[\s\S]*--output\s+json'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists

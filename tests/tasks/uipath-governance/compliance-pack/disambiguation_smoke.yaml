@@ -8,11 +8,17 @@ description: >
 
   This tests the most fragile routing path — wrong silent routing here produces
   a real artifact on the wrong branch.
-tags: [uipath-governance, smoke, lifecycle:discover, feature:compliance]
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, feature:compliance]
 
 sandbox:
-  driver: tempdir
   python: {}
+
+# Safety net: smoke sandboxes have live tenant auth in CI, so an agent that
+# fails this test (silently routes and creates a policy) really mutates the
+# tenant. Clean up after.
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
 
 run_limits:
   max_turns: 5
@@ -20,11 +26,7 @@ run_limits:
 initial_prompt: |
   Restrict AI model access for my finance team in UiPath.
 
-  Use the uipath-governance skill. Capture your response to ./output.txt.
-
-  Important:
-  - Do NOT run any uip gov commands yet — wait for the user to clarify.
-  - Write your clarification question to output.txt.
+  Capture your response to ./output.txt.
 
 success_criteria:
   - type: llm_judge

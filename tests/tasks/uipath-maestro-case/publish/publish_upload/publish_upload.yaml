@@ -1,0 +1,112 @@
+task_id: skill-case-publish-upload
+description: >
+  Operate mode — build a small Case solution, then PUBLISH it to Studio Web via
+  `uip solution resources refresh` followed by `uip solution upload` (Phase 6),
+  the one workflow step with no prior coverage (existing tasks stop after
+  refresh + debug and never upload). Asserts the publish commands run in the
+  correct order and the upload succeeds. Requires cloud auth; the uploaded
+  solution is removed by the post-run cleanup.
+tags: [uipath-maestro-case, integration, mode:operate, lifecycle:setup]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "PublishUploadCase" containing a
+  project also named "PublishUploadCase" from the sdd.md below, then publish it
+  to Studio Web. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — PublishUploadCase
+
+  Single-stage case used to exercise the publish-to-Studio-Web step.
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | PublishUploadCase |
+  | Case Description | Minimal case used to verify the Studio Web publish step. |
+  | Case Identifier | Prefix: PUC, Type: constant |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Handle (`handle`)
+  **Type:** Stage
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once |
+  |---|---------|-----------|------|----------|---------------|
+  | 1 | `handle.holdBriefly` | Hold briefly | wait-for-timer | Yes | No |
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the HARD
+  STOP / AskUserQuestion approval steps. Do NOT run `uip maestro case debug`.
+  After `uip maestro case validate` passes, PUBLISH the solution to Studio Web:
+  run `uip solution resources refresh` on the solution folder, then
+  `uip solution upload`. Report the resulting Studio Web URL. Do NOT ask for
+  approval, confirmation, or feedback — build, validate, and publish end-to-end
+  in a single pass.
+
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate PublishUploadCase/PublishUploadCase/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed solution resources before uploading (Rule 14)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uploaded the solution to Studio Web (Phase 6 publish)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120
