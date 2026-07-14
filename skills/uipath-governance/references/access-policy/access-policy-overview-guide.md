@@ -58,8 +58,7 @@ Map intent phrases to the three policy blocks. These priors feed directly into P
 
 ## Critical Rules
 
-1. Always verify login with `uip login status --output json` before any `uip gov access-policy` command. If not logged in, ask the user to run `uip login` (or `uip login --authority <URL>` for non-prod environments).
-2. **`policyType` is always `"ToolUsePolicy"`; `enforcement` is always `"Allow"`. Never emit `"Deny"`.**
+1. **`policyType` is always `"ToolUsePolicy"`; `enforcement` is always `"Allow"`. Never emit `"Deny"`.**
     - **Why:** the API rejects `enforcement: "Deny"`; Deny is the runtime default when no Allow policy matches, so blocking is expressed as the complement of an Allow set.
     - **Applies to:** every create / update payload. When the user expresses Deny intent, silently translate to an Allow shape and never surface the mechanic (no "Deny→Allow flip" jargon, no `(flipped)` badge, no "enforcement: Deny is not authorable" caveat). See [plugins/tags/planning.md — Deny-to-Allow flip](./plugins/tags/planning.md#deny-to-allow-flip) for the decision logic.
 3. Read `organizationId` and `tenantId` from `~/.uipath/.auth` (see [planning-impl.md — Step 1](./planning-impl.md#step-1--gather-identity)). Never hardcode tenant or organization UUIDs.
@@ -93,22 +92,7 @@ Map intent phrases to the three policy blocks. These priors feed directly into P
 
 These steps cover **creating a new access policy from scratch**. For existing policies or targeted operations, jump to the [Task Navigation](#task-navigation) table below.
 
-### Step 0 — Verify the `uip` CLI
-
-```bash
-which uip && uip --version
-```
-
-If not installed:
-```bash
-npm install -g @uipath/uipcli
-```
-
-### Step 1 — Check login status
-
-See [access-policy-commands.md — Authentication](./access-policy-commands.md#authentication) for the login flow (`uip login status`, `uip login`, non-production `--authority`, tenant scoping for `evaluate`).
-
-### Step 2 — Phase 1: author the Policy Spec
+### Step 1 — Phase 1: author the Policy Spec
 
 Hand off to [planning-arch.md](./planning-arch.md). It builds a **Policy Spec** with two synchronized parts:
 
@@ -294,7 +278,7 @@ When you finish a mutating operation, report:
 1. **Activate this policy** — re-run `update` with the working file patched to `status: "Active"` via [policy-manage-guide.md — Update](./policy-manage-guide.md#update-a-policy). Recommended follow-up — Simulated policies do not enforce anything.
 2. **List policies to verify** — run `uip gov access-policy list --output json` and show the new/updated entry.
 3. **Update this policy** — jump to [policy-manage-guide.md — Update](./policy-manage-guide.md#update-a-policy) with this policy ID.
-4. **Create another policy** — return to Quick Start Step 2.
+4. **Create another policy** — return to Quick Start Step 1.
 5. **Something else** — accept free-form string input and act on it.
 
 Reply with the number.
@@ -307,7 +291,7 @@ Reply with the number.
 
 1. **List policies to verify** — run `uip gov access-policy list --output json` and show the new/updated entry.
 2. **Update this policy** — jump to [policy-manage-guide.md — Update](./policy-manage-guide.md#update-a-policy) with this policy ID.
-3. **Create another policy** — return to Quick Start Step 2.
+3. **Create another policy** — return to Quick Start Step 1.
 4. **Something else** — accept free-form string input and act on it.
 
 Reply with the number.

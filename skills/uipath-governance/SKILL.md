@@ -1,7 +1,9 @@
 ---
 name: uipath-governance
-description: "UiPath governance via `uip gov` — author and deploy policies on three layers. AOps product policies (`uip gov aops-policy`): block/restrict/enforce features in Studio, StudioX, Assistant, Robot, AI Trust Layer, Agent Builder; deploy to user/group/tenant. Access ToolUsePolicy (`uip gov access-policy`): allow/deny when one workflow invokes another as a tool (Agent→Agent/Maestro/Flow/RPA/API/Case), gated by tag, caller, or actor (User/Group). Custom policies (`uip gov custom-policy`): WASM rules evaluated at every lifecycle hook — PII, model, tool checks; verdicts in audit trail (audit mode only); create/update/delete/enable/disable. Skill classifies intent before authoring. Compliance packs (ISO 42001, ISO 27001, HIPAA, SOC 2): check posture and configure recommended controls across products in one operation. For platform ops→uipath-platform."
+description: "UiPath governance via `uip gov` — author and deploy policies on three layers. AOps product policies (`uip gov aops-policy`): block/restrict/enforce features in Studio, StudioX, Assistant, Robot, AI Trust Layer, Agent Builder; deploy to user/group/tenant. Access ToolUsePolicy (`uip gov access-policy`): allow/deny when one workflow invokes another as a tool (Agent→Agent/Maestro/Flow/RPA/API/Case), gated by tag, caller, or actor (User/Group). Custom policies (`uip gov custom-policy`): WASM guardrails at every agent lifecycle hook — block PII/SSN/regex in prompts or responses, restrict models, cap tool calls; org-level, per-tenant activation. Compliance packs (`uip gov compliance-pack`): enable/disable prebuilt packs (ISO 42001, HIPAA, SOC 2); author custom packs from PDFs via analyze→review→bundle. For platform ops→uipath-platform."
+when_to_use: "Must use when user mentions policy, governance, compliance, or guardrails in UiPath. Triggers: 'make a custom policy', 'create a policy', 'block SSN', 'block PII', 'block credit card number', 'redact in agent prompts', 'restrict model', 'cap tool calls', 'govern agent', 'aops policy', 'access policy', 'ToolUsePolicy', 'compliance pack', 'compliance standard', 'ISO 42001', 'HIPAA', 'SOC 2', 'check compliance posture', 'am I compliant', 'apply compliance controls', 'uip gov', 'block in Studio', 'restrict what agents can do', 'create a guardrail', 'uipath governance', 'policy not taking effect'. NOT for platform ops or package deploy (→uipath-platform). NOT for authoring agents/workflows (→uipath-agents, →uipath-rpa)."
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
+user-invocable: true
 ---
 
 # UiPath Governance
@@ -14,7 +16,7 @@ Uber skill for UiPath governance authoring. Three backing CLI surfaces:
 |---|---|---|
 | **AOps product policy** | Product feature behavior — what Studio / StudioX / Assistant / Robot / AI Trust Layer / Agent Builder can do at design-time / runtime | `uip gov aops-policy` |
 | **Access policy** (`ToolUsePolicy`) | Resource/tool-use boundary — when an Actor Process invokes a child Resource (Agent / Maestro / Flow / RPA / API / Case Management), is the call allowed? | `uip gov access-policy` |
-| **Custom policy** | Agent runtime rules — WASM-compiled, evaluated at every lifecycle hook (model calls, tool calls, agent I/O); verdicts recorded in audit trail (audit mode only — enforcement coming) | `uip gov custom-policy` |
+| **Custom Policy** | Agent runtime rules — WASM-compiled, evaluated at every lifecycle hook (model calls, tool calls, agent I/O); org-level storage, per-tenant activation; verdicts recorded in audit trail (audit mode only — enforcement coming) | `uip gov custom-policy` |
 
 All three surfaces share verbs (`block`, `restrict`, `deny`, `allow`, `require`, `enforce`). The same English sentence often maps to different layers, so this skill **classifies first** and only then routes to the matching mechanic.
 
@@ -23,7 +25,9 @@ All three surfaces share verbs (`block`, `restrict`, `deny`, `allow`, `require`,
 Activate on **any** governance / policy / rule intent — even when the user did not name the underlying CLI:
 
 - `policy / rule / guardrail / govern / gate / control` requests
+- `custom policy` — author, create, enable, or manage a custom Rego runtime policy
 - `block / restrict / deny / disable / disallow` an action, model, app, URL, agent, flow, or process
+- `block PII / block SSN / block credit card / redact` in agent prompts or responses at runtime
 - `require / enforce / mandate` a behavior or rule
 - `allow only / permit only / limit to / restrict to` X
 - `who can / which … can / on behalf of` — actor- or identity-shaped governance
@@ -48,22 +52,16 @@ Activate on **any** governance / policy / rule intent — even when the user did
 6. **Always show a receipt after any apply.** Present the post-apply report (controls configured, manual steps needed, Applied by / date) so the user has a record. No local file write is needed — the CLI and UiPath platform are the source of truth.
 7. **Always `uip login` before any `uip gov …` command.** `evaluate` (Access) additionally requires tenant-scoped login — see [`access-policy-overview-guide.md` § Critical Rules](./references/access-policy/access-policy-overview-guide.md#critical-rules).
 8. **Never fabricate UUIDs.** Resolve every named user / group / process / agent / flow / robot / tenant via the relevant branch's lookups.
-9. **Custom and default policies** are running locally and need CUSTOM_POLICY_BASE_URL=http://localhost:3005/appsdev/agenticgovernance_/api/v1 appended to the environment for CLI calls in this skill. This is handled by the skill's manifest and should not be changed.
+9. **Custom Policy CLI calls require `CUSTOM_POLICY_BASE_URL` in environment.** Set this in your terminal before running any `uip gov custom-policy` command. Do not hardcode or prompt the user for its value.
 
 ## Workflow
 
 1. **Classify the intent.** Read [`references/disambiguation-guide.md`](./references/disambiguation-guide.md) — it lists the strong signals for each branch, the phrase patterns that need disambiguation, and the canonical worked example. If the request contains a standard name (`ISO 42001`, `ISO 27001`, `HIPAA`, `SOC 2`), or phrases like `apply pack`, `compliance posture`, `drift check`, `am I compliant`, `is my tenant compliant`, `what packs are available`, `which standards are enabled`, `organization-wide`, or `disable pack` → route silently to the compliance-pack flow (see step 3). For all other governance requests: if a strong signal matches a branch, route silently. If the phrasing is ambiguous (matches AOps or Access), ask the [disambiguation question](#disambiguation-question) and wait for a digit reply. If the user replies with anything other than `1`, `2`, or `3`, treat it as a re-statement of intent and re-classify. **Do not run any CLI command before classification is settled** — the disambiguation question itself does not need `uip`, and an unrelated request (platform ops, agent authoring) must redirect to a sibling skill before any setup happens here.
-2. **Verify `uip` and login** *(only after classification routes to a governance branch).*
-   ```bash
-   which uip && uip --version
-   uip login status --output json
-   ```
-   If not installed: `npm install -g @uipath/cli`. If not logged in: `uip login` (`--authority <URL>` for non-prod). For Access `evaluate`, login MUST be tenant-scoped.
-3. **Route to the chosen mechanic** and follow its flow end-to-end.
+2. **Route to the chosen mechanic** and follow its flow end-to-end.
    - Branch A → [`references/aops-policy/aops-policy-overview-guide.md`](./references/aops-policy/aops-policy-overview-guide.md)
    - Branch B → [`references/access-policy/access-policy-overview-guide.md`](./references/access-policy/access-policy-overview-guide.md)
    - Branch C → [`references/custom-policy/custom-policy-overview-guide.md`](./references/custom-policy/custom-policy-overview-guide.md)
-   - Compliance pack → `partial-apply/planning.md` for scoped requests; `coverage/impl.md` for posture checks; `catalog/impl.md` for discovery or listing configured packs; `query/impl.md` for information queries; `full-apply/impl.md` after confirming the posture plan; `disable/impl.md` for removal
+   - Compliance pack → [`references/compliance-pack/compliance-pack-commands.md`](./references/compliance-pack/compliance-pack-commands.md) for list/enable/disable/delete; [`references/compliance-pack/compliance-pack-authoring-guide.md`](./references/compliance-pack/compliance-pack-authoring-guide.md) for custom pack creation from a PDF
 
 ## Disambiguation Question
 
@@ -93,16 +91,11 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 | **Look up CLI flags / output shapes** (AOps) | [`references/aops-policy/aops-policy-commands.md`](./references/aops-policy/aops-policy-commands.md) |
 | **Look up CLI flags / output shapes** (Access) | [`references/access-policy/access-policy-commands.md`](./references/access-policy/access-policy-commands.md) |
 | **Resolve a name to a UUID for Access** | [`references/access-policy/resource-lookup-guide.md`](./references/access-policy/resource-lookup-guide.md) |
-| **Manage or author an agent runtime policy** | [`references/custom-policy/custom-policy-overview-guide.md`](./references/custom-policy/custom-policy-overview-guide.md) |
+| **Author or manage an agent runtime policy** | [`references/custom-policy/custom-policy-overview-guide.md`](./references/custom-policy/custom-policy-overview-guide.md) |
 | **Look up CLI flags / output shapes** (custom policy) | [`references/custom-policy/custom-policy-commands.md`](./references/custom-policy/custom-policy-commands.md) |
-| **Custom policy — Rego authoring reference (JSON envelope, hook inputs, patterns)** | [`references/custom-policy/custom-policy-schema-guide.md`](./references/custom-policy/custom-policy-schema-guide.md) |
-| **Discover available compliance packs** | [`references/compliance-pack/catalog/impl.md`](./references/compliance-pack/catalog/impl.md) |
-| **List which compliance packs are currently configured** | [`references/compliance-pack/catalog/impl.md`](./references/compliance-pack/catalog/impl.md) — use `state list tenant <id>` |
-| **Posture analysis** — what controls are configured vs recommended | [`references/compliance-pack/coverage/impl.md`](./references/compliance-pack/coverage/impl.md) |
-| **Apply full compliance pack** | Run coverage first, then [`references/compliance-pack/full-apply/impl.md`](./references/compliance-pack/full-apply/impl.md) |
-| **Apply specific controls / clauses** | [`references/compliance-pack/partial-apply/planning.md`](./references/compliance-pack/partial-apply/planning.md) |
-| **Remove compliance pack controls** | [`references/compliance-pack/disable/impl.md`](./references/compliance-pack/disable/impl.md) |
-| **Query — what does a clause / control recommend?** | [`references/compliance-pack/query/impl.md`](./references/compliance-pack/query/impl.md) |
+| **Custom Policy — Rego authoring reference (annotations, hook inputs, patterns)** | [`references/custom-policy/custom-policy-schema-guide.md`](./references/custom-policy/custom-policy-schema-guide.md) |
+| **List, enable, or disable a compliance pack** | [`references/compliance-pack/compliance-pack-commands.md`](./references/compliance-pack/compliance-pack-commands.md) |
+| **Create a custom compliance pack from a PDF** | [`references/compliance-pack/compliance-pack-authoring-guide.md`](./references/compliance-pack/compliance-pack-authoring-guide.md) |
 
 ## Anti-patterns
 
@@ -113,8 +106,8 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 - Do NOT propose skill edits when intent doesn't map to either branch. Ask the user to clarify.
 - Do NOT use `deployed-policy list` for gap detection — it returns all rules in priority order, not the merged effective value. Use `deployed-policy get <licenseType> <productName> <tenantId>` to get the single effective merged policy.
 - Do NOT skip the post-apply report even if apply partially fails — show what succeeded and what needs manual attention.
-- For compliance pack posture analysis, use `uip gov compliance-packs state coverage` — do NOT use `aops-policy deployed-policy` commands; those are for AOps policy debugging (Branch A), not compliance pack flows.
-- For full pack configuration, use `state enable` — do NOT manually call `aops-policy create` for each product; that path is only for partial/scoped configuration.
+- For compliance pack operations, use `uip gov compliance-pack list/enable/disable` — do NOT use `aops-policy` commands for compliance pack flows; those are for Branch A only.
+- To enable a prebuilt pack, use `uip gov compliance-pack enable <packId>` directly — do NOT manually call `aops-policy create` for each product.
 - NEVER claim a tenant is "compliant" with a standard — only that recommended controls are configured. Compliance status is determined by the customer's auditor.
 - Do NOT surface policy names, product identifiers (AITrustLayer, Robot, Development), or clause IDs (A.6.2.8) as the main response unit — lead with plain-English control names and clause descriptions. Policy is an internal implementation detail. Clause IDs appear only as secondary reference in parentheses.
 - Do NOT use the word "settings" in user-facing output — use "controls". "Settings" is not the UI vocabulary.

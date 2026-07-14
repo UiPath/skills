@@ -69,32 +69,7 @@ When the user expresses a governance rule without naming a product, your job is 
 
 These steps are for **creating a new policy from scratch**. For existing policies or targeted operations, jump straight to the relevant guide via the [Task Navigation](#task-navigation) table below.
 
-### Step 0 — Verify the `uip` CLI
-
-```bash
-which uip && uip --version
-```
-
-If not installed (both commands fail):
-```bash
-npm install -g @uipath/uipcli
-```
-
-### Step 1 — Check login status
-
-All `uip gov aops-policy` commands require authentication.
-
-```bash
-uip login status --output json
-```
-
-If not logged in:
-```bash
-uip login                                          # interactive OAuth (opens browser)
-uip login --authority https://alpha.uipath.com     # non-production environments
-```
-
-### Step 2 — Create a session directory and bootstrap every product's schema
+### Step 1 — Create a session directory and bootstrap every product's schema
 
 Isolate scratch files for this run in a session directory, then fetch every product's form template, default form data, and locale resource in a single call (Critical Rule #3).
 

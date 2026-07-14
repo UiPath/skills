@@ -10,7 +10,7 @@ Single source of truth for the Rego file format, OPA METADATA annotations, the R
 
 The `--file` argument for `create` and `update` must be a plain `.rego` file. The server extracts all policy metadata from **OPA METADATA annotations** embedded directly in the Rego source — no separate JSON envelope is needed.
 
-The server runs `opa inspect --annotations` on the submitted file to extract name, version, hooks, and rule messages/priorities. A submission missing the required package-level annotation is rejected with a descriptive error.
+Submission pipeline: `regal lint` → `opa inspect --annotations` → `validateNameMatchesPackage` → store. A file that fails any step is rejected with a descriptive error.
 
 ---
 
@@ -22,35 +22,37 @@ Placed immediately before the `package` declaration. Declares the policy identit
 
 ```rego
 # METADATA
-# title: My Policy
+# title: block_ssn_in_prompts
 # custom:
 #   version: "1.0"
 #   hooks:
 #   - before_model
-#   - after_model
-package policy.my_policy
+package policy.block_ssn_in_prompts
 ```
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `title` | **yes** | Policy display name. Must be unique within the tenant. |
+| `title` | **yes** | Policy name. **Must exactly match the package suffix** (e.g. `block_ssn_in_prompts` for `package policy.block_ssn_in_prompts`). Used as the DB policy name and must be unique within the org partition. |
 | `custom.version` | no | Free-form version string (default: `"1.0"`). |
-| `custom.hooks` | **yes** | Array of lifecycle hooks this policy fires on. Controls which hook WASMs are recompiled. |
+| `custom.hooks` | **yes** | Array of lifecycle hooks this policy fires on. Only `[a-zA-Z0-9_-]` characters allowed. |
+
+**Package naming:** `package policy.<snake_case_name>` — one package per file, no nesting.
+
+**Title constraint:** `title` and the package suffix must be **identical strings**. `"Block SSN In Prompts"` does NOT match `block_ssn_in_prompts` — the server rejects it with `metadata-name-package-mismatch`.
 
 ### Rule-level annotation (one per deny/allow rule)
 
-Placed immediately before the rule definition. Declares the audit message and evaluation priority.
+Placed immediately before the rule definition.
 
 ```rego
 # METADATA
-# title: MY_POLICY-model-approval
-# description: Model not in approved list.
+# title: BLOCK_SSN-ssn-in-prompt
+# description: SSN pattern detected in model input.
 # custom:
-#   priority: 90
-deny_rules contains "MY_POLICY-model-approval" if {
-    input.hook in {"before_model"}
-    input.model_name != ""
-    not allowed_models[input.model_name]
+#   priority: 80
+deny_rules contains "BLOCK_SSN-ssn-in-prompt" if {
+    input.hook == "before_model"
+    regex.match(`\b\d{3}-\d{2}-\d{4}\b`, json.marshal(input.model_input))
 }
 ```
 
@@ -60,35 +62,31 @@ deny_rules contains "MY_POLICY-model-approval" if {
 | `description` | no | Message shown in the audit trail for this verdict. Defaults to the rule ID if omitted. |
 | `custom.priority` | no | Evaluation priority (higher = first). Default `0`. |
 
-**Constraint:** `title` in the annotation must exactly match the string literal used in `deny_rules`/`allow_rules`. The server enforces this at compile time.
-
 ---
 
-## Package Naming and Required Structure
+## Regal Lint Rules
 
+The server runs `regal lint` with two rules suppressed; everything else is active at the default level.
+
+| Rule | Status | Reason |
+|------|--------|--------|
+| `idiomatic/directory-package-mismatch` | **ignored** | Policies are compiled in ephemeral temp dirs — no on-disk project structure to mirror. |
+| `performance/non-loop-expression` | **ignored** | `deny_rules contains "RULE-id" if { ... }` is the canonical pattern; the ID is intentionally a constant string, not a loop variable. |
+| `bugs/constant-condition` | **active** | Do NOT write `if false` or `if { false }` in your policy — the server rejects it. |
+
+**Do NOT include sentinel lines** (`deny_rules contains "__sentinel__" if { false }`) in user-authored policies. The server's merge rego adds them automatically. Including them triggers the active `constant-condition` rule.
+
+**Use `==` for single-value hook checks**, not `in {single}`:
 ```rego
-package policy.<snake_case_name>
+# ✓ correct
+input.hook == "before_model"
+
+# ✓ correct for multiple hooks
+input.hook in {"before_model", "after_model"}
+
+# ✗ regal flags this — use == for single values
+input.hook in {"before_model"}
 ```
-
-Use the policy name lowercased with spaces replaced by underscores. One package per file.
-
-Every policy **must** follow the `deny_rules` set pattern — NOT a `deny` boolean. The server's merge file aggregates across all active policies using:
-
-```rego
-deny_rules contains r if data.policy.<name>.deny_rules[r]
-```
-
-A policy that defines `deny if { ... }` (boolean) is a **silent no-op** — it contributes nothing to the merged bundle and produces no audit output.
-
-**Required boilerplate in every policy:**
-
-```rego
-# Sentinel lines — required so the merge file sees a non-empty set definition
-deny_rules  contains "__sentinel__" if false
-allow_rules contains "__sentinel__" if false
-```
-
-Rule ID naming: `<POLICY-PREFIX>-<description>` (e.g. `MY_POLICY-model-approval`). Must be unique within the policy and must match the annotation `title` exactly.
 
 ---
 
@@ -128,7 +126,7 @@ All fields available in `input` when Rego is evaluated. Fields not populated at 
 
 | Feature | Type | Description |
 |---------|------|-------------|
-| `encoding_concern_events` | int | Raw count of encoding corruption events (U+FFFD, `�`, `\xHH`, mojibake bigrams) |
+| `encoding_concern_events` | int | Raw count of encoding corruption events (U+FFFD, `â€œ`, `\xHH`, mojibake bigrams) |
 | `encoding_concern_ratio` | float | Weighted corruption density (0.0–1.0); threshold > 0.05 is a strong signal |
 
 **Incident detection**
@@ -147,11 +145,11 @@ Usage: `input.features.incident_categories.safety_refusal == true`
 | `commitment_amount` | bool | True if currency-anchored amount found ($500, 200 EUR, …) |
 | `commitment_deadline` | bool | True if deadline phrase found (within 3 days, by tomorrow, …) |
 
-Declare features in the package annotation to have them pre-computed before evaluation:
+Declare features in the package annotation:
 
 ```rego
 # METADATA
-# title: My Policy
+# title: my_policy
 # custom:
 #   hooks:
 #   - before_model
@@ -171,15 +169,12 @@ package policy.my_policy
 
 ```rego
 # METADATA
-# title: Block SSN In Prompts
+# title: block_ssn_in_prompts
 # custom:
 #   version: "1.0"
 #   hooks:
 #   - before_model
 package policy.block_ssn_in_prompts
-
-deny_rules  contains "__sentinel__" if false
-allow_rules contains "__sentinel__" if false
 
 # METADATA
 # title: BLOCK_SSN-ssn-in-prompt
@@ -187,7 +182,7 @@ allow_rules contains "__sentinel__" if false
 # custom:
 #   priority: 80
 deny_rules contains "BLOCK_SSN-ssn-in-prompt" if {
-    input.hook in {"before_model"}
+    input.hook == "before_model"
     regex.match(`\b\d{3}-\d{2}-\d{4}\b`, json.marshal(input.model_input))
 }
 ```
@@ -200,7 +195,7 @@ deny_rules contains "BLOCK_SSN-ssn-in-prompt" if {
 
 ```rego
 # METADATA
-# title: Approved Models Only
+# title: approved_models_only
 # custom:
 #   version: "1.0"
 #   hooks:
@@ -209,16 +204,13 @@ package policy.approved_models_only
 
 allowed_models := {"gpt-4o", "claude-sonnet-4-6"}
 
-deny_rules  contains "__sentinel__" if false
-allow_rules contains "__sentinel__" if false
-
 # METADATA
 # title: APPROVED_MODELS-model-approval
 # description: Model not in approved list.
 # custom:
 #   priority: 90
 deny_rules contains "APPROVED_MODELS-model-approval" if {
-    input.hook in {"before_model"}
+    input.hook == "before_model"
     input.model_name != ""
     not allowed_models[input.model_name]
 }
@@ -230,7 +222,7 @@ deny_rules contains "APPROVED_MODELS-model-approval" if {
 
 ```rego
 # METADATA
-# title: Approved Tools Only
+# title: approved_tools_only
 # custom:
 #   version: "1.0"
 #   hooks:
@@ -239,16 +231,13 @@ package policy.approved_tools_only
 
 allowed_tools := {"search", "calculator", "send_email"}
 
-deny_rules  contains "__sentinel__" if false
-allow_rules contains "__sentinel__" if false
-
 # METADATA
 # title: APPROVED_TOOLS-tool-allowlist
 # description: Tool not in approved list.
 # custom:
 #   priority: 85
 deny_rules contains "APPROVED_TOOLS-tool-allowlist" if {
-    input.hook in {"tool_call"}
+    input.hook == "tool_call"
     input.tool_name != ""
     not allowed_tools[input.tool_name]
 }
@@ -260,15 +249,12 @@ deny_rules contains "APPROVED_TOOLS-tool-allowlist" if {
 
 ```rego
 # METADATA
-# title: Tool Call Budget
+# title: tool_call_budget
 # custom:
 #   version: "1.0"
 #   hooks:
 #   - tool_call
 package policy.tool_call_budget
-
-deny_rules  contains "__sentinel__" if false
-allow_rules contains "__sentinel__" if false
 
 # METADATA
 # title: TOOL_BUDGET-session-limit
@@ -276,7 +262,7 @@ allow_rules contains "__sentinel__" if false
 # custom:
 #   priority: 75
 deny_rules contains "TOOL_BUDGET-session-limit" if {
-    input.hook in {"tool_call"}
+    input.hook == "tool_call"
     input.session_state.tool_calls >= 20
 }
 ```
@@ -287,7 +273,7 @@ deny_rules contains "TOOL_BUDGET-session-limit" if {
 
 ```rego
 # METADATA
-# title: Production Finance Model Guard
+# title: production_finance_model_guard
 # custom:
 #   version: "1.0"
 #   hooks:
@@ -296,16 +282,13 @@ package policy.production_finance_model_guard
 
 allowed_models := {"gpt-4o", "claude-sonnet-4-6"}
 
-deny_rules  contains "__sentinel__" if false
-allow_rules contains "__sentinel__" if false
-
 # METADATA
 # title: FINANCE_GUARD-model-approval
 # description: Model not approved for finance agents in production.
 # custom:
 #   priority: 90
 deny_rules contains "FINANCE_GUARD-model-approval" if {
-    input.hook in {"before_model"}
+    input.hook == "before_model"
     input.ring == "production"
     input.agent_name == "finance-agent"
     input.model_name != ""
@@ -317,11 +300,9 @@ Omit `input.ring` or `input.agent_name` conditions to apply the rule to all agen
 
 ### 6. Pre-computed feature — commitment language detection
 
-Flag model output that makes financial or delivery commitments:
-
 ```rego
 # METADATA
-# title: Commitment Language Guard
+# title: commitment_language_guard
 # custom:
 #   version: "1.0"
 #   hooks:
@@ -330,9 +311,6 @@ Flag model output that makes financial or delivery commitments:
 #   - commitment_verb
 #   - commitment_amount
 package policy.commitment_language_guard
-
-deny_rules  contains "__sentinel__" if false
-allow_rules contains "__sentinel__" if false
 
 # METADATA
 # title: COMMIT_GUARD-financial-commitment
@@ -348,11 +326,9 @@ deny_rules contains "COMMIT_GUARD-financial-commitment" if {
 
 ### 7. Pre-computed feature — incident detection
 
-Audit when the model refuses a request (safety refusal):
-
 ```rego
 # METADATA
-# title: Safety Refusal Audit
+# title: safety_refusal_audit
 # custom:
 #   version: "1.0"
 #   hooks:
@@ -360,9 +336,6 @@ Audit when the model refuses a request (safety refusal):
 #   required_features:
 #   - incident_categories
 package policy.safety_refusal_audit
-
-deny_rules  contains "__sentinel__" if false
-allow_rules contains "__sentinel__" if false
 
 # METADATA
 # title: SAFETY_AUDIT-refusal-detected
@@ -377,11 +350,9 @@ deny_rules contains "SAFETY_AUDIT-refusal-detected" if {
 
 ### 8. Pre-computed feature — encoding integrity
 
-Flag suspicious output with encoding corruption (e.g. garbled binary data):
-
 ```rego
 # METADATA
-# title: Encoding Integrity Guard
+# title: encoding_integrity_guard
 # custom:
 #   version: "1.0"
 #   hooks:
@@ -391,9 +362,6 @@ Flag suspicious output with encoding corruption (e.g. garbled binary data):
 #   - encoding_concern_ratio
 #   - encoding_concern_events
 package policy.encoding_integrity_guard
-
-deny_rules  contains "__sentinel__" if false
-allow_rules contains "__sentinel__" if false
 
 # METADATA
 # title: ENCODING_GUARD-corruption-detected
@@ -405,14 +373,6 @@ deny_rules contains "ENCODING_GUARD-corruption-detected" if {
     input.features.encoding_concern_events >= 3
 }
 ```
-
----
-
-## Regal Lint Rules
-
-> Guidelines will be added here. The server enforces whatever Regal config is active at submission time — check this section before submitting.
-
-*(empty — populated in a future update)*
 
 ---
 
