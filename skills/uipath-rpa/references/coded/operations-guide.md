@@ -45,7 +45,7 @@ Read: <PROJECT_DIR>/Main.xaml          # or TestCase.xaml for test projects
 1. Read existing `project.json` to get project name (for namespace), `outputType`, and current entry points
 2. Create the new `.cs` file:
    - Use the project name as namespace
-   - Class name = file name (without .cs). The class name must **not** equal the project name — a class named like the project's default namespace fails analyzer rule ST-NMG-017 (Error) at `analyze`/`build`. When the natural name collides (e.g. workflow `Invoicing` in project `Invoicing`), pick a variant like `InvoicingWorkflow`
+   - Class name = file name (without .cs). The class name must **not** equal the project name — a class named like the project's default namespace fails analyzer rule ST-NMG-017 (Error) at `analyze`/`build`/`pack`. When the natural name collides (e.g. workflow `Invoicing` in project `Invoicing`), pick a variant like `InvoicingWorkflow`
    - Inherit from `CodedWorkflow`
    - Add `[Workflow]` attribute on the entry-point method. Method name does not have to be `Execute` — any name works. `Execute` is convention; keep it unless the user asks otherwise. **One `[Workflow]`/`[TestCase]` attribute per file** — a second one in the same file fails analyzer rule ST-DBP-010 (Error)
    - Add appropriate `using` statements based on which activities are needed
@@ -59,9 +59,9 @@ Read: <PROJECT_DIR>/Main.xaml          # or TestCase.xaml for test projects
    | Single return + `Output` input | `public string Execute(string Output, int c)` | `Output` = InOut (input named `"Output"` collides with implicit return name), `c` = In |
    | No return | `public void Execute(string input)` | `input` = In |
 
-   > **NEVER use C# `out` or `ref` keywords** on `Execute` parameters — the auto-generated `*+Activity.cs` wrapper does not handle them correctly. Symptoms: analyzer error ST-USG-017 at `analyze`/`build`, compile error `CS1620`, or runtime `Using 'out' and 'ref' modifiers is not allowed for Coded Workflows executions.` Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead.
+   > **NEVER use C# `out` or `ref` keywords** on `Execute` parameters — the auto-generated `*+Activity.cs` wrapper does not handle them correctly. Symptoms: analyzer error ST-USG-017 at `analyze`/`build`/`pack`, compile error `CS1620`, or runtime `Using 'out' and 'ref' modifiers is not allowed for Coded Workflows executions.` Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead.
 
-   > **InOut collapse requires matching types.** When a name collision turns a parameter into an `InOutArgument` (rows 3–4 above), the input parameter type and the returned type must be identical — a mismatch (e.g. input `string b` vs tuple element `int b`) fails analyzer rule ST-REL-001 (Error) at `analyze`/`build`.
+   > **InOut collapse requires matching types.** When a name collision turns a parameter into an `InOutArgument` (rows 3–4 above), the input parameter type and the returned type must be identical — a mismatch (e.g. input `string b` vs tuple element `int b`) fails analyzer rule ST-REL-001 (Error) at `analyze`/`build`/`pack`.
 4. Update `project.json` (**Process projects only** — skip `entryPoints` for Tests and Library projects):
    - Add new entry to `entryPoints` array with `filePath`, unique `uniqueId`, `input`, and `output` definitions
    - If the workflow has parameters, define them in `input`/`output` with `name`, `type`, and `required`
@@ -193,7 +193,7 @@ Coded Source Files are plain `.cs` files that contain reusable classes, models, 
 1. Read existing `project.json` to get the project name (for namespace)
 2. Create the `.cs` file:
    - Use the project name as namespace
-   - Class name = file name (without .cs) — and never the project name itself (analyzer rule ST-NMG-017 applies to every class in the default namespace, source files included)
+   - Name each class after what it contains (for a single-class file, that matches the file name). Never use the project name as a class name — analyzer rule ST-NMG-017 applies to every class in the default namespace, source files included
    - Add only the `using` statements the class needs (typically just `System` namespaces)
    - Do NOT inherit from `CodedWorkflow`
 3. No `project.json` changes needed

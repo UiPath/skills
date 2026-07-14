@@ -118,7 +118,7 @@ Four built-in Workflow Analyzer rules with scope `Coded Workflow` run as Roslyn 
 | **ST-REL-001** — Mismatched InOut argument types | An entry-point input parameter collapses into an InOut argument (its name matches a return-tuple element, or it is literally named `Output` with a single non-void return) but the input and returned types differ | Make the input parameter type and the returned type identical |
 | **ST-USG-017** — Invalid parameter modifier | `out` or `ref` modifier on a `[Workflow]`/`[TestCase]` method parameter | Use return values or tuples for outputs instead |
 
-> Older CLI versions listed these rules in `analyzer-rules list` but did not execute them headlessly — only Studio flagged the violations. Do not treat a clean `analyze`/`build` from an older CLI as proof these rules pass; fix violations at authoring time regardless.
+> Older CLI versions listed these rules in `analyzer-rules list` but did not execute them headlessly — only Studio flagged the violations. Do not treat a clean `analyze`/`build`/`pack` from an older CLI as proof these rules pass; fix violations at authoring time regardless.
 
 ## Best Practices
 
@@ -158,7 +158,7 @@ if (system.PathExists(@"C:\Reports\report.pdf", PathType.File, out ILocalResourc
 
 ### Code Quality
 - **Start simple, iterate** — Create minimal working version first, then refine
-- **NEVER use C# `out` or `ref` keywords in `[Workflow]` methods** — The auto-generated `*+Activity.cs` wrapper does not handle them correctly. Symptoms: analyzer error ST-USG-017 at `analyze`/`build`, compile error `CS1620`, or runtime `Using 'out' and 'ref' modifiers is not allowed for Coded Workflows executions.` Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead
+- **NEVER use C# `out` or `ref` keywords in `[Workflow]` methods** — The auto-generated `*+Activity.cs` wrapper does not handle them correctly. Symptoms: analyzer error ST-USG-017 at `analyze`/`build`/`pack`, compile error `CS1620`, or runtime `Using 'out' and 'ref' modifiers is not allowed for Coded Workflows executions.` Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead
 - **Only include using statements for packages in project.json** — Adding unused usings causes compile errors
 - **Match input parameter names exactly** — Execute method signature must match `--input` arguments (case-sensitive)
 - **Escape backslashes in paths** — Use `C:\\path\\file.txt` not `C:\path\file.txt` in input arguments
