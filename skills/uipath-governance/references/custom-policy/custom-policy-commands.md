@@ -2,46 +2,40 @@
 
 Single source of truth for every `uip gov custom-policy` subcommand, its flags, and its output shape. Use `--output json` for programmatic use.
 
-> All commands require **tenant-scoped login**: `uip login --tenant <TENANT_NAME>`. A user-scoped login is not sufficient — commands will fail with `401` or `403`.
+
+> **Org-level storage, per-tenant activation.** `create` stores the policy org-wide but does NOT activate it. Run `enable` to activate for the current tenant.
 
 ---
 
 ## uip gov custom-policy list
 
-List all custom policies for the tenant (active and inactive).
+List all agent policies for the org.
 
 ```bash
 uip gov custom-policy list --output json
 ```
 
-**Flags:**
+**Output:** Array of policy entries. Each entry has `policyId`, `policyName`, `policyVersion`, `source`, `active`, `createdAt`, `createdBy`, `updatedAt`.
 
-| Flag | Required | Description |
-|------|----------|-------------|
-| `--limit <N>` | no | Max results to return (default: server default) |
-| `--offset <N>` | no | Pagination offset (default: 0) |
-
-**Output:** Array of custom policy entries. Each entry has `policyId`, `policyName`, `policyVersion`, `active`, `createdAt`, `createdBy`, `updatedAt`.
+`active` reflects activation status for the current tenant's login context.
 
 ---
 
 ## uip gov custom-policy get
 
-Fetch the Rego source for a custom policy.
+Fetch the Rego source for an custom policy.
 
 ```bash
 uip gov custom-policy get <POLICY_ID> --output json
 ```
 
-Returns `403` for UiPath default policies. Always run before `update` to retrieve the current Rego.
-
-**Output:** `Data` contains the Rego source string. Save it to a `.rego` file to use as the update base.
+**Output:** `policyId` and `regoSource` (full Rego string). Save to a `.rego` file if you need to revise it.
 
 ---
 
 ## uip gov custom-policy create
 
-Upload a Rego file. The server extracts metadata from OPA annotations, runs Regal lint, compiles to WASM, and stores the bundle.
+Upload a `.rego` file. Server validates the source, runs Regal lint, extracts OPA METADATA, and stores the policy org-wide. Does not activate — run `enable` after.
 
 ```bash
 uip gov custom-policy create \
@@ -55,61 +49,49 @@ uip gov custom-policy create \
 |------|----------|-------------|
 | `--file <PATH>` | yes | Path to the `.rego` file |
 
-> `--file` must be a `.rego` file with valid OPA METADATA annotations. The server uses `opa inspect --annotations` to extract `name`, `version`, `hooks`, and rule `message`/`priority` from the file — no separate metadata JSON is required. See [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) for the annotation format.
+> `--file` must be a `.rego` file with valid OPA METADATA annotations. The server uses `opa inspect --annotations` to extract `title`, `hooks`, and rule `description`/`priority`. See [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) for the annotation format.
 
-**Output:** `Data` contains the new `policyId` (GUID) and `policyName`. Policies are created with `active: true` by default — they take effect at the next agent poll.
+**Output:** `policyId` (GUID) and `policyName`. Policy is stored org-wide but **not yet active** — run `enable` to activate for the current tenant.
 
----
-
-## uip gov custom-policy update
-
-Upload a revised Rego file. The server re-extracts annotations, re-lints, recompiles, and updates the stored bundle.
-
-```bash
-uip gov custom-policy update <POLICY_ID> \
-  --file <PATH_TO_REGO> \
-  --output json
-```
-
-Returns `403` for UiPath default policies. Always run `get` first to retrieve the current Rego before editing.
-
-**Output:** `Data` contains `policyId` and updated metadata.
-
----
-
-## uip gov custom-policy delete
-
-Permanently remove a custom policy.
-
-```bash
-uip gov custom-policy delete <POLICY_ID> --output json
-```
-
-**Destructive — cannot be undone.** Always run `get` first and confirm with the user before deleting. Returns `403` for UiPath default policies.
-
-**Output:** `Result: "Success"` on deletion.
+> **No update command.** To revise a policy: `get` the Rego source, edit it, `delete` the old policy, `create` the new one, then `enable`.
 
 ---
 
 ## uip gov custom-policy enable
 
-Activate a custom policy — sets `active=true`. Included in the next agent poll. Idempotent.
+Activate a policy for the current tenant. Idempotent.
 
 ```bash
 uip gov custom-policy enable <POLICY_ID> --output json
 ```
 
+The policy takes effect at the next agent poll.
+
 ---
 
 ## uip gov custom-policy disable
 
-Deactivate a custom policy — sets `active=false`. Excluded from the next agent poll. Idempotent.
+Deactivate a policy for the current tenant. Idempotent.
 
 ```bash
 uip gov custom-policy disable <POLICY_ID> --output json
 ```
 
-Running agents are not interrupted mid-run. The change takes effect at the next run boundary after the agent's background refresh cycle.
+Running agents are not interrupted mid-run. The change takes effect at the next run boundary after the background refresh cycle.
+
+---
+
+## uip gov custom-policy delete
+
+Hard-delete a policy from all tenants it was enabled on. Irreversible.
+
+```bash
+uip gov custom-policy delete <POLICY_ID> --output json
+```
+
+**Destructive — cannot be undone.** Always run `list` first, confirm the `policyName` and `active` status with the user before deleting.
+
+**Output:** `Result: "Success"` on deletion.
 
 ---
 
@@ -117,7 +99,6 @@ Running agents are not interrupted mid-run. The change takes effect at the next 
 
 | Option | Description |
 |--------|-------------|
-| `--login-validity <MINUTES>` | Override interactive-login token lifetime for this call |
 | `--output json` | Machine-readable output. Always pass when parsing output. |
 
 ---
@@ -126,9 +107,10 @@ Running agents are not interrupted mid-run. The change takes effect at the next 
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `401 Unauthorized` | Token expired or missing | Run `uip login --tenant <TENANT_NAME>` and retry |
+| `401 Unauthorized` | Token expired or missing | Surface auth error to user |
+| `403 Forbidden` | Insufficient permissions | Surface auth error to user |
 | `command not found: uip` | CLI not installed | `npm install -g @uipath/uipcli` |
 | `Regal lint failed` | Rego violates lint rules | Fix the Rego against lint rules in [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) and resubmit |
-| `missing package-level METADATA annotation` | Rego file has no `# METADATA` block before `package` | Add the required annotations — see [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) |
+| `missing package-level METADATA annotation` | No `# METADATA` block before `package` | Add required annotations — see [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) |
 | `must declare at least one hook` | Package annotation has no `custom.hooks` array | Add `hooks:` to the package METADATA block |
 | Policy active but audit trail empty | Agent has not polled yet | Wait for the background refresh interval, or restart the agent |

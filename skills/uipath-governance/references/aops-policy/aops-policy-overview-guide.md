@@ -47,8 +47,7 @@ When the user expresses a governance rule without naming a product, your job is 
 
 ## Critical Rules
 
-1. Always use `uip login` before running any `uip gov aops-policy` commands.
-2. Always use the product `name` (identifier) in CLI commands, not the `label` shown to the user.
+1. Always use the product `name` (identifier) in CLI commands, not the `label` shown to the user.
 3. For `create`: always bootstrap before selecting or confirming a product. Run `uip gov aops-policy template list --output-dir "$SESSION_DIR/products" --output json` — this writes each product's `form-template.json` (whose top-level `product` object holds `{name, label}`), `form-data.json`, and `form-template-locale-resource.json` into `$SESSION_DIR/products/<ProductName>/`. The product catalog is implicit — enumerate products with the `Glob` tool on `$SESSION_DIR/products/*/form-template.json` and read `.product.{name, label}`. Do NOT create a separate `products.json` or run `product list`. Use the bootstrapped schemas to validate the user's chosen product against their stated intent; if the intent's fields live under a different product, suggest that product instead.
 4. For `create`, read the form template, default form data, and locale labels from `$SESSION_DIR/products/<ProductName>/` (produced by the bootstrap). For `update`, the caller creates `$SESSION_DIR` first (see aops-policy-manage-guide update Step 1) and then configure-guide runs `template get` with `--output-form-data` and `--output-template-locale-resource` into the same per-product subfolder. Use the locale file for human-readable labels and the form-data (create) or existing policy data (update) for the working blueprint. Prefer Mode A (intent-based auto-fill) over field-by-field prompting whenever the user supplied any intent. Do not construct policy data JSON manually.
 5. Use the component `key` as the JSON key in policy data — never the label or humanized name.

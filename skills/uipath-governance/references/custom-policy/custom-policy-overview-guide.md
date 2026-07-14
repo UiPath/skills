@@ -19,8 +19,7 @@ Two modes inside this branch:
 
 ## Critical Rules
 
-1. **Tenant-scoped login is required.** Run `uip login --tenant <TENANT_NAME>` before any command. A user-scoped login returns `401` or silently hits the wrong tenant.
-2. **Classify operate vs author before acting.** Do not run any CLI command until the mode is determined.
+1. **Classify operate vs author before acting.** Do not run any CLI command until the mode is determined.
 3. **Never fabricate policy IDs.** Always resolve policy names to IDs via `list` — never guess a GUID.
 4. **For delete: always confirm.** Run `list` to confirm the policy's `policyName` and `active` status, then ask for explicit user confirmation before running `delete`. Delete is hard — it removes the policy from all tenants.
 5. **No update command.** To revise a policy: `get` the Rego source, edit it, `delete` the old policy, `create` the new one, then `enable`.

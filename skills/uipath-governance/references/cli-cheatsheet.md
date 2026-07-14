@@ -182,26 +182,20 @@ All halts write a deploy record (Apply) or patch record (Diagnose).
 ## Compliance Packs
 
 ```bash
-# Catalog (read-only — no scope needed beyond login)
-uip gov compliance-packs catalog list --output json
-uip gov compliance-packs catalog get <packId> --output json
+# List prebuilt + custom packs (with active status for current tenant)
+uip gov compliance-pack list --output json
 
-# State (tenant-scoped; Policy:Read for coverage/get/list; Policy:Write for enable/disable)
-TENANT_ID=$(grep '^UIPATH_TENANT_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
-ORG_ID=$(grep '^UIPATH_ORGANIZATION_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
+# Enable / disable a pack for the current tenant
+uip gov compliance-pack enable  <packId> --output json
+uip gov compliance-pack disable <packId> --output json
 
-# Tenant scope
-uip gov compliance-packs state coverage tenant $TENANT_ID <packId> --output json
-uip gov compliance-packs state enable  tenant $TENANT_ID <packId> --output json
-uip gov compliance-packs state disable tenant $TENANT_ID <packId> --output json
-uip gov compliance-packs state get    tenant $TENANT_ID <packId> --output json
-uip gov compliance-packs state list   tenant $TENANT_ID          --output json
+# Delete a custom pack (hard delete — prebuilt packs use disable)
+uip gov compliance-pack delete <packId> --output json
 
-# Organization scope (all tenants)
-uip gov compliance-packs state coverage organization $ORG_ID <packId> --output json
-uip gov compliance-packs state enable  organization $ORG_ID <packId> --output json
-uip gov compliance-packs state list   organization $ORG_ID          --output json
+# Custom pack authoring — complete analyze → review → bundle in one sitting
+uip gov compliance-pack analyze --file <path-to-doc.pdf> [--description "<text>"] --output json
+uip gov compliance-pack review  <sessionId> --output json
+uip gov compliance-pack bundle  <sessionId> --output json
 ```
 
-`state coverage` does NOT require the pack to be enabled first — it reads live tenant state fresh every call.
-All state commands use positional args `<scopeLevel> <scopeTargetId>`. There is no `--tenant-id` flag.
+Prebuilt pack IDs: `uipath-iso42001`, `uipath-hipaa`, `uipath-soc2`, `uipath-iso27001` (run `list` to confirm).
