@@ -76,3 +76,28 @@ The reason this command exists: a stale checkout published diagnose at 17% inste
 2. Compare counted `covered` and `total` against `DOC_TALLY`'s `Direct eval` and `Capabilities` for that mode. Mismatch → FAIL, cite `Diagnose tally <a>/<b> but counted <c> covered / <d> rows`.
 3. Verify `Total` row = sum of the three per-mode rows (capabilities and direct-eval columns). Mismatch → FAIL.
 4. `CHECK4_RESULT` = PASS iff every mode reconciles and the total sums.
+
+## Phase 4 — Verdict
+
+Print a fixed-width table, one row per check, exactly:
+
+```
+CHECK 0 staleness      <PASS|FAIL>  <detail>
+CHECK 1 doc↔evals      <PASS|FAIL>  <n stale, n mismatch, n un-listed>
+CHECK 2 doc↔playbooks  <PASS|FAIL>  <covered>/<total> represented
+CHECK 3 doc↔scorecard  <PASS|WARN|FAIL>  <detail>
+CHECK 4 internal       <PASS|FAIL>  <detail>
+```
+
+Below the table, under each non-PASS check, list the specific mismatches (one per line: the task_id / playbook / cell and what disagreed). Overall verdict = worst status across checks.
+
+## Phase 5 — Opt-in fix (only if any FAIL/WARN)
+
+Do NOT mutate anything automatically. Ask ONE question with `AskUserQuestion`:
+
+> "Reconcile the discrepancies?"
+> - **Patch repo doc** — update `REPO_DOC` markdown to match fresh repo state (then user commits).
+> - **Republish Confluence** — push the corrected body to `CONFLUENCE_PAGE_ID` via `updateConfluencePage`.
+> - **Do nothing** — leave everything; report only.
+
+Act only on the chosen option. For "Patch repo doc", edit `REPO_DOC` and show a diff — do not commit or push (leave that to the user). For "Republish", update the page with `includeBody:false` and a version message naming the reconciled checks. Never edit the org scorecard page itself.
