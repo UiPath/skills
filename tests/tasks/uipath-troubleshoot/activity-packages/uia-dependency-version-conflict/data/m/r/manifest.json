@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the UIAutomationNext dependency/version-conflict scenario; mock dispatcher only — do not treat as investigation evidence. The failure is a design-time/validation MissingMethodException diagnosed from project.json; the process never ran, so job lists are empty.",
+  "_doc": "Mock dispatcher fixture set for this scenario; not investigation evidence. Provides a folder list and empty job lists (this process has no Orchestrator runs).",
   "rules": [
     {
       "match": "or folders list --output json",
