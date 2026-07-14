@@ -31,3 +31,13 @@ The reason this command exists: a stale checkout published diagnose at 17% inste
 2. Run `git rev-list --count HEAD..origin/main`.
 3. If the count is `> 0`: **hard-fail**. Print `CHECK 0 staleness  FAIL — local main is <N> commits behind origin/main`, instruct `git pull --ff-only origin main`, and STOP. Do not run Phases 1–4 against a stale tree.
 4. If `0`: print `CHECK 0 staleness  PASS (HEAD == origin/main)` and continue.
+
+## Phase 1 — Fetch and parse the enumeration doc (source of truth)
+
+1. Resolve the page id: `--doc` if given, else `CONFLUENCE_PAGE_ID`.
+2. Fetch it: `getConfluencePage(cloudId="uipath.atlassian.net", pageId=<id>, contentFormat="html")`. If auth fails, STOP and tell the user to authenticate the Atlassian MCP.
+3. From the returned HTML, extract into named sets:
+   - **`DOC_TASK_IDS`** — every ``code``-wrapped `task_id` in the feature-table "Coded Test Tasks" cells (values matching `skill-[a-z0-9-]+` or `-connector-*`, `-rpa-is-*` shorthands). Record the mode section (Build/Operate/Diagnose) each appears under.
+   - **`DOC_PLAYBOOKS`** — every playbook basename cited (values matching `[a-z-]+` that appear in "Playbook(s)" cells, e.g. `connection-invalid`, `cs-permission-denied`).
+   - **`DOC_TALLY`** — the Coverage Summary table: per-mode `Capabilities`, `Direct eval`, and `Eval %` (Build/Operate/Diagnose/Total).
+4. Print a one-line summary: `Parsed doc: <n> task_ids, <n> playbooks, tally B/O/D = …`. If any set is empty, WARN (doc may have been reformatted) but continue.
