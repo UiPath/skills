@@ -20,11 +20,11 @@ run_limits:
   turn_timeout: 900
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/jira_create_issue/seed_jira.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_create_issue/seed_jira.py"
     timeout: 60
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/jira_create_issue/teardown_jira.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_create_issue/teardown_jira.py"
     timeout: 120
 
 initial_prompt: |
