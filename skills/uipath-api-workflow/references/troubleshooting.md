@@ -544,12 +544,12 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### `Workflow status is not "Successful"` (executor returns failure)
 - **Cause:** A task threw during execution
 - **Fix:** Read `Message` and `Instructions` in the failure output. Common patterns:
-  - JS_Invoke: missing `return` statement, runtime error in script body, undefined `$context.outputs.<TaskName>` (prior task did not run or did not `export`)
+  - JS_Invoke: missing `return` statement, runtime error in script body, undefined `$context.outputs.<Activity>` (prior activity did not run or did not `export`)
   - Assign expression: invalid `${...}` syntax, referencing an undefined variable in strict mode
   - Loop body: condition variable not updated (DoWhile infinite loop), missing `#Body` suffix, wrong export pattern
 
-### `$context.outputs.<TaskName>` is undefined
-- **Cause:** The prior task did not `export` its output back into context
+### `$context.outputs.<Activity>` is undefined
+- **Cause:** The prior activity did not `export` its output back into context
 - **Fix:** Add the standard export to the prior task — see [expressions-and-context.md](expressions-and-context.md)
 
 ### Strict-mode JS error inside a JS_Invoke
