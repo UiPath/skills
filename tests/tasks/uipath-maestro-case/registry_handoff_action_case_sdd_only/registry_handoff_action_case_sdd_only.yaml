@@ -107,7 +107,7 @@ simulation:
   constraints:
     - "Do not change the SDD or provide alternate resource names."
     - "For purchaseorderapp-1782974854, choose the exact Shared-folder match and do not use a placeholder."
-    - "For PortableReviewActionProbeQ91 and PortableChildCaseProbeQ91, choose Skip and use placeholders; neither resource should be built inline."
+    - "For PortableReviewActionProbeQ91 and PortableChildCaseProbeQ91, choose Use placeholders for all; neither resource should be built inline."
     - "When shown tasks.md for approval, say the plan is sufficient and ask the agent to stop before Phase 2."
     - "Do not request Phase 0 or any design changes."
     - "Keep replies short — one sentence or a single option pick."
