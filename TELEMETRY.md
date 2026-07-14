@@ -75,8 +75,8 @@ plugin; everything else exits silently. A call qualifies when:
 |------|----------------|
 | `Skill` | skill name starts with `uipath:` / `uipath-` |
 | `Agent` / `spawn_agent` | spawned type is a UiPath agent (`uipath:` / `uipath-`) or a built-in/generic type (Claude's `general-purpose`, `Explore`, `Plan`, `claude`, `claude-code-guide`, `statusline-setup`, `fork`, or Codex's `default`) — **not** other plugins' (`<plugin>:<name>`) or user-defined custom agents. Claude spawns via `Agent` + `tool_input.subagent_type`; Codex via `spawn_agent` + `tool_input.agent_type` |
-| `Bash` / `PowerShell` | command invokes the `uip` CLI or `rpa-tool` |
-| `Edit` / `Write` / `Read` / `Glob` / `Grep` | path targets `.cs` (coded workflows), `.flow`, `.xaml`, `.uipx`, `.bpmn`, `agent.json`, `caseplan.json`, `project.json`, `app.config.json`, `action-schema.json` |
+| `Bash` / `PowerShell` (Autopilot / Delegate: `ExecuteBashCommand` / `ExecutePowershellCommand`) | command invokes the `uip` CLI or `rpa-tool` |
+| `Edit` / `Write` / `Read` / `Glob` / `Grep` (Autopilot / Delegate: `ReadFile` / `WriteFile` / `EditFile` / `LsDirectory`) | path targets `.cs` (coded workflows), `.flow`, `.xaml`, `.uipx`, `.bpmn`, `agent.json`, `caseplan.json`, `project.json`, `app.config.json`, `action-schema.json` |
 
 ## How it works
 
@@ -225,6 +225,19 @@ signals. The cross-agent handling itself changes no keys; the current key set
 is **schema v2** (see the [field table](#properties-sent-by-the-hook)). Events
 are distinguished by agent through the CLI-stamped client/`source` context, not
 a hook field.
+
+**UiPath Autopilot / Delegate** honor `hooks.json` with the same envelope and
+lifecycle events, but name their shell and file tools differently. Attribution
+is gated on both spellings:
+
+| Tool role | Claude Code | Autopilot / Delegate |
+|-----------|-------------|----------------------|
+| Shell command | `Bash` / `PowerShell` | `ExecuteBashCommand` / `ExecutePowershellCommand` |
+| File read/write/edit/list | `Read` / `Write` / `Edit` / `Glob` / `Grep` | `ReadFile` / `WriteFile` / `EditFile` / `LsDirectory` |
+
+Their `tool_input` still carries `command` / `file_path`, so the `uip`-command
+and file-extension attribution and the `uipSubcommand` / `fileExtension`
+derivation work unchanged once the renamed tool names are gated. No key changes.
 
 ### Added by the CLI
 
