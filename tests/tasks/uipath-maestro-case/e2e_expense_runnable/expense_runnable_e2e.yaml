@@ -53,6 +53,10 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available and authenticated in the environment.
+  - For each non-connector resource, `bindings_v2.json` metadata may contain
+    only `subType` (or be empty). Do not add `bindingsVersion` or
+    `solutionsSupport`: those fields make `uip solution resources refresh` fail
+    with "Node already added to the graph" in this eval environment.
   - Treat all hard stops after the SDD as pre-approved, including Phase 1
     planning approval, Phase 2 publish-for-review, and Phase 5 debug. Choose the
     continue / skip-publish path and keep going.
