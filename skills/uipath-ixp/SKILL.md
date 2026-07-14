@@ -71,7 +71,6 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 | "Import this taxonomy" / provides a taxonomy file | [Project Setup Guide](references/project-setup-guide.md) — Option B (`--skip-taxonomy` + `import-taxonomy`) |
 | "Label documents" / "Review predictions" | [Label Documents Guide](references/label-documents-guide.md) |
 | "Improve scores" / "Fix prompts" / "Improve F1" | [Improve Prompts Guide](references/improve-prompts-guide.md) |
-| "Publish the model" / "Tag as live" | `uip ixp projects publish <project-name> --output json` |
 | "Publish the model" / "Tag as live" | `uip ixp projects publish <project-name> --output json` — publishes the latest version, untagged. Add `--tag <live\|staging>` to also tag it. See [cli-reference](references/cli-reference.md) for `--model-version`/`--description`. |
 | "Roll back to a previous version" / "Restore version N" | `uip ixp projects publish <project-name> --model-version <N> --output json` — re-publishes an earlier version. Get available versions from `uip ixp projects list-models <project-name> --output json`. |
 | "Unpublish a model" / "Take a model out of production" | `uip ixp projects unpublish <project-name> --model-version <N> --output json` — removes a version from the published set (it stays trained/listable). `--model-version` is required; find published versions via `list-models` (`Pinned: true`). To change which version is live, `publish` a different one instead. |
