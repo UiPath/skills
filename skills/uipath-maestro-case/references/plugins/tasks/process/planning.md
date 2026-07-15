@@ -34,10 +34,13 @@ For RPA robot tasks specifically, prefer [rpa](../rpa/planning.md). For Coded wo
 5. **`folder-path` = the SELECTED entry's `folders[0].fullyQualifiedName`** (not the sdd.md "Folder" — see the field table above). Fall back to the sdd.md folder only when there is no registry match (Unresolved path).
 6. **Discover inputs/outputs:** after resolving the `entityKey`, fetch the input/output schema via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md). Record input names, types, and output names. Unrecognized inputs in sdd.md → ask the user (**AskUserQuestion** with matching field names + "Something else").
 
+> **Ambiguous PROCESS/RPA reading — disambiguate BEFORE the gate.** If this task was PROCESS-defaulted from an ambiguous PROCESS/RPA reading ([rpa/planning.md § When to Use](../rpa/planning.md#when-to-use)) **and** the registry lookup came back empty, re-surface the ambiguity with `AskUserQuestion` **now, while assembling the empty-result batch** — *before* the [Rule 17 gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) annotates creatability. An `rpa` reading enters the batch as **creatable** (Create offered); a `process` reading enters as **placeholder-only**. Resolving this inside the post-gate § Unresolved Fallback is **too late** — the gate would already have committed the task to placeholder-only, hiding the Create option. Only a user-confirmed `process` (or no pick) proceeds as `process` into the Unresolved Fallback below.
+
 ## Unresolved Fallback
 
 If no match is found across both cache files after `registry pull`:
 
+- The ambiguous-reading disambiguation (if any) already ran **pre-gate** — see the § Registry Resolution note above. By here the task's type is settled to `process`.
 - Mark the task line: `<UNRESOLVED: process "<name>" in folder "<folder>" not found in registry>`
 - Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1).
 - Continue planning for remaining tasks.

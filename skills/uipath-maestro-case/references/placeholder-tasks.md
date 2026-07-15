@@ -115,7 +115,7 @@ These are **expected** and do not block the build. Errors only appear when cross
 
 ## Upgrade Procedure — Placeholder → Full Task
 
-> **Built-inline agents / API workflows are not placeholders.** An `agent` or `api-workflow` the user chose to **Create** at the Rule 17 gate is built and bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — it enters Phase 2 as a fully resolved task, never a placeholder, and skips this procedure. This procedure covers creatable resources the user **declined/skipped or whose build failed** (their recovery is the same as any other unresolved kind — register the real resource, below), plus every other unresolved kind.
+> **Built-inline resources are not placeholders.** An `agent`, `rpa`, or `api-workflow` the user chose to **Create** at the Rule 17 gate is built and bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — it enters Phase 2 as a fully resolved task, never a placeholder, and skips this procedure. This procedure covers creatable resources the user **declined/skipped or whose build failed** (their recovery is the same as any other unresolved kind — register the real resource, below), plus every other unresolved kind.
 
 When the user has registered the real resource:
 
@@ -129,7 +129,7 @@ uip maestro case registry pull --force
 
 ### 2. Resolve the task-type-id
 
-Read the relevant cache file directly per [registry-discovery.md](registry-discovery.md) — e.g., `process-index.json` for processes, `action-apps-index.json` for action apps. For a **manually-built in-solution sibling** (agent or api-workflow), find it offline by name with `uip maestro case registry search "<name>" --type <agent|api> --local --output json` (`agent` for an agent sibling, `api` for an api-workflow sibling; select the exact-name `Data.Resources[].Resource` entry; use `search` — `get --local` matches only the opaque `entityKey`, not the name). Its `Resource.EntityKey` is an opaque derived key (not the `.uipx` `Projects[].Id`), audit-only; the node binds by name+folder. Read the sibling's I/O field names from its raw `entry-points.json` (the `--output json` keys are PascalCased). For an **api-workflow sibling**, read its I/O per the fallback chain in [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution) — flat `entryPoints[0].input.properties` → `input.schema.document.properties` wrapper → `Workflow.json` root schemas when the entry-point I/O is `null`; note any fallback in the report.
+Read the relevant cache file directly per [registry-discovery.md](registry-discovery.md) — e.g., `process-index.json` for processes, `action-apps-index.json` for action apps. For a **manually-built in-solution sibling** (agent, RPA process, or api-workflow), find it offline by name with `uip maestro case registry search "<name>" --type <agent|process|api> --local --output json` (`agent` for an agent, `process` for an RPA sibling — no local `rpa` type, `api` for an api-workflow; select the exact-name `Data.Resources[].Resource` entry; use `search` — `get --local` matches only the opaque `entityKey`, not the name). Its `Resource.EntityKey` is an opaque derived key (not the `.uipx` `Projects[].Id`), audit-only; the node binds by name+folder. Read the sibling's I/O field names from its on-disk contract (the `--output json` keys are PascalCased) — **agent:** raw `entry-points.json`; **rpa:** `project.json` `entryPoints[].input/output` (no `entry-points.json`); **api-workflow:** `entry-points.json` per the fallback chain in [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution) — flat `entryPoints[0].input.properties` → `input.schema.document.properties` wrapper → `Workflow.json` root schemas when the entry-point I/O is `null`; note any fallback in the report.
 
 ### 3. Fetch the schema
 
@@ -187,15 +187,17 @@ When the build finishes with placeholders, the skill's completion report must li
 - **Custom IS connectors** (N): U Submit (GetSubmission), U Place (SubmitPlannedMarkets), …
 ```
 
-When agents / API workflows were **built inline** at the gate, list them separately — they are resolved, not placeholders:
+When resources were **built inline** at the gate (agents, RPA processes, API workflows), list them separately — they are resolved, not placeholders:
 
 ```
-### Agents / API workflows built inline (N)
+### Built inline (N)
 
 | Stage | Task | Resource | Status |
 |-------|------|----------|--------|
-| Triage | Classify PO | Classify PO (agent) | built as in-solution sibling via uipath-agents; bound via --local |
-| Enrich | Fetch Rates | RateFetcher (api-workflow) | built as in-solution sibling via uipath-api-workflow; bound via --local |
+| Triage | Classify PO | Classify PO (agent) | built via uipath-agents; bound via --local |
+| Enrich | Fetch Rates | RateFetcher (api-workflow) | built via uipath-api-workflow; bound via --local |
+| Intake | Trim Text | TrimText (rpa) | built + compiled + run via uipath-rpa; bound via --local |
+| Post | Post Record | PostRecord (rpa) | built + compiled via uipath-rpa; bound via --local — not runtime-verified (side-effecting; verify on deploy) |
 
 ### Built but not referenced (reject case)
 
@@ -204,7 +206,7 @@ When agents / API workflows were **built inline** at the gate, list them separat
 | Sentiment (agent) | built sibling on disk; task dropped from plan — reuse or remove manually |
 ```
 
-The user uses the placeholder/external lists to drive external resource creation, then runs the upgrade procedure; the "built inline" list is informational (already wired).
+The user uses the placeholder/external lists to drive external resource creation, then runs the upgrade procedure; the "built inline" list is informational — these siblings are wired (`built:true`); a row may note "not runtime-verified" where the sub-agent could not safely run it here (e.g. a side-effecting RPA automation — verify on deploy). A resource whose build returned `built:false` (blocked — missing application / credential / unstated rule — or a build that could not pass) is NOT in this list; it is a placeholder in the list above, for the user to finish. See [create-inline-common.md § Build result](plugins/tasks/create-inline-common.md#build-result).
 
 ## Anti-Patterns
 
@@ -212,6 +214,6 @@ The user uses the placeholder/external lists to drive external resource creation
 - **Do NOT partially bind inputs on a placeholder.** A placeholder has no `data.inputs[]` to edit — the io-binding plugin logs a `SKIPPED` entry and moves on. Half-bound placeholders are harder to upgrade than bare ones.
 - **Do NOT skip task-entry conditions on placeholders.** Conditions are structural; they work on the TaskId and must be created so the workflow order is visible in review.
 - **Do NOT create placeholders for timer tasks.** Timers have no registry dependency — use the full `wait-for-timer` plugin.
-- **Do NOT create a placeholder for an agent or API workflow the user chose to build inline.** It is built + bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a resolved task, not a placeholder.
-- **Do NOT build an agent or API workflow from SDD content alone.** Inline create runs only for resources the user explicitly selected at the Rule 17 gate. The built resource is an in-solution **sibling** that co-deploys with the case — never a separate tenant publish.
-- **Invoking `uipath-agents` / `uipath-api-workflow` for the inline build is sanctioned** — it is not a violation of the "don't auto-invoke other skills" anti-pattern, which still applies to every non-creatable kind (regular RPA process, action, case-management, connectors, agentic process) and to `uipath-planner`.
+- **Do NOT create a placeholder for an agent, RPA process, or API workflow the user chose to build inline.** It is built + bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a resolved task, not a placeholder.
+- **Do NOT build an agent, RPA process, or API workflow from SDD content alone.** Inline create runs only for resources the user explicitly selected at the Rule 17 gate. The built resource is an in-solution **sibling** that co-deploys with the case — never a separate tenant publish.
+- **Invoking `uipath-agents` / `uipath-rpa` / `uipath-api-workflow` for the inline build is sanctioned** — it is not a violation of the "don't auto-invoke other skills" anti-pattern, which still applies to every non-creatable kind (generic `process`, action, case-management, connectors, agentic process) and to `uipath-planner`.
