@@ -8,7 +8,7 @@ description: >
   the queue was missing at run time AND to flag the deeper cause (wrong
   hardcoded name vs. deleted queue vs. config-fed value) as unverifiable
   with the available evidence, without executing any fix.
-tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, orchestrator, e2e, mode:diagnose]
 
 # Inherits from experiments/default.yaml: model, permission_mode, plugins
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides
