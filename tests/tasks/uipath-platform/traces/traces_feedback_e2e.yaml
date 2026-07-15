@@ -20,7 +20,7 @@ run_limits:
 initial_prompt: |
   Run a feedback round-trip on a real trace:
   - Start one job for process `$TRACES_SMOKE_PROCESS_KEY`, wait for it to finish, and save the result to job.json
-  - Fetch the trace spans for that job with `uip traces spans get --job-key ...` and save to spans.json
+  - Fetch the trace spans for that job and save to spans.json
   - Create positive feedback on the trace and save the response to feedback_create.json
   - Fetch the feedback record back by ID and save to feedback_get.json
 
