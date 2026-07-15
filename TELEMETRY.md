@@ -97,9 +97,8 @@ plugin; everything else exits silently. A call qualifies when:
    [Region scoping](#region-scoping)).
 3. It pipes one flat `key:value` JSON object to `uip track` on stdin, then
    exits 0.
-4. `uip track` ([UiPath/cli#2600](https://github.com/UiPath/cli/pull/2600),
-   extended for lifecycle events in
-   [UiPath/cli#2815](https://github.com/UiPath/cli/pull/2815)) reads that
+4. `uip track` (cli#2600, extended for lifecycle events in cli#2815)
+   reads that
    object, maps the `eventName` token to the CLI-owned `uip.skills.<event>`
    name (an unrecognized token drops the event; an absent one means
    `tool-use`), stamps a `source: "skills-plugin"` dimension, attaches the
@@ -120,11 +119,11 @@ Each event is an App Insights event named `uip.skills.<event>` (see
 
 | Field | Example | Notes |
 |-------|---------|-------|
-| `schemaVersion` | `2` | Constant in the hook. JSON **number**. Bumped on any change to the key set, so App Insights can segment events emitted with older/churned schemas. `2` added `eventName` / `session_source` / `reason` / `agent_model`, renamed `sessionId` → `session_id`, and dropped `environment` / `baseUrl` (CLI-stamped since [UiPath/cli#2806](https://github.com/UiPath/cli/pull/2806) — see [Added by the CLI](#added-by-the-cli)) |
+| `schemaVersion` | `2` | Constant in the hook. JSON **number**. Bumped on any change to the key set, so App Insights can segment events emitted with older/churned schemas. `2` added `eventName` / `session_source` / `reason` / `agent_model`, renamed `sessionId` → `session_id`, and dropped `environment` / `baseUrl` (CLI-stamped since cli#2806 — see [Added by the CLI](#added-by-the-cli)) |
 | `eventName` | `session-start` | Which lifecycle event this is (see [Events](#events)). Consumed by `uip track` to pick the `uip.skills.<event>` name; **not** emitted as an event property |
 | `toolName` | `Skill`, `Bash` | Claude Code tool. From the top-level `tool_name`. `tool-use` only |
 | `toolUseId` | `toolu_01ABC` | Unique per call — correlation key + ordering tiebreaker |
-| `session_id` | `b3f1...` | Claude Code `session_id` — the coding-agent session; session correlation key. Canonical snake_case, matching the CLI command stream ([UiPath/cli#2800](https://github.com/UiPath/cli/pull/2800)); `uip track` still accepts the v1 `sessionId` spelling and maps it |
+| `session_id` | `b3f1...` | Claude Code `session_id` — the coding-agent session; session correlation key. Canonical snake_case, matching the CLI command stream (cli#2800); `uip track` still accepts the v1 `sessionId` spelling and maps it |
 | `subagentModel` | `opus` | From `tool_response.resolvedModel`, normalized to a family — `opus` / `sonnet` / `haiku` / `fable` (`other` if unrecognized). The context-window marker is dropped (`claude-opus-4-8[1m]` → `opus`). Set on an Agent-**spawn** event; empty otherwise |
 | `subagentType` | `general-purpose` | From `tool_input.subagent_type` — requested subagent type. Set on an Agent-**spawn** event; empty otherwise |
 | `agentType` | `Explore` | From the top-level `agent_type` — type of the subagent the call runs **inside**. Empty on a main-loop call |
@@ -248,7 +247,7 @@ and a `source` value sent by the hook would be overridden:
 |-------|-------|
 | `source` | Always `skills-plugin` |
 | `CloudUserId` / `CloudTenantId` / `CloudOrganizationId` | Authenticated UiPath cloud identity |
-| `environment` / `base_url` / `region` | Normalized from the CLI's **own** auth context at startup ([UiPath/cli#2806](https://github.com/UiPath/cli/pull/2806)) — always fresh, `base_url` reduced to its origin. Replaces the hook's former `environment` / `baseUrl` (schema v1), which came from a 1h-cached `uip login status` and could go stale |
+| `environment` / `base_url` / `region` | Normalized from the CLI's **own** auth context at startup (cli#2806) — always fresh, `base_url` reduced to its origin. Replaces the hook's former `environment` / `baseUrl` (schema v1), which came from a 1h-cached `uip login status` and could go stale |
 | `application_Version` | The `uip` CLI's own version (replaces the hook's former `cliVersion`) |
 | OS / client context | Recorded by the tracker by default (replaces the hook's former `operatingSystem`) |
 
@@ -300,8 +299,7 @@ aggregations over events sharing `session_id`:
 The synchronous SessionStart step (`hooks/set-session-env.sh` / `.ps1`) writes
 `export UIPATH_SESSION_ID='<session_id>'` to Claude Code's `CLAUDE_ENV_FILE`,
 so every `uip` command the agent runs inherits it and the CLI stamps the same
-`session_id` on **native command telemetry**
-([UiPath/cli#2800](https://github.com/UiPath/cli/pull/2800)). Skills events and
+`session_id` on **native command telemetry** (cli#2800). Skills events and
 command events then join on `session_id` — e.g. "commands per turn" or
 "sessions whose skill invocation produced no successful build/operate command".
 Safety: a host-provided `UIPATH_SESSION_ID` always wins (the step is a no-op

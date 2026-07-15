@@ -56,7 +56,7 @@ Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / cod
 15. **Response activity shape — STRICT for StudioWeb roundtrip:**
     - `markJobAsFailed` is a sibling of `response`, not nested inside it.
     - Always include `"then": "end"` — without it, the workflow does not terminate properly. `then: "end"` is for Response only; `then: "exit"` is for control-flow branches/loops.
-    - **Object-valued responses MUST use the single-expression form**, NOT the JSON-object-with-`${}`-fields form. StudioWeb's designer corrupts the latter on save (issue **SW-28452** / [UiPath/cli#1537](https://github.com/UiPath/cli/issues/1537)).
+    - **Object-valued responses MUST use the single-expression form**, NOT the JSON-object-with-`${}`-fields form. StudioWeb's designer corrupts the latter on save (issue **SW-28452**).
       - ✗ Wrong (CLI runs but StudioWeb corrupts): `"response": { "tier": "${$context.variables.tier}", "count": "${$context.variables.count}" }`
       - ✓ Correct: `"response": "${{ tier: $context.variables.tier, count: $context.variables.count }}"`
       Inside the outer `${{ ... }}` you are already in expression scope, so reference variables/outputs directly without an inner `${...}` wrapper. JS object literal keys can be unquoted identifiers (`tier:`, `count:`); literal string values use single quotes (`status: 'ok'`); numbers/booleans/references are bare. The designer leaves an already-wrapped single expression alone; the JSON-object form gets flattened to a stringified expression where inner `${...}` substitutions are inside JS double-quoted strings (which don't interpolate), turning each field into the literal text of its expression.

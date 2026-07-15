@@ -437,7 +437,7 @@ Returns a result and ends the workflow execution path.
 
 **Required fields:** `response` (single expression string), `markJobAsFailed` (boolean, sibling of `response`), `then: "end"`, `export.as`, `metadata`
 
-**Critical (StudioWeb roundtrip):** `response` MUST be a **single expression string**. For object-valued returns, use the `${{ ... }}` (double-brace) object-literal expression form, NOT a JSON object with `${...}` fields. The JSON-object form is corrupted by StudioWeb's designer on save (issue **SW-28452** / [UiPath/cli#1537](https://github.com/UiPath/cli/issues/1537)) — each field becomes the literal text of its expression instead of the evaluated value. See SKILL.md critical rule 15 and the [troubleshooting entry](troubleshooting.md#object-valued-response-gets-corrupted-fields-evaluate-to-literal-expression-text-sw-28452--cli1537).
+**Critical (StudioWeb roundtrip):** `response` MUST be a **single expression string**. For object-valued returns, use the `${{ ... }}` (double-brace) object-literal expression form, NOT a JSON object with `${...}` fields. The JSON-object form is corrupted by StudioWeb's designer on save (issue **SW-28452**) — each field becomes the literal text of its expression instead of the evaluated value. See SKILL.md critical rule 15 and the [troubleshooting entry](troubleshooting.md#object-valued-response-gets-corrupted-fields-evaluate-to-literal-expression-text-sw-28452).
 
 **Export pattern:**
 ```
