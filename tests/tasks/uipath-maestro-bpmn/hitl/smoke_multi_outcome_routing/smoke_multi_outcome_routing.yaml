@@ -22,6 +22,9 @@ initial_prompt: |
      step and end.
 
   Requirements:
+  - This is a UiPath Maestro BPMN project authored with the uipath-maestro-bpmn
+    skill: `.bpmn` XML, main file `LeaveRequestBpmn/LeaveRequestBpmn.bpmn`. Do
+    NOT build a `.flow`.
   - Model the review as a `bpmn:userTask` using the documented `Actions.HITL`
     `uipath:activity` shell from the registry template. Do not hand-author the
     uipath:* payload from prose.

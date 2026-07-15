@@ -22,6 +22,9 @@ initial_prompt: |
      records the approval, the other ends the process.
 
   Requirements:
+  - This is a UiPath Maestro BPMN project authored with the uipath-maestro-bpmn
+    skill: `.bpmn` XML, main file `ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn`.
+    Do NOT build a `.flow`.
   - Model the review as a `bpmn:userTask` using the documented `Actions.HITL`
     `uipath:activity` shell from the registry template.
   - A downstream gateway condition MUST reference the HITL output variable using

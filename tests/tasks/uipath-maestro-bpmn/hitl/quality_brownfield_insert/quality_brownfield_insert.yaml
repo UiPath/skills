@@ -26,6 +26,8 @@ initial_prompt: |
     Start -> Validate order -> Compute total -> HITL approval -> End
 
   Requirements:
+  - Edit the existing `.bpmn` XML in place with the uipath-maestro-bpmn skill.
+    Do NOT convert it to a `.flow` or regenerate it from scratch.
   - Model the approval as a `bpmn:userTask` using the documented `Actions.HITL`
     `uipath:activity` shell from the registry template. Do not hand-author the
     uipath:* payload from prose.

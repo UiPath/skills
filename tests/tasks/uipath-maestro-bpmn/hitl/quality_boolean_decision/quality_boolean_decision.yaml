@@ -24,6 +24,9 @@ initial_prompt: |
      vendor, false rejects it — each to its own step and end.
 
   Requirements:
+  - This is a UiPath Maestro BPMN project authored with the uipath-maestro-bpmn
+    skill: `.bpmn` XML, main file `VendorApprovalBpmn/VendorApprovalBpmn.bpmn`.
+    Do NOT build a `.flow`.
   - Model the review as a `bpmn:userTask` using the documented `Actions.HITL`
     `uipath:activity` shell from the registry template.
   - The approval decision MUST be a boolean output field bound to a

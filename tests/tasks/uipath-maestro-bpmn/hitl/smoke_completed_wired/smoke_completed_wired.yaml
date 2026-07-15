@@ -15,6 +15,9 @@ initial_prompt: |
   manual start -> HITL approval -> a step that records the approval -> end.
 
   Requirements:
+  - This is a UiPath Maestro BPMN project authored with the uipath-maestro-bpmn
+    skill: `.bpmn` XML, main file
+    `PurchaseApprovalBpmn/PurchaseApprovalBpmn.bpmn`. Do NOT build a `.flow`.
   - Model the approval as a `bpmn:userTask` using the documented `Actions.HITL`
     `uipath:activity` shell from the registry template. Show the reviewer the
     purchase amount and vendor; outcomes are Approve and Reject.
