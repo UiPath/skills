@@ -1,0 +1,51 @@
+task_id: skill-bpmn-hitl-completed-wired
+description: >
+  Smoke test (ported from flow hitl/smoke_02): agent places an Actions.HITL
+  user task and wires its completion outcome to a downstream step that reaches
+  an end event — the BPMN equivalent of wiring the flow HITL "completed" port
+  to the next node.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl", "feature:approval-gate"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 80
+
+initial_prompt: |
+  Create a local BPMN project named "PurchaseApprovalBpmn" with this process:
+  manual start -> HITL approval -> a step that records the approval -> end.
+
+  Requirements:
+  - Model the approval as a `bpmn:userTask` using the documented `Actions.HITL`
+    `uipath:activity` shell from the registry template. Show the reviewer the
+    purchase amount and vendor; outcomes are Approve and Reject.
+  - The HITL completion must be wired to a downstream step (a script or service
+    task that records the approval), which then flows to the end event. Do not
+    wire the HITL task directly to the end event.
+  - Use synthetic placeholder resource names only. No tenant URLs, folder keys,
+    connection IDs, or real user names.
+  - Include BPMN DI for every visible node and sequence flow.
+  - Do not upload, publish, deploy, debug, or run the process. Do not pause for
+    approval, confirmation, or feedback.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "PurchaseApprovalBpmn/PurchaseApprovalBpmn.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL modeled with the documented Actions.HITL activity type"
+    path: "PurchaseApprovalBpmn/PurchaseApprovalBpmn.bpmn"
+    includes:
+      - "Actions.HITL"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "HITL completion is wired to a downstream step that reaches an end event"
+    command: "python3 $TASK_DIR/check_smoke_completed_wired.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

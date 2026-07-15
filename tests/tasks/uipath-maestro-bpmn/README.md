@@ -19,6 +19,11 @@ authoring-only skill for producing valid, importable Maestro `.bpmn` XML.
   public-safe Maestro BPMN XML contract variants.
 - `connector/` covers Integration Service boundary behavior and registry
   discovery for connector wrapper types without cloud-side mutations.
+- `hitl/` covers human-in-the-loop (`Actions.HITL` user task) authoring —
+  completion wiring, multi-outcome gateway routing, task data-mapping design,
+  downstream consumption of the reviewer's decision, boolean-typed decisions,
+  and surgical insertion of an approval gate into an existing `.bpmn`. Ported
+  from the flow suite's `hitl/` intent.
 - `e2e/` covers a multi-node authoring scenario end to end.
 - `operate-diagnose/` covers diagnostic inspection and operate-action guidance
   using mocked CLI responses, matching the operate and diagnose capabilities the

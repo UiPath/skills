@@ -1,0 +1,56 @@
+task_id: skill-bpmn-hitl-result-downstream
+description: >
+  Quality test (ported from flow hitl/quality_02): agent makes the human's
+  decision actually drive downstream flow — an exclusive gateway condition
+  references the HITL activity's output variable via a vars.<id> expression, and
+  that variable is declared.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl", "node:decision", "feature:approval-gate"]
+
+run_limits:
+  expected_turns: 24
+  max_turns: 100
+
+initial_prompt: |
+  Create a local BPMN project named "ExpenseApprovalBpmn" with this process:
+
+  1. Manual start.
+  2. HITL user task — expense review. The reviewer sees the expense amount,
+     requester name, and category (read-only), and fills in an approval decision
+     and optional comments. Capture the decision as an output of the HITL
+     activity bound to a declared process variable.
+  3. An exclusive gateway that branches on the reviewer's decision: one branch
+     records the approval, the other ends the process.
+
+  Requirements:
+  - Model the review as a `bpmn:userTask` using the documented `Actions.HITL`
+    `uipath:activity` shell from the registry template.
+  - A downstream gateway condition MUST reference the HITL output variable using
+    a `vars.<id>` expression (the exact variable the HITL activity binds).
+  - Declare process variables with the registry BPMN.Variables template.
+  - Use synthetic placeholder resource names only.
+  - Include BPMN DI for every visible node and sequence flow.
+  - Do not upload, publish, deploy, debug, or run the process. Do not pause for
+    approval, confirmation, or feedback.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL modeled with the documented Actions.HITL activity type"
+    path: "ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn"
+    includes:
+      - "Actions.HITL"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A downstream gateway condition references the HITL output variable"
+    command: "python3 $TASK_DIR/check_quality_result_downstream.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
