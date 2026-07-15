@@ -193,8 +193,8 @@ def expected_caseplan() -> dict:
         "nodes": [
             {
                 "id": "manual-trigger",
-                "type": "case-management:Trigger",
-                "data": {"uipath": {"serviceType": "Manual"}},
+                "type": "uipath.case.trigger",
+                "data": {"typeVersion": "1.0.0", "inputs": {"serviceType": "Manual"}},
             },
             *stages,
         ],

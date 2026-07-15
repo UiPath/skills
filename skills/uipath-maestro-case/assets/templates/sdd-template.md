@@ -191,7 +191,7 @@ The generated SDD must start with:
 
 > Number triggers sequentially starting at T02 (T01 is reserved for the case file). The T-number is referenced by Case Variables rows whose value comes from this trigger's payload.
 >
-> `Manual` is author shorthand — a manual trigger has **no** `serviceType` in the generated JSON (the CLI serviceType enum is `None` / `Intsvc.EventTrigger` / `Intsvc.TimerTrigger`; never write `serviceType: "Manual"`).
+> `Manual` is author shorthand — a manual trigger has **no** `serviceType` in the generated JSON (the on-disk serviceType enum is `None` / `Intsvc.EventTrigger` / `timer`; the SDD's `Intsvc.TimerTrigger` maps to on-disk `timer`; never write `serviceType: "Manual"`).
 
 **Configuration column — write user-specified intent only:**
 

@@ -7,7 +7,7 @@ Structural reference for the case definition JSON. Shared across all node types.
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "23.0.0",
+  "version": "27.0.0",
   "name": "<case name>",
   "description": "<optional>",
   "metadata": {
@@ -60,6 +60,7 @@ Node-level layout fields move to a top-level `layout` block. The frontend transf
 | Stage/case/task condition | `Condition_` | 6 | `Condition_xC1XyX` |
 | Rule inside those conditions | `Rule_` | 6 | `Rule_jdBFrJ` |
 | Sticky note | `StickyNote_` | 6 | `StickyNote_aBcDeF` |
+| SLA rule entry | `sla` | 8 | `sla7bK2mNp9` |
 | SLA escalation | `esc_` | 6 | `esc_gH2jKl` |
 | Binding | `b` | 8 | `b3KmNp7Q9` |
 
@@ -72,7 +73,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "23.0.0",
+  "version": "27.0.0",
   "name": "Loan Approval",
   "description": "case description",
   "metadata": {
@@ -84,7 +85,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
     "caseDirectlyPassTaskOutputs": true,
     "intsvcActivityConfig": "v2",
     "slaRules": [
-      { "expression": "=js:true", "count": 5, "unit": "d" }
+      { "id": "slaQ4wZ1xC8", "displayName": "Default", "expression": "=js:true", "count": 5, "unit": "d" }
     ],
     "caseExitRules": []
   }
@@ -94,7 +95,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Unique ID, `case-` + 10 random chars (auto-generated) |
-| `version` | string | Schema version — `"23.0.0"`. Emitted by the `case` plugin at T01. |
+| `version` | string | Schema version — `"27.0.0"`. Emitted by the `case` plugin at T01. |
 | `name` | string | Human-readable name |
 | `description` | string? | Case description |
 | `metadata.caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
@@ -131,26 +132,36 @@ Rule structure uses DNF — see §4.
 
 ## 2. nodes (three types, discriminated on `type`)
 
-### a) Trigger Node — `"case-management:Trigger"`
+### a) Trigger Node — `"uipath.case.trigger"`
 
 Entry point. Written by the triggers plugin at T02. Exactly one per case (single-trigger cases); additional triggers use the `trigger_` ID prefix.
 
 ```json
 {
   "id": "trigger_xY2mNp",
-  "type": "case-management:Trigger",
+  "type": "uipath.case.trigger",
   "data": {
-    "label": "Start",
-    "uipath": { "serviceType": "None" }
+    "typeVersion": "1.0.0",
+    "display": { "label": "Start" },
+    "inputs": { "serviceType": "None" }
   }
 }
 ```
 
 No `position`, `style`, `measured`, `width`, `zIndex`, or `parentElement` on Trigger nodes (Rule 18 layout-strip).
 
-`serviceType` values: `"None"`, `"Intsvc.EventTrigger"`, `"Intsvc.TimerTrigger"`. The specific binding/config shape for each trigger kind lives in the corresponding trigger plugin's `impl-json.md`.
+**`data` shape (v24 manifest layout).** The label lives under `data.display.label`; all runtime config (`serviceType`, `timerType`, `timeCycle`, `context[]`, `inputs[]`, `outputs[]`, `bindings[]`) lives under `data.inputs`. `data.typeVersion` is the literal `"1.0.0"`.
 
-> **Placeholder form (`Intsvc.EventTrigger` only):** when an event trigger's IS connection is unresolved, `data.uipath` carries `serviceType` only — no `context[]`, `metadata`, `inputs[]`, `outputs[]`, or `bindings[]`. See [`triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md).
+| Field | Type | Description |
+|-------|------|-------------|
+| `typeVersion` | string | Manifest type version — literal `"1.0.0"`. |
+| `display` | `{ label?, icon? }` ? | Presentation. `display.label` is the trigger's display name (was `data.label` pre-v24). |
+| `inputs` | object? | Runtime config bag (passthrough). Holds `serviceType` plus per-kind fields. Absent on a manual trigger. |
+| `description` | string? | Free-text description — stays at `data.description` (only `label` moved to `display`). |
+
+`data.inputs.serviceType` values: `"None"`, `"Intsvc.EventTrigger"`, `"timer"`. The specific binding/config shape for each trigger kind lives in the corresponding trigger plugin's `impl-json.md`.
+
+> **Placeholder form (`Intsvc.EventTrigger` only):** when an event trigger's IS connection is unresolved, `data.inputs` carries `serviceType` only — no `context[]`, `metadata`, `inputs[]`, `outputs[]`, or `bindings[]`. See [`triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md).
 
 ### b) Stage Node — `"case-management:Stage"`
 
@@ -169,7 +180,7 @@ Workflow stage. Contains tasks. Covers BOTH primary and secondary stages — dis
     "isPendingParent": false,
     "tasks": [ [ { "...": "task" } ] ],
     "slaRules": [
-      { "expression": "=js:true", "count": 2, "unit": "d" }
+      { "id": "sla3kL9mNpQ", "displayName": "Default", "expression": "=js:true", "count": 2, "unit": "d" }
     ]
   }
 }
@@ -303,11 +314,13 @@ Connects Trigger → Stage. No rules.
   "type": "case-management:TriggerEdge",
   "source": "trigger_xY2mNp",
   "target": "Stage_aB3kL9",
-  "sourceHandle": "trigger_xY2mNp____source____right",
+  "sourceHandle": "output",
   "targetHandle": "Stage_aB3kL9____target____left",
   "data": { "label": "Start" }
 }
 ```
+
+Since v24, a trigger-sourced edge uses `sourceHandle: "output"` (the `uipath.case.trigger` manifest handle), not the `____source____` format. Stage→Stage edges keep the `____source____` format below.
 
 ### b) Edge — `"case-management:Edge"`
 
@@ -398,12 +411,15 @@ All SLA data on a target (root or stage) lives in a single `slaRules[]` array. T
 ```json
 "slaRules": [
   {
+    "id": "sla7bK2mNp9",
+    "displayName": "Urgent priority",
     "expression": "=js:vars.priority === 'Urgent'",
     "count": 30,
     "unit": "min",
     "escalationRule": [
       {
         "id": "esc_aB3kL9",
+        "displayName": "Escalation rule 1 - Urgent priority",
         "triggerInfo": { "type": "sla-breached" },
         "action": {
           "type": "notification",
@@ -415,6 +431,8 @@ All SLA data on a target (root or stage) lives in a single `slaRules[]` array. T
     ]
   },
   {
+    "id": "slaQ4wZ1xC8",
+    "displayName": "Default",
     "expression": "=js:true",
     "count": 5,
     "unit": "d",
@@ -438,11 +456,14 @@ All SLA data on a target (root or stage) lives in a single `slaRules[]` array. T
 Time units: `"min"` (minutes), `"h"` (hours), `"d"` (days), `"w"` (weeks), `"m"` (months).
 Escalation `triggerInfo.type`: `"at-risk"` or `"sla-breached"`. `atRiskPercentage` is required when `type === "at-risk"` and omitted otherwise.
 Escalation `action.recipients[].scope`: `"User"` or `"UserGroup"`. `target` is the user / group UUID; `value` is the display string (email or group name).
+Escalation `id` and `displayName` are both **required** (as of schema v27). Default `displayName` format: `Escalation rule <N> - <sla displayName>`.
 
 ### SlaRuleEntry
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Unique SLA rule ID, `sla` + 8 random chars (e.g. `sla7bK2mNp9`). **Required** (added at schema v26). |
+| `displayName` | string? | Human-readable label for the SLA rule (e.g. `"Default"` for the trailing `"=js:true"` entry). |
 | `expression` | string | Rule predicate. `"=js:true"` marks the default / fallback rule. |
 | `count` | number? | SLA duration count (optional — a bare escalation-only rule may omit this). |
 | `unit` | `"min" \| "h" \| "d" \| "w" \| "m"` ? | SLA duration unit (optional — paired with `count`). |
@@ -507,7 +528,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "23.0.0",
+  "version": "27.0.0",
   "name": "Simple Case",
   "metadata": {
     "caseIdentifier": "Simple Case",
@@ -523,8 +544,8 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
   "nodes": [
     {
       "id": "trigger_xY2mNp",
-      "type": "case-management:Trigger",
-      "data": { "label": "Start" }
+      "type": "uipath.case.trigger",
+      "data": { "typeVersion": "1.0.0", "display": { "label": "Start" } }
     },
     {
       "id": "Stage_aB3kL9",
