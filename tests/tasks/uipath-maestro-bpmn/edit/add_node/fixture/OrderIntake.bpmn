@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_OrderIntake" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_OrderIntake" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:caseManagement version="v1"><![CDATA[{"owner":"order-ops","opaque":"preserve-only-do-not-touch"}]]></uipath:caseManagement>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_OrderId" name="OrderId" type="string" />
+        <uipath:inputOutput id="Var_Qty" name="Qty" type="number" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_1" name="Start"><bpmn:outgoing>Flow_S1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:scriptTask id="Task_Validate" name="Validate Order" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
+          <uipath:output name="qty" type="number" var="Var_Qty" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_S1</bpmn:incoming><bpmn:outgoing>Flow_VN</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: orderId ? 1 : 0 };]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Task_Notify" name="Notify Customer" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args"><![CDATA[{"qty":"=vars.Var_Qty"}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_VN</bpmn:incoming><bpmn:outgoing>Flow_NE</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "notified" };]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_1" name="Done"><bpmn:incoming>Flow_NE</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_S1" sourceRef="Start_1" targetRef="Task_Validate" />
+    <bpmn:sequenceFlow id="Flow_VN" sourceRef="Task_Validate" targetRef="Task_Notify" />
+    <bpmn:sequenceFlow id="Flow_NE" sourceRef="Task_Notify" targetRef="End_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_OrderIntake">
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Validate" bpmnElement="Task_Validate"><dc:Bounds x="250" y="78" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Notify" bpmnElement="Task_Notify"><dc:Bounds x="410" y="78" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1"><dc:Bounds x="570" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_S1" bpmnElement="Flow_S1"><di:waypoint x="196" y="118" /><di:waypoint x="250" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_VN" bpmnElement="Flow_VN"><di:waypoint x="350" y="118" /><di:waypoint x="410" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_NE" bpmnElement="Flow_NE"><di:waypoint x="510" y="118" /><di:waypoint x="570" y="118" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
