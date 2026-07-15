@@ -10,7 +10,7 @@ Produce a `sdd.md` shaped by [`assets/templates/sdd-template.md`](../assets/temp
 
 Phase 0 also writes:
 
-- `tasks/registry-resolved.json` — one entry per task (search query, all matches, selected, rationale, resolved I/O contract).
+- `tasks/registry-resolved.json` — one entry per task using Rule 9's required association and lookup keys, plus the resolved I/O contract when applicable.
 - `sdd.draft.md` — intermediate; deleted atomically at approval.
 - `sdd-viewer.html` — optional, written only if the user accepts the preview offer (§HTML preview).
 
@@ -250,7 +250,9 @@ Breach any quantitative cap → §Soft redirect.
 
 ### Resolve
 
-For each task in `sdd.draft.md`, find the matching registry resource. Search the cache file under `~/.uip/case-resources/` by name keywords. Filename varies by component type — common cases:
+Before registry lookup, establish the concrete intended resource name for every `process`, `agent`, `rpa`, `api-workflow`, `action`, and `case-management` task. Write it to the task type's portable-name field: `Resolved Resource` for process/agent/rpa/api-workflow, the `Action App: <deploymentTitle>` value in `HITL Implementation` for action, and `Child Case` for case-management. Preserve a name the user supplied; if it is absent, ask rather than silently substituting the task's display name. These portable-name fields are NEVER `<UNRESOLVED>`.
+
+Find each matching registry resource using that intended name. Search the cache file under `~/.uip/case-resources/` by name keywords. Filename varies by component type — common cases:
 
 - `process-index.json`, `agent-index.json`, `api-index.json`, `processOrchestration-index.json`, `caseManagement-index.json` — `<type>-index.json` shape
 - `action-apps-index.json` — kebab + plural for HITL action apps
@@ -271,7 +273,7 @@ Run `uip maestro case registry pull` first if cache absent. See [registry-discov
 | `api-workflow` | `apiWorkflowId` (`api-index.json`) | the API workflow is **deployed** — or built inline at the Phase 1 Rule 17 Create gate (in-solution sibling) |
 | `case-management` | child case (`caseManagement-index.json`) | the child case is **published** |
 
-A *type* match with **no live instance** still ships `<UNRESOLVED>` + a `high` review item — never fabricate IDs (SKILL.md Rule 8). (A connector type can exist in the catalog while the tenant has zero connections — that is still `<UNRESOLVED>`.)
+A *type* match with **no live instance** still ships an unresolved identity + a `high` review item — never fabricate IDs (SKILL.md Rule 8). Preserve the type-specific portable name: `Resolved Resource` for process/agent/rpa/api-workflow, the Action App title for action, and `Child Case` for case-management. Write `<UNRESOLVED>` only to that type's resolution fields: `Resource Identity` + `Folder Path`, or `Action App ID` + `Deployment Folder`. (A connector type can exist in the catalog while the tenant has zero connections — its identity is still unresolved.)
 
 **Narrate the search before presenting matches.** Don't drop the AskUserQuestion cold:
 
@@ -283,7 +285,7 @@ Before per-task prompts, run all task searches in parallel, then bucket results:
 
 | Bucket | Definition |
 |---|---|
-| **A — single high-confidence** | Exactly 1 match **across all folders**, AND the match's name shares ≥ 1 token (case-insensitive, ≥ 3 chars) with the task's `Task Name` |
+| **A — single high-confidence** | Exactly 1 match **across all folders**, AND the match's name shares ≥ 1 token (case-insensitive, ≥ 3 chars) with the task's intended resource name |
 | **B — ambiguous** | Multiple matches (**including the same resource name present in ≥2 folders** — a cross-folder name never auto-confirms), OR single match with no token overlap |
 | **C — empty** | 0 matches across cache files |
 
@@ -304,14 +306,14 @@ Per-task AskUserQuestion (4 options max). **When candidate matches differ by fol
 |---|---|
 | `<top match — name · folder · version · type>` | Record selection (incl. chosen folder). |
 | `<second match — name · folder · version · type>` (if available) | Record selection (incl. chosen folder). |
-| `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. **For an `agent` or `api-workflow`,** Phase 1's Rule 17 gate additionally offers to build it inline as an in-solution sibling ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a no-match resource of these kinds need not stay manual. |
+| `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Retain the task type's concrete portable name and leave only its identity/folder fields unresolved. Phase 1 emits a placeholder task per Rule 8. **For an `agent` or `api-workflow`,** Phase 1's Rule 17 gate additionally offers to build it inline as an in-solution sibling ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a no-match resource of these kinds need not stay manual. Action Apps and child cases remain placeholder-only. |
 | `Something else` | Free-text re-search keyword, retry. |
 
 **Empty registry match** across bucket C → AskUserQuestion `Force pull and re-resolve` / `Skip and use placeholders` — plus, when ≥1 still-empty is an `agent` or `api-workflow` AND the CLI supports `registry --local`, `Create the missing resource(s) inline` (build as in-solution siblings; see [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — per Rule 17, applied per batch, not per task. When the user picks `Skip and use placeholders`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
 
 #### Schema discovery — pull each resolved task's I/O contract
 
-Identity is not the whole contract. The SDD's task Inputs / Outputs `Field` cells MUST match the resource's real argument / field names verbatim (see [sdd-generation-rules.md § Task content rules](sdd-generation-rules.md#task-content-rules)), and a connector's *required* inputs stay invisible until its schema is read. For every task resolved to a **live instance** (skip `<UNRESOLVED>` — no identity, no schema), pull its contract and use it to fill the `Field` cells from the real names and to back-solve required inputs against the *actual* list, not the user's recollection.
+Identity is not the whole contract. The SDD's task Inputs / Outputs `Field` cells MUST match the resource's real argument / field names verbatim (see [sdd-generation-rules.md § Task content rules](sdd-generation-rules.md#task-content-rules)), and a connector's *required* inputs stay invisible until its schema is read. For every task resolved to a **live instance** (skip tasks whose identity is `<UNRESOLVED>` — no identity, no schema), pull its contract and use it to fill the `Field` cells from the real names and to back-solve required inputs against the *actual* list, not the user's recollection.
 
 Run in parallel after the picks land — `--output json`, connectors via `spec`, runnables via `tasks describe`:
 
@@ -334,9 +336,9 @@ Map each answer to a variable, a literal, or an upstream task's output (§Ask �
 
 **Cost.** One CLI call per resolved task, run in parallel and resolved-only. The trade is a longer Resolve for far fewer Phase 3 / 4 binding failures — wrong `Field` names and unmapped required inputs that otherwise surface only after Rule 2 locks the file.
 
-After all picks and schema discovery, write `tasks/registry-resolved.json` (Rule 9 shape — including each resolved task's fetched I/O contract). The persisted contract MUST record, per resolved task, each declared **input name + `required` flag** and the full **declared output-field list** — Phase 3 io-binding Check 5 re-verifies required-input coverage and output-field fidelity against this without re-fetching ([io-binding/impl-json.md § Check 5](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)). Update `sdd.draft.md` with concrete resource names and the real Inputs / Outputs `Field` names. Any unresolved task carries a paired `review_items[]` entry in the same JSON.
+After all picks and schema discovery, write `tasks/registry-resolved.json` (Rule 9 shape — including each resolved task's fetched I/O contract). The persisted contract MUST record, per resolved task, each declared **input name + `required` flag** and the full **declared output-field list** — Phase 3 io-binding Check 5 re-verifies required-input coverage and output-field fidelity against this without re-fetching ([io-binding/impl-json.md § Check 5](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)). Update `sdd.draft.md`: a resolved task uses the selected entry's canonical type-specific name, exact folder, and identity; an unresolved task retains its requested portable name and uses `<UNRESOLVED>` only for its identity/folder fields. Also update the matching Section 4 roll-up row when that resource family has one. Any unresolved task carries a paired `review_items[]` entry in the same JSON when the file is written.
 
-> **Phase 1 handoff.** Phase 1 reads `tasks/registry-resolved.json` and skips re-search for resolved entries. It still extends the file with any resolutions Phase 0 deferred. No artifact replay; sdd.md is the contract.
+> **Phase 1 handoff.** `sdd.md` is the authoritative handoff; `tasks/registry-resolved.json` is an optional cache/audit artifact. Phase 1 reuses an entry only after its type, searched cache, canonical name, exact folder, and identity match the current SDD per [planning.md § Phase 0 carryover](planning.md#step-2--locate-and-parse-the-design-document). A missing, unresolved, or mismatched field makes the entry stale and triggers discovery from the SDD's type-specific portable name (`Resolved Resource`, Action App title, or `Child Case`).
 
 ### Approve
 
@@ -520,7 +522,7 @@ If the user asks how something works, explain in their language (cases, stages, 
 | User says "skip" / "I don't know" on optional field | Write `—` in the draft. |
 | User says "skip" on required field | Write `<UNRESOLVED: <agent's question>>` in the draft. Phase 1 + post-build loop will revisit. |
 | 3 stuck replies in single Ask (per-field counter, reset on `answered` — see §Ask Stuck detector for classification) | Trigger §Soft redirect. |
-| Registry pull fails (CLI error, no auth) | Skip Resolve. All tasks marked `<UNRESOLVED>`. Phase 1 emits placeholders. Inform user. |
+| Registry pull fails (CLI error, no auth) | Skip live resolution. For process/agent/rpa/api-workflow, keep a concrete intended `Resolved Resource`; for action, keep the Action App title; for case-management, keep `Child Case`. Mark only the type-specific identity/folder fields `<UNRESOLVED>` and pair the unresolved identity with a `high` review item. Phase 1 retries discovery and emits placeholders only for identities that remain unresolved. Inform user. |
 | User edits `sdd.md` to add stages exceeding threshold | Edit validation fires §Soft redirect. |
 | `sdd.md` already exists at path when interview begins | Should not happen — trigger detection exits Phase 0 first. If race, abort with error. Never overwrite. |
 | HTML preview generation fails (template missing, write error) | Inform user, fall back to text summary only. Approve gate is unaffected. |
@@ -529,8 +531,8 @@ If the user asks how something works, explain in their language (cases, stages, 
 
 After Approve:
 
-- `sdd.md` — always present. May include warning header, `<UNRESOLVED>` markers, or `—` placeholders.
-- `tasks/registry-resolved.json` — **present only if Resolve ran successfully.** Absent when Resolve was skipped (registry pull failed, no auth, or the cache was unreachable — see Failure modes). Phase 1 ([planning.md § Step 3](planning.md)) handles both cases: if the file exists, it reads carry-over picks and skips re-search for resolved entries; if absent, it runs full discovery from scratch. Either way, format matches Phase 1's artifact shape (Rule 9) when written.
+- `sdd.md` — always present. May include warning header, `<UNRESOLVED>` markers, or `—` placeholders, but every process/agent/rpa/api-workflow task has a concrete `Resolved Resource`, every action has a concrete Action App title, and every case-management task has a concrete `Child Case` name.
+- `tasks/registry-resolved.json` — **present only if Resolve ran successfully.** Absent when Resolve was skipped (registry pull failed, no auth, or the cache was unreachable — see Failure modes). Phase 1 ([planning.md § Step 2](planning.md#step-2--locate-and-parse-the-design-document)) validates every carry-over entry against the current SDD before reuse; stale or mismatched entries are re-resolved from the type-specific portable name and replaced. If the file is absent, Phase 1 runs full discovery and writes a fresh file. Either way, format matches Rule 9 when written.
 - `sdd-viewer.html` — present only if user generated the preview. Phase 1 ignores it.
 - `sdd.draft.md` — deleted (atomic rename at Approve).
 

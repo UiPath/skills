@@ -10,8 +10,8 @@ Pick this plugin when the sdd.md describes a task as `AGENT` — an AI agent tha
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `display-name` | Agent Reference "Name" | Shown in the UI |
-| `name` | Agent Reference "Name" |  |
+| `display-name` | Task `Task Name` | Shown in the UI |
+| `name` | Task `Resolved Resource` | Concrete intended resource name and registry query |
 | `folder-path` | Resolved registry `folders[0].fullyQualifiedName` (NOT the sdd.md "Folder") | Binds to `data.folderPath`; Orchestrator starts the agent here at runtime. The sdd.md "Folder" only seeds the lookup and may be a parent/truncated path. See [§ Registry Resolution](#registry-resolution). For an agent **built inline** as an in-solution sibling, the runtime `folder-path` is **empty `""`** (co-located — the case starts the agent in its own deployed folder) while `resourceKey` stays `solution_folder.<name>`; do NOT put the `solution_folder` sentinel in `folder-path` (runtime `folder not exist`). See [§ Creating an Agent inline](#creating-an-agent-inline). |
 | `task-type-id` | Registry resolution (below) | Enables auto-enrichment via `tasks describe` |
 | `element-id` | (optional) | Required only when the agent has multiple element bindings |
@@ -126,6 +126,7 @@ Mirrors [connector-integration.md § Creating a Connection](../../../connector-i
 
 ```markdown
 ## T<n>: Add agent task "<display-name>" to "<stage>"
+- name: "<resource-name>"
 - taskTypeId: <entityKey>
 - folder-path: "<folder>"
 - inputs:

@@ -7,13 +7,17 @@ description: >
   in one bounded turn. Grades mechanical validity of the produced sdd.md
   (sdd_check: variable lineage, per-gate rule legality, task types, entry/exit
   conditions, interrupting semantics) plus domain coherence.
+  Also verifies that unresolved runnable resources retain concrete portable names
+  in both their task blocks and the Section 4 integration rollup.
 tags:
   - uipath-maestro-case
   - integration
   - lifecycle:generate
   - mode:build
   - shape:multi-node
+  - resource
   - feature:phase-0
+  - feature:registry
   - feature:stages
   - feature:case-exit
   - feature:conditions
@@ -45,8 +49,10 @@ initial_prompt: |
   the final design document.
 
   Work from what's there; the design is settled, so don't redo it or re-interview
-  me. The connector IDs in the draft are placeholders on purpose — leave them as
-  they are. I just need the finalized design for now, nothing built yet.
+  me. The connector IDs and the two agent resource identities in the draft are
+  unresolved on purpose — leave them that way and preserve the agents' concrete
+  intended resource names. I just need the finalized design for now, nothing
+  built yet.
 
 success_criteria:
   - type: file_exists
@@ -58,6 +64,14 @@ success_criteria:
   - type: run_command
     description: "sdd.md is mechanically sound: variable mappings + lineage, per-gate rule legality, task types, entry/completion/exit conditions"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/sdd_check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Unresolved agent tasks preserve concrete names in Section 2 and Section 4 while folder and identity remain unresolved"
+    command: "python3 $TASK_DIR/check_resource_name_contract.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -141,7 +155,7 @@ simulation:
     the draft, use it as-is, and approve. Keep the agent in Phase 0 only.
   constraints:
     - "If it asks how you want to proceed with the existing draft, tell it to use the draft as-is and finalize it — you don't want to be re-interviewed or redo the design."
-    - "When the agent presents the finalized sdd.md for approval, approve it on the first pass ('looks good — approved'). If it warns about high-severity review items or unresolved/tenant-default connector IDs, approve anyway — the placeholders are intentional for this design spec."
+    - "When the agent presents the finalized sdd.md for approval, approve it on the first pass ('looks good — approved'). If it warns about high-severity review items, unresolved/tenant-default connector IDs, or unresolved agent identities, approve anyway — the unresolved identities are intentional for this design spec, but the concrete agent resource names must remain."
     - "Do not request design changes or add new requirements — the draft is settled. Do not ask the agent to re-run the interview."
     - "Decline or skip any optional HTML-preview offer."
     - "Keep the agent in Phase 0 only. If it offers to plan tasks.md, build a caseplan, or move to a later phase, tell it to stop at the approved sdd.md."

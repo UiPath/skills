@@ -183,6 +183,14 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
 |------|-----|
 | `selected-tasks-completed("Sync Application from Greenhouse")` | — |
 
+###### Process / Agent / RPA / API Workflow Task Detail
+
+**Resolved Resource:** CandidateResumeScreeningPhase0ProbeQ91
+**Folder Path:** <UNRESOLVED>
+**Resource Identity:** <UNRESOLVED>
+**Binding Sub-Type:** Agent
+**Dispatch / Operation:** —
+
 **Inputs:**
 
 | Field | Type | Binding |
@@ -785,6 +793,14 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
 | WHEN | IF |
 |------|-----|
 | `current-stage-entered` | — |
+
+###### Process / Agent / RPA / API Workflow Task Detail
+
+**Resolved Resource:** CandidateDebriefSummaryPhase0ProbeQ91
+**Folder Path:** <UNRESOLVED>
+**Resource Identity:** <UNRESOLVED>
+**Binding Sub-Type:** Agent
+**Dispatch / Operation:** —
 
 **Inputs:**
 
@@ -1585,3 +1601,10 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
 | Operation | Method | Input Fields | Output Fields |
 |-----------|--------|-------------|---------------|
 | Hire Employee | POST | firstName, email, jobTitle, department | employeeId |
+
+### Agents
+
+| Agent | Folder | Resource ID (+version) | Inputs → Outputs (or shared contract) | Used By Tasks |
+|-------|--------|------------------------|----------------------------------------|---------------|
+| CandidateResumeScreeningPhase0ProbeQ91 | <UNRESOLVED> | <UNRESOLVED> | candidateName, roleTitle, roleDepartment, roleLevel, applicationId → screeningResult, screeningNotes | Screen Resume |
+| CandidateDebriefSummaryPhase0ProbeQ91 | <UNRESOLVED> | <UNRESOLVED> | candidateName, roleTitle, resumeScreeningResult, technicalScreenScore, technicalScreenNotes, scorecard1Rating, scorecard2Rating, scorecard3Rating → debriefSummary | Prepare Debrief Summary |

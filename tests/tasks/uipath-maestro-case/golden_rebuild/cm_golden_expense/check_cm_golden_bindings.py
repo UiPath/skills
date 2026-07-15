@@ -60,12 +60,22 @@ def parse_fixture() -> dict:
 
     expected: dict = {"folder": None}
     resource_names = set(re.findall(r"\*\*Resolved Resource:\*\*\s*([^\n]+)", sdd))
-    if len(resource_names) != 5:
+    if len(resource_names) != 4:
         _fail(
-            "fixture parse error: expected 5 distinct Resolved Resource names; "
+            "fixture parse error: expected 4 distinct Resolved Resource names "
+            "(process/agent/rpa/api-workflow); "
             f"got {sorted(resource_names)!r}"
         )
     expected["resource_names"] = resource_names
+    # case-management tasks carry their portable name in **Child Case:**, not
+    # **Resolved Resource:** — parse it separately and bind-check it the same way.
+    child_case_names = set(re.findall(r"\*\*Child Case:\*\*\s*([^\n]+)", sdd))
+    if len(child_case_names) != 1:
+        _fail(
+            "fixture parse error: expected exactly 1 Child Case name; "
+            f"got {sorted(child_case_names)!r}"
+        )
+    expected["child_case_names"] = child_case_names
 
     conn_ids = {g.lower() for g in re.findall(rf"Connection ID[^`\n]*`{GUID}`", sdd)}
     act_ids = {g.lower() for g in re.findall(rf"Activity Type ID[^`\n]*`{GUID}`", sdd)}
@@ -156,7 +166,7 @@ def main():
         _fail("bindings_v2.json has no resources[] entries")
     expected_keys = {
         f"{expected['folder']}.{name}".lower()
-        for name in expected["resource_names"] | {expected["app_name"]}
+        for name in expected["resource_names"] | expected["child_case_names"] | {expected["app_name"]}
     }
     caseplan_keys = {
         str(binding.get("resourceKey") or "").lower()
