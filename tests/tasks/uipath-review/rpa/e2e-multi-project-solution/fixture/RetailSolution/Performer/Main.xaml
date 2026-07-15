@@ -1,0 +1,76 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#" sap2010:WorkflowViewState.IdRef="Main_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Process Invoices" sap:VirtualizedContainerService.HintSize="898,700" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="strPassword" />
+      <Variable x:TypeArguments="ui:QueueItem" Name="transactionItem" />
+    </Sequence.Variables>
+    <Assign DisplayName="Assign finance password" sap:VirtualizedContainerService.HintSize="450,100" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <CSharpReference x:TypeArguments="x:String">strPassword</CSharpReference>
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <CSharpValue x:TypeArguments="x:String">"Fin@nce_FAKE_2024"</CSharpValue>
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:GetQueueItem DisplayName="Get Invoice Transaction" QueueName="InvoiceQueue" sap:VirtualizedContainerService.HintSize="450,120" sap2010:WorkflowViewState.IdRef="GetQueueItem_1">
+      <ui:GetQueueItem.QueueItem>
+        <OutArgument x:TypeArguments="ui:QueueItem">
+          <CSharpReference x:TypeArguments="ui:QueueItem">transactionItem</CSharpReference>
+        </OutArgument>
+      </ui:GetQueueItem.QueueItem>
+    </ui:GetQueueItem>
+    <TryCatch DisplayName="Process (Try Catch)" sap2010:Annotation.AnnotationText="Catch logs and continues — no Rethrow, so a failed transaction is left marked successful." sap:VirtualizedContainerService.HintSize="700,400" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+      <TryCatch.Try>
+        <ui:CopyFile DisplayName="Post To Finance" OverwriteExisting="True" sap:VirtualizedContainerService.HintSize="450,120" sap2010:WorkflowViewState.IdRef="CopyFile_1">
+          <ui:CopyFile.Path>
+            <InArgument x:TypeArguments="x:String">
+              <CSharpValue x:TypeArguments="x:String">@"C:\temp\invoice.xlsx"</CSharpValue>
+            </InArgument>
+          </ui:CopyFile.Path>
+          <ui:CopyFile.Destination>
+            <InArgument x:TypeArguments="x:String">
+              <CSharpValue x:TypeArguments="x:String">@"\\finance\in\invoice.xlsx"</CSharpValue>
+            </InArgument>
+          </ui:CopyFile.Destination>
+        </ui:CopyFile>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception" sap:VirtualizedContainerService.HintSize="450,150">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+            </ActivityAction.Argument>
+            <ui:LogMessage DisplayName="Log Error" Level="Error" sap:VirtualizedContainerService.HintSize="400,100" sap2010:WorkflowViewState.IdRef="LogMessage_1">
+              <ui:LogMessage.Message>
+                <InArgument x:TypeArguments="x:String">
+                  <CSharpValue x:TypeArguments="x:String">"Error: " + exception.Message</CSharpValue>
+                </InArgument>
+              </ui:LogMessage.Message>
+            </ui:LogMessage>
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+      <TryCatch.Finally />
+    </TryCatch>
+  </Sequence>
+</Activity>

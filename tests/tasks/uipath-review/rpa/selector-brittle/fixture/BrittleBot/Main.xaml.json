@@ -1,0 +1,21 @@
+{
+  "DisplayName": "Main",
+  "Tooltip": null,
+  "HelpLink": null,
+  "Color": null,
+  "OriginalIconFileName": null,
+  "Arguments": [
+    {
+      "Name": "prompt",
+      "DisplayName": "prompt",
+      "Category": null,
+      "Tooltip": null,
+      "Placeholder": "for the new employee create account in workday and send welcome email. Also, if she is a manager send a notification to direct reports",
+      "Widget": null,
+      "IsRequired": false,
+      "IsPrincipal": true,
+      "ArgumentType": 0,
+      "DataSourceItems": null
+    }
+  ]
+}
