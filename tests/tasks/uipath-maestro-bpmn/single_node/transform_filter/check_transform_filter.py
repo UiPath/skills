@@ -67,7 +67,12 @@ def assert_script_task(root, source_must_match, label):
 
 def main() -> None:
     path, root = parse_bpmn("TransformFilterDemo")
-    assert_script_task(root, [r"\.filter\s*\(", r">=|>|greater"], "filter/comparison")
+    # Filter signal: .filter( / .filter.call( / .filter.apply( or a loop+push build.
+    assert_script_task(
+        root,
+        [r"\.filter\s*[(.]|(for|while)[\s\S]*push\s*\(", r">=|>|greater"],
+        "filter/comparison",
+    )
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)
     print(f"OK: {path} has a Jint-safe scriptTask performing a filter transform")

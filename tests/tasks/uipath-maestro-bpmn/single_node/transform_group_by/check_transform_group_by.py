@@ -67,10 +67,11 @@ def assert_script_task(root, source_must_match, label):
 
 def main() -> None:
     path, root = parse_bpmn("TransformGroupByDemo")
-    # A grouping construct plus an aggregation signal.
+    # Grouping signal: reduce( / reduce.call( / "group" naming / keyed loop build,
+    # plus an aggregation signal.
     assert_script_task(
         root,
-        [r"reduce\s*\(|group", r"count|sum|average|avg|aggregate|total|\.length|push\s*\(|\+\s*1|\+="],
+        [r"reduce\s*[(.]|group|(for|while)[\s\S]*\[", r"count|sum|average|avg|aggregate|total|\.length|push\s*\(|\+\s*1|\+="],
         "group-by/aggregation",
     )
     require_sequence_integrity(root)

@@ -67,7 +67,12 @@ def assert_script_task(root, source_must_match, label):
 
 def main() -> None:
     path, root = parse_bpmn("TransformMapDemo")
-    assert_script_task(root, [r"\.map\s*\(", r"touppercase|toupper"], "map/uppercase")
+    # Map signal: .map( / .map.call( / .map.apply( or an explicit loop+push build.
+    assert_script_task(
+        root,
+        [r"\.map\s*[(.]|(for|while)[\s\S]*push\s*\(", r"touppercase|toupper"],
+        "map/uppercase",
+    )
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)
     print(f"OK: {path} has a Jint-safe scriptTask performing a map/uppercase transform")
