@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-24T05:25:39Z",
-  "cli_version": "1.197.0-alpha.20260623.7621",
+  "generated_at": "2026-07-15T05:05:57Z",
+  "cli_version": "1.197.0-alpha.20260626.7673",
   "verbs": [
     "admin",
     "admin audit",
@@ -320,6 +320,7 @@
     "codedagent pull",
     "codedagent push",
     "codedagent register",
+    "codedagent review",
     "codedagent run",
     "codedagent setup",
     "codedapp",
