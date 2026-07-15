@@ -44,7 +44,7 @@ on:
         type: string
         default: ''
       cli_version:
-        description: '@uipath/cli version (dist-tag or version; `dev` = live prerelease train).'
+        description: '@uipath/cli version.'
         type: string
         default: dev
       agent:
