@@ -1,15 +1,13 @@
 task_id: skill-flow-bindings-no-duplicates
 description: >
-  Regression for MST-10236 — `uip maestro flow node configure` previously
-  appended brand-new Connection bindings instead of claiming the empty-keyed
+  Regression — `uip maestro flow node configure` previously appended
+  brand-new Connection bindings instead of claiming the empty-keyed
   stubs that flow-core hoists at `node add` time. The produced .flow shipped
   with two binding rows per real connection; Studio Web's runtime resolved
   the empty stub first and failed with `Value cannot be null. (Parameter
   'Connection')`. This eval asserts the configured .flow contains no
   empty-keyed Connection bindings and no duplicate (name, propertyAttribute)
-  rows under the Connection resource. See:
-  https://github.com/UiPath/cli/pull/2197 and
-  https://uipath.atlassian.net/browse/MST-10236
+  rows under the Connection resource.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, bindings, regression]
 
 run_limits:
