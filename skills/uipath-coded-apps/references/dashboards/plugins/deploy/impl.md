@@ -117,9 +117,11 @@ On the user's reply:
 
 Otherwise this is a **fresh deploy**: ask the two SHORT structured-choice questions below (SKILL.md Rule 18), recommended option first and suffixed "(Recommended)". **Never** put them in the same message as the plan — they fire on this later, short turn.
 
-> **ALWAYS present Question 1 (mode) on a fresh deploy.** The Step-2 inference only decides which option is pre-marked "(Recommended)" — it does **NOT** let you skip the question or silently auto-pick a mode. Deploying as *standalone* without asking is a bug: an agent-health / jobs / KPI dashboard is merely *recommended* standalone, but the user may deliberately want it as a governance dashboard, so you MUST show all three and let them choose. The **only** thing that skips Question 1 is the **user's own wording** having already named the mode (e.g. "deploy it as a governance dashboard, pinned" or "just deploy it as a standalone app"). A bare "deploy" / "confirm" / "yes" does **not** settle the mode — ask. The same rule applies to Question 2 (folder): always ask unless the wording already named a folder.
+> **When an interactive user is present, ALWAYS present Question 1 (mode) on a fresh deploy.** The Step-2 inference only decides which option is pre-marked "(Recommended)" — with a human present it does **NOT** let you silently auto-pick a mode. Deploying as *standalone* without asking is a bug: an agent-health / jobs / KPI dashboard is merely *recommended* standalone, but the user may deliberately want it as a governance dashboard, so show all three and let them choose. A bare "deploy" / "confirm" / "yes" does **not** settle the mode — ask.
+>
+> **Skip Question 1 ONLY when:** (a) the user's wording already named the mode ("deploy as a governance dashboard, pinned" / "just deploy as a standalone app"); or (b) the user told you not to ask / to proceed without confirmation, or the run is non-interactive / automated (e.g. CI) — then use the **recommended** mode and proceed without asking (never block a headless deploy on a question). The **same two carve-outs** govern Question 2 (folder): ask when interactive, otherwise use the recommended folder.
 
-**Question 1 — mode** (ask on every fresh deploy; skip ONLY if the user's wording already named the mode):
+**Question 1 — mode** (ask when a human is present; skip per carve-outs (a)/(b) above):
 
 | Option | Meaning |
 |--------|---------|
@@ -129,7 +131,7 @@ Otherwise this is a **fresh deploy**: ask the two SHORT structured-choice questi
 
 > ⚠️ **Pinning is a preview feature.** When offering a pinned option, state: *"Pinning surfaces the dashboard in the Governance section — an Agentic Governance preview feature, so it only takes effect if your org is enrolled in the preview. Either way the dashboard deploys and is reachable at its URL."* If the org isn't enrolled, the deploy still succeeds and the app is fully usable via its URL — only the Governance-UI pin has no visible effect until preview access is granted (contact your UiPath representative).
 
-**Question 2 — folder** (ask on every fresh deploy; skip ONLY if the user's wording already named a folder). Present these **three named options**, recommended first. **"Create a new folder" MUST appear as its own selectable option — do NOT fold it into the free-text / "type something" escape** (the escape is the separate 4th slot per Rule 18). The three are distinct *actions*, not just "type a name":
+**Question 2 — folder** (ask when a human is present; skip per carve-outs (a)/(b) above). Present these **three named options**, recommended first. **"Create a new folder" MUST appear as its own selectable option — do NOT fold it into the free-text / "type something" escape** (the escape is the separate 4th slot per Rule 18). The three are distinct *actions*, not just "type a name":
 
 | Option | Mechanism |
 |--------|-----------|
