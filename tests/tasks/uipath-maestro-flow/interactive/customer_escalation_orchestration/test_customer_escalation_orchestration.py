@@ -36,7 +36,8 @@ class CustomerEscalationOrchestrationTests(unittest.TestCase):
         cases = document["cases"]
 
         self.assertEqual(len(cases), 4)
-        self.assertEqual(cases[0]["expected"]["route"], "EngineeringEscalation")
+        self.assertIn("EngineeringEscalation", cases[0]["expected"]["route"])
+        self.assertIn("NewEscalation", cases[0]["expected"]["route"])
         self.assertEqual(cases[1]["expected"]["jiraAction"], "UpdateExisting")
         self.assertEqual(cases[2]["expected"]["exceptionCode"], "SALESFORCE_NO_MATCH")
         self.assertEqual(cases[3]["expected"]["exceptionCode"], "INVALID_AGENT_JSON")
@@ -56,6 +57,13 @@ class CustomerEscalationOrchestrationTests(unittest.TestCase):
         )
         checker.assert_named_equals(
             _payload(engineeringHandoff="No"), "engineeringHandoff", False
+        )
+
+    def test_named_comparison_accepts_explicit_aliases(self) -> None:
+        checker.assert_named_equals(
+            _payload(route="NewEscalation"),
+            "route",
+            ["EngineeringEscalation", "NewEscalation"],
         )
 
     def test_named_comparison_rejects_wrong_route(self) -> None:
@@ -81,7 +89,7 @@ class CustomerEscalationOrchestrationTests(unittest.TestCase):
                 {
                     "id": "severity_agent",
                     "type": "core.action.script",
-                    "inputs": {"script": "severity agent parses severityAgentJson INVALID_AGENT_JSON"},
+                    "inputs": {"script": "parses severityAgentJson INVALID_AGENT_JSON"},
                 },
                 {
                     "id": "jira_duplicate_search",
@@ -101,7 +109,7 @@ class CustomerEscalationOrchestrationTests(unittest.TestCase):
                 {
                     "id": "draft_agent",
                     "type": "core.action.script",
-                    "inputs": {"script": "draft agent prepares responseDraft"},
+                    "inputs": {"script": "parses draftAgentJson into responseDraft"},
                 },
                 {
                     "id": "drive_summary",

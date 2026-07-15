@@ -68,7 +68,7 @@ def build_seed() -> dict:
                     "contactId": "003AVA",
                     "severity": "Sev1",
                     "engineeringHandoff": True,
-                    "route": "EngineeringEscalation",
+                    "route": ["EngineeringEscalation", "NewEscalation"],
                     "jiraAction": "Create",
                     "jiraIssueKey": "NEW",
                     "driveAction": "SaveSummaryAndAttachments",

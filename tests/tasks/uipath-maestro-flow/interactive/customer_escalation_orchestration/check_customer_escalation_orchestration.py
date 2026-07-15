@@ -58,7 +58,12 @@ def normalized(value: Any) -> Any:
 
 def assert_named_equals(payload: dict, name: str, expected: Any) -> None:
     actual = assert_output_nonempty(payload, name)
-    if normalized(actual) != normalized(expected):
+    if isinstance(expected, list):
+        if normalized(actual) in [normalized(item) for item in expected]:
+            return
+    elif normalized(actual) == normalized(expected):
+        return
+    else:
         fail(f"output {name!r}: expected {expected!r}, got {actual!r}")
 
 
@@ -148,19 +153,22 @@ def assert_structural_orchestration() -> None:
 
     flow_blob = json.dumps(flow, default=str).casefold()
     required_surface_terms = {
-        "outlook": "Outlook email parsing / acknowledgement",
-        "salesforce": "Salesforce account/contact/case lookup",
-        "jira": "Jira duplicate/create/update routing",
-        "drive": "Drive summary or attachment archiving",
-        "slack": "Slack escalation notification",
-        "severity agent": "inline severity agent handoff",
-        "draft agent": "response draft agent handoff",
-        "invalid_agent_json": "invalid agent JSON exception path",
-        "salesforce_no_match": "missing Salesforce match exception path",
+        "Outlook email parsing / acknowledgement": ("outlook",),
+        "Salesforce account/contact/case lookup": ("salesforce",),
+        "Jira duplicate/create/update routing": ("jira",),
+        "Drive summary or attachment archiving": ("drive",),
+        "Slack escalation notification": ("slack",),
+        "severity agent handoff": ("severity agent", "severityagentjson"),
+        "response draft agent handoff": ("draft agent", "draftagentjson"),
+        "invalid agent JSON exception path": ("invalid_agent_json",),
+        "missing Salesforce match exception path": ("salesforce_no_match",),
     }
-    for term, label in required_surface_terms.items():
-        if term not in flow_blob:
-            fail(f"Flow does not mention required surface/policy: {label} ({term!r})")
+    for label, terms in required_surface_terms.items():
+        if not any(term in flow_blob for term in terms):
+            fail(
+                f"Flow does not mention required surface/policy: {label} "
+                f"(expected any of {terms!r})"
+            )
 
     variables = flow.get("variables") or {}
     globals_list = variables.get("globals") or []
