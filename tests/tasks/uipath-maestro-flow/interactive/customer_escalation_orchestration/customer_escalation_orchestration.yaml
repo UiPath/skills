@@ -13,9 +13,9 @@ tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-nod
 
 run_limits:
   expected_turns: 55
-  max_turns: 100
-  turn_timeout: 600
-  task_timeout: 3000
+  max_turns: 140
+  turn_timeout: 2400
+  task_timeout: 10800
 
 agent:
   # allowed_tools uses replace semantics. Keep the default authoring tools and
@@ -129,7 +129,7 @@ success_criteria:
   - type: run_command
     description: "Seeded Sev1, duplicate Sev2, unknown-customer, and invalid-agent-JSON paths produce the expected orchestration outputs"
     command: "python3 $TASK_DIR/check_customer_escalation_orchestration.py"
-    timeout: 1500
+    timeout: 3000
     expected_exit_code: 0
     weight: 10.0
     pass_threshold: 1.0

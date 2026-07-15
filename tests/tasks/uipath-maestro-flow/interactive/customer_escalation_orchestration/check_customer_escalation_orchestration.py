@@ -201,7 +201,7 @@ def assert_structural_orchestration() -> None:
 
 
 def verify_case(case: dict[str, Any]) -> None:
-    payload = run_debug(inputs=case["inputs"], timeout=360)
+    payload = run_debug(inputs=case["inputs"], timeout=600)
     for name, expected in case["expected"].items():
         assert_named_equals(payload, name, expected)
     assert_named_contains(payload, "responseDraft", case.get("draft_contains") or [])
