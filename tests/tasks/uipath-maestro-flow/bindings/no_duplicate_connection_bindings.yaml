@@ -1,6 +1,6 @@
 task_id: skill-flow-bindings-no-duplicates
 description: >
-  Regression — `uip maestro flow node configure` previously appended
+  Regression - `uip maestro flow node configure` previously appended
   brand-new Connection bindings instead of claiming the empty-keyed
   stubs that flow-core hoists at `node add` time. The produced .flow shipped
   with two binding rows per real connection; Studio Web's runtime resolved

@@ -64,7 +64,7 @@ Open the file. The shape is roughly:
 | `resource.runtimeDependencies` | Recomputed at every pack — manual edits lost on next pack |
 | `resource.files`, `resource.locks` | Managed; never appear in user-edit scenarios |
 | `resource.folders` | Moves the resource. For a *cloud-imported* resource the folder is `solution_folder` (placeholder) — editing it doesn't change cloud location, only confuses sync. For a *virtual* resource that you authored at a non-`solution_folder` folder, edit at the binding (`bindings_v2.json`) and let refresh re-create — don't edit the resource file directly |
-| `resource.spec.<reference-fields>` | E.g. `storageBucketReference`, `retentionBucketRef`. The SDK rewrites these when the target's link state changes; hand-edits get clobbered. (Known bug: the rewrite isn't always applied automatically — that's not a license to hand-edit dependents arbitrarily) |
+| `resource.spec.<reference-fields>` | E.g. `storageBucketReference`, `retentionBucketRef`. The SDK rewrites these when the target's link state changes; hand-edits get clobbered. (Known bug: the rewrite isn't always applied automatically - that's not a license to hand-edit dependents arbitrarily) |
 
 ### Examples — safe edits
 
