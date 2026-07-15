@@ -47,7 +47,7 @@ def main() -> None:
         _fail(f"no .flow references the {JIRA_KEY} connector (found {flows})")
     print(f"OK: flow references {JIRA_KEY}")
 
-    payload = run_debug(timeout=240)
+    payload = run_debug(timeout=480)
     print("OK: flow debug completed")
 
     # Candidate issue keys: clean output leaves + a project-scoped scan of the
