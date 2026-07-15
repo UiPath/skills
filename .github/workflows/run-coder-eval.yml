@@ -44,9 +44,9 @@ on:
         type: string
         default: ''
       cli_version:
-        description: '@uipath/cli version.'
+        description: '@uipath/cli version (dist-tag or version; `dev` = live prerelease train).'
         type: string
-        default: alpha
+        default: dev
       agent:
         description: 'Agent to run.'
         type: choice
@@ -386,7 +386,7 @@ jobs:
             --store-password-in-clear-text
 
       # Two-feed install: `@uipath/cli` comes from the internal GitHub
-      # Packages feed (so the `cli_version` input — e.g. `alpha`, pinned
+      # Packages feed (so the `cli_version` input — e.g. `dev`, pinned
       # prereleases — resolves the same way as the Linux Docker build).
       # `@uipath/rpa-tool` + `@uipath/rpa-legacy-tool` come from public npm
       # because the internal feed carries a divergent `1.0.0-alpha.*`
