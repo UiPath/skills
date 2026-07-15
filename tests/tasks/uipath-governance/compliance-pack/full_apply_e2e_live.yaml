@@ -94,7 +94,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "report.json references iso-42001-2023 and omits internal/implementation tokens (posture data is validated semantically by check_full_apply_report.py, which parses the numbers regardless of the agent's JSON key casing)"
+    description: "report.json references iso-42001-2023 and omits internal implementation tokens"
     path: "report.json"
     includes:
       - "iso-42001-2023"
