@@ -13,6 +13,7 @@ What this looks like:
 
 What can cause it:
 - The app checks `sdk.isAuthenticated()` **without first calling `sdk.completeOAuth()`** to exchange the `?code=` for tokens
+- `sdk.completeOAuth()` **is called but throws** (the code exchange failed — often a stale/reused code) and the error is swallowed, so no token is stored
 - The app does custom `URLSearchParams` / `window.location` parsing of the callback instead of the SDK's `sdk.isInOAuthCallback()` + `sdk.completeOAuth()`
 - Stale PKCE state in browser storage from a previous, interrupted attempt
 
@@ -38,7 +39,13 @@ What to look for:
 
   ```typescript
   if (sdk.isInOAuthCallback()) {
-    await sdk.completeOAuth();   // exchange ?code= for tokens — required before isAuthenticated()
+    try {
+      await sdk.completeOAuth();   // exchange ?code= for tokens — required before isAuthenticated()
+    } catch {
+      localStorage.clear(); sessionStorage.clear();  // exchange failed (stale code) — clear and restart
+      await sdk.initialize();
+      return;
+    }
   }
   if (!sdk.isAuthenticated()) {
     await sdk.initialize();      // start a fresh OAuth flow
