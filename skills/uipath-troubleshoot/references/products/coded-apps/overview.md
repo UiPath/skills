@@ -9,7 +9,7 @@ Unlike server-side products, a coded app runs **in the user's browser**. Most fa
 - **SDK config comes from `<meta name="uipath:*">` tags**, not from code. `new UiPath()` reads `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, `redirectUri` from those tags. Locally the tags are injected from **`uipath.json`** (project root, committed) — the single config source.
 - **Auth is browser OAuth 2.0 Authorization Code + PKCE.** The External Application backing a coded app is a **non-confidential (public) client** with **user-delegated scopes**. The app redirects to UiPath, the user signs in, and the SDK exchanges the code for a token via `sdk.completeOAuth()`.
 - **API host is the API subdomain** (`api.uipath.com`), NOT the portal domain (`cloud.uipath.com`). The portal domain does not return browser CORS headers.
-- **Deployed apps** are served by the platform's Cloudflare Worker under `https://cloud.uipath.com/<org>/apps_/<system-name>`; the app must be built with a **relative** Vite base (`base: './'`) and read its route prefix from `getAppBase()`.
+- **Deployed apps** are served under a platform-routed URL, so the app must be built with a **relative** Vite base (`base: './'`) and read its route prefix from `getAppBase()` — an absolute or hardcoded base breaks asset/routing resolution after deploy.
 
 ## Dependencies
 
