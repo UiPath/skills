@@ -44,9 +44,11 @@ on:
         type: string
         default: ''
       cli_version:
-        description: '@uipath/cli version.'
+        description: '@uipath/cli version (dist-tag or exact). `dev` tracks
+          main and auto-updates on every push; `alpha` is a manual prerelease
+          that goes stale between cuts.'
         type: string
-        default: alpha
+        default: dev
       agent:
         description: 'Agent to run.'
         type: choice
