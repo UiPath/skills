@@ -127,5 +127,8 @@ success_criteria:
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_codedapp_folder.py"
     timeout: 60
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_external_app.py"
-    timeout: 60
+# No external-app cleanup here: this is a DEPLOY-only test (pre-seeded dist/, no
+# build flow), so it never mints an OAuth external app — nothing records a Client
+# ID for cleanup_external_app.py to act on. That cleanup lives on the dashboard
+# BUILD tests (dashboard_full_e2e / dashboard_scaffold), which run the build flow
+# that mints one.

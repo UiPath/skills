@@ -36,7 +36,7 @@ pre_run:
         "env": "alpha", "org": "testorg", "tenant": "testTenant",
         "cloudUrl": "https://alpha.uipath.com",
         "widgets": ["policy-denials", "rule-compliance"],
-        "deployment": { "systemName": null, "folderKey": null, "appUrl": null, "lastDeployedAt": null }
+        "deployment": { "systemName": null, "folderKey": null, "folderName": null, "appUrl": null, "pinnedToGovernance": false, "lastDeployedAt": null }
       }
       EOF
     timeout: 15
