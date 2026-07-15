@@ -10,6 +10,8 @@ description: >
 tags: [uipath-coded-apps, e2e, dashboard, mode:operate, lifecycle:setup]
 
 run_limits:
+  expected_turns: 20
+  max_turns: 60
   turn_timeout: 1200
   task_timeout: 1500
 

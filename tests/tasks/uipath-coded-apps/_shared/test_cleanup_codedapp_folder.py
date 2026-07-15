@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Guardrail unit test for cleanup_codedapp_folder.py.
+"""Allowlist unit test for cleanup_codedapp_folder.py.
 
-Runs the cleanup script in a temp dir with a crafted report.json and asserts
-it refuses protected folder names (prints SKIP, deletes nothing, exits 0).
-No live tenant / uip binary needed: the guardrail returns before any uip call.
+The script uses an ALLOWLIST: it only deletes folders whose name starts with
+`codedapp-` (per-run disposable test folders). Everything else — shared
+(AdminDashboards / Shared), personal ("<user>'s workspace"), or any real tenant
+folder — must be refused (SKIP printed, nothing deleted, exit 0).
+
+No live tenant / uip binary needed: refused names return before any uip call.
 """
 import json
 import os
@@ -27,19 +30,23 @@ def run_with_folder(folder: str):
 def main() -> int:
     failures = []
 
-    # Protected names must be refused with a "protected" SKIP and exit 0.
+    # Not on the allowlist → must be refused with a SKIP and exit 0. Covers the
+    # shared governance home, the tenant default, a personal workspace, and a
+    # plausible real folder name — none start with `codedapp-`.
     for name in ["AdminDashboards", "admindashboards", "Shared",
-                 "nishank.siddharth@uipath.com's workspace"]:
+                 "nishank.siddharth@uipath.com's workspace", "Finance-Prod"]:
         r = run_with_folder(name)
         if r.returncode != 0:
             failures.append(f"{name!r}: expected exit 0, got {r.returncode}")
-        if "protected" not in r.stderr.lower():
-            failures.append(f"{name!r}: expected 'protected' SKIP on stderr, got {r.stderr!r}")
+        if "SKIP" not in r.stderr or "codedapp-" not in r.stderr:
+            failures.append(f"{name!r}: expected an allowlist SKIP on stderr, got {r.stderr!r}")
 
-    # A legit codedapp-* name is NOT caught by the protected guard.
-    r = run_with_folder("codedapp-workspace-abc123")
-    if "protected" in r.stderr.lower():
-        failures.append("codedapp-workspace-* wrongly caught by protected guard")
+    # On the allowlist → NOT refused by the prefix guard. (It then falls through
+    # to the uip delete call, which errors without a tenant; we only assert the
+    # guard did not skip it.)
+    r = run_with_folder("codedapp-govtest-1784045382")
+    if "refusing to delete" in r.stderr:
+        failures.append("codedapp-govtest-* wrongly refused by the allowlist guard")
 
     if failures:
         print("FAIL:\n  " + "\n  ".join(failures), file=sys.stderr)

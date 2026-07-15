@@ -42,19 +42,12 @@ folder = load_folder_name()
 if not folder:
     sys.exit(0)
 
-# Hard refuse-list: never delete shared or personal folders, regardless of the
-# prefix check below. AdminDashboards is the shared governance home; Shared is
-# the tenant default; a "<user>'s workspace" name is a personal workspace.
-# There is no `codedapp delete` verb, so a deployed governance dashboard is torn
-# down by deleting a DISPOSABLE per-run folder — never one of these.
-_name = folder.strip().lower()
-if _name in ("admindashboards", "shared") or _name.endswith("'s workspace"):
-    print(f"SKIP: folder '{folder}' is protected — refusing to delete", file=sys.stderr)
-    sys.exit(0)
-
-# Guardrail: never touch tenant-default folders. Test folders must use the
-# `codedapp-` prefix — anything else is either a test authoring bug or an
-# attempt to run this against something it shouldn't touch.
+# Guardrail: ALLOWLIST, not a denylist. Only ever delete a per-run disposable
+# test folder — which by convention starts with `codedapp-`. Anything else
+# (AdminDashboards / Shared / a "<user>'s workspace" personal folder / any real
+# tenant folder) fails this check and is left untouched. Since `uip codedapp`
+# has no delete verb, a deployed governance dashboard is torn down by deleting
+# its DISPOSABLE folder — never a shared/personal one, which the prefix excludes.
 if not folder.lower().startswith("codedapp-"):
     print(f"SKIP: folder '{folder}' does not start with 'codedapp-' — refusing to delete", file=sys.stderr)
     sys.exit(0)
