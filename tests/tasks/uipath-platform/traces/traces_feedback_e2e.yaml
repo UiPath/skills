@@ -10,15 +10,23 @@ tags: [uipath-platform, e2e, mode:diagnose, lifecycle:discover, traces, feedback
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
 
+# Starts a real job and waits for its trace to land, so wall-clock runs long.
+# The default 900s ceiling isn't enough — a single job-completion poll can take
+# ~5min on a busy tenant. Match the slower data-fabric e2e tasks.
 run_limits:
   expected_turns: 16
+  turn_timeout: 1800
 
 initial_prompt: |
   Run a feedback round-trip on a real trace:
-  - Start a job for process `$TRACES_SMOKE_PROCESS_KEY` and save the result to job.json
-  - Fetch the LLM trace spans for that job and save to spans.json
+  - Start one job for process `$TRACES_SMOKE_PROCESS_KEY`, wait for it to finish, and save the result to job.json
+  - Fetch the trace spans for that job with `uip traces spans get --job-key ...` and save to spans.json
   - Create positive feedback on the trace and save the response to feedback_create.json
   - Fetch the feedback record back by ID and save to feedback_get.json
+
+  Use the one job you started above — don't start extra jobs or hunt across
+  other jobs for specific span types. Any span the job emits is fine; the root
+  span works.
 
 success_criteria:
   - type: command_executed
