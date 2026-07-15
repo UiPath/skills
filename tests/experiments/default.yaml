@@ -22,7 +22,7 @@ defaults:
       You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
     plugins:
       - type: "local"
-        path: /home/azureuser/projects/skills
+        path: "$SKILLS_REPO_PATH"
     ignore_patterns: []
 
   # Sandbox cleanup between tasks. Tasks that upload Studio Web solutions
