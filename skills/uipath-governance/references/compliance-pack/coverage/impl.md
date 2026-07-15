@@ -28,9 +28,9 @@ uip gov compliance-packs state coverage tenant $tenantId <packId> --output json 
 
 CLI output is **PascalCase**. Field names below are exactly as returned by `state coverage`.
 
-`Data.DeploymentPolicies[].Status` (product-grain; INTERNAL — never rendered to the user, never projected onto settings):
-- `"new"` — this product has ≥1 gap · `"in-place"` — this product fully satisfied
-- Used only for the all-applied check (`Summary.NewCount == 0`); the user-facing posture is driven entirely by clauses + per-setting `controls[]`.
+`Data.DeploymentPolicies[].Status` (product-grain; INTERNAL — never rendered to the user, never projected onto settings). Three disjoint values:
+- `"in-place"` — product fully satisfied · `"needs-manual-config"` — deployed but ≥1 control still needs manual setup · `"new"` — nothing deployed for this product
+- INTERNAL only; the user-facing posture is driven entirely by clauses + per-setting `controls[]`. Do NOT gate the all-applied case on `Summary.NewCount == 0` — with the disjoint counts a `needs-manual-config` product leaves `NewCount == 0` yet the pack is not fully applied.
 
 `Data.Clauses[].Status` (per-control rollup):
 - `"fully-deployed"` — every checkable setting satisfied — display as **Applied** (✓)
@@ -51,8 +51,8 @@ CLI output is **PascalCase**. Field names below are exactly as returned by `stat
 - `actual` — the value currently deployed on the tenant (absent / `null` when unset)
 
 `Data.Summary` (PRODUCT-grain counts + a clause rollup — read these directly, do NOT recompute):
-- `DeploymentPolicyCount` — total products the pack governs · `InPlaceCount` — products fully Applied · `NewCount` — products with any gap (if `0`, every product is fully in place)
-- `ClauseSummary.FullyDeployedCount` / `PartiallyDeployedCount` / `NotDeployedCount` — the clause rollup driving the SUMMARY counts
+- `DeploymentPolicyCount` — total products · three **disjoint** product tallies that sum to it: `InPlaceCount` (fully applied) + `NeedsManualConfigCount` (deployed, manual setup pending) + `NewCount` (nothing deployed). `NewCount == 0` does NOT mean fully applied — needs-manual-config products aren't counted in it.
+- `ClauseSummary.FullyDeployedCount` / `PartiallyDeployedCount` / `NotDeployedCount` — the clause rollup driving the SUMMARY counts and the all-applied check
 
 `Data.PackId` / `ScopeLevel` / `ScopeTargetId` — identify the pack + tenant scope (internal; the user sees the tenant NAME from auth context, not the id).
 
@@ -155,7 +155,7 @@ Next action (state-aware — see "Next-action suggestion"):
 
 ## All settings applied
 
-If `Summary.NewCount == 0` (every product in-place) — equivalently `Summary.ClauseSummary.PartiallyDeployedCount == 0 && NotDeployedCount == 0`:
+If `Summary.ClauseSummary.PartiallyDeployedCount == 0 && NotDeployedCount == 0` (every clause fully deployed). Do NOT use `Summary.NewCount == 0` for this — with disjoint product counts a `needs-manual-config` product leaves `NewCount == 0` while settings still need manual setup:
 
 ```
 All ISO 42001 recommended settings are Applied on <tenantName>.
