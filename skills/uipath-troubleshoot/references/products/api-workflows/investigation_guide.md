@@ -15,7 +15,7 @@ uip api-workflow run <Workflow.json> --no-auth --output json  # runtime: express
 - If `run --no-auth` reproduces the fault, it is a structure/expression/logic fault (not auth or connection). Fix locally; the cloud will inherit the fix.
 - If `run --no-auth` succeeds but the cloud run fails, the fault is auth, connection state, real vendor response, trigger payload, or tenant/folder scope — move to the cloud surfaces below.
 
-`--no-auth` skips credential loading; use it for control-flow-only or Http-kind (`ImplicitConnection`) workflows. IntSvc-kind (vendor connector) activities need auth at run time even locally.
+`--no-auth` skips credential loading. It covers control-flow-only workflows and HTTP Request activities in **manual authentication** (`bodyParameters.authentication: "manual"`, `connectionId: "ImplicitConnection"` — auth details are supplied in the request itself). Anything bound to a real IS connection needs auth at run time even locally: every IntSvc-kind (vendor connector) activity, and an HTTP Request in **connector-based authentication** (`bodyParameters.authentication: "connector"` + `targetConnector` + a real connection UUID in `connectionId`).
 
 ## 2. Fix in category order
 
@@ -27,7 +27,7 @@ The executor's failure output carries `Message` + `Instructions`; the `Instructi
 
 ## 4. Confirm the connection actually works — don't trust the listing
 
-For any Connector/HTTP-kind (`UiPath.IntSvc`) activity, a connection that appears `Enabled` in `uip is connections list` can still be stale/orphaned. Confirm with a ping before concluding the workflow shape is at fault:
+For any connection-bound activity (IntSvc kind, or Http kind in connector-based authentication), a connection that appears `Enabled` in `uip is connections list` can still be stale/orphaned. Confirm with a ping before concluding the workflow shape is at fault:
 
 ```bash
 uip is connections ping <connection-uuid> --output json   # Code: "ConnectionPing" = usable
@@ -40,9 +40,9 @@ A workflow authored against a non-pinging connection fails in cloud regardless o
 A published API Workflow runs as an Orchestrator API-process **job**. When investigating a cloud failure, verify you are reading the correct job in the correct folder before interpreting logs:
 
 ```bash
-uip or jobs get <jobId> --output json      # status + fault summary
-uip or jobs logs <jobId> --output json     # execution logs
-uip or jobs traces <jobId> --output json   # span-level trace
+uip or jobs get <job-key> --output json                  # status + fault summary
+uip or jobs logs <job-key> --output json                 # execution logs
+uip traces spans get --job-key <job-key> --output json   # span-level trace
 ```
 
 Confirm the job's process is the one the user means, and that the folder matches — the same package can be deployed to multiple folders with different connections bound.
