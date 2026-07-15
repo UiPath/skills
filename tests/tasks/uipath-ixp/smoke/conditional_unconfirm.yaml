@@ -3,10 +3,12 @@ description: >
   Smoke: conditional bulk unconfirm with semantic field selection. Five fields on
   one document were confirmed earlier; the agent must roll back only the ones that
   hold a person's name or phone number (First Name, Last Name, Phone Number) and
-  leave the rest confirmed. Tests real semantic matching, not substring matching:
-  "Phone Number" must be caught (it's a phone, though it has no "name" in it) while
-  "Account Number" must NOT (shares "Number" but is not a phone), and "Signup Date"
-  is left alone.
+  leave the rest confirmed. The discrimination is carried by two substring traps —
+  fields that share a keyword with the request but are not what it asks for:
+  "Company Name" contains "name" yet is not a person's name, and "Account Number"
+  shares "Number" with "Phone Number" yet is not a phone. Both must stay confirmed,
+  so an agent that keys on the bare substrings "name"/"number" fails while a
+  semantic one passes.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -29,7 +31,7 @@ initial_prompt: |
   - Last Name — field id f-302
   - Phone Number — field id f-303
   - Account Number — field id f-304
-  - Signup Date — field id f-305
+  - Company Name — field id f-305
 
   For a data-privacy request, roll back the confirmations on the fields that
   capture a person's name or phone number, so those go back to un-annotated.
@@ -41,8 +43,9 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # Targets: the three name/phone fields must be unconfirmed on the right
-  # project + document. Field ids are matched after --fields, so one combined
+  # Targets: the three name/phone fields must be unconfirmed. (Project + document
+  # are pinned for a precise match, not to test selection — there is only one of
+  # each.) Field ids are matched after --fields, so one combined
   # `--fields f-301 f-302 f-303` call or three separate calls both satisfy these.
   - type: command_executed
     description: "Unconfirmed First Name (f-301)"
@@ -60,8 +63,8 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Phone Number carries no "name" substring — catching it proves semantic
-  # (not substring) matching.
+  # Phone field — a target. (This one is named in the prompt verbatim, so it does
+  # not test substring vs. semantic; the traps below do.)
   - type: command_executed
     description: "Unconfirmed Phone Number (f-303)"
     tool_name: "Bash"
@@ -70,11 +73,12 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # The crux: the non-name/phone fields must stay confirmed. Pattern is anchored
-  # to the `unconfirm` verb + the specific ids, so a mere mention in prose/comment
-  # can't false-match. Account Number (f-304) is the substring trap.
+  # The crux: the two substring traps must stay confirmed — Account Number (f-304,
+  # "Number" but not a phone) and Company Name (f-305, "name" but not a person's
+  # name). Pattern is anchored to the `unconfirm` verb + the specific ids, so a
+  # mere mention in prose/comment can't false-match.
   - type: command_not_executed
-    description: "Did NOT unconfirm Account Number (f-304) or Signup Date (f-305)"
+    description: "Did NOT unconfirm Account Number (f-304) or Company Name (f-305)"
     tool_name: "Bash"
     command_pattern: 'uip\s+ixp\s+labellings\s+unconfirm\b[^|;&]*(f-304|f-305)'
     weight: 3.0
