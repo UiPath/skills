@@ -2,11 +2,12 @@ task_id: skill-ixp-extract-runtime-smoke
 description: >
   Smoke: agent runs runtime extraction against a published model via the
   async two-step flow — resolve the project Id from the designtime project
-  list, `uip ixp start-extraction <project-id> <file> --tag <tag>` to get an
-  operationId, then `uip ixp get-extraction-result <project-id> <operation-id> --tag
-  <tag>` to fetch the result. It must NOT use the retired `uip ixp extract`,
-  and must NOT substitute `labellings get-predictions` (which is for the
-  training set, not a fresh runtime file).
+  list, `uip ixp extraction start <project-id> <file> --tag <tag>` to get an
+  operationId, then `uip ixp extraction get-result <project-id> <operation-id> --tag
+  <tag>` to fetch the result. It must NOT collapse this into a single-shot
+  `uip ixp extract` verb (there is none — extraction is the two-step flow), and
+  must NOT substitute `labellings get-predictions` (which is for the training
+  set, not a fresh runtime file).
 
   Harness is unauthenticated; CLI calls fail with auth/file errors.
   Grades command shape, not wire effect.
@@ -40,25 +41,25 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran `uip ixp start-extraction` with `--tag`"
+    description: "Agent ran `uip ixp extraction start` with `--tag`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+start-extraction\s+.*--tag\b'
+    command_pattern: 'uip\s+ixp\s+extraction\s+start\s+.*--tag\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent polled the result with `uip ixp get-extraction-result --tag`"
+    description: "Agent polled the result with `uip ixp extraction get-result --tag`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+get-extraction-result\s+.*--tag\b'
+    command_pattern: 'uip\s+ixp\s+extraction\s+get-result\s+.*--tag\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on the start-extraction call (advisory, non-gating)"
+    description: "Agent used --output json on the extraction start call (advisory, non-gating)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+start-extraction\s+.*--output\s+json'
+    command_pattern: 'uip\s+ixp\s+extraction\s+start\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
     # Non-gating: `--output json` is the CLI default, so omitting it is harmless. Keep the
@@ -66,7 +67,7 @@ success_criteria:
     # miss never flips the task to FAILURE — avoids docking an agent that reaches the same result.
     pass_threshold: 0
 
-  # Runtime extraction is start-extraction/get-extraction-result, not `get-predictions`
+  # Runtime extraction is `extraction start`/`extraction get-result`, not `get-predictions`
   # (the latter returns predictions on already-uploaded training docs). Guard
   # the agent against substituting the design-time command.
   - type: command_not_executed
@@ -76,10 +77,12 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # `uip ixp extract` was split into start-extraction + get-extraction-result and no
-  # longer exists — the agent must not reach for the retired verb.
+  # There is no single-shot `uip ixp extract` verb — runtime extraction is the
+  # two-step `extraction start` / `extraction get-result` flow. Guard against
+  # the agent inventing a one-call verb. (`extract\b` will not match the valid
+  # `extraction` subcommand — no word boundary after "extract" in "extraction".)
   - type: command_not_executed
-    description: "Agent did NOT use the retired `uip ixp extract`"
+    description: "Agent did NOT invent a single-shot `uip ixp extract`"
     tool_name: "Bash"
     command_pattern: 'uip\s+ixp\s+extract\b'
     weight: 1.0
