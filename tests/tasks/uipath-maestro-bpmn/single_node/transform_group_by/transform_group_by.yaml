@@ -1,0 +1,65 @@
+task_id: skill-bpmn-transform-group-by
+description: >
+  Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a
+  Jint-safe script task that performs a group-by transform (grouping rows by a
+  field and producing an aggregation) — the BPMN analogue of a Flow Transform
+  Group By node. Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "shape:single-node", "node:script", "feature:transform"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 55
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a single Maestro BPMN file `TransformGroupByDemo.bpmn` in the working
+  directory with the shape: start -> scriptTask -> end. The script task groups a
+  small static collection of records by a field (e.g. employees by department)
+  and computes at least one aggregation (e.g. a count per group).
+
+  Requirements:
+  - The scriptTask sets scriptFormat="JavaScript" and uipath:scriptVersion v3,
+    and its Jint-safe JavaScript groups the rows by a field and produces an
+    aggregation (e.g. Array.prototype.reduce building groups plus a count/sum).
+    No Node.js/browser/network/filesystem APIs.
+  - Map a declared input (the collection) into the script and map the grouped
+    result to a declared output variable, per the skill's BPMN.ScriptTask
+    contract; do not hand-author uipath:* XML from prose.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+  - Validate the file locally before finishing (the bundled validator, or a
+    well-formed-XML parse).
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback, and do NOT pause between planning and
+  implementation. Build the complete file end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "TransformGroupByDemo.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN file has a diagram and a JavaScript script task"
+    path: "TransformGroupByDemo.bpmn"
+    includes:
+      - "bpmndi:BPMNDiagram"
+      - "scriptTask"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN has a Jint-safe scriptTask (v3, mapped I/O) implementing a group-by transform, with full DI"
+    command: "python3 $TASK_DIR/check_transform_group_by.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
