@@ -2,17 +2,7 @@
 """JiraSearchTriage: structural + live + tenant checks for a JQL-search-driven
 triage flow.
 
-⚠️  This task is DISABLED (its YAML ships as `*.yaml.disabled`). It is a
-capability-frontier task: the flow is a perfectly reasonable Jira automation
-(find matching issues by JQL, then act on each), and the connector *does* expose
-a `search-issues-by-jql` activity — so the flow builds and validates. But JQL
-search is not in this connection's curated scope, so at `flow debug` time the
-search node returns 401 ("scope does not match") and the run cannot complete.
-The check below encodes the intended PASS behavior, so the task flips to passing
-the moment the connection is granted search scope; until then it stays disabled
-so it never drags the nightly pass-rate.
-
-Intended checks (when search scope exists):
+Checks:
   1. STRUCTURAL: a valid `.flow` references the `uipath-atlassian-jira`
      connector, a search activity, and a loop node.
   2. LIVE: `flow debug` runs to Completed.
@@ -57,9 +47,7 @@ def main() -> None:
     assert_flow_has_node_type(["core.logic.loop"])
     print("OK: flow references a JQL search op and a loop node")
 
-    # This is where the frontier bites today: the search node 401s, so debug
-    # does not reach Completed and run_debug() exits FAIL here.
-    payload = run_debug(timeout=300)
+    payload = run_debug(timeout=600)
     print("OK: flow debug completed")
 
     conn = jira_is.connection_id()

@@ -1,37 +1,19 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# DISABLED — capability-frontier task (ships as *.yaml.disabled; the runner
-# does not discover it).
-#
-# WHY: this is a realistic Jira automation — find matching issues by JQL, then
-# comment each — and the connector DOES expose a `search-issues-by-jql` activity,
-# so the flow builds and validates fine. But JQL search is NOT in this
-# connection's curated scope: `issue_search*` returns 401 ("scope does not
-# match"). So `flow debug` cannot complete here today, and the task would score 0
-# every night. It is parked here to document the gap and the intended coverage.
-#
-# FLIP TO PASS: when the `uipath-atlassian-jira` connection in
-# `Shared/uipath-maestro-flow` is granted issue-search scope, rename this file to
-# `jira_search_triage.yaml` and run it — seed/check/teardown are complete and the
-# check encodes the intended PASS behavior.
-# ─────────────────────────────────────────────────────────────────────────────
 task_id: skill-flow-ipe-jira-search-triage
 description: >
   E2E live Jira coverage of a JQL-search-driven triage flow: a manual-trigger
   Flow that searches for issues matching a seeded JQL and, for each match, adds
   a triage comment. pre_run seeds two real issues carrying a unique tag; grading
   runs the flow (`flow debug`) and asserts both seeded issues come back carrying
-  the triage comment. DISABLED today: JQL search is outside this connection's
-  curated scope (401), so debug cannot complete — see the header for the
-  flip-to-pass condition.
+  the triage comment.
 
   Tenant prerequisite: a `uipath-atlassian-jira` connection in folder
-  `Shared/uipath-maestro-flow` reaching the `CE` / "Coder Eval" project, WITH
-  issue-search scope (not currently granted). Targets live in `jira_is.py`.
+  `Shared/uipath-maestro-flow` reaching the `CE` / "Coder Eval" project, with
+  issue-search scope. Targets live in `jira_is.py`.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:loop, connector, e2e, uipath-atlassian-jira, ipe, mode:build]
 
 run_limits:
   expected_turns: 45
-  task_timeout: 1500
+  task_timeout: 2400
   max_turns: 120
   turn_timeout: 900
 
@@ -73,7 +55,7 @@ success_criteria:
   - type: run_command
     description: "JiraSearchTriage checks: valid flow with a JQL search feeding a loop of Add-Comment, debug completes, and both seeded issues carry the triage comment"
     command: "python3 $TASK_DIR/check_jira_search_triage.py"
-    timeout: 600
+    timeout: 1200
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

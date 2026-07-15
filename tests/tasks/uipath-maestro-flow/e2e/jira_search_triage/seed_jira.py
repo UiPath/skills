@@ -3,11 +3,6 @@
 summary, and write seed.json with the JQL that selects exactly them plus the
 comment the flow should stamp on each match. The created keys are recorded to
 `.created_keys` so teardown deletes them regardless of the run outcome.
-
-This task is DISABLED (see the YAML header): the flow it asks for uses a JQL
-search node, and JQL search is not in this connection's curated scope (401), so
-`flow debug` cannot complete here today. The seed still creates real targets so
-the task passes as-is the moment the connection gains search scope.
 """
 
 import json

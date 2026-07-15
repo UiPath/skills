@@ -3,11 +3,7 @@
 
 Self-contained (no shared module). Assumes `uip` is on PATH and logged in and
 that the connection + CE project exist — this is a tenant-gated e2e task.
-
-NOTE: this connection is scoped to the curated single-record ops. JQL search
-(`issue_search*`) is NOT in scope and returns 401 — which is exactly why the
-flow this task asks for cannot run here yet (see the YAML header). This helper
-only uses the in-scope create / get / delete ops to seed and verify.
+This helper uses the create / get / delete ops to seed and verify.
 """
 
 from __future__ import annotations
