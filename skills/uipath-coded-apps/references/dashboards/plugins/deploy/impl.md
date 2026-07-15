@@ -128,17 +128,17 @@ Otherwise ask up to two SHORT structured-choice questions (SKILL.md Rule 18), th
 
 > ⚠️ **Pinning is a preview feature.** When offering a pinned option, state: *"Pinning surfaces the dashboard in the Governance section — an Agentic Governance preview feature, so it only takes effect if your org is enrolled in the preview. Either way the dashboard deploys and is reachable at its URL."* If the org isn't enrolled, the deploy still succeeds and the app is fully usable via its URL — only the Governance-UI pin has no visible effect until preview access is granted (contact your UiPath representative).
 
-**Question 2 — folder** (skip if settled):
+**Question 2 — folder** (skip if settled). Present these **three named options**, recommended first. **"Create a new folder" MUST appear as its own selectable option — do NOT fold it into the free-text / "type something" escape** (the escape is the separate 4th slot per Rule 18). The three are distinct *actions*, not just "type a name":
 
 | Option | Mechanism |
 |--------|-----------|
+| **An existing folder** | deploy into a folder that already exists; resolve its key by name. Offer a **concrete** default, not the generic word "existing": **`AdminDashboards`** for a governance mode, or a shared team folder (e.g. **`Shared`**) for standalone. The user may name a different existing folder in free text. |
+| **Create a new folder** | the user gives a name; you run `uip or folders create` (governance shared folder → provision via `setup-admin-folder.mjs`) and deploy into it |
 | **Personal workspace** | your own workspace, private to you |
-| **Existing folder** | you provide the name |
-| **Create a new folder** | you provide the name |
 
-For a governance mode, present **`AdminDashboards`** as the recommended **Existing folder** default; "Create a new folder" covers a differently-named shared governance folder. For standalone, **Personal workspace** is recommended.
+Recommended (first, suffixed "(Recommended)"): the existing-folder default — **`AdminDashboards`** for a governance mode; a shared team folder (e.g. `Shared`) for a standalone dashboard (a dashboard is usually team-facing; offer Personal workspace as the private alternative).
 
-Free-text replies remain valid and take precedence.
+Free-text replies (including a bare folder name) remain valid and take precedence.
 
 ---
 
