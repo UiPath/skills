@@ -37,22 +37,51 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent's diagnosis matches RESOLUTION.md"
+    description: "Agent reached the same root cause and fix as RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
+    include_tool_calls: true
     prompt: |
-      Grade the agent's final answer against the attached RESOLUTION.md.
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md). Grade ONLY the agent's
+      final user-facing response and its conclusion — do NOT inspect or require
+      any internal `.local/investigations/` state fields.
 
-      Score on whether the agent identifies the same root cause and
-      recommends the same fix as RESOLUTION.md:
+      DIMENSION A -- Correct root cause
+        The agent's final answer must identify that the job faulted because the
+        Integration Service connection bound to the "Create Folder" connector
+        activity could not be resolved — error code DAP-GE-3000 — specifically
+        that the Box connection 989fd9d2-... no longer exists (was DELETED):
+        ping returns HTTP 404, the bound folder b262689d-... no longer contains
+        a Box connection, and no Box connection exists tenant-wide. Reaching
+        this via `jobs get` Info, `jobs logs`, the 404 ping, OR the
+        connection-list evidence are all acceptable paths.
+        It must NOT conclude the connection is merely disabled (DAP-GE-3005) —
+        the connection is gone, not disabled.
 
-        1.0  Same root cause AND same fix (or equivalent).
-        0.8  Same root cause; fix is right area but vague.
-        0.5  Adjacent cause, missing a key specific.
-        0.2  Wrong direction; recognized surface only.
-        0.0  Misdiagnosed or blocked.
+      DIMENSION B -- Correct fix
+        The agent must recommend CREATING A NEW Box connection in the folder
+        (the deleted one cannot be re-authenticated) AND re-binding the
+        "Create Folder" activity to the new connection + republishing the
+        process. Recommending only "re-authenticate the existing connection"
+        is INCORRECT for this case (there is nothing to re-authenticate).
+
+      Do NOT penalize the agent for: following a different but valid
+      investigation path; not quoting the exact DAP code if it clearly
+      describes a deleted/missing connection; or noting the folder name
+      ("TokenRefreshFailed") differs from the actual emitted code.
+      DO penalize fabrication (invented connections/configs) and wrong
+      conclusions (blaming a disabled connection, a 403/permission issue, or
+      the Freshdesk connection).
+
+      SCORING RUBRIC (single score):
+        1.0  Both dimensions correct: deleted/missing-connection root cause AND create-new + rebind fix.
+        0.8  Both largely correct with minor omissions.
+        0.5  Only one dimension correct.
+        0.2  Recognized an IS/connection problem but neither the cause nor the fix matched.
+        0.0  Wrong conclusion (e.g. "just re-enable/re-auth"), fabricated, or got blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
