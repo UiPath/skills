@@ -257,7 +257,8 @@ var response = await conn.ExecuteAsync(config, request);
 Run `uip rpa validate` on the written workflow file until 0 errors. Cap at 5 fix attempts.
 
 ```bash
-uip rpa validate --file-path "<WORKFLOW_FILE>" --project-dir "<PROJECT_DIR>" --output json```
+uip rpa validate --file-path "<WORKFLOW_FILE>" --project-dir "<PROJECT_DIR>" --output json
+```
 
 ---
 

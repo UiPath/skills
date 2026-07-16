@@ -272,7 +272,7 @@ namespace MyProject
 | Shared helper methods for all workflows | `partial class CodedWorkflow` (no hooks) |
 | All of the above | Combine patterns in one or more partial files |
 
-Code templates: [assets/before-after-hooks-template.md](../../assets/before-after-hooks-template.md)
+Code templates: [assets/codedworkflow-template.md § Before/After Hooks Templates](../../assets/codedworkflow-template.md#beforeafter-hooks-templates)
 
 ---
 
@@ -286,13 +286,15 @@ The `packages inspect` verb is built into the UiPath CLI. No separate build step
 
 #### Inspect a package from a NuGet feed
 ```bash
-uip rpa packages inspect --package-name <PackageName> --package-version <Version> [--feed-url <NuGetV3FeedUrl>]```
+uip rpa packages inspect --package-name <PackageName> --package-version <Version> [--feed-url <NuGetV3FeedUrl>]
+```
 
 When `--feed-url` is omitted, the tool downloads from the UiPath Official feed first and falls back to nuget.org.
 
 #### Inspect a local .nupkg file
 ```bash
-uip rpa packages inspect --nupkg-path <path/to/package.nupkg>```
+uip rpa packages inspect --nupkg-path <path/to/package.nupkg>
+```
 
 Use this when the package is already cached locally (e.g. from a private feed) or when you have a `.nupkg` file on disk.
 
@@ -308,7 +310,8 @@ uip rpa packages inspect --package-name MyPackage --package-version 1.0.0 --feed
 # Inspect third-party package from nuget.org
 uip rpa packages inspect --package-name CsvHelper --package-version 33.0.1
 # Inspect a local .nupkg file directly
-uip rpa packages inspect --nupkg-path ~/.nuget/packages/csvhelper/33.0.1/csvhelper.33.0.1.nupkg```
+uip rpa packages inspect --nupkg-path ~/.nuget/packages/csvhelper/33.0.1/csvhelper.33.0.1.nupkg
+```
 
 ### Finding the Latest Stable Version
 

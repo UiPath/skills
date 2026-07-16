@@ -190,13 +190,13 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 2a. **Pass `--target-framework` AND `--expression-language` explicitly on every `uip rpa init` — never omit them.** Both are immutable after creation (Rule 23); omitting `--target-framework` silently yields a **Windows** project. Choose framework by where the automation runs: cross-platform / non-Windows runtime (Linux, container, serverless) or Studio Web editing → **`Portable`** (Cross-platform); Windows runtime using Windows-only capabilities (Excel COM, classic Office, WPF / `PresentationFramework`, Windows-only UIA) or Studio Desktop as the edit surface → **`Windows`** (not editable in Studio Web). A request needing *both* a cross-platform runtime and a Windows-only capability is contradictory — surface it, don't silently pick. **Windows - Legacy is a last resort** (explicit ask or hard .NET 4.6.1 need; never inferred from VB.NET or non-"X" classic activities) — create it in Legacy mode, not modern `init`. No signal → `AskUserQuestion` (Windows vs Cross-platform), framed around the runtime host. `--expression-language`: default `VisualBasic`, `CSharp` only on explicit request.
 3. **Phase-gated validation.** Two-phase validation:
    - **Per-file** (after every create or edit): `uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Catches structural XAML, missing references, analyzer-rule violations, schema violations. Fix one thing per iteration.
-   - **Project-level build** (after per-file `validate` is clean across all files in the edit session, and before declaring done): `uip rpa build "<PROJECT_DIR>" --output json` until clean. Catches what `validate` misses (unknown members, invalid enums, CacheMetadata / member resolution, attribute-form C# JIT) — full list at [validation-guide.md § Errors `build` catches that `validate` misses](references/validation-guide.md). If `build` errors, identify the offending file from the output and re-run `validate --file-path` on it.
+   - **Project-level build** (after per-file `validate` is clean across all files in the edit session, and before declaring done): `uip rpa build "<PROJECT_DIR>" --output json` until clean. Catches what `validate` misses (unknown members, invalid enums, CacheMetadata / member resolution, attribute-form C# JIT) — full list at [cli-reference.md § Errors `build` catches that `validate` misses](references/cli-reference.md#errors-build-catches-that-validate-misses). If `build` errors, identify the offending file from the output and re-run `validate --file-path` on it.
    - **5-attempt cap per loop** — 5 attempts for each file's per-file `validate` loop; a separate 5 attempts for the project-level `build` loop. Fix one root cause per iteration.
-   - **Smoke-test shortcut:** A successful `uip rpa run` substitutes for the standalone end-of-session `build` — `run` compiles internally. Prefer `run --skip-build` when `build` has just passed; see [validation-guide.md § Smoke Test](references/validation-guide.md).
-   - **Do NOT run `uip rpa analyzer-rules list` as an authoring prerequisite.** `validate` and `build` already enforce the enabled analyzer rules and report violations with rule IDs and recommendations — pre-fetching the rule list is speculative cost (the unscoped call can take a minute or more). It is an **on-demand** command: run it when the user asks about the project's best-practice/analyzer rules, or when repeated violations of the same rule family suggest authoring against the full rule set. See [validation-guide.md § On demand: List Analyzer Rules](references/validation-guide.md) and [cli-reference.md § analyzer-rules list](references/cli-reference.md).
+   - **Smoke-test shortcut:** A successful `uip rpa run` substitutes for the standalone end-of-session `build` — `run` compiles internally. Prefer `run --skip-build` when `build` has just passed; see [cli-reference.md § Smoke Test](references/cli-reference.md#smoke-test).
+   - **Do NOT run `uip rpa analyzer-rules list` as an authoring prerequisite.** `validate` and `build` already enforce the enabled analyzer rules and report violations with rule IDs and recommendations — pre-fetching the rule list is speculative cost (the unscoped call can take a minute or more). It is an **on-demand** command: run it when the user asks about the project's best-practice/analyzer rules, or when repeated violations of the same rule family suggest authoring against the full rule set. See [cli-reference.md § analyzer-rules list](references/cli-reference.md#analyzer-rules-list).
 
-   See [references/validation-guide.md](references/validation-guide.md).
-4. **ALWAYS validate files as you go AND verify the project builds before declaring done.** After every create or edit: per-file `validate` to clean. Project-level `build` runs once at the end of the edit session (or at any compile-verification gate) — not after every Edit, because `build` is project-scoped and rebuilds the entire project regardless of which file changed. `validate` clean alone is not "validated"; it cannot see member or enum errors — the project-level `build` is mandatory before declaring done. See [references/validation-guide.md](references/validation-guide.md).
+   See [cli-reference.md § Validation Iteration Loop](references/cli-reference.md#validation-iteration-loop).
+4. **ALWAYS validate files as you go AND verify the project builds before declaring done.** After every create or edit: per-file `validate` to clean. Project-level `build` runs once at the end of the edit session (or at any compile-verification gate) — not after every Edit, because `build` is project-scoped and rebuilds the entire project regardless of which file changed. `validate` clean alone is not "validated"; it cannot see member or enum errors — the project-level `build` is mandatory before declaring done. See [cli-reference.md § Validation Iteration Loop](references/cli-reference.md#validation-iteration-loop).
 5. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
 6. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
 6a. **Pre-edit verification gate.** Two authoring actions are hard to roll back once `build` fails — verify before serialization, not after.
@@ -252,7 +252,7 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
    - `uip rpa activities find` for activities you'll author
 
    These share the warmed Studio host (§ Session Pre-warm) — pay the cold-start once, then fire the batch.
-2. **Activity-discovery fan-out.** Rule 21 runs a triple per non-card activity (`activities find` → read `<Activity>.md` → `get-default-xaml`). For K activities, emit all K `find`s as parallel `Bash`, then all K doc `Read`s in parallel, then all K `get-default-xaml`s in parallel — never one activity at a time. See [xaml/workflow-guide.md § Phase 1](references/xaml/workflow-guide.md).
+2. **Activity-discovery fan-out.** Rule 21 runs a triple per non-card activity (`activities find` → read `<Activity>.md` → `get-default-xaml`). For K activities, emit all K `find`s as parallel `Bash`, then all K doc `Read`s in parallel, then all K `get-default-xaml`s in parallel — never one activity at a time. See [xaml/xaml-basics-and-rules.md § Phase 1: Discovery](references/xaml/xaml-basics-and-rules.md#phase-1-discovery).
 
 **Chaining:** chain dependent `uip` calls with `&&` in one `Bash`; emit independent `Bash` / `Read` calls as parallel tool uses. Split a turn only where a call needs an earlier call's stdout or a file mutation.
 
@@ -296,9 +296,9 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 |-------------|------|-----------|
 | **Work in a Legacy (.NET 4.6.1) project** | Legacy | [legacy/legacy-mode-guide.md](references/legacy/legacy-mode-guide.md) — entry point. Modern-mode rules below do not apply. |
 | **Choose coded vs XAML** | Both | [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) |
-| **Work in a hybrid project** | Hybrid | [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) → [project-structure.md](references/project-structure.md) |
+| **Work in a hybrid project** | Hybrid | [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) → [environment-setup.md § Designing Project Structure](references/environment-setup.md#designing-project-structure) |
 | **Create a new project** | Both | [environment-setup.md](references/environment-setup.md) |
-| **Add/edit a coded workflow** | Coded | [coded/operations-guide.md](references/coded/operations-guide.md) → [coded/coding-guidelines.md](references/coded/coding-guidelines.md) |
+| **Add/edit a coded workflow** | Coded | [coded/operations-guide.md](references/coded/operations-guide.md) — includes § Coding Guidelines |
 | **Add a coded test case** | Coded | [coded/operations-guide.md](references/coded/operations-guide.md) — remember: register in `fileInfoCollection` (Common Rule 10) |
 | **Set up data-driven testing** | Both | [testing-guide.md § Data-Driven Testing](references/testing-guide.md) — remember: register in `fileInfoCollection` (Common Rule 10) |
 | **Create XAML test case (Given-When-Then)** | XAML | [testing-guide.md § XAML Test Case Structure](references/testing-guide.md) — remember: register in `fileInfoCollection` (Common Rule 10) |
@@ -306,11 +306,11 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 | **Use XAML test activities** | XAML | [testing-guide.md § XAML Test Activities](references/testing-guide.md) |
 | **Use execution templates** | XAML | [testing-guide.md § Execution Templates](references/testing-guide.md) |
 | **Set up Test Manager for the project** (server URL + default project) | Both | [cli-reference.md § Test Manager](references/cli-reference.md) — `uip rpa tm connect` / `set-default-project` |
-| **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
+| **Create/edit XAML workflow** | XAML | [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) — authoring workflow + anatomy + safety rules |
 | **Add error handling / resilience** (Try/Catch, Retry Scope, BusinessRuleException, ContinueOnError, screenshot-on-error, Global Exception Handler, recover app state, transaction boundary, idempotency / avoid duplicate creates, queue vs local retry ownership) | Both | [error-handling-guide.md](references/error-handling-guide.md) |
 | **Use a common activity** (`Sequence` / `If` / `Switch<T>` / `TryCatch` / `While` / `DoWhile` / `ForEach<T>` / `Assign` / `LogMessage` / `WriteLine` / `Delay` / `Throw` / `Rethrow`) | XAML | [common-activity-card.md](references/common-activity-card.md) |
-| **Create/edit Flowchart** | XAML | [xaml/flowchart-guide.md](references/xaml/flowchart-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
-| **Create StateMachine** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
+| **Create/edit Flowchart** | XAML | [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) — § Flowchart Structure & Wiring, then § Flowchart Layout |
+| **Create StateMachine** | XAML | [xaml/xaml-basics-and-rules.md § State Machine](references/xaml/xaml-basics-and-rules.md) → [xaml/canvas-layout-guide.md § State Machine Layout](references/xaml/canvas-layout-guide.md#4-state-machine-layout) |
 | **Create/edit Long Running Workflow (ProcessDiagram)** | XAML | [xaml/long-running-workflow-guide.md](references/xaml/long-running-workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Write UI automation** | Both | UIA package guide `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md` (Rule 7) |
 | **Build multi-screen UIA XAML workflow** | XAML | UIA package guide (Rule 7) § Multi-Screen Authoring |
@@ -319,31 +319,31 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 | **Drive a captured control** (date inputs, native vs custom dropdowns, buttons disabled during async) | Both | UIA package guide § Control-Specific Interaction Patterns |
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `references/activity-docs/{PackageId}/{closest}/` |
 | **Manipulate data (DataTable/LINQ, strings, RegEx, DateTime, collections, JSON)** | Both | [data-manipulation-guide.md](references/data-manipulation-guide.md) |
-| **Use Data Fabric entities** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [activity-docs overview](references/activity-docs/UiPath.DataService.Activities/overview.md) |
+| **Use Data Fabric entities** | XAML | [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) → [activity-docs overview](references/activity-docs/UiPath.DataService.Activities/overview.md) |
 | **Query Data Fabric with filters** | XAML | [data-service-filter-builder-guide.md](references/activity-docs/UiPath.DataService.Activities/guides/data-service-filter-builder-guide.md) → [QueryEntityRecords](references/activity-docs/UiPath.DataService.Activities/activities/QueryEntityRecords.md) |
 | **Call an IS connector (coded)** | Coded | [coded/integration-service-guide.md](references/coded/integration-service-guide.md) |
-| **Call an IS connector (XAML)** | XAML | [is-connector-xaml-guide.md](references/is-connector-xaml-guide.md) → [connector-capabilities.md](references/connector-capabilities.md) |
+| **Call an IS connector (XAML)** | XAML | [is-connector-xaml-guide.md](references/is-connector-xaml-guide.md) — includes connector discovery + connection lifecycle |
 | **Build an event-triggered workflow** (O365 / Gmail / Salesforce / Jira / Slack / ServiceNow / time / queue / file watcher / UI click) | XAML | [trigger-pattern-guide.md](references/trigger-pattern-guide.md) → `activity-docs/{PackageId}/{closest}/activities/<TriggerActivity>.md` |
 | **Inspect Integration Service trigger lifecycle** (webhook vs. polling, filter fields, webhook URL retrieval) | Both | [trigger-pattern-guide.md § Connection Handling](references/trigger-pattern-guide.md) and [§ Server-Side Filtering](references/trigger-pattern-guide.md) |
 | **Read or edit an existing `ui:TriggerScope` workflow** | XAML | [trigger-pattern-guide.md § Reading and Editing Existing TriggerScope XAML](references/trigger-pattern-guide.md) |
-| **Build/run/validate** | Both | [cli-reference.md](references/cli-reference.md) → [validation-guide.md](references/validation-guide.md) |
+| **Build/run/validate** | Both | [cli-reference.md](references/cli-reference.md) — includes § Validation Iteration Loop + § Smoke Test |
 | **Profile a slow workflow / verify UI automation correctness** | Both | [debugging.md § Profiling Workflow Performance](references/debugging.md) |
-| **Pack & publish project to Orchestrator** | Both | [publishing-guide.md](references/publishing-guide.md) |
+| **Pack & publish project to Orchestrator** | Both | [cli-reference.md § Pack & Publish to Orchestrator](references/cli-reference.md#pack--publish-to-orchestrator) |
 | **List project best-practice / analyzer rules** | Both | [cli-reference.md § analyzer-rules list](references/cli-reference.md) |
-| **Add a NuGet package** | Coded | [coded/operations-guide.md § Add Dependency](references/coded/operations-guide.md) → [coded/third-party-packages-guide.md](references/coded/third-party-packages-guide.md) |
+| **Add a NuGet package** | Coded | [coded/operations-guide.md § Add Dependency](references/coded/operations-guide.md) → [coded/codedworkflow-reference.md § Third-Party NuGet Packages](references/coded/codedworkflow-reference.md#third-party-nuget-packages) |
 | **Find / reuse existing tenant libraries** | Both | [tenant-library-search-guide.md](references/tenant-library-search-guide.md) |
 | **Extract reusable logic into a library** | Both | [library-authoring-guide.md](references/library-authoring-guide.md) — public-workflow contract, argument naming, private helpers |
 | **Publish a library** | Both | [library-authoring-guide.md § Pack & Publish](references/library-authoring-guide.md) — tenant libraries feed, versioning |
 | **Invoke a PowerShell script from a workflow** | Both | [powershell-interop-guide.md](references/powershell-interop-guide.md) |
 | **List / install Data Fabric entities** | Both | [cli-reference.md § Data Fabric Entities](references/cli-reference.md) |
-| **Discover activity APIs** | Coded | [coded/inspect-package-guide.md](references/coded/inspect-package-guide.md) |
-| **Troubleshoot coded errors** | Coded | [coded/coding-guidelines.md § Common Issues](references/coded/coding-guidelines.md) |
-| **Troubleshoot XAML errors** | XAML | [xaml/common-pitfalls.md](references/xaml/common-pitfalls.md) → [validation-guide.md](references/validation-guide.md) |
-| **Understand project structure** | Both | [project-structure.md](references/project-structure.md) |
+| **Discover activity APIs** | Coded | [coded/codedworkflow-reference.md § Inspect NuGet Package Tool](references/coded/codedworkflow-reference.md#inspect-nuget-package-tool-on-demand-api-discovery) |
+| **Troubleshoot coded errors** | Coded | [coded/operations-guide.md § Common Issues and Fixes](references/coded/operations-guide.md#common-issues-and-fixes) |
+| **Troubleshoot XAML errors** | XAML | [xaml/common-pitfalls.md](references/xaml/common-pitfalls.md) → [cli-reference.md § Validation Iteration Loop](references/cli-reference.md#validation-iteration-loop) |
+| **Understand project structure** | Both | [environment-setup.md § Project Structure Reference](references/environment-setup.md#project-structure-reference) |
 
 ## Coded Workflows Quick Reference
 
-Coded workflows use standard C# development: create file → write code → validate → run. Activity discovery (`activities find`, `activities get-default-xaml`) is XAML-specific — for coded mode, check `{projectRoot}/.local/docs/packages/{PackageId}/coded/coded-api.md` first for service API docs, then fall back to `packages inspect`. See [coded/inspect-package-guide.md](references/coded/inspect-package-guide.md).
+Coded workflows use standard C# development: create file → write code → validate → run. Activity discovery (`activities find`, `activities get-default-xaml`) is XAML-specific — for coded mode, check `{projectRoot}/.local/docs/packages/{PackageId}/coded/coded-api.md` first for service API docs, then fall back to `packages inspect`, then to the bundled per-package coded docs at `references/activity-docs/<PackageId>/<closest-version>/coded/`. See [coded/codedworkflow-reference.md § Inspect NuGet Package Tool](references/coded/codedworkflow-reference.md#inspect-nuget-package-tool-on-demand-api-discovery).
 
 ### Three Types of .cs Files
 
@@ -381,16 +381,13 @@ Full reference: [coded/codedworkflow-reference.md](references/coded/codedworkflo
 
 ### Templates
 
-- [assets/codedworkflow-template.md](assets/codedworkflow-template.md) — Workflow boilerplate
-- [assets/testcase-template.md](assets/testcase-template.md) — Test case boilerplate
-- [assets/helper-utility-template.md](assets/helper-utility-template.md) — Helper class boilerplate
+- [assets/codedworkflow-template.md](assets/codedworkflow-template.md) — Workflow, test case, helper-class, and Before/After-hooks boilerplate (all coded templates)
 - [assets/json-template.md](assets/json-template.md) — `entryPoints` and `fileInfoCollection` snippets
-- [assets/before-after-hooks-template.md](assets/before-after-hooks-template.md) — Before/After hooks
-- [references/project-structure-guide.md](references/project-structure-guide.md) — Project structure design guidelines (mode-agnostic)
+- [environment-setup.md § Designing Project Structure](references/environment-setup.md#designing-project-structure) — Project structure design guidelines (mode-agnostic)
 
 ## XAML Workflows Quick Reference
 
-XAML workflows follow a **discovery-first, phase-based approach**: Discovery → Generate/Edit → Validate & Fix → Response. See [references/xaml/workflow-guide.md](references/xaml/workflow-guide.md) for the full phase workflow.
+XAML workflows follow a **discovery-first, phase-based approach**: Discovery → Generate/Edit → Validate & Fix → Response. See [xaml/xaml-basics-and-rules.md § Authoring Workflow](references/xaml/xaml-basics-and-rules.md#authoring-workflow) for the full phase workflow.
 
 ### Workflow Types
 
@@ -438,10 +435,8 @@ The XAML file anatomy template (namespace declarations, root Activity element, b
 - [data-manipulation-guide.md](references/data-manipulation-guide.md) — DataTable LINQ (filter/sort/group/join/diff), strings, RegEx, DateTime, type conversion, collections, JSON; VB + C# forms
 - [error-handling-guide.md](references/error-handling-guide.md) — Modern-mode error handling & resilience: exception taxonomy, Try/Catch discipline, Retry Scope, ContinueOnError, Throw/Rethrow, screenshot-on-error, Global Exception Handler (scaffold + registration + verdict logic), state recovery before retry, transaction boundaries, idempotent/compensating writes (duplicate-create safety), sensitive-data redaction, and retry ownership across layers
 - [reframework-guide.md](references/reframework-guide.md) — REFramework execution modes, SetTransactionStatus queue-guard fix, Config.xlsx leftover trap
-- [xaml/csharp-activity-binding-guide.md](references/xaml/csharp-activity-binding-guide.md) — Canonical C# binding forms per common activity property (LogMessage, GetText, StartProcess, …) — flat lookup table + recipes
-- [xaml/csharp-expression-pitfalls.md](references/xaml/csharp-expression-pitfalls.md) — C#-specific expression failures (attribute-form VB JIT, ThrowIfNotInTree, OutArgument parse errors)
-- [xaml/flowchart-guide.md](references/xaml/flowchart-guide.md) — Flowchart node vocabulary, structure & wiring, node registration, forbidden nested-chain pattern, condition expressions
-- [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) — Flowchart, State Machine, and Long Running Workflow canvas layout with ViewState
+- [xaml/csharp-activity-binding-guide.md](references/xaml/csharp-activity-binding-guide.md) — Canonical C# binding forms per common activity property (flat lookup table + recipes) + § C# Expression Pitfalls (attribute-form VB JIT, ThrowIfNotInTree, OutArgument parse errors)
+- [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) — Flowchart node vocabulary, structure & wiring, node registration, forbidden nested-chain pattern + Flowchart/State Machine/LRW canvas layout with ViewState
 - [xaml/long-running-workflow-guide.md](references/xaml/long-running-workflow-guide.md) — LRW package dependency, node vocabulary, gateway patterns, suspend/resume persistence
 - [xaml/jit-custom-types-schema.md](references/xaml/jit-custom-types-schema.md) — JIT custom type discovery
 - [library-authoring-guide.md](references/library-authoring-guide.md) — Produce reusable libraries: public-workflow contract, activity layout sidecar (display name, icon, widgets), error contract, SemVer, pack & publish to the libraries feed

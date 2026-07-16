@@ -7,7 +7,7 @@ Expression/code patterns for transforming data in modern projects: DataTable LIN
 - C# XAML expression *binding* form (`CSharpValue`/`CSharpReference`) → [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 - Config.xlsx row/field access in REFramework → [reframework-guide.md](reframework-guide.md).
 - Per-activity property surfaces (ForEachRow, AddDataRow, JoinDataTables, SortDataTable, …) → `{PROJECT_DIR}/.local/docs/packages/UiPath.System.Activities/` or `references/activity-docs/UiPath.System.Activities/`.
-- Coded-mode `using` directives → [coded/coding-guidelines.md](coded/coding-guidelines.md).
+- Coded-mode `using` directives → [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules).
 
 ## Where each snippet goes — read first
 
@@ -28,7 +28,7 @@ A DataTable LINQ chain needs ALL of the following in `TextExpression` (XAML). Do
 - **Namespace imports** (`NamespacesForImplementation`): `System.Data`, `System.Linq`
 - **Assembly references** (`ReferencesForImplementation`): `System.Data`, `System.Data.Common`, `System.Data.DataSetExtensions`
 
-A scaffolded project (`uip rpa init`) already has all of these — untouched, the LINQ family just works. Add them only when hand-authoring a XAML file or after trimming imports. Coded (`.cs`): `using System.Data;` + `using System.Linq;` ([coded/coding-guidelines.md](coded/coding-guidelines.md)).
+A scaffolded project (`uip rpa init`) already has all of these — untouched, the LINQ family just works. Add them only when hand-authoring a XAML file or after trimming imports. Coded (`.cs`): `using System.Data;` + `using System.Linq;` ([coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules)).
 
 Notes:
 - `AsEnumerable` / `CopyToDataTable` / `DataRowComparer`: in modern (Windows / cross-platform) they resolve via `System.Data` (the `System.Data.DataSetExtensions` reference is harmless and present by default); **legacy (.NET Framework 4.6.1) requires `System.Data.DataSetExtensions`** — there they live in that assembly, not `System.Data`. Including it in both is the safe default.
@@ -308,4 +308,4 @@ API-response pattern: parse `responseBody`, `If response("error") IsNot Nothing`
 
 ## Coded (`.cs`) note
 
-Coded workflows use the C# forms directly (`r => r["Col"]`, ternary, `out`, `?.`, `??`, collection initializers, verbatim `@"\d+"` regex, query or method LINQ). Add the `using`s (`System.Data`, `System.Linq`, `System.Text.RegularExpressions`, `System.Globalization`) per [coded/coding-guidelines.md](coded/coding-guidelines.md). The XAML C# *binding* wrapper is separate — [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
+Coded workflows use the C# forms directly (`r => r["Col"]`, ternary, `out`, `?.`, `??`, collection initializers, verbatim `@"\d+"` regex, query or method LINQ). Add the `using`s (`System.Data`, `System.Linq`, `System.Text.RegularExpressions`, `System.Globalization`) per [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules). The XAML C# *binding* wrapper is separate — [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
