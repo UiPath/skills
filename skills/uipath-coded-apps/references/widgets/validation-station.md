@@ -10,6 +10,8 @@ Package: [`@uipath/ui-widgets-validation-station`](https://www.npmjs.com/package
 - App receives a `ContentValidationData` payload (bucket paths + document ID) — either from an Action Center task created by a DU workflow, or fetched at runtime in a web app.
 - Replaces a hand-rolled PDF viewer + field editor. Do **not** rebuild this UI from scratch — the widget already handles PDF rendering, bounding boxes, table editing, translations, and save/discard plumbing.
 
+**Two integration shapes.** The all-in-one `ValidationStation` component (standard layout, fastest — most apps want this) covers the sections below. When you need a **custom layout** — rearrange, hide, or embed individual panels (viewer, fields form, table editor, doc-type field, business rules) — the package also exports those as composable **subcomponents**. See [Compose-your-own layout: subcomponents](#compose-your-own-layout-subcomponents).
+
 If the user just wants a generic form (no DU document), use the standard Action App form pattern in [../create-action-app.md](../create-action-app.md) instead.
 
 ## Critical Rules
@@ -297,6 +299,95 @@ useEffect(() => {
 }, [isDark]);
 ```
 
+## Compose-your-own layout: subcomponents
+
+When the standard layout doesn't fit — you need to rearrange panels, hide some, or embed one piece inside your own screen — the package also exports the Validation Station as **five composable subcomponents** plus a data hook, instead of the all-in-one `ValidationStation`. Same document, same bucket artifacts, same save flows; you own the layout.
+
+Exports (from the same `@uipath/ui-widgets-validation-station` package):
+
+| Export | Kind | Role |
+|--------|------|------|
+| `useBucketArtifacts(sdk, data, folderId)` | hook | Fetches the document + extraction artifacts **once**; returns `{ artifacts, error }`. Feed `artifacts` to every subcomponent. |
+| `DocumentViewer` | component | PDF/text viewer with bounding boxes. Read-only. |
+| `CompactFieldsForm` | component | Extraction fields, editable. The **only** subcomponent that persists — give it `sdk` + `data` + `folderId` and it runs Submit / Save-draft / Report-exception (same callbacks as the monolithic widget). |
+| `CompactTableEditor` | component | Inline editor for table (line-item) fields. Edit-only. |
+| `CompactDocTypeField` | component | Document-type selector dropdown. |
+| `CompactBusinessRules` | component | Read-only evaluated business rules. |
+
+**How they link — one shared `instanceId`.** Give every subcomponent the same `instanceId` string and they share a single store: selecting a field in the form highlights it in the viewer, selecting a table field opens the table editor, clicking a rule focuses the offending field. No cross-wiring — the shared id *is* the wiring. Different ids → independent, unlinked panels.
+
+Must-knows (all easy to get wrong):
+
+0. **Requires a package version that exports the subcomponents** (`@uipath/ui-widgets-validation-station >= <FIRST_VERSION_WITH_SUBCOMPONENTS>`). Earlier versions export only `ValidationStation`; if the import fails at build, the installed version predates them — bump it.
+1. **Fetch artifacts once, share them.** Call `useBucketArtifacts` in the parent and pass the same `artifacts` object to all subcomponents. Calling it per-subcomponent re-downloads the same unchanged document once per panel.
+2. **Only `CompactFieldsForm` gets `sdk`/`data`/`folderId`.** It owns persistence. The other four can take the pre-fetched `artifacts` only.
+3. **Set `persistent: false` for static layouts.** These panels sit in a fixed grid and are never re-parented. Leaving `persistent` on makes React StrictMode's throwaway unmount call `forceDestroy()`, tearing down the underlying element so it renders **blank**. Only set `persistent: true` if you actually move a subcomponent between DOM parents.
+4. **Drop duplicated panels via `options`.** When you render `CompactBusinessRules` / `CompactDocTypeField` standalone, tell the fields form to hide its built-in copies: `options={{ hideBusinessRules: true, hideDocumentTypeField: true, emitDtoStateChanges: true }}`. (`emitDtoStateChanges` is still required for save-as-draft, same as the monolithic widget.)
+
+Same static-asset copy and `optimizeDeps.exclude` setup as the monolithic widget applies (see [Static Assets](#static-assets--vite-plugin)) — the subcomponents load the same web component under the hood. Peer versions and SDK scopes are identical too.
+
+```typescript
+import {
+  DocumentViewer,
+  CompactDocTypeField,
+  CompactFieldsForm,
+  CompactTableEditor,
+  CompactBusinessRules,
+  useBucketArtifacts,
+  ValidationStationLanguage,
+  type SaveValidatedDataResult,
+} from '@uipath/ui-widgets-validation-station';
+import type { DuFramework } from '@uipath/uipath-typescript/document-understanding';
+import { TaskType } from '@uipath/uipath-typescript/tasks';
+import type { TaskGetResponse } from '@uipath/uipath-typescript/tasks';
+import { useAuth } from '../hooks/useAuth';
+
+// `task` is already hydrated via tasks.getById(...) — see "Integration: Web App".
+function ReviewWorkspace({ task }: { task: TaskGetResponse }) {
+  const { sdk } = useAuth();
+  const data = task.data as DuFramework.ContentValidationData;
+  const { artifacts, error } = useBucketArtifacts(sdk, data, task.folderId);
+
+  if (error) return <div>Failed to load document: {error}</div>;
+  if (!artifacts) return <div>Loading document…</div>;
+
+  // One shared store for the whole screen, scoped to this document.
+  const instanceId = `review-${data.DocumentId ?? task.id}`;
+  const shared = {
+    artifacts,
+    documentId: data.DocumentId,
+    instanceId,
+    theme: 'light' as const,
+    language: ValidationStationLanguage.English,
+    persistent: false, // static grid — see must-know #3
+  };
+
+  const handleSubmit = async (result: SaveValidatedDataResult) => {
+    if (!result.success) return; // widget renders no error UI — surface it yourself
+    await task.complete({ action: 'Completed', type: TaskType.DocumentValidation });
+  };
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 8, height: '100%' }}>
+      <DocumentViewer {...shared} style={{ height: '100%' }} />
+      <CompactDocTypeField {...shared} />
+      <CompactFieldsForm
+        {...shared}
+        sdk={sdk}
+        data={data}
+        folderId={task.folderId}
+        options={{ hideBusinessRules: true, hideDocumentTypeField: true, emitDtoStateChanges: true }}
+        onSubmitComplete={handleSubmit}
+      />
+      <CompactTableEditor {...shared} />
+      <CompactBusinessRules {...shared} />
+    </div>
+  );
+}
+```
+
+Runnable end-to-end example (task list + selection + all five subcomponents wired to Submit / Save-draft / Report-exception): the [`document-validation-subcomponents-app` sample](https://github.com/UiPath/uipath-typescript/tree/main/samples/document-validation-subcomponents-app) in the SDK repo.
+
 ## Anti-patterns
 
 - **Do not skip the `du-assets/` copy step.** PDF rendering and translations 404 silently in prod; "works on my machine" because dev serves from `node_modules`.
@@ -306,3 +397,11 @@ useEffect(() => {
 - **Do not call `completeTask` inside the `save` setter.** Always wait for `onSubmitComplete` with `success: true` — submit may fail validation, and completing early submits unvalidated data.
 - **Do not assume the widget shows an error on failure — it does not.** `onSubmitComplete`/`onSaveAsDraftComplete` with `success: false` render no UI; surface the error yourself (`showMessage`, toast, etc.).
 - **Do not treat `onReportExceptionComplete` like the save callbacks.** It receives `(documentId, reason)`, not `SaveValidatedDataResult`, and persists nothing — you must call `OrchestratorDuModule.submitExceptionReport(...)` before completing the task.
+
+Subcomponents (compose-your-own layout) only:
+
+- **Do not call `useBucketArtifacts` inside each subcomponent.** Fetch once in the parent and pass the same `artifacts` down, or you refetch the whole document per panel.
+- **Do not give more than one subcomponent `sdk`/`data`.** Only `CompactFieldsForm` persists.
+- **Do not leave `persistent` on for a static grid.** StrictMode's throwaway unmount calls `forceDestroy()` and the panel renders blank. Use `persistent: false` unless you actually re-parent the subcomponent.
+- **Do not give subcomponents different `instanceId`s** and expect them to sync — the shared id is what links the store; mismatched ids leave the panels independent.
+- **Do not render `CompactBusinessRules`/`CompactDocTypeField` standalone without hiding the form's built-in copies** (`options.hideBusinessRules` / `hideDocumentTypeField`) — you'll get each panel twice.
