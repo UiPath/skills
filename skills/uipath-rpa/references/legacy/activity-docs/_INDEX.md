@@ -45,7 +45,7 @@ Reference documents for writing **legacy** UiPath RPA workflows (XAML). Each fil
 | [WorkflowEvents.md](WorkflowEvents.md) | UiPath.WorkflowEvents.Activities | App-triggered workflows via SignalR |
 | [Google-Speech.md](Google-Speech.md) | UiPath.Google.Activities | Google Cloud Speech-to-Text, Text-to-Speech |
 | [ComplexScenarios.md](ComplexScenarios.md) | UiPath.ComplexScenarios.Activities | Pre-built StudioX scenario templates |
-| [ActiveDirectory.md](ActiveDirectory.md) | (Deprecated) | Moved to github.com/UiPath/it-automation |
+| [ActiveDirectory.md](ActiveDirectory.md) | (Deprecated) | Moved out of the main Activities repository |
 
 ## Third-Party Packages
 
