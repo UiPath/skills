@@ -2,9 +2,9 @@ task_id: skill-bpmn-error-boundary-handler
 description: >
   Structural error-handling eval: agent uses the uipath-maestro-bpmn skill to
   attach an INTERRUPTING error boundary event (cancelActivity="true") with a
-  configured error code to a serviceTask, routing the caught error to a recovery
-  path. Exercises the ERROR_BOUNDARY_EVENT_REQUIRES_ERROR_CODE and duplicate
-  catch-all boundary rules. Authoring only — no cloud effects.
+  configured error code to a service-call task, routing the caught error to a
+  recovery path. Exercises the ERROR_BOUNDARY_EVENT_REQUIRES_ERROR_CODE and
+  duplicate catch-all boundary rules. Authoring only — no cloud effects.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
 
 run_limits:
@@ -22,12 +22,12 @@ initial_prompt: |
   Author a single Maestro BPMN file `InvoiceServiceRecovery.bpmn` in the working
   directory that recovers from a service failure with a boundary event:
     - a manual start,
-    - a serviceTask that posts an invoice to a downstream service,
+    - a task that posts an invoice to a downstream service (use the registry
+      service/HTTP node type of your choice),
     - an INTERRUPTING error boundary event (cancelActivity="true") attached to
-      that serviceTask, referencing a declared bpmn:error that carries an
-      errorCode,
-    - on the happy path the serviceTask flows to a normal end event; when the
-      boundary error fires, it routes to a recovery task and its own end event.
+      that task, referencing a declared bpmn:error that carries an errorCode,
+    - on the happy path the task flows to a normal end event; when the boundary
+      error fires, it routes to a recovery task and its own end event.
 
   Requirements:
   - Discover any UiPath extension node's type via the registry and author it from
@@ -70,7 +70,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Interrupting error boundary with a configured code on a serviceTask routes to recovery, fully shaped"
+    description: "Interrupting error boundary with a configured code on a service-call task routes to recovery, fully shaped"
     command: "python3 $TASK_DIR/check_error_boundary_handler.py"
     timeout: 30
     expected_exit_code: 0

@@ -8,7 +8,11 @@ host task:
   - attachedToRef resolves to a userTask;
   - a valid non-week ISO-8601 timer duration (or an expression);
   - a DI shape for the boundary event and an outgoing flow.
-Reuses the shared uipath-maestro-bpmn check helpers.
+
+Element lookups are case-insensitive on the BPMN local name: registry
+xmlTemplates emit capitalized element names (e.g. bpmn:UserTask for
+Actions.HITL) while hand-authored structural BPMN uses the lowercase-camel
+spec names. Reuses the shared uipath-maestro-bpmn check helpers.
 """
 
 from __future__ import annotations
@@ -16,30 +20,51 @@ from __future__ import annotations
 import os
 import re
 import sys
+import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")))
 from _shared.bpmn_check import (  # noqa: E402
     NS,
     attr,
-    elements,
     fail,
     parse_bpmn,
     require_di_for_visible_elements,
     require_sequence_integrity,
 )
 
+BPMN_NS = NS["bpmn"]
+
+
+def els(root: ET.Element, kind: str) -> list[ET.Element]:
+    """Case-insensitive BPMN element lookup by local name."""
+    prefix = "{" + BPMN_NS + "}"
+    kl = kind.lower()
+    return [
+        el for el in root.iter()
+        if el.tag.startswith(prefix) and el.tag[len(prefix):].lower() == kl
+    ]
+
+
+def child(el: ET.Element, kind: str) -> ET.Element | None:
+    prefix = "{" + BPMN_NS + "}"
+    kl = kind.lower()
+    for c in el:
+        if c.tag.startswith(prefix) and c.tag[len(prefix):].lower() == kl:
+            return c
+    return None
+
 
 def main() -> None:
     path, root = parse_bpmn("ApprovalReminder")
 
-    user_task_ids = {attr(t, "id") for t in elements(root, "userTask")}
+    user_task_ids = {attr(t, "id") for t in els(root, "userTask")}
     if not user_task_ids:
         fail("no userTask to attach a reminder timer to")
-    flows = elements(root, "sequenceFlow")
+    flows = els(root, "sequenceFlow")
 
     timer_boundaries = [
-        be for be in elements(root, "boundaryEvent")
-        if be.find("bpmn:timerEventDefinition", NS) is not None
+        be for be in els(root, "boundaryEvent")
+        if child(be, "timerEventDefinition") is not None
     ]
     if not timer_boundaries:
         fail("no timer boundary event (boundaryEvent with a bpmn:timerEventDefinition)")
@@ -53,12 +78,10 @@ def main() -> None:
         attached = attr(be, "attachedToRef")
         if attached not in user_task_ids:
             fail(f"non-interrupting timer boundary {be_id} attachedToRef {attached!r} is not a userTask")
-        tdef = be.find("bpmn:timerEventDefinition", NS)
-        dur = tdef.find("bpmn:timeDuration", NS)
-        date = tdef.find("bpmn:timeDate", NS)
-        cycle = tdef.find("bpmn:timeCycle", NS)
+        tdef = child(be, "timerEventDefinition")
         spec = None
-        for el in (dur, date, cycle):
+        for kind in ("timeDuration", "timeDate", "timeCycle"):
+            el = child(tdef, kind)
             if el is not None and (el.text or "").strip():
                 spec = el.text.strip()
                 break

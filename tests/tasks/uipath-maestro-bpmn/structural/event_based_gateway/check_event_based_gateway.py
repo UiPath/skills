@@ -3,39 +3,64 @@
 
 Asserts:
   - a bpmn:eventBasedGateway with >=2 outgoing sequence flows;
-  - every outgoing flow targets a bpmn:intermediateCatchEvent (the only valid
+  - every outgoing flow targets an intermediate catch event (the only valid
     target type for an event-based gateway);
   - among the raced catch events, at least one carries a messageEventDefinition
     and at least one carries a timerEventDefinition;
   - the gateway's outgoing flows all have BPMNEdges.
-Reuses the shared uipath-maestro-bpmn check helpers.
+
+Element lookups are case-insensitive on the BPMN local name: registry
+xmlTemplates emit capitalized element names (e.g. bpmn:IntermediateCatchEvent
+for Maestro.ReceiveMessageEvent) while hand-authored structural BPMN uses the
+lowercase-camel spec names. Reuses the shared uipath-maestro-bpmn check helpers.
 """
 
 from __future__ import annotations
 
 import os
 import sys
+import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")))
 from _shared.bpmn_check import (  # noqa: E402
     NS,
     attr,
-    elements,
     fail,
     parse_bpmn,
     require_di_for_visible_elements,
     require_sequence_integrity,
 )
 
+BPMN_NS = NS["bpmn"]
+
+
+def els(root: ET.Element, kind: str) -> list[ET.Element]:
+    """Case-insensitive BPMN element lookup by local name."""
+    prefix = "{" + BPMN_NS + "}"
+    kl = kind.lower()
+    return [
+        el for el in root.iter()
+        if el.tag.startswith(prefix) and el.tag[len(prefix):].lower() == kl
+    ]
+
+
+def child(el: ET.Element, kind: str) -> ET.Element | None:
+    prefix = "{" + BPMN_NS + "}"
+    kl = kind.lower()
+    for c in el:
+        if c.tag.startswith(prefix) and c.tag[len(prefix):].lower() == kl:
+            return c
+    return None
+
 
 def main() -> None:
     path, root = parse_bpmn("PaymentRace")
 
-    gateways = elements(root, "eventBasedGateway")
+    gateways = els(root, "eventBasedGateway")
     if not gateways:
         fail("no bpmn:eventBasedGateway")
-    flows = elements(root, "sequenceFlow")
-    catch_by_id = {attr(c, "id"): c for c in elements(root, "intermediateCatchEvent")}
+    flows = els(root, "sequenceFlow")
+    catch_by_id = {attr(c, "id"): c for c in els(root, "intermediateCatchEvent")}
     edged = {e.attrib.get("bpmnElement") for e in root.findall(".//bpmndi:BPMNEdge", NS)}
 
     valid = False
@@ -48,8 +73,8 @@ def main() -> None:
         non_catch = [t for t in targets if t not in catch_by_id]
         if non_catch:
             fail(f"event-based gateway {gw_id} routes to non-catch targets {non_catch} (must be intermediateCatchEvents)")
-        has_message = any(catch_by_id[t].find("bpmn:messageEventDefinition", NS) is not None for t in targets)
-        has_timer = any(catch_by_id[t].find("bpmn:timerEventDefinition", NS) is not None for t in targets)
+        has_message = any(child(catch_by_id[t], "messageEventDefinition") is not None for t in targets)
+        has_timer = any(child(catch_by_id[t], "timerEventDefinition") is not None for t in targets)
         if not has_message:
             fail(f"event-based gateway {gw_id} has no message catch among its raced events")
         if not has_timer:
