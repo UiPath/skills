@@ -23,7 +23,7 @@ receipts, and standard-list output:
 
 ## 2. 403 → preview not enabled (stop the flow)
 
-If **any** `uip gov compliance-packs …` call (`catalog get`, `state coverage|get|list|enable|disable`)
+If **any** `uip gov compliance-pack` call (`list`, `enable`, `disable`, `analyze`, `review`, `bundle`)
 returns **HTTP 403 / Forbidden**, the organization is not enrolled in the preview. **Stop immediately:**
 do not retry, and run no further compliance commands. Present exactly this, then end the flow:
 

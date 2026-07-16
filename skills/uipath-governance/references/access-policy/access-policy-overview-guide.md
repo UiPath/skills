@@ -204,7 +204,7 @@ A `ToolUsePolicy` access policy is structured as three rule blocks evaluated aga
 
 The CLI wraps two endpoints:
 - **PAP (Policy Administration Point)** — `list` / `get` / `create` / `update` / `delete` operate on policy records in the catalog.
-- **PDP (Policy Decision Point)** — `evaluate` asks the service to resolve the effective decision for a concrete request context. `evaluate` requires tenant-scoped login (Critical Rule #12).
+- **PDP (Policy Decision Point)** — `evaluate` asks the service to resolve the effective decision for a concrete request context. `evaluate` needs an active tenant session (Critical Rule #12).
 
 ### Evaluation & aggregation
 
@@ -308,7 +308,7 @@ Reply with the number.
 Reply with the number.
 ```
 
-**Do NOT offer `Evaluate this policy` in the post-mutation list** — end users creating or updating a policy do not need to dry-run it, and dummy-UUID evaluations produce confusing results (Critical Rule #12). `evaluate` remains available on demand only when the user explicitly asks; route via [access-policy-commands.md — evaluate](./access-policy-commands.md#uip-gov-access-policy-evaluate) (real UUIDs + tenant-scoped login required — Critical Rule #12).
+**Do NOT offer `Evaluate this policy` in the post-mutation list** — end users creating or updating a policy do not need to dry-run it, and dummy-UUID evaluations produce confusing results (Critical Rule #12). `evaluate` remains available on demand only when the user explicitly asks; route via [access-policy-commands.md — evaluate](./access-policy-commands.md#uip-gov-access-policy-evaluate) (real UUIDs only — Critical Rule #12).
 
 Do not run any of these actions automatically. Wait for the user's selection.
 

@@ -19,4 +19,4 @@ product, continue).
 
 **Warnings on stderr:** the script uses `console.warn` (→ stderr, not stdout). Lines starting with `⚠`
 indicate controls whose values are org-specific (`notEmpty`) or are access-policy checks (`exists`) —
-collect those values from the user before proceeding (see [impl.md](impl.md) Step 1b).
+collect those values from the user before proceeding — prompt for each `⚠` control by its display name before building the override file.

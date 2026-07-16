@@ -76,7 +76,7 @@ uip gov aops-policy list [--product-name X] [--search Q] [--limit N] [--offset M
 uip gov aops-policy get <policyIdentifier> --output json
 # Response shape: { Data: { name, identifier, description, priority, availability, product, data: {...} } }
 
-# UPDATE — ALL metadata flags required, see cli-known-issues.md #2
+# UPDATE — ALL metadata flags required (all must be present or the call returns 500)
 uip gov aops-policy update \
   --identifier <guid> \
   --name <policyName> \
@@ -97,7 +97,7 @@ Bare `formData` object, NOT wrapped in `{ "data": ... }`. The CLI adds the wrapp
 
 ## Deployment (tenant / group / user)
 
-> **All `deployment * configure` commands are FULL REPLACE.** The submitted array rewrites the target's assignment list. Always read current state first, merge new entries in, then configure. See [policy-assign.md](policy-assign.md) for the merge-first pattern.
+> **All `deployment * configure` commands are FULL REPLACE.** The submitted array rewrites the target's assignment list. Always read current state first (`deployment tenant/group/user get`), merge new entries in, then configure.
 >
 > **Why this matters:** the previous `assign-tenant` / `assign-group` / `assign-user` commands had a "last deploy wins" bug — sequential single-policy calls each did a full-replace at the API. The new `configure` commands fix this by taking the full assignment list in one atomic call.
 
@@ -173,8 +173,8 @@ This skill uses only the default caller-own mode. The `--tenant-only` and `--use
 | `401 / 403` | Session expired or insufficient perms. | Halt. Ask user to `uip login`. |
 | `404` | Identifier not found. | Halt. Check IDs. (Missing `--input` paths now surface a clear filesystem error, not 404.) |
 | `409` | Duplicate policy name on create. | Halt. V1 = do NOT retry-as-update. (Critical Rule in SKILL.md) |
-| `500` | Often [missing metadata flags on update (known-issue #2)](cli-known-issues.md). | Halt. Re-read policy metadata, pass all flags. |
-| `503` with transient `Instructions` text (`template upgrade`, `connection timeout`, `backend temporarily unavailable`) | AOPS is migrating the policy's Form.io template or a dependency is flapping — typically tens of seconds to minutes. | Do NOT use the default 3s retry. Wait 30s before first retry, 60s before second. Or surface to user and offer `retry now` / `cancel`. Only halt after a third failure or if the `Instructions` text shifts to a non-transient error. See [policy-crud.md UPDATE error map](policy-crud.md#update-recipe). |
+| `500` | Often missing metadata flags on update — `--name`, `--product-name`, `--description`, `--priority`, `--availability` are all required. | Halt. Re-read policy metadata via `get`, pass all flags. |
+| `503` with transient `Instructions` text (`template upgrade`, `connection timeout`, `backend temporarily unavailable`) | AOPS is migrating the policy's Form.io template or a dependency is flapping — typically tens of seconds to minutes. | Do NOT use the default 3s retry. Wait 30s before first retry, 60s before second. Or surface to user and offer `retry now` / `cancel`. Only halt after a third failure or if the `Instructions` text shifts to a non-transient error. |
 | `5xx` other | Server-side. | Retry once after 3s. Halt on second failure. Surface `Instructions` verbatim. |
 
 All halts write a deploy record (Apply) or patch record (Diagnose).

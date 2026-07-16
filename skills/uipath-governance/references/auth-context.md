@@ -35,15 +35,6 @@ UIPATH_ACCESS_TOKEN=$(grep      '^UIPATH_ACCESS_TOKEN='       "$AUTH_FILE" | cut
 | `UIPATH_ACCESS_TOKEN` | `eyJ...` (JWT) | Raw API calls (principals lookup, until CLI wraps it) |
 | `UIPATH_REFRESH_TOKEN` | `...` | Do not use — CLI manages refresh |
 
-## Preflight check
-
-Before any capability runs, verify:
-
-1. `uip login status --output json` returns `Data.Status == "Logged in"`.
-2. `~/.uipath/.auth` exists and `UIPATH_TENANT_ID` is non-empty.
-
-If either fails, halt and surface a `401 / not authenticated` error to the user.
-
 ## Tenant-intent validation (Apply / Advise / Diagnose)
 
 When the user's prompt names a specific tenant (e.g., *"on staging tenant"*, *"in production"*, *"apply to the prod tenant"*), compare their named tenant against `UIPATH_TENANT_NAME` and `UIPATH_URL` **before** taking any mutation action.

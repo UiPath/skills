@@ -8,8 +8,6 @@ user-invocable: true
 
 # UiPath Governance
 
-> **Preview** — skill is under active development; surface and behavior may change.
-
 Uber skill for UiPath governance authoring. Three backing CLI surfaces:
 
 | Surface | Governs | CLI |

@@ -6,7 +6,7 @@ The three branches:
 
 - **Branch A — AOps product policy** (`uip gov aops-policy`) → governs *product feature behavior* on Studio / StudioX / Assistant / Robot / AI Trust Layer / Agent Builder.
 - **Branch B — Access ToolUsePolicy** (`uip gov access-policy`) → governs *resource/tool use* on the Actor Process → child Resource boundary.
-- **Branch C — Custom policy** (`uip gov custom-policy`) → governs *agent runtime behavior* via WASM-compiled guardrails enforced at every lifecycle hook (model calls, tool calls, agent I/O).
+- **Branch C — Custom Policy** (`uip gov custom-policy`) → governs *agent runtime behavior* via WASM-compiled guardrails enforced at every lifecycle hook (model calls, tool calls, agent I/O).
 
 ## Compliance standard override (highest priority)
 
@@ -46,16 +46,16 @@ Route directly when the user:
 
 → Continue at [`access-policy/access-policy-overview-guide.md`](./access-policy/access-policy-overview-guide.md).
 
-## Strong signals — Branch C (Custom policy)
+## Strong signals — Branch C (Custom Policy)
 
 Route directly when the user:
 
-- Mentions `custom-policy`, `custom policy`, `uip gov custom-policy`, `custom agent policy`, `agent policy`, `runtime guardrail`, `WASM policy`, or `runtime policy`.
+- Mentions `custom-policy`, `custom policy`, `uip gov custom-policy`, `runtime guardrail`, `WASM policy`, or `runtime policy`.
 - Wants to **block PII / regex patterns in prompts or responses** at agent runtime — not at the Studio/product layer.
 - Wants to **restrict which models** an agent can call at runtime.
 - Wants to **allowlist tools** an agent may invoke, or **cap tool calls** per session.
-- Mentions **lifecycle hooks** — `before_model`, `after_model`, `tool_call`, `after_tool`, `before_agent`, `after_agent`.
-- Wants to **list, enable, disable, create, update, or delete** an custom policy by name or ID.
+- Mentions **lifecycle hooks** — `before_model`, `after_model`, `tool_call`, `after_tool`, `before_agent`, `after_agent`, `memory_write`.
+- Wants to **list, enable, disable, create, or delete** an custom policy by name or ID.
 
 → Continue at [`custom-policy/custom-policy-overview-guide.md`](./custom-policy/custom-policy-overview-guide.md).
 
@@ -86,7 +86,7 @@ Skip the question and route directly when the phrasing is unambiguous.
 | "Block PII / SSN / credit cards in agent prompts" | C — agent runtime guardrail |
 | "Cap tool calls at N per session" | C — agent runtime guardrail |
 | "Only allow GPT-4o / Claude for this agent" | C — agent runtime guardrail |
-| "List / enable / disable my agent policies" | C — agent policy management |
+| "List / enable / disable my agent policies" | C — custom policy management |
 
 ## Worked example — the canonical ambiguous prompt
 
