@@ -16,6 +16,18 @@ Response wrapper: `{ Result, Code: "RecordList" | "RecordQuery", Data: { Items, 
 - **`Data.NextCursor` is an object `{ "Value": "<base64-string>" }`, not a flat string.** Pass `Data.NextCursor.Value` to `--cursor` on the next call (unwrap one level). Passing the whole `NextCursor` object errors out.
 - Use `Data.HasNextPage` to check if more records exist. Stop when it's `false`.
 
+## MULTILINE_MAX Fields — Marker vs Full Content
+
+`records list` and `records query` do NOT return `MULTILINE_MAX` content. Each such field comes back as a size marker string starting `HasValue=true Length=N` — live form: `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`. Only single-record read returns the full content:
+
+```bash
+uip df records get <entity-id> <record-id> --output json
+```
+
+1. **Never treat the marker as the value.** Don't display, compare, or persist `"HasValue=true Length=N"` as field content — fetch via `records get` first.
+2. **Never write the marker back.** A `records update` body built by echoing a record from `list` / `query` overwrites the real content with the literal marker string — verified: the server accepts it as a normal value, `Result: Success`, content silently destroyed. Omit `MULTILINE_MAX` keys from update bodies unless intentionally replacing the content.
+3. **No filter, no sort.** `queryFilters` / `sortOptions` naming a `MULTILINE_MAX` field → 400: *"Field '<name>' is of type MULTILINE_MAX and cannot be used in filters."* / *"Sort field '<name>' is of type MULTILINE_MAX and cannot be used for sorting."* Surface verbatim (data-fabric.md Rule 18); don't retry with other operators. Full type contract: [entity-schema.md → MULTILINE_MAX fields](entity-schema.md#multiline_max-fields).
+
 ## Pagination
 
 Offset-based under the hood. Available on both `records list` and `records query`:

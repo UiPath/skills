@@ -32,6 +32,7 @@ Pass the exact `EntityFieldDataType` UPPERCASE string — CLI is case-sensitive.
 |---|---|---|
 | `STRING` | NVARCHAR | Short text (≤4000 chars via `lengthLimit`) |
 | `MULTILINE_TEXT` | NVARCHAR(MAX) | Long text (≤10000 chars via `lengthLimit`) |
+| `MULTILINE_MAX` | NVARCHAR(MAX) | Very large text (`lengthLimit` = UTF-16 byte budget, 1–131072; default 128 KB ≈ 65,536 chars max). No filter/sort; list/query reads return a size marker — see [MULTILINE_MAX fields](#multiline_max-fields) |
 | `DECIMAL` | DECIMAL | All numbers — `decimalPrecision: 0` for whole; `2` for money |
 | `BOOLEAN` | BIT | true/false |
 | `DATE` | DATE | Date only |
@@ -62,7 +63,7 @@ CLI needs UPPERCASE enum. Users write mixed-case + synonyms. Two paths:
 
 | User phrasing | Ask |
 |---|---|
-| `text` / `long text` / `paragraph` | `STRING` vs `MULTILINE_TEXT` — expected length? |
+| `text` / `long text` / `paragraph` / `document body` | `STRING` (≤4000) vs `MULTILINE_TEXT` (≤10000) vs `MULTILINE_MAX` (up to ≈65,536 chars, but no filter/sort — see [MULTILINE_MAX fields](#multiline_max-fields)) — expected length? |
 | `number` / `int` / `integer` / `float` / `double` | `DECIMAL` — how many decimal places? (`0` for whole, `2` for money) |
 | `money` / `price` / `amount` | Default `DECIMAL` with `decimalPrecision: 2`; confirm |
 | `timestamp` / `datetime` | Default `DATETIME_WITH_TZ`; confirm |
@@ -73,6 +74,24 @@ CLI needs UPPERCASE enum. Users write mixed-case + synonyms. Two paths:
 | `uuid` / `guid` | `RELATIONSHIP` if FK else `STRING` — ask |
 
 If the CLI rejects a `--body` with *"Cannot read properties of undefined (reading 'sqlTypeName')"*, the `type` value didn't match a known enum — almost always a casing issue. Re-emit with the exact UPPERCASE value from the table above.
+
+### MULTILINE_MAX fields
+
+Very large text. Contract differs from `MULTILINE_TEXT` in three ways — all three matter:
+
+1. **Tenant-gated.** Schema creation requires the `MultilineMax` feature flag on the tenant. Where off, `entities create` / `addFields` naming the type returns 400 — report as an enablement gap (*"MultilineMax feature flag not enabled on this tenant"*), do NOT retry or silently substitute `MULTILINE_TEXT` (Rule 18).
+2. **Not filterable, not sortable.** Any `queryFilters` or `sortOptions` entry naming a `MULTILINE_MAX` field → 400: *"Field '<name>' is of type MULTILINE_MAX and cannot be used in filters."* / *"Sort field '<name>' is of type MULTILINE_MAX and cannot be used for sorting."* Never offer the field in filter/sort predicates. See [filter contract](filter-platform-contract.md#operator-support-by-field-type).
+3. **List/query reads return a size marker, not content.** `records list` / `records query` return a string starting `HasValue=true Length=N` (live form: `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`); only `records get <entity-id> <record-id>` returns the full value. Read + write-back rules in [records-query.md → MULTILINE_MAX fields](records-query.md#multiline_max-fields--marker-vs-full-content).
+
+Needs `@uipath/data-fabric-tool` `1.198.0+` (see data-fabric.md → Tool Version Requirements).
+
+```bash
+uip df entities create "Documents" \
+  --body '{"fields":[{"fieldName":"Title","type":"STRING","isRequired":true},{"fieldName":"Body","type":"MULTILINE_MAX"}]}' \
+  --output json
+```
+
+`lengthLimit` optional: UTF-16 **byte** budget, 1–131072; omitted → 131072 (platform max ≈ 65,536 chars — verified: 65,536-char insert succeeds, 65,537 rejected with *"value … is 131074 bytes, exceeds the 131072-byte limit"*).
 
 ## Field Definition Object
 
@@ -122,7 +141,7 @@ Accepted on `entities create` and on `addFields` / `updateFields` in `entities u
 
 | Constraint | Allowed type | Range |
 |------------|--------------|-------|
-| `lengthLimit` | `STRING` (1–4000), `MULTILINE_TEXT` (1–10000) | — |
+| `lengthLimit` | `STRING` (1–4000), `MULTILINE_TEXT` (1–10000), `MULTILINE_MAX` (1–131072 — UTF-16 **bytes**, ≈ 2 per char: 131072 ⇒ 65,536 chars max) | — |
 | `maxValue` / `minValue` | `DECIMAL` | ±9,007,199,254,740,991 |
 | `decimalPrecision` | `DECIMAL` — `0` whole, `2` money | 0–10 |
 

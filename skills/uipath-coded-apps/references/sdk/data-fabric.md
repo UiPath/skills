@@ -19,6 +19,8 @@ Data Fabric does NOT behave like a typical RDBMS. These differences trip up agen
 7. **Aggregates require server-side `aggregates` + `groupBy`.** Don't fetch raw rows and `.length` / `.reduce` client-side — every list call returns one page (see [pagination.md](pagination.md)) and you'll silently truncate. Use `{ aggregates: [{ function: EntityAggregateFunction.Count, field: 'Id' }] }` (string literal `'COUNT'` works equivalently).
 8. **`field.fieldDataType` is an OBJECT, not a string.** It's `{ name: 'DECIMAL', lengthLimit?: ..., maxValue?: ..., ... }`. Code like `String(field.fieldDataType).toUpperCase()` produces `"[object Object]"` and silently rejects every field. Always read `field.fieldDataType?.name`. Same applies to `field.fieldDisplayType` — but that one IS a plain string enum (`'ChoiceSetSingle'`, `'File'`, etc.).
 9. **File-type fields (`fieldDisplayType === 'File'`) aren't strings.** The record carries only metadata (`{ id, name, size, contentType }`); stringifying gives `"[object Object]"`. To display, call `entities.downloadAttachment(entityId, recordId, fieldName)` → `Blob` → `URL.createObjectURL` for an `<img src>`. **Neither `contentType` nor filename extension is reliable for detecting kind** — DF often returns `application/octet-stream`, and the stored `name` is frequently a bare UUID with no extension. To decide whether to render inline or fall back to a download link, either (a) sniff the blob's magic bytes after download (PNG starts `89 50 4E 47`, JPEG `FF D8 FF`, GIF `47 49 46 38`, PDF `25 50 44 46`, etc.), or (b) optimistically attempt `<img src={objectUrl}>` and swap to a download link in `onError`. Writes: `uploadAttachment(entityId, recordId, fieldName, file)`, not `insertRecordById` / `updateRecordById`.
+10. **`MULTILINE_MAX` fields return a size marker on list/query reads.** `getAllRecords` / `queryRecordsById` return a string starting `HasValue=true Length=N` (live form: `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`), never the content — only `getRecordById` returns the full value (SDK 1.5.2+, v2 read endpoint). Never render or persist the marker as data, and never echo it back through `updateRecordById` / `updateRecordsById` — the server accepts it as a normal value and silently destroys the real content; omit the key instead. The type accepts no filters or `sortOptions` (server 400: *"Field '<name>' is of type MULTILINE_MAX and cannot be used in filters."*), `lengthLimit` is a UTF-16 **byte** budget (max 131072 ≈ 65,536 chars), and schema creation is tenant-gated by the `MultilineMax` feature flag.
+
 ## Scopes
 
 - Schema reads: `DataFabric.Schema.Read`
@@ -67,7 +69,7 @@ import type {
 
 ```typescript
 import {
-  EntityFieldDataType,     // UUID, STRING, INTEGER, DATETIME, DATETIME_WITH_TZ, DECIMAL, FLOAT, DOUBLE, DATE, BOOLEAN, BIG_INTEGER, MULTILINE_TEXT
+  EntityFieldDataType,     // UUID, STRING, INTEGER, DATETIME, DATETIME_WITH_TZ, DECIMAL, FLOAT, DOUBLE, DATE, BOOLEAN, BIG_INTEGER, MULTILINE_TEXT, MULTILINE_MAX (SDK 1.5.2+)
   EntityType,              // Entity, ChoiceSet, InternalEntity, SystemEntity
   FieldDisplayType,        // Basic, Relationship, File, ChoiceSetSingle, ChoiceSetMultiple, AutoNumber
   LogicalOperator,         // And, Or

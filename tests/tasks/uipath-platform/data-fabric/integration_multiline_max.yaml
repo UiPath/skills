@@ -1,0 +1,112 @@
+task_id: skill-datafabric-integration-multiline-max
+description: >
+  Integration: MULTILINE_MAX lifecycle — create an entity with a MULTILINE_MAX
+  field, insert ~20k-char content, observe the size marker on records list,
+  retrieve full content via records get, and surface the server-side filter
+  rejection verbatim without retrying (Rules 18 + 21). Requires the
+  MultilineMax feature flag enabled on the test tenant.
+tags: [uipath-platform, data-fabric, integration, entities, records, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 50
+  turn_timeout: 600
+
+initial_prompt: |
+  I need a place to store full documents in UiPath Data Fabric — tenant level,
+  no folder. Do NOT ask for approval, confirmation, or feedback.
+
+  1. Create an entity CE_MultilineMaxTest with a required short-text Title
+     (up to 100 chars) and a Body column that must hold very large text —
+     around 20,000 characters have to fit in one value.
+  2. Generate a local text file of roughly 20,000 characters, then insert one
+     record with Title "doc-1" and that text as the Body.
+  3. Show me what `records list` returns for that record's Body, then retrieve
+     and show the actual full Body content, and explain how the two outputs
+     differ and why.
+  4. Try to find records whose Body contains the word "lorem" using a
+     server-side filter, and report exactly what happens — do not retry with
+     different operators and do not work around it unless I say so.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the entity with a MULTILINE_MAX Body field (not MULTILINE_TEXT)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_MultilineMaxTest)(?=.*MULTILINE_MAX)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inserted the record"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved the single record for full content (records get), not just list/query"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+get'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: CE_MultilineMaxTest holds exactly one record"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_MultilineMaxTest --min 1 --max 1"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent explained the marker-vs-full contract and surfaced the filter rejection without silent workarounds"
+    include_agent_output: true
+    prompt: |
+      The agent worked against a Data Fabric entity whose Body field is
+      MULTILINE_MAX. Platform contract: `records list` / `records query`
+      return a size marker string starting "HasValue=true Length=N" (with a
+      trailing hint about Get Entity Record By Id) for such fields; only
+      `records get` returns the full content; server-side filters on the
+      field are rejected with HTTP 400 ("Field 'Body' is of type
+      MULTILINE_MAX and cannot be used in filters.").
+
+      Read the agent's final response. Score on three points:
+
+      a) The agent showed that `records list` returned a size marker (not the
+         content) for Body, and showed the full ~20,000-char content (or a
+         clearly-labelled excerpt of it) obtained via the single-record read.
+      b) The agent explained the difference correctly (list/query return a
+         marker; the single-record read returns full content) — not a wrong
+         theory like truncation, encoding, or a bug.
+      c) For the "contains lorem" filter request, the agent either surfaced
+         the server's rejection verbatim (real error text/code) or stated
+         up-front that MULTILINE_MAX is not filterable citing the platform
+         contract — WITHOUT silently falling back to a client-side scan or a
+         different operator. Asking the user whether to do a client-side scan
+         is acceptable; doing it unprompted is not.
+
+      Score 1.0 if all three hold. Score 0.5 if exactly two hold.
+      Score 0.0 otherwise.
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete the entity"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_MultilineMaxTest"
+    timeout: 60
+    fail_on_error: false
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_MultilineMaxTest"
+    timeout: 60
