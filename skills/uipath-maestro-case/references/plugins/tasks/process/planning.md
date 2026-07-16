@@ -2,6 +2,23 @@
 
 An RPA-driven automated process task. Invokes a UiPath process (or agentic process) by name and folder.
 
+## Resource Interface Declaration
+
+```yaml
+interface-provider: tasks-describe
+placeholder-profile: task
+recovery-capabilities: select-alternate | adapt | defer
+provider-config:
+  cli-type: process
+  id-source: selected.entityKey
+  inputs: Data.Inputs[]
+  outputs: Data.Outputs[]
+  field-map: {name: Name, type: Type, required: Required}
+  native-type-normalization: Case CLI native vocabulary; unknown stays deferred
+```
+
+Apply [resource-interface-resolution.md](../../../resource-interface-resolution.md). Tenant Process resources are never modified.
+
 ## When to Use
 
 Pick this plugin when the sdd.md describes a task as any of:

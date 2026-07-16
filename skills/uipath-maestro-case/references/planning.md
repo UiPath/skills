@@ -4,7 +4,7 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 
 > **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip this planning pipeline — see [brownfield.md](brownfield.md).
 
-> **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file. When SLA escalations are present, also `tasks/recipients-resolved.json` — see [`plugins/sla/planning.md` § Identity Resolution](plugins/sla/planning.md#identity-resolution).
+> **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` + `tasks/interface-resolved.json` in the same directory as the sdd.md file. When SLA escalations are present, also `tasks/recipients-resolved.json` — see [`plugins/sla/planning.md` § Identity Resolution](plugins/sla/planning.md#identity-resolution).
 >
 > **Exit gate:** User must explicitly approve `tasks.md` before Phase 2 begins.
 
@@ -68,6 +68,8 @@ If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) 
 >
 > Canonical selected fields: `deploymentTitle` / `deploymentFolder.fullyQualifiedName` / `id` for action; `name` / `folders[0].fullyQualifiedName` / `entityKey` for the other non-connector types. Normalize a labeled SDD identity (e.g. `agentId <uuid> (v1.0.6)`) before comparison — the ID token must equal `entityKey`, and any SDD version must equal the selected entry's version metadata (e.g. `customData.ProcessVersion`) when present. **If any field is missing, `<UNRESOLVED>`, or mismatched, treat the entry as stale:** ignore it, re-run discovery from the SDD, and replace that task's audit entry. Never let a cached identity upgrade or override unresolved or edited SDD fields. If the file is absent, run the same discovery from each task's portable name and write a fresh file. This rule covers the portable-resource task types above; connector resolution continues through [connector-integration.md](connector-integration.md), unchanged.
 
+> **Interface carryover.** Read `tasks/interface-resolved.json` independently from the identity audit. Reuse an owner record only when owner, plugin/provider, resource identity+version, requested contract, and successful status still match exactly. A missing legacy sidecar, stale owner, changed SDD binding, or changed resource version requires one interface resolution before the consumer is considered resolved. Full cache contract: [resource-interface-resolution.md § Cache reuse](resource-interface-resolution.md#cache-reuse).
+
 ## Step 3 — Resolve resources
 
 Before resource resolution, seed TodoWrite with the items below to track Phase 1 progress through registry lookups and §4 T-entry emit. Mark each `in_progress` on entry, `completed` on exit. One item per emit class — never per T-entry.
@@ -87,7 +89,8 @@ For every task, trigger, and condition in the sdd.md:
 1. **Identify the plugin** by matching the sdd.md component description to an entry in the catalogs below (§3.1–§3.3).
 2. **Load the plugin's `planning.md`** — it lists the exact fields to resolve from sdd.md, the cache file(s) to consult, and any discovery steps required.
 3. **Apply registry discovery** via [registry-discovery.md](registry-discovery.md) when a taskTypeId is needed. Use the type-specific portable-name field as the query: `Resolved Resource` for process/agent/rpa/api-workflow, Action App title for action, and `Child Case` for case-management. A missing or `<UNRESOLVED>` portable name violates the SDD contract and must be surfaced instead of silently falling back to `Task Name`.
-4. **Persist every resolution** to `registry-resolved.json` using Rule 9's exact keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`). Keep the full exact-name match objects for debugging and stale-cache validation.
+4. **Persist every identity resolution** to `registry-resolved.json` using Rule 9's exact keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`). Keep the full exact-name match objects for debugging and stale-cache validation.
+5. **Resolve the invocation interface** through the plugin declaration and [resource-interface-resolution.md](resource-interface-resolution.md). Build the requested contract from supplied inputs and `->` extracts, acquire/compare the actual contract, and apply only declared user-approved recovery. Persist one `interface-resolved.json` record per task, event trigger, or connector-bound condition rule. `wait-for-timer` records `not-applicable` through `none`.
 
 ### 3.1 Task Type catalog
 
@@ -128,7 +131,7 @@ For every task, trigger, and condition in the sdd.md:
 
 ### 3.4 Unresolved resources
 
-When a resource cannot be resolved (registry gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**.
+When a resource cannot be resolved (registry gap, missing connection, unavailable contract, or interface resolution ended deferred), **do not fabricate an identity, contract, or best-effort binding**.
 
 > **Missing connection — offer to create first.** A missing/empty IS connection is not immediately "unresolved". The connector pipeline offers to create one via `uip is connections create` ([connector-integration.md § Step 2](connector-integration.md), [connector-trigger-common.md § Resolve the connection](connector-trigger-common.md#2-resolve-the-connection)). Only after the user **declines** or creation fails does the connection become `<UNRESOLVED>` and fall through to the steps below.
 
@@ -141,15 +144,17 @@ Otherwise:
 3. Keep every other structural field (display-name, isRequired, runOnlyOnce, order). Task-entry conditions still emit normally.
 4. **Continue planning — do not halt.**
 
-At execution time, unresolved tasks become **placeholder tasks** in `caseplan.json` (display-name + type only, no task-type-id, no bindings). The workflow graph is still reviewable end-to-end, and the user attaches real resources + bindings externally before runtime. See [placeholder-tasks.md](placeholder-tasks.md).
+At execution time, unresolved/interface-blocked consumers route through their declared placeholder profile: task `data: {}`, event-trigger serviceType-only, or connector-rule stub. Incompatible bindings are removed. The workflow graph remains reviewable end-to-end. See [resource-interface-resolution.md § Placeholder routing](resource-interface-resolution.md#placeholder-routing) and [placeholder-tasks.md](placeholder-tasks.md).
 
-## Step 4 — Generate tasks.md and registry-resolved.json
+## Step 4 — Generate tasks.md and resolution sidecars
 
 Create a `tasks/` folder adjacent to the sdd.md file. Generate `tasks.md` using the structure below. Each section is a numbered task (`T01`, `T02`, …) — declarative parameters only. Field names use plain identifiers (e.g., `type:`, `displayName:`, `lane:`), not CLI flag syntax. The implementation phase translates each entry into the matching plugin's JSON writes.
 
 Cross-reference: [case-schema.md](case-schema.md) for JSON shape, [bindings-and-expressions.md](bindings-and-expressions.md) for inputs/outputs wiring.
 
 Also write `registry-resolved.json` — full detail per task using Rule 9's exact keys: task type, searched cache filename, search query, all exact-name matches, selected entry, and rationale.
+
+Write `interface-resolved.json` using the canonical schema in [resource-interface-resolution.md § Persistence](resource-interface-resolution.md#persistence-tasksinterface-resolvedjson). Keep exact owner fields; never derive a composite string key. A deferred/unavailable result keeps the SDD wiring intent in the audit but the emitted T-entry follows the owner's unresolved placeholder shape.
 
 ### 4.0 Completeness principle (no omissions)
 
@@ -190,6 +195,7 @@ Procedure:
    - TaskUpdate marks each T-entry `in_progress` → `completed` as it goes — that is the per-T-entry audit trail, not the file diff.
 3. **Inventory finalize.** After last T-entry, Edit the inventory section with class-by-class counts (per §4.0 cross-check table).
 4. **`registry-resolved.json`.** Same section-batched discipline — one Read per section, N Edit-appends, no re-Read between siblings.
+5. **`interface-resolved.json`.** Same discipline, one record per consumer. Shared resources still produce separate owner records.
 
 Why: section-batched round-trips keep tool-call transcript reviewable, preserve rollback granularity at section boundary, allow mid-run interruption recovery via re-Read + resume from next un-applied T-entry, and surface omissions before they propagate — without paying a per-T-entry Read tax that inflates inference latency by ~5s per turn.
 

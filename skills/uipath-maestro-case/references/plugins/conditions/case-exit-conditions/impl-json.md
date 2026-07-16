@@ -2,6 +2,8 @@
 
 > **Phase split.** Phase 3 only. Phase 2 does not write conditions. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
+> **Connector interface gate.** For `wait-for-connector`, read the exact condition-rule owner in `tasks/interface-resolved.json`. Only `compatible`/`adapted` materializes the full `uipath`; deferred/unavailable or blocking drift emits the validated connector-rule stub and no partial bindings. Ordinary rules bypass the resolver. See [resource-interface-resolution.md](../../../resource-interface-resolution.md).
+
 Write the case-exit condition directly into `metadata.caseExitRules[]` in `caseplan.json`. No CLI command needed.
 
 > **Destination + field name.** Array key is `caseExitRules`, lives under `metadata.caseExitRules` (top-level `metadata`). Plugin folder name `case-exit-conditions` follows the *concept*; the on-disk field is `caseExitRules`. Do NOT place at the JSON top level.

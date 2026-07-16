@@ -4,6 +4,21 @@ A connector-based trigger **inside a stage** — waits for an external event bef
 
 The planning pipeline is shared with the [event trigger](../../triggers/event/planning.md) — see [connector-trigger-common.md](../../../connector-trigger-common.md) for the full resolution pipeline (TypeCache lookup → connection pick → `case spec` discovery → reference resolution → required-field gate → SDD mapping → input-values + filter authoring).
 
+## Resource Interface Declaration
+
+```yaml
+interface-provider: case-spec-trigger
+placeholder-profile: task
+recovery-capabilities: select-alternate | adapt | defer
+provider-config:
+  inputs: inputs.eventParameters[]
+  outputs: outputs.responseFields[]
+  field-map: {name: name, type: dataType, required: required}
+  native-type-normalization: spec dataType -> Case vocabulary
+```
+
+Apply [resource-interface-resolution.md](../../../resource-interface-resolution.md). Trigger filters, references, mandatory parameters, and `caseShape` stay in `connector-trigger-common.md`.
+
 ## When to Use
 
 Pick this plugin when the sdd.md describes a task that **suspends the stage until an external event fires**:

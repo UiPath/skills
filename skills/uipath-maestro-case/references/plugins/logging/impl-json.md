@@ -75,3 +75,19 @@ After Step 12 (validate), group issues by `plugin` and write to `tasks/build-iss
 - Plugins with zero issues: write `No issues.` under the heading
 - Write the file even if zero total issues — confirms a clean build
 - The completion report (Step 13) reads this file directly
+
+### Interface deferrals and open items
+
+Whenever Resource Interface Resolution ends `deferred` or `unavailable`, append one `SKIPPED` issue under plugin `resource-interface` and one deduplicated row under `## Open Items for User`. Key it by the exact sidecar owner object, not a composite display string:
+
+```markdown
+## Open Items for User
+
+| Owner | Provider | Status | Reason | Placeholder / next action |
+|-------|----------|--------|--------|---------------------------|
+| task: Submission Review / Validate Submission | tasks-describe | deferred | missing output `riskBand` | task `data: {}`; select/adapt a compatible process |
+| event-trigger: New urgent email | case-spec-trigger | unavailable | acquisition failed twice | serviceType-only trigger; restore connection/spec |
+| condition-rule: stage-entry / Submission Review / Await update | case-spec-trigger | deferred | reversed `status` direction | validated rule stub; correct Case mapping |
+```
+
+Do not add another row when Phase 2/3 rereads an unchanged snapshot. Update the existing row when status/reason changes; remove it only after the owner becomes `compatible`, `adapted`, or `not-applicable` and the full consumer is materialized.

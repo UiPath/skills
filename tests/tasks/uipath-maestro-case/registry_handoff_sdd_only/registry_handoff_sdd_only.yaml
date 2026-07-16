@@ -11,10 +11,11 @@
 task_id: skill-case-registry-handoff-sdd-only
 description: >
   PHASE 1 CROSS-MACHINE HANDOFF — an approved sdd.md is staged without the
-  Phase 0 tasks/registry-resolved.json cache. Its API-workflow and agent tasks
+  Phase 0 resolution sidecars. Its API-workflow and agent tasks
   retain concrete Resolved Resource names while Folder Path and Resource
   Identity are unresolved. The skill must use those SDD names to run discovery,
-  emit tasks/tasks.md, and create a fresh registry-resolved.json before stopping
+  emit tasks/tasks.md, and create fresh registry-resolved.json and
+  interface-resolved.json sidecars before stopping
   at the Phase 1 approval gate.
 tags:
   - uipath-maestro-case
@@ -44,12 +45,12 @@ sandbox:
 
 initial_prompt: |
   This approved `sdd.md` was copied from another machine. Only the SDD was
-  transferred; there is deliberately no Phase 0 `tasks/registry-resolved.json`.
+  transferred; there is deliberately no Phase 0 resolution sidecar.
 
   Run Phase 1 planning only. Resolve the runnable resources using the concrete
   `Resolved Resource` names in the SDD, then produce `tasks/tasks.md` and a fresh
-  `tasks/registry-resolved.json`. Stop at the Phase 1 plan-approval gate; do not
-  create a solution or caseplan.
+  `tasks/registry-resolved.json` and `tasks/interface-resolved.json`. Stop at the
+  Phase 1 plan-approval gate; do not create a solution or caseplan.
 
   The `uip` CLI is already available and authenticated. Use the approved SDD as
   written: do not redo Phase 0, re-interview me, or replace a resource name with
@@ -66,6 +67,12 @@ success_criteria:
   - type: file_exists
     description: "Phase 1 regenerated the absent registry cache"
     path: "tasks/registry-resolved.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Phase 1 created the absent per-consumer interface sidecar before reuse"
+    path: "tasks/interface-resolved.json"
     weight: 2.0
     pass_threshold: 1.0
 
@@ -108,7 +115,7 @@ simulation:
     one build machine to another. You only need the Phase 1 plan and registry
     audit regenerated on the new machine.
   goal: |
-    Produce tasks/tasks.md and a fresh tasks/registry-resolved.json from the
+    Produce tasks/tasks.md plus fresh registry and interface sidecars from the
     staged sdd.md, then stop before any caseplan or solution build.
   constraints:
     - "Do not change the SDD or provide alternate resource names."

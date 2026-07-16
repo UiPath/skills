@@ -2,6 +2,23 @@
 
 A nested case task. Invokes another case definition as a sub-case within the current one. Enables hierarchical / recursive case structures.
 
+## Resource Interface Declaration
+
+```yaml
+interface-provider: tasks-describe
+placeholder-profile: task
+recovery-capabilities: select-alternate | adapt | defer
+provider-config:
+  cli-type: case-management
+  id-source: selected.entityKey
+  inputs: Data.Inputs[]
+  outputs: Data.Outputs[]
+  field-map: {name: Name, type: Type, required: Required}
+  native-type-normalization: Case CLI native vocabulary; unknown stays deferred
+```
+
+Apply [resource-interface-resolution.md](../../../resource-interface-resolution.md). Deployed child cases are never modified.
+
 ## When to Use
 
 Pick this plugin when the sdd.md describes a task that spawns or delegates to another case definition. Typical patterns:

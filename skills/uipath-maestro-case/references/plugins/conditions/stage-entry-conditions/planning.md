@@ -2,6 +2,19 @@
 
 Conditions that control **when a stage is entered**. Attach to a stage; fire when the inbound rule is satisfied.
 
+## Connector-rule Interface Declaration
+
+Applies only when `rule-type: wait-for-connector`; ordinary rules are outside the resolver.
+
+```yaml
+interface-provider: case-spec-trigger
+placeholder-profile: connector-rule
+recovery-capabilities: select-alternate | adapt | defer
+provider-config: {inputs: inputs.eventParameters[], outputs: outputs.responseFields[], native-type-normalization: spec dataType -> Case vocabulary}
+```
+
+Persist owner `kind: condition-rule`, `scope: stage-entry`, exact stage and rule name. Apply [resource-interface-resolution.md](../../../resource-interface-resolution.md).
+
 ## When to Use
 
 Pick this plugin when the sdd.md **literally uses the phrase "stage entry condition"** (or close variants: "stage entry conditions", "entry rule on stage", "entry gate on <stage>").

@@ -2,6 +2,19 @@
 
 Conditions that control **when and how a stage exits**. Attach to a stage; fire when the inbound rule is satisfied.
 
+## Connector-rule Interface Declaration
+
+Applies only when `rule-type: wait-for-connector`; ordinary rules are outside the resolver.
+
+```yaml
+interface-provider: case-spec-trigger
+placeholder-profile: connector-rule
+recovery-capabilities: select-alternate | adapt | defer
+provider-config: {inputs: inputs.eventParameters[], outputs: outputs.responseFields[], native-type-normalization: spec dataType -> Case vocabulary}
+```
+
+Persist owner `kind: condition-rule`, `scope: stage-exit`, exact stage and rule name. Apply [resource-interface-resolution.md](../../../resource-interface-resolution.md).
+
 ## When to Use
 
 Pick this plugin when the sdd.md **literally uses the phrase "stage exit condition"** (or close variants: "stage exit conditions", "stage completion condition", "exit rule on <stage>").

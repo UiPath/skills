@@ -2,6 +2,23 @@
 
 An RPA robot task. The sdd.md component type is `RPA`. The task node's `type` field is `"rpa"`, but the cached registry entity typically lives in `process-index.json` — the registry does not separate "process" from "rpa" at storage time.
 
+## Resource Interface Declaration
+
+```yaml
+interface-provider: tasks-describe
+placeholder-profile: task
+recovery-capabilities: select-alternate | adapt | defer
+provider-config:
+  cli-type: rpa
+  id-source: selected.entityKey
+  inputs: Data.Inputs[]
+  outputs: Data.Outputs[]
+  field-map: {name: Name, type: Type, required: Required}
+  native-type-normalization: Case CLI native vocabulary; unknown stays deferred
+```
+
+This declaration covers existing tenant RPA tasks. Inline/local RPA creation is intentionally not part of this branch; its future plugin can add a `local-entry-points` origin without changing the resolver. Apply [resource-interface-resolution.md](../../../resource-interface-resolution.md).
+
 ## When to Use
 
 Pick this plugin when the sdd.md explicitly labels a task as `RPA` (e.g., "RPA robot does X"). The distinction from `process` is **semantic** (sdd.md intent) rather than structural (registry representation).

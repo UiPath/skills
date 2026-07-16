@@ -10,7 +10,7 @@
                 "References uip maestro case registry pull for upfront caching",
                 "Produces a tasks.md file with numbered task sections (T01, T02, etc.)",
                 "Includes registry lookups to resolve taskTypeIds",
-                "Generates a registry-resolved.json for audit",
+                "Generates registry-resolved.json for identity audit and interface-resolved.json for per-consumer I/O compatibility",
                 "Asks user for approval before executing the build"
             ]
         },

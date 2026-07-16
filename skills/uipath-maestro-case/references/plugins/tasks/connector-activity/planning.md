@@ -4,6 +4,21 @@ A connector activity task inside a stage. Calls an external service (Jira, Slack
 
 This plugin is **schema-data-driven** — one plugin covers every connector. Connector-specific input shapes are discovered from the `case spec` CLI's normalized output, not baked into this plugin.
 
+## Resource Interface Declaration
+
+```yaml
+interface-provider: case-spec-activity
+placeholder-profile: task
+recovery-capabilities: select-alternate | adapt | defer
+provider-config:
+  inputs: inputs.bodyFields[] | inputs.pathParameters[] | inputs.queryParameters[] | inputs.multipart.parameters[]
+  outputs: outputs.responseFields[]
+  field-map: {name: name, type: dataType, required: required}
+  native-type-normalization: spec dataType -> Case vocabulary; multipart isFile -> file
+```
+
+Apply [resource-interface-resolution.md](../../../resource-interface-resolution.md) for invocation I/O. Connection, operation, references, filters, multipart shape, and `caseShape` remain in this plugin.
+
 ## When to Use
 
 Pick this plugin when the sdd.md describes a task as `CONNECTOR_ACTIVITY` or names a specific external service action (e.g., "send a Slack message", "create a Jira issue", "update Salesforce opportunity").

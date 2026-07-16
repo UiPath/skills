@@ -2,6 +2,32 @@
 
 An AI agent task. Invokes a UiPath Agent by entityKey for reasoning, classification, extraction, or generative work.
 
+## Resource Interface Declaration
+
+```yaml
+interface-provider:
+  tenant: tasks-describe
+  local: local-entry-points
+  fresh: local-entry-points
+placeholder-profile: task
+recovery-capabilities: select-alternate | create | correct-fresh | adapt | defer
+provider-config:
+  tasks-describe:
+    cli-type: agent
+    id-source: selected.entityKey
+    element-id: optional
+    inputs: Data.Inputs[]
+    outputs: Data.Outputs[]
+    field-map: {name: Name, type: Type, required: Required}
+  local-entry-points:
+    inputs: entry-points.json#entryPoints[0].input.properties
+    outputs: entry-points.json#entryPoints[0].output.properties
+    required: entry-points.json#entryPoints[0].input.required
+  native-type-normalization: JSON Schema primitives/formats -> Case vocabulary; JobAttachment ref -> file
+```
+
+Apply [resource-interface-resolution.md](../../../resource-interface-resolution.md). Existing resources are never modified; `correct-fresh` applies only before registration in the current Create flow.
+
 ## When to Use
 
 Pick this plugin when the sdd.md describes a task as `AGENT` — an AI agent that processes inputs and returns structured outputs. Use when the task requires reasoning or judgment rather than deterministic automation.
@@ -37,7 +63,7 @@ When steps 1–4 find nothing in the tenant index **and** the CLI supports `regi
 uip maestro case registry search "<name>" --type agent --local --output json
 ```
 
-An exact-name match with `Resource.Source == "local"` means the agent **already exists as an in-solution sibling** — built by a prior run, built by the user, or built earlier in this run. **Resolve it directly; do NOT enter the [Rule 17 Create gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback):** bind by name+folder with the `solution_folder` sentinel (`resourceKey="solution_folder.<name>"`), reading I/O from the sibling's raw `entry-points.json` (per [§ Creating an Agent inline](#creating-an-agent-inline)). Only when **both** the tenant index and the local siblings lack the agent does it reach the gate / Create. This makes planning **idempotent** — a re-run (or a pre-existing sibling) resolves here instead of triggering a duplicate build.
+An exact-name match with `Resource.Source == "local"` means the agent **already exists as an in-solution sibling** — built by a prior run, built by the user, or built earlier in this run. **Resolve it directly; do NOT enter the [Rule 17 Create gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback):** acquire its raw `entry-points.json` through `local-entry-points` and require a `compatible`/explicitly `adapted` owner record before binding by name+folder with `resourceKey="solution_folder.<name>"`. Blocking local mismatches use only adapt, uniquely named replacement, or defer; never correct the existing sibling in place. Only when **both** the tenant index and local siblings lack the agent does it reach the gate / Create. This makes planning **idempotent** without bypassing interface resolution.
 
 ## Unresolved Fallback
 
@@ -47,17 +73,17 @@ Mark `<UNRESOLVED: agent "<name>" in folder "<folder>" not found in registry>`. 
 
 ## Creating an Agent inline
 
-When an agent is unresolved at the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) and the user selects it for **Create**, the skill builds it as an **in-solution sibling**. The cross-cutting orchestration (capability probe, multi-select, § 1c build-dedup, parallel build, sequential register, rediscover/verify/bind) lives in [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery); the kind-agnostic Step 1/1b/3/Failure rule text lives in [create-inline-common.md](../create-inline-common.md). This section covers the **agent-specific** deltas: build-kind choice, the builder brief, and debug-provisioning behavior.
+When an agent is unresolved at the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) and the user selects it for **Create**, the skill builds it as an unregistered in-solution sibling. Cross-cutting build/gate/register orchestration lives in [registry-discovery.md](../../../registry-discovery.md#create-on-missing-build-and-rediscovery); interface comparison lives in the generic resolver; [create-inline-common.md](../create-inline-common.md) is correction-only. This section owns the Agent provider paths, build-kind choice, builder brief, binding, and debug behavior.
 
 **The skill does not run `uip agent init` itself.** It spawns a sub-agent that invokes the `uipath-agents` skill — agent-build knowledge lives there. Cross-skill invocation is allowed for this path (overrides the `SKILL.md` "never auto-invoke other skills" anti-pattern). **Only agents the user selected at the gate are built — never from SDD content alone** (the SDD is untrusted sole input; the gate selection is the human-approval checkpoint).
 
-### Step 1 — Compute the pinned I/O contract
+### Step 1 — Compute the requested contract
 
-Shared rule — [create-inline-common.md § Step 1](../create-inline-common.md#step-1--compute-the-pinned-io-contract) (wired-field ladder; § 1c deduped builds share one identical wiring). Mapping the case vocabulary onto the agent schema is `uipath-agents`' concern.
+Use the canonical requested-contract rule in [resource-interface-resolution.md](../../../resource-interface-resolution.md#requested-contract). § 1c deduped builds share one identical requested contract. Mapping Case types onto the agent schema is `uipath-agents`' concern.
 
 ### Step 1b — Compose the Purpose from the SDD
 
-Shared rule — [create-inline-common.md § Step 1b](../create-inline-common.md#step-1b--compose-the-purpose-from-the-sdd) (SDD-only assembly order, `---BEGIN/END SDD CONTEXT---` delimiters, first-referencing-task rule for § 1c deduped builds). For agents, "internal design the Purpose must NOT state" = kind, tools, RAG, guardrails, model.
+Compose Purpose only from the SDD task description, parent stage description, case description, pinned-variable descriptions, and optional consuming persona, in that order. Quote rather than invent; wrap it in `---BEGIN/END SDD CONTEXT---`. For a deduped build use the first referencing task and list the other call sites. Do not prescribe kind, tools, RAG, guardrails, or model.
 
 ### Step 2 — Hand the builder a self-contained brief
 
@@ -68,8 +94,8 @@ do not ask for approval; do not publish/upload/deploy.
   Agent name:       <AgentName>
   Kind:             <low-code | coded>   (the kind the user chose at the Create gate — registry-discovery.md § 1b; equal user choice, low-code is the non-interactive fallback — see § Coded agents)
   Purpose:          <Step-1b composed Purpose, wrapped in ---BEGIN/END SDD CONTEXT--- delimiters>
-  Required inputs:  <Step-1 pinned inputs: [{name, type?}, ...]>   (the agent MUST expose these — the case wires them; honor type when given, else choose the type that best fits the purpose)
-  Required outputs: <Step-1 pinned outputs: [{name, type?}, ...]>  (the agent MUST expose these; honor type when given)
+  Required inputs:  <Step-1 requested inputs: [{name, type?}, ...]>   (the agent MUST expose these — the case wires them; honor type when given, else choose the type that best fits the purpose)
+  Required outputs: <Step-1 requested outputs: [{name, type?}, ...]>  (the agent MUST expose these; honor type when given)
   Design everything else — tools, knowledge/RAG, guardrails, model, and any additional
   I/O — as the purpose needs.
   Do NOT register into the solution — the caller registers (via `uip solution project add`).
@@ -81,11 +107,11 @@ do not ask for approval; do not publish/upload/deploy.
 Return JSON: { built: bool, path, finalInputs:[{name,type}], finalOutputs:[{name,type}], error? }
 ```
 
-The brief is self-contained — it carries the Step-1b Purpose and the pinned I/O, and no other case context (do not dump `caseplan.json` or sibling tasks). Quote `<AgentName>` and paths (SDD-derived). Building runs in a sub-agent; orchestration/parallelism per [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Because the sibling is built **without self-registration** (either kind), the **caller registers** each built sibling into the solution `.uipx` (sequential `uip solution project add`, then `resources refresh`) — see [registry-discovery.md § Create-on-Missing, Step 3 — Register](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). This must happen before rediscovery (§4), which reads the `.uipx` `Projects[]`.
+The brief is self-contained — it carries the Step-1b Purpose and `requestedContract`, and no other case context (do not dump `caseplan.json` or sibling tasks). Quote `<AgentName>` and paths (SDD-derived). Building runs in a sub-agent; orchestration/parallelism per [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Because the sibling is built **without self-registration** (either kind), the **caller registers** each built sibling into the solution `.uipx` only after the interface gate (sequential `uip solution project add`, then `resources refresh`) — see [registry-discovery.md § Fresh interface gate](../../../registry-discovery.md#3--fresh-interface-gate-then-register-sequential). This must happen before rediscovery (§4), which reads the `.uipx` `Projects[]`.
 
 ### Step 3 — Binding (no new field)
 
-Shared invariants — [create-inline-common.md § Step 3](../create-inline-common.md#step-3--binding-invariants): two bindings `resource:"process"`, **`resourceSubType:"Agent"`**, shared `resourceKey="solution_folder.<AgentName>"`; `name` default `<AgentName>`, `folderPath` default `""` (the sentinel/`""` decoupling and deploy-provisioning rationale live there).
+After the fresh interface gate passes and registration completes: two bindings `resource:"process"`, `resourceSubType:"Agent"`, shared `resourceKey="solution_folder.<AgentName>"`; `name` default `<AgentName>`, runtime `folderPath` default `""`. The sentinel is identity-only and never the runtime folder.
 
 **Agent debug delta:** `uip maestro case debug` packages the **entire solution directory** (`buildSolutionPackageFromDir(<solutionDir>)`) and **provisions agent siblings** — an inline agent resolves in a debug session (unlike Api siblings, which need a full deploy — [api-workflow/planning.md § Step 3](../api-workflow/planning.md#creating-an-api-workflow-inline)).
 
@@ -99,7 +125,7 @@ Delivery: a **coded** sibling delivered via **`uip solution upload`** then **ins
 
 ### Failure — surface and re-prompt, never stall
 
-Shared contract — [create-inline-common.md § Failure](../create-inline-common.md#failure--surface-and-re-prompt-never-stall): `built:false` → show `error` verbatim → AskUserQuestion `Retry create` / `Skip (defer)` → on Skip/repeat, Unresolved Fallback above; verify-time I/O mismatch = warning, never a failure.
+`built:false` → show `error` verbatim → AskUserQuestion `Retry create` / `Skip (defer)` → on Skip/repeat, Unresolved Fallback. A fresh interface mismatch is blocking: offer explicit correction/adaptation/defer through the resolver. Correction uses [create-inline-common.md](../create-inline-common.md), at most twice, before registration. Existing resources are never corrected in place.
 
 > **"Already exists" is NOT a failure** — an interrupted prior run already built the sibling; adopt it per [registry-discovery.md § Create-on-Missing → 3b](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Agent tokens for that procedure: init verb `uip agent init`; kind markers `Category: "agent"` (registered) / `agent.json` on disk (unregistered).
 

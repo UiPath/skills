@@ -7,6 +7,12 @@ Shared planning and implementation logic for connector-based triggers. Used by t
 
 All three use the same TypeCache (`typecache-triggers-index.json`), same single-call `case spec` discovery, same FE-canonical `caseShape` consumption. Only the target (task `data` / trigger node `data.uipath` / rule `uipath`), `serviceType`, and a few shape details differ — see each plugin's own docs.
 
+## Shared interface provider boundary
+
+The connector-trigger task, event trigger, and connector-bound rule all declare `case-spec-trigger`; each persists its own exact owner record in `tasks/interface-resolved.json`. The provider normalizes only `inputs.eventParameters[]` and `outputs.responseFields[]`. Canonical name/direction/type comparison, recovery, drift, and placeholder routing are defined in [resource-interface-resolution.md](resource-interface-resolution.md).
+
+This file still owns TypeCache/connection/object selection, references, mandatory parameters, filters, `caseShape`, registration metadata, root bindings, and context substitution. A repeated acquisition failure or blocking interface drift never leaves partial enrichment: task → `data: {}`, event trigger → serviceType-only, rule → validated stub below.
+
 > Mirrors the [connector-activity](plugins/tasks/connector-activity/planning.md) flow. Same CLI surface (`uip maestro case spec` with `--skip-case-shape` for planning, `--input-details` for Phase 3); `--type trigger` swaps in trigger-shaped inputs/outputs and, for event-parameter connectors, a `metadata.body.bindings[Property]` registration entry (Step 4).
 
 ---
@@ -462,7 +468,7 @@ Rule `id`s are opaque to the FE (no format validation on import) — `Rule_xxxxx
 
 Two entry paths reach this fallback: **Scenario A** — connector not found in TypeCache (§ 1 No-match, after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the [§ 2 create offer](#2-resolve-the-connection) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight to the placeholder.
 
-On `case spec` failure or `<UNRESOLVED>` `type-id` / `connection-id` / `connector-key`, emit the rule with a **stub `uipath`**. A *bare* rule (no `uipath`) is NOT a valid placeholder — full `validate` errors `connector activity missing` and Studio Web rejects it. The stub is the **minimum that clears `validate`**: `serviceType` plus the two `context` entries the validator checks for — named `connectorKey` + `operation`, each the literal `"placeholder"` — with empty `inputs` / `outputs` / `bindings`. Do NOT pad it with the other resolved context fields (`connection`, `objectName`, …): Studio Web flags the unresolved connector regardless of how complete the stub is, so extra placeholders buy nothing until the connector is real. The full attach checklist lives in the `tasks.md` `<UNRESOLVED>` markers and the completion report, not in the stub.
+On repeated `case spec` failure, blocking interface resolution, or `<UNRESOLVED>` `type-id` / `connection-id` / `connector-key`, mark the sidecar deferred/unavailable and emit the rule with a **stub `uipath`**. A *bare* rule (no `uipath`) is NOT a valid placeholder — full `validate` errors `connector activity missing` and Studio Web rejects it. The stub is the **minimum that clears `validate`**: `serviceType` plus `connectorKey` + `operation` context entries, each literal `"placeholder"`, with empty `inputs` / `outputs` / `bindings`. Do not retain partial compatible-looking fields or pad the stub; the attach checklist lives in `tasks.md` and the completion report.
 
 ```json
 {
