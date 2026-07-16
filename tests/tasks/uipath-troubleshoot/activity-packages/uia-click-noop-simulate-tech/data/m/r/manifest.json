@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "10fold.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "20jobs.json"
+    },
+    {
+      "match": "or jobs get 7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44",
+      "file": "30jobg.json"
+    },
+    {
+      "match": "or jobs logs 7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44 --level Error",
+      "file": "40errl.json"
+    },
+    {
+      "match": "or jobs logs 7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44",
+      "file": "50infl.json"
+    },
+    {
+      "match": "or jobs healing-data 7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44",
+      "file": "55heal.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0
+  }
+}
