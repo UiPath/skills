@@ -551,7 +551,7 @@ Alternatives:
 
 #### UIA `N*` Activities Carry a `Version` — Never Strip It
 
-Every UIA `N*` activity carries a `Version` attribute in its `uip rpa activities get-default-xaml` starter (e.g. `NGetText Version="V5"`, `NApplicationCard Version="V2"`). Dropping it survives BOTH `validate` and `build` and fails only at runtime with `System.InvalidOperationException ... ThrowIfNotInTree` on the activity's argument bindings. Carry over **every** attribute the starter emits. See [csharp-expression-pitfalls.md § `ThrowIfNotInTree` at runtime](csharp-expression-pitfalls.md).
+Every UIA `N*` activity carries a `Version` attribute in its `uip rpa activities get-default-xaml` starter (e.g. `NGetText Version="V5"`, `NApplicationCard Version="V2"`). Dropping it survives BOTH `validate` and `build` and fails only at runtime with `System.InvalidOperationException ... ThrowIfNotInTree` on the activity's argument bindings. Carry over **every** attribute the starter emits. See [xaml/csharp-activity-binding-guide.md § `ThrowIfNotInTree` at runtime](xaml/csharp-activity-binding-guide.md#throwifnotintree-at-runtime--two-causes).
 
 
 #### Selector Special Characters

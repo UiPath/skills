@@ -25,7 +25,7 @@ Read: <PROJECT_DIR>/Main.xaml          # or TestCase.xaml for test projects
 - How many workflow files? (one per logical step or responsibility)
 - Are there shared data models or helpers? (create Coded Source Files)
 - Is this a test project? (create test cases with Given/When/Then structure, optionally add Before/After hooks)
-- See [../project-structure-guide.md](../project-structure-guide.md) for guidelines
+- See [../environment-setup.md § Designing Project Structure](../environment-setup.md#designing-project-structure) for guidelines
 
 **4. Add required dependencies to `project.json`** based on the Service-to-Package mapping. Edit the existing `project.json` — do NOT rewrite the entire file.
 
@@ -416,7 +416,7 @@ Canonical CLI: `uip rpa packages install`. Do NOT hand-edit `project.json` `depe
 - `UiPath.MicrosoftOffice365.Activities` → `3.6.10` — Microsoft 365 (Graph API: mail, calendar, Excel cloud, OneDrive, SharePoint)
 - `UiPath.GSuite.Activities` → `3.6.10` — Google Workspace (Gmail, Calendar, Drive, Sheets, Docs)
 
-**Third-party NuGet packages:** same CLI — pass the public NuGet package ID as `id`. See [third-party-packages-guide.md](third-party-packages-guide.md).
+**Third-party NuGet packages:** same CLI — pass the public NuGet package ID as `id`. See [codedworkflow-reference.md § Third-Party NuGet Packages](codedworkflow-reference.md#third-party-nuget-packages).
 
 ---
 
