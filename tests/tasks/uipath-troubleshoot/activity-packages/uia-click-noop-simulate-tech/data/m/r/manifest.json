@@ -3,27 +3,27 @@
   "rules": [
     {
       "match": "or folders list",
-      "file": "10fold.json"
+      "file": "c0e1024460.json"
     },
     {
       "match": "or jobs list",
-      "file": "20jobs.json"
+      "file": "3dd609b65e.json"
     },
     {
       "match": "or jobs get 7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44",
-      "file": "30jobg.json"
+      "file": "d4fa9befad.json"
     },
     {
       "match": "or jobs logs 7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44 --level Error",
-      "file": "40errl.json"
+      "file": "c5eda10ee1.json"
     },
     {
       "match": "or jobs logs 7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44",
-      "file": "50infl.json"
+      "file": "636b8bd298.json"
     },
     {
       "match": "or jobs healing-data 7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44",
-      "file": "55heal.json"
+      "file": "b7a0b7b0c0.json"
     },
     {
       "match": "docsai ask",

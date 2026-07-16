@@ -1,12 +1,12 @@
 task_id: skill-troubleshoot-uia-click-noop-simulate-tech
 description: >
-  Silent NClick no-op: a modern Click with InteractionMode=Simulate targets a
-  Java desktop app, where Simulate is unsupported, so the click reports
-  Successful while the button is never actuated (job Successful, zero Error
-  logs, downstream status unchanged). The agent must route via the no-signature
-  table to the click-silent-no-op playbook, confirm the no-op from runtime logs,
-  and name the input-method/target-tech mismatch as the root cause with the
-  Hardware Events fix. Grades the conclusion, not the trajectory.
+  Silent no-op of a modern Click (NClick) in a Java desktop automation: the job
+  finished Successful with zero Error logs, but the Submit button was never
+  actuated (downstream status unchanged). Exercises the no-signature routing
+  path for a "succeeded but did nothing" report — the agent must investigate and
+  identify the cause and fix from the evidence and workflow source. Grades the
+  conclusion (skill_triggered + llm_judge against RESOLUTION.md), not the
+  trajectory.
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
