@@ -83,6 +83,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **SDK: Import paths & subpath exports** | [references/sdk/imports.md](references/sdk/imports.md) |
 | **SDK: Assets, Queues, Buckets, Processes, Jobs, Attachments** | [references/sdk/orchestrator.md](references/sdk/orchestrator.md) |
 | **SDK: Data Fabric (Entities, ChoiceSets)** | [references/sdk/data-fabric.md](references/sdk/data-fabric.md) |
+| **SDK: Ontologies** | [references/sdk/ontologies.md](references/sdk/ontologies.md) |
 | **SDK: Maestro (Processes, Cases)** | [references/sdk/maestro.md](references/sdk/maestro.md) |
 | **SDK: Action Center (Tasks)** | [references/sdk/action-center.md](references/sdk/action-center.md) |
 | **SDK: Conversational Agent** | [references/sdk/conversational-agent.md](references/sdk/conversational-agent.md) |
