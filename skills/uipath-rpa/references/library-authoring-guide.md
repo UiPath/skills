@@ -22,7 +22,7 @@ Boundaries:
 | Need | Go to |
 |------|-------|
 | Start new projects from a standard baseline | Project templates — [environment-setup.md § Template Selection](environment-setup.md) |
-| Share UI selectors across projects | UI Libraries — [ui-automation-guide.md § Object Repository as a Published UI Library](ui-automation-guide.md) |
+| Share UI selectors across projects | UI Libraries — [§ Object Repository as a Published UI Library](#object-repository-as-a-published-ui-library) below |
 | Reuse logic inside one project | Separate workflow file — [project-structure-guide.md § Designing for Reuse](project-structure-guide.md) |
 
 ## Creating and Structuring
@@ -209,6 +209,43 @@ Declare the namespace and use each public workflow as an element — property na
 `<SANITIZED_NAMESPACE>` is the underscore form from [§ Activity identity](#activity-identity). Bind non-literal properties per the project's expression language rules ([xaml/xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md)).
 
 5. **Stale design session after the dependency becomes resolvable:** `build` compiles the consumer but `validate` keeps failing with `Cannot create unknown type` for the library activity. Kill the `UiPath.Studio.Helm` process (it relaunches on the next command) and re-run `validate`.
+
+## Object Repository as a Published UI Library
+
+Selector breakage is the #1 maintenance cost in UI automation. A **UI Library** is a published library project whose Object Repository ships inside the `.nupkg` — descriptors defined once, consumed by every automation against the same application. Fix a descriptor once, bump the version, and all consumers inherit the fix.
+
+### Hierarchy and naming
+
+```
+Application (InvoicePortal)
+  └── Screen (LoginPage)
+      └── Element (UsernameField)
+```
+
+- Reference form: `App.Screen.Element` — `InvoicePortal.LoginPage.UsernameField`
+- Business-meaningful PascalCase element names: `SubmitOrderButton`, not `Button32`
+- One descriptor per distinct UI element; screens mirror the application's logical screens
+
+### Extract-and-publish pattern
+
+Precondition: the source project has captured descriptors (`.objects/` content). If it has none, capture targets first ([ui-automation-guide.md § Configuring Targets](ui-automation-guide.md#configuring-targets-object-repository)) — there is nothing to promote, and hand-writing descriptors is forbidden.
+
+1. Develop the first process against its **local** Object Repository, configuring targets as usual ([ui-automation-guide.md § Configuring Targets](ui-automation-guide.md#configuring-targets-object-repository)).
+2. Promote the reusable descriptors into a dedicated UI Library project — a library project (this guide) holding the shared Object Repository; pack and upload per [§ Pack & Publish](#pack--publish). Concrete Object Repository manipulation steps: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`.
+3. **One UI Library per corporate application** (SAP, Salesforce, Workday) — an update to one app's selectors must not force re-deployment of another's.
+4. New automations against that application consume the UI Library from the start. Process-specific one-off descriptors stay in the local Object Repository.
+
+### Consumption
+
+Install the UI Library as a package dependency; its descriptors appear under **UI Libraries** in the Object Repository and are targetable like local descriptors. Coded workflows resolve them via [ui-automation-guide.md § Finding Descriptors Step 2](ui-automation-guide.md#step-2--check-uilibrary-nuget-packages). Selector updates propagate by bumping the dependency version — no per-workflow changes.
+
+### Update rules — MANDATORY
+
+1. **Update descriptors in place — NEVER delete-and-re-add an element.** The element-to-activity link is identity-based; deleting the element severs it and every consumer activity bound to it breaks, even if a same-named element is re-created.
+2. **Version by SemVer** ([§ Versioning](#versioning)): selector fix without renaming = patch; element/screen rename or restructure = breaking = major.
+3. **Promote accepted healing fixes.** When a selector recovery ([ui-automation-guide.md § Runtime Selector Failure Recovery](ui-automation-guide.md#runtime-selector-failure-recovery)) is accepted in a workflow that consumes a shared UI Library, apply the fix in the UI Library and bump the version — do not re-fix the same selector consumer by consumer.
+
+---
 
 ## Library Patterns
 
