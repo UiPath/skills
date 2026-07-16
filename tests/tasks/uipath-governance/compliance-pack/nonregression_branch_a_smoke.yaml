@@ -32,16 +32,17 @@ post_run:
     timeout: 120
 
 initial_prompt: |
-  I want to start keeping a record of the AI prompts and responses my Studio
-  developers generate — set up a governance policy so that AI usage is logged
-  and retained. I only want to capture the activity, not restrict which AI
-  models or providers anyone can use. Go ahead and create the policy, but don't
-  assign or apply it to any users, groups, or the whole tenant yet — I'll review
-  it and roll it out myself later. Call it `test-nonreg-aitl-trace-logging` so I
-  can find it.
+  In the AI Trust Layer, turn on prompt logging for my Studio developers so
+  their AI prompts and responses are captured and retained. Just create the
+  policy — do NOT deploy or roll it out. Name it exactly `test-nonreg-aitl-logging`
+  so it is easy to identify.
 
-  This is an automated run — don't ask me to confirm anything, and save the
-  commands' output to ./output.txt.
+  Important:
+  - The uip CLI may return auth or permission errors in this environment. That
+    is expected — run each command once, capture its output, and move on. Do NOT
+    retry a failed command or try to log in.
+  - Save all command output to ./output.txt.
+  - This is an automated run — do not ask for confirmation.
 
 success_criteria:
   - type: command_not_executed
