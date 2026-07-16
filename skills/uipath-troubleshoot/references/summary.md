@@ -193,7 +193,7 @@ For problems with nothing greppable (no exception, no error code — silent fail
 
 | Symptom | Domain | Entry |
 |---|---|---|
-| Job/run Successful but the action had no effect or output is wrong | The acting activity's package (ui-automation, word, excel, gsuite, o365, database, system) | Activity-level trace logs — look for zero-count lines ("Replaced 0 occurrence"), Simulate/inert-verify configurations, provider quirks |
+| Job/run Successful but the action had no effect or output is wrong | The acting activity's package (ui-automation, classic, word, excel, gsuite, o365, database, system) | Activity-level trace logs — look for zero-count lines ("Replaced 0 occurrence"), Simulate/inert-verify configurations, provider quirks |
 | Job stuck Pending | orchestrator | `PendingReasons` on the job record — its error codes ARE greppable signatures; re-grep after fetching |
 | Job/instance stuck Running | orchestrator (plain job) / maestro (BPMN instance) | Child-job states + open incidents; a Maestro instance with an Open incident is blocked until the incident is resolved |
 | Works in Debug, fails deployed | maestro | Debug-vs-deploy silent playbook |
