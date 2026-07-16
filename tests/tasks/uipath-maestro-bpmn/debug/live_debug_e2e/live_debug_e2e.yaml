@@ -1,0 +1,77 @@
+task_id: skill-bpmn-e2e-live-debug
+description: >
+  First Maestro BPMN eval that EXECUTES a process. The agent authors a tiny,
+  deterministic BPMN project (manual start with two numeric inputs, one Jint
+  script task that computes their product, an end event), then runs a live
+  `uip maestro bpmn debug` session against Studio Web with inputs a=6 and b=7 and
+  inspects the runtime result via the `debug-instance` variables commands. The
+  agent saves the raw debug and variables CLI output to `debug-evidence/`, and
+  the check asserts the debug run reached finalStatus Completed and the runtime
+  `product` variable is 42 — an un-fakeable runtime assertion. Mirrors the
+  uipath-maestro-flow live `run_debug` grading pattern. Live: no mocks; auth
+  comes from the experiment environment.
+tags: [uipath-maestro-bpmn, e2e, "mode:operate", "lifecycle:setup", path-to-ga]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 900
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a minimal Maestro BPMN project named "ProductCalc" with its main file
+  at `ProductCalc/ProductCalc.bpmn` for this process:
+    - a manual start event with two numeric input variables `a` and `b`,
+    - a single Jint script task that computes `product = a * b` into a `product`
+      variable,
+    - an end event.
+
+  Then run a debug session for the project against Studio Web with inputs
+  a = 6 and b = 7, and confirm from the runtime that the `product` variable is
+  42. You have explicit consent to upload and debug this project in the
+  connected tenant.
+
+  Save the raw CLI output so the result can be verified independently:
+    - save the full JSON output of the debug command to
+      `debug-evidence/debug.json`,
+    - take the debug instance id the debug command returns and save the full
+      JSON output of the `debug-instance variables-all` command for that
+      instance to `debug-evidence/variables.json`.
+
+  Preserve the raw CLI JSON exactly — do not summarize or hand-edit it.
+
+  The task is complete only when the debug run reaches finalStatus Completed and
+  the runtime `product` variable reads 42. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran a live BPMN debug session"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug\s'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected the debug instance's runtime variables"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug-instance\s+variables(-all)?'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Live debug reached finalStatus Completed and the runtime product variable is 42 (computed by a script task, not hardcoded)"
+    command: "python3 $TASK_DIR/check_live_debug.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
