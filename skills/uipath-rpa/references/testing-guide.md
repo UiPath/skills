@@ -17,19 +17,7 @@ Reference for XAML test automation features in UiPath RPA projects — XAML test
 
 ## Test Manager Setup (CLI)
 
-Linking a project to Test Manager (server connection + default project) can be done headlessly with `uip rpa tm`, without opening Studio — useful before authoring test cases that reference Test Manager test cases. Full verb/flag reference: [cli-reference.md § Test Manager](cli-reference.md). The essentials:
-
-```
-uip rpa tm connect --url "https://<host>/<org>/<tenant>/testmanager_" --project-dir "<PROJECT_DIR>" --output json
-uip rpa tm set-default-project --id <project-guid> --name "<name>" --key "<KEY>" --project-dir "<PROJECT_DIR>" --output json
-uip rpa tm status --project-dir "<PROJECT_DIR>" --output json
-```
-
-Behavior to know when authoring:
-- **`set-default-project` requires a connected server** — run `connect` first, or it is rejected (nothing is written).
-- **Switching to a different server** (`connect` to a different host/org/tenant) **clears the default project** — it belonged to the old server. Re-link one with `set-default-project` afterwards.
-- **`reloadHint` in the output**: if the project is open in a **Studio older than 26.0.197**, the change isn't picked up until the project is reloaded. When you see `reloadHint`, tell the user to **close and reopen the project in Studio**. Studio 26.0.197+ applies the change live (no `reloadHint`).
-- The CLI does **not** validate the project id against the server; obtain a real id from Test Manager (the runtime `uip tm project list` tool can list them).
+Linking a project to Test Manager (server connection + default project) can be done headlessly with `uip rpa tm`, without opening Studio — useful before authoring test cases that reference Test Manager test cases. Commands, ordering constraints (`connect` before `set-default-project`, server switches clearing the default project), and `reloadHint` handling: [cli-reference.md § Test Manager](cli-reference.md#test-manager). The CLI does **not** validate the project id against the server; obtain a real id from Test Manager (the runtime `uip tm project list` tool can list them).
 
 ---
 
@@ -111,21 +99,7 @@ If the workflow has arguments, pass them in the `InvokeWorkflowFile.Arguments` d
 
 Register every XAML test case in `designOptions.fileInfoCollection` — this is **Common Rule 10** in SKILL.md and applies to both XAML and coded test cases. Test cases live **only** in `fileInfoCollection`, never in `entryPoints` — `entryPoints` is for executable workflow files in Process projects (e.g. `Main.xaml`), and test cases are not workflow entry points regardless of project type.
 
-```json
-{
-  "designOptions": {
-    "fileInfoCollection": [
-      {
-        "editingStatus": "InProgress",
-        "testCaseId": "<UNIQUE_GUID>",
-        "testCaseType": "TestCase",
-        "executionTemplateInvokeIsolated": false,
-        "fileName": "TestCase.xaml"
-      }
-    ]
-  }
-}
-```
+Copy-paste JSON snippet (including `publishAsTestCase` for coded test cases and `dataVariationFilePath` for data-driven): [../assets/json-template.md](../assets/json-template.md).
 
 **Required keys per entry:**
 

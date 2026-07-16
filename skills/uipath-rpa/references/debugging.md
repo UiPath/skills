@@ -462,8 +462,6 @@ Read `runResult` fields in this order. **Verdict comes from the outer `Result` e
 3. **`Output` (when `HasErrors: false`)** — workflow's serialized output arguments JSON for `run` / `debug start` completions. Empty string `""` for debug-command responses (step / continue / cancel) and on failure.
 4. **Streamed log entries** — diagnostic context emitted live during execution on a separate channel. Use them to read variable values logged by the workflow, trace ordering, or correlate context with an `ErrorMessage` that already failed the run. **Do NOT use log-entry `Level` as a failure signal.**
 
-> **Anti-pattern: treating a streamed log entry's `Level == "Error"` or `"Warning"` as a `run` / `debug start` failure.** Workflows routinely emit `Log Message` at `Error` / `Warning` to record handled exceptions, validation results, or business outcomes. The run completes successfully and `HasErrors` stays `false`. Reading log levels as a failure signal flips successful runs to "failed" and burns retries on a green workflow.
-
 ### Identifying the Root Cause from Debug Output
 
 A practical example — a workflow makes an HTTP request and tries to deserialize the response as JSON, but fails:
