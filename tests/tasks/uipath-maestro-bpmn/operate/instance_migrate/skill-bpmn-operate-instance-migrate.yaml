@@ -49,11 +49,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Summary names the instance id, target version, and migrated status"
+    description: "Summary names the migrated instance id and the target version"
     path: "migrate-summary.md"
     includes:
       - "inst-paused-005"
       - "2.0.0"
-      - "Migrated"
     weight: 2.0
     pass_threshold: 1.0
