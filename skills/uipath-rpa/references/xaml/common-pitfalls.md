@@ -2,6 +2,13 @@
 
 Common pitfalls that cause validation errors or runtime failures.
 
+Moved topical catalogs — one pointer each, content lives with its domain:
+
+- UIA activity gotchas (input methods, `NKeyboardShortcuts`, `NTypeInto` special-key tokens, `N*` `Version`, selector escaping): [../ui-automation-guide.md § XAML-Specific Pitfalls](../ui-automation-guide.md)
+- IS `ConnectorActivity` gotchas: [../is-connector-xaml-guide.md](../is-connector-xaml-guide.md)
+- Flowchart/StateMachine/ProcessDiagram node wiring (`x:Reference` / `__ReferenceID`): [canvas-layout-guide.md](canvas-layout-guide.md)
+- CLI usage pitfalls: [../cli-reference.md](../cli-reference.md)
+
 ## Container/Scope Requirements
 
 These activities **must** be placed inside a specific parent scope:
@@ -97,45 +104,6 @@ Some properties are only required when another property has a specific value:
 | ConvertHtmlToPDF, ConvertTextToPDF | `InputMode = File` | `FileName` or `ResourceFile` must be set |
 | ConvertHtmlToPDF | `InputMode = Content` | `Html` must be set |
 | ConvertTextToPDF | `InputMode = Content` | `Text` must be set |
-
-## Input Method Constraints (UIAutomation)
-
-- `SimulateClick` cannot be used with `ClickType=Double` or `MouseButton=Right/Middle` — validation error
-- `TypeInto` with `SimulateType=True` **cannot use special keys** (Ctrl, Alt, Shift, etc.) — validation error via `SpecialKeyHelper.IsSpecialKeyUsed()`
-- `SimulateClick=True` AND `SendWindowMessages=True` is always invalid — pick one or neither
-- Input method resolution: `SendWindowMessages` → WINDOW_MESSAGES; else `SimulateClick` → API; else → HARDWARE_EVENTS (physical)
-- These are validated both at design-time (CacheMetadata) and runtime
-
-## NKeyboardShortcuts: `Shortcuts` vs `ShortcutsArgument`
-
-`NKeyboardShortcuts` has **two** shortcut properties — using the wrong one causes VB bracket parsing failures:
-
-- **`Shortcuts`** (`string`) — **Always use this** for hotkey encoding like `[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]`. Brackets are literal text.
-- **`ShortcutsArgument`** (`InArgument<string>`) — Only for dynamic/variable-driven values. Brackets here are parsed as VB expressions, so `[d(hk)]` would fail (VB tries to call function `d(hk)`).
-
-**Wrong:** `ShortcutsArgument="[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]"` → VB parser error
-**Correct:** `Shortcuts="[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]"` → literal string, works fine
-
-See `ui-automation.md` NKeyboardShortcuts section for the full hotkey encoding reference.
-
-## NTypeInto `Text` with literal `[k(...)]` special-key tokens
-
-When `Text` contains literal `[k(...)]`, `[d(...)]`, or `[u(...)]` special-key tokens, use the long-form element — never the attribute form. The attribute form runs correctly but the value does not render in Studio, so the workflow looks empty even though it works.
-
-**Wrong:** `Text="[&quot;13700132[k(enter)]&quot;]"` → runs, but `Text` shows blank in Studio.
-
-**Correct:**
-```xml
-<uix:NTypeInto ...>
-  <uix:NTypeInto.Text>
-    <InArgument x:TypeArguments="x:String">["13700132[k(enter)]"]</InArgument>
-  </uix:NTypeInto.Text>
-</uix:NTypeInto>
-```
-
-Alternatives:
-- Build the bracket characters with `ChrW(91)` / `ChrW(93)` so the string carries no literal `[` / `]`: `Text="[&quot;13700132&quot; &amp; ChrW(91) &amp; &quot;k(enter)&quot; &amp; ChrW(93)]"`.
-- Split the input: one `NTypeInto` for the digits, one `NKeyboardShortcuts` (or a second `NTypeInto`) for `[k(enter)]`.
 
 ## ActivityAction/ActivityFunc Initialization
 
@@ -387,72 +355,7 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 - Missing `ConnectionId` when `UseConnectionService=True` → validation error about missing account/connection name
 - Child activities expect their parent scope to have initialized OAuth extensions (`IGraphServiceClient`, `OAuthDataOptions`, etc.) — using them without a parent scope causes `NullReferenceException` at runtime
 
-**Connection lifecycle with CLI:**
-- **Discover connections**: `uip is connections list [connector-key] --output json` — find existing connection GUIDs
-- **Verify connection health**: `uip is connections ping <connection-id>` — check if a connection is still active
-- **Create new connection**: `uip is connections create <connector-key>` — opens OAuth flow for user to authenticate
-- **Re-authenticate**: `uip is connections edit <connection-id>` — re-runs OAuth flow for expired/revoked connections
-- If no connection exists and you cannot create one interactively, use a placeholder GUID (`00000000-0000-0000-0000-000000000000`) and inform the user they must configure the connection in Studio
-
-## IS `ConnectorActivity` Gotchas
-
-Full authoring flow: [../is-connector-xaml-guide.md](../is-connector-xaml-guide.md).
-
-### JIT `OutArgument` from Studio Designer Breaks Fresh Loads
-
-When Studio's designer touches an IS `ConnectorActivity`, it can inject a JIT-typed `OutArgument` on the `Jit_<operation>` `FieldObject`:
-
-```xml
-<isactr:FieldObject Name="Jit_send_message_to_channel_v2" Type="FieldArgument">
-  <isactr:FieldObject.Value>
-    <OutArgument x:TypeArguments="uiascb:send_message_to_channel_v2_Create" />
-  </isactr:FieldObject.Value>
-</isactr:FieldObject>
-```
-
-The `uiascb:` namespace points at a Studio-session-local dynamically-compiled assembly (e.g. `C35283077FA_send_mes.<hash>`). On any **fresh load** (new Studio session, Helm, CI), that assembly doesn't exist, compile fails with:
-
-```
-[Error] Unable to create activity builder for <workflow>.xaml.
-Reason was 'Cannot create unknown type '{...}OutArgument({...}<op>_Create)'.'
-```
-
-**Fix** — strip the injected `OutArgument` back to bare form:
-
-```xml
-<isactr:FieldObject Name="Jit_send_message_to_channel_v2" Type="FieldArgument" />
-```
-
-Also remove the `xmlns:uiascb` namespace declaration from the root `<Activity>` element if no other reference uses it. Tracked as PILOT-4812.
-
-### Field Names Come From the Schema, Not Memory
-
-`FieldObject Name` values are connector-specific and schema-driven. Never guess. Always read:
-
-```bash
-uip is resources describe <connector-key> <object-name> --operation Create --output json
-cat ~/.uipath/cache/integrationservice/<connector-key>/_static/<operation>.Create.json
-```
-
-Guessed names (e.g. `method`/`path`/`body` for an HTTP operation that actually expects connector-specific names) trigger a `Configuration contains a breaking change` runtime error.
-
-### `Configuration` Attribute Is Opaque
-
-The `Configuration` attribute on `ConnectorActivity` is a base64 + gzip JSON blob encoding connector + operation identity (`ConnectorKey`, `ObjectName`, `HttpMethod`, `Operation`, `ActivityType`). **Never hand-edit.** Always take the value verbatim from `uip rpa activities get-default-xaml --activity-type-id <GUID> --connection-id <GUID>`. When an operation's full schema is gated behind prerequisite criteria fields (Jira `project`/`issuetype`, generic record `Type`), re-run that command with `--field-values <criteria>=<value>` to obtain the expanded blob — never splice extra fields into an old blob (see [is-connector-xaml-guide.md § Hidden Secondary Fields](../is-connector-xaml-guide.md)).
-
-### `FieldObject.Value` Attribute Does Nothing
-
-Putting a literal in the attribute form — `<isactr:FieldObject Name="channel" Value="hello" />` — is silently ignored. The runtime only reads the element form:
-
-```xml
-<isactr:FieldObject Name="channel" Type="FieldArgument">
-  <isactr:FieldObject.Value>
-    <InArgument x:TypeArguments="x:String">
-      <CSharpValue x:TypeArguments="x:String">"hello"</CSharpValue>
-    </InArgument>
-  </isactr:FieldObject.Value>
-</isactr:FieldObject>
-```
+- Connection lifecycle CLI (list / ping / create / edit) and the placeholder-GUID fallback when no connection exists: [../is-connector-xaml-guide.md](../is-connector-xaml-guide.md)
 
 ## Deprecated Activities (Do Not Use)
 
@@ -610,10 +513,6 @@ Activity properties typed as enums (e.g. `Operator`, `ClickType`, `KeyModifiers`
 
 **Prevention:** When using `uip rpa activities get-default-xaml`, the output matches the currently installed package version. Never copy XAML snippets from projects using different package versions.
 
-## UIA `N*` Activities Carry a `Version` — Never Strip It
-
-Every UIA `N*` activity carries a `Version` attribute in its `uip rpa activities get-default-xaml` starter (e.g. `NGetText Version="V5"`, `NApplicationCard Version="V2"`). Dropping it survives BOTH `validate` and `build` and fails only at runtime with `System.InvalidOperationException ... ThrowIfNotInTree` on the activity's argument bindings. Carry over **every** attribute the starter emits. See [csharp-expression-pitfalls.md § `ThrowIfNotInTree` at runtime](csharp-expression-pitfalls.md).
-
 ## Expression Language Mismatch
 
 Every XAML file must use the same expression language as the project (`expressionLanguage` in `project.json`).
@@ -628,14 +527,10 @@ Every XAML file must use the same expression language as the project (`expressio
 - VB uses `OrElse`/`AndAlso` (short-circuit) vs `Or`/`And` (non-short-circuit) — different behavior in XAML expressions
 
 **C#-specific gotchas:**
-- Expressions must use explicit `<CSharpValue>` / `<CSharpReference>` elements inside `<InArgument>` / `<OutArgument>` — do NOT use `[bracket]` shorthand (brackets create VB expression nodes)
-- String interpolation (`$"..."`) is NOT supported in XAML expressions — use string concatenation
+- Expressions must use explicit `<CSharpValue>` / `<CSharpReference>` elements inside `<InArgument>` / `<OutArgument>` — do NOT use `[bracket]` shorthand (brackets create VB expression nodes). String interpolation (`$"..."`) is NOT supported — concatenate.
+- Attribute-form expressions, `OutArgument<T>` parse failures, and `ThrowIfNotInTree` are specific to **XAML projects with `expressionLanguage: CSharp`** — NOT to coded workflows (`.cs` files), which are plain C# and never use `CSharpValue`/`CSharpReference`: [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
 
 **Prevention:** Always check `project.json` `expressionLanguage` before writing any expression. Never mix languages.
-
-### C# expression pitfalls — separate file
-
-Applies only to XAML projects with `expressionLanguage: CSharp` — not to VB XAML, and not to coded workflows (`.cs` files). Attribute-form expressions, `OutArgument<T>` parse failures, and `ThrowIfNotInTree` all have root causes specific to that configuration. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md) and [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
 
 ## Missing Assembly References
 
@@ -664,14 +559,6 @@ Cannot create unknown type '{http://schemas.microsoft.com/netfx/2009/xaml/activi
 ```
 
 **Root cause:** Workflow arguments (In/Out/InOut) must be declared in `<x:Members>` with `<x:Property>` children — both prefixed with `x:` (the XAML language schema, `http://schemas.microsoft.com/winfx/2006/xaml`). Writing `<Activity.Properties>` with bare `<Property>` elements resolves `Property` against the **default** xmlns (the activities namespace), where no such type exists — so the file fails to load entirely.
-
-**Wrong** — Studio cannot open the workflow:
-```xml
-<Activity.Properties>
-  <Property Name="in_Username" Type="InArgument(x:String)" />
-  <Property Name="out_LoginSuccess" Type="OutArgument(x:Boolean)" />
-</Activity.Properties>
-```
 
 **Correct:**
 ```xml
@@ -752,55 +639,7 @@ xmlns:ss="clr-namespace:System.Security;assembly=System.Private.CoreLib"
 <OutArgument x:TypeArguments="ss:SecureString">[var_SecurePass]</OutArgument>
 ```
 
-**Fix example:**
-
-Wrong — causes `Cannot create unknown type` at load time:
-```xml
-<Variable x:TypeArguments="x:DateTime" Name="startTime" />
-<Variable x:TypeArguments="x:DateTimeOffset" Name="reminderTime" />
-```
-
-Correct — requires `xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"`:
-```xml
-<Variable x:TypeArguments="s:DateTime" Name="startTime" />
-<Variable x:TypeArguments="s:DateTimeOffset" Name="reminderTime" />
-```
-
 The same rule applies anywhere a type argument appears: `x:TypeArguments` on `Variable`, `InArgument`, `OutArgument`, `CSharpValue`, `CSharpReference`, `ActivityAction`, `DelegateInArgument`, etc.
-
----
-
-## Array Types in `Variable` Declarations
-
-The XAML parser rejects CLR array syntax in `<Variable x:TypeArguments="...">`. `<Variable x:TypeArguments="x:String[]">` fails to load with `Cannot create unknown type ... Variable(String[])`. The error message does not hint at the fix.
-
-**Use `scg:List(<T>)` instead of `<T>[]`** for variable declarations. Required `xmlns:scg` declaration depends on `targetFramework`:
-
-- **Modern (Windows/Portable):** `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"`
-- **Legacy (.NET Framework 4.6.1):** `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"`
-
-Wrong:
-```xml
-<Variable x:TypeArguments="x:String[]" Name="paths" />
-```
-
-Correct — **VB XAML** (`expressionLanguage: VisualBasic`, bracket shorthand for the default expression):
-```xml
-<Variable x:TypeArguments="scg:List(x:String)" Name="paths" Default="[New List(Of String)()]" />
-```
-
-Correct — **C# XAML** (`expressionLanguage: CSharp`): drop the `Default` attribute and use `<Variable.Default>` with `<CSharpValue>` instead; see [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
-
-**`InArgument` with array `x:TypeArguments` — context-dependent.** The canonical XAML for `AddDataRow.ArrayRow` (see [`../activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md`](../activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md)) uses `<InArgument x:TypeArguments="x:Object[]">[New Object() { ... }]</InArgument>` and Studio accepts it. Some agent-authored variants of the same form have been reported to fail at parse time — root cause unverified. **If `InArgument x:TypeArguments="x:Object[]"` fails in your project, fall back to calling the underlying params overload via `InvokeMethod`** (only safe when the target method has a `ParamArray Object()` / `params object[]` overload — `DataRowCollection.Add` does):
-
-```xml
-<InvokeMethod TargetObject="[dt.Rows]" MethodName="Add">
-  <InArgument x:TypeArguments="x:String">Alice</InArgument>
-  <InArgument x:TypeArguments="x:Int32">42</InArgument>
-</InvokeMethod>
-```
-
-This pattern is NOT a general substitute for fixed-arity array parameters — only for `ParamArray`/`params` overloads where the runtime builds the array from N positional arguments. For non-params arrays (e.g. `Method(int[] arr)`), `InvokeMethod` with N separate `<InArgument>` children does not work; the array must be constructed in a preceding `Assign`.
 
 ---
 
@@ -874,70 +713,6 @@ The boxed array reaches `ArrayRow` (whose property type is `Object[]`) correctly
 
 **Fix:** Find the activity with the empty expression in the XAML and either set a valid expression or remove the empty argument element.
 
-## x:Reference / __ReferenceID Naming
-
-Flowcharts, State Machines, and Long Running Workflows (ProcessDiagram) use `x:Name="__ReferenceID0"` and `<x:Reference>__ReferenceID0</x:Reference>` to link nodes.
-
-### Where `<x:Reference>` Goes
-
-`<x:Reference>` is used ONLY inside property elements to create cross-references between nodes:
-
-| Property Element | Container | Purpose |
-|-----------------|-----------|---------|
-| `Flowchart.StartNode` | Flowchart | Points to the first node |
-| `FlowStep.Next` | Flowchart | Links to the next node |
-| `FlowDecision.True` / `.False` | Flowchart | Branch targets |
-| `Transition.To` | State Machine | Transition destination state |
-| `StateMachine.InitialState` | State Machine | Starting state (attribute form: `{x:Reference ...}`) |
-| `ProcessDiagram.StartNode` | ProcessDiagram | Points to start event |
-| `EventNode.Next` / `TaskNode.Next` | ProcessDiagram | Links to next node |
-| `DecisionNode.True` / `.False` | ProcessDiagram | Branch targets |
-
-### Node Registration Rule
-
-All nodes in a Flowchart/ProcessDiagram must be registered as children of the container element. Two scenarios:
-
-1. **Direct children** of the container (e.g., `<FlowStep>` directly under `<Flowchart>`) — already registered. Do NOT also add a trailing `<x:Reference>`.
-2. **Inline definitions** inside property elements (e.g., `<FlowStep>` inside `<FlowDecision.True>`) — MUST add a trailing `<x:Reference>` entry as a direct child of the container.
-
-**Correct — inline node registered with trailing `<x:Reference>`:**
-```xml
-<Flowchart>
-  <Flowchart.StartNode>
-    <x:Reference>__ReferenceID0</x:Reference>
-  </Flowchart.StartNode>
-  <FlowDecision x:Name="__ReferenceID0">        <!-- direct child — no trailing ref -->
-    <FlowDecision.True>
-      <FlowStep x:Name="__ReferenceID1">         <!-- inline definition -->
-        ...
-      </FlowStep>
-    </FlowDecision.True>
-  </FlowDecision>
-  <x:Reference>__ReferenceID1</x:Reference>      <!-- register inline node -->
-</Flowchart>
-```
-
-**Wrong — re-listing a direct child:**
-```xml
-<Flowchart>
-  <FlowStep x:Name="__ReferenceID0">             <!-- direct child -->
-    ...
-  </FlowStep>
-  <x:Reference>__ReferenceID0</x:Reference>      <!-- WRONG — already a direct child -->
-</Flowchart>
-```
-
-The same registration rules apply to `<upa:ProcessDiagram>` and its node types (`EventNode`, `TaskNode`, `DecisionNode`, `SwitchNode<T>`, `SplitNode`, `MergeNode`, `SubProcessNode`, `EndNode`, `BoundaryNode`).
-
-### Other Gotchas
-
-- `__ReferenceID` values must be unique within the entire XAML file — duplicate IDs cause deserialization errors
-- When copy-pasting FlowStep/FlowDecision nodes, duplicate `__ReferenceID` values will be created — Studio auto-renumbers, but manual XAML editing doesn't
-- When copying from flowchart to sequence, elements may be ordered backwards due to node ordering in XAML
-- `x:Reference` can only refer to elements with `x:Name` in the same XAML file — cross-file references are not supported
-
-**When editing manually:** If adding new FlowStep/FlowDecision nodes, use a `__ReferenceID` number higher than any existing one in the file.
-
 ## XAML File Size and Performance
 
 - XAML files over **5 MB** cause significant Studio slowdowns
@@ -961,20 +736,6 @@ The same registration rules apply to `<upa:ProcessDiagram>` and its node types (
 
 **Fix:** Prefix with the XAML escape sequence `{}` to indicate a literal string: `Search="{}{FullName}"`
 
-## Selector Special Characters
-
-When writing selectors in XAML, XML special characters must be escaped:
-
-| Character | XAML Escape | Notes |
-|-----------|------------|-------|
-| `&` | `&amp;` | Most common issue — `&` in window titles/URLs |
-| `<` | `&lt;` | Rare in selectors |
-| `>` | `&gt;` | Rare in selectors |
-| `"` | `&quot;` | Inside attribute values |
-| `'` | `&apos;` | Inside single-quoted attributes |
-
-**Double-encoding gotcha:** If a selector value goes through both XML escaping and UiPath's own escaping, you may get `&amp;amp;` instead of `&amp;`. Use `SecurityElement.Escape()` in C# expressions for dynamic selectors.
-
 ## ViewState Section Corruption
 
 The `<sap2010:WorkflowViewState.ViewStateManager>` section can become corrupted:
@@ -997,34 +758,7 @@ The `.project/JitCustomTypesSchema.json` file can be missing or outdated.
 
 **Fix:** Use the `Read` tool to read it one more time only. If this also fails, then read the project structure.
 
-## CLI-Specific Pitfalls
-
-### `validate --file-path` requires relative paths
-
-The `--file-path` parameter of `uip rpa validate` must be a path **relative to the project directory**:
-- Correct: `--file-path "Workflows/SendEmail.xaml"`
-- Wrong: `--file-path "C:\Users\me\Projects\MyProject\Workflows\SendEmail.xaml"`
-
-Using an absolute path will result in a "file not found" error even if the file exists.
-
-### `--project-dir` defaults to CWD
-
-All `uip rpa` commands default to the current working directory as the project root. If you are running commands from a parent directory or monorepo root, every command will silently target the wrong location. Always verify the CWD contains `project.json`, or pass `--project-dir` explicitly.
-
-### Studio IPC connection failures
-
-`uip rpa` commands communicate with Studio over IPC. By default this is a **headless Studio** that auto-launches from a NuGet package — no Studio Desktop required. Recovery steps when commands fail with connection errors:
-
-1. **Re-run the command.** Headless Studio relaunches automatically on the next call; transient pipe errors clear on retry.
-2. **Raise the timeout for the first call.** Cold NuGet restore of the headless Studio package can take 30–90 s — `uip rpa --timeout 600 <command>`.
-3. **`uip rpa project open --project-dir "..."`** — open the project explicitly if Studio reports no project loaded.
-4. **Studio Desktop only** — if the failing command is `diff` or `focus-activity` (or the user set `UIPATH_RPA_TOOL_USE_STUDIO=1`), check Studio Desktop with the hidden `uip rpa instances list --output json` and run `uip rpa studio start --project-dir "..."` if no instance is up.
-
-### CLI output format for parsing
-
-Always use `--output json` when you need to parse CLI output programmatically. The default `table` format is human-readable but unreliable for parsing (column alignment varies, long values may be truncated). JSON output is structured and unambiguous.
-
-### DataTable.Select numeric comparisons on Excel-sourced data
+## DataTable.Select numeric comparisons on Excel-sourced data
 
 When reading Excel data with `ReadRangeX`, column types in the resulting `DataTable` may be `String` even when the Excel cells contain numbers. This causes `DataTable.Select("[Amount] > 1000")` to perform string comparison instead of numeric comparison (e.g., `"4200" < "800"` alphabetically), silently dropping rows.
 
