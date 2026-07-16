@@ -63,8 +63,6 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Phone field — a target. (This one is named in the prompt verbatim, so it does
-  # not test substring vs. semantic; the traps below do.)
   - type: command_executed
     description: "Unconfirmed Phone Number (f-303)"
     tool_name: "Bash"
