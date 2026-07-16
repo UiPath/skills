@@ -1,0 +1,59 @@
+task_id: skill-bpmn-operate-instance-migrate
+description: >
+  Consent-gated operate mutation for the uipath-maestro-bpmn skill. With explicit
+  approval, the agent migrates a paused BPMN instance to a new process version
+  with folder context via a mocked CLI, and does not cancel or move a cursor.
+tags: [uipath-maestro-bpmn, integration, "mode:operate", "lifecycle:setup"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 24
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+initial_prompt: |
+  The user has already approved migrating the paused UiPath Maestro BPMN instance
+  inst-paused-005 in folder folder-public to package version 2.0.0. Migrate that
+  instance to version 2.0.0.
+
+  Do NOT cancel the instance or move its cursor. Write a short summary to
+  migrate-summary.md naming the instance id and the version it was migrated to.
+
+  Use the mocked `uip maestro bpmn ...` CLI on PATH with `--output json`. Do NOT
+  read files under mocks/, fixtures/, or any response JSON directly — obtain all
+  data by running the CLI.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent migrated the instance to version 2.0.0 with folder context"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+migrate\s+inst-paused-005\s+2\.0\.0\s+(-f|--folder-key)\s+folder-public'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT cancel the instance or move a cursor"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+(cancel|goto)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Summary names the instance id, target version, and migrated status"
+    path: "migrate-summary.md"
+    includes:
+      - "inst-paused-005"
+      - "2.0.0"
+      - "Migrated"
+    weight: 2.0
+    pass_threshold: 1.0

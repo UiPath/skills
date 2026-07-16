@@ -1,0 +1,23 @@
+[
+  {
+    "instanceId": "inst-triage-001",
+    "processKey": "process-invoice-triage",
+    "status": "Faulted",
+    "folderKey": "folder-public",
+    "startedAt": "2026-05-01T12:00:00Z"
+  },
+  {
+    "instanceId": "inst-run-101",
+    "processKey": "process-invoice-triage",
+    "status": "Running",
+    "folderKey": "folder-public",
+    "startedAt": "2026-05-02T09:00:00Z"
+  },
+  {
+    "instanceId": "inst-done-102",
+    "processKey": "process-invoice-triage",
+    "status": "Completed",
+    "folderKey": "folder-public",
+    "startedAt": "2026-04-30T08:00:00Z"
+  }
+]

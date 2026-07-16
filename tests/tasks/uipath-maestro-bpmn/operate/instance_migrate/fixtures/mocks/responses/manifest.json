@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "_doc": "Mocked public-safe BPMN operate migrate of a paused instance to a new version.",
+  "rules": [
+    {
+      "match": "login status",
+      "file": "auth-status.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance get inst-paused-005 -f folder-public",
+      "file": "instance-get.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance get inst-paused-005 --folder-key folder-public",
+      "file": "instance-get.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance migrate inst-paused-005 2.0.0 -f folder-public",
+      "file": "instance-migrate.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance migrate inst-paused-005 2.0.0 --folder-key folder-public",
+      "file": "instance-migrate.json",
+      "exit_code": 0
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"error\":\"unmocked public-safe BPMN command\"}\n",
+    "exit_code": 1
+  }
+}
