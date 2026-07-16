@@ -107,6 +107,19 @@ if (!System.Text.RegularExpressions.Regex.IsMatch(hash, @"^[0-9a-f]{40}$"))
 
 Project-local types are appropriate for **domain DTOs** that have no platform equivalent — `InvoiceLineItem`, `CustomerRecord`, `WorkItem` — and belong in Coded Source Files. The rule above applies to platform-provided types only: do not reinvent exceptions, queue-item shapes, credential handles, file-resource handles, or OR descriptors.
 
+## Coded Workflow Analyzer Rules
+
+Four built-in Workflow Analyzer rules with scope `Coded Workflow` run as Roslyn analyzers over the project's `.cs` files. All four are **Error** severity and enabled by default — a violation fails `uip rpa analyze`, `build`, and `pack`, and Studio flags the same violations as validation errors. Author to satisfy them up front:
+
+| Rule | Trigger | Fix |
+|------|---------|-----|
+| **ST-NMG-017** — Class name matches default namespace | A class declared inside the project's default namespace has the same name as that namespace (generated from the project name) — e.g. class `Invoicing` in project `Invoicing`. Applies to every class, including Coded Source Files. | Rename the class (and its file to match) — e.g. `InvoicingWorkflow` |
+| **ST-DBP-010** — Multiple `[Workflow]`/`[TestCase]` | More than one `[Workflow]` or `[TestCase]` attribute in the same **file** (the two attribute kinds count together) | One entry-point attribute per file — move each extra entry point to its own file |
+| **ST-REL-001** — Mismatched InOut argument types | An entry-point input parameter collapses into an InOut argument (its name matches a return-tuple element, or it is literally named `Output` with a single non-void return) but the input and returned types differ | Make the input parameter type and the returned type identical |
+| **ST-USG-017** — Invalid parameter modifier | `out` or `ref` modifier on a `[Workflow]`/`[TestCase]` method parameter | Use return values or tuples for outputs instead |
+
+> Older CLI versions listed these rules in `analyzer-rules list` but did not execute them headlessly — only Studio flagged the violations. Do not treat a clean `analyze`/`build`/`pack` from an older CLI as proof these rules pass; fix violations at authoring time regardless.
+
 ## Best Practices
 
 ### API Discovery
@@ -145,7 +158,7 @@ if (system.PathExists(@"C:\Reports\report.pdf", PathType.File, out ILocalResourc
 
 ### Code Quality
 - **Start simple, iterate** — Create minimal working version first, then refine
-- **NEVER use C# `out` or `ref` keywords in `[Workflow]` methods** — The auto-generated `*+Activity.cs` wrapper does not handle them correctly. Symptoms: compile error `CS1620`, or runtime `Using 'out' and 'ref' modifiers is not allowed for Coded Workflows executions.` Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead
+- **NEVER use C# `out` or `ref` keywords in `[Workflow]` methods** — The auto-generated `*+Activity.cs` wrapper does not handle them correctly. Symptoms: analyzer error ST-USG-017 at `analyze`/`build`/`pack`, compile error `CS1620`, or runtime `Using 'out' and 'ref' modifiers is not allowed for Coded Workflows executions.` Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead
 - **Only include using statements for packages in project.json** — Adding unused usings causes compile errors
 - **Match input parameter names exactly** — Execute method signature must match `--input` arguments (case-sensitive)
 - **Escape backslashes in paths** — Use `C:\\path\\file.txt` not `C:\path\file.txt` in input arguments
@@ -186,6 +199,8 @@ C) <user-driven approach>
 - Never generate C# code without first searching for existing .cs files (API Discovery)
 - Never edit files without reading them first
 - Never skip the `[Workflow]` or `[TestCase]` attribute on the Execute method (Critical Rule #4)
+- Never put more than one `[Workflow]`/`[TestCase]` attribute in the same file — analyzer error ST-DBP-010 (see § Coded Workflow Analyzer Rules)
+- Never name a class the same as the project — analyzer error ST-NMG-017 (see § Coded Workflow Analyzer Rules)
 - Never forget to inherit from `CodedWorkflow` (except Coded Source Files) (Critical Rule #3)
 - Never add `using` statements for packages not in `project.json` — causes CS errors
 - Never guess service method names — verify with existing code or `uip rpa packages inspect`

@@ -1,0 +1,60 @@
+task_id: skill-bpmn-edit-group-to-subflow
+description: >
+  Brownfield edit: extract a contiguous group of tasks from a valid Maestro BPMN
+  into an embedded subprocess (with its own start/end and a diagram shape),
+  keeping the remaining tail node in the main flow and behavior intact.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:subflow"]
+
+run_limits:
+  expected_turns: 26
+  max_turns: 90
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  A valid Maestro BPMN file `Fulfillment.bpmn` is in the working directory. Its
+  flow is: "Pick Items" (Task_Pick) -> "Pack Box" (Task_Pack) -> "Ship Parcel"
+  (Task_Ship).
+
+  Extract "Pick Items" and "Pack Box" into a single embedded subprocess named
+  "Prepare", preserving their behavior. "Ship Parcel" must stay in the main flow
+  and still run after the subprocess. Give the subprocess its own start/end
+  events and a diagram shape so it renders.
+
+  Make a SURGICAL edit: "Ship Parcel"'s payload and id, uipath:migrationVersion,
+  and the process-level preserve-only content must round-trip untouched.
+
+  Validate the edited file locally before finishing. Do not upload, publish,
+  deploy, debug, run, or pack anything, and do not pause for approval — make the
+  edit end to end in one pass.
+
+success_criteria:
+  - type: file_exists
+    description: "The edited BPMN file is still present"
+    path: "Fulfillment.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Preserve-only payload round-tripped untouched"
+    path: "Fulfillment.bpmn"
+    includes:
+      - "preserve-only-do-not-touch"
+      - 'bpmn:subProcess'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Group extracted into a subprocess, Ship Parcel preserved in main flow, file still structurally sound"
+    command: "python3 $TASK_DIR/check_group_to_subflow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

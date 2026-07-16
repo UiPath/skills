@@ -76,7 +76,7 @@ A `Log("LoginWorkflow: type username")` stub:
 
 A real `<uix:NTypeInto>` activity with placeholder selector + `TODO Indicate` marker:
 
-- Build/validate may surface "selector incomplete" warnings — useful, since they tell the developer what is left to do.
+- Build/validate surface the unconfigured targets ("Target or Input UI Element must be set" — hard errors in current packages) — useful, since they tell the developer what is left to do. A stub-mode deliverable therefore does NOT reach a clean `build`; its acceptance bar is that the ONLY remaining validate/build errors are the expected unconfigured-target ones.
 - The activity is wired into the workflow's control flow, package dependencies, scope, and Object Repository registration plumbing. The developer's only remaining work is **Indicate**.
 - The TODO marker is visible in Studio's designer pane and grep-able in the file.
 - The cost of "what does this stub actually need from the developer?" drops from "read this carefully and infer" to "click Indicate on the marked activities."
@@ -293,6 +293,16 @@ Install the UI Library as a package dependency; its descriptors appear under **U
 
 Skipping steps 4-5 causes the next run's open-if-not-open behavior to reuse a stale window in whatever state it was left in, or -- if the selector doesn't match -- to spawn a duplicate instance.
 
+### Advanced Debugging — Profiling
+
+For advanced debugging, add `--profiling` to collect insightful per-activity execution data, timings, and before- and after-execution screenshots:
+
+```bash
+uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --profiling
+```
+
+Use the before-execution screenshot to confirm the application/element started in the correct state, and the after-execution one to validate the expected outcome. Each screenshot's filename is recorded in the run's `.uistat` file; the image sits in the `Screenshots` folder in the same directory as that `.uistat` file. See [debugging.md § Profiling Workflow Performance](debugging.md#profiling-workflow-performance) for details.
+
 ### Runtime Selector Failure Recovery
 
 "UI element not found", "UI element is invalid", element not on screen -- these surface at runtime, not during static validation. They occur when a selector was captured against one app state but the DOM changed by the time the activity executes.
@@ -497,7 +507,7 @@ Example — copy a value from App A and paste it into App B. Outer card → App 
                 <uix:NApplicationCard.Body>
                     <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
                         <!-- ScopeIdentifier = App A card's ScopeGuid → reads from App A (outer) -->
-                        <uix:NGetText DisplayName="Get value from App A" Text="[out_Value]"
+                        <uix:NGetText DisplayName="Get value from App A" TextString="[out_Value]"
                                       ScopeIdentifier="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
                                       sap2010:WorkflowViewState.IdRef="NGetText_1" Version="V5" />
                         <!-- ScopeIdentifier = App B card's ScopeGuid → pastes into App B (inner) -->

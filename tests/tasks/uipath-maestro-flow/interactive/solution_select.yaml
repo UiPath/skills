@@ -9,7 +9,7 @@ description: >
   solution" + "Something else") instead of guessing. A simulated user answers
   the prompt. Grades that the gate fired AND that the flow still builds and
   validates afterward.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, simulation]
 
 agent:
   # Add AskUserQuestion to the default tool set so the gate can actually fire.

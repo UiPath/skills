@@ -147,6 +147,8 @@ Rules:
 
 `uip rpa analyzer-rules list` reports the Workflow Analyzer rules **enabled** for the project — the best-practice rules `validate` and `build` enforce. Reports rules, not violations. Each rule returns `severity` (`error`/`warning`/`info`), rule ID, scope, title, and (when available) `recommendation` and `docs` URL. Prefix convention: `ST-*` = built-in Studio rule, `MA-*` = package-shipped rule.
 
+Rules with scope `Coded Workflow` run as Roslyn analyzers over the project's `.cs` files during `analyze`, `build`, and `pack` — same enforcement as the XAML-scoped rules. The four built-in ones are all Error severity; triggers and fixes: [coded/coding-guidelines.md § Coded Workflow Analyzer Rules](coded/coding-guidelines.md#coded-workflow-analyzer-rules).
+
 > **Performance:** the unscoped call enumerates every rule across every package and can take a minute or more. Narrow with `--scope` (`Activity`, `Workflow`, `Project`, or `Coded Workflow`) — scoped calls return in seconds. See `--help` for accepted scope values.
 
 ---

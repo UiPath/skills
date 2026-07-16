@@ -21,6 +21,7 @@ Mechanical only; runtime behaviour is graded by check_expense_runnable_debug.py.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import sys
@@ -39,6 +40,9 @@ from _shared.case_check import (  # noqa: E402
 EXPECTED_CASEPLAN = os.path.join(
     "ExpenseReimbursementRunnable", "ExpenseReimbursementRunnable", "caseplan.json"
 )
+EXPECTED_BINDINGS_V2 = os.path.join(
+    "ExpenseReimbursementRunnable", "ExpenseReimbursementRunnable", "bindings_v2.json"
+)
 PRIMARY_STAGES = ["Submission", "Manager Approval", "Finance Approval", "Payment", "Approved"]
 TERMINAL_LANES = ["Rejected", "Withdrawn"]
 REQUIRED_TASK_TYPES = {
@@ -46,6 +50,13 @@ REQUIRED_TASK_TYPES = {
 }
 # The automated runnable variant deliberately omits these (no HITL / no live connectors).
 FORBIDDEN_TASK_TYPES = {"action", "execute-connector-activity", "wait-for-connector"}
+REQUIRED_EXTERNAL_BINDINGS = {
+    "Shared/uipath-maestro-case/NameToAgeFixed2.API Workflow": "API Workflow",
+    "Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters": "CountLetters",
+    "Shared/uipath-agents/ProcurementProcess.ProcurementProcess": "ProcurementProcess",
+    "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow": "RPA Workflow",
+    "Shared/uipath-maestro-case/CaseTest.Maestro Case": "Maestro Case",
+}
 
 
 def _fail(msg: str):
@@ -89,8 +100,55 @@ def _incoming_from(plan: dict, target_id: str, sources: set[str]) -> bool:
     return any(tr.get("source") in sources for tr in find_transitions(plan, target=target_id))
 
 
+def _assert_bindings_v2_metadata(bindings: dict) -> None:
+    """Reject metadata that the eval CLI's resource refresh cannot consume."""
+    resources = bindings.get("resources")
+    if not isinstance(resources, list):
+        _fail("bindings_v2.json must contain a resources array")
+    for index, resource in enumerate(resources):
+        if not isinstance(resource, dict):
+            _fail(f"bindings_v2.json resources[{index}] must be an object")
+        metadata = resource.get("metadata") or {}
+        if not isinstance(metadata, dict):
+            _fail(f"bindings_v2.json resource {resource.get('key', index)!r} metadata must be an object")
+        unsupported = sorted(set(metadata) - {"subType"})
+        if unsupported:
+            _fail(
+                "bindings_v2.json resource "
+                f"{resource.get('key', index)!r} has unsupported metadata key(s) "
+                f"{unsupported}; only subType is supported by uip solution resources refresh"
+            )
+
+
+def _assert_required_external_bindings(bindings: dict) -> None:
+    """Ensure aliases from the SDD are not used as deployed resource names."""
+    resources = bindings.get("resources")
+    if not isinstance(resources, list):
+        _fail("bindings_v2.json must contain a resources array")
+    names_by_key = {
+        resource.get("key"): ((resource.get("value") or {}).get("name") or {}).get(
+            "defaultValue"
+        )
+        for resource in resources
+        if isinstance(resource, dict)
+    }
+    for key, expected_name in REQUIRED_EXTERNAL_BINDINGS.items():
+        actual_name = names_by_key.get(key)
+        if actual_name != expected_name:
+            _fail(
+                f"bindings_v2.json must bind {key!r} as deployed name "
+                f"{expected_name!r}; got {actual_name!r}"
+            )
+
+
 def main():
     plan = read_caseplan(EXPECTED_CASEPLAN if os.path.exists(EXPECTED_CASEPLAN) else None)
+    if not os.path.exists(EXPECTED_BINDINGS_V2):
+        _fail(f"missing required {EXPECTED_BINDINGS_V2}")
+    with open(EXPECTED_BINDINGS_V2, encoding="utf-8") as f:
+        bindings = json.load(f)
+    _assert_bindings_v2_metadata(bindings)
+    _assert_required_external_bindings(bindings)
 
     # --- trigger: Manual, so `uip maestro case debug` can start the case headlessly
     triggers = find_triggers(plan)

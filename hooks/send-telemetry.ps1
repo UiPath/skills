@@ -43,15 +43,21 @@
 #                            (resolvedModel)
 #
 # CROSS-AGENT: registered as a PostToolUse hook, this also runs under other
-# coding agents that honor hooks.json (e.g. Codex). Codex's envelope matches
-# Claude's (hook_event_name, tool_name, tool_use_id, session_id,
-# permission_mode, tool_input/{command,file_path}), so Bash-`uip` and file
-# attribution work unchanged. Differences handled / accepted: agent spawns use
-# `spawn_agent` + tool_input.agent_type (see Test-UipathCall + extraction);
-# Codex omits duration_ms / effort.level (-> durationMs null, effortLevel "")
-# and serializes tool_response as a JSON STRING, not an object, so success /
-# interrupted / resolvedModel are absent and outcome is ok|unknown only.
-# Only derived, low-cardinality, PII-free values ever leave the machine.
+# coding agents that honor hooks.json (e.g. Codex, UiPath Autopilot / Delegate).
+# Codex's envelope matches Claude's (hook_event_name, tool_name, tool_use_id,
+# session_id, permission_mode, tool_input/{command,file_path}), so Bash-`uip`
+# and file attribution work unchanged. Differences handled / accepted: agent
+# spawns use `spawn_agent` + tool_input.agent_type (see Test-UipathCall +
+# extraction); Codex omits duration_ms / effort.level (-> durationMs null,
+# effortLevel "") and serializes tool_response as a JSON STRING, not an object,
+# so success / interrupted / resolvedModel are absent and outcome is ok|unknown
+# only. UiPath Autopilot / Delegate keep the same envelope but rename the shell
+# and file tools — ExecuteBashCommand / ExecutePowershellCommand (vs Bash /
+# PowerShell) and ReadFile / WriteFile / EditFile / LsDirectory (vs Read / Write
+# / Edit / Glob / Grep); their tool_input still carries command / file_path, so
+# the same attribution + derivation fire once those names are gated (see
+# Test-UipathCall + Get-DerivedFields). Only derived, low-cardinality, PII-free
+# values ever leave the machine.
 #
 # Non-blocking by contract: registered as an async hook in hooks.json
 # ("async": true) on every event EXCEPT SessionEnd, so Claude Code runs it in
@@ -125,11 +131,11 @@ function Test-UipathCall([string]$Tool, [string]$Skill, [string]$SubagentType, [
       if (@('general-purpose', 'Explore', 'Plan', 'claude', 'claude-code-guide', 'statusline-setup', 'fork', 'default') -ccontains $SubagentType) { return $true }
       break
     }
-    { $_ -cin @('Bash', 'PowerShell') } {
+    { $_ -cin @('Bash', 'PowerShell', 'ExecuteBashCommand', 'ExecutePowershellCommand') } {
       if ($Command -cmatch '(^|[\\";|&(\s])(uip|rpa-tool)\s' -or $Command -cmatch '\$UIP\b') { return $true }
       break
     }
-    { $_ -cin @('Edit', 'Write', 'Read', 'Glob', 'Grep') } {
+    { $_ -cin @('Edit', 'Write', 'Read', 'Glob', 'Grep', 'ReadFile', 'WriteFile', 'EditFile', 'LsDirectory') } {
       if ($FilePath -imatch '\.(cs|flow|xaml|uipx|bpmn)$' -or $FilePath -imatch '(^|[/\\])(agent|caseplan|project|app\.config|action-schema)\.json$') { return $true }
       break
     }
@@ -148,7 +154,7 @@ function Get-DerivedFields([string]$Tool, [string]$Skill, [string]$Command, [str
       $derived.skillName = $Skill
       break
     }
-    { $_ -cin @('Bash', 'PowerShell') } {
+    { $_ -cin @('Bash', 'PowerShell', 'ExecuteBashCommand', 'ExecutePowershellCommand') } {
       # e.g. "solution publish" from "uip solution publish --output json".
       $m = [regex]::Match($Command, '(uip|\$UIP)\s+[a-z][a-z-]*(\s+[a-z][a-z-]*)?')
       if ($m.Success) {
@@ -156,7 +162,7 @@ function Get-DerivedFields([string]$Tool, [string]$Skill, [string]$Command, [str
       }
       break
     }
-    { $_ -cin @('Edit', 'Write', 'Read', 'Glob', 'Grep') } {
+    { $_ -cin @('Edit', 'Write', 'Read', 'Glob', 'Grep', 'ReadFile', 'WriteFile', 'EditFile', 'LsDirectory') } {
       $m = [regex]::Match($FilePath, '\.[A-Za-z0-9]+$')
       if ($m.Success) { $derived.fileExt = $m.Value }
       if ($FilePath -clike '*agent.json') { $derived.fileExt = 'agent.json' }

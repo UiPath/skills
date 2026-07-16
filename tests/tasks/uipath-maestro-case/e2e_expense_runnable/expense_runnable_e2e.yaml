@@ -32,8 +32,8 @@ agent:
 
 run_limits:
   task_timeout: 4800
-  max_turns: 250
-  turn_timeout: 2700
+  max_turns: 500
+  turn_timeout: 4800
 
 sandbox:
   template_sources:
@@ -53,6 +53,15 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available and authenticated in the environment.
+  - For each non-connector resource, `bindings_v2.json` metadata may contain
+    only `subType` (or be empty). Do not add `bindingsVersion` or
+    `solutionsSupport`: those fields make `uip solution resources refresh` fail
+    with "Node already added to the graph" in this eval environment.
+  - The SDD resource labels are aliases. In `bindings_v2.json`, use these deployed
+    resource keys and names exactly: `NameToAgeFixed2` → `API Workflow`,
+    `CountLetters` → `CountLetters`, `ProcurementProcess` →
+    `ProcurementProcess`, `ProjectEuler` → `RPA Workflow`, and `CaseTest` →
+    `Maestro Case`. Do not substitute an SDD alias for a deployed name.
   - Treat all hard stops after the SDD as pre-approved, including Phase 1
     planning approval, Phase 2 publish-for-review, and Phase 5 debug. Choose the
     continue / skip-publish path and keep going.

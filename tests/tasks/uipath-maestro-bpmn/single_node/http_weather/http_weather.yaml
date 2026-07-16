@@ -1,0 +1,73 @@
+task_id: skill-bpmn-http-weather
+description: >
+  HTTP activity eval: agent uses the uipath-maestro-bpmn skill to model a
+  connectionless HTTP call to a public weather API (Open-Meteo) as a
+  bpmn:sendTask with the registry Intsvc.HttpExecution wrapper in manual mode,
+  capturing the response into a declared variable. Ports the Flow Open-Meteo
+  weather single-node test to a connectionless BPMN HTTP node. Authoring only —
+  no cloud effects, no live call.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:single-node", "feature:http"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 80
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a local BPMN project named "OpenMeteoWeatherHttp" with the main file at
+  OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn. Model this process:
+  manual start -> HTTP GET the current weather for Bellevue from the public
+  Open-Meteo API -> end.
+
+  Requirements:
+  - Discover the HTTP-execution extension type via the registry and author its
+    node from the registry template. Do not hand-author uipath:* XML from prose.
+  - This is a connectionless (manual) HTTP call — no Integration Service
+    connection. Model it as a bpmn:sendTask using the documented
+    Intsvc.HttpExecution wrapper in manual mode with method GET and a literal
+    Open-Meteo forecast URL (host api.open-meteo.com), including latitude,
+    longitude, and current-weather query parameters.
+  - Capture the HTTP response into a declared process variable (BPMN.Variables).
+  - Do not invent or paste real tenant URLs, connection IDs, or connector keys —
+    the only external URL is the public Open-Meteo endpoint.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+  - Do not upload, publish, deploy, debug, run, pack, or actually call the API,
+    and do not pause for approval or confirmation.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN uses the HTTP-execution wrapper and the public Open-Meteo host"
+    path: "OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn"
+    includes:
+      - "Intsvc.HttpExecution"
+      - "open-meteo"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run any cloud-side Maestro BPMN lifecycle command"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(upload|publish|deploy|debug|run|pack)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "HTTP sendTask is connectionless manual GET to Open-Meteo with a bound output variable"
+    command: "python3 $TASK_DIR/check_http_weather.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

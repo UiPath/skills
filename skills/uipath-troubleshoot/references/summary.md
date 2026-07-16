@@ -57,6 +57,15 @@ CLI: `uip llm-configuration --help`, `uip traces spans get`, `uip gov aops-polic
 - [products/llm-gateway/overview.md](./products/llm-gateway/overview.md) — Service model, dependencies, CLI surface, and what the CLI does NOT expose
 - [products/llm-gateway/summary.md](./products/llm-gateway/summary.md) — All playbooks for LLM Gateway / BYO LLM issues
 
+## Coded Apps
+
+Custom TypeScript/React web front-ends (coded web apps) and Action Center form apps (coded action apps) that call UiPath APIs through the `@uipath/uipath-typescript` SDK, built and shipped with `uip codedapp`. A coded app runs in the user's browser, so failures surface as OAuth redirect errors (`redirect_uri_mismatch`, `invalid_scope`), failed HTTP calls (401/403/404), CORS blocks, or a broken deployed URL — not as a faulted job with a trace. Config lives in `uipath.json` (what the app requests); the External Application backing it (`uip admin external-apps`) governs what redirect URIs and scopes are allowed. There is no runtime job/trace/log CLI — diagnosis is current-state (`uipath.json`, `uip admin external-apps get`, `.uipath/app.config.json`, `vite.config.ts`) plus the error signature the user reports.
+
+CLI: `uip codedapp --help`, `uip admin external-apps get <client-id>`
+
+- [products/coded-apps/overview.md](./products/coded-apps/overview.md) — Runtime/auth model (PKCE public client), CLI surface, and evidence sources
+- [products/coded-apps/summary.md](./products/coded-apps/summary.md) — All playbooks for Coded Apps issues
+
 ## UI Automation
 
 Activities for interacting with desktop and web application UIs. Robots use selectors (XML descriptors) to find and interact with UI elements. Issues here involve selector failures, element not found exceptions, timeout issues, Healing Agent problems, and data validation errors during UI interactions.
