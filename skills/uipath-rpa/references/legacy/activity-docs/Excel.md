@@ -19,7 +19,7 @@ Excel automation with three access modes: Portable (file-based, no Excel require
 
 **CRITICAL: Cannot mix patterns in same workflow**
 
-**CRITICAL: Scope activities require `ActivityAction<T>` body** — you cannot place child activities directly inside `ExcelApplicationScope`, `ExcelProcessScopeX`, or `ExcelApplicationCard`. Each requires a `.Body` property containing `ActivityAction` with a `DelegateInArgument`. See [common-pitfalls.md](../common-pitfalls.md#scope-activities-require-activityaction-body-critical-for-xaml-generation) for the complete XAML template and all scope body patterns.
+**CRITICAL: Scope activities require `ActivityAction<T>` body** — you cannot place child activities directly inside `ExcelApplicationScope`, `ExcelProcessScopeX`, or `ExcelApplicationCard`. Each requires a `.Body` property containing `ActivityAction` with a `DelegateInArgument`. See [xaml-basics-and-rules.md](../xaml-basics-and-rules.md#scope-activities-require-activityaction-body-critical-for-xaml-generation) for the complete XAML template and all scope body patterns.
 
 ---
 
