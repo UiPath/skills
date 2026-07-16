@@ -70,6 +70,10 @@ Keep every rule statement; delegate procedure bodies to the merged references. T
 - Merged files raise tokens-read for flows that previously read only the smaller member; pairs were chosen for high co-read probability. The A/B tokens metric is the check.
 - Frontmatter `description` untouched → no `activation-gate.yml` recall eval.
 
+## Stage 1 result (measured)
+
+Merged-file sizes after implementation (tokens = chars/4): ui-automation-guide 12.7k · xaml-basics-and-rules 12.4k · common-pitfalls 12.3k · coded/operations-guide 11.0k · legacy/cli-reference 10.1k · cli-reference 9.7k · canvas-layout 8.7k · legacy/xaml-basics 8.5k · is-connector 8.1k · uia-configure 7.3k · environment-setup 7.3k · legacy/testing 5.8k · codedworkflow-reference 5.4k · legacy/selector 4.9k · library-authoring 4.2k · assets/codedworkflow-template 2.5k · csharp-activity-binding 2.6k. Three files exceed the soft ~12k cap by 3–6% (each absorbed always-co-read content; the alternative was an extra Read per flow). Link integrity: 0 broken links/anchors across 700 files. Also fixed along the way: pre-existing unclosed code fences (trailing ``` on command lines) in three files.
+
 ## Verification
 
 1. Link integrity: every relative `.md` link under `skills/uipath-rpa/` resolves (no checker script exists; use grep + existence check).

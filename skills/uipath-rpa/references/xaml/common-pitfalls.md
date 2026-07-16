@@ -234,7 +234,7 @@ Studio silently clears any Dictionary-wrapped argument entries on load — the a
 2. Use the correct argument direction: `InArgument` for `in_*`, `OutArgument` for `out_*`, `InOutArgument` for `io_*`
 3. The `x:TypeArguments` must match the callee's argument type
 4. For literal string values, place the text directly in the element content (e.g., `<InArgument ...>someValue</InArgument>`)
-5. For variable bindings, follow the expression language rules in [xaml-basics-and-rules.md](xaml-basics-and-rules.md#expression-language): VB uses `[bracket]` shorthand, C# uses `<CSharpValue>`/`<CSharpReference>` elements
+5. For variable bindings, follow the expression language rules in [xaml-basics-and-rules.md](xaml-basics-and-rules.md#respect-expression-language): VB uses `[bracket]` shorthand, C# uses `<CSharpValue>`/`<CSharpReference>` elements
 
 ### OutArgument Bindings Must Be Variable References
 
@@ -488,7 +488,7 @@ Activity-level mechanics below. For the expression/code layer (LINQ filter/sort/
 Activity properties typed as enums (e.g. `Operator`, `ClickType`, `KeyModifiers`, `EmptyFieldMode`, comparison/filter strategies) are checked at compile time against the activity's enum, **not** during `validate` static analysis. An invalid identifier on an enum-typed attribute returns "no diagnostics found" from `validate` and surfaces only at `build` / `CacheMetadata` time. Two consequences:
 
 1. Always read `{projectRoot}/.local/docs/packages/<PackageId>/activities/<Activity>.md` for the exact, package-version-specific enum members before authoring an enum-valued attribute. Do not infer values from naming intuition or from prose in this skill.
-2. Always run `uip rpa build` after `validate` clears — it is the only validator that catches invalid enum identifiers (see [../validation-guide.md § Validation Iteration Loop](../validation-guide.md#validation-iteration-loop)).
+2. Always run `uip rpa build` after `validate` clears — it is the only validator that catches invalid enum identifiers (see [../cli-reference.md § Validation Iteration Loop](../cli-reference.md#validation-iteration-loop)).
 
 ## Package Version Changes Break XAML
 
