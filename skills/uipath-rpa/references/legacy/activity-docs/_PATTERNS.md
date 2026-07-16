@@ -7,7 +7,7 @@ Quick-reference patterns for writing legacy XAML workflows: VB.NET expressions, 
 
 ## Required Parent Scopes
 
-See [common-pitfalls.md](../common-pitfalls.md) for the canonical Required Parent Scopes table and ActivityAction body patterns.
+See [xaml-basics-and-rules.md § Common Pitfalls](../xaml-basics-and-rules.md#common-pitfalls--quick-reference) for the canonical Required Parent Scopes table and ActivityAction body patterns.
 
 ---
 
