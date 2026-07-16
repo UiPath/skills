@@ -100,6 +100,7 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 | **Trigger** | <HOW_IS_THE_AGENT_INVOKED> |
 | **Expected LLM model** | <MODEL_NAME — e.g., claude-sonnet-4-5, gpt-4o> |
 | **Expected volume** | <INVOCATIONS_PER_DAY> |
+| **Source PDD** | <PATH_OR_LINK_TO_PDD> |
 
 ### In Scope
 
@@ -108,6 +109,14 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 ### Out of Scope
 
 - <CAPABILITY_1>
+
+### Assumptions
+
+<!-- Assumptions the design relies on. Verify before build; promote to [SME REVIEW] if unconfirmed. -->
+
+- <ASSUMPTION_1>
+- <ASSUMPTION_2>
+- <ASSUMPTION_3>
 
 ---
 
@@ -133,9 +142,9 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 <!-- List every tool the agent can call. Tools can be: Python functions, RPA processes, API Workflows,
      Integration Service connectors, other agents. -->
 
-| Tool Name | Tool Type | Purpose | Input Schema | Output Schema |
-|---|---|---|---|---|
-| `<TOOL_NAME>` | <PYTHON_FN / RPA_PROCESS / API_WORKFLOW / CONNECTOR / AGENT> | <PURPOSE> | <JSON_SCHEMA_SUMMARY> | <JSON_SCHEMA_SUMMARY> |
+| Tool Name | Tool Type | Repo / IS URL | Purpose | Input Schema | Output Schema |
+|---|---|---|---|---|---|
+| `<TOOL_NAME>` | <PYTHON_FN / RPA_PROCESS / API_WORKFLOW / CONNECTOR / AGENT> | <REPO_URL_OR_IS_CONNECTOR_URL_OR_—> | <PURPOSE> | <JSON_SCHEMA_SUMMARY> | <JSON_SCHEMA_SUMMARY> |
 
 ### Tool Invocation Policy
 
@@ -143,6 +152,31 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 
 - <TOOL_NAME>: Use when <CONDITION>
 - ...
+
+### Agent Configuration
+
+<!-- Agent-level configuration. Fields already captured elsewhere are not repeated: agent name and LLM model live in §1 Agent Overview; context grounding lives in §4 Memory / RAG; evaluation scenarios live in §5 Evaluation Criteria; per-tool type + repo/IS URL live in the Tools table above. -->
+
+| Field | Value |
+|---|---|
+| **Agent type** | <CONVERSATIONAL / FUNCTIONAL> |
+| **Primary function** | <ONE_LINE_PRIMARY_FUNCTION> |
+| **Agent hosting** | <CLOUD / STAGING> |
+| **Arguments — in** | <INPUT_ARGUMENTS_WITH_TYPES> |
+| **Arguments — out** | <OUTPUT_ARGUMENTS_WITH_TYPES> |
+
+### Agent Interaction Diagram
+
+<!-- Agent core, the tools it calls (from the Tools table above), the external systems behind them, and the HITL escalation path (§7). Build from §3 Tools + §8 Integrated Components — do not invent tools. -->
+
+```mermaid
+flowchart LR
+    Trigger([<TRIGGER>]) --> Agent[<AGENT_NAME>]
+    Agent -->|<TOOL_1>| T1[<TOOL_1_TARGET>]
+    Agent -->|<TOOL_2>| T2[<TOOL_2_TARGET>]
+    Agent -.->|low confidence| HITL[[HITL escalation]]
+    Agent --> Output([<OUTPUT>])
+```
 
 ---
 
@@ -248,6 +282,14 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 |---|---|---|
 | <CONNECTOR_NAME> | `<TOOL_NAME>` | <OPERATION> |
 
+### Integration Service Connections
+
+<!-- Every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Complements the Integration Service Connectors table above (tool + operation). -->
+
+| Connector | System | Access Method (Integration Service — <slug> / Custom connector — <slug> / Direct HTTP) | Used By |
+|---|---|---|---|
+| <CONNECTOR_NAME> | <SYSTEM> | <Integration Service — <slug> / Custom connector — <slug> / Direct HTTP> | <TOOLS> |
+
 ---
 
 ## 9. Project Structure
@@ -280,6 +322,45 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 ├── agent.json
 └── entry-points.json
 ```
+
+### Solution / Project Breakdown
+
+<!-- Every buildable project in the solution: its product, source repo, Orchestrator folder, and run mode. One row per project (single row for a single-project solution). -->
+
+| Project | Product (RPA / API / Agent / …) | GitHub Repository | Folder | Attended / Unattended |
+|---|---|---|---|---|
+| <PROJECT_NAME> | <PRODUCT> | <GIT_URL_OR_REPO> | <FOLDER_PATH> | <ATTENDED / UNATTENDED / N-A> |
+
+### Reusable Components
+
+<!-- Components reused from an existing library vs. new reusable components this build will publish. -->
+
+| Type (reused / new-reusable) | Name | Details |
+|---|---|---|
+| reused | <COMPONENT_NAME> | <SOURCE_LIBRARY_AND_VERSION> |
+| new-reusable | <COMPONENT_NAME> | <WHAT_IT_ENCAPSULATES_AND_CONSUMERS> |
+
+### Environments (DEV / UAT / PROD)
+
+<!-- Per-environment Orchestrator/tenant and folder targets. Fill with [SME REVIEW] if the deployment team has not confirmed. -->
+
+| Item | DEV | UAT | PROD | Used By |
+|---|---|---|---|---|
+| Orchestrator + Tenant/Service | <URL_OR_TENANT> | <URL_OR_TENANT> | <URL_OR_TENANT> | <PROJECTS_OR_ALL> |
+| Folder | <FOLDER_PATH> | <FOLDER_PATH> | <FOLDER_PATH> | <PROJECTS_OR_ALL> |
+
+### Non-Functional Requirements
+
+<!-- Consolidated NFRs for the agent and its tools. Fill each row with the concrete design decision; use [SME REVIEW] where unconfirmed. -->
+
+| Dimension | Requirement / Design decision |
+|---|---|
+| **Security** | <LLM keys and tool credentials in Orchestrator credential / secret assets; least-privilege Integration Service connection scope for tools; do not expose tool / API calls in the trace; guardrails on prompt injection and PII> |
+| **Performance** | <token budget and model latency; cache / batch tool calls; webhooks vs polling in tools; avoid license-consuming Windows processes in RPA tools> |
+| **Scalability** | <expected concurrent invocations; rate-limit headroom; peak-window sizing> |
+| **Availability / Resilience** | <retry / backoff on tool + LLM failures (§7); fallback when a tool is unavailable; graceful degradation> |
+| **Logging & Monitoring** | <trace capture; alerting on failure / low-confidence escalations; eval pass-rate tracking (§5, §10)> |
+| **Compliance** | <REGULATION_OR_—> |
 
 ---
 

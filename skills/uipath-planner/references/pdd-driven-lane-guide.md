@@ -47,6 +47,7 @@ Common section locations per template:
 | RPA single project | §11 Project Structure (workflow inventory) |
 | RPA Master Project | §10 Master Project Architecture (sub-project list) + §11 Workflow Inventory per sub-project |
 | Flow | §3 Nodes Inventory + §7 Integrated Components |
+| BPMN | §4 Activities Inventory + §9 Integrated Components |
 | Case | §15 Project Structure + §14 Integrated Components |
 | Agent | §9 Project Structure + §3 Tools |
 | Coded App | §10 Project Structure + §9 Integrated Components |
@@ -56,7 +57,7 @@ Common section locations per template:
 Extract per project:
 
 - Project name (used for the `Identity` tuple)
-- Product (RPA / Flow / Case / Agent / Coded App / API Workflow)
+- Product (RPA / Flow / BPMN / Case / Agent / Coded App / API Workflow)
 - Sub-type (for RPA: Process / Library / Test Automation)
 - Role (Dispatcher / Performer / Reporting / Library / Test / etc.)
 - Framework (Sequence / REFramework, for RPA)
@@ -74,6 +75,8 @@ Based on the project list, pick the matching pattern from [multi-skill-patterns-
 | RPA Master Project | Pattern 1 per sub-project, integrated via shared queues; cross-project deploy via `uipath-solution` (single `.uipx`) |
 | Flow with §7 Integrated Components that reference unbuilt resources | Pattern 2 |
 | Flow whose §7 integrated components are pre-existing | Pattern 3 |
+| BPMN with §9 Integrated Components that reference unbuilt resources | Pattern 2 (substitute `uipath-maestro-bpmn` for `uipath-maestro-flow`) |
+| BPMN whose §9 integrated components are pre-existing | Pattern 3 (substitute `uipath-maestro-bpmn`) |
 | Agent with RPA tools in §3 Tools | Pattern 5 |
 | Coded App | Coded App build + `uipath-solution` deploy + testing (when wrapped in `.uipx`); otherwise `uipath-coded-apps` self-deploys |
 | API Workflow | API Workflow build + `uipath-solution` publish + testing |

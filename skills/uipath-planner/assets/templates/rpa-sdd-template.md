@@ -112,6 +112,7 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 | **Avg. handling time (manual)** | <MANUAL_TIME> |
 | **Avg. handling time (automated target)** | <AUTOMATED_TIME> |
 | **Exception rate** | <ESTIMATED_RATE> |
+| **Source PDD** | <PATH_OR_LINK_TO_PDD> |
 
 ### Delivery Team
 
@@ -134,6 +135,14 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 
 - <ACTIVITY_1>
 - ...
+
+### Assumptions
+
+<!-- Assumptions the design relies on. Verify before build; promote to [SME REVIEW] if unconfirmed. -->
+
+- <ASSUMPTION_1>
+- <ASSUMPTION_2>
+- <ASSUMPTION_3>
 
 ---
 
@@ -310,6 +319,14 @@ public enum <EnumName>
 | **No-completion behavior** | [DEFAULT] <e.g., wait 5 min, then abort with notification> |
 | **Design shape** | <A: login-before-handoff \| B: mid-run pause + state-aware resume> |
 
+### Integration Service Connections
+
+<!-- List every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. This complements the Access Method column of the Application Inventory table above. -->
+
+| Connector | System | Access Method (Integration Service — <slug> / Custom connector — <slug> / Direct HTTP) | Used By |
+|---|---|---|---|
+| <CONNECTOR_NAME> | <SYSTEM> | <Integration Service — <slug> / Custom connector — <slug> / Direct HTTP> | <STEPS_OR_APPS> |
+
 ---
 
 ## 10. Master Project Architecture
@@ -357,6 +374,23 @@ flowchart LR
 ---
 
 ## 11. Project Structure
+
+### Solution / Project Breakdown
+
+<!-- Every buildable project in the solution: its product, source repo, Orchestrator folder, and run mode. Solution-wide — fill once. One row per project (single row for a single-project solution). -->
+
+| Project | Product (RPA / API / Agent / …) | GitHub Repository | Folder | Attended / Unattended |
+|---|---|---|---|---|
+| <PROJECT_NAME> | <PRODUCT> | <GIT_URL_OR_REPO> | <FOLDER_PATH> | <ATTENDED / UNATTENDED / N-A> |
+
+### Reusable Components
+
+<!-- Components reused from an existing library vs. new reusable components this build will publish. Solution-wide — fill once. -->
+
+| Type (reused / new-reusable) | Name | Details |
+|---|---|---|
+| reused | <COMPONENT_NAME> | <SOURCE_LIBRARY_AND_VERSION> |
+| new-reusable | <COMPONENT_NAME> | <WHAT_IT_ENCAPSULATES_AND_CONSUMERS> |
 
 > **For Master Project (Option A in §10):** repeat this entire section per sub-project, with a heading like "### 11.1 ProjectName_Dispatcher", "### 11.2 ProjectName_Performer", etc.
 > **For Single Project (Option B in §10):** use this section once.
@@ -540,6 +574,15 @@ Sub-type reference:
 | **Source repository** | <GIT_URL_OR_SME_REVIEW> |
 | **Shared libraries referenced** | <COMMA_SEPARATED_LIBRARY_NAMES_OR_NONE — from Step 2.5 Tenant Library Discovery> |
 
+### Environments (DEV / UAT / PROD)
+
+<!-- Per-environment Orchestrator/tenant and folder targets. Fill with [SME REVIEW] if the deployment team has not confirmed. -->
+
+| Item | DEV | UAT | PROD | Used By |
+|---|---|---|---|---|
+| Orchestrator + Tenant/Service | <URL_OR_TENANT> | <URL_OR_TENANT> | <URL_OR_TENANT> | <PROJECTS_OR_ALL> |
+| Folder | <FOLDER_PATH> | <FOLDER_PATH> | <FOLDER_PATH> | <PROJECTS_OR_ALL> |
+
 ### Development & Production Hosts
 
 | Environment | Machine Name(s) / VM Pool | Notes |
@@ -566,6 +609,19 @@ List every prerequisite required on the robot machine before first run:
 | **Scalable (multi-robot)?** | <YES / NO> |
 | **Concurrent job limit** | <N> (Orchestrator queue trigger concurrency) |
 | **Peak window** | <TIME_WINDOW> |
+
+### Non-Functional Requirements
+
+<!-- Consolidated NFRs. These usually come from the security / deployment team, not the PDD. Fill each row with the concrete design decision; use [SME REVIEW] where unconfirmed. -->
+
+| Dimension | Requirement / Design decision |
+|---|---|
+| **Security** | <credentials in Orchestrator credential / secret assets; least-privilege Integration Service connection scope; do not expose entity / API calls in the network trace> |
+| **Performance** | <database vs file storage; webhooks vs polling; avoid license-consuming Windows processes where a headless / cross-platform path exists> |
+| **Scalability** | <see Scalability & Concurrency above — multi-robot count, concurrent-job limit, peak sizing> |
+| **Availability / Resilience** | <restart / failover behavior; idempotent retry so re-runs do not double-process; graceful degradation> |
+| **Logging & Monitoring** | <log level and sinks; alerting on job failure; Orchestrator / Insights dashboards> |
+| **Compliance** | <REGULATION_OR_—> |
 
 ---
 

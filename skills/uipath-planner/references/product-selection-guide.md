@@ -1,6 +1,6 @@
 # Product Selection Guide
 
-This is the most important decision the SDD makes. Select the wrong product and the architecture is wrong. This guide produces a scope recommendation from PDD signals, covering all 7 UiPath products and multi-project Solutions.
+This is the most important decision the SDD makes. Select the wrong product and the architecture is wrong. This guide produces a scope recommendation from PDD signals, covering all 8 UiPath products and multi-project Solutions.
 
 ## Levels of Decision
 
@@ -30,6 +30,20 @@ The delivery model (asked or detected at Phase 1 Step 0) and any user-stated pro
 
 ## Level 1 — Primary Scope Selection
 
+> **Match on the need, not the keyword.** Each row's "Signal in PDD" is *evidence* of an underlying need — the decision is the need it points to, not the literal term. Read the [need profile](sdd-generation-guide.md#step-35-synthesize-the-need) and pick the product whose purpose fits the need:
+>
+> **No single factor decides — weigh the whole need profile.** Determinism (rule-expressible vs judgment) is one key factor, not the sole gate; also weigh input structure, whether a stable API exists (API-first — avoid UI fragility), volume/cost (agentic execution runs ~10–100× deterministic), risk/reversibility/confidence (→ a HITL gate), auditability/compliance, and coordination shape. See the full [need profile](sdd-generation-guide.md#step-35-synthesize-the-need). Genuine judgment/reasoning is the only thing that justifies an **Agent** (not the words "AI"/"smart"/"automatic"). The dominant pattern is **hybrid** — AI decides, deterministic RPA/API execute as governed tools, Maestro orchestrates, HITL gates the risky/low-confidence steps — so a mostly-deterministic process with one judgment step is a deterministic primary + an Agent component, not an Agent overall.
+>
+> - judgment / reasoning not expressible as fixed rules → **Agents**
+> - a user-facing screen as the deliverable → **Coded Apps**
+> - headless system-to-system integration, no UI, no bot → **API Workflows**
+> - a staged case lifecycle with SLA / approvals → **Case Management**
+> - structured control-flow (formal gateways / events / subprocess) without a case → **Maestro BPMN**
+> - a plain multi-automation pipeline → **Maestro Flow**
+> - UI / data automation → **RPA**
+>
+> **Anti-pattern:** never route on a keyword when the need contradicts it — "AI" over a deterministic rule set is RPA, not Agents; a "dashboard" that is really a scheduled report is not necessarily a Coded App. When evidence and need disagree, the need wins; when the product is genuinely unclear, ask the user (see Presenting the Recommendation).
+
 ### Decision table
 
 Walk through in priority order. **First match wins.** Signals that match *below* the primary become candidate additional projects in a Solution (see Solution Signals below).
@@ -40,11 +54,24 @@ Walk through in priority order. **First match wins.** Signals that match *below*
 | 2 | Web dashboard, internal tool, Action Center form as the deliverable | Coded Apps |
 | 3 | System-to-system API integration (synchronous, no UI, no bots) | API Workflows |
 | 4 | Case lifecycle with stages, SLA tracking, approval gates, task routing | Case Management |
-| 5 | Orchestrating MULTIPLE automation types (RPA + agents + apps) | Maestro Flow |
-| 6 | UI automation, data processing, reusable component, or application testing (no other product fits) | **RPA** (sub-type decided at Level 1.5) |
-| 7 | Multiple coordinated projects across products or mixed RPA sub-types (e.g., Flow + API Workflows, or 2 Libraries + 1 Test Automation project) | **Solution** (composition decided at Level 1.75) |
+| 5 | Standards-based BPMN process orchestration — parallel / inclusive / event-based gateways, boundary events (activity timeouts / errors), intermediate message or timer events, subprocesses or call activities, multi-instance loops, OR an explicit BPMN 2.0 process-model request — with NO case stages/SLA (those → Case) | Maestro BPMN |
+| 6 | Orchestrating MULTIPLE automation types (RPA + agents + apps) with linear / branching node flow and no formal BPMN structure | Maestro Flow |
+| 7 | UI automation, data processing, reusable component, or application testing (no other product fits) | **RPA** (sub-type decided at Level 1.5) |
+| 8 | Multiple coordinated projects across products or mixed RPA sub-types (e.g., Flow + API Workflows, or 2 Libraries + 1 Test Automation project) | **Solution** (composition decided at Level 1.75) |
 
 Apply the [Constraint Gate](#constraint-gate) to the matched primary before presenting it — a first-match product that is blocked on the customer's delivery model is replaced by the matrix's alternative, not presented with a caveat.
+
+### Maestro disambiguation — BPMN vs Flow vs Case
+
+All three are Maestro / orchestration-adjacent; apply first-match-wins with these need-based rules:
+
+- **Case Management (priority 4)** wins when work is framed as a **case** moving through **stages** with **SLA / approval gates, escalation, task routing**. Case compiles to BPMN internally — a stage-and-SLA lifecycle is Case even though it is BPMN under the hood.
+- **Maestro BPMN (priority 5)** wins for a **structured, long-running (stateful) control-flow process** — spanning many systems and decision points — with formal BPMN semantics but **no case / stage / SLA lifecycle**: parallel / inclusive / event-based gateways, boundary events (per-activity timeouts or error catches), intermediate message / timer events, subprocesses or call activities (invoking a separate Maestro / agentic / case instance), multi-instance loops, or an explicit "model this as BPMN / a swimlane process" request.
+- **Maestro Flow (priority 6)** is the default orchestrator for the simpler **node-graph pipeline** — linear or single-branch sequencing of RPA / agents / apps / APIs with data transforms between steps — when none of the BPMN structures above are required.
+
+Rule of thumb: **case entity + stages + SLA → Case; formal gateways/events/subprocess without a case → BPMN; plain multi-automation pipeline → Flow.** When Flow vs BPMN is genuinely close, default to Flow and offer BPMN as an alternative via `AskUserQuestion` — never force BPMN.
+
+**Don't over-orchestrate:** never pick Maestro (Flow or BPMN) just to trigger a single RPA Dispatcher→Performer — that is an RPA Process. Maestro earns its place only when orchestrating *multiple* integrations, agents, or RPA workflows.
 
 ### Solution Signals
 
@@ -71,6 +98,8 @@ When any of the above applies, set the default primary to **Solution** and pre-c
 - "Multi-step reasoning", "plan and execute"
 - "Natural language interface"
 - Agent decides what to do based on user input, not a fixed script
+
+**Determinism gate (apply before selecting Agents):** confirm the core task needs **non-deterministic** judgment — decisions that cannot be written as explicit rules. If every decision is rule-expressible (even when the PDD says "AI", "smart", or "automatic"), the task is deterministic → RPA / API Workflows / rule-based logic, NOT an Agent. Reserve Agents for genuine reasoning, interpretation, or adaptation over ambiguous input. **Middle tier:** simple summarization or content generation with **no decisioning/escalation** is an *LLM activity inside an RPA/Flow project*, not a standalone Agent — pick an Agent only for decision-making or multi-step reasoning.
 
 **Required PDD information (may trigger gap-filling Q&A):**
 - Framework preference (LangGraph, LlamaIndex, OpenAI Agents, Simple Function)
@@ -124,7 +153,7 @@ When any of the above applies, set the default primary to **Solution** and pre-c
 - "SLA" or "service level agreement"
 - "Escalation" on time or condition
 - "Case" as a first-class concept (invoice case, ticket case, claim case)
-- BPMN-style multi-lane flow
+- BPMN-style multi-lane flow **organized into case stages with SLA / approval gates** (a bare pool/lane BPMN model with no case lifecycle → Maestro BPMN, priority 5)
 - Tasks that can run in parallel within a lane
 
 **Required PDD information:**
@@ -132,6 +161,27 @@ When any of the above applies, set the default primary to **Solution** and pre-c
 - Task definitions per stage
 - SLA rules (time-based or condition-based)
 - Escalation rules
+
+#### Maestro BPMN
+
+**Signals the PDD is describing Maestro BPMN:**
+- Explicit "BPMN", "BPMN 2.0", "process model", "process diagram", or "swimlane process" request
+- Parallel work that forks and rejoins (parallel gateway) or multiple simultaneous conditional branches (inclusive gateway)
+- A race between events / first-to-arrive routing (event-based gateway)
+- Per-activity timeouts, deadlines, or "cancel / compensate this step if it runs too long or errors" (boundary events)
+- Waiting for or sending a message / signal between running process instances (intermediate message events)
+- Timer waits ("wait N days", scheduled intermediate pauses) that are NOT a case SLA
+- Reusable containers (subprocesses) or invoking a separate Maestro / agentic / case process (call activities)
+- Processing each item of a collection with sequential or parallel instances (multi-instance loops)
+- Long-running, structured control flow — but NO case entity, stages, SLA, or RACI (→ Case), and beyond a simple linear/branching pipeline (→ Flow)
+
+**Required PDD information:**
+- Control-flow map — activities, gateways, and sequence order
+- Parallel vs sequential branches and their join points
+- Events — start-trigger type, intermediate waits / messages, boundary timeouts / errors
+- Process variables passed between nodes (name, type, direction)
+- Integrated components each activity invokes (RPA, Agent, API Workflow, HITL, connector)
+- Retry / timeout policy per activity; subprocess and call-activity boundaries
 
 #### Maestro Flow
 
@@ -169,7 +219,7 @@ The goal of Level 1.75 is to produce a concrete list of projects the SDD will co
 
 **Gate the option list first.** Before composing the questions, drop every product the [Constraint Gate](#constraint-gate) blocks for this delivery model (matrix block or user exclusion) — do not show a blocked product as a selectable option. When a dropped product had matching Level 1 signals, say so in the question preamble with the alternative from the availability matrix. When the matrix lists no alternative (e.g., Coded Apps on Automation Suite — no on-prem equivalent), state that and mark the touchpoint `[SME REVIEW]`; do not substitute a product the planner cannot build.
 
-`AskUserQuestion` has a hard 4-option cap per question. Pass A covers 8 candidate products, so it **must be a single `AskUserQuestion` call containing two question objects**, each with `multiSelect: true` and ≤4 options. The user answers both questions on one screen; both sets of selections return together.
+`AskUserQuestion` has a hard 4-option cap per question, and a call carries at most two question objects (8 option slots). Pass A covers **9 candidate products across 8 slots**: Maestro Flow and Maestro BPMN share one **"Maestro orchestration"** option and are disambiguated by a short follow-up (Pass A.5) only when that option is selected. Pass A therefore stays a single `AskUserQuestion` call containing two question objects, each with `multiSelect: true` and ≤4 options. The user answers both questions on one screen; both sets of selections return together.
 
 Invoke exactly like this:
 
@@ -181,7 +231,7 @@ AskUserQuestion({
       "multiSelect": true,
       "options": [
         { "label": "RPA",             "description": "Attended/unattended RPA Process, Library, or Test Automation project(s)" },
-        { "label": "Maestro Flow",    "description": "Long-running orchestration across RPA, Agents, APIs, and HITL" },
+        { "label": "Maestro orchestration", "description": "Long-running orchestration across RPA, Agents, APIs, HITL — Flow (node pipeline) or BPMN (standards-based process model); engine chosen next" },
         { "label": "Case Management", "description": "Stage-based workflows with SLA, approvals, and evidence" },
         { "label": "Agents",          "description": "LLM-driven reasoning, tool use, and decisioning" }
       ]
@@ -205,7 +255,7 @@ AskUserQuestion({
 | Option | Pre-select when |
 |---|---|
 | RPA | Level 1 RPA signals matched (UI, transactional processing, queue-based) |
-| Maestro Flow | Level 1 Flow signals matched (orchestration across products) |
+| Maestro orchestration | Level 1 Flow signals matched OR Maestro BPMN signals matched (orchestration across products, or BPMN gateways / events / subprocess / parallel structure) |
 | Case Management | Level 1 Case signals matched (stages, SLA, approvals) |
 | Agents | Level 1 Agent signals matched (AI reasoning, tool use) |
 | Coded Apps | Level 1 Coded Apps signals matched (custom UI, data entry forms) |
@@ -214,6 +264,30 @@ AskUserQuestion({
 | RPA Test Automation | Test Automation signals matched (regression pack, assertions) — and pre-select RPA if so |
 
 Use the client's pre-selection mechanism (`defaultSelected: true` or equivalent) so the user opens the screen with the recommended composition already checked. They can uncheck, add, or leave as-is. If no signals match for an option, leave it unchecked — the user adds it explicitly if they disagree.
+
+### Pass A.5 — Disambiguate the Maestro engine (only when "Maestro orchestration" is selected)
+
+"Maestro orchestration" resolves to **Maestro Flow** or **Maestro BPMN**. Resolve without a prompt when possible:
+
+- Exactly one of Flow / BPMN Level 1 signals matched and the user did not override → record that engine; **skip the follow-up**. With no BPMN structural signals, default to **Flow**.
+- Neither matched, or both matched → ask one follow-up, pre-selecting the engine(s) whose signals matched:
+
+```json
+AskUserQuestion({
+  "questions": [
+    {
+      "question": "Which Maestro orchestration engine(s) should the Solution use?",
+      "multiSelect": true,
+      "options": [
+        { "label": "Maestro Flow", "description": "Node-graph pipeline — linear/branching orchestration of RPA, Agents, APIs, HITL. Simpler, fastest to author." },
+        { "label": "Maestro BPMN", "description": "Standards-based BPMN 2.0 — parallel/event gateways, boundary timeouts, subprocesses, message events, multi-instance loops." }
+      ]
+    }
+  ]
+})
+```
+
+Selecting both is legal (rare) — one Flow project plus one BPMN project. Feed the chosen engine(s) into the project list as the product for that row. BPMN is never the silent default: choose it only on matched structure or an explicit user pick.
 
 ### Pass B — Resolve quantities per product
 
@@ -290,6 +364,26 @@ Example unified project list for a Solution (Flow + RPA Library×2 + RPA Test Au
 | 5 | `<NAME>_IntegrationLib` | RPA | Library | Salesforce + ServiceNow wrappers used by Performer | — | — | — |
 | 6 | `<NAME>_Regression` | RPA | Test Automation | Regression pack validating Performer behavior | — | — | — |
 
+## Per-task component placement (the to-be, per step)
+
+Level 1 picks the *primary* project; within it, type each task and place it on the component that fits — the canonical UiPath placement model (internal process-knowledge §13). This is how the SDD says **where** API / RPA / Agents / DU / DMN / HITL / Maestro are each needed.
+
+| Task type (verb) | Best-fit component | Routes to |
+|---|---|---|
+| **Validate / Transfer** — deterministic, rule-based | RPA, or Integration Service / API Workflow if a stable API exists | `uipath-rpa` / `uipath-platform` / `uipath-api-workflow` |
+| **Collect** from semi-structured documents | Document Understanding / IXP | `uipath-ixp` (or a DU activity inside RPA/Flow) |
+| **Decide / classify** — judgment | AI Agent; or Business Rules / DMN for threshold / eligibility logic | `uipath-agents`; DMN lives inside Maestro or an Agent |
+| **Create / author / summarize** free-form | AI Agent (simple gen with no decisioning = an LLM activity, not a standalone Agent) | `uipath-agents` |
+| **Review / Escalate / sign-off**, exception handling | HITL | `uipath-human-in-the-loop` |
+| **Wait / Assign / Schedule / sequence the whole flow** | Maestro orchestration (Flow / BPMN / Case) | `uipath-maestro-flow` / `-bpmn` / `-case` |
+| **Aggregate data across systems** | Data Fabric / Data Service | `uipath-platform` |
+
+Rules:
+- **DU / IXP is extraction from semi-structured documents — NOT free-form authoring** (that's an Agent). Route document-heavy `Collect` to `uipath-ixp`.
+- **Business Rules / DMN** are not a standalone project — DMN decision tables live inside Maestro, or as an Agent's rule logic; flag them in the host template's rules section.
+- **Data Fabric / Data Service** is accessed via `uipath-platform` (entities), not a separate build.
+- Deterministic `Validate` / `Transfer` should not reflexively become RPA when a stable API / connector exists — prefer Integration Service / API Workflow (API-first).
+
 ## Level 3 — Capability Add-ons
 
 These are capabilities added to the primary product, not standalone products. When detected, flag them in the appropriate template section. Lane A (task derivation) reads the flags from the SDD when it derives the task list and routes the work to the correct skill.
@@ -309,13 +403,22 @@ These are capabilities added to the primary product, not standalone products. Wh
 
 ### Integration Service
 
-**Scope:** Adds connector activities (Salesforce, Jira, ServiceNow, Slack, etc.) to RPA, Flow, Case Management, or Agents.
+**Scope:** Adds connector activities (Salesforce, Jira, ServiceNow, Slack, etc.) to RPA, Flow, Case Management, or Agents. IS connectors are the standard integration surface for **API Workflows, Maestro (Flow / BPMN / Case), and Agents** — these consume connector activities, not raw UI. **RPA can also call an API directly** (HTTP Request activity) when no connector exists.
 
 **Signals the PDD needs Integration Service:**
 - Third-party SaaS system mentioned (not a custom web app): Salesforce, Jira, ServiceNow, Slack, HubSpot, Workday, Zendesk, etc.
 - "Create a ticket in...", "Post a message to...", "Read records from..."
 
-**How to flag:** In the Application Inventory section, list the connector explicitly with `Access Method = Integration Service — <slug>`. The planner will add a "Configure X connector" task that routes to `uipath-platform`.
+**Check availability — reuse before build.** For each required integration, retrieve the catalog before assuming a connector exists (auth required; best-effort like tenant library discovery):
+
+```bash
+uip is connectors list --output json                          # full catalog
+uip is connectors list --filter "<KEYWORD>" --output json     # narrow by system name
+```
+
+- **Connector exists →** reuse it. Flag `Access Method = Integration Service — <slug>`; the planner adds a "Configure <X> connector" task routed to `uipath-platform`.
+- **No connector, and the primary is API Workflows / Maestro / Agents →** a **custom connector must be built**. Flag `Access Method = Custom connector — <slug>`; the planner adds a "Build custom <X> connector" task routed to `uipath-connector-builder`, ordered before its consumer. An unverified connector is an `[SME REVIEW]` item — never assume one exists.
+- **No connector, and the primary is RPA →** call the API directly (HTTP Request). Flag `Access Method = Direct HTTP`. Build a custom connector only if the integration must be reused by non-RPA products.
 
 ### API Workflow (as integrated component)
 
@@ -327,6 +430,17 @@ These are capabilities added to the primary product, not standalone products. Wh
 
 **How to flag:** In the primary product's template, list API Workflow invocations in the relevant section (Flow nodes, Agent tools, Case tasks). The planner picks this up and creates a per-API-Workflow task that routes to `uipath-api-workflow`.
 
+### Reusability & shared assets
+
+Design for reuse — a modular solution is cheaper to build and maintain (CoE: *"break into small automations"*). For each candidate shared asset, **reuse before build**, and when building new, treat it as its own buildable project built **before** its consumers:
+
+- **RPA Library** — shared/common workflows (date/string/mapping helpers, app wrappers) extracted into a Library (Level 1.5 sub-type). **Reuse:** discover deployed tenant libraries via the [Tenant Library Search](tenant-library-search-guide.md) (Phase 1 Step 2.5) and reference them in §Packages. **Build new:** a new Library is its own RPA project routed to `uipath-rpa`, consumed by others.
+- **Custom connector** — when the catalog has no Integration Service connector (see [Integration Service](#integration-service) above), build a reusable custom connector via `uipath-connector-builder`; one connector serves many projects.
+- **Reusable components** — shared components from the Marketplace / org repo (reuse) or new-to-build. List both in the SDD's **Reusable Components** section (reused existing + new reusable).
+- **Shared scope / modularity** — an asset used by 2+ projects (Library, custom connector, IS connection, asset, queue) lives at the **parent-folder / solution level**, built once and referenced by all — never duplicated per project.
+
+Flag every reused and new-to-build shared asset in the SDD; the planner emits a build task for each new one (Library → `uipath-rpa`; custom connector → `uipath-connector-builder`), ordered before its consumers.
+
 ## Template Mapping
 
 ### Single-product scope
@@ -337,6 +451,7 @@ Based on the Level 1 primary, select one template:
 |---|---|
 | RPA Process, Library, Test Automation | `../assets/templates/rpa-sdd-template.md` |
 | Maestro Flow | `../assets/templates/flow-sdd-template.md` |
+| Maestro BPMN | `../assets/templates/bpmn-sdd-template.md` |
 | Case Management | `../assets/templates/case-sdd-template.md` |
 | Agents | `../assets/templates/agent-sdd-template.md` |
 | Coded Apps | `../assets/templates/coded-app-sdd-template.md` |

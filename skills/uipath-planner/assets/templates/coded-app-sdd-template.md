@@ -100,6 +100,7 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 | **Primary users** | <USER_ROLES> |
 | **Trigger** | <HOW_IS_THE_APP_OPENED — user navigation / action from automation / HITL form> |
 | **Expected concurrent users** | <NUMBER> |
+| **Source PDD** | <PATH_OR_LINK_TO_PDD> |
 
 ### In Scope
 
@@ -108,6 +109,14 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 ### Out of Scope
 
 - <FEATURE_1>
+
+### Assumptions
+
+<!-- Assumptions the design relies on. Verify before build; promote to [SME REVIEW] if unconfirmed. -->
+
+- <ASSUMPTION_1>
+- <ASSUMPTION_2>
+- <ASSUMPTION_3>
 
 ---
 
@@ -179,6 +188,14 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 | API Workflow | Called From | Input | Output |
 |---|---|---|---|
 | `<API_WORKFLOW_NAME>` | <COMPONENT_OR_PAGE> | <INPUT_SCHEMA> | <OUTPUT_SCHEMA> |
+
+### Integration Service Connections
+
+<!-- Every Integration Service connection the app relies on and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. -->
+
+| Connector | System | Access Method (Integration Service — <slug> / Custom connector — <slug> / Direct HTTP) | Used By |
+|---|---|---|---|
+| <CONNECTOR_NAME> | <SYSTEM> | <Integration Service — <slug> / Custom connector — <slug> / Direct HTTP> | <PAGES_OR_COMPONENTS> |
 
 ---
 
@@ -254,6 +271,45 @@ flowchart LR
 
 - [ ] Studio Web (default)
 - [ ] Orchestrator (for production)
+
+### Solution / Project Breakdown
+
+<!-- Every buildable project in the solution: its product, source repo, Orchestrator folder, and run mode. One row per project (single row for a single-project solution). -->
+
+| Project | Product (RPA / API / Agent / …) | GitHub Repository | Folder | Attended / Unattended |
+|---|---|---|---|---|
+| <PROJECT_NAME> | <PRODUCT> | <GIT_URL_OR_REPO> | <FOLDER_PATH> | <ATTENDED / UNATTENDED / N-A> |
+
+### Reusable Components
+
+<!-- Components reused from an existing library vs. new reusable components this build will publish. -->
+
+| Type (reused / new-reusable) | Name | Details |
+|---|---|---|
+| reused | <COMPONENT_NAME> | <SOURCE_LIBRARY_AND_VERSION> |
+| new-reusable | <COMPONENT_NAME> | <WHAT_IT_ENCAPSULATES_AND_CONSUMERS> |
+
+### Environments (DEV / UAT / PROD)
+
+<!-- Per-environment Orchestrator/tenant and folder targets. Fill with [SME REVIEW] if the deployment team has not confirmed. -->
+
+| Item | DEV | UAT | PROD | Used By |
+|---|---|---|---|---|
+| Orchestrator + Tenant/Service | <URL_OR_TENANT> | <URL_OR_TENANT> | <URL_OR_TENANT> | <PROJECTS_OR_ALL> |
+| Folder | <FOLDER_PATH> | <FOLDER_PATH> | <FOLDER_PATH> | <PROJECTS_OR_ALL> |
+
+### Non-Functional Requirements
+
+<!-- Consolidated NFRs for the app. Fill each row with the concrete design decision; use [SME REVIEW] where unconfirmed. -->
+
+| Dimension | Requirement / Design decision |
+|---|---|
+| **Security** | <OAuth-PKCE auth (§6); no secrets in the client bundle; least-privilege scopes on UiPath API / Integration Service calls; do not expose API calls with sensitive data in the network trace> |
+| **Performance** | <bundle size and code-splitting; API latency and caching; avoid over-fetching; webhooks vs polling for live data> |
+| **Scalability** | <expected concurrent users (§1); stateless client; CDN / static hosting> |
+| **Availability / Resilience** | <retry / fallback UI on API failure (§8); degraded / offline behavior; session-expiry handling> |
+| **Logging & Monitoring** | <client-side error logging and sink; usage / error dashboards; alerting> |
+| **Compliance** | <REGULATION_OR_—> |
 
 ---
 

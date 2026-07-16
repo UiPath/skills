@@ -101,6 +101,7 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 | **Invocation pattern** | Synchronous request-response |
 | **Expected latency** | <MILLISECONDS_OR_SECONDS> |
 | **Expected throughput** | <CALLS_PER_MINUTE> |
+| **Source PDD** | <PATH_OR_LINK_TO_PDD> |
 
 ### In Scope
 
@@ -109,6 +110,14 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 ### Out of Scope
 
 - <CAPABILITY_1>
+
+### Assumptions
+
+<!-- Assumptions the design relies on. Verify before build; promote to [SME REVIEW] if unconfirmed. -->
+
+- <ASSUMPTION_1>
+- <ASSUMPTION_2>
+- <ASSUMPTION_3>
 
 ---
 
@@ -188,6 +197,14 @@ flowchart LR
 |---|---|---|---|---|
 | <SYSTEM_NAME> | <GET/POST/PUT/DELETE> | <ENDPOINT_URL> | <STEP_NUMBER> | <PURPOSE> |
 
+### Integration Service Connections
+
+<!-- Consolidated view of every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Ties the Integration Service Connectors and Direct HTTP Calls tables above to an explicit access method. -->
+
+| Connector | System | Access Method (Integration Service — <slug> / Custom connector — <slug> / Direct HTTP) | Used By |
+|---|---|---|---|
+| <CONNECTOR_NAME> | <SYSTEM> | <Integration Service — <slug> / Custom connector — <slug> / Direct HTTP> | <STEPS> |
+
 ---
 
 ## 6. Error Handling
@@ -246,6 +263,16 @@ flowchart LR
 | Per caller | <CALLS_PER_MINUTE> |
 | Global | <CALLS_PER_SECOND> |
 
+### Non-Functional Requirements (supplement)
+
+<!-- Performance / scaling → §7; security / auth → §8 above. These are the remaining cross-cutting NFRs. Fill each row; use [SME REVIEW] where unconfirmed. -->
+
+| Dimension | Requirement / Design decision |
+|---|---|
+| **Availability / Resilience** | <serverless auto-scale (§7); idempotency so caller retries are safe; retry / timeout per §6 Retry Policy> |
+| **Logging & Monitoring** | <request / response logging excluding sensitive fields; alerting on error-rate spikes; Insights / Orchestrator dashboards> |
+| **Compliance** | <REGULATION_OR_—> |
+
 ---
 
 ## 9. Consumers
@@ -272,6 +299,32 @@ flowchart LR
 
 - **Studio Web** (required — API Workflows are authored only in Studio Web)
 - Published to **Orchestrator** for consumption by agents, flows, or external callers
+
+### Solution / Project Breakdown
+
+<!-- Every buildable project in the solution: its product, source repo, Orchestrator folder, and run mode. One row per project (single row for a single-project solution). -->
+
+| Project | Product (RPA / API / Agent / …) | GitHub Repository | Folder | Attended / Unattended |
+|---|---|---|---|---|
+| <PROJECT_NAME> | <PRODUCT> | <GIT_URL_OR_REPO> | <FOLDER_PATH> | <ATTENDED / UNATTENDED / N-A> |
+
+### Reusable Components
+
+<!-- Components reused from an existing library vs. new reusable components this build will publish. -->
+
+| Type (reused / new-reusable) | Name | Details |
+|---|---|---|
+| reused | <COMPONENT_NAME> | <SOURCE_LIBRARY_AND_VERSION> |
+| new-reusable | <COMPONENT_NAME> | <WHAT_IT_ENCAPSULATES_AND_CONSUMERS> |
+
+### Environments (DEV / UAT / PROD)
+
+<!-- Per-environment Orchestrator/tenant and folder targets. Fill with [SME REVIEW] if the deployment team has not confirmed. -->
+
+| Item | DEV | UAT | PROD | Used By |
+|---|---|---|---|---|
+| Orchestrator + Tenant/Service | <URL_OR_TENANT> | <URL_OR_TENANT> | <URL_OR_TENANT> | <PROJECTS_OR_ALL> |
+| Folder | <FOLDER_PATH> | <FOLDER_PATH> | <FOLDER_PATH> | <PROJECTS_OR_ALL> |
 
 ---
 

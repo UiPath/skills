@@ -106,6 +106,7 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 | **Expected volume** | <CASES_PER_DAY> |
 | **Typical case duration** | <DURATION_RANGE> |
 | **Maximum case duration** | <HARD_MAX_BEFORE_BREACH> |
+| **Source PDD** | <PATH_OR_LINK_TO_PDD> |
 
 ### In Scope
 
@@ -114,6 +115,14 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 ### Out of Scope
 
 - <ACTIVITY_1>
+
+### Assumptions
+
+<!-- Assumptions the design relies on. Verify before build; promote to [SME REVIEW] if unconfirmed. -->
+
+- <ASSUMPTION_1>
+- <ASSUMPTION_2>
+- <ASSUMPTION_3>
 
 ---
 
@@ -351,6 +360,14 @@ flowchart LR
 |---|---|---|
 | <CONNECTOR_NAME> | <TASK_NAME> | <OPERATION> |
 
+### Integration Service Connections
+
+<!-- Every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Complements the Integration Service Connectors table above (connector + task + operation). -->
+
+| Connector | System | Access Method (Integration Service — <slug> / Custom connector — <slug> / Direct HTTP) | Used By |
+|---|---|---|---|
+| <CONNECTOR_NAME> | <SYSTEM> | <Integration Service — <slug> / Custom connector — <slug> / Direct HTTP> | <TASKS> |
+
 ### HITL Tasks
 
 <!-- Inline in Case Management — use HITL task type with inline schema (do NOT route to HITL skill; Case Mgmt handles it directly). -->
@@ -372,6 +389,45 @@ flowchart LR
 └── content/
     └── <CASE_NAME>.bpmn     (auto-generated)
 ```
+
+### Solution / Project Breakdown
+
+<!-- Every buildable project in the solution: its product, source repo, Orchestrator folder, and run mode. One row per project (single row for a single-project solution). -->
+
+| Project | Product (RPA / API / Agent / …) | GitHub Repository | Folder | Attended / Unattended |
+|---|---|---|---|---|
+| <PROJECT_NAME> | <PRODUCT> | <GIT_URL_OR_REPO> | <FOLDER_PATH> | <ATTENDED / UNATTENDED / N-A> |
+
+### Reusable Components
+
+<!-- Components reused from an existing library vs. new reusable components this build will publish. -->
+
+| Type (reused / new-reusable) | Name | Details |
+|---|---|---|
+| reused | <COMPONENT_NAME> | <SOURCE_LIBRARY_AND_VERSION> |
+| new-reusable | <COMPONENT_NAME> | <WHAT_IT_ENCAPSULATES_AND_CONSUMERS> |
+
+### Environments (DEV / UAT / PROD)
+
+<!-- Per-environment Orchestrator/tenant and folder targets. Fill with [SME REVIEW] if the deployment team has not confirmed. -->
+
+| Item | DEV | UAT | PROD | Used By |
+|---|---|---|---|---|
+| Orchestrator + Tenant/Service | <URL_OR_TENANT> | <URL_OR_TENANT> | <URL_OR_TENANT> | <PROJECTS_OR_ALL> |
+| Folder | <FOLDER_PATH> | <FOLDER_PATH> | <FOLDER_PATH> | <PROJECTS_OR_ALL> |
+
+### Non-Functional Requirements
+
+<!-- Consolidated NFRs. Compliance and SLA / timeliness have dedicated sections — cross-reference, do not duplicate. Fill each row with the concrete design decision; use [SME REVIEW] where unconfirmed. -->
+
+| Dimension | Requirement / Design decision |
+|---|---|
+| **Security** | <credentials in Orchestrator credential / secret assets; least-privilege Integration Service connection scope; do not expose case data in the network trace; PHI / PII handling per §7 Sensitivity> |
+| **Performance** | <database vs file storage; webhooks vs polling; avoid license-consuming Windows processes where a headless / cross-platform path exists> |
+| **Scalability** | <expected concurrent cases; task-lane parallelism; peak-window sizing> |
+| **Availability / Resilience** | <restart / retry behavior on task failure; idempotency of invoked components; timeliness targets in §8 SLA Rules> |
+| **Logging & Monitoring** | <log level and sinks; alerting on SLA-at-risk / breach (§9 Escalations); Insights dashboards> |
+| **Compliance** | <see §11 Compliance Constraints and its Audit & Traceability Requirements> |
 
 ---
 

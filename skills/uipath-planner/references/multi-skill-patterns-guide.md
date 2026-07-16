@@ -63,6 +63,8 @@ A request is **single-skill** when:
 5. uipath-maestro-flow → testing for the flow (mandatory)
 ```
 
+> **BPMN is a peer orchestrator to Flow.** The same Pattern 2/3 structure applies to a Maestro BPMN process — swap `uipath-maestro-bpmn` for `uipath-maestro-flow`. As with Flow, inline `uipath:*` elements (scriptTask, businessRuleTask, connector, userTask/HITL) are authored by the BPMN specialist itself and are NOT separate components — only separate buildable projects (standalone RPA process, coded agent, coded app) fan out.
+
 ## Pattern 4 — Flow deploy to Orchestrator
 
 **When it applies:** the flow exists; user wants it deployed to Orchestrator (not Studio Web).
@@ -119,6 +121,8 @@ When deriving tasks from an SDD, the planner picks a pattern based on the SDD's 
 | RPA Master Project (multiple sub-projects, queue-connected) | Pattern 1 applied per sub-project, then cross-project deploy via `uipath-solution` (single `.uipx`) |
 | Solution with Flow + RPA + Agents, components built fresh in this session | Pattern 2 expanded across all included products |
 | Solution with Flow consuming pre-published Orchestrator resources | Pattern 3 |
+| BPMN orchestrating components built fresh in this session | Pattern 2 expanded, substituting `uipath-maestro-bpmn` for `uipath-maestro-flow` |
+| BPMN consuming pre-published Orchestrator resources | Pattern 3, substituting `uipath-maestro-bpmn` |
 | Solution overview SDD | Compose multiple patterns; respect cross-product integration order from §Cross-Project Data Flow |
 | API Workflow (single product) | `uipath-api-workflow` + `uipath-solution` for deploy + testing |
 | Agent with RPA tools in §3 Tools | Pattern 5 |
@@ -131,7 +135,7 @@ Cross-project integration order (general rule): **dependencies before dependents
 
 Solution-scope SDDs produce a unified project list. The planner walks the list and emits one pattern segment per project, then sequences them so that integrated components are built before their consumers:
 
-1. Build all leaf resources (libraries, callable API Workflows, RPA processes used as agent tools).
+1. Build all leaf resources (libraries, custom connectors, callable API Workflows, RPA processes used as agent tools).
 2. Run testing for each leaf.
 3. Deploy leaf resources to Orchestrator.
 4. Build orchestrators (Flows, parent agents, Cases) using the published leaf references.

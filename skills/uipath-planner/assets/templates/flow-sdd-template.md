@@ -99,6 +99,7 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 | **Department / Function** | <DEPARTMENT> — <FUNCTION> |
 | **Trigger type** | <MANUAL / SCHEDULED / EVENT / HTTP> |
 | **Expected execution volume** | <EXECUTIONS_PER_DAY> |
+| **Source PDD** | <PATH_OR_LINK_TO_PDD> |
 
 ### In Scope
 
@@ -107,6 +108,14 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 ### Out of Scope
 
 - <ACTIVITY_1>
+
+### Assumptions
+
+<!-- Assumptions the design relies on. Verify before build; promote to [SME REVIEW] if unconfirmed. -->
+
+- <ASSUMPTION_1>
+- <ASSUMPTION_2>
+- <ASSUMPTION_3>
 
 ---
 
@@ -206,6 +215,14 @@ flowchart LR
 |---|---|---|
 | <CONNECTOR_NAME> (Salesforce/Jira/etc.) | `<NODE_KEY>` | <OPERATION> |
 
+### Integration Service Connections
+
+<!-- Every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Complements the Integration Service Connectors table above (connector + node + operation). -->
+
+| Connector | System | Access Method (Integration Service — <slug> / Custom connector — <slug> / Direct HTTP) | Used By |
+|---|---|---|---|
+| <CONNECTOR_NAME> | <SYSTEM> | <Integration Service — <slug> / Custom connector — <slug> / Direct HTTP> | <NODES> |
+
 ### HITL Touchpoints
 
 <!-- Flag HITL nodes. Implementation routes to uipath-human-in-the-loop skill. -->
@@ -248,6 +265,45 @@ flowchart LR
 
 - [ ] Studio Web (default)
 - [ ] Orchestrator (`.uipx`-wrapped solution → `uipath-solution`; non-solution single package → `uipath-platform`)
+
+### Solution / Project Breakdown
+
+<!-- Every buildable project in the solution: its product, source repo, Orchestrator folder, and run mode. One row per project (single row for a single-project solution). -->
+
+| Project | Product (RPA / API / Agent / …) | GitHub Repository | Folder | Attended / Unattended |
+|---|---|---|---|---|
+| <PROJECT_NAME> | <PRODUCT> | <GIT_URL_OR_REPO> | <FOLDER_PATH> | <ATTENDED / UNATTENDED / N-A> |
+
+### Reusable Components
+
+<!-- Components reused from an existing library vs. new reusable components this build will publish. -->
+
+| Type (reused / new-reusable) | Name | Details |
+|---|---|---|
+| reused | <COMPONENT_NAME> | <SOURCE_LIBRARY_AND_VERSION> |
+| new-reusable | <COMPONENT_NAME> | <WHAT_IT_ENCAPSULATES_AND_CONSUMERS> |
+
+### Environments (DEV / UAT / PROD)
+
+<!-- Per-environment Orchestrator/tenant and folder targets. Fill with [SME REVIEW] if the deployment team has not confirmed. -->
+
+| Item | DEV | UAT | PROD | Used By |
+|---|---|---|---|---|
+| Orchestrator + Tenant/Service | <URL_OR_TENANT> | <URL_OR_TENANT> | <URL_OR_TENANT> | <PROJECTS_OR_ALL> |
+| Folder | <FOLDER_PATH> | <FOLDER_PATH> | <FOLDER_PATH> | <PROJECTS_OR_ALL> |
+
+### Non-Functional Requirements
+
+<!-- Consolidated NFRs for the flow and the components it orchestrates. Fill each row with the concrete design decision; use [SME REVIEW] where unconfirmed. -->
+
+| Dimension | Requirement / Design decision |
+|---|---|
+| **Security** | <credentials in Orchestrator credential / secret assets; least-privilege Integration Service connection scope; do not expose entity / API calls in the network trace> |
+| **Performance** | <database vs file storage; webhooks vs polling; avoid license-consuming Windows processes where a headless / cross-platform path exists> |
+| **Scalability** | <expected concurrent instances; per-node fan-out limits; peak-window sizing> |
+| **Availability / Resilience** | <restart / retry behavior on node failure; idempotency of invoked components; graceful degradation> |
+| **Logging & Monitoring** | <log level and sinks; alerting on instance failure; Maestro / Insights dashboards> |
+| **Compliance** | <REGULATION_OR_—> |
 
 ---
 
