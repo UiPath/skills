@@ -167,7 +167,7 @@ for entry in root.outputs[]:
   has_bare_name_producer   = exists in tasks.md any task's T-entry with an `outputs:` line `- <name>` (bare, no operator) where camelCase(name) == var
   has_any_producer         = has_extraction_producer || has_assignment_producer || has_bare_name_producer
 
-  producer_task_unresolved = the tasks.md-declared producer task is a Rule 17 placeholder (look up the task in caseplan.json by displayName; check `node.data.uipath` is empty `{}`)
+  producer_task_unresolved = the tasks.md-declared producer task is a Rule 17 placeholder (look up the task in caseplan.json by displayName; check `node.data.inputs` is empty `{}`)
 
   if has_companion_default:
       # Companion default guarantees a value; producer is optional bonus
