@@ -4,7 +4,7 @@
 
 Runtime policy rules for UiPath agents, compiled to WASM and evaluated by the agent SDK at every lifecycle hook. Verdicts are recorded in the audit trail. Managed via `uip gov custom-policy`.
 
-> **Audit mode only.** The current runtime records a verdict (allow/deny) for every rule evaluation. It does not yet stop or interrupt agent actions — enforcement is coming in a future release. Be explicit with users: a policy being active means its verdicts appear in audit logs, not that matching actions are blocked.
+> **Verdicts are always recorded in the audit trail.** In enforce mode, a deny verdict raises a `GovernanceBlockException` and blocks the agent run. In audit mode, the verdict is logged but the run continues. The enforcement mode is a tenant/runtime configuration — when confirming a policy is active, tell the user verdicts appear in the audit trail and that enforcement depends on how the runtime is configured.
 
 > **Org-level storage, per-tenant activation.** Policies created with `create` are stored at the org level and must be explicitly enabled per tenant with `enable`.
 
@@ -66,7 +66,7 @@ Ask (or infer from context):
 
 - Select patterns from [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) that match the user's request.
 - Embed all metadata in OPA `# METADATA` annotations — package-level for name/version/hooks, rule-level for message/priority.
-- Do NOT add `input.hook` guards in rule bodies — each hook WASM is scoped at compile time via the annotation's `hooks` list.
+- No need to add `input.hook` guards in rule bodies — each hook WASM is already scoped to its hook at compile time via the annotation's `hooks` list. Hook guards are harmless if added for clarity but are redundant.
 - If the request requires a field not in `input.*`, refuse explicitly: "That rule requires access to [X], which isn't available in the Rego input at any hook." See the "What Can't Be Expressed" section of [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) for the full list.
 
 ### Step 3 — Show Rego and confirm
@@ -97,8 +97,8 @@ uip gov custom-policy enable <POLICY_ID> --output json
 ```
 
 After enable:
-- Confirm verdicts will appear in the audit trail at the next agent run.
-- Remind: verdicts are currently recorded only — agent actions are not yet stopped by the policy.
+- Confirm verdicts will appear in the audit trail at the next agent run (policy changes take effect at the start of the next run — the runtime refreshes bundles every 30 s but never interrupts a running agent).
+- Note: whether a deny verdict blocks the run depends on the runtime's enforcement mode configuration.
 
 ### Author mode — common gaps
 

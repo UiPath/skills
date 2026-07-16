@@ -2,7 +2,7 @@
 
 Single source of truth for the Rego file format, OPA METADATA annotations, the Rego input shape at each hook, common Rego patterns, and what can't be expressed in the current runtime.
 
-> **Audit mode only.** All rule verdicts (allow/deny) are recorded in the audit trail. The runtime does not yet stop or interrupt agent actions when a deny verdict fires. Be explicit with users: an active policy means its verdicts appear in audit logs, not that matching actions are blocked.
+> **Verdicts are always recorded in the audit trail.** In enforce mode, a deny verdict raises a `GovernanceBlockException` and blocks the agent run. In audit mode, the verdict is logged but the run continues. Enforcement mode is a runtime configuration — not controlled by the Rego file itself.
 
 ---
 
@@ -75,6 +75,8 @@ The server runs `regal lint` with two rules suppressed; everything else is activ
 | `bugs/constant-condition` | **active** | Do NOT write `if false` or `if { false }` in your policy — the server rejects it. |
 
 **Do NOT include sentinel lines** (`deny_rules contains "__sentinel__" if { false }`) in user-authored policies. The server's merge rego adds them automatically. Including them triggers the active `constant-condition` rule.
+
+**`input.hook` guards are optional.** Each WASM is compiled for a specific hook at bundle time, so `input.hook` is already scoped — adding a guard is redundant but harmless. Examples in this guide include them for clarity.
 
 **Use `==` for single-value hook checks**, not `in {single}`:
 ```rego
@@ -391,3 +393,9 @@ The following rule types are outside the current `input.*` surface. Refuse these
 | Per-tool argument inspection | `tool_args` is available but no structured schema per tool | Use `tool_call` + regex on serialized args if pattern is known |
 
 When refusing: name the missing field or capability and suggest the correct governance layer if one exists.
+
+## Runtime Behavior Notes
+
+**Fail-open:** If the governance server or CDN is unreachable at agent startup, the runtime falls back to the last cached WASM bundles on disk. If no cache exists (first ever startup with no connectivity), the Rego evaluator is skipped entirely and the agent runs without custom policies. A warning is logged. This is intentional — governance infrastructure outages should not take down agent operations.
+
+**Policy changes take effect at the next run boundary**, not mid-run. A background thread refreshes bundles every 30 s (`UIPATH_GOVERNANCE_BUNDLE_REFRESH_SECONDS` to override), but a running agent is never interrupted.

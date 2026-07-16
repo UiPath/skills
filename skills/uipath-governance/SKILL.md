@@ -14,7 +14,7 @@ Uber skill for UiPath governance authoring. Three backing CLI surfaces:
 |---|---|---|
 | **AOps product policy** | Product feature behavior — what Studio / StudioX / Assistant / Robot / AI Trust Layer / Agent Builder can do at design-time / runtime | `uip gov aops-policy` |
 | **Access policy** (`ToolUsePolicy`) | Resource/tool-use boundary — when an Actor Process invokes a child Resource (Agent / Maestro / Flow / RPA / API / Case Management), is the call allowed? | `uip gov access-policy` |
-| **Custom Policy** | Agent runtime rules — WASM-compiled, evaluated at every lifecycle hook (model calls, tool calls, agent I/O); org-level storage, per-tenant activation; verdicts recorded in audit trail (audit mode only — enforcement coming) | `uip gov custom-policy` |
+| **Custom Policy** | Agent runtime rules — WASM-compiled, evaluated at every lifecycle hook (model calls, tool calls, agent I/O); org-level storage, per-tenant activation; verdicts recorded in audit trail; deny verdict raises GovernanceBlockException and blocks the run in enforce mode | `uip gov custom-policy` |
 
 All three surfaces share verbs (`block`, `restrict`, `deny`, `allow`, `require`, `enforce`). The same English sentence often maps to different layers, so this skill **classifies first** and only then routes to the matching mechanic.
 
