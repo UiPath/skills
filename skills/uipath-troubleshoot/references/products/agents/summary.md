@@ -4,11 +4,6 @@ Covers errors from `uip agent` (low-code agents). Primary investigation surface:
 
 **Always check the `agentOutput` span even when the job reports success.** A run can complete without error while returning all-null output — this is a silent failure class not surfaced by Orchestrator job status.
 
-**For multi-agent solutions, read the `.uis` / `.uipx` file before inspecting traces.** Unzip the solution file and compare the `outputSchema` of each upstream agent against the `inputSchema` of each downstream agent. Two failure classes are only visible at this layer:
-
-- **Schema naming mismatch** — upstream outputs snake_case property names, downstream input schema defines PascalCase. The agent runtime populates schema-defined properties as null alongside the actual values, producing contradictory input to the model on every call.
-- **Semantic contract mismatch** — upstream outputs a controlled-vocabulary value (a status marker, sentinel string, or code) that the downstream agent's prompt has no instruction for. Results in undefined model behavior on a specific input path. Detectable only by reading both prompts against the actual input values in the trace.
-
 | Issue | Confidence | Description | Playbook |
 |-------|:---:|-------------|----------|
 | Input Schema Validation Failure | High | `agent.json failed schema validation` (Variant A: config schema) or `Data failed json schema validation DynamicType_0 BatchJson` (Variant B: input payload). Faults at agent startup before any LLM call. | [input-schema-validation-failure.md](./playbooks/input-schema-validation-failure.md) |
