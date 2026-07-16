@@ -19,6 +19,12 @@ authoring-only skill for producing valid, importable Maestro `.bpmn` XML.
   public-safe Maestro BPMN XML contract variants.
 - `connector/` covers Integration Service boundary behavior and registry
   discovery for connector wrapper types without cloud-side mutations.
+- `edit/` covers surgical brownfield edits on a pre-built, valid `.bpmn`
+  fixture (add / remove / update / reorder a node, add an output mapping,
+  extract a group into a subprocess). Each task ships its own fixture and
+  grades the requested edit plus preservation of untouched ids, `uipath:*`
+  payloads, and `uipath:migrationVersion` via an ElementTree diff against the
+  pristine original.
 - `e2e/` covers a multi-node authoring scenario end to end.
 - `operate-diagnose/` covers diagnostic inspection and operate-action guidance
   using mocked CLI responses, matching the operate and diagnose capabilities the
