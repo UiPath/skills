@@ -1,15 +1,16 @@
-task_id: flow-expense-approval-simulated
+task_id: skill-flow-expense-approval-simulated
 description: >
   Expense-approval flow with an inline HITL review step (trigger → script →
   HITL → script → end), driven by a simulated developer who describes the
   outcome but withholds the schema details until asked. Tests whether the agent
   elicits the field names/types/directions and approval outcomes before building.
   Validate-only — inline HITL nodes block on human review and can't be flow-debugged.
-tags: [uipath-maestro-flow, uipath-human-in-the-loop, e2e, devcon, simulation]
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, e2e, mode:build, lifecycle:generate, devcon, simulation]
 
 run_limits:
-  max_turns: 140
-  task_timeout: 3600
+  # max_turns = simulation rounds x ~5 (~4 build turns/round + headroom)
+  max_turns: 90
+  task_timeout: 2400
   turn_timeout: 1200
 
 # No initial_prompt — the simulator generates turn 1 from its persona + goal.
@@ -57,6 +58,7 @@ simulation:
     - "Do not reveal which details the manager sees vs. fills in unless asked what the reviewer should see or enter."
     - "Do not reveal the 'expense-approvers' group unless asked who approves."
     - "Do not reveal the project name 'ExpenseApproval' unless asked what to name it."
+    - "You expect a UiPath Maestro Flow — i.e. a `.flow` file in the workspace. If the agent builds anything else (e.g. an API workflow), tell it you specifically want a Maestro Flow and are not satisfied until there is a `.flow` file."
     - "When you are satisfied that the flow is built and validated, reply with exactly <<<END>>> on its own line."
 
   max_turns: 18
@@ -91,13 +93,15 @@ success_criteria:
     weight: 6.0
     pass_threshold: 1.0
 
-  # The project name is a withheld requirement the agent is expected to elicit
-  # (the persona only reveals it if asked what to name it). Scored on its own so
-  # missing it is a partial deduction, not a total failure of the flow above.
+  # The project name is a WITHHELD, COSMETIC requirement (persona reveals it only
+  # if asked what to name it) — the flow behaves identically whatever it's called.
+  # Non-gating: reports whether the agent elicited the exact name (score 1/0), but
+  # pass_threshold 0 keeps a cosmetic miss from failing the task and the low weight
+  # keeps it from dominating the score.
   - type: run_command
     description: "Project/flow is named ExpenseApproval (elicited from the user)"
     command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/ExpenseApproval.flow',recursive=True) else 'expected a flow named ExpenseApproval.flow')\""
     timeout: 15
     expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0

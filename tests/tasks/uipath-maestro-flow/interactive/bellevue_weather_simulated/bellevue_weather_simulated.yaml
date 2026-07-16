@@ -1,12 +1,13 @@
-task_id: flow-bellevue-weather-simulated
+task_id: skill-flow-bellevue-weather-simulated
 description: >
   Bellevue weather flow (HTTP → script → decision), but driven by a simulated
   non-technical user who withholds requirements until asked. Tests the agent's
   ability to clarify an ambiguous ask before building.
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, feature:http, ipe, simulation]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:decision, feature:http, ipe, simulation]
 
 run_limits:
-  max_turns: 60
+  # max_turns = simulation rounds x ~5 (~4 build turns/round + headroom)
+  max_turns: 70
   task_timeout: 2400
   turn_timeout: 1200
 
@@ -51,6 +52,7 @@ simulation:
     - "Do not reveal the 60F threshold or the exact messages unless asked about the temperature rule or wording."
     - "Do not reveal the city 'Bellevue' unless asked which location."
     - "Do not reveal the project name 'BellevueWeather' unless asked what to name it."
+    - "You expect a UiPath Maestro Flow — i.e. a `.flow` file in the workspace. If the agent builds anything else (e.g. an API workflow), tell it you specifically want a Maestro Flow and are not satisfied until there is a `.flow` file."
     - "When you are satisfied that the flow is built and validated, reply with exactly <<<END>>> on its own line."
 
   max_turns: 14
@@ -72,28 +74,24 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # Mirrors the skills-repo bellevue checker (check_weather_flow.py):
-  #   assert_flow_has_any_node_type(["core.action.http", "custom-codereval-openmeteoapis"])
-  #   + output contains a verdict message.
-  # Static adaptation: the original checks the runtime output for ONE verdict
-  # (require_all=False); we can't run the flow, so we assert BOTH verdict strings
-  # are authored in the flow file. No script/decision node is required — the
-  # original asserts neither.
+  # Runtime check:
   - type: run_command
-    description: "Flow has a weather HTTP/open-meteo node and both verdict strings"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/*.flow',recursive=True); assert flows,'No flow file'; f=json.load(open(flows[0])); types=[str(x.get('type','')).lower() for x in f['nodes']]; assert any('core.action.http' in y or 'custom-codereval-openmeteoapis' in y for y in types),'no weather HTTP/open-meteo node'; s=json.dumps(f).lower(); assert 'nice day' in s and 'bring a jacket' in s,'missing verdict text'; print('OK')\""
-    timeout: 15
+    description: "Flow debug runs; weather-API node executed and output contains a verdict"
+    command: "python3 $TASK_DIR/check_weather_flow.py"
+    timeout: 300
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
-  # The project name is a withheld requirement the agent is expected to elicit
-  # (the persona only reveals it if asked what to name it). Scored on its own so
-  # missing it is a partial deduction, not a total failure of the flow above.
+  # The project name is a WITHHELD, COSMETIC requirement (persona reveals it only
+  # if asked what to name it) — the flow behaves identically whatever it's called.
+  # Non-gating: reports whether the agent elicited the exact name (score 1/0), but
+  # pass_threshold 0 keeps a cosmetic miss from failing the task and the low weight
+  # keeps it from dominating the score.
   - type: run_command
     description: "Project/flow is named BellevueWeather (elicited from the user)"
     command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/BellevueWeather.flow',recursive=True) else 'expected a flow named BellevueWeather.flow')\""
     timeout: 15
     expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0

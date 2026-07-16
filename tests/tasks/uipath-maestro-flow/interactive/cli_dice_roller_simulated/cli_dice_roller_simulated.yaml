@@ -1,28 +1,21 @@
-task_id: flow-cli-dice-roller-simulated
+task_id: skill-flow-cli-dice-roller-simulated
 description: >
   Dice-roller flow via CLI mode, but driven by a simulated non-technical user
   who withholds requirements until asked. Tests the agent's ability to
   clarify ambiguous asks before building.
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, simulation]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, simulation]
 run_limits:
-  max_turns: 40
+  # max_turns = simulation rounds x ~5 (~4 build turns/round + headroom)
+  max_turns: 60
   task_timeout: 2400
   turn_timeout: 1200
 
 agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  # Override only the system prompt; type, permission_mode, allowed_tools,
+  # plugins, and sandbox all inherit from the experiment (tests/README.md —
+  # don't duplicate the full agent block).
   system_prompt: |
     If you're unsure of anything, ask for more information.
-  plugins:
-    - type: local
-      path: "$SKILLS_REPO_PATH"
-
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 # No initial_prompt — the simulator generates turn 1 from its persona + goal.
 
@@ -59,6 +52,7 @@ simulation:
     - "Do not mention 'CLI', 'uip', 'validate', 'node', or 'edge' unless the agent brings them up first."
     - "Do not reveal the die has six sides unless asked about the number of sides or range."
     - "Do not reveal the project name 'DiceRoller' unless asked what to name it."
+    - "You expect a UiPath Maestro Flow — i.e. a `.flow` file in the workspace. If the agent builds anything else (e.g. an API workflow), tell it you specifically want a Maestro Flow and are not satisfied until there is a `.flow` file."
     - "When you are satisfied that the flow is built and validated, reply with exactly <<<END>>> on its own line."
 
   max_turns: 12
@@ -80,21 +74,26 @@ success_criteria:
     weight: 4.0
     pass_threshold: 1.0
 
+  # Runtime check (mirrors the retired non-simulated original, check_dice_runs.py):
+  # a Script node executes and the output is an integer in [1, 6]. Supersedes a
+  # static grep for "random", which a flow that never executes would still pass.
   - type: run_command
-    description: "Flow has script node with dice logic"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/*.flow',recursive=True); assert flows,'No flow file found'; f=json.load(open(flows[0])); scripts=[n for n in f['nodes'] if n['type']=='core.action.script']; assert len(scripts)>=1,'No script node'; s=scripts[0].get('inputs',{}).get('script',''); assert 'Math.random' in s or 'random' in s.lower(), f'No random logic: {s[:100]}'; print('OK')\""
-    timeout: 10
+    description: "Flow debug runs; Script node executed and output is an integer in [1,6]"
+    command: "python3 $TASK_DIR/check_dice_runs.py"
+    timeout: 300
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  # The project name is a withheld requirement the agent is expected to elicit
-  # (the persona only reveals it if asked what to name it). Scored on its own so
-  # missing it is a partial deduction, not a total failure of the flow above.
+  # The project name is a WITHHELD, COSMETIC requirement (persona reveals it only
+  # if asked what to name it) — the flow behaves identically whatever it's called.
+  # Non-gating: reports whether the agent elicited the exact name (score 1/0), but
+  # pass_threshold 0 keeps a cosmetic miss from failing the task and the low weight
+  # keeps it from dominating the score.
   - type: run_command
     description: "Project/flow is named DiceRoller (elicited from the user)"
     command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/DiceRoller.flow',recursive=True) else 'expected a flow named DiceRoller.flow')\""
     timeout: 15
     expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0
