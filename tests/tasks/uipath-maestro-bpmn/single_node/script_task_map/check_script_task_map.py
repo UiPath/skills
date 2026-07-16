@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Structural check for the map-transform script-task port.
+"""Structural check for the map script-task test.
 
-Asserts a Jint-safe JavaScript script task performs a map transform (uppercasing
+Asserts a Jint-safe JavaScript script task runs a map operation (uppercasing
 a field over a collection): scriptFormat="JavaScript", scriptVersion v3, a mapped
 input and output, no non-Jint runtime APIs, a diagram shape, and a source that
-implements a map/uppercase transform.
+implements a map/uppercase operation.
 """
 
 from __future__ import annotations
@@ -57,7 +57,7 @@ def assert_script_task(root, source_must_match, label):
 
     for pattern in source_must_match:
         if not re.search(pattern, source, re.IGNORECASE):
-            fail(f"script source does not implement a {label} transform (missing /{pattern}/)")
+            fail(f"script source does not implement a {label} operation (missing /{pattern}/)")
 
     shaped = {s.attrib.get("bpmnElement") for s in root.findall(".//bpmndi:BPMNShape", NS)}
     if attr(task, "id") not in shaped:
@@ -66,7 +66,7 @@ def assert_script_task(root, source_must_match, label):
 
 
 def main() -> None:
-    path, root = parse_bpmn("TransformMapDemo")
+    path, root = parse_bpmn("ScriptTaskMapDemo")
     # Map signal: .map( / .map.call( / .map.apply( or an explicit loop+push build.
     assert_script_task(
         root,
@@ -75,7 +75,7 @@ def main() -> None:
     )
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)
-    print(f"OK: {path} has a Jint-safe scriptTask performing a map/uppercase transform")
+    print(f"OK: {path} has a Jint-safe scriptTask performing a map/uppercase operation")
 
 
 if __name__ == "__main__":

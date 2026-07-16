@@ -1,10 +1,10 @@
-task_id: skill-bpmn-transform-filter
+task_id: skill-bpmn-script-task-filter
 description: >
   Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a
-  Jint-safe script task that performs a filter transform (keeping rows whose
-  amount meets a threshold) — the BPMN analogue of a Flow Transform Filter node.
+  Jint-safe script task that runs a filter operation (keeping rows whose
+  amount meets a threshold). Script tasks are how BPMN processes reshape data.
   Authoring only — no cloud effects.
-tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:single-node", "node:script", "feature:transform"]
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:single-node", "node:script"]
 
 run_limits:
   expected_turns: 20
@@ -18,7 +18,7 @@ sandbox:
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
-  Author a single Maestro BPMN file `TransformFilterDemo.bpmn` in the working
+  Author a single Maestro BPMN file `ScriptTaskFilterDemo.bpmn` in the working
   directory with the shape: start -> scriptTask -> end. The script task filters a
   small static collection, keeping only rows whose `amount` is at least 100.
 
@@ -42,13 +42,13 @@ initial_prompt: |
 success_criteria:
   - type: file_exists
     description: "BPMN source was authored"
-    path: "TransformFilterDemo.bpmn"
+    path: "ScriptTaskFilterDemo.bpmn"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: file_contains
     description: "BPMN file has a diagram and a JavaScript script task"
-    path: "TransformFilterDemo.bpmn"
+    path: "ScriptTaskFilterDemo.bpmn"
     includes:
       - "bpmndi:BPMNDiagram"
       - "scriptTask"
@@ -56,8 +56,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "BPMN has a Jint-safe scriptTask (v3, mapped I/O) implementing a filter transform, with full DI"
-    command: "python3 $TASK_DIR/check_transform_filter.py"
+    description: "BPMN has a Jint-safe scriptTask (v3, mapped I/O) implementing a filter operation, with full DI"
+    command: "python3 $TASK_DIR/check_script_task_filter.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
