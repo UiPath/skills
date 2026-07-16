@@ -16,7 +16,6 @@ tags:
   - connector
   - uipath-salesforce-slack
   - feature:records
-  - path-to-ga
 
 run_limits:
   expected_turns: 30

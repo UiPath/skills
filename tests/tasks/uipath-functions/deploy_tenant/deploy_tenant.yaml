@@ -8,7 +8,7 @@ description: >
   non-interactive tenant-feed publish (pending uipath/cli#2778), so
   requiring an interactive `publish` made this task nondeterministic
   (the agent either fumbled the feed picker or exhausted its turns).
-tags: [uipath-functions, e2e, mode:build, feature:deploy, path-to-ga]
+tags: [uipath-functions, e2e, mode:build, feature:deploy]
 max_iterations: 1
 
 initial_prompt: |

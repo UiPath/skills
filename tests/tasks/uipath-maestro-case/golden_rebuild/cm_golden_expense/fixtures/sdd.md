@@ -444,7 +444,7 @@
 |----------|---------------|----------------|
 | Yes | No | — |
 
-**Resolved Resource:** Task agentic case
+**Child Case:** Task agentic case
 **Folder Path:** Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106
 **Resource Identity:** caseManagementId `deecae87-ce5a-4351-b777-92348aff3226` (v1.0.6)
 **Binding Sub-Type:** CaseManagement
