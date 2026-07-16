@@ -51,9 +51,10 @@ initial_prompt: |
   Help me map this out end to end — about two tasks per stage, the key data we
   track, and the business rules. Call it "LoanOrigination".
 
-  I want a draft design document I can review before we commit to anything. Let's
-  get the draft down and stop there — we'll finalize and build it later, so don't
-  polish or validate it yet, just capture the design.
+  We don't have an sdd.md yet — interview me and get a draft down that I can
+  review before we commit to anything. Stop at the draft — we'll finalize and
+  build the caseplan later, so don't polish or validate it yet, just capture
+  the design.
 
 success_criteria:
   # The interview grades the captured DESIGN, in whichever file Phase 0 leaves it:
