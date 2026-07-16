@@ -90,19 +90,11 @@ For modern projects, determine whether this is a **coded** or **XAML** project:
 
 For any task whose business behavior is "open an app/browser, click, type, scrape visible UI, submit a form, or verify UI state", the interaction layer MUST be UiPath UI Automation — `NApplicationCard` plus UIA activities (XAML), or `uiAutomation.Open`/`Attach` plus Object Repository descriptors (coded). Do NOT substitute `InvokeCode`, PowerShell, Selenium, Playwright, Chrome DevTools Protocol, raw DOM JavaScript, HTTP form posts, or external browser-driver scripts. The coded fallback rows above apply only to non-UI helper logic (data transforms, parsing, DTOs, calculations, API-only integrations).
 
-If target configuration is unavailable, fall back to the documented UIA indication path — never to an external browser automation shortcut.
-
-The full prohibited-tool list, the UIA-only exploration requirement, and the `InvokeJS`/`InjectJsScript` exception scope are in [ui-automation-guide.md](references/ui-automation-guide.md) § Mandatory: Generate Targets Before Writing Any UI Code — read it in full per Rule 7 before any UIA work.
+If target configuration is unavailable, fall back to the documented UIA indication path — never to an external browser automation shortcut. Full prohibited-tool list + exploration boundaries: [ui-automation-guide.md § Mandatory: Generate Targets Before Writing Any UI Code](references/ui-automation-guide.md) (read in full per Rule 7).
 
 ### Placeholder-Selector Stub Pattern (when live app access is unavailable)
 
-When generating a UI automation workflow **without** live app access (target capture cannot be run because the app is not installed, the agent has no UI, or the user explicitly deferred capture to a developer), emit **real UIA activities with placeholder selectors and `TODO Indicate` markers** — never `Log` stubs.
-
-**Forbidden:** a workflow whose UI-interaction steps are `Log("LoginWorkflow: type username")` with a `// TODO[selectors]:` comment. The workflow passes build/validate and runs cleanly, but does nothing. This is the most expensive kind of stub — it looks complete, the validator says it's fine, and the failure mode is silent.
-
-**Required:** the **real** UIA activity (`NTypeInto`, `NClick`, `NGetText`, `NApplicationCard`, etc.) with the target descriptor's selector left as a placeholder string and a `TODO Indicate` marker embedded in the activity's `DisplayName` (XAML) or in a `// TODO[Indicate]` comment immediately adjacent to the coded call. A developer opens Studio, clicks **Indicate** on each marked activity, and the workflow runs.
-
-This applies to **both** XAML and coded modes. The full pattern with XAML and coded examples is in [ui-automation-guide.md](references/ui-automation-guide.md) § Placeholder-Selector Stub Pattern (read in full per Rule 7).
+When generating a UI automation workflow **without** live app access (app not installed, no GUI, capture deferred to a developer), emit **real UIA activities with placeholder selectors and `TODO Indicate` markers** — never `Log` stubs. A `Log("type username")` stub passes build/validate/run and silently does nothing — the most expensive kind of stub. The real activity ships wired into control flow with a marker the developer clicks Indicate on. Applies to both XAML and coded modes; full pattern + examples: [ui-automation-guide.md § Placeholder-Selector Stub Pattern](references/ui-automation-guide.md) (read in full per Rule 7).
 
 **Hybrid pattern** — XAML orchestration + coded fallback for logic with no matching activity:
 
@@ -113,16 +105,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 
 ## Capture-First Fast Path
 
-When the request is "automate this dialog/form" or "build a UI test from these manual steps" — i.e. the bulk of the work is target capture, not coding — **defer authoring-phase prerequisites until target capture is complete**. The capture surface is interactive, app-state-sensitive, and time-bound; project-context discovery adds nothing during capture and steals time from it.
-
-**Fast-path order for capture-first tasks.** Read [ui-automation-guide.md](references/ui-automation-guide.md) and [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) in full first (Rule 7; the second is used in step 3). Then:
-
-1. **Pre-flight Window Baseline** — list top-level windows once; decide whether to launch the app ([§ Pre-flight: Window Baseline](references/ui-automation-guide.md)).
-2. **Inventory targets from manual steps** (Test Manager test case, PDD, or written script). Each "Click X" / "Enter Y" / "Select Z" / "Verify W" step maps to one OR element. Group by screen state ([§ Capturing from Manual Test Steps](references/ui-automation-guide.md)).
-3. **Capture all targets** screen by screen via `uia-configure-target` and screen advancement ([§ Multi-Step UI Flows](references/uia-configure-target-workflows.md)).
-4. **Then enter authoring phase:** project-context discovery (the precondition above), write code, validate.
-
-Skip this path when the task has no UI surface (data transforms, IS connector calls, headless file/email automation). Also skip it when the task HAS a UI surface but **no live app to capture against** (app not installed, no GUI, capture deferred to a developer) — there is nothing to capture, so use the § Placeholder-Selector Stub Pattern above instead. The Window Baseline does not tell you if the app is installed and has a GUI — validate that separately (e.g. look for the executable on disk) or ask the user.
+When the request is "automate this dialog/form" or "build a UI test from these manual steps" — the bulk of the work is target capture — **defer authoring-phase prerequisites (project-context discovery) until capture is complete**; the capture surface is interactive and app-state-sensitive. Read [ui-automation-guide.md](references/ui-automation-guide.md) and [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) in full first (Rule 7), then: (1) Pre-flight Window Baseline; (2) inventory targets from the manual steps, grouped by screen state; (3) capture screen by screen via `uia-configure-target`; (4) then enter the authoring phase. Skip this path when there is no UI surface, or no live app to capture against (use the § Placeholder-Selector Stub Pattern instead — and verify app availability separately; the Window Baseline doesn't prove the app is installed).
 
 ## Session Pre-warm
 
@@ -142,29 +125,25 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 
 1. **NEVER create a project without confirming none exists.** Follow Step 0 resolution: check explicit path, project name, then CWD for `project.json`. Only create when confirmed no project matches AND user explicitly requests creation.
 2. **ALWAYS use `uip rpa init`** to create new projects — never write `project.json` or scaffolding manually.
-   - **Before creating, decide if a template is needed.** If the user names a template ("REFramework", "Robotic Enterprise Framework", "based on the X template"), an industry/domain pattern (SAP, ERP, banking, mainframe), or otherwise hints at a non-blank starter, run `uip rpa templates search --query "<term>" --output json` first. Selection rule against `Data[*]`:
-     - **User named a specific non-Official template** (e.g. "Enhanced REFramework", "Lite ReFrameWork") AND a `Marketplace` item's `title` or `packageId` substring-matches the user's specific qualifier → ask the user (Official + that Marketplace item are both candidates). Do NOT auto-pick.
-     - **Exactly one `source == "Official"` match AND user did not name a non-Official template** → use it; pass `--template-package-id <packageId> --template-package-version <version>` to `init`. Proceed without asking.
-     - **Multiple `Official` matches OR only `Marketplace` matches** → present candidates (`packageId`, `version`, `source`, `title`) to the user and ask which to use. Never silently pick a Marketplace template.
-     - **No matches** → fall back to a built-in `--template-id` and tell the user nothing was found.
-   - Built-in `--template-id` keywords map without a search: `library` → `LibraryProcessTemplate`, `test automation` / `test project` → `TestAutomationProjectTemplate`, otherwise `BlankTemplate`. When `--template-package-id` is set, `--template-id` is ignored. Full decision flow: [environment-setup.md § Template selection](references/environment-setup.md).
-2a. **Pass `--target-framework` AND `--expression-language` explicitly on every `uip rpa init` — never omit them.** Both are immutable after creation (Rule 23); omitting `--target-framework` silently yields a **Windows** project. Choose framework by where the automation runs: cross-platform / non-Windows runtime (Linux, container, serverless) or Studio Web editing → **`Portable`** (Cross-platform); Windows runtime using Windows-only capabilities (Excel COM, classic Office, WPF / `PresentationFramework`, Windows-only UIA) or Studio Desktop as the edit surface → **`Windows`** (not editable in Studio Web). A request needing *both* a cross-platform runtime and a Windows-only capability is contradictory — surface it, don't silently pick. **Windows - Legacy is a last resort** (explicit ask or hard .NET 4.6.1 need; never inferred from VB.NET or non-"X" classic activities) — create it in Legacy mode, not modern `init`. No signal → `AskUserQuestion` (Windows vs Cross-platform), framed around the runtime host. `--expression-language`: default `VisualBasic`, `CSharp` only on explicit request.
-3. **Phase-gated validation.** Two-phase validation:
-   - **Per-file** (after every create or edit): `uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Catches structural XAML, missing references, analyzer-rule violations, schema violations. Fix one thing per iteration.
-   - **Project-level build** (after per-file `validate` is clean across all files in the edit session, and before declaring done): `uip rpa build "<PROJECT_DIR>" --output json` until clean. Catches what `validate` misses (unknown members, invalid enums, CacheMetadata / member resolution, attribute-form C# JIT) — full list at [cli-reference.md § Errors `build` catches that `validate` misses](references/cli-reference.md#errors-build-catches-that-validate-misses). If `build` errors, identify the offending file from the output and re-run `validate --file-path` on it.
-   - **5-attempt cap per loop** — 5 attempts for each file's per-file `validate` loop; a separate 5 attempts for the project-level `build` loop. Fix one root cause per iteration.
-   - **Smoke-test shortcut:** A successful `uip rpa run` substitutes for the standalone end-of-session `build` — `run` compiles internally. Prefer `run --skip-build` when `build` has just passed; see [cli-reference.md § Smoke Test](references/cli-reference.md#smoke-test).
-   - **Do NOT run `uip rpa analyzer-rules list` as an authoring prerequisite.** `validate` and `build` already enforce the enabled analyzer rules and report violations with rule IDs and recommendations — pre-fetching the rule list is speculative cost (the unscoped call can take a minute or more). It is an **on-demand** command: run it when the user asks about the project's best-practice/analyzer rules, or when repeated violations of the same rule family suggest authoring against the full rule set. See [cli-reference.md § analyzer-rules list](references/cli-reference.md#analyzer-rules-list).
+   - **Before creating, decide if a template is needed.** If the user names a template ("REFramework", "based on the X template"), an industry/domain pattern (SAP, ERP, banking, mainframe), or otherwise hints at a non-blank starter, run `uip rpa templates search --query "<term>" --output json` first and select per [environment-setup.md § Template selection](references/environment-setup.md#template-selection): auto-pick only a single `Official` match; otherwise present candidates and ask — never silently pick a Marketplace template. No matches → built-in `--template-id` and tell the user.
+   - Built-in `--template-id` keywords map without a search: `library` → `LibraryProcessTemplate`, `test automation` / `test project` → `TestAutomationProjectTemplate`, otherwise `BlankTemplate`. When `--template-package-id` is set, `--template-id` is ignored.
+2a. **Pass `--target-framework` AND `--expression-language` explicitly on every `uip rpa init` — never omit them.** Both are immutable after creation (Rule 23); omitting `--target-framework` silently yields a **Windows** project. Cross-platform runtime (Linux, container, serverless) or Studio Web editing → `Portable`; Windows-only capabilities (Excel COM, classic Office, WPF, Windows-only UIA) or Studio Desktop editing → `Windows`. A request needing both is contradictory — surface it, don't silently pick. **Windows - Legacy is a last resort** (explicit ask or hard .NET 4.6.1 need; never inferred from VB.NET or classic activities) — create it in Legacy mode, not modern `init`. No signal → `AskUserQuestion` framed around the runtime host. `--expression-language`: default `VisualBasic`, `CSharp` only on explicit request. Signal details: [environment-setup.md § Step 0.3](references/environment-setup.md#step-03-creating-a-new-project).
+3. **Phase-gated validation.**
+   - **Per-file** (after every create or edit): `uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors — fix one root cause per iteration.
+   - **Project-level build** (once per edit session, before declaring done): `uip rpa build "<PROJECT_DIR>" --output json` until clean — catches what `validate` misses (unknown members, invalid enums, CacheMetadata / member resolution, attribute-form C# JIT). On error, identify the offending file from the output and re-run `validate --file-path` on it.
+   - **5-attempt cap per loop** (separate caps for the validate and build loops). A successful `uip rpa run` substitutes for the end-of-session `build` — `run` compiles internally; prefer `run --skip-build` right after a clean `build`.
+   - **Do NOT pre-fetch `uip rpa analyzer-rules list`** — `validate`/`build` already enforce the rules; it is on-demand only (user asks, or repeated violations of one rule family).
 
-   See [cli-reference.md § Validation Iteration Loop](references/cli-reference.md#validation-iteration-loop).
+   Canonical loop, build-vs-validate matrix, smoke test: [cli-reference.md § Validation Iteration Loop](references/cli-reference.md#validation-iteration-loop).
+
 4. **ALWAYS validate files as you go AND verify the project builds before declaring done.** After every create or edit: per-file `validate` to clean. Project-level `build` runs once at the end of the edit session (or at any compile-verification gate) — not after every Edit, because `build` is project-scoped and rebuilds the entire project regardless of which file changed. `validate` clean alone is not "validated"; it cannot see member or enum errors — the project-level `build` is mandatory before declaring done. See [cli-reference.md § Validation Iteration Loop](references/cli-reference.md#validation-iteration-loop).
 5. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
 6. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
 6a. **Pre-edit verification gate.** Two authoring actions are hard to roll back once `build` fails — verify before serialization, not after.
    - **Removing a dependency** — grep the project for usages before deleting an entry. A package may be the sole supplier of an activity used elsewhere (`MergePDFs` lives in the IntelligentOCR.StudioWeb family).
    - **Writing a new activity tag** — confirm via `uip rpa activities find --query "<verb>" --output json` and use the returned `ClassName`. Do not derive tag names from Studio display names. See [common-pitfalls.md § Common Activity Name Confusions](references/xaml/common-pitfalls.md).
-7. **[UIA] Before writing ANY UIA activity (XAML `<uix:N*>` or coded `uiAutomation.*` / `Descriptors.*`), MUST read [references/ui-automation-guide.md](references/ui-automation-guide.md) IN FULL** — including the mode-specific section (For Coded Workflows or For XAML Workflows) and Running UI Automation Workflows. No exceptions for "simple" UIs. Skipping this rule is the most common cause of hallucinated selectors, wrong target XML, and missing OR descriptors. NEVER hand-write selectors — use `uia-configure-target` exclusively (the guide explains how). This guide is the single entry point for UIA work: it routes you to [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) (and carries § Prerequisites) and the package docs in order — the other UIA sections in this file point back here rather than restating the read mandate.
-7a. **[UIA] Verify UIA prerequisites before invoking `uia-configure-target`.** The minimum version and the prerequisite check live in [ui-automation-guide.md § Prerequisites](references/ui-automation-guide.md) — read it and run that check first (do not hardcode the version from memory; that file is the only source of truth). If `UiPath.UIAutomation.Activities` is below the minimum or `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md` is absent, the `uip rpa uia` CLI is unavailable — and **both** target capture and indication depend on it, so indication is *not* a fallback when the package itself is missing. Ask the user to install/upgrade per that § Prerequisites section. If they decline or the package cannot be installed, fall back to the **Placeholder-Selector Stub Pattern** (§ above) — real activities with `TODO Indicate` markers need no CLI. Never silently route to a non-existent skill path. Use indication capture only when a compatible UIA package *is* installed but `uia-configure-target` cannot see the element; record `UI capture: indication-only` in the plan header to skip `uia-configure-target` in that case. **Runtime failure counts too:** when the package is present but the UIA snapshot CLI's live scans fail persistently (driver/COM errors on every scan), first rule out a locked or non-interactive Windows session (`LogonUI` running = lock screen) — that needs an unlock, not a fallback. Only if scans still fail on an unlocked interactive session, treat capture as unavailable and use the Placeholder-Selector Stub Pattern.
+7. **[UIA] Before writing ANY UIA activity (XAML `<uix:N*>` or coded `uiAutomation.*` / `Descriptors.*`), MUST read [references/ui-automation-guide.md](references/ui-automation-guide.md) IN FULL** — including the mode-specific section (For Coded Workflows or For XAML Workflows) and Running UI Automation Workflows. No exceptions for "simple" UIs. Skipping this rule is the most common cause of hallucinated selectors, wrong target XML, and missing OR descriptors. NEVER hand-write selectors — use `uia-configure-target` exclusively (the guide explains how). It is the single entry point for UIA work and routes to [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) and the package docs in order.
+7a. **[UIA] Verify UIA prerequisites before invoking `uia-configure-target`.** The minimum version and the prerequisite check live in [ui-automation-guide.md § Prerequisites](references/ui-automation-guide.md) — read it and run that check first (do not hardcode the version from memory; that file is the only source of truth). If `UiPath.UIAutomation.Activities` is below the minimum or `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md` is absent, the `uip rpa uia` CLI is unavailable — and **both** target capture and indication depend on it, so indication is *not* a fallback when the package itself is missing. Ask the user to install/upgrade per that § Prerequisites section. If they decline or the package cannot be installed, fall back to the **Placeholder-Selector Stub Pattern** (§ above) — real activities with `TODO Indicate` markers need no CLI. Never silently route to a non-existent skill path. Use indication capture only when a compatible UIA package *is* installed but `uia-configure-target` cannot see the element; record `UI capture: indication-only` in the plan header to skip `uia-configure-target` in that case. **Runtime failure counts too:** persistent live-scan failures (driver/COM errors on every scan) → first rule out a locked/non-interactive Windows session (`LogonUI` = lock screen; needs an unlock, not a fallback); only then treat capture as unavailable and use the stub pattern.
 8. **Use `--output json`** on all CLI commands whose output is parsed programmatically.
 8a. **`run` / `debug start` success/failure verdict comes from the outer `Result` (and equivalently the inner `HasErrors`), NEVER from any log entry's `Level`.** A successful workflow may emit `Log Message` activities at `Error` or `Warning` level as observability — those are workflow-emitted data, not CLI failures. Compile failures, validation failures, and unhandled runtime exceptions all flip `HasErrors` and propagate to the outer `Result`. Treating log-entry levels as a failure signal flips green runs to "failed" and burns retries on healthy workflows. In a debug session, check `DebugState` first — a `Suspended` response means an exception awaits your decision (continue / retry / ignore / cancel) while `HasErrors` is still `false`. See [cli-reference.md § run](references/cli-reference.md) and [debugging.md § Reading Debug Output Effectively](references/debugging.md).
 9. **For "leverage / reuse / find shared libraries" requests, search the tenant feed — not the local filesystem, NuGet.org, or keyword-permutation loops.** Run `uip or libraries list --limit 500 --output-filter "<JMESPath>" --output json`. On zero results from the filtered call, take the fallback branch — do not re-keyword. Skip when an SDD already records §16 "Shared libraries referenced" or the user has said "no shared libraries" earlier in the session. See [tenant-library-search-guide.md](references/tenant-library-search-guide.md) for the full procedure.
@@ -172,18 +151,13 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 
 11. **Test case structure: Given-When-Then.** Applies to both XAML and coded test cases. See [references/testing-guide.md § XAML Test Case Structure](references/testing-guide.md) for the canonical patterns (the section's lead also points to the coded variant in `coded/operations-guide.md`).
 
-12. **Trigger activity placement.** Two trigger types — identify from `uip rpa activities find --query "<event>" --output json` by reading `isTrigger` and `triggerType`. Placement rules differ.
+12. **Trigger activity placement.** Identify via `uip rpa activities find --query "<event>" --output json` → read `isTrigger` and `triggerType`.
 
-    **Integration triggers** (`isTrigger: true`, `triggerType: "integration"`) — **strict placement.** MUST be the first activity of `Main.xaml`'s root `Sequence`; CANNOT be placed inside `ui:TriggerScope`. Bind `Result` to a workflow-scope variable; the rest of the `Sequence` is the handler. **Connection asset (`ConnectionId`) required for IS-based** triggers (Mail / GSuite / O365 / Salesforce / Jira / Slack / ServiceNow / any `*.IntegrationService.Activities` package); **not required for Orchestrator-native** triggers (`TimeTrigger`, `QueueTrigger`, `ManualTrigger`).
+    **Integration triggers** (`triggerType: "integration"`) — strict: MUST be the first activity of `Main.xaml`'s root `Sequence`; CANNOT sit inside `ui:TriggerScope`; bind `Result` to a workflow-scope variable. IS-based triggers (Mail / GSuite / O365 / Salesforce / Jira / Slack / ServiceNow / any `*.IntegrationService.Activities`) require a `ConnectionId`; Orchestrator-native (`TimeTrigger`, `QueueTrigger`, `ManualTrigger`) do not.
 
-    **Local triggers** (`isTrigger: true`, `triggerType: "local"`) — **flexible placement.** Place EITHER as the first activity of `Main.xaml`'s root `Sequence` (Orchestrator dispatches a fresh job per event) OR inside `<ui:TriggerScope.Triggers>` with handler in `<ui:TriggerScope.Action>` (robot stays alive while the scope is active; trigger fires in-process). Both placements are valid — choose by runtime model. No connection asset required.
+    **Local triggers** (`triggerType: "local"`) — flexible: first activity of the root `Sequence` (Orchestrator dispatches a fresh job per event) OR inside `<ui:TriggerScope.Triggers>` with the handler in `<ui:TriggerScope.Action>` (robot stays alive). Unknown `triggerType` → read the bundled doc and ask the user. Reading existing XAML: an integration trigger inside `<ui:TriggerScope.Triggers>` is broken — flag it.
 
-    **Unknown `triggerType`** (forward-compat — e.g. a future `"scheduled"`) → read the bundled doc and ask the user. Do not assume placement.
-
-    **Reading existing XAML:** activity inside `<ui:TriggerScope.Triggers>` must be a local trigger; an integration trigger there is broken — flag to the user. Activity at workflow root can be either type — check `triggerType` to disambiguate.
-
-    See [trigger-pattern-guide.md](references/trigger-pattern-guide.md) for worked examples, the `SchedulingMode` reference, the catalog of trigger activities, and the procedure for editing existing `ui:TriggerScope` workflows.
-
+    Worked examples, `SchedulingMode`, trigger catalog, editing procedure: [trigger-pattern-guide.md](references/trigger-pattern-guide.md).
 
 ### Destination Preflight (Both Modes)
 
@@ -201,7 +175,7 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 
 ### Error Handling (Both Modes)
 
-**Wrap external interactions (UI, file, network, DB) in Try/Catch and classify failures — `BusinessRuleException` for bad input data (no retry; needs a human), system exceptions for transient faults (retry then escalate).** Don't blanket-wrap pure logic, don't leave a Catch empty, and `Rethrow` (never `Throw New Exception(ex.Message)`) to preserve the stack trace. For exception taxonomy, Retry Scope count/interval semantics, ContinueOnError suppression, screenshot-on-error, the Global Exception Handler recipe (scaffold + `project.json` registration + verdict logic), and the resilience patterns — recovering to a known app state before retrying, per-item transaction boundaries, idempotent/compensating writes to avoid **duplicate creates** and partial writes, sensitive-data redaction, and **retry ownership** across queue/Retry-Scope/GEH/job layers — read [references/error-handling-guide.md](references/error-handling-guide.md) in full before adding resilience to a workflow.
+**Wrap external interactions (UI, file, network, DB) in Try/Catch and classify failures — `BusinessRuleException` for bad input data (no retry; needs a human), system exceptions for transient faults (retry then escalate).** Don't blanket-wrap pure logic, don't leave a Catch empty, and `Rethrow` (never `Throw New Exception(ex.Message)`) to preserve the stack trace. Exception taxonomy, Retry Scope, ContinueOnError, screenshot-on-error, the Global Exception Handler recipe, and the resilience patterns (state recovery, transaction boundaries, idempotent/compensating writes, redaction, retry ownership across layers): read [error-handling-guide.md](references/error-handling-guide.md) in full before adding resilience to a workflow.
 
 ### Call Batching (Both Modes)
 
@@ -237,18 +211,16 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 17. **[XAML] MUST understand project structure** — read `project.json`, check expression language, scan existing patterns. NEVER generate XAML blind.
 18. **[XAML] Start minimal, iterate to correct** — build one activity at a time, validate after each addition.
 19. **[XAML] Fix errors by category** — Package → Structure → Type → Activity Properties → Logic.
-20. **[XAML] Flowchart node structure + ViewState both decide whether a Flowchart renders.** **Structure first:** every `FlowStep`/`FlowDecision`/`FlowSwitch` MUST be a direct child of `<Flowchart>` (only direct children are added to the `Flowchart.Nodes` collection), wired through `Flowchart.StartNode`/`FlowStep.Next`/branches with `<x:Reference>`+`x:Name`. NEVER build the flow as a nested chain — one `FlowStep` physically nested inside the previous one's `<FlowStep.Next>` — because nested-only steps are absent from `Flowchart.Nodes` and the designer renders almost nothing, regardless of ViewState. **Then ViewState:** when generating new Flowchart/StateMachine/ProcessDiagram workflows, per-node ViewState is MANDATORY — `ShapeLocation`+`ShapeSize` on every node (`ConnectorLocation` optional, Studio auto-routes). Without it Studio stacks every node at (0,0) so they overlap into what looks like a single node, and Studio does NOT auto-arrange on open (see [canvas-layout-guide.md](references/xaml/canvas-layout-guide.md)). When editing existing files, do NOT modify ViewState on nodes you are not changing. For Sequences, ViewState is optional.
-21. **[XAML] Reading `<Activity>.md` from `{PROJECT_DIR}/.local/docs/packages/...` is a precondition for `activities get-default-xaml` — for every activity not on the common-activity card.**
-    - **Card-listed activities:** check [references/common-activity-card.md](references/common-activity-card.md) first; if the activity is on the card, author from the card entry alone — skip `activities find`, skip `activities get-default-xaml`, skip the per-activity MD read.
-    - **All other activities:** (1) `activities find` → class name, (2) **read `<Activity>.md` first** and extract a property checklist (required + use-case-relevant), (3) `activities get-default-xaml` → starter element, (4) **diff your checklist against the starter and add what's missing** — an empty checklist means you skipped step 2, go back.
-    - **Doc lookup order:** primary `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Activity>.md`; fallback `references/activity-docs/<PackageId>/<closest-version>/<Activity>.md` for older package versions where `.local/docs` is empty. **Exception — `UiPath.UIAutomation.Activities` has no bundled fallback:** `.local/docs` (present only after the package is installed) is its sole activity-doc source. If it is absent, do not hunt for a bundled copy — follow Rule 7a (install with consent per [ui-automation-guide.md § Prerequisites](references/ui-automation-guide.md), or use the Placeholder-Selector Stub Pattern).
-    - **Trigger activities are special — read BOTH docs.** When the class name ends in `Trigger`, the namespace contains `.Triggers`, or the description mentions "starts a job" / "Monitor Events" / "Trigger Scope", also read the bundled `references/activity-docs/<PackageId>/<closest-version>/activities/<Activity>.md` **and** the package's bundled `overview.md`. The auto-generated `.local/docs` version is sparse for triggers; the bundled hand-written docs carry placement guidance (entry-point vs. `ui:TriggerScope`), deployment context, and cross-cutting namespace/assembly gotchas that the extractor does not capture. See Common Rule 12 and [trigger-pattern-guide.md](references/trigger-pattern-guide.md).
-    - **Skip-tax — concrete:** `activities get-default-xaml` omits any property whose value equals the type default. For `NGetText` the starter is literally `<uix:NGetText HealingAgentBehavior="SameAsCard" />` with **zero** output properties — authoring from this alone produces `NGetText.Value="..."` (does not exist; the output member is `TextString`), which `validate` accepts and `build` rejects. For `NTypeInto` that's 2 of 20 properties hidden.
-    - **Self-extending the card — "this activity feels simple, I'll add it to the card mentally" — is the failure mode.** The card is the only allowlist; for non-card activities the MD read is the only check.
-    - Full procedure: [xaml/xaml-basics-and-rules.md § Activity Property Surface](references/xaml/xaml-basics-and-rules.md).
-21a. **[XAML] Built-in workflow activities: use the card only for this allowlist.** Fast-path card activities are: `Sequence`, `If`, `Switch<T>`, `TryCatch`, `While`, `DoWhile`, `ForEach<T>`, `Assign`, `LogMessage`, `WriteLine`, `Delay`, `Throw`, `Rethrow`. If the activity is on this list, open [references/common-activity-card.md](references/common-activity-card.md) and author from the card. If it is not on this list, follow full Rule 21. `InvokeWorkflowFile`, `Pick`, `Parallel`, and `ParallelForEach<T>` are intentionally off-card; use full Rule 21. Studio's "While" / "Do While" / "For Each" toolbox items emit UiPath wraps (`UiPath.Core.Activities.InterruptibleWhile` / `InterruptibleDoWhile` / `UiPath.Core.Activities.ForEach<T>`), not the framework `System.Activities.Statements.While`/`DoWhile`/`ForEach<T>`.
+20. **[XAML] Flowchart node structure + ViewState both decide whether a Flowchart renders — structure first, then coordinates.** Every `FlowStep`/`FlowDecision`/`FlowSwitch` MUST be a direct child of `<Flowchart>`, wired via `<x:Reference>` — NEVER a physically nested chain (nested-only steps never enter `Flowchart.Nodes` and don't render, regardless of ViewState). Then per-node ViewState (`ShapeLocation`+`ShapeSize`) is MANDATORY when generating new Flowchart/StateMachine/ProcessDiagram workflows — without it Studio stacks every node at (0,0) and does NOT auto-arrange. When editing, do not modify ViewState on nodes you are not changing; Sequences don't need it. Full rules: [canvas-layout-guide.md](references/xaml/canvas-layout-guide.md).
+21. **[XAML] For every activity not on the common-activity card, reading `<Activity>.md` is a precondition for `activities get-default-xaml`.**
+    - **Card-listed activities:** author from [common-activity-card.md](references/common-activity-card.md) alone — skip `activities find`, `get-default-xaml`, and the MD read. The card is the only allowlist (Rule 21a) — never self-extend it by judgment.
+    - **All other activities:** (1) `activities find` → class name; (2) read `<Activity>.md` — primary `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/`, fallback bundled `references/activity-docs/<PackageId>/<closest-version>/` — and write a property checklist; (3) `get-default-xaml` → starter; (4) diff the checklist against the starter and add what's missing (an empty checklist means step 2 was skipped — go back). The starter omits every type-default property (skip-tax — `NGetText`'s starter shows zero output members; authoring from it alone produces the unknown member `Value`), so the MD read is the only property-surface check.
+    - **`UiPath.UIAutomation.Activities` has no bundled fallback** — `.local/docs` is its sole activity-doc source; if absent, follow Rule 7a (never hunt for a bundled copy).
+    - **Trigger activities: read BOTH docs** — the `.local/docs` version AND the bundled package docs (`activities/<Activity>.md` + `overview.md`); the bundled ones carry placement and deployment guidance the extractor misses. See Rule 12.
+    - Full procedure: [xaml-basics-and-rules.md § Activity Property Surface](references/xaml/xaml-basics-and-rules.md).
+21a. **[XAML] Card fast-path allowlist:** `Sequence`, `If`, `Switch<T>`, `TryCatch`, `While`, `DoWhile`, `ForEach<T>`, `Assign`, `LogMessage`, `WriteLine`, `Delay`, `Throw`, `Rethrow`. `InvokeWorkflowFile`, `Pick`, `Parallel`, and `ParallelForEach<T>` are intentionally off-card → full Rule 21. Studio's "While" / "Do While" / "For Each" toolbox items emit UiPath wraps (`InterruptibleWhile` / `InterruptibleDoWhile` / `UiPath.Core.Activities.ForEach<T>`), not the MWF primitives.
 22. **[XAML] MUST read [references/xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md)** before generating or editing any XAML.
-23. **[XAML] NEVER change `expressionLanguage` or `targetFramework` on an existing project.** Decide both proactively at init time (Common Rule 2a); this rule covers the immutability afterward. Both fields in `project.json` are fixed at creation time and apply to every XAML file in the project — flipping `expressionLanguage` (VisualBasic ↔ CSharp) invalidates every expression, and flipping `targetFramework` (Windows ↔ Portable/cross-platform, or Legacy) invalidates package references and activity compatibility. **Do not attempt in-place conversion.** If the user wants to convert an existing project, confirm with them, copy the project to a temporary folder, create a new project via `uip rpa init --expression-language <VisualBasic|CSharp> --target-framework <Windows|Portable>` (for a target of Windows - Legacy, create it in Legacy mode instead — modern `init` is not the legacy creation path), make sure all the defined workflows in the old project have an equivalent in the new project. Delete the copied project just after the new project has been successfully generated and the user agree with the changes.
+23. **[XAML] NEVER change `expressionLanguage` or `targetFramework` on an existing project.** Both are fixed at creation (Rule 2a) and apply to every XAML file — flipping `expressionLanguage` invalidates every expression; flipping `targetFramework` invalidates package references and activity compatibility. **No in-place conversion.** If the user wants a conversion: confirm with them, copy the project to a temporary folder, create a new project via `uip rpa init` with the target settings (Windows - Legacy → create in Legacy mode instead), port every workflow, and delete the copy only after the new project is verified and accepted.
 24. **[XAML] Wrap every container-activity body/branch in `<Sequence>` — even single-activity bodies.** Studio's designer expects the wrap as a drop zone; Studio's emitter produces it. `validate` and `build` accept the bare form, so neither catches missing wrappers. Applies to creation and editing alike. Slots include `If.Then`/`If.Else`, `While`/`DoWhile` body, `ForEach.Body`, `TryCatch.Try`/`Catch`/`Finally`, `Switch.Default` + each case, `PickBranch.Trigger`/`Action`, `NApplicationCard.Body`. Full table with examples: [xaml/xaml-basics-and-rules.md § Container Activity Bodies — Wrap in Sequence](references/xaml/xaml-basics-and-rules.md).
 
 ## Task Navigation
@@ -335,9 +307,7 @@ For IS connectors from coded workflows via `ConnectorConnection.ExecuteAsync`: `
 
 ### CodedWorkflow Base Class
 
-All workflow/test case files inherit from `CodedWorkflow`, providing built-in methods (`Log`, `Delay`, `RunWorkflow`), service properties, and the `workflows` property for strongly-typed invocation. Extendable with Before/After hooks via `IBeforeAfterRun`.
-
-Full reference: [coded/codedworkflow-reference.md](references/coded/codedworkflow-reference.md)
+All workflow/test case files inherit from `CodedWorkflow`: built-in methods (`Log`, `Delay`, `RunWorkflow`), service properties, the `workflows` property for strongly-typed invocation, Before/After hooks via `IBeforeAfterRun`. Full reference: [coded/codedworkflow-reference.md](references/coded/codedworkflow-reference.md)
 
 ### Templates
 
@@ -351,38 +321,15 @@ XAML workflows follow a **discovery-first, phase-based approach**: Discovery →
 
 ### Workflow Types
 
-| Type | When to Use |
-|------|-------------|
-| **Sequence** | Linear step-by-step logic; most common for simple automations |
-| **Flowchart** | Branching/looping logic with multiple decision points |
-| **State Machine** | Long-running processes with distinct states and transitions |
-| **Long Running Workflow** | BPMN-style horizontal flow; event-driven processes with long waits. Requires `UiPath.FlowchartBuilder.Activities` — see [xaml/long-running-workflow-guide.md](references/xaml/long-running-workflow-guide.md) |
+**Sequence** (linear; the default) and the three canvas types — **Flowchart** (branching graphs), **State Machine** (state-driven, e.g. REFramework), **Long Running Workflow** (BPMN-style, needs `UiPath.FlowchartBuilder.Activities` — [xaml/long-running-workflow-guide.md](references/xaml/long-running-workflow-guide.md)). Structure + layout for all three canvases: [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md).
 
 ### Expression Language
 
 Check `expressionLanguage` in `project.json`. VB.NET uses `[brackets]` for expressions; C# uses `CSharpValue<T>` / `CSharpReference<T>`. Default for new XAML projects is VB.NET.
 
-### Key CLI Commands
+### Key CLI Commands & Common Activities
 
-| Command | Purpose |
-|---------|---------|
-| `activities find --query "<keyword>"` | Discover activities by keyword |
-| `activities get-default-xaml --activity-class-name "<class>"` | Get starter XAML for an activity |
-| `analyzer-rules list --project-dir "<dir>"` | List enabled Workflow Analyzer rules — on demand only (user asks about project rules, or repeated violations of one rule family); `validate`/`build` enforce the rules without it |
-| `validate --file-path "<file>"` | Per-file static validation (structure, references, analyzer rules) |
-| `build "<PROJECT_DIR>"` | Compile-time validation (member names, enum values, JIT expressions) — run after `validate` is clean |
-
-### Common Activities
-
-| Activity | Package | Purpose |
-|----------|---------|---------|
-| **UI automation** (Use Application/Browser, Click, Type Into, Get Text, Select Item, …) | `UiPath.UIAutomation.Activities` | **Never author from memory or from this row.** Selectors and targets are captured, not hand-written — read [ui-automation-guide.md](references/ui-automation-guide.md) in full first (Rule 7). |
-| If | built-in | Conditional branching |
-| Assign | built-in | Set variable/argument values |
-| For Each | built-in | Iterate over a collection |
-| Invoke Workflow File | built-in | Call another workflow file |
-| Create Entity Record | `UiPath.DataService.Activities` | Create a Data Fabric entity record |
-| Query Entity Records | `UiPath.DataService.Activities` | Query Data Fabric records with filters — see [filter builder guide](references/activity-docs/UiPath.DataService.Activities/guides/data-service-filter-builder-guide.md) |
+Activity discovery (`activities find`, `activities get-default-xaml`), validation, and build commands: [cli-reference.md](references/cli-reference.md). Common built-ins author from the card (Rule 21a). **UI automation activities are never authored from memory** — selectors and targets are captured, not hand-written; read [ui-automation-guide.md](references/ui-automation-guide.md) in full first (Rule 7). Data Fabric records: `UiPath.DataService.Activities` — see the [filter builder guide](references/activity-docs/UiPath.DataService.Activities/guides/data-service-filter-builder-guide.md).
 
 ### XAML File Anatomy
 
@@ -403,7 +350,7 @@ The XAML file anatomy template (namespace declarations, root Activity element, b
 
 ### Multi-Screen UI Automation Workflows
 
-For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets get registered in the OR — validating with `validate` after each batch. [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) MUST be read IN FULL first (see § Multi-Step UI Flows for the capture loop and the Complete-then-advance rule).
+For XAML workflows spanning multiple capture screens: add each screen's activities as its targets get registered in the OR, validating after each batch. [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) MUST be read IN FULL first (§ Multi-Step UI Flows: capture loop + Complete-then-advance rule).
 
 ## Resolving Packages & Activity Docs
 
@@ -411,14 +358,7 @@ Follow this flow whenever you need to use an activity package:
 
 ### Step 1 — Ensure the package is installed
 
-Check `project.json` → `dependencies` for the required package.
-
-**Always query versions with `--include-prerelease`.** Many UiPath activity packages ship as `-preview` between stable releases, and the latest preview routinely contains new activities, fixed signatures, and updated `.local/docs` content that activity generation depends on. Without the flag, the listing hides these and the agent will pick a stale stable.
-
-- **If present** → note the installed version. Then list available versions with `--include-prerelease` and compare:
-  - If a newer version (stable or preview) exists, **inform the user**: state the installed version, the latest available version, and that newer packages offer the best support for activity generation (latest activity surface, accurate `.local/docs`, fewer signature mismatches). Ask whether to upgrade. **Never force-upgrade** an already-installed package.
-  - If the installed version is already the latest, proceed to Step 2.
-- **If absent** → install the latest version returned by `packages versions --include-prerelease` (preview is acceptable):
+Check `project.json` → `dependencies`. **Always query versions with `--include-prerelease`** — previews routinely carry new activities and fresher `.local/docs`. Present → if a newer stable/preview exists, inform the user and offer the upgrade (never force). Absent → install the latest returned version:
 
 ```bash
 uip rpa packages versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output json
@@ -444,25 +384,11 @@ UIA references live in two locations. Always cite by location so the reader know
 
 ### In the UIA activity pack (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`)
 
-- `overview.md` — Package overview and entry point
-- `references/cli-reference.md` — Full `uip rpa uia` CLI: subcommands, flags, accepted values, artifact filenames
-- `references/object-repository.md` — Object Repository concepts and CLI flows
-- `references/selector-variables.md` — Selector variable substitution
-- `references/uia-target-attachment-guide.md` — Attaching OR targets to XAML activities (TargetApp / TargetAnchorable)
-- `references/indication-fallback-workflow.md` — Indication-mode capture when `uia-configure-target` is unavailable
-- `coded/coded-api.md` — Coded API surface for `uiAutomation.*` service calls
-- `activities/<Activity>.md` — Per-activity property surface (`NClick`, `NTypeInto`, `NApplicationCard`, …)
-- `activities/common/<Type>.md` — Shared enums and types (`NHealingAgentBehavior`, `Target`, `NClickType`, …)
-- `skills/uia-configure-target/{SKILL.md,USAGE.md}` — Target-configuration skill: procedure + invocation modes
-- `skills/uia-improve-selector/{SKILL.md,USAGE.md}` — Selector recovery / improvement skill
+`overview.md` (entry point) · `references/` (`cli-reference.md` — full `uip rpa uia` CLI; `object-repository.md`; `selector-variables.md`; `uia-target-attachment-guide.md`; `indication-fallback-workflow.md`) · `coded/coded-api.md` (coded `uiAutomation.*` surface) · `activities/<Activity>.md` + `activities/common/<Type>.md` (property surfaces, shared enums) · `skills/uia-configure-target/` and `skills/uia-improve-selector/` (`SKILL.md` + `USAGE.md` each).
 
 ## Completion Output
 
-**Before reporting "done", verify the plan is complete.** If a plan file at `docs/plans/*.md` drove this work:
-1. Re-read the plan and scan its task checkboxes.
-2. If any `[ ]` boxes remain AND the plan's header says `Execution autonomy: autonomous` AND no `Stop conditions` item was hit — **do not report done**. Resume execution on the next unchecked task.
-3. If unchecked boxes remain because a Stop condition was hit, name the exact stop-condition item in the report.
-4. If the plan is fully checked off, or execution autonomy is `interactive`, proceed to the report format below.
+**Before reporting "done", verify the plan is complete** per § Execution Discipline: re-read `docs/plans/*.md`, and with `Execution autonomy: autonomous`, unchecked boxes + no Stop condition hit = resume execution, not "done". If a Stop condition interrupted, name the exact item.
 
 When you finish a task, report to the user:
 1. **What was done** — files created, edited, or deleted (list file paths)
