@@ -1,0 +1,60 @@
+task_id: skill-bpmn-timer-intermediate
+description: >
+  Author a Maestro BPMN with a timer intermediate catch event that pauses the
+  process for a fixed duration between the start and end events. Exercises
+  authoring a bpmn:intermediateCatchEvent carrying a bpmn:timerEventDefinition
+  with a timeDuration — the BPMN equivalent of a Delay node.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:single-node", "node:delay"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 30
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a Maestro BPMN file `DelayProcess.bpmn` for a process that waits a fixed
+  duration (15 minutes) partway through, between the start and the end.
+
+  Validate the file parses as well-formed XML before finishing, e.g.:
+  `python3 -c "import xml.etree.ElementTree as ET; ET.parse('DelayProcess.bpmn')"`.
+  Do NOT upload, publish, deploy, debug, run, or pack anything, and do not ask for
+  approval or feedback — author it in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran an explicit well-formed-XML validation on the authored BPMN"
+    tool_name: "Bash"
+    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*DelayProcess\.bpmn'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "DelayProcess.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN file carries a timer intermediate catch event"
+    path: "DelayProcess.bpmn"
+    includes:
+      - "intermediateCatchEvent"
+      - "timerEventDefinition"
+      - "timeDuration"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Timer intermediate catch event present, wired, and shaped; diagram integral"
+    command: "python3 $TASK_DIR/check_timer_intermediate.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

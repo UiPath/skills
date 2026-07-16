@@ -1,0 +1,52 @@
+task_id: skill-bpmn-update-node
+description: >
+  Update the routeByRisk gateway's condition in the existing OrderTriage BPMN so
+  orders route to flagForReview only when risk is 75 or higher. Exercises an
+  in-place edit of an existing node's routing logic while preserving every id,
+  the node set, and the diagram.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:edit", "shape:multi-node", "node:decision"]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 25
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../templates/initial_bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  `OrderTriage.bpmn` is an existing Maestro BPMN process. Change the `routeByRisk`
+  gateway so it routes to `flagForReview` only when `risk` is 75 or higher.
+
+  Validate the file parses as well-formed XML before finishing, e.g.:
+  `python3 -c "import xml.etree.ElementTree as ET; ET.parse('OrderTriage.bpmn')"`.
+  Do NOT upload, publish, deploy, debug, run, or pack anything, and do not ask for
+  approval or feedback — make the edit in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran an explicit well-formed-XML validation on the edited BPMN"
+    tool_name: "Bash"
+    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*OrderTriage\.bpmn'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Edited BPMN source is present"
+    path: "OrderTriage.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Conditioned branch updated to risk >= 75, node set and ids preserved, diagram intact"
+    command: "python3 $TASK_DIR/check_update_node.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

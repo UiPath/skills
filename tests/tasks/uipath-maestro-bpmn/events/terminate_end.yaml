@@ -1,0 +1,60 @@
+task_id: skill-bpmn-terminate-end
+description: >
+  Author a Maestro BPMN that forks into two parallel branches, one ending in a
+  terminate end event that hard-stops the whole process and one ending in a
+  normal end event. Exercises authoring a bpmn:endEvent carrying a
+  bpmn:terminateEventDefinition alongside a parallel gateway.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:terminate"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 35
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a Maestro BPMN file `TerminateProcess.bpmn` for a process that forks into
+  two parallel branches: one branch immediately hard-stops the entire process,
+  and the other runs a task and ends normally.
+
+  Validate the file parses as well-formed XML before finishing, e.g.:
+  `python3 -c "import xml.etree.ElementTree as ET; ET.parse('TerminateProcess.bpmn')"`.
+  Do NOT upload, publish, deploy, debug, run, or pack anything, and do not ask for
+  approval or feedback — author it in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran an explicit well-formed-XML validation on the authored BPMN"
+    tool_name: "Bash"
+    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*TerminateProcess\.bpmn'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "TerminateProcess.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN file carries a terminate end event and a parallel gateway"
+    path: "TerminateProcess.bpmn"
+    includes:
+      - "terminateEventDefinition"
+      - "parallelGateway"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Terminate end event + parallel fork + a normal end event; diagram fully shaped and integral"
+    command: "python3 $TASK_DIR/check_terminate_end.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

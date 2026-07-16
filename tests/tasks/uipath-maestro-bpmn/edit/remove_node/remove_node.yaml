@@ -1,0 +1,53 @@
+task_id: skill-bpmn-remove-node
+description: >
+  Remove the autoApprove script task from the existing OrderTriage BPMN and
+  rewire the routeByRisk gateway's default branch straight to the end event.
+  Exercises deleting a node, reconnecting the orphaned edges, and pruning the
+  removed node's diagram shape/edges without leaving dangling references.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:edit", "shape:multi-node"]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 25
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../templates/initial_bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  `OrderTriage.bpmn` is an existing Maestro BPMN process. Remove the `autoApprove`
+  step; its branch of the `routeByRisk` gateway should now end the process
+  directly.
+
+  Validate the file parses as well-formed XML before finishing, e.g.:
+  `python3 -c "import xml.etree.ElementTree as ET; ET.parse('OrderTriage.bpmn')"`.
+  Do NOT upload, publish, deploy, debug, run, or pack anything, and do not ask for
+  approval or feedback — make the edit in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran an explicit well-formed-XML validation on the edited BPMN"
+    tool_name: "Bash"
+    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*OrderTriage\.bpmn'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Edited BPMN source is present"
+    path: "OrderTriage.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "autoApprove removed, gateway default rewired to end, no dangling refs or orphan DI"
+    command: "python3 $TASK_DIR/check_remove_node.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

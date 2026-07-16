@@ -1,0 +1,63 @@
+task_id: skill-bpmn-switch-multi-branch
+description: >
+  Author a Maestro BPMN that routes on a tier value through a single exclusive
+  gateway with three or more branches (two-plus conditioned outcomes plus a
+  default). Exercises multi-way switch routing — wider than the two-branch
+  gateway already covered — with conditions on every non-default branch and a
+  fully shaped diagram.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:switch"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 35
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a Maestro BPMN file `TierRouting.bpmn` for a process that classifies a
+  customer `tier` and then routes on it through a single gateway into three
+  outcomes: `gold`, `silver`, and everything else (the default), each leading to
+  its own step.
+
+  Validate the file parses as well-formed XML before finishing, e.g.:
+  `python3 -c "import xml.etree.ElementTree as ET; ET.parse('TierRouting.bpmn')"`.
+  Do NOT upload, publish, deploy, debug, run, or pack anything, and do not ask for
+  approval or feedback — author it in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran an explicit well-formed-XML validation on the authored BPMN"
+    tool_name: "Bash"
+    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*TierRouting\.bpmn'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "TierRouting.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN file carries an exclusive gateway and a diagram"
+    path: "TierRouting.bpmn"
+    includes:
+      - "exclusiveGateway"
+      - "conditionExpression"
+      - "bpmndi:BPMNDiagram"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "One exclusive gateway with 3+ branches, exactly one default, conditions on the rest; diagram integral"
+    command: "python3 $TASK_DIR/check_multi_branch_gateway.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
