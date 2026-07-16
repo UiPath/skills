@@ -66,12 +66,13 @@ Append (not prepend) the trigger node:
     "parentElement": { "id": "root", "type": "case-management:root" },
     "description": "<description from sdd.md or LLM-inferred>",
     "typeVersion": "1.0.0",
-    "display": { "label": "<displayName>" }
+    "display": { "label": "<displayName>" },
+    "inputs": { "serviceType": "None" }
   }
 }
 ```
 
-**No `data.inputs` key.** Absence of `inputs` is the manual trigger's signature. `serviceType` only appears inside `data.inputs` on timer (`timer`) and event (`Intsvc.EventTrigger`) variants.
+**`data.inputs.serviceType` is `"None"` for manual triggers.** Older schemas may omit `inputs` entirely — both forms are valid when reading. Always emit `"inputs": {"serviceType": "None"}` when writing.
 
 ## Recipe — `entry-points.json` (append to `entryPoints`)
 
@@ -113,7 +114,7 @@ After writing, confirm:
 - `nodes[].data.description` is present and non-empty (direct-JSON-write divergence — always emitted).
 - `nodes[].data.typeVersion === "1.0.0"`.
 - `nodes[].data.parentElement` always present. No `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18).
-- `nodes[].data.inputs` is **absent** (manual triggers have no `inputs` key).
+- `nodes[].data.inputs.serviceType === "None"` (or `inputs` absent in older schemas — both are valid).
 - `entry-points.json.entryPoints` contains a new entry with `filePath` ending in `#<trigger_XXXXXX>` and `displayName === <displayName>`.
 
 Run `uip maestro case validate <caseplan.json> --output json` after all triggers for this plugin's batch are added.
