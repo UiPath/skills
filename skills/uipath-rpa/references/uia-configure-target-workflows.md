@@ -166,12 +166,12 @@ Workflow steps, response shape, downstream OR regeneration for coded vs XAML, an
 
 Once targets are registered in the OR (via `uia-configure-target` or indication fallback), attach them to XAML activities per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`. That doc owns the concrete subcommands, flags, and response shapes for both attachment paths.
 
-**Path-choice policy (this skill's scope — which path to take, not how to invoke it).** The attachment guide describes two paths; they are not interchangeable for agent-authored XAML:
+**Path-choice policy (this skill's scope — which path to take, not how to invoke it).** The attachment guide describes two paths:
 
-- **Embed path — DEFAULT for agent-authored XAML.** Inline the OR-resolved target XAML as a child of the consuming activity element directly in the file you just wrote. Works on cold files — the project does not need to be loaded in Studio's in-memory designer. This is the only path that reliably works for XAML the agent has just generated or just edited from disk.
-- **Link path — only for files already loaded in Studio Desktop's designer.** Resolves an OR entry against an activity reference inside Studio's loaded workflow model. Requires the workflow to be open and parsed by Studio Desktop (not Studio Helm / headless). Use this only when the user has the file open in the designer or an existing Studio session already loaded the project.
+- **Link path — DEFAULT.** Attach OR entries to activities by their `sap2010:WorkflowViewState.IdRef` — screen first, then all element targets in one batched call. The file does not need to be open in Studio.
+- **Embed fallback — per-reference, only on a link failure.** If a link call fails for a specific reference, inline that reference's OR-resolved target XAML as a child of the consuming activity element — scoped to only the failed reference, not the whole screen.
 
-When generating a new XAML file or editing one that has not been opened in Studio Desktop in this session, take the embed path. Do not attempt the link path on cold XAML — it produces resolution failures that look like activity-id / display-name mismatches but are actually "the file isn't in Studio's model yet" (see § CLI Pitfalls).
+Take the link path first. On a link failure for a reference, drop straight to the embed fallback for that one reference — do not iterate through activity-id / display-name variations (see § CLI Pitfalls). The package attachment guide is source-of-truth when it diverges from this skill (per SKILL.md).
 
 ### Multi-Screen Workflows
 
@@ -185,4 +185,4 @@ Runtime symptoms that have wasted entire capture sessions. Canonical flag list, 
 - **Selector resolution rejects bare element refs (`Invalid --refs entry`).** Each ref must be paired with the definition file that owns it.
 - **OR element-creation rejects inline JSON.** The OR CLI consumes pre-written per-element definition files only. Generate the definition files first, then invoke create-elements with their paths.
 - **UIA interact actions reject discovery and global flags (`unknown option`).** Interact subcommands accept only interaction-shape flags. Folder, ref, and project-dir style flags belong to other UIA subcommand families.
-- **Link path against a cold XAML file fails with `Could not retrieve the activity from the workflow`.** This means the target file is not loaded in Studio Desktop's in-memory designer model — not that the activity-id, display name, or reference ID are wrong. Stop after the **first** failure; do not iterate through activity-id / display-name / property-name variations. Switch to the embed path (see § Attaching Targets to Workflow Activities). The link path is reserved for files that an active Studio Desktop session has already opened and parsed; XAML the agent has just written from disk does not qualify.
+- **A link call fails with `Could not retrieve the activity from the workflow`.** Not an activity-id / display-name / reference-ID problem — do not iterate on those. Stop after the **first** failure for that reference and use the embed fallback (see § Attaching Targets to Workflow Activities).
