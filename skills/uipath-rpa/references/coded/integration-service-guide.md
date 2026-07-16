@@ -99,12 +99,12 @@ Typed handle to a specific IS connector + connection. Constructed by the auto-ge
    # → copy the "Id" field of the target connection
    ```
 
-### Step 1 — Resolve metadata using the uipath-platform skill
+### Step 1 — Resolve connector metadata
 
-Before writing the coded workflow, resolve the connector metadata using the `uipath-platform` skill. The full CLI commands and output interpretation are covered in those reference files:
+Before writing the coded workflow, resolve the connector metadata with the `uip is` CLI (drill into flags with `uip is <group> --help`; when the `uipath-platform` skill is available, delegate deep Integration Service questions to it):
 
-- **Find connector key and list connections:** [connectors.md](../../../uipath-platform/references/integration-service/connectors.md) and [connections.md](../../../uipath-platform/references/integration-service/connections.md)
-- **Discover activities/resources and run describe:** [activities.md](../../../uipath-platform/references/integration-service/activities.md) and [resources.md](../../../uipath-platform/references/integration-service/resources.md)
+- **Find connector key and list connections:** `uip is connectors list --output json`, then `uip is connections list <connector-key> --output json`
+- **Discover activities/resources and run describe:** `uip is activities list <connector-key> --output json`, `uip is resources list <connector-key> --output json`, `uip is resources describe <connector-key> <object-name> --operation <Op> --output json`
 
 The describe response tells you:
 
