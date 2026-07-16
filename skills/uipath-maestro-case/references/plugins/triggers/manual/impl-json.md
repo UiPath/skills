@@ -91,16 +91,16 @@ Where `basename(caseplanFile)` is the schema file's base name including extensio
 
 Leave this entry's `input`/`output` schemas (the `entry-points.json` fields above — not the trigger node's I/O) empty here — Step 6.3 back-fills them from the case's In/Out args ([entry-points-sync.md](../../../entry-points-sync.md)).
 
-Write back with **4-space indent** (`JSON.stringify(obj, null, 4)`).
+Preserve the existing **4-space indent** in each bounded Edit.
 
-## Write order
+## Mutation order
 
-Write both files atomically in this order:
+Mutate both files atomically in this order:
 
-1. `caseplan.json` — node appended.
-2. `entry-points.json` — entry appended.
+1. `caseplan.json` — append the node with a bounded Edit.
+2. `entry-points.json` — append the entry.
 
-If the second write fails, the `caseplan.json` mutation must be rolled back to avoid a half-written state. Simplest rollback: re-read the `caseplan.json` that existed pre-mutation (kept in memory), write it back. Prefer fail-fast: verify `entry-points.json` exists BEFORE the first write.
+If the second mutation fails, roll back the `caseplan.json` mutation with the inverse bounded Edit to avoid a half-written state. Prefer fail-fast: verify `entry-points.json` exists BEFORE the first Edit.
 
 ## Post-write validation
 
@@ -115,4 +115,3 @@ After writing, confirm:
 - `entry-points.json.entryPoints` contains a new entry with `filePath` ending in `#<trigger_XXXXXX>` and `displayName === <displayName>`.
 
 Run `uip maestro case validate <caseplan.json> --output json` after all triggers for this plugin's batch are added.
-

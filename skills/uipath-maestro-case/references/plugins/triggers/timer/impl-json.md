@@ -91,7 +91,7 @@ Locate `entry-points.json` adjacent to `caseplan.json` (same directory). Append 
 - `displayName` matches `node.data.label` (including the `Trigger <N>` default if `displayName` absent).
 - Leave this entry's `input`/`output` schemas (the `entry-points.json` fields above — not the trigger node's I/O) empty here — Step 6.3 back-fills them from the case's In/Out args ([entry-points-sync.md](../../../entry-points-sync.md)).
 
-**Write order:** `caseplan.json` first, then `entry-points.json`. If the second write fails, the skill surfaces the inconsistency to the user rather than silently half-applying.
+**Mutation order:** apply the bounded `caseplan.json` Edit first, then mutate `entry-points.json`. If the second mutation fails, the skill surfaces the inconsistency to the user rather than silently half-applying.
 
 ## ID generation
 
@@ -113,4 +113,3 @@ After writing, confirm:
 - `entry-points.json.entryPoints` has a new entry with `filePath` containing the new `triggerId` and `displayName` matching `node.data.label`
 
 Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added.
-

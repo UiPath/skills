@@ -124,7 +124,7 @@ src_stage = find_node_by_label(nodes, "Stage Name")
 src_task  = find_task_by_name(src_stage, "Task Name")
 src_output = find_output_by_name(src_task, "output_name")
 target_input.value = f"=vars.{src_output['var']}"
-# Write updated caseplan.json back to disk
+# Apply a bounded Edit to this input entry
 ```
 
 See [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md) for the full procedure.

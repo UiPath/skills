@@ -156,7 +156,7 @@ Wire each input per the `io-binding` plugin — see [`plugins/variables/io-bindi
 1. Read `caseplan.json`; locate the task's `data.inputs[]` by input `name`.
 2. For literals/expressions from the `wiring notes` code block (`foo = =metadata.x`) — write the RHS string to `input.value`.
 3. For cross-task references (`foo <- "Stage"."Task".output`) — resolve the source task's output `var` from `caseplan.json`, then write `=vars.<var>` to the target input's `value`.
-4. Write `caseplan.json` back.
+4. Apply bounded Edits to the task and affected binding slices in `caseplan.json`.
 
 ### 6. Re-validate
 

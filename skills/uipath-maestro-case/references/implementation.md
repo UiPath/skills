@@ -17,20 +17,18 @@ Every plugin uses direct JSON writes via its `impl-json.md`. Cross-cutting mecha
 **Per-section batched writes — mandatory.** Process `tasks.md` one **section** at a time (§4.2.1 vars, §4.3 triggers, §4.4 stages, §4.6 task-shapes, §9.7 connector schema, §9.8 I/O binding, §10 conditions, §11 SLA):
 
 1. **One Read** of `caseplan.json` at section entry.
-2. **Writes sized to section** — pick by T-entry count:
-   - **<10 T-entries** — N Edits in sequence, one per T-entry. Skip the re-Read between sibling Edits.
-   - **≥10 T-entries** — single whole-section Edit or Write replacing the section's container (e.g., `schema.nodes`, a stage's `data.tasks`). Compose the complete post-section state in reasoning from the section-entry Read, then emit one write. Untouched siblings (other sections, root fields, unrelated nodes) MUST be copied verbatim — drop nothing.
+2. **Bounded target Edits** — group only T-entries that mutate one stable target container (for example, one stage's `data.tasks`, one task's `data.inputs`, one condition target, or one SLA target). Split a target further when the replacement `new_string` would exceed 30KB. After T01, never use whole-file Write as a size fallback.
 3. **One validate** at section boundary.
 
-TaskUpdate items keyed by T-number are the audit trail — mark each `in_progress` before composing the entry's mutation, `completed` after the write returns success. The audit trail stays T-by-T even when the file diff collapses to one whole-section write.
+Use section-level TodoWrite items only. Mark a section `in_progress` before its first schema gather or Read and `completed` after its final Edit + validate. `tasks.md` and `id-map.json` provide the T-level audit trail. Never finish composing JSON and then call TaskUpdate; once a mutation is composed, the next tool call for that work must be Edit.
 
 **Bundle status text with tool_use.** Any progress text emitted alongside writes MUST share the same assistant turn as the next tool_use (text block + tool_use block in one content array). Standalone text-only turns between Edits are forbidden — they each cost ~5s inference + full cache replay for no work. Cap inline status to ≤1 sentence / ~20 tokens. **Hard token cap:** any single text block >200 tokens (or >500 tokens for allow-listed exceptions — completion reports, AskUserQuestion preambles, validate result summaries) is a planning monologue, forbidden regardless of content. **Forbidden announcement verbs** at any length: text blocks starting with `Building`, `Composing`, `Writing`, `Drafting`, `Generating`, `Now I'll`, `Next:`, `Approach:`, `Strategy:`, `Plan:`, `Caveman push:`, `Big single Write:`, `Let me`, or any other narration of the imminent tool call. The tool_use input IS the announcement.
 
-**Cap single Write at ~15K out tok / ~40KB.** When a section's whole-section Write would exceed this, split into Phase 2 skeleton (root + nodes + vars, `edges` stays `[]`, empty task `data`) → Phase 3 fill (per-section Edits onto populated nodes). For cases with ≥40 tasks or ≥8 stages, NEVER emit the full populated caseplan.json in one Write — always Phase 2 → Phase 3 split. A single 15K-out-tok Write turn pays ~150s inference; smaller turns let validate gates catch field drops between phases. Build-assembler helper scripts (`/tmp/build-caseplan.js` etc.) are forbidden — they violate Rule 13 regardless of `/tmp` placement or framing.
+**Write caseplan.json only at T01.** T01 creates the small root scaffold (`nodes: []`, `edges: []`); every later phase mutates it with bounded Edits. Keep each replacement `new_string` ≤30KB and split by stable target when needed. A populated whole-file rewrite is forbidden even when it would fit the model output limit. Build-assembler helper scripts (`/tmp/build-caseplan.js` etc.) remain forbidden — they violate Rule 13 regardless of `/tmp` placement or framing.
 
-For CLI-gated sections (§4.6 non-connector schema, §9.7 connector schema), use **gather-then-write**: run all CLI calls first, collect results in reasoning, then enter the Read → writes → validate batch.
+For CLI-gated sections (§4.6 non-connector schema, §9.7 connector schema), use **gather-then-edit**: run all CLI calls first, collect results in reasoning, then enter the Read → bounded Edits → validate batch. Compose only the current stable target; do not reconstruct or pre-compose the remaining populated file in the same reasoning turn.
 
-Full contract — recovery, tool primitive selection (Edit default, whole-section Write at ≥10 T-entries), audit trail, scope — in [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical). Phase 1 `tasks.md` building uses the same section-batched contract per [planning.md §4.0a](planning.md).
+Full contract — recovery, bounded target selection, section-level progress, scope — in [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical). Phase 1 `tasks.md` building uses the same section-batched contract per [planning.md §4.0a](planning.md).
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-json.md`:
 > - Root case → `plugins/case/impl-json.md`
@@ -71,7 +69,7 @@ Before Step 6, seed TodoWrite with the section-level items below. Mark each `in_
 
 (No edge step — edges are retired; stage transitions are condition-driven and written in Phase 3 Step 10.)
 
-**Per-T-entry sub-items.** Inside each section, also seed one TodoWrite item per T-entry the section will Edit (e.g., `T04 stage "Intake"`, `T05 stage "Review"`). Mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit returns success. These per-T-entry items are the audit trail — section-level Edits collapse the file diff, but the todo log preserves T-by-T progress for reviewers (per [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical)).
+Do not seed per-T-entry sub-items. The section item tracks progress; T-numbered declarations in `tasks.md` and generated entries in `id-map.json` are the detailed audit trail. On interruption, inspect those artifacts to locate the next missing T-entry.
 
 ---
 
@@ -120,7 +118,7 @@ Edges are retired; there is no edge-building step. `schema.edges` stays `[]`. St
 
 For multi-trigger cases, add the additional triggers via the appropriate trigger plugin (Step 6.1) — no edge wiring is needed; any trigger entering the case activates the first stage's `case-entered` condition.
 
-## Step 9 — Add tasks (Phase 2 shape, gather-then-write)
+## Step 9 — Add tasks (Phase 2 shape, gather-then-edit)
 
 **Phase A — gather.** For each non-connector task in `tasks.md §4.6`, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` and collect the input schema in reasoning. Connector tasks (`connector-activity`, `connector-trigger`) skip the gather — `case spec` defers to Phase 3 Step 9.7. Unresolved tasks skip too — they become placeholders per Step 9.1. **Inline-built siblings (agent / api-workflow, Rule 17 Create) also skip the gather** — they were resolved + bound in Phase 1 with I/O read from the sibling's on-disk `entry-points.json`; their `taskTypeId` is a local audit-only key with no tenant resource, so tenant `tasks describe` does not apply. See the per-type Built-inline notes: [`plugins/tasks/agent/impl-json.md`](plugins/tasks/agent/impl-json.md), [`plugins/tasks/api-workflow/impl-json.md`](plugins/tasks/api-workflow/impl-json.md).
 
@@ -196,11 +194,11 @@ Before any Phase 3 mutation:
    4. Configure SLA + escalation (Step 11)
    5. Resolve in-expression `vars.$xref` markers (Step 11.5)
 
-   Inside each section, also seed per-T-entry sub-items (one per T-entry that section will Edit). Mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit returns success. Per-T-entry items are the audit trail under the per-section batched contract (per [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical)).
+   Do not seed per-T-entry sub-items. Keep progress section-level; use `tasks.md`, `caseplan.json`, and `id-map.json` to identify completed T-entries during recovery. Never interpose a TodoWrite update after composing a section mutation and before its Edit.
 
 Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across hard stop.
 
-## Step 9.7 — Connector task detail (gather-then-write)
+## Step 9.7 — Connector task detail (gather-then-edit)
 
 **Phase A — gather.** For each connector task (`connector-activity`, `connector-trigger`) in `tasks.md`:
 
@@ -255,7 +253,7 @@ Skip the re-Read between sibling Edits. One validate at section end. Per-scope c
 
 One Read of `caseplan.json` at Step 11 entry. Group `tasks.md §4.8` entries by target (root or stage). For each target, one Edit replacing that target's full `slaRules[]` array per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Skip the re-Read between sibling Edits. Supports per-conditional-rule escalations, secondary-stage SLA, and multi-recipient single rules. One validate at section end.
 
-## Step 11.5 — Resolve in-expression `vars.$xref` markers (whole-file pass)
+## Step 11.5 — Resolve in-expression `vars.$xref` markers (one scan, bounded Edits)
 
 Runs after bindings (9.8), conditions (10), and SLA (11) — when every task / trigger / rule output is minted and deduped (the dedup pool spans tasks ∪ triggers ∪ rules, so a marker's target `var` is not final until Step 10's rule outputs are minted). Resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` in ONE pass: one Read, then Edit each string value holding a marker — substitute the source output's post-dedup `var` as bare `vars.<var>` (no leading `=`; the marker already sits inside `=js:`). Sink-blind: covers composite input payloads, `conditionExpression`, SLA `expression`, computed `=` outputs, and connector body fields in one place. An unresolved name-triple is an ERROR (Check 4 below). Algorithm + pseudocode: [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md#in-expression-marker-resolution-step-115). One validate at section end.
 
