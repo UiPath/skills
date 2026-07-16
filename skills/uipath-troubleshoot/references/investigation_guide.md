@@ -2,6 +2,38 @@
 
 Always apply these rules. If a product-specific `investigation_guide.md` exists, apply it **in addition** to these.
 
+## Customer-Provided Artifacts
+
+When the user provides files directly, extract evidence from them before running CLI commands. Artifact types and what to extract:
+
+**Solution files (`.uis`, `.uipx`, `.flow`, `.bpmn`, `caseplan.json`)** — zipped archives. Unzip and read:
+- `<ComponentFolder>/agent.json` — `inputSchema`, `outputSchema`, system prompt, user prompt template, model settings
+- `<ComponentFolder>/entry-points.json` — entry point bindings
+- `.flow`, `.bpmn`, `caseplan.json` — node definitions, data mappings, action contracts
+
+For solutions with multiple connected components, compare `outputSchema` of each upstream component against `inputSchema` of each downstream component. Record any property naming mismatches or value conventions present in one component's output that are absent from the next component's prompt.
+
+**Trace JSON** — array of spans. Extract per span:
+- `SpanType` — identifies the span role (`agentRun`, `llmCall`, `completion`, `agentOutput`, `contextGroundingTool`, etc.)
+- `Attributes` (JSON string, must be parsed) — contains model, token counts, rendered prompt, output value, error message, deployment type
+- `StartTime` / `EndTime` — compute duration; long duration with zero completion tokens is a distinct failure signal
+- `Status` — 1 = success, 2 = failed; check `agentOutput` span status AND output value regardless of `agentRun` status
+
+Key span fields by type:
+
+| SpanType | Fields to extract |
+|---|---|
+| `completion` | `model`, `usage.prompt_tokens`, `usage.completion_tokens`, `usage.execution_deployment_type`, `settings.temperature` |
+| `agentRun` | `error`, `input.value` (rendered input), `output.value` |
+| `agentOutput` | `output.value` — inspect every field; all-null on a succeeded run = silent failure |
+| `llmCall` | `input.value` (rendered prompt sent to model) — check for schema contradictions in data objects |
+
+**HAR files** — extract HTTP status codes, request/response bodies for failing calls, and routing headers.
+
+**Screenshots / error messages** — extract exact error text verbatim; use as grep input for playbook routing (§4).
+
+**Eval / debug run outputs** — compare failing vs. passing inputs to isolate the discriminating condition.
+
 ## Data Correlation
 
 Before using any fetched data, verify it matches the user's reported problem:
