@@ -1,135 +1,48 @@
-# Action Center Reference
+# Action Center (Tasks) — Traps & Server Behavior
 
-## Import
+Signatures/params/examples: `dist/tasks/index.d.ts`. Per-method scopes: shipped `docs/oauth-scopes.md`. This file covers only what neither can express.
 
-```typescript
-import { Tasks } from '@uipath/uipath-typescript/tasks';
-```
+## Traps
 
-## Scopes
+### `create()` only makes External tasks
 
-- Read: `OR.Tasks` or `OR.Tasks.Read`
-- Write: `OR.Tasks` or `OR.Tasks.Write`
+The server accepts only `TaskType.External` from `create()`. Form and App tasks are created by the system through workflows.
 
-## Types to Import
+### Form task hydration
 
-```typescript
-import type {
-  TaskGetResponse,
-  RawTaskGetResponse,
-  TaskCreateResponse,
-  RawTaskCreateResponse,
-  TaskMethods,
-  TaskCreateOptions,
-  TaskGetAllOptions,
-  TaskGetByIdOptions,
-  TaskGetUsersOptions,
-  TaskAssignOptions,
-  TaskAssignmentOptions,
-  TaskAssignmentResponse,
-  TaskCompleteOptions,
-  TaskCompletionOptions,
-  UserLoginInfo,
-  TaskSlaDetail,
-  TaskAssignment,
-  TaskActivity,
-  Tag,
-  TaskSource,
-} from '@uipath/uipath-typescript/tasks';
-```
+When `getById` hits the Form-specific endpoint (`taskType: TaskType.Form`), the SDK silently adds `expandOnFormLayout: true` so `formLayout` is populated — you don't pass it yourself.
 
-## Enums
+### OData filtering — server-side field names
 
-```typescript
-import {
-  TaskType,          // Form, External, App, DocumentValidation, DocumentClassification, DataLabeling
-  TaskPriority,      // Low, Medium, High, Critical
-  TaskStatus,        // Unassigned, Pending, Completed
-  TaskSlaStatus,     // OverdueLater, OverdueSoon, Overdue, CompletedInTime
-  TaskSlaCriteria,   // TaskCreated, TaskAssigned, TaskCompleted
-  TaskActivityType,  // Created, Assigned, Reassigned, Unassigned, Saved, Forwarded, Completed, Commented, Deleted, BulkSaved, BulkCompleted, FirstOpened
-  TaskSourceName,    // Agent, Workflow, Maestro, Default
-} from '@uipath/uipath-typescript/tasks';
-```
-
-`TaskType` string values:
-
-| Member | API string | Notes |
-|--------|------------|-------|
-| `TaskType.Form` | `'FormTask'` | Renders a UiPath form layout |
-| `TaskType.External` | `'ExternalTask'` | Externally managed task |
-| `TaskType.App` | `'AppTask'` | Powered by a UiPath App |
-| `TaskType.DocumentValidation` | `'DocumentValidationTask'` | DU validation — owned by the Validation Station widget. See [../widgets/validation-station.md](../widgets/validation-station.md) |
-| `TaskType.DocumentClassification` | `'DocumentClassificationTask'` | DU classification task |
-| `TaskType.DataLabeling` | `'DataLabelingTask'` | Training-data annotation task |
-
-## Tasks Service
-
-### create(options: TaskCreateOptions, folderId: number)
-
-Returns `Promise<TaskCreateResponse>` (task data with attached methods). Options: `{ title: string, data?: Record<string, unknown>, priority?: TaskPriority }`. The `folderId` is required.
-
-**Note:** `create()` only supports creating External tasks (`TaskType.External`). Form tasks and App tasks are created by the system through workflows.
-
-### getAll(options?: TaskGetAllOptions)
-
-Returns `NonPaginatedResponse<TaskGetResponse>` or `PaginatedResponse<TaskGetResponse>`. Options extend `RequestOptions & PaginationOptions & { folderId?: number, asTaskAdmin?: boolean }`. Supports `filter`, `orderby`, `expand`, `select`, pagination.
-
-### getById(id: number, options?: TaskGetByIdOptions, folderId?: number)
-
-Returns `Promise<TaskGetResponse>` with attached methods.
-
-`TaskGetByIdOptions.taskType` is an optimization. Without it, the SDK issues a generic GET, inspects `type`, then issues a second type-specific GET. With it, the SDK skips the discovery call and goes straight to the type-specific endpoint — **`folderId` then becomes required** (throws `ValidationError` otherwise). Use for any non-`External` task when you already know the type:
-
-```typescript
-// Faster — single round-trip. Required pattern for Validation Station hydration.
-const dvTask = await tasks.getById(taskId, { taskType: TaskType.DocumentValidation }, folderId);
-```
-
-For `TaskType.Form`, the SDK auto-adds `expandOnFormLayout: true` so `formLayout` is populated.
-
-`TaskGetResponse` key fields: `id`, `title`, `status`, `type`, `priority`, `folderId`, `key`, `data`, `isDeleted`, `isCompleted`, `createdTime`, `assignedToUser`, `formLayout` (form tasks), `taskAssignments`, `activities`, `tags`, `taskSource`, `parentOperationId`, `externalTag`.
-
-**OData filtering:** `TaskGetAllOptions` supports `filter` (OData `$filter` string) and `orderby` for server-side filtering and sorting. Examples:
+`filter` / `orderby` take raw server-side field names (not derivable from the `filter?: string` type):
 - Pending tasks only: `filter: "Status ne 'Completed'"`
 - By external tag: `filter: "ExternalTag eq 'some-value'"`
 - Combined: `filter: "Status ne 'Completed' and ExternalTag eq 'some-value'"`
 
-### getUsers(folderId: number, options?: TaskGetUsersOptions)
+### Completing tasks
 
-Returns `NonPaginatedResponse<UserLoginInfo>` or `PaginatedResponse<UserLoginInfo>`. Each user has: `name`, `surname`, `userName`, `emailAddress`, `displayName`, `id`.
+When you already hold a `TaskGetResponse`, use the task-attached `task.complete(...)` over the service `tasks.complete(...)` — no `taskId` / `folderId` to thread through.
 
-### assign(options: TaskAssignmentOptions | TaskAssignmentOptions[])
+**`TaskCompleteOptions` is a discriminated union on `type` — NEVER use conditional spread.** TypeScript cannot narrow the union through `...(condition ? { data: {} } : {})` (TS2345). Always branch explicitly:
 
-Returns `Promise<OperationResponse<TaskAssignmentOptions[] | TaskAssignmentResponse[]>>`. Each assignment requires `taskId` and either `userId` or `userNameOrEmail`.
+```typescript
+const handleTaskAction = async (task: TaskGetResponse, action: 'approve' | 'reject') => {
+  const actionLabel = action === 'approve' ? 'Approve' : 'Reject';
 
-### reassign(options: TaskAssignmentOptions | TaskAssignmentOptions[])
+  if (task.type === TaskType.External) {
+    await task.complete({ type: TaskType.External, action: actionLabel });
+  } else {
+    // Form and App tasks require data and action
+    await task.complete({ type: task.type, action: actionLabel, data: {} });
+  }
+};
+```
 
-Same signature as assign. Reassigns tasks to new users.
+### Action strings
 
-### unassign(taskId: number | number[])
+`action` is free-form and must match what the workflow designer configured. If `task.action` is set, that's the expected string. Common patterns: `'Approve'` / `'Reject'`, `'Submit'`. Maestro HITL tasks are typically `TaskType.App` or `TaskType.External`; pass `data: {}` for App tasks with no form data.
 
-Returns `Promise<OperationResponse<{ taskId: number }[] | TaskAssignmentResponse[]>>`. Accepts single ID or array.
-
-### complete(options: TaskCompletionOptions, folderId: number)
-
-Returns `Promise<OperationResponse<TaskCompletionOptions>>`. The `folderId` is required.
-
-`TaskCompletionOptions` is a discriminated union on `type`:
-- `External`, `DocumentValidation`, `DocumentClassification`, `DataLabeling`: `{ type, taskId, data?, action? }` — both `data` and `action` optional. Routes to the generic complete endpoint.
-- `Form`: `{ type: TaskType.Form, taskId, data, action }` — both required. Routes to the form-task endpoint.
-- `App`: `{ type: TaskType.App, taskId, data, action }` — both required. Routes to the app-task endpoint.
-
-## Task-Attached Methods (TaskMethods)
-
-Returned by `getAll()`, `getById()`, and `create()` on each task:
-
-- `task.assign(options: TaskAssignOptions)` -> requires `{ userId }` or `{ userNameOrEmail }`
-- `task.reassign(options: TaskAssignOptions)` -> same options as assign
-- `task.unassign()` -> no arguments needed, uses the task's own ID
-- `task.complete(options: TaskCompleteOptions)` -> `{ type, data?, action? }` (no taskId needed, uses own ID)
-
-`TaskAssignOptions` type: `{ userId: number } | { userNameOrEmail: string }` (mutually exclusive).
+For `TaskType.DocumentValidation`, the Validation Station widget owns the data contract — call `task.complete({ type: TaskType.DocumentValidation, action: 'Completed' })` from `onSaveComplete`. Do NOT pass `data` yourself; the widget already uploaded the validated payload to the bucket before firing the callback. See [../widgets/validation-station.md](../widgets/validation-station.md).
 
 ## Linking Tasks to Maestro Process Instances
 
@@ -155,92 +68,6 @@ const pendingTask = result.items.find(t => !t.isCompleted) ?? null;
 
 **IMPORTANT:** There is NO shortcut from `latestRunStatus` — a process waiting on HITL still shows as `"Running"`. Always use `getVariables()` + `getBpmn()` to detect HITL first, then use the `CreatorJobKey` filter to get the task details.
 
-## Completing Tasks — Detailed Patterns
-
-### Prefer task-attached `complete()` over service `complete()`
-
-When you already have a `TaskGetResponse` from `getAll()` or `getById()`, **always use the task-attached method** — it's simpler because it doesn't need `taskId` or `folderId`:
-
-```typescript
-// PREFERRED — task-attached method (no taskId, no folderId needed)
-await task.complete({ type: task.type as TaskType, action: 'Approve', data: {} });
-
-// AVOID — service method (requires both taskId and folderId)
-await tasks.complete({ type: TaskType.External, taskId: task.id, action: 'Approve' }, folderId);
-```
-
-### Task type discrimination — use the enum, don't compare strings
-
-The `task.type` field on `TaskGetResponse` is a `TaskType` enum value. **Always use the enum for comparison and when passing to `complete()`:**
-
-```typescript
-import { TaskType } from '@uipath/uipath-typescript/tasks';
-
-// CORRECT — use the enum directly from the task
-await task.complete({
-  type: task.type as TaskType,  // Already a TaskType value
-  action: actionLabel,
-  data: task.type === TaskType.External ? undefined : {},
-});
-
-// WRONG — comparing against string literals
-if (task.type === 'FormTask') { ... }  // Don't do this
-```
-
-### `TaskCompleteOptions` discriminated union
-
-The `type` field determines which other fields are required:
-
-| Task Type | `data` | `action` | Example |
-|-----------|--------|----------|---------|
-| `TaskType.External` | Optional | Optional | `{ type: TaskType.External, action: 'Approve' }` |
-| `TaskType.DocumentValidation` | Optional | Optional | `{ type: TaskType.DocumentValidation, action: 'Completed' }` |
-| `TaskType.DocumentClassification` | Optional | Optional | `{ type: TaskType.DocumentClassification, action: 'Completed' }` |
-| `TaskType.DataLabeling` | Optional | Optional | `{ type: TaskType.DataLabeling, action: 'Completed' }` |
-| `TaskType.Form` | **Required** | **Required** | `{ type: TaskType.Form, action: 'Submit', data: formData }` |
-| `TaskType.App` | **Required** | **Required** | `{ type: TaskType.App, action: 'Approve', data: {} }` |
-
-For Maestro HITL tasks (approve/reject flows), tasks are typically `TaskType.App` or `TaskType.External`. Pass `data: {}` (empty object) for App tasks when there's no form data to submit.
-
-For `TaskType.DocumentValidation`, the Validation Station widget owns the data contract — call `task.complete({ type: TaskType.DocumentValidation, action: 'Completed' })` from `onSaveComplete`. Do NOT pass `data` yourself; the widget already uploaded the validated payload to the bucket before firing the callback. See [../widgets/validation-station.md](../widgets/validation-station.md).
-
-### Action strings
-
-The `action` parameter is a free-form string that maps to the workflow's expected action. Common patterns:
-- **Approve/Reject**: `action: 'Approve'` or `action: 'Reject'`
-- **Submit**: `action: 'Submit'`
-- **Custom**: whatever the workflow designer configured
-
-If the task has an `action` field set (`task.action`), that's the expected action string. For tasks with multiple possible actions (approve/reject), pass the action corresponding to the user's choice.
-
-### Complete pattern for HITL approve/reject
-
-**IMPORTANT:** `TaskCompleteOptions` is a discriminated union on `type`. TypeScript cannot narrow the union when you use conditional spreads like `...(condition ? { data: {} } : {})`. **Always use explicit if/else branching:**
-
-```typescript
-const handleTaskAction = async (task: TaskGetResponse, action: 'approve' | 'reject') => {
-  const actionLabel = action === 'approve' ? 'Approve' : 'Reject';
-
-  // Branch by type — TypeScript narrows the discriminated union correctly
-  if (task.type === TaskType.External) {
-    await task.complete({ type: TaskType.External, action: actionLabel });
-  } else {
-    // Form and App tasks require data and action
-    await task.complete({ type: task.type, action: actionLabel, data: {} });
-  }
-};
-```
-
-**NEVER use conditional spread for discriminated unions:**
-```typescript
-// WRONG — TS2345: TypeScript can't narrow the union through a spread
-await task.complete({
-  type: task.type as TaskType,
-  action: actionLabel,
-  ...(task.type !== TaskType.External ? { data: {} } : {}),  // Breaks type narrowing
-});
-```
-
 ### If no task is found — show an error, don't widen the search
 
 **NEVER fall back to "pick the first pending task" or "pick any Maestro task" if the `CreatorJobKey` filter returns no results.** This risks completing the wrong task. Instead:
@@ -256,49 +83,5 @@ if (!pendingTask) {
   // Show clear error — do NOT widen the search
   setError('No pending task found for this instance. The task may have already been completed.');
   return;
-}
-```
-
-## Usage Example
-
-```typescript
-import { useMemo, useEffect, useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { Tasks } from '@uipath/uipath-typescript/tasks';
-import { TaskType, TaskPriority } from '@uipath/uipath-typescript/tasks';
-import type { TaskGetResponse } from '@uipath/uipath-typescript/tasks';
-
-function TaskInbox({ folderId }: { folderId: number }) {
-  const { sdk } = useAuth();
-  const tasks = useMemo(() => new Tasks(sdk), [sdk]);
-  const [taskList, setTaskList] = useState<TaskGetResponse[]>([]);
-
-  useEffect(() => {
-    const load = async () => {
-      const result = await tasks.getAll({ folderId, pageSize: 20 });
-      setTaskList(result.items);
-    };
-    load();
-  }, [tasks, folderId]);
-
-  // Use task-attached complete — no taskId or folderId needed
-  const handleComplete = async (task: TaskGetResponse, action: string) => {
-    if (task.type === TaskType.External) {
-      await task.complete({ type: TaskType.External, action });
-    } else {
-      await task.complete({ type: task.type, action, data: {} });
-    }
-  };
-
-  const handleAssign = async (task: TaskGetResponse, userId: number) => {
-    await task.assign({ userId });
-  };
-
-  const handleCreate = async () => {
-    const newTask = await tasks.create({
-      title: 'Review document',
-      priority: TaskPriority.Medium,
-    }, folderId);
-  };
 }
 ```
