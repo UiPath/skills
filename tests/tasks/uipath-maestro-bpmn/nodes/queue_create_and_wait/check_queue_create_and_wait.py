@@ -19,7 +19,6 @@ sys.path.insert(0, _d)
 
 from _shared.bpmn_assertions import activity_type, mapping_inputs, mapping_outputs  # noqa: E402
 from _shared.bpmn_check import (  # noqa: E402
-    elements,
     fail,
     parse_bpmn,
     require_di_for_visible_elements,
@@ -30,10 +29,17 @@ from _shared.bpmn_check import (  # noqa: E402
 TYPE = "Orchestrator.CreateAndWaitForQueueItem"
 
 
+def elements_ci(root, local_name: str) -> list:
+    """Find BPMN elements by local name, case-insensitively — the skill docs use
+    both camelCase and PascalCase element names, so accept either."""
+    target = local_name.lower()
+    return [el for el in root.iter() if el.tag.rsplit("}", 1)[-1].lower() == target]
+
+
 def main() -> None:
     path, root = parse_bpmn("QueueCreateAndWaitBpmn")
 
-    hosts = [t for t in elements(root, "serviceTask") if activity_type(t) == TYPE]
+    hosts = [t for t in elements_ci(root, "serviceTask") if activity_type(t) == TYPE]
     if not hosts:
         fail(f"missing bpmn:serviceTask with {TYPE}")
 
@@ -48,7 +54,7 @@ def main() -> None:
         "receiveTask",
         "scriptTask",
     ):
-        offenders = [e for e in elements(root, kind) if activity_type(e) == TYPE]
+        offenders = [e for e in elements_ci(root, kind) if activity_type(e) == TYPE]
         if offenders:
             fail(f"{TYPE} must be on bpmn:serviceTask (synchronous wait), found on bpmn:{kind}")
 

@@ -19,7 +19,6 @@ sys.path.insert(0, _d)
 
 from _shared.bpmn_assertions import activity_type  # noqa: E402
 from _shared.bpmn_check import (  # noqa: E402
-    elements,
     fail,
     parse_bpmn,
     require_di_for_visible_elements,
@@ -30,10 +29,18 @@ from _shared.bpmn_check import (  # noqa: E402
 TYPE = "Orchestrator.StartAgenticProcess"
 
 
+def elements_ci(root, local_name: str) -> list:
+    """Find BPMN elements by local name, case-insensitively — the skill's
+    structural-bpmn.md documents `bpmn:CallActivity`/`bpmn:SubProcess` in
+    PascalCase while the spec/fixtures use camelCase, so accept both."""
+    target = local_name.lower()
+    return [el for el in root.iter() if el.tag.rsplit("}", 1)[-1].lower() == target]
+
+
 def main() -> None:
     path, root = parse_bpmn("CallActivityAgenticBpmn")
 
-    hosts = [c for c in elements(root, "callActivity") if activity_type(c) == TYPE]
+    hosts = [c for c in elements_ci(root, "callActivity") if activity_type(c) == TYPE]
     if not hosts:
         fail(f"missing bpmn:callActivity with {TYPE}")
 
@@ -48,7 +55,7 @@ def main() -> None:
         "receiveTask",
         "scriptTask",
     ):
-        offenders = [e for e in elements(root, kind) if activity_type(e) == TYPE]
+        offenders = [e for e in elements_ci(root, kind) if activity_type(e) == TYPE]
         if offenders:
             fail(f"{TYPE} must be on bpmn:callActivity (separate instance), found on bpmn:{kind}")
 

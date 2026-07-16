@@ -19,8 +19,6 @@ while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared"
 sys.path.insert(0, _d)
 
 from _shared.bpmn_check import (  # noqa: E402
-    NS,
-    elements,
     fail,
     parse_bpmn,
     require_di_for_visible_elements,
@@ -30,6 +28,18 @@ from _shared.bpmn_check import (  # noqa: E402
 
 ITEM_RE = re.compile(r"iterator\[0\]\.item")
 LOOPCTR_RE = re.compile(r"iterator\[0\]\.loopCounter")
+
+
+def local(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1] if "}" in tag else tag
+
+
+def find_local(root, local_name: str) -> list:
+    """Find elements by local name, case-insensitively — the skill's
+    structural-bpmn.md documents `bpmn:SubProcess` in PascalCase while the
+    spec/fixtures use camelCase, so accept both."""
+    target = local_name.lower()
+    return [el for el in root.iter() if local(el.tag).lower() == target]
 
 
 def collect_values(root) -> list[str]:
@@ -47,14 +57,14 @@ def collect_values(root) -> list[str]:
 def main() -> None:
     path, root = parse_bpmn("MultiInstanceIteratorBpmn")
 
-    markers = root.findall(".//bpmn:multiInstanceLoopCharacteristics", NS)
+    markers = find_local(root, "multiInstanceLoopCharacteristics")
     if not markers:
         fail("no bpmn:multiInstanceLoopCharacteristics marker authored")
 
     # The marker must sit on a subProcess so subprocess-depth indexing applies.
     on_subprocess = any(
-        sp.find("bpmn:multiInstanceLoopCharacteristics", NS) is not None
-        for sp in elements(root, "subProcess")
+        any(local(child.tag).lower() == "multiinstanceloopcharacteristics" for child in sp)
+        for sp in find_local(root, "subProcess")
     )
     if not on_subprocess:
         fail(
