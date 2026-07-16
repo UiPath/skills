@@ -20,7 +20,9 @@ initial_prompt: |
   Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
-  If you're asked which AI model providers to approve, just answer SKIP for now.
+  When the synthesize step surfaces the approved AI model providers setting,
+  answer SKIP for it. SKIP is your answer to that detected prompt — you still
+  must run the synthesize/detection step, not bypass it.
   Important:
   - uip CLI not connected — auth errors expected. Run each command once and continue.
   - Always pass --output json. Do NOT prompt for confirmation.
@@ -37,7 +39,7 @@ success_criteria:
 
   - type: command_executed
     description: "Agent invoked synthesize-formdata.mjs for AI Trust Layer model governance"
-    command_pattern: 'synthesize-formdata\.mjs'
+    command_pattern: 'node\s+.*synthesize-formdata\.mjs'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

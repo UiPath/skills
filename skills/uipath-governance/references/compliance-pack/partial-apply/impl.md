@@ -11,6 +11,8 @@ Synthesizes and deploys AOPS policies for the NLP-matched clause/product subset 
 
 ## Step 1: Synthesize formData overrides per product
 
+`synthesize-formdata.mjs` is the ONLY sanctioned way to build formData overrides. It also surfaces the `notEmpty` prompts in Step 1b. Do NOT hand-roll a substitute or default the values — running it is mandatory even when every org-specific value will be answered SKIP.
+
 For each `productIdentifier` in `targetProducts`:
 
 ```bash
