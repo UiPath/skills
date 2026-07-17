@@ -17,7 +17,7 @@ uip ixp projects get-taxonomy <project-name> --output json
 
 Save the taxonomy to `/tmp/ixp/<project-name>/taxonomies/v1.json` (increment the version on each re-fetch).
 
-From the taxonomy (raw snake_case: field groups/fields under `Data.dataset.label_groups`, types under `Data.dataset.entity_defs`), review the field groups and field types so you understand what each predicted field represents.
+From the taxonomy (raw snake_case: field groups/fields under `Data.dataset.label_groups`, types under `Data.dataset.entity_defs`), review the field groups and field types so you understand what each predicted field represents. Use the field type when judging equivalence: normalized output for a Monetary Quantity does not need to reproduce the page's literal formatting.
 
 ## Step 2 — Process Each Document
 
@@ -48,10 +48,34 @@ Use the **Read tool** to view the document file (read the whole document in one 
 
 1. **Look at the document** to understand the layout and where field values appear.
 2. **For each predicted field**, assign one of four verdicts:
-   - **CONFIRMED** — the predicted value matches what is in the document. Minor OCR-level differences (capitalization, whitespace) are acceptable.
-   - **CORRECTED** — **OCR-mangled values only.** The prediction found the right field in the right location, the bytes-on-page are correct, but the text was garbled in transcription (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`, `lNGRAM` instead of `INGRAM`). The reference is correct, only the literal characters need fixing. Do NOT use CORRECTED for booleans that came back with the wrong answer, inferred/computed values that came back wrong, or any case where IXP picked the wrong source on the page — those are NOT CONFIRMED.
+   - **CONFIRMED** — the predicted value matches what is in the document, either literally or according to the field type's valid normalization. Minor OCR-level differences (capitalization, whitespace) are acceptable. For Monetary Quantity fields, equivalent precision, locale separators, currency placement, and canonical currency notation are acceptable when the numeric amount and currency are supported by the document.
+   - **CORRECTED** — **OCR-mangled values only.** The prediction found the right field in the right location, the bytes-on-page are correct, but the text was garbled in transcription (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`, `lNGRAM` instead of `INGRAM`, or `1S.00 RON` instead of `15.00 RON`). The reference is correct, only the literal characters need fixing. Do NOT use CORRECTED to add/remove trailing zeros, separators, a currency code, or other valid normalized formatting. Do NOT use CORRECTED for booleans that came back with the wrong answer, inferred/computed values that came back wrong, or any case where IXP picked the wrong source on the page — those are NOT CONFIRMED.
    - **MISSING** — IXP predicted **no value** (empty `FormattedValue`) AND the field is genuinely absent from the document. Both conditions must hold. If IXP predicted a value but the field isn't actually in the document, that's NOT CONFIRMED, not MISSING — Critical Rule 12 forbids overriding a non-empty prediction with "missing".
    - **NOT CONFIRMED** — the prediction is wrong for any reason other than OCR mangling. Covers: wrong literal value on the right field, wrong-source extraction, hallucinated value, boolean came back with the wrong answer, inferred/computed value came back wrong, predicted a value the document doesn't contain. Left unannotated. Do NOT try to "fix" these with `--corrections` — `--corrections` is OCR-only (see Critical Rule 8). Improve the prompt instead.
+
+#### Monetary Quantity decision test
+
+Before using `--corrections` on a Monetary Quantity:
+
+1. Parse the predicted numeric value and currency.
+2. Parse the visible document value using the document's locale and currency evidence.
+3. Normalize harmless representation differences: trailing zeros, thousands/decimal separators, currency placement, symbols/codes, and canonical currency names.
+4. If the normalized amount and currency match, mark **CONFIRMED** and submit the prediction unchanged.
+5. If the source characters were genuinely misread but the field and location are correct, mark **CORRECTED**.
+6. If the amount, currency, or source row differs, mark **NOT CONFIRMED**.
+
+Examples:
+
+| Prediction | Document | Verdict | Reason |
+|---|---|---|---|
+| `15.00 RON` | `15 LEI` | CONFIRMED | Same amount and canonical currency; precision differs only in display. |
+| `USD 15.00` | `$15` | CONFIRMED | Same amount and currency with different placement/notation. |
+| `1,234.50 EUR` | `1.234,50 EUR` | CONFIRMED | Same value under the document's locale. |
+| `1S.00 RON` | `15.00 RON` | CORRECTED | OCR confused `S` with `5` at the correct source location. |
+| `15.00 USD` | `15.00 RON` | NOT CONFIRMED | Currency differs. |
+| `15.00 RON` | `150.00 RON` | NOT CONFIRMED | Numeric amount differs. |
+| `15.00 RON` | `15.00` with no currency evidence | NOT CONFIRMED | The prediction added an unsupported currency. |
+
 3. **Report your verdict for every field.** Print a table per document:
 
 ```text
