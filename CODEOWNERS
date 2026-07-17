@@ -167,3 +167,6 @@
 
 # Automation Discovery skill
 /skills/uipath-automation-discovery/ @uisherif
+
+# Assistant Diagnostics skill (desktop-app diagnostic archives — combined.log / Robot.log)
+/skills/uipath-assistant-diagnostics/ @vasyop
