@@ -2,8 +2,8 @@
 
 ## Status
 
-- **Outcome:** Experiment 1 concluded negatively; follow-up Experiment 2 is in progress.
-- **Decision:** Keep PR #2098 closed. Test schema-once gathering plus stage-level batching on a separate branch before deciding whether to open a new PR.
+- **Outcome:** Experiment 1 concluded negatively. Follow-up Experiment 2 was faster and cheaper, but failed the deterministic grader and did not follow its intended cache/batching contract.
+- **Decision:** Keep PR #2098 closed and do not open or merge a follow-up PR. Correct the cache-consumption and semantic-condition fidelity before spending on another benchmark.
 - **Date:** 2026-07-17 (Pacific time)
 - **Scope:** `uipath-maestro-case` Golden Expense end-to-end build
 
@@ -16,7 +16,8 @@
 - Successful experiment run: [GitHub Actions 29541608582](https://github.com/UiPath/skills/actions/runs/29541608582), attempt 2
 - Earlier infrastructure-only failures: [GitHub Actions 29539778252](https://github.com/UiPath/skills/actions/runs/29539778252)
 - Follow-up branch: `experiment/maestro-case-schema-once-stage-batching`
-- Follow-up PR/run: pending
+- Follow-up implementation commit: [`a83cb1eae`](https://github.com/UiPath/skills/commit/a83cb1eae49192334220e1478b887ff61a4ceafa)
+- Follow-up run: [GitHub Actions 29596260683](https://github.com/UiPath/skills/actions/runs/29596260683)
 
 ## Goal
 
@@ -120,7 +121,7 @@ The useful retained finding is that **one scaffold Write plus bounded Edits is a
 
 ## Follow-up Experiment 2 — Schema Once + Stage Batching
 
-Status: implementation in progress on `experiment/maestro-case-schema-once-stage-batching`.
+Status: rejected by the first unchanged Golden Expense run. The implementation branch remains a diagnostic artifact, not a merge candidate.
 
 This variant combines the first two recommended follow-ups because they attack separate sources of turns:
 
@@ -146,6 +147,35 @@ The unchanged Golden Expense task and deterministic grader remain the correctnes
 | Cost | $12.1531 | No higher than the $9.7311 baseline |
 
 Any grader regression rejects the variant regardless of speed. A small duration improvement from a single run is directional only; two successful runs are still required before a merge recommendation.
+
+### Result — GitHub Actions 29596260683
+
+The unchanged Golden Expense task ran on `a83cb1eae` with `claude-sonnet-4-6` in one iteration. It completed in 2,007.4 seconds (33m27s) at $7.4434, but scored `0.500`; this rejects the experiment regardless of the apparent performance improvement.
+
+| Metric | Baseline | Follow-up run | Change |
+|---|---:|---:|---:|
+| Deterministic score | 1.000 | 0.500 | rejected |
+| Duration | 3,175.0s (52m55s) | 2,007.4s (33m27s) | -1,167.6s (-36.8%) |
+| Cost | $9.7311 | $7.4434 | -$2.2877 (-23.5%) |
+| Output tokens | 217,198 | 125,065 | -92,133 (-42.4%) |
+| Cache-read tokens | 13,932,735 | 12,108,691 | -1,824,044 (-13.1%) |
+| Cache-creation tokens | 578,104 | 499,853 | -78,251 (-13.5%) |
+| Uncached input tokens | 41,813 | 20,135 | -21,678 (-51.8%) |
+| Agent turns | 194 | 222 | +28 (+14.4%) |
+| Tool calls | 190 | 164 | -26 (-13.7%) |
+
+The generated caseplan did validate and passed the topology and seed-object checks. It failed two required deterministic checks:
+
+- **Connector binding fidelity:** the generated Outlook activity contained the literal placeholder `list-email-activity-type-id`, not the real `5b154ea8-15bb-30a6-b07d-74a8cd1c1688` identifier. The agent had already stored the correct populated `C02.Data.CaseShape` in `tasks/schema-cache.json`, so this was a cache-consumption failure rather than unavailable tenant metadata.
+- **Stage-exit semantics:** Stage 1's `required-tasks-completed` condition omitted explicit `type: "exit-only"`. CLI validation accepts the omission, but the semantic checker correctly requires the SDD-derived exit type.
+
+The transcript also shows that the result is **not a valid measurement of the intended mechanism**:
+
+- It made 23 `tasks describe` and 8 `case spec` invocations, missing the targets of at most 6 and 2. The cache was written, but repeated exploratory and implementation fetches continued.
+- It made one populated whole-file `caseplan.json` Write followed by seven Edits. The initial Write was not the required T01 root scaffold, so it bypassed the planned Phase 2 stage-array construction.
+- It did avoid task-ledger calls, but that improvement cannot compensate for the failed accuracy contract.
+
+Next corrective action before a rerun: make cached connector `CaseShape` consumption mechanically explicit in the activity recipe and require a pre-validation comparison of the cached `UiPathActivityTypeId` and every SDD-declared exit `type` against the composed caseplan. Re-run only after those fidelity fixes pass local skill validation; require two score-1.0 runs before considering a PR.
 
 ## Recommended Next Experiments
 
