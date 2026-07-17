@@ -67,6 +67,14 @@ Tell them apart from the captured selector: a native control's element carries `
 
 Patterns that apply to any captured control regardless of UI stack (web, desktop, Java, etc.).
 
+### Debugging a failed interaction with an element
+
+When an interaction fails or faults and the selector still looks correct, suspect the interaction itself changed the element. It can make the app **remount** the target as a new DOM node (e.g. a search box that re-mounts on focus, or a click that expands a dropdown/popup). The activity resolved the *old* node; the next action then hits the now-detached one and faults with `InvalidNodeException: "The UI element is invalid..."` — distinct from "not found" / "click failed". A compound action inside one activity is the classic case: `TypeInto`'s built-in click-before-typing, whose pre-click detaches the field it's about to type into.
+
+**Diagnostic tell:** the selector still resolves, and input mode / delay changes do nothing — it is a re-resolution problem, not timing.
+
+**Fix:** split the interactions into **separate** activities (e.g. `Click` then `TypeInto`) so the second **re-resolves** its target against the new node.
+
 ### Buttons disabled during async operations
 
 A button can be present and matched by its selector yet `disabled` while the application validates a form, loads, or refreshes data.
