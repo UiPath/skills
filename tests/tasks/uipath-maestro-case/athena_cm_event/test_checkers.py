@@ -193,7 +193,7 @@ closes on required-stages-completed.
                 {
                     "id": "trigger",
                     "type": "case-management:Trigger",
-                    "data": {"uipath": {"serviceType": "Intsvc.EventTrigger"}},
+                    "data": {"inputs": {"serviceType": "Intsvc.EventTrigger"}},
                 },
                 stage_a,
                 stage_b,
