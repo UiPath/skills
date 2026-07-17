@@ -130,7 +130,7 @@ These two mechanisms both provide access to third-party systems, but they are **
 
 | Package | Version | Purpose |
 |---|---|---|
-| `UiPath.IntegrationService.Activities` | Latest | Runtime host for Integration Service connector activities |
+| `UiPath.IntegrationService.Activities` | pin at build | Runtime host for Integration Service connector activities |
 
 ### Example — Salesforce via NuGet native package
 
@@ -144,7 +144,7 @@ These two mechanisms both provide access to third-party systems, but they are **
 
 | Package | Version | Purpose |
 |---|---|---|
-| `UiPath.Salesforce.Activities` | Latest | Native Salesforce activities — used because Integration Service connector not available in this tenant |
+| `UiPath.Salesforce.Activities` | pin at build | Native Salesforce activities — used because Integration Service connector not available in this tenant |
 
 ## Per-Product Dependency Manager
 

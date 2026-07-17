@@ -6,7 +6,13 @@ Use this when a step needs a login the robot cannot perform — a physical hardw
 
 Apply when the PDD's robot-attendance or signing-modality signals show a human must complete authentication: `hardware token`, `smart card`, `physical 2FA`, `OTP device`, `biometric`, `human present for login`.
 
-Rule out automatable factors first. Do NOT apply this when the second factor is a **soft** token the robot can read (Google/Microsoft/Okta TOTP, SMS/email code) — `uipath-rpa` scripts those, no handoff. Apply only for factors no software can supply.
+**MFA factor handling is a security-policy decision, never a convenience default.** Preference order for any MFA-protected login:
+
+1. **Approved application / certificate identity** — service principal, app registration, certificate/token auth against the target's API. No interactive factor to handle; confirm with the customer's security team first.
+2. **Interactive attended handoff (this pattern)** — the human completes the MFA login, the robot uses the authenticated session. The default whenever no approved application identity exists — for hardware AND soft factors alike.
+3. **Scripted soft factor** (TOTP secret / SMS / email code the robot reads) — **never by default**: a second factor the robot can read collapses MFA to one factor. Design it only with the security team's documented approval — flag `[SME REVIEW]`, store the secret in the Orchestrator credential store, record the approval in §16 Security & Data Handling.
+
+Physical factors (hardware token, smart card, biometric) can never be scripted — options 1 or 2 only.
 
 ## Choose the design shape
 

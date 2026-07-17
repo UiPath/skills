@@ -414,7 +414,7 @@ Verify a file contains (or excludes) expected strings. From `uipath-maestro-flow
   pass_threshold: 1.0
 ```
 
-`excludes:` is also supported — useful for asserting a file does not contain a deprecated flag or forbidden value.
+`excludes:` is also supported — useful for asserting a file does not contain a deprecated flag or forbidden value. `includes` is a required field: an excludes-only criterion fails schema validation, so pair `excludes` with at least one positive `includes` entry.
 
 ### `json_check`
 
@@ -446,18 +446,18 @@ Or byte-equality for upload/download round-trips:
 
 ### `skill_triggered`
 
-Verify the agent invoked a Claude Code Skill tool. Useful for "did the agent recognize this scenario calls for skill X?" Supports positive (`expected: "yes"`) and negative (`expected: "no"`) assertions:
+Verify the agent invoked a Claude Code Skill tool. Useful for "did the agent recognize this scenario calls for skill X?" Both `skill_name` and `expected_skill` are required; the expected label is "yes" iff `expected_skill == skill_name`:
 
 ```yaml
 - type: skill_triggered
   description: "Agent invoked the uipath-human-in-the-loop skill"
   skill_name: "uipath-human-in-the-loop"
-  expected: "yes"
+  expected_skill: "uipath-human-in-the-loop"
   weight: 3.0
   pass_threshold: 1.0
 ```
 
-Un-fakeable — the criterion inspects `turn_records.commands` directly. The negative form (`expected: "no"`) is the right primitive for smoke tests where the agent should NOT trigger a particular skill.
+Un-fakeable — the criterion inspects `turn_records.commands` directly. The negative form (`expected_skill: ""`) is the right primitive for smoke tests where the agent should NOT trigger a particular skill.
 
 ### `command_not_executed`
 
