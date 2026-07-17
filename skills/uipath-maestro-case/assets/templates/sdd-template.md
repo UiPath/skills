@@ -391,16 +391,16 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 ###### Action Task Detail (type: `action`)
 
-> Use this block for every task of type `action`. The action plugin authors action tasks ONLY from a deployed Action App registered in `action-apps-index.json`; inline JSON-Schema HITL forms are not authored by the skill (an unresolved app falls back to a Rule-8 placeholder).
+> Use this block for every task of type `action`. Two paths (see [action/planning.md § Path Selection](../../references/plugins/tasks/action/planning.md#path-selection)): **QuickForm** (default) authors an inline form — no deployed app — with fields from the Input/Output Schema rows below; **Action App** binds a deployed app registered in `action-apps-index.json`. Set `HITL Implementation` accordingly. A deployed app is never built inline; a named-but-missing app falls back to QuickForm or a Rule-8 placeholder at the Rule 17 gate.
 
-**HITL Implementation:** Action App: {the concrete intended `deploymentTitle`. REQUIRED and NEVER `<UNRESOLVED>`: use the selected registry entry's canonical title when resolved; otherwise retain the user-requested title so Phase 1 can repeat discovery from this SDD alone.}
-**Action App ID:** {`actionAppId` — concrete deployment id, or `<UNRESOLVED>` when no live app was selected}
-**Deployment Folder:** {`deploymentFolder.fullyQualifiedName`, or `<UNRESOLVED>` when Action App ID is unresolved}
+**HITL Implementation:** {`QuickForm` (default — inline form, no app) OR `Action App: <deploymentTitle>` (bind a deployed app; concrete intended title, registry canonical when resolved, else the user-requested title so Phase 1 can repeat discovery). REQUIRED and NEVER `<UNRESOLVED>`.}
+**Action App ID:** {`actionAppId` — concrete deployment id, or `<UNRESOLVED>` when no live app was selected; `N/A` for `QuickForm`}
+**Deployment Folder:** {`deploymentFolder.fullyQualifiedName`, or `<UNRESOLVED>` when Action App ID is unresolved; `N/A` for `QuickForm`}
 **actionType:** {the dispatch code the app's code-behind switches on — e.g., `GRNConfirmation`, `ApLeadApproval`. **A recognised code is REQUIRED; passing a human display name instead fails result mapping at runtime.** `—` only when the app is not a code-switched app.}
 **Recipient:** {typed prefix only: `Role:<name>` \| `User:<uuid>` \| `UserGroup:<uuid>` \| `Email:<addr>` \| `Expression:=vars.<id>`}
 **Priority:** {Low \| Medium \| High \| Critical} · **Task Title:** {one-line Action Center prompt} · **Labels:** {csv or `—`}
 
-> The Action App title carries portable intent; `Action App ID` carries resolution status. A concrete ID plus the exact folder locates the deployed app, while an unresolved ID plus the intended title lets Phase 1 repeat discovery without `tasks/registry-resolved.json`. `actionType` is the human-decision app's behaviour selector — treat it as a closed enum sourced from the app, not a free-text label.
+> The Action App title carries portable intent; `Action App ID` carries resolution status. A concrete ID plus the exact folder locates the deployed app, while an unresolved ID plus the intended title lets Phase 1 repeat discovery without `tasks/registry-resolved.json`. `actionType` is the human-decision app's behaviour selector — treat it as a closed enum sourced from the app, not a free-text label. **For a `QuickForm` task, `Action App ID` / `Deployment Folder` / `actionType` do not apply (`N/A`)** — the form is defined by the Input/Output Schema rows (fields) and the Action buttons (outcomes).
 
 **Input Schema:**
 

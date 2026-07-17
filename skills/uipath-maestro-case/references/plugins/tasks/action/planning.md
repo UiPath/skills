@@ -1,10 +1,21 @@
 # action task — Planning
 
-A human-in-the-loop (HITL) action task. Assigns a task to a user or group for manual review, approval, or data entry via the Actions app.
+A human-in-the-loop (HITL) action task. Assigns a task to a user or group for manual review, approval, sign-off, correction, or data entry. Two authoring paths: **QuickForm** (inline form, no deployed app — the default) and **App-based** (a deployed Action Center app).
 
 ## When to Use
 
 Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring manual user interaction: approval, review, sign-off, correction, classification by a person.
+
+## Path Selection
+
+Choose by whether a deployed Action Center app backs the task:
+
+1. **App named + resolves** — sdd.md `HITL Implementation` = `Action App: <deploymentTitle>` AND it resolves in `action-apps-index.json` → **App-based** (§ Registry Resolution). Bind to the deployed app.
+2. **No app named** — sdd.md `HITL Implementation` = `QuickForm` or silent → **QuickForm** (§ QuickForm), the default. Author an inline form — no app, no registry, no bindings.
+3. **App named + missing** — named app absent from `action-apps-index.json` → a Rule 17 empty-lookup confirm, **action-specific** (NOT the agent/api sibling-create gate in [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery) — QuickForm builds no sibling project): `AskUserQuestion` **Author QuickForm inline** / **Placeholder (deploy the app later)**. Create → QuickForm; Skip → placeholder. Report the swap in the completion report (`named app "<x>" not found — authored QuickForm`).
+4. **Not derivable** — QuickForm chosen but no wired I/O and no described decision/outcomes → placeholder (§ Unresolved Fallback).
+
+QuickForm matches the `uipath-human-in-the-loop` Case surface (assume PR #2056). Reach for App-based only when the SDD names a specific deployed app.
 
 ## Required Fields from sdd.md
 
@@ -22,6 +33,8 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 | `outputs` | Discovered via `tasks describe` | Decision, comments, structured form fields |
 | `isRequired` | sdd.md (default `true`) |  |
 
+> **Path-scoped:** `resource-name`, `name`, `folder-path`, `task-type-id` apply to **App-based** only. QuickForm omits them — its form fields come from wired I/O (§ QuickForm), not `tasks describe`. `display-name`, `task-title`, `priority`, `recipient`, `isRequired` are shared by both paths.
+
 ## Task Title Fallback
 
 `task-title` is what the user sees in the Actions app. Required on resolved action tasks (placeholders skip — see § Unresolved Fallback). Derive in this order:
@@ -30,7 +43,7 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 2. SDD has a Description → summarize into a short, concise title
 3. Neither → use the `display-name`
 
-## Registry Resolution
+## Registry Resolution (App-based)
 
 1. **Primary cache file:** `action-apps-index.json`.
 2. **Identifier field:** `id` (NOT `entityKey` — action-apps use a different field).
@@ -40,17 +53,34 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 6. Set `name` to the selected entry's canonical `deploymentTitle` and `folder-path` to its exact `deploymentFolder.fullyQualifiedName`. Never substitute the task display name or a parent/truncated folder.
 7. Discover form fields / inputs / outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
 
-Query by the exact concrete `resource-name` from the SDD. `Action App ID` determines whether the prior phase resolved the app; an unresolved ID does not erase or replace the intended title. Action lookups stay in `action-apps-index.json` — never adopt a same-named resource from another cache type.
+Query by the exact concrete `resource-name` from the SDD. `Action App ID` determines whether the prior phase resolved the app; an unresolved ID does not erase or replace the intended title. Action lookups stay in `action-apps-index.json` — never adopt a same-named resource from another cache type. A name absent from the index is **not** an automatic placeholder — it routes to the missing-app gate (§ Path Selection step 3).
 
 See [registry-discovery.md](../../../registry-discovery.md#cli-search-gaps) for the fallback rationale.
 
-## Unresolved Fallback
+## QuickForm (default — no deployed app)
 
-Mark `<UNRESOLVED: action-app "<resource-name>" in folder "<folder>" not found in action-apps-index.json>`, using the SDD's preserved Action App title even when its ID/folder are unresolved. Emit only structural fields — drop every action-specific line (`task-title`, `priority`, `recipient`, `inputs`, `outputs`). See [placeholder-tasks.md](../../../placeholder-tasks.md) for the full placeholder entry shape and wiring-block convention.
+Author an inline form; no deployed app, no registry lookup, no root bindings. The schema lives in a sibling `<TaskLabel>.hitl.json`; the task carries `data.context[hitlType]="quick"`. Full task + file shapes: [impl-json.md § QuickForm](impl-json.md).
+
+Derive the form ONLY from the SDD's wired I/O + described decision — the pinned-I/O contract, [create-inline-common.md § Step 1](../create-inline-common.md#step-1--compute-the-pinned-io-contract). No field-name guessing, no silent `string` default.
+
+| Form element | One per… | `.hitl.json` field shape |
+|---|---|---|
+| **Input field** (reviewer reads) | wired input the reviewer must see | `direction:"input"`, `binding:"=vars.<v>"`; type pinned from the SDD Case Variables table |
+| **Output field** (reviewer enters) | wired output the case consumes downstream | `direction:"output"`, `variable:"<name>"`, `required:true` if mandatory; downstream reads `=vars.<name>` |
+| **inOut field** (reviewer edits a prefilled value) | wired value the human may correct | `direction:"inOut"`, both `binding` and `variable` |
+| **Outcomes** | the SDD's described decision | domain-specific buttons (Approve/Reject…), never a bare Submit |
+
+`task-title`, `priority`, `recipient` — derived exactly as App-based (§ Task Title Fallback, § Recipient Handling).
+
+## Unresolved Fallback (placeholder)
+
+A HITL task placeholders ONLY when no path yields a real task: no deployed app resolves **and** no QuickForm is derivable (no wired I/O, no described decision/outcomes), OR the user picks **Placeholder** at the missing-app gate (§ Path Selection step 3). A named-but-missing app does NOT auto-placeholder — it offers QuickForm first.
+
+Mark `<UNRESOLVED: HITL task "<display-name>" — no deployed app and no derivable form>`. Emit only structural fields — drop every action-specific line (`task-title`, `priority`, `recipient`, `inputs`, `outputs`, `name`, `folder-path`, `task-type-id`). See [placeholder-tasks.md](../../../placeholder-tasks.md) for the full placeholder entry shape and wiring-block convention.
 
 ## Recipient Handling
 
-> Resolved action tasks only — placeholders skip this entire section (see § Unresolved Fallback).
+> Resolved action tasks only (both paths) — placeholders skip this entire section (see § Unresolved Fallback).
 
 - If sdd.md **names a specific user email**, record it in `tasks.md`. Sets `assignmentCriteria: "user"` at execution time.
 - If sdd.md **names a group or role**, do **not** record a recipient — group assignment is configured separately via Actions app rules. Record a note in `tasks.md` so the user remembers to configure group assignment externally.
@@ -66,10 +96,13 @@ For open-ended inputs like an email address, use a direct prompt rather than Ask
 
 ## tasks.md Entry Format
 
-Resolved action task. For the unresolved placeholder shape, see [placeholder-tasks.md § `tasks.md` Planning-Entry Shape](../../../placeholder-tasks.md#tasksmd-planning-entry-shape).
+Two variants by path. For the unresolved placeholder shape, see [placeholder-tasks.md § `tasks.md` Planning-Entry Shape](../../../placeholder-tasks.md#tasksmd-planning-entry-shape).
+
+### App-based
 
 ```markdown
 ## T<n>: Add action task "<display-name>" to "<stage>"
+- hitl-kind: app
 - taskTypeId: <action-app-id>
 - name: "<selected-deployment-title>"
 - folder-path: "<selected-deployment-folder>"
@@ -86,4 +119,26 @@ Resolved action task. For the unresolved placeholder shape, see [placeholder-tas
 - order: after T<m>
 - lane: <n>  # FE layout; increment per task. Within `runs-sequentially` group, parallel members share a lane (semantic).
 - verify: Confirm Result: Success, capture TaskId
+```
+
+### QuickForm
+
+```markdown
+## T<n>: Add QuickForm action task "<display-name>" to "<stage>"
+- hitl-kind: quick
+- task-title: "<title-shown-to-user>"
+- priority: Medium
+- recipient: user@company.com   # omit when group-assigned or when user chose Skip
+- assignment-note: "<free-form note if group-assigned>"   # optional
+- fields:
+  - <name> input  = "=vars.<v>"         # reviewer reads; bound to case var <v>
+  - <name> output -> <var> [required]   # reviewer enters; downstream reads =vars.<var>
+  - <name> inout  = "=vars.<v>" -> <var># reviewer edits a prefilled value
+- outputs: <var1>, <var2>   # the output/inOut field vars — REQUIRED for io-binding: declares the case vars and makes this task a producer (the Out-arg producer scan reads `outputs:`, not `fields:`). No `inputs:` line — QuickForm inputs bind inside the .hitl.json, not `data.inputs[]`.
+- outcomes: Approve, Reject
+- runOnlyOnce: false   # from sdd.md "Run Only Once" column
+- isRequired: true
+- order: after T<m>
+- lane: <n>  # FE layout; increment per task. Within `runs-sequentially` group, parallel members share a lane (semantic).
+- verify: uip maestro case validate passes; <TaskLabel>.hitl.json present alongside caseplan.json
 ```
