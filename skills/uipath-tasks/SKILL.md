@@ -33,7 +33,10 @@ When switching is required:
 # Check current environment, org, and tenant
 uip login status --output json
 
-# Login to Alpha with a specific tenant
+# Login with a specific tenant (production cloud — the default, no --authority)
+uip login --tenant MyTenant
+
+# For a non-production environment, pass --authority (e.g. alpha)
 uip login --authority https://alpha.uipath.com --tenant MyTenant
 
 # List all available tenants (after login)

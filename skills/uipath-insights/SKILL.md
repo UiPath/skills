@@ -36,7 +36,10 @@ All operations go through `uip insights jobs <subcommand> --output json`.
 # Check current environment, org, and tenant
 uip login status --output json
 
-# Login to a specific environment
+# Login with a specific tenant (production cloud is the default)
+uip login --tenant MyTenant
+
+# For a non-production environment, pass --authority (e.g. alpha)
 uip login --authority https://alpha.uipath.com --tenant MyTenant
 
 # Switch tenant within the same environment

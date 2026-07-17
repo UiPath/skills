@@ -186,7 +186,7 @@ Common failure modes when authoring, running, packaging, or publishing API workf
 
 ## StudioWeb Roundtrip Pitfalls
 
-These are issues that surface only when a workflow is opened or run in **StudioWeb** (alpha.uipath.com). Workflows that pass `uip api-workflow run --no-auth` may still fail in cloud for these reasons.
+These are issues that surface only when a workflow is opened or run in **StudioWeb** (cloud.uipath.com). Workflows that pass `uip api-workflow run --no-auth` may still fail in cloud for these reasons.
 
 ### `ReferenceError: <literal> is not defined` after opening in StudioWeb
 
@@ -514,7 +514,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   - **Fix:** Switch to IntSvc kind (`call: "UiPath.IntSvc"`, `with.connector` = the vendor key, `with.endpoint` = `"/<curated-operation-name>"`). See [connector-activity-discovery.md — IntSvc kind](connector-activity-discovery.md#intsvc-kind--call-uipathintsvc-vendor-curated-activity) — IntSvc kind is for vendor activities, Http kind is only for the `uipath-uipath-http` HTTP Request activity.
 
   **Sub-case B — Connection is in a broken state.** The endpoint is right (e.g. `/getNewestEmail` on an Outlook connection), but the connection's upstream OAuth token is expired, never properly authorized, or the running identity doesn't have access to the connection.
-  - **Fix:** Run `uip is connections ping <connection-uuid> --output json`. If it returns `Code: "ConnectionNotEnabled"`, re-authenticate via `uip is connections edit <connection-uuid>` (opens browser for OAuth) or fix in the StudioWeb UI. If it returns `Code: "ConnectionPing"` (success) but the cloud still 401s, check that your CLI login (`uip login status`) is in the same org+tenant your browser is using at alpha.uipath.com — a tenant mismatch will reject the connection ID at the proxy layer.
+  - **Fix:** Run `uip is connections ping <connection-uuid> --output json`. If it returns `Code: "ConnectionNotEnabled"`, re-authenticate via `uip is connections edit <connection-uuid>` (opens browser for OAuth) or fix in the StudioWeb UI. If it returns `Code: "ConnectionPing"` (success) but the cloud still 401s, check that your CLI login (`uip login status`) is in the same org+tenant your browser is using at cloud.uipath.com — a tenant mismatch will reject the connection ID at the proxy layer.
 
 - **Prevention:** The discovery flow's Step 4b (`uip is connections ping`) is mandatory specifically to catch sub-case B before authoring. Don't author against a connection that doesn't ping — the workflow shape will look right and even run locally, but fail at deployment time.
 

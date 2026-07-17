@@ -16,7 +16,7 @@ Before writing the node JSON, resolve the app and register it with the solution.
 source "$HOME/.uipath/.auth"
 # Variables now available:
 # UIPATH_ACCESS_TOKEN       — bearer token
-# UIPATH_URL                — e.g. https://alpha.uipath.com
+# UIPATH_URL                — e.g. https://cloud.uipath.com
 # UIPATH_ORGANIZATION_NAME  — org name (slug)
 # UIPATH_ORGANIZATION_ID    — org UUID
 # UIPATH_TENANT_NAME
