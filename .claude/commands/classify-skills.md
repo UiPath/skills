@@ -38,9 +38,11 @@ Some examples (not limited to these) of codifiable procedures are as follows:
 
 ## Step 2: Classify a skill
 
-Based on your findings, classify a skill into one of Strong, Partial, and None. 
+Based on your findings and how many things a skill teaches the agent to do, classify a skill into one of Strong, Partial, and None. 
 
-Compare the procedures you found with skill related files:
+For example, if a skill teaches the agent the following things: open a browser, extract a block from html, extract response header from a request, find out the request that takes the longest time, and search for certain texts, and 4 of them can be scripted, then the skill is Strong.
+
+Compare the procedures you found with things the skill teaches:
 
 - Strong: If the procedures take up most of the skill
 - Partial: If the procedures take up part of the skill
@@ -50,7 +52,7 @@ Compare the procedures you found with skill related files:
 The final output should contain 2 files: classification.json and classification-details.md.
 
 - classification.json: the keys are the class label, and the values are list of skills
-- classification-details.md: for each skill, you need to include the justifications for making the classification decision and where the justifications are derived.
+- classification-details.md: for each skill, you need to include the justifications for making the classification decision and where the justifications are derived. Also write down the things a skill teaches the agent and which of these things can be scripted, and add an estimate of turn-savings by script-ifing procedures.
 
 If there is only one skill, then the skill's name should be attached to the files' name.
 
