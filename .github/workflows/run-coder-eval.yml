@@ -393,7 +393,7 @@ jobs:
       # rpa-tool line under the same scope; pulling those from the public
       # feed (with the `^0.9` pin) keeps Helm on the known-good 0.9.x
       # line. See smoke-rpa-skills.yml for the full rationale.
-      - name: Install uip CLI + RPA tools (GH Packages cli, public-npm tools)
+      - name: Install uip CLI + RPA tools (GH Packages @dev)
         shell: bash
         env:
           CLI_VERSION:    ${{ inputs.cli_version }}
@@ -404,26 +404,35 @@ jobs:
           cd "$install_dir"
           npm config get registry
 
-          # Step 1: install the CLI from GH Packages. Use a scratch
-          # NPM_CONFIG_USERCONFIG so the @uipath→npm.pkg.github.com mapping
-          # and auth token don't leak into other steps. Mirrors the
-          # tests/docker/Dockerfile config (line 14-17).
+          # Install the CLI AND the RPA tool plugins from the SAME GitHub Packages
+          # feed at the CLI's dist-tag (default `dev`). Use a scratch
+          # NPM_CONFIG_USERCONFIG so the @uipath→npm.pkg.github.com mapping and
+          # auth token don't leak into other steps. Mirrors tests/docker/Dockerfile.
+          #
+          # RPA from @dev (not public-npm stable): under `dev`, rpa-tool ships a
+          # matching 1.199.x-dev build (cli PR #2650 aligned it), so it
+          # version-matches the dev CLI. A public-npm STABLE rpa-tool fails to load
+          # against a -dev CLI — the `rpa` group never appears. Raw npm, not `uip
+          # tools install`: `dev` is a publish dist-tag, not a release channel, so
+          # `uip tools install` resolves to `stable` and can't find a `-dev` tool.
+          # npm resolves `@dev` directly; the CLI discovers the plugin on disk
+          # under $(npm root -g)/@uipath/*.
+          #
+          # NOTE on pinning: rpa-tool publishes on its own pipeline (date-stamped
+          # `-dev.<YYYYMMDD>.<n>`), so pinning cli_version to an exact monorepo
+          # `-dev.<run>` won't resolve rpa-tool. Keep cli_version=`dev` (the
+          # default) to track main; pin only to freeze the monorepo CLI + tools.
           tmp_npmrc="$(mktemp)"
           cat > "$tmp_npmrc" <<EOF
           @uipath:registry=https://npm.pkg.github.com/
           //npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}
           EOF
-          NPM_CONFIG_USERCONFIG="$tmp_npmrc" npm install -g "@uipath/cli@${CLI_VERSION}"
+          NPM_CONFIG_USERCONFIG="$tmp_npmrc" npm install -g \
+            "@uipath/cli@${CLI_VERSION}" \
+            "@uipath/rpa-tool@${CLI_VERSION}" \
+            "@uipath/rpa-legacy-tool@${CLI_VERSION}"
           rm -f "$tmp_npmrc"
           uip --version
-
-          # Step 2: install the RPA tools from public npm. CLI-flag scope
-          # override beats any lingering global config, so this stays on
-          # the public registry regardless of runner image defaults.
-          npm install -g \
-            --@uipath:registry=https://registry.npmjs.org/ \
-            "@uipath/rpa-tool@>=0.9" \
-            @uipath/rpa-legacy-tool@latest
           echo "--- Installed @uipath/* packages ---"
           npm ls -g --depth=0 2>/dev/null | grep '@uipath/' || true
           echo "--- uip tools list ---"

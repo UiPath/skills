@@ -344,11 +344,12 @@ jobs:
           echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }}
 
-      # Build custom smoke image extending coder-eval-agent with @uipath/cli
-      # and @uipath/admin-tool from GitHub Packages @alpha.
-      # Every merge to `cli/main` publishes a `-alpha.<date>.<run>` prerelease;
-      # smoke tracks this so changes in task YAMLs/skills are tested against main,
-      # not stale `latest` from public npm (which lags by days).
+      # Build custom smoke image extending coder-eval-agent with @uipath/cli and
+      # every whitelisted tool plugin from GitHub Packages @dev (see
+      # tests/docker/Dockerfile). Every push to `cli/main` publishes a
+      # `-dev.<run>` prerelease under the `dev` dist-tag (cli PR #2650 renamed the
+      # old `alpha` tag → `dev` on 2026-06-26), so smoke tracks main — not stale
+      # `latest` from public npm (which lags by ~2 weeks).
       - name: Build skills smoke Docker image
         run: |
           docker build \

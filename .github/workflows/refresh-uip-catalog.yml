@@ -12,6 +12,12 @@ permissions:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    env:
+      # Turn off the CLI's startup version-sync: on a `-dev` CLI it would try to
+      # re-align tools through the release-channel path (which can't resolve
+      # `-dev` tool builds) while the catalog build runs `uip` commands, risking
+      # a corrupted/collapsed catalog.
+      UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
     steps:
       - uses: actions/checkout@v4
 
