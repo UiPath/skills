@@ -481,13 +481,14 @@ For each function:
 - **Name** — `ont:{camelCaseFunctionName}` (verb phrase: `countPrescriptionsByStatus`, `listPrescriptionsWithDoctorAndPatient`)
 - **Label** — short human phrase
 - **Comment** — per-function fact: what it returns, whether it produces counts or individual rows, what params it needs; do NOT put routing rules here — those go in USAGE POLICY
-- **SPARQL SELECT** — inline on `ont:statement`, prefixed with `PREFIX ont: <https://ontology.uipath.com/{name}#>`; bind parameters as unbound triple variables, not in FILTER
-- **Parameters** — only if needed; omit `fno:expects` entirely when the function takes none
+- **SPARQL SELECT** — on `ont:statement`; prefixed with `PREFIX ont: <https://ontology.uipath.com/{name}#>`; for equality lookups bind the parameter as an unbound triple variable (`; ont:Prop ?param`); for comparisons (`<`, `>`, `!=`) bind via `FILTER (?field < ?param)`
+- **Parameters** — only if needed; omit `fno:expects` entirely when the function takes none; optional params add `ont:required false ; ont:default "{val}"`
+- **Returns** — always declare `fno:returns ( ont:ret.{fn}.{var} … )` and a corresponding `ont:ret.*` block (`a fno:Output ; ont:returnName "…" ; ont:returnType "xsd:…"`) for every projected SELECT variable
 
 **File structure** — all functions in a single file:
 1. Prefix declarations: `fno:`, `ont:`, `rdfs:`
 2. USAGE POLICY comment block — routing rules and output discipline (≤30 non-empty lines; see functions-patterns.md)
-3. For each function: `ont:{functionName}` block, then any `ont:param.*` blocks immediately after
+3. For each function: `ont:{functionName}` block, then `ont:param.*` blocks, then `ont:ret.*` blocks immediately after
 
 ---
 
@@ -500,12 +501,14 @@ Functions ({N}):
   ont:countPrescriptionsByStatus
     label: "Count prescriptions in a given status"
     SPARQL: SELECT (COUNT(*) AS ?n) WHERE { ?p a ont:Prescription ; ont:Prescription.status ?status }
-    params: status (xsd:string, required)
+    params:  status (xsd:string, required)
+    returns: n (xsd:integer)
 
   ont:listPrescriptionsWithDoctorAndPatient
     label: "List prescriptions with their doctor and patient"
     SPARQL: SELECT ?medication ?status ?doctorName ?patientName WHERE { ... (3-way join) }
-    params: none
+    params:  none
+    returns: medication (xsd:string), status (xsd:string), doctorName (xsd:string), patientName (xsd:string)
 ```
 
 ---
@@ -518,7 +521,11 @@ Functions ({N}):
 
 **Check 3 — Object properties:** every `ont:{verbPhrase}` used as a property in SPARQL must be declared in `schema.ofn`.
 
-**Check 4 — Parameter binding:** every `?paramName` that appears as an unbound input variable in the WHERE clause must have a matching entry in `fno:expects` and a corresponding `ont:param.*` block.
+**Check 4 — Parameter binding:** every `?paramName` that appears as an unbound input variable in the WHERE clause (whether in a triple pattern or a `FILTER`) must have a matching entry in `fno:expects` and a corresponding `ont:param.*` block.
+
+**Check 5 — Return contract (both directions):**
+- Forward: every variable projected in `SELECT ?x ?y …` must have a matching `ont:ret.*` block where `ont:returnName` equals the variable name (without `?`).
+- Reverse: every `ont:returnName` value in every `ont:ret.*` block must correspond to a variable actually projected in the SELECT. No orphaned return nodes allowed.
 
 Report:
 ```
@@ -526,7 +533,9 @@ Functions checks:
   ✓ Property paths — all ont: DataProperty terms declared in schema.ofn
   ✓ Class references — all ont: class terms declared in schema.ofn
   ✓ Object properties — all ont: ObjectProperty terms declared in schema.ofn
-  ✓ Parameter binding — all unbound variables have matching fno:expects entries
+  ✓ Parameter binding — all unbound variables (triple and FILTER) have matching fno:expects entries
+  ✓ Return contract (forward) — all projected SELECT variables have matching fno:returns / fno:Output nodes
+  ✓ Return contract (reverse) — all ont:returnName values match a projected SELECT variable
 ```
 
 Fix any issues in the draft before proceeding.
