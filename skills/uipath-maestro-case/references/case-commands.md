@@ -116,6 +116,8 @@ uip maestro case pack ./my-case-project ./dist --name MyCase --version 2.0.0
 | `<output-path>` | **(required)** Output directory for the `.nupkg` |
 | `-n, --name <name>` | Package name (default: project folder name) |
 | `-v, --version <version>` | Package version (default: `1.0.0`) |
+| `--author <author>` | Package author (default: `UiPath`) |
+| `--description <text>` | Package description (default: `Created by UiPath`) |
 
 > `pack` + `uip solution publish` deploys directly to Orchestrator — bypasses Studio Web. Default publish path is `uip solution upload`.
 
