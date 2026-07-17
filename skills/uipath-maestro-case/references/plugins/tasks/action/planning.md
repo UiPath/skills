@@ -15,7 +15,7 @@ Choose by whether a deployed Action Center app backs the task:
 3. **App named + missing** — named app absent from `action-apps-index.json` → a Rule 17 empty-lookup confirm, **action-specific** (NOT the agent/api sibling-create gate in [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery) — QuickForm builds no sibling project): `AskUserQuestion` **Author QuickForm inline** / **Placeholder (deploy the app later)**. Create → QuickForm; Skip → placeholder. Report the swap in the completion report (`named app "<x>" not found — authored QuickForm`).
 4. **Not derivable** — QuickForm chosen but no wired I/O and no described decision/outcomes → placeholder (§ Unresolved Fallback).
 
-QuickForm matches the `uipath-human-in-the-loop` Case surface (assume PR #2056). Reach for App-based only when the SDD names a specific deployed app.
+This plugin owns a self-contained Case QuickForm contract and must remain usable without any sibling skill. Other authoring surfaces should mirror this public contract independently. Reach for App-based only when the SDD names a specific deployed app.
 
 ## Required Fields from sdd.md
 
@@ -59,16 +59,16 @@ See [registry-discovery.md](../../../registry-discovery.md#cli-search-gaps) for 
 
 ## QuickForm (default — no deployed app)
 
-Author an inline form; no deployed app, no registry lookup, no root bindings. The schema lives in a sibling `<TaskLabel>.hitl.json`; the task carries `data.context[hitlType]="quick"`. Full task + file shapes: [impl-json.md § QuickForm](impl-json.md).
+Author an inline form; no deployed app, no registry lookup, no root bindings, and no `registry-resolved.json` entry. The authoring schema lives in a sibling `<TaskLabel>.hitl.json`; the task carries `data.context[hitlType]="quick"` **and** mirrors the form's runtime I/O into `data.inputs[]` / `data.outputs[]`. The sidecar alone does not deliver bindings to the packed HITL task. Full task + file shapes: [impl-json.md § QuickForm](impl-json.md).
 
 Derive the form ONLY from the SDD's wired I/O + described decision — the pinned-I/O contract, [create-inline-common.md § Step 1](../create-inline-common.md#step-1--compute-the-pinned-io-contract). No field-name guessing, no silent `string` default.
 
-| Form element | One per… | `.hitl.json` field shape |
-|---|---|---|
-| **Input field** (reviewer reads) | wired input the reviewer must see | `direction:"input"`, `binding:"=vars.<v>"`; type pinned from the SDD Case Variables table |
-| **Output field** (reviewer enters) | wired output the case consumes downstream | `direction:"output"`, `variable:"<name>"`, `required:true` if mandatory; downstream reads `=vars.<name>` |
-| **inOut field** (reviewer edits a prefilled value) | wired value the human may correct | `direction:"inOut"`, both `binding` and `variable` |
-| **Outcomes** | the SDD's described decision | domain-specific buttons (Approve/Reject…), never a bare Submit |
+| Form element | One per… | `.hitl.json` field shape | Required Case runtime bridge |
+|---|---|---|---|
+| **Input field** (reviewer reads) | wired input the reviewer must see | `direction:"input"`, `binding:"=vars.<v>"`; type pinned from the SDD Case Variables table | one `data.inputs[]` entry whose `name` is the field `id` and whose `value` is the same binding |
+| **Output field** (reviewer enters) | wired output the case consumes downstream | `direction:"output"`, `variable:"<name>"`, `required:true` if mandatory; downstream reads `=vars.<name>` | one `data.outputs[]` entry that extracts `=<field.id>` and targets `=<field.variable>` |
+| **inOut field** (reviewer edits a prefilled value) | wired value the human may correct | `direction:"inOut"`, both `binding` and `variable` | both an input entry and an output entry |
+| **Outcomes** | the SDD's described decision | domain-specific buttons (Approve/Reject…), never a bare Submit | no task I/O entry; outcomes remain in the sidecar |
 
 `task-title`, `priority`, `recipient` — derived exactly as App-based (§ Task Title Fallback, § Recipient Handling).
 
@@ -134,7 +134,7 @@ Two variants by path. For the unresolved placeholder shape, see [placeholder-tas
   - <name> input  = "=vars.<v>"         # reviewer reads; bound to case var <v>
   - <name> output -> <var> [required]   # reviewer enters; downstream reads =vars.<var>
   - <name> inout  = "=vars.<v>" -> <var># reviewer edits a prefilled value
-- outputs: <var1>, <var2>   # the output/inOut field vars — REQUIRED for io-binding: declares the case vars and makes this task a producer (the Out-arg producer scan reads `outputs:`, not `fields:`). No `inputs:` line — QuickForm inputs bind inside the .hitl.json, not `data.inputs[]`.
+- outputs: <var1>, <var2>   # the output/inOut field vars — REQUIRED: declares the producer contract (the Out-arg producer scan reads `outputs:`, not `fields:`). The action recipe derives both runtime arrays from `fields:`: input/inOut -> data.inputs[], output/inOut -> data.outputs[].
 - outcomes: Approve, Reject
 - runOnlyOnce: false   # from sdd.md "Run Only Once" column
 - isRequired: true

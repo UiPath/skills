@@ -131,11 +131,11 @@ Per-class shape inside each Edit:
 | Task class | Phase 2 `data` content |
 |---|---|
 | Non-connector (`process`, `agent`, `rpa`, `action` **App-based**, `api-workflow`, `case-management`, `wait-for-timer`) | Full `data.inputs[]` schema from the Phase A gather. Each input's `value` is `""`. Outputs populated per plugin. |
-| `action` — **QuickForm** | `data.context[]` (`hitlType:"quick"`, `_schemaFileId`, `hitlSchemaId`, `taskTitle`, `priority`, `recipient`…); `data.inputs[]`/`data.outputs[]` **empty**. Also write the `<Label>.hitl.json` sidecar next to `caseplan.json`. Fully authored in Phase 2 (no Phase-3 io-binding). See [action/impl-json.md § QuickForm](plugins/tasks/action/impl-json.md). |
+| `action` — **QuickForm** | `data.context[]` (`hitlType:"quick"`, `_schemaFileId`, `hitlSchemaId`, `taskTitle`, `priority`, `recipient`…); `.hitl.json` fields; and the matching runtime bridge in `data.inputs[]` / `data.outputs[]`. Input/inOut bindings are copied into `data.inputs[].value`; output/inOut mappings are emitted in `data.outputs[]`. Also write the `<Label>.hitl.json` sidecar next to `caseplan.json`. Fully authored in Phase 2 (no Phase-3 io-binding for the QuickForm task itself). See [action/impl-json.md § QuickForm](plugins/tasks/action/impl-json.md). |
 | Connector (`connector-activity`, `connector-trigger`) | `data.typeId` + `data.connectionId` set. `data.inputs` omitted. **Do NOT call `case spec` in Phase 2** — schema discovery happens in Phase 3. |
 | Unresolved (any class) | Placeholder task per Step 9.1 — empty `data: {}` plus action-only extras. |
 
-**Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md).
+**Do NOT bind input `value` fields in Step 9 for registry-backed tasks.** All literals, expressions, and cross-task references for those tasks are written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). QuickForm is the exception: its task-local runtime bridge is complete in Phase 2, so copy each input/inOut field's `.hitl.json` `binding` into the corresponding `data.inputs[].value` immediately.
 
 On context-compaction mid-gather: re-Read `caseplan.json`, scan for §4.6 tasks not yet appended, re-run Phase A for those only.
 

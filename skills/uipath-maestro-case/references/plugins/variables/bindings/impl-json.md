@@ -1,6 +1,6 @@
 # Resource Bindings — Implementation
 
-Top-level binding creation. Referenced by **all** task plugins — non-connector tasks for name + folderPath bindings, connector tasks for ConnectionId + folderKey bindings. Every task type MUST create bindings; see each task plugin's §Root-level bindings section. **Exception: a QuickForm `action` task creates NO bindings** — it has no deployed resource; its input fields bind inside the `.hitl.json` via `=vars.<v>`. The `action` row below applies to **App-based** action tasks only.
+Top-level binding creation. Referenced by **all** task plugins — non-connector tasks for name + folderPath bindings, connector tasks for ConnectionId + folderKey bindings. Every task type MUST create bindings; see each task plugin's §Root-level bindings section. **Exception: a QuickForm `action` task creates NO root bindings** — it has no deployed resource. Its `.hitl.json` declares form bindings, and the matching task-local runtime bridge lives in `data.inputs[]` / `data.outputs[]`. The `action` row below applies to **App-based** action tasks only.
 
 > **No `planning.md`** — bindings are created during implementation (driven by each task plugin's §Root-level bindings), not planned as standalone T-entries. Intentional, not a gap.
 
@@ -18,7 +18,7 @@ The bindings array stores resource metadata for tasks — process names, folder 
 |---|---|---|---|
 | process | `"process"` | `"ProcessOrchestration"` | name + folderPath |
 | action (App-based) | `"app"` | — | name + folderPath |
-| action (QuickForm) | — | — | **none** — inputs bind in the `.hitl.json` via `=vars.<v>` |
+| action (QuickForm) | — | — | **none** — `.hitl.json` plus task-local `data.inputs[]` / `data.outputs[]`; no deployed resource binding |
 | agent | `"process"` | `"Agent"` | name + folderPath |
 | rpa | `"process"` | — | name + folderPath |
 | api-workflow | `"process"` | `"Api"` | name + folderPath |

@@ -1,0 +1,150 @@
+task_id: skill-case-quickform-runtime-io
+description: >
+  Builds an inline QuickForm Case action and verifies that sidecar input,
+  output, and inOut fields are mirrored into task runtime I/O and survive
+  solution packing into BPMN.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:single-node, node:hitl, feature:approval-gate, path-to-ga]
+max_iterations: 1
+
+run_limits:
+  expected_turns: 90
+  task_timeout: 1200
+  max_turns: 120
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "QuickFormRuntimeIO" with a
+  project of the same name from the exact sdd.md below. The action must use
+  inline QuickForm, not a deployed Action App. Write sdd.md first, then build
+  until uip maestro case validate passes. Do not debug, upload, or publish.
+
+  BEGIN SDD
+
+  # SDD — QuickFormRuntimeIO
+
+  A reviewer sees an invoice ID, may edit prefilled notes, and records a
+  decision through an inline QuickForm.
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | QuickFormRuntimeIO |
+  | Case Description | Verify QuickForm runtime input and output bindings. |
+  | Case Identifier | Prefix: QFR, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | - |
+  | SLA Type | - |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.5 Case Variables
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+  |---|---|---|---|---|---|---|
+  | invoiceId | In | string | | | | Invoice identifier supplied by the caller. |
+  | draftNotes | In | string | | | | Prefilled notes supplied by the caller. |
+  | decision | Variable | string | | | | Reviewer decision written by Invoice Review. |
+  | notes | Variable | string | | | | Reviewer-edited notes written by Invoice Review. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Review (review)
+  **Type:** Stage
+  **Description:** Review the invoice and capture the human decision.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---|---|---|---|---|---|---|
+  | 1 | review.invoiceReview | Invoice Review | action | Yes | No | Reviewer | — |
+
+  ##### Task 1.1: Invoice Review (review.invoiceReview)
+
+  **Type:** action
+  **Description:** Review the invoice, edit notes if needed, then approve or reject.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  **HITL Implementation:** QuickForm
+  **Action App ID:** N/A
+  **Deployment Folder:** N/A
+  **actionType:** N/A
+  **Recipient:** Email:reviewer@example.com
+  **Priority:** Medium · **Task Title:** Review this invoice · **Labels:** —
+
+  **Input Schema:**
+
+  | Field | Type | Binding | Required |
+  |---|---|---|---|
+  | Invoice ID | String | =vars.invoiceId | Yes |
+  | Notes | String | =vars.draftNotes | No |
+
+  **Output Schema:**
+
+  | Field | Binding / Value |
+  |---|---|
+  | Decision | -> decision |
+  | Notes | -> notes |
+
+  **Actions:**
+
+  | Button | Maps To | Behavior |
+  |---|---|---|
+  | Approve | decision = "Approved" | Complete task and set variables |
+  | Reject | decision = "Rejected" | Complete task and set variables |
+
+  END SDD
+
+  This is a noninteractive test harness. Treat the generated tasks.md as
+  approved, skip review publication, skip debug, choose Done instead of
+  publishing, and finish the local build in one pass.
+
+success_criteria:
+  - type: file_exists
+    description: "caseplan.json exists at the conventional solution/project path"
+    path: "QuickFormRuntimeIO/QuickFormRuntimeIO/caseplan.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Case validation passes"
+    command: "uip maestro case validate QuickFormRuntimeIO/QuickFormRuntimeIO/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "QuickForm sidecar/task I/O parity and packed BPMN mappings are correct"
+    command: "python3 $TASK_DIR/check_quickform_runtime_io.py QuickFormRuntimeIO/QuickFormRuntimeIO/caseplan.json --solution QuickFormRuntimeIO --pack"
+    timeout: 360
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

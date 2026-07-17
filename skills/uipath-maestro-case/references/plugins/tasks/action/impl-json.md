@@ -4,7 +4,7 @@ Two paths — **QuickForm** (default; inline form, no app) and **App-based** (de
 
 > **Phase split.**
 > - **App-based:** Phase 2 writes shape with empty input values; Phase 3 binds values per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
-> - **QuickForm:** fully authored in Phase 2 — the input bindings live inside the `.hitl.json` (`=vars.<v>`), and `data.inputs[]`/`data.outputs[]` stay empty, so the task has **no** Phase-3 io-binding step of its own. Downstream tasks that consume a QuickForm output bind it in *their* Phase 3 via `=vars.<variable>`.
+> - **QuickForm:** fully authored in Phase 2. The `.hitl.json` defines the form, while populated `data.inputs[]` / `data.outputs[]` deliver the same contract to the Case packer/runtime. The QuickForm task has **no** Phase-3 io-binding step of its own because its input values and output mappings are final in Phase 2. Downstream tasks that consume a QuickForm output bind it in *their* Phase 3 via `=vars.<variable>`.
 >
 > See [phased-execution.md](../../../phased-execution.md).
 
@@ -12,7 +12,7 @@ Two paths — **QuickForm** (default; inline form, no app) and **App-based** (de
 
 ## QuickForm (default — no deployed app)
 
-Author two artifacts: a `<TaskLabel>.hitl.json` schema file alongside `caseplan.json`, and the action task carrying `data.context[hitlType]="quick"`. No deployed app, no `tasks describe`, **no `root.data.uipath.bindings[]` entries**. Generate two fresh UUID v4 values up front: `schemaId` (schema identity) and `_schemaFileId` (placeholder file id — **must differ** from `schemaId`).
+Author two aligned artifacts: a `<TaskLabel>.hitl.json` schema file alongside `caseplan.json`, and the action task carrying `data.context[hitlType]="quick"` plus its runtime I/O bridge. No deployed app, no `tasks describe`, **no `root.data.uipath.bindings[]` entries**. Generate two fresh UUID v4 values up front: `schemaId` (schema identity) and `_schemaFileId` (placeholder file id — **must differ** from `schemaId`).
 
 ### `<TaskLabel>.hitl.json`
 
@@ -57,6 +57,55 @@ Sits next to `caseplan.json`. Filename = the task's label. Unified `fields[]` ar
 | `datetime` | `dateTime` |
 | `jsonSchema` / `file` | no native QuickForm type — use `text`, or prefer **App-based** when the reviewer needs rich/file I/O |
 
+### Runtime I/O bridge (required)
+
+The sidecar is the form-authoring schema; it is **not** the Case runtime binding surface. The Case packer builds the HITL task arguments and output mappings from the action task's `data.inputs[]` / `data.outputs[]`. Derive those arrays from the same `fields[]` in the same Phase-2 write:
+
+| `.hitl.json` direction | `data.inputs[]` | `data.outputs[]` |
+|---|---|---|
+| `input` | one entry | — |
+| `output` | — | one entry |
+| `inOut` | one entry | one entry |
+
+**Input / inOut mapping:**
+
+```json
+{
+  "name": "<field.id>",
+  "type": "<original Case variable type>",
+  "id": "v<8 alphanumeric chars>",
+  "var": "<same value as id>",
+  "elementId": "<stageId>-<taskId>",
+  "value": "<field.binding>"
+}
+```
+
+- Copy `field.binding` byte-for-byte into `value` (for example, `=vars.invoiceId`).
+- `type` is the pinned Case/runtime type from the SDD (`string`, `integer`, `float`, `double`, `boolean`, `date`, `datetime`, ...), **not** the sidecar-native type (`text`, `number`, ...).
+- Mint a distinct letter-leading input slot ID (`v` + 8 alphanumeric chars) and mirror it in `var`.
+
+**Output / inOut mapping:**
+
+```json
+{
+  "name": "<field.id>",
+  "type": "<target Case variable type>",
+  "id": "<field.variable>",
+  "var": "<field.variable>",
+  "value": "<field.variable>",
+  "source": "=<field.id>",
+  "target": "=<field.variable>",
+  "elementId": "<stageId>-<taskId>"
+}
+```
+
+- `source` reads the submitted QuickForm response by **field ID**.
+- `id` / `var` / `value` / `target` use the exact declared `field.variable`; do not substitute the display label.
+- `type` comes from the output target's pinned Case type.
+- `required` stays on the sidecar field. `outcomes[]` also stays in the sidecar; neither creates another task-I/O entry.
+
+Leaving either runtime array empty when matching fields exist is a functional defect: validation can still pass, but the packed HITL task has no argument/output mapping and an expression such as `=vars.invoiceId` can reach the form as literal text instead of a resolved value.
+
 ### Task JSON
 
 ```json
@@ -81,8 +130,15 @@ Sits next to `caseplan.json`. Filename = the task's label. Unified `fields[]` ar
       { "name": "assignmentCriteria",           "type": "string",  "value": "user" },
       { "name": "recipient",                    "type": "json",    "body": { "Type": 2, "Value": "approver@company.com" } }
     ],
-    "inputs": [],
-    "outputs": []
+    "inputs": [
+      { "name": "invoiceid", "type": "string", "id": "vA1b2C3d4", "var": "vA1b2C3d4", "elementId": "Stage_aB3kL9-ta1b2c3d4", "value": "=vars.invoiceId" },
+      { "name": "amount", "type": "double", "id": "vE5f6G7h8", "var": "vE5f6G7h8", "elementId": "Stage_aB3kL9-ta1b2c3d4", "value": "=vars.amount" },
+      { "name": "notes", "type": "string", "id": "vJ9k0L1m2", "var": "vJ9k0L1m2", "elementId": "Stage_aB3kL9-ta1b2c3d4", "value": "=vars.draftNotes" }
+    ],
+    "outputs": [
+      { "name": "decision", "type": "string", "id": "decision", "var": "decision", "value": "decision", "source": "=decision", "target": "=decision", "elementId": "Stage_aB3kL9-ta1b2c3d4" },
+      { "name": "notes", "type": "string", "id": "notes", "var": "notes", "value": "notes", "source": "=notes", "target": "=notes", "elementId": "Stage_aB3kL9-ta1b2c3d4" }
+    ]
   }
 }
 ```
@@ -91,7 +147,7 @@ Sits next to `caseplan.json`. Filename = the task's label. Unified `fields[]` ar
 - `data.taskTitle` appears **both** top-level and in `context[]` — both required.
 - `hitlType` = `"quick"`. `hitlSchemaId` = the `.hitl.json` `schemaId` **exactly**. `_schemaFileId` = the other UUID (placeholder; Studio Web replaces it when it processes the project).
 - `labels` / `actionCatalogName`: leave the entry present but with no `value` for QuickForm.
-- `data.inputs[]` / `data.outputs[]`: **empty arrays** — the schema lives in the `.hitl.json`.
+- `data.inputs[]` / `data.outputs[]`: required runtime mirrors of `.hitl.json` fields. Cardinality is `input + inOut` and `output + inOut`, respectively; use the mapping above.
 - No `data.name` / `data.folderPath` (those are App-based). No `root.data.uipath.bindings[]`.
 - **Entry conditions** are added by the shared Step 10 (`current-stage-entered`), same as any task — a task with none fails `validate` (`Task has no entry rules`). No QuickForm-specific handling.
 - `recipient` / `priority`: `context[recipient].body` is the `{ Type, Value }` object and `context[priority].value` the level — same values and Type rules as App-based (§ Action-Specific Fields).
@@ -184,7 +240,9 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 - `type: "action"`; `data.taskTitle` non-empty and equal to `context[taskTitle].value`
 - a `<TaskLabel>.hitl.json` exists alongside `caseplan.json` with `schemaId`, `fields[]` (unified, `direction`-typed), `outcomes[]`
 - `context[]` has `hitlType:"quick"`, `_schemaFileId`, `hitlSchemaId` — and `context[hitlSchemaId].value` == `.hitl.json` `schemaId`; `_schemaFileId` ≠ `hitlSchemaId`
-- `data.inputs[]` and `data.outputs[]` are empty arrays; no `data.name`/`data.folderPath`; `root.data.uipath.bindings[]` NOT modified
+- every sidecar `input`/`inOut` field has one matching `data.inputs[]` entry (`name == field.id`, `value == field.binding`, runtime Case type, unique `id == var`)
+- every sidecar `output`/`inOut` field has one matching `data.outputs[]` entry (`name == field.id`, `source == "=" + field.id`, `id == var == value == field.variable`, `target == "=" + field.variable`)
+- neither runtime array contains fields of the wrong direction; no `data.name`/`data.folderPath`; `root.data.uipath.bindings[]` NOT modified
 - `uip maestro case validate` Status `Valid`; `id` captured in `id-map.json`
 
 **App-based:**
@@ -198,6 +256,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 ## Anti-patterns
 
 - **Do NOT emit `data.recipient` as a bare string, drop it, or "resolve" it.** It is always the object `{ Type, Value }` (App-based `data.recipient`; QuickForm `context[recipient].body`). The tasks.md value (`=vars.X`, email, UUID) is the `Value` — wrap it, don't pass it through. `Type 3` `=vars.X` is the finished runtime reference; copying it through as a string, deferring to Phase 3, or rewriting it to the var's email each break the task.
-- **Do NOT give a QuickForm task `data.name`/`data.folderPath` or root `bindings[]`** — those are App-based only. A QuickForm task binds nothing at the root; its inputs bind inside the `.hitl.json`.
-- **Do NOT populate `data.inputs[]`/`data.outputs[]` on a QuickForm task** — the schema lives in the `.hitl.json`; these arrays stay empty.
-- **CLI `validate` does NOT check `data.recipient`, the `.hitl.json` binding, or context completeness** — verify presence/shape explicitly (Post-Write Verification).
+- **Do NOT give a QuickForm task `data.name`/`data.folderPath` or root `bindings[]`** — those are App-based only. QuickForm uses its sidecar plus task-local runtime I/O arrays, not deployed-resource bindings.
+- **Do NOT leave QuickForm `data.inputs[]`/`data.outputs[]` empty when corresponding fields exist.** The sidecar controls the form schema; the task arrays control packed runtime delivery/extraction. Both artifacts are required and must agree.
+- **Do NOT copy sidecar-native `text` / `number` into task runtime types.** Use the pinned Case type (`string`, `double`, and so on).
+- **CLI `validate` does NOT check `data.recipient`, sidecar↔task I/O parity, or context completeness** — verify presence/shape explicitly (Post-Write Verification), then pack the solution when practical to exercise the runtime converter.

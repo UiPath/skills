@@ -57,16 +57,16 @@ Accept the `sdd.md` file path from the user, or ask if not provided. When the di
 
 If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) before this step. See [phase-0-interview.md](phase-0-interview.md). Phase 1 resumes here only after the Approve hard-stop in Phase 0.
 
-`sdd.md` is the **sole required input**. It describes stages, tasks, conditions, SLA, component types, persona information, and provides the search keys for registry lookups. The portable name is type-specific: `Resolved Resource` for process/agent/rpa/api-workflow, the Action App title in `HITL Implementation` for action, and `Child Case` for case-management. The corresponding identity cell (`Resource Identity` or `Action App ID`) says whether an earlier phase resolved it. (The SDD does not describe edges — transitions are expressed as stage entry/exit conditions; edges are retired.) The skill does not validate or gap-fill sdd.md — trust it as written. (Phase 0 may have generated it; once approved, Rule 2 applies regardless of source.)
+`sdd.md` is the **sole required input**. It describes stages, tasks, conditions, SLA, component types, persona information, and provides the search keys for registry lookups. The portable intent is type-specific: `Resolved Resource` for process/agent/rpa/api-workflow, `HITL Implementation` (`QuickForm` or `Action App: <deploymentTitle>`) for action, and `Child Case` for case-management. Only the Action App variant supplies an action registry search key; QuickForm is inline and has no registry identity. The corresponding identity cell (`Resource Identity` or `Action App ID`) says whether an earlier phase resolved a registry-backed resource. (The SDD does not describe edges — transitions are expressed as stage entry/exit conditions; edges are retired.) The skill does not validate or gap-fill sdd.md — trust it as written. (Phase 0 may have generated it; once approved, Rule 2 applies regardless of source.)
 
-> **Phase 0 carryover.** `tasks/registry-resolved.json` is an optional performance cache/audit artifact, never the source of resource intent. If it exists, read it first, associate an entry by exact `stage` + `task`, and reuse it **only when ALL four hold against the current SDD contract**:
+> **Phase 0 carryover.** `tasks/registry-resolved.json` is an optional performance cache/audit artifact for registry-backed tasks, never the source of resource intent. QuickForm actions are intentionally absent because they perform no registry lookup. If the file exists, read it first, associate an entry by exact `stage` + `task`, and reuse it **only when ALL four hold against the current SDD contract**:
 >
 > 1. `taskType` matches the SDD task type.
 > 2. `cacheFile` is compatible with that type under [registry-discovery.md](registry-discovery.md) (`action` and `case-management` require their primary cache exactly).
 > 3. `searchQuery` and the selected entry's canonical name equal the SDD's type-specific portable name.
 > 4. The SDD identity and folder are both concrete and equal the selected entry's identity and exact folder.
 >
-> Canonical selected fields: `deploymentTitle` / `deploymentFolder.fullyQualifiedName` / `id` for action; `name` / `folders[0].fullyQualifiedName` / `entityKey` for the other non-connector types. Normalize a labeled SDD identity (e.g. `agentId <uuid> (v1.0.6)`) before comparison — the ID token must equal `entityKey`, and any SDD version must equal the selected entry's version metadata (e.g. `customData.ProcessVersion`) when present. **If any field is missing, `<UNRESOLVED>`, or mismatched, treat the entry as stale:** ignore it, re-run discovery from the SDD, and replace that task's audit entry. Never let a cached identity upgrade or override unresolved or edited SDD fields. If the file is absent, run the same discovery from each task's portable name and write a fresh file. This rule covers the portable-resource task types above; connector resolution continues through [connector-integration.md](connector-integration.md), unchanged.
+> Canonical selected fields: `deploymentTitle` / `deploymentFolder.fullyQualifiedName` / `id` for an App-based action; `name` / `folders[0].fullyQualifiedName` / `entityKey` for the other non-connector types. Normalize a labeled SDD identity (e.g. `agentId <uuid> (v1.0.6)`) before comparison — the ID token must equal `entityKey`, and any SDD version must equal the selected entry's version metadata (e.g. `customData.ProcessVersion`) when present. **If any field is missing, `<UNRESOLVED>`, or mismatched, treat the entry as stale:** ignore it, re-run discovery from the SDD, and replace that task's audit entry. Never let a cached identity upgrade or override unresolved or edited SDD fields. If the file is absent, run discovery for each registry-backed task and write a fresh file; do not add QuickForm actions. Connector resolution continues through [connector-integration.md](connector-integration.md), unchanged.
 
 ## Step 3 — Resolve resources
 
@@ -86,8 +86,8 @@ For every task, trigger, and condition in the sdd.md:
 
 1. **Identify the plugin** by matching the sdd.md component description to an entry in the catalogs below (§3.1–§3.3).
 2. **Load the plugin's `planning.md`** — it lists the exact fields to resolve from sdd.md, the cache file(s) to consult, and any discovery steps required.
-3. **Apply registry discovery** via [registry-discovery.md](registry-discovery.md) when a taskTypeId is needed. Use the type-specific portable-name field as the query: `Resolved Resource` for process/agent/rpa/api-workflow, Action App title for action, and `Child Case` for case-management. A missing or `<UNRESOLVED>` portable name violates the SDD contract and must be surfaced instead of silently falling back to `Task Name`.
-4. **Persist every resolution** to `registry-resolved.json` using Rule 9's exact keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`). Keep the full exact-name match objects for debugging and stale-cache validation.
+3. **Apply registry discovery** via [registry-discovery.md](registry-discovery.md) when a taskTypeId is needed. Use the type-specific portable-name field as the query: `Resolved Resource` for process/agent/rpa/api-workflow, the deployment title for an `Action App: <deploymentTitle>` action, and `Child Case` for case-management. A `QuickForm` action skips registry discovery entirely. A missing or `<UNRESOLVED>` portable name on a registry-backed task violates the SDD contract and must be surfaced instead of silently falling back to `Task Name`.
+4. **Persist every registry-backed resolution** to `registry-resolved.json` using Rule 9's exact keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`). Keep the full exact-name match objects for debugging and stale-cache validation. Omit QuickForm actions; they have no cache file, query, match set, or selected deployment.
 
 ### 3.1 Task Type catalog
 
@@ -149,7 +149,7 @@ Create a `tasks/` folder adjacent to the sdd.md file. Generate `tasks.md` using 
 
 Cross-reference: [case-schema.md](case-schema.md) for JSON shape, [bindings-and-expressions.md](bindings-and-expressions.md) for inputs/outputs wiring.
 
-Also write `registry-resolved.json` — full detail per task using Rule 9's exact keys: task type, searched cache filename, search query, all exact-name matches, selected entry, and rationale.
+Also write `registry-resolved.json` — full detail per registry-backed task using Rule 9's exact keys: task type, searched cache filename, search query, all exact-name matches, selected entry, and rationale. QuickForm actions are omitted because no lookup occurred.
 
 ### 4.0 Completeness principle (no omissions)
 

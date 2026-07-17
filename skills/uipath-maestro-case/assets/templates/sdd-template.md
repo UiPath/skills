@@ -400,7 +400,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 **Recipient:** {typed prefix only: `Role:<name>` \| `User:<uuid>` \| `UserGroup:<uuid>` \| `Email:<addr>` \| `Expression:=vars.<id>`}
 **Priority:** {Low \| Medium \| High \| Critical} · **Task Title:** {one-line Action Center prompt} · **Labels:** {csv or `—`}
 
-> The Action App title carries portable intent; `Action App ID` carries resolution status. A concrete ID plus the exact folder locates the deployed app, while an unresolved ID plus the intended title lets Phase 1 repeat discovery without `tasks/registry-resolved.json`. `actionType` is the human-decision app's behaviour selector — treat it as a closed enum sourced from the app, not a free-text label. **For a `QuickForm` task, `Action App ID` / `Deployment Folder` / `actionType` do not apply (`N/A`)** — the form is defined by the Input/Output Schema rows (fields) and the Action buttons (outcomes).
+> The Action App title carries portable intent; `Action App ID` carries resolution status. A concrete ID plus the exact folder locates the deployed app, while an unresolved ID plus the intended title lets Phase 1 repeat discovery without `tasks/registry-resolved.json`. `actionType` is the human-decision app's behaviour selector — treat it as a closed enum sourced from the app, not a free-text label. **For a `QuickForm` task, `Action App ID` / `Deployment Folder` / `actionType` do not apply (`N/A`)** — the Input/Output Schema rows (fields) and Action buttons (outcomes) drive both the `.hitl.json` sidecar and the task-local runtime I/O bridge.
 
 **Input Schema:**
 
