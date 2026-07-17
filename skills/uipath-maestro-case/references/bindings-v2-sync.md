@@ -8,13 +8,12 @@ Bindings live at top-level `bindings[]` in `caseplan.json`. Output `bindings_v2.
 
 **Batched, not per-task.** `bindings_v2.json` is only consumed by `uip solution resources refresh` (which runs once before upload/debug). No intermediate step reads it. Regenerating after every task wastes Read→convert→Write cycles on a growing file.
 
-Run at these three points only:
+Run at these two points only:
 
-1. **End of Phase 2 Step 9** (after all non-connector tasks written) — covers all process/agent/rpa/action/api-workflow/case-management bindings
-2. **End of Phase 3 Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache for tasks
-3. **End of Phase 3 Step 10** (after all connector condition RULES written across the 4 scopes — stage-entry, stage-exit, case-exit, task-entry) — adds Connection bindings + populates IS cache for rules. Required because connector rules are written in Step 10 (conditions), not Step 9.7 (tasks); without this third sync point, rule-introduced Connection/Folder bindings + IS-cache entries wouldn't land until the post-Phase-3 catch-all, and `resource refresh` would miss them.
+1. **End of Phase 2 Step 9** (after root triggers and non-connector task shapes are written) — covers process/agent/rpa/action/api-workflow/case-management bindings plus fully configured case-level event-trigger Connection bindings. Populate the IS cache for those trigger connections here so the Phase 2 `Publish for review` branch can refresh resources.
+2. **End of Phase 3 root finalization** (after every stage and connector condition rule is composed) — adds all remaining connector-task/rule Connection/Folder bindings and merges their selected connections into the IS cache. Connector task/rule bindings are accumulated during stage composition, so no intermediate consumer reads a partially regenerated file.
 
-Individual task / rule plugins write bindings to `caseplan.json` per-target as normal (top-level `bindings[]`). The batch regeneration reads the full bindings array once and converts everything in one pass.
+Plugins compose bindings per target, but greenfield authoring accumulates/deduplicates them and applies the top-level `bindings[]` slice only at the phase batch boundary. The regeneration then reads that full array once and converts everything in one pass.
 
 ---
 
@@ -67,7 +66,7 @@ File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ 
 
 ## § Populate IS connection cache
 
-`uip solution resources refresh` reads a local IS cache that connector plugins must populate after `get-connection`. Applies to all three connector-resolving paths: connector **tasks** (Step 9.7), connector **triggers** (Step 6.1), and connector **condition rules** in any of the 4 scopes (Step 10).
+`uip solution resources refresh` reads a local IS cache populated from the run-scoped cached `get-connection` response. Applies to all three connector-resolving paths: connector **tasks**, connector **triggers**, and connector **condition rules** in any of the 4 scopes. Merge event-trigger connections at the Phase 2 sync and remaining task/rule connections at Phase 3 root finalization. Existing IDs are skipped; never repeat `get-connection`.
 
 **Path:** `~/.uipath/cache/integrationservice/<connectorKey>/connections.json`
 
@@ -91,15 +90,15 @@ File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ 
 | Field | Source | Plugin step |
 |---|---|---|
 | `id` | `connection-id` from `tasks.md` | Planning |
-| `name` | `.Data.Connections[selected].name` from `get-connection` | Step 1 |
+| `name` | `.Data.Connections[selected].name` from cached `get-connection` response | Schema gather |
 | `connectorKey` | `connector-key` from `tasks.md` | Planning |
-| `connectorName` | `.Data.Connections[selected].connector.name` from `get-connection` | Step 1 |
-| `folderKey` | `.Data.Connections[selected].folder.key` from `get-connection` | Step 1 |
-| `folderName` | `.Data.Connections[selected].folder.name` from `get-connection` | Step 1 |
+| `connectorName` | `.Data.Connections[selected].connector.name` from cached `get-connection` response | Schema gather |
+| `folderKey` | `.Data.Connections[selected].folder.key` from cached `get-connection` response | Schema gather |
+| `folderName` | `.Data.Connections[selected].folder.name` from cached `get-connection` response | Schema gather |
 
 ### Procedure
 
-After `get-connection` succeeds (Step 1), write or merge the cache:
+At each of the two sync points, write or merge every currently referenced selected connection from `tasks/schema-cache.json`:
 
 1. Read existing cache at the path above (may not exist — start with `[]`)
 2. If an entry with the same `id` already exists, skip

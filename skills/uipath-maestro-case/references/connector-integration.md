@@ -20,7 +20,7 @@ Connection selection mechanics (`--refresh` retry, ping verification, BYOA workf
 
 ## Resolution Pipeline
 
-For every connector task or event trigger, run these CLI metadata fetches in order. Each call feeds the next; the populated `caseShape` from `case spec` is written directly into `caseplan.json` per the plugin's `impl-json.md` — there is no `tasks add-connector` mutation step.
+Inventory every connector task, event trigger, and connector-bound rule, then run each **distinct exact request** once through [schema-cache-guide.md](schema-cache-guide.md). Consumers with the same exact request share the persisted response but mint their own IDs; the populated `caseShape` is composed into its owning stage/root per the plugin recipe.
 
 > **Empty `Connections[]` is not terminal.** When `get-connection` returns no connections, Step 2 offers to create one (`uip is connections create`) before falling back to `<UNRESOLVED>` — see [§ Creating a Connection](#creating-a-connection).
 
@@ -36,6 +36,8 @@ Read the relevant TypeCache index file directly (CLI `registry search` has known
 Match on `displayName` from the sdd.md. **Skip entries without a `uiPathActivityTypeId`** — non-connector activities are not supported as case tasks.
 
 ### Step 2 — Resolve the connection
+
+Before the command, check `tasks/schema-cache.json` by `(cacheType, activityTypeId)` and reuse an exact `Kxx` result. Run the command only on a miss and persist its complete response. Record each consumer's choice separately in `Kxx.selections[T-number]`; one cached list may legitimately serve tasks that select different connections.
 
 ```bash
 uip maestro case registry get-connection --type <typecache-activities|typecache-triggers> \
@@ -81,9 +83,9 @@ uip is connections create "<connector-key>" --output json
 
 > If you must re-discover via `is connections list` after create, pass `--refresh` to bypass the cache — but capturing `ConnectionId` from the create output is preferred.
 
-### Step 3 — Discover the operation contract via `case spec`
+### Step 3 — Discover the operation contract via cached `case spec`
 
-One CLI call replaces the legacy `case tasks describe` + `is resources describe` dance:
+Prefer one populated call when the SDD already provides exact field keys and no reference/filter discovery is needed. Use the lean call only for ambiguous mapping, unknown required fields, reference discovery, or filter discovery. Either exact request is persisted and never repeated:
 
 ```bash
 # Planning phase — lean response (no caseShape payload)
@@ -92,7 +94,7 @@ uip maestro case spec --type <activity|trigger> \
   --connection-id "<connection-id>" \
   --skip-case-shape --output json
 
-# Phase 3 (implementation) — populated caseShape from --input-details
+# Populated-shape gather — once per exact configured request, before stage mutation
 uip maestro case spec --type <activity|trigger> \
   --activity-type-id "<uiPathActivityTypeId>" \
   --connection-id "<connection-id>" \
@@ -143,7 +145,7 @@ If a reference cannot be resolved, **AskUserQuestion** with the candidates (drop
 
 ## Applying Results to caseplan.json
 
-In Phase 3, the populated `caseShape` from `case spec --input-details` is dropped into the task's `data` after binding-id substitution. Per-class wiring lives in each plugin's `impl-json.md` — the table below is a quick reference.
+In Phase 3, the populated `caseShape` is read from the consumer's exact `Cxx` entry, then composed into the target after binding-id substitution. Per-class wiring lives in each plugin's `impl-json.md` — the table below is a quick reference.
 
 | Resolved value | Connector activity / trigger task field |
 |---|---|

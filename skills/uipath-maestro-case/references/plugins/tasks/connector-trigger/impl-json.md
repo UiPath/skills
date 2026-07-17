@@ -2,9 +2,9 @@
 
 > **Node `type` value: `wait-for-connector` (schema-kebab).** NEVER write `connector-trigger` (plugin folder name) into the JSON `type` field. The CLI `--type connector-trigger` flag is a separate concept — used only when calling the legacy `uip maestro case tasks describe` command. The current path uses `uip maestro case spec --type trigger`. See SKILL.md Rule 16 + Plugin Index.
 
-> **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --type trigger --input-details` once, reads the populated `caseShape`, substitutes placeholders, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
+> **Phase split.** Phase 2 writes `data.typeId` + `data.connectionId` only. Phase 3 consumes the T-entry's cached populated `caseShape`, substitutes placeholders, and finalizes the task inside its owning-stage Edit. See [`../../../schema-cache-guide.md`](../../../schema-cache-guide.md).
 
-Fetch the populated trigger task scaffold via `uip maestro case spec --type trigger --input-details`, then drop it into `caseplan.json` as a `wait-for-connector` task. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `tasks.md` and threads them through the spec call.
+Load the populated trigger task scaffold from `tasks/schema-cache.json`, then compose it into the owning stage as a `wait-for-connector` task. Field discovery, reference resolution, and exact-request gathering happen before stage mutation.
 
 For shared CLI invocation, placeholder substitution, anti-patterns, and the canonical form for filter expressions with variable references, see [connector-trigger-common.md](../../../connector-trigger-common.md). For the per-sink canonical-form table covering all expression-syntax decisions in this skill, see [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink). This doc covers only the **task-specific** parts.
 
@@ -42,9 +42,9 @@ Construct the input-details object literally from `tasks.md`:
 
 Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
 
-### Step 2 — Run `case spec` with input-details
+### Step 2 — Load the exact populated response
 
-Single CLI call replaces the legacy `get-connection` + `case tasks describe --type connector-trigger` two-call pattern. See [common § Phase 3 Implementation Step 2](../../../connector-trigger-common.md#step-2--run-case-spec-with-input-details) for the command and response handling.
+Read the T-entry's `connector-shape-key` from `tasks/schema-cache.json` and verify the stored request exactly matches the Step 1 input details plus type/activity/connection/object identity. On a cache hit, do not call CLI. On a miss, return to the gather pass, fetch once, persist the complete response, then resume. See [common § Phase 3 Implementation Step 2](../../../connector-trigger-common.md#step-2--load-the-populated-case-spec-response).
 
 ### Step 3 — Required-event-param validation (HARD GATE)
 
@@ -78,7 +78,7 @@ For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** pe
 
 **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is `caseShape.outputs[]` from `case spec` (Step 2 above). The dedup rule above applies first; output binding consumes the deduped names.
 
-### Step 7 — Build task and write to caseplan.json
+### Step 7 — Build task for owning-stage composition
 
 ```json
 {
@@ -98,15 +98,15 @@ For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** pe
 }
 ```
 
-Append the task to the target stage's `tasks[]` array. Default: own task set (one task per lane). **Exception:** if this task is a parallel member of a `runs-sequentially` group, push into the shared lane of that group (shared lane = parallel siblings inside the sequence, semantic).
+Place the task in the target stage's composed `tasks[]` array. Default: own task set (one task per lane). **Exception:** if this task is a parallel member of a `runs-sequentially` group, push into the shared lane of that group. Do not issue a task-only Edit; the complete stage is written once by the Phase 3 stage pass.
 
-### Step 8 — Append root-level bindings
+### Step 8 — Accumulate root-level bindings
 
 Per [common § Root-level bindings](../../../connector-trigger-common.md#root-level-bindings). Two entries (ConnectionId, FolderKey), `resourceKey` = `connection-id`. Deduplicate against existing root bindings.
 
-### Step 9 — Sync IS connection cache
+### Step 9 — Defer sidecar sync
 
-After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](../../../bindings-v2-sync.md). Skip if `case spec` failed.
+Hold the root bindings for Phase 3 root finalization, then populate the IS connection cache from the cached `Kxx` response and regenerate `bindings_v2.json` once per [bindings-v2-sync.md](../../../bindings-v2-sync.md). Skip this consumer if populated schema gathering failed.
 
 ## Graceful degradation
 
@@ -114,7 +114,7 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 
 | Step failed | What gets populated | Log |
 |---|---|---|
-| `case spec` fails | Phase 2 shape preserved — `data.typeId` + `data.connectionId` only, no Phase 3 inputs/outputs/context enrichment. Distinct from a Rule 8 placeholder (`data: {}`) — typeId/connectionId are resolved, only the spec-driven enrichment is skipped. Log per Rule 8 reporting | `[SKIPPED] case spec failed — typeId/connectionId preserved, no enrichment` |
+| populated schema gather fails | Phase 2 shape preserved — `data.typeId` + `data.connectionId` only, no Phase 3 inputs/outputs/context enrichment. Distinct from a Rule 8 placeholder (`data: {}`) — typeId/connectionId are resolved, only the spec-driven enrichment is skipped. Log per Rule 8 reporting | `[SKIPPED] case spec failed — typeId/connectionId preserved, no enrichment` |
 | Required-event-param gate fails (user declines) | Placeholder per Rule 8 OR re-prompt | `[SKIPPED] required event parameter <name> missing — placeholder task per Rule 8` |
 | All succeed | Full population per Steps 4-9 including bindings_v2 sync | — |
 

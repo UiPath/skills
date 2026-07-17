@@ -10,14 +10,14 @@ When editing `caseplan.json` directly, the agent is responsible for these mechan
 
 | Concern | Requirement |
 |---|---|
-| Task schema (`taskTypeId`, `inputs`, `outputs`) | Never hand-author. Source from `registry-resolved.json` / `uip maestro case tasks describe` — see [registry-discovery.md](registry-discovery.md). Hand-written schemas fail validation. |
+| Task schema (`taskTypeId`, `inputs`, `outputs`) | Never hand-author. Source from the T-entry's exact response in `tasks/schema-cache.json` — see [schema-cache-guide.md](schema-cache-guide.md). Hand-written schemas fail validation. |
 | ID generation | Generate IDs per the ID Generation section below using the `prefixedId(prefix, count)` algorithm |
 | `elementId` on tasks | Compute and write `${stageId}-${taskId}` on every task |
 | Stage data fields | Emit `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` on every new Stage node. Do NOT emit `style`, `measured`, `width`, `zIndex`, or `position` — see Layout fields below (Rule 18/19) |
 | Edges | Not authored — `schema.edges` stays `[]`. No edge handles, no edge objects, no cleanup needed on stage removal |
 | Root-level bindings cleanup | Prune entries from top-level `bindings` no longer referenced by any task |
 | Lane array expansion | Ensure `stageNode.data.tasks` is expanded to include `laneIndex` before pushing |
-| `id-map.json` sidecar | Initialize on T01 (case plugin); append per plugin as IDs are generated; flush to disk at end of run (or after each plugin for durability) |
+| `id-map.json` sidecar | Initialize on T01 (case plugin); append IDs for a stage and its owned entries together; flush once per stage batch |
 | `caseplan.json` file creation | T01 (case plugin) writes the file from scratch; downstream plugins mutate in place |
 | Layout fields | Do NOT emit node-level `position`, `style`, `measured`, `width`, `height`, `zIndex`. Do NOT emit edge `data.waypoints`. Emit top-level `layout: {}` — FE auto-layouts on canvas load (Rule 18). |
 
@@ -66,7 +66,7 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 11. **Cross-task bindings reference existing IDs.** Before writing a `var bind` entry, confirm the source stage ID and source task ID both exist in `caseplan.json`.
 
-12. **Validate after every section's batch — with exceptions.** Run `uip maestro case validate <file> --output json` after each `tasks.md` section batch completes (per § Per-section batch write contract below). One validate per section, not one per T-entry. Fixing errors at the section boundary is cheaper than chasing a cascade.
+12. **Validate at phase boundaries for greenfield; operation boundaries for brownfield.** Greenfield runs `validate --skeleton` once after the complete Phase 2 stage batches and full `validate` once after Phase 3/root finalization. Do not validate between stage Edits. Brownfield validates once after its targeted operation batch.
     - **Exception — case plugin (T01):** A case-only caseplan is known-invalid by design (no stage nodes, so the case cannot be entered). Skip `uip maestro case validate` after T01; a cheap `JSON.parse` + root/trigger shape check is the substitute — see [plugins/case/impl-json.md § Post-write validation](plugins/case/impl-json.md#post-write-validation).
     - **Exception — stages plugin (pilot):** A stages-only caseplan is also known-invalid (stages have no entry conditions yet). The plugin's validation parity is captured in the fixture instead.
 
@@ -155,8 +155,8 @@ Full sink-to-form table, the lookup-vs-JS-eval dispatch, and connector-trigger f
 All mutations to `caseplan.json` (and sibling files like `entry-points.json`, `id-map.json`) MUST go through Claude's built-in tools only:
 
 - **Read** to load the file.
-- **Edit** for narrowly-scoped, unambiguous in-place replacements — default for all mutations after T01, and required for sections with <10 T-entries.
-- **Write** for the T01 scaffold (initial empty-file creation by the `case` plugin) and for whole-section batched writes when a section has ≥10 T-entries — see § Per-section batch write contract for the bounded conditions under which whole-section Write replaces N sibling Edits.
+- **Edit** for every `caseplan.json` mutation after T01. Greenfield targets the owning stage slice; brownfield targets the smallest safe operation slice.
+- **Write** only for the T01 initial `caseplan.json` scaffold. Never rewrite the populated whole file.
 
 **Do NOT** shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other process to read, parse, transform, or write the JSON. No helper scripts, no inline one-liners that modify files, no `python3 -c '... json.load ... json.dump ...'`, no `node -e "...fs.writeFileSync...".` The agent holds the parsed object in its own reasoning; the file system is touched only via Read/Write/Edit.
 
@@ -176,18 +176,22 @@ Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issu
 
 **Prefixed IDs (`Stage_`, `t`, `Rule_`, `Condition_`, `trigger_`, `c`, `r`, `b`, `esc_`, `StickyNote_`) are picked inline by the agent — no subprocess.** See § ID Generation algorithm above.
 
-### Per-section batch write contract — canonical
+### Greenfield stage-batched write contract — canonical
 
-`caseplan.json` mutations follow a **per-section batched Edit** contract. The unit is one `tasks.md` section (e.g., §4.4 stages, §4.6 task-shapes, §4.7 conditions, §4.8 SLA), not one T-entry.
+The greenfield mutation unit is the **owning stage**, not a T-entry or a `tasks.md` section. T01 is the only whole-file Write.
 
-Procedure per section:
+1. **Gather before mutation.** Finish all registry/schema requests and persist them to `tasks/schema-cache.json`. Do not interleave metadata CLI calls with stage Edits.
+2. **Phase 2 — one stage-array Edit.** Read `caseplan.json` once, compose every stage node and every Phase 2 task shape, mint all stage/task/input/output IDs, then append the complete stage set by replacing the `schema.nodes` slice once while preserving existing triggers verbatim. Accumulate/deduplicate non-connector bindings and apply the complete root `bindings[]` slice in one additional Edit. Update all corresponding `id-map.json` entries together. If the node replacement would exceed 30KB, split by complete stage; never split by task or binding.
+3. **Phase 3 — one Edit per stage.** At re-entry, Read `tasks.md`, `schema-cache.json`, and `caseplan.json` once. Precompute global output-name deduplication and `$xref` resolutions before editing. For each stage, replace its complete node in one Edit containing all connector detail, task input/output values, stage entry/exit conditions, task entry conditions, stage/task SLA, and resolved `$xref` markers.
+4. **Root finalization — one Edit.** After stage finalization, apply case-exit conditions, case-level SLA, and accumulated root bindings in one root-owned Edit. Sidecars regenerate once after the completed pass.
+5. **No re-Read between sibling stage Edits.** Re-read only after an Edit failure, external file change, or context compaction.
+6. **Validate only at phase boundaries.** One skeleton validate after all Phase 2 stages; one full validate after Phase 3/root finalization.
 
-1. **One Read** of `caseplan.json` at section entry — authoritative state.
-2. **Section-sized writes** — pick by T-entry count:
-   - **Small sections (<10 T-entries)** — N Edits in sequence, one per T-entry. Edit targets the smallest unambiguous slice of JSON the T-entry mutates (one node, one array field, one task's `data.inputs`).
-   - **Large sections (≥10 T-entries)** — single whole-section write replacing the section's container (e.g., entire `schema.nodes` array for stages, a stage's full `data.tasks` array for tasks within that stage). Compose the complete post-section state in reasoning from the Read snapshot, then emit via one Edit (replacing the container slice) or one Write (whole-file rewrite) — Write only when the per-section Edit slice is too large to express as a single unambiguous `old_string`/`new_string` pair.
-3. **Skip the re-Read between sibling Edits** — Edit's tool result confirms applied state in context; explicit re-Read is redundant for in-memory correctness.
-4. **One `validate`** at section boundary (Pre-flight Item 12 above).
+**Mutation budget.** The normal maximum after T01 is `numberOfStages + 5` caseplan Edits: one Phase 2 stage-array Edit, one Phase 3 Edit per stage, plus bounded root/trigger/variable work. For an eight-stage case, target 10–13 Edits. If the planned sequence exceeds the formula, regroup before mutating; do not fall back to per-task/per-condition Edits.
+
+**Large stage exception.** Keep each `new_string` at or below approximately 30KB. If a single final stage exceeds that size, use at most two Phase 3 Edits for that stage: (a) the full `data.tasks` slice, then (b) the stage conditions/SLA slice. This is a size split, not permission to edit each child independently.
+
+**Brownfield exception.** Targeted edits remain narrow and operation-scoped per [brownfield.md](brownfield.md). Do not replace an entire stage for a one-rule brownfield change merely to follow the greenfield batching rule.
 
 **Same-file sequential Edits — anchoring.** N Edits against `caseplan.json` in one section serialize in order; each later Edit runs against the text the earlier ones already changed. `caseplan.json` has keys that recur across nodes (`"tasks"`, `"data"`, `"entryConditions"`, `"exitConditions"`, `"inputs"`) — a bare recurring key is NOT a safe anchor.
 
@@ -195,27 +199,27 @@ Procedure per section:
 - **Extend until the match is unique within the whole file**, not just within the intended node.
 - An `old_string` that overlaps text a prior Edit in the same turn removed or shifted fails with "string not found" — order Edits so each targets an untouched slice, or re-Read if a later Edit depends on an earlier one's output.
 
-**Tool primitive choice.** Edit is the default — it preserves untouched fields automatically. Whole-file Write rebuilds the file from agent reasoning and risks silently dropping fields the agent forgot; use it only when (a) the section has ≥10 T-entries AND (b) the agent has the complete file state in context from the Read at step 1 AND (c) every untouched root-level field, sibling section, and node not mutated by this section will be copied verbatim. When in doubt, fall back to N Edits — the 12-item Pre-flight Checklist exists because field drops have happened, and Edit is the structural defense.
+**Tool primitive choice.** Edit is mandatory after T01 because it preserves untouched root fields and sibling stages automatically. Never fall back to a populated whole-file Write.
 
-**Status text bundling.** Any progress text the agent emits before a section's first Edit/Write MUST share the same assistant turn as the tool_use (text block + tool_use block in one content array). Standalone text-only turns between Edits are forbidden — they each cost ~5s inference latency + full prompt cache replay for no work. Cap inline status to ≤1 sentence / ~20 tokens. Per-T-entry audit lives in TaskUpdate, NOT in narration.
+**Status text bundling.** Any progress text before a stage Edit MUST share the same assistant turn as the tool use. Standalone text-only turns between Edits are forbidden. Cap inline status to one short sentence. T-entry audit lives in `tasks.md` and `id-map.json`, not narration or one progress call per T-entry.
 
-**Planning monologues forbidden.** Pre-Write/pre-Edit text turns that announce intent ("Caveman push:", "Approach:", "Strategy:", "Big single Write:", "Writing full caseplan.json structurally", "Now I'll batch all stages") are forbidden, whether bundled or standalone. The tool call itself IS the announcement — TaskUpdate carries the T-by-T narrative, the Edit/Write tool input is self-describing. If the status text the agent wants to emit exceeds one short sentence, the correct action is to cut it, not to bundle it. Multi-paragraph status text is always a violation.
+**Planning monologues forbidden.** Pre-Write/pre-Edit text turns that announce intent ("Caveman push:", "Approach:", "Strategy:", "Big single Write:", "Writing full caseplan.json structurally", "Now I'll batch all stages") are forbidden, whether bundled or standalone. The tool call itself is the announcement; the Edit input is self-describing. If status exceeds one short sentence, cut it. Multi-paragraph status text is always a violation.
 
 **Hard token cap on any single text block.** Outside the allow-list below, no text block may exceed **200 tokens**. Inside the allow-list, no text block may exceed **500 tokens**, ever. A text block >200 tokens outside the allow-list, or >500 inside it, is by definition a planning monologue regardless of content or framing. Allow-list (and only this list): hard-stop AskUserQuestion preambles, Phase 5/6 completion reports, `Publish for review` DesignerUrl print, post-validate result summaries.
 
 **Forbidden announcement verbs.** Text blocks (bundled or standalone) starting with `Building`, `Composing`, `Writing`, `Drafting`, `Generating`, `Now I'll`, `Next:`, `Next step:`, `Approach:`, `Strategy:`, `Plan:`, `Caveman push:`, `Big single Write:`, `Let me`, or any other narration of the imminent tool call are FORBIDDEN regardless of length. Restating the upcoming tool_use in prose is pure cost. Allowed exceptions remain: AskUserQuestion preambles, completion reports (Phase 5/6 exit), `Publish for review` DesignerUrl print, and post-validate result summaries (`N errors, M warnings — fixing X` is fine; `Composing fix for ...` is not).
 
-**Audit trail via TaskUpdate.** Reviewers see T-by-T progress in the todo log, not in the file diff. Each plugin seeds TaskCreate items keyed by T-number; mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit/Write returns success. The transcript shows one or N writes per section — what changes is the dropped re-Read between siblings and the dropped standalone narration turns.
+**Audit trail without per-T progress calls.** `tasks.md` maps every declaration to a T-number and `id-map.json` maps every generated element back to it. Use one progress item per phase or stage pass. Do not seed TaskCreate/TaskUpdate items per T-entry; those calls duplicate the durable audit and add inference turns.
 
-**CLI-gated sections — gather-then-write.** Where each T-entry needs its own CLI call before its JSON shape is known (Phase 2 §4.6 non-connector `tasks describe`; Phase 3 §9.7 connector `case spec`): run all CLI calls first, collect results in reasoning, then enter the Read → N-Edits → validate batch.
+**CLI-gated data — cache-then-write.** Execute unique schema requests once through [schema-cache-guide.md](schema-cache-guide.md), persist complete responses, then enter the stage Edit pass. Implementation plugins read cached entries; they do not issue ad-hoc schema calls.
 
-**Recovery.** On any mid-batch interruption (Edit failure, context compact, abort): re-Read `caseplan.json` + `tasks.md`, scan for next un-applied T-entry, resume from there. No sidecar checkpoint file. For CLI-gated sections, re-run the CLI calls for un-applied entries — typically cheap.
+**Recovery.** On interruption, re-Read `caseplan.json`, `tasks.md`, `id-map.json`, and `schema-cache.json`; scan for the next stage not fully applied and resume there. Reuse successful cache entries — do not repeat their CLI calls.
 
-**Scope.** This contract applies to **`caseplan.json`**. `tasks.md` (Phase 1) and `registry-resolved.json` follow the mirror section-batched contract in [planning.md §4.0a](planning.md) — same one-Read-per-section + N-Edit-appends shape, with markdown Edit-append as the primitive (no whole-section Write needed; markdown appends are cheap regardless of count).
+**Scope.** The stage contract applies to greenfield **`caseplan.json`** authoring. `tasks.md` and `registry-resolved.json` follow [planning.md §4.0a](planning.md). Brownfield uses operation-scoped narrow Edits.
 
-**Whole-file Write outside T01.** Permitted only at section boundaries for sections with ≥10 T-entries, per the procedure above. Forbidden mid-section (between T-entries within the same section) — that bypasses the Read snapshot and risks field drops.
+**Whole-file Write outside T01.** Forbidden. Size pressure is handled by the large-stage two-Edit exception, never by rewriting the populated file.
 
-**Cap single Write output at ~15K tokens / ~40KB.** When a section's combined output would exceed this, do NOT collapse into one Write — split by phase: Phase 2 emits the skeleton (root + nodes + variables, `edges` stays `[]`, empty `data` on tasks); Phase 3 then fills `data.context` / `data.inputs` / `data.outputs` / conditions / SLA via per-section Edits onto the already-populated nodes. A single Write turn beyond ~15K out tok pays ~150s inference latency and concentrates field-drop risk; the Phase 2 → Phase 3 split spreads the same work across smaller turns with intermediate validate gates. Concretely, for a case with ≥40 tasks or ≥8 stages: never emit the full populated caseplan.json in one Write — always Phase 2 skeleton (small Write) → Phase 3 fill (per-section Edits on populated nodes).
+**Cap one stage Edit at ~30KB.** Split only that stage into the two bounded slices above. Phase 2/Phase 3 already provide the cross-run size split; do not introduce extra task-by-task fills.
 
 **Forbidden: build-assembler helper scripts.** Writing `/tmp/build-caseplan.js`, `/tmp/gen-tasks.py`, or any script that assembles a skill artifact and pipes/writes it to disk is a Rule 13 violation — regardless of `/tmp` placement, "mechanical copy" framing, or "avoid Read+Write churn" rationale. The script-write + script-run + script-output-to-file pattern bypasses the tool-call audit trail Rule 13 protects. If the artifact is too large for a single Write turn, apply the ~15K-token Write cap and Phase 2 → Phase 3 split above. There is no helper-script escape hatch.
 
@@ -480,9 +484,9 @@ Transitions are not edges. To change where a stage flows, edit the relevant stag
 
 ## Validation Cadence
 
-Run `uip maestro case validate <file> --output json` after each `tasks.md` section's batch completes — not after every Edit. Intermediate states can be invalid (e.g., a stage whose entry condition references a stage that will be added next); validate is authoritative at the section boundary.
+Greenfield runs `validate --skeleton` once after all Phase 2 stage batches and full `validate` once after Phase 3/root finalization. Intermediate stage states are intentionally incomplete; validating them adds latency and produces non-actionable errors. Brownfield runs one full validate after the targeted operation batch.
 
-On failure: fix the reported issue (usually a missing field, malformed ID, or orphan reference) and re-validate. Up to 3 retries per section; if still failing, halt and AskUserQuestion the user with the remaining errors and options to retry, pause, or abort.
+On authoritative validation failure, fix the reported issue and re-validate under the Phase 4 retry contract.
 
 ---
 
@@ -496,8 +500,8 @@ On failure: fix the reported issue (usually a missing field, malformed ID, or or
 - **Do NOT auto-inject a task `entryCondition` at task-creation time based on task type.** Entry conditions come from the SDD via the task-entry-conditions plugin (Step 10), uniformly across task types. Injecting one early duplicates the Step 10 write and corrupts `displayName` indexing.
 - **Do NOT write partial JSON with Edit tool regex.** Round-trip through Read → reason → Edit per the per-section batch contract.
 - **Do NOT run validation after every single Edit.** Validate at section boundaries, not per-T-entry.
-- **Do NOT use whole-file Write mid-section.** Whole-file Write between sibling T-entries inside a section bypasses the section-entry Read snapshot and risks silently dropping fields. Use Edit per T-entry, OR collapse the entire section into one whole-section Write at section boundary when T-entry count ≥10 (per § Per-section batch write contract).
-- **Do NOT skip TaskUpdate per T-entry.** TaskUpdate is the audit trail under the per-section batched contract — reviewers track T-by-T progress there, not in per-T-entry file diffs. The audit trail must remain T-by-T even when the file diff collapses to one whole-section write.
+- **Do NOT use whole-file Write after T01.** Replace an owning stage or stable root slice with Edit; use the bounded two-slice exception for a stage over 30KB.
+- **Do NOT create progress items per T-entry.** `tasks.md` plus `id-map.json` are the durable T-by-T audit. Keep progress at phase/stage-pass level.
 - **Do NOT emit standalone text-only assistant turns between Edits.** Each costs ~5s inference + ~250K cache replay for zero work. Bundle status text into the same turn as the next tool_use (text block + tool_use block in one content array), or omit entirely — TaskUpdate already shows progress.
 
 ---

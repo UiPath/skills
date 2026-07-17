@@ -26,15 +26,11 @@
 
 ## Procedure
 
-**Step 0 — Get inputs/outputs schema:**
+**Step 0 — Load the cached inputs/outputs schema:**
 
-```bash
-uip maestro case tasks describe --type case-management --id "<entityKey>" --output json
-```
+Read the T-entry's `schema-cache-key` from `tasks.md`, then consume that entry in `tasks/schema-cache.json`. Verify its request tuple is `(case-management, <entityKey>, null)`. Do not call `tasks describe` during implementation. If the entry is absent or mismatched, return to the [schema gather pass](../../../schema-cache-guide.md), fetch it once, persist it, then resume. If the resource is unresolved, use the placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
 
-Fallback: planning-captured schema from tasks.md. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
-
-**Step 1 — Root-level bindings:**
+**Step 1 — Accumulate root-level bindings:**
 
 Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape (all required — omitting any causes Studio Web render failure). Per-task overrides:
 
@@ -51,7 +47,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 3. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
 4. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
 
-   **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is the `tasks describe` output (Step 0 above).
+   **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema is the cached `tasks describe` response (Step 0 above).
 5. Append to target stage's `tasks[laneIndex][]`
 
 > Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).

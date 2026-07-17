@@ -2,9 +2,9 @@
 
 ## Status
 
-- **Outcome:** Experiment concluded; accuracy passed, but the efficiency trade-off did not justify merging.
-- **Decision:** Close the draft PR and retain this document as the experiment record.
-- **Date:** 2026-07-16 (Pacific time)
+- **Outcome:** Experiment 1 concluded negatively; follow-up Experiment 2 is in progress.
+- **Decision:** Keep PR #2098 closed. Test schema-once gathering plus stage-level batching on a separate branch before deciding whether to open a new PR.
+- **Date:** 2026-07-17 (Pacific time)
 - **Scope:** `uipath-maestro-case` Golden Expense end-to-end build
 
 ## Links
@@ -15,6 +15,8 @@
 - Baseline report: [Golden Expense baseline](https://coder-evalboard.uipath-dev.com/runs/2026-07-16_04-24-15/skill-case-golden-rebuild-cm-expense)
 - Successful experiment run: [GitHub Actions 29541608582](https://github.com/UiPath/skills/actions/runs/29541608582), attempt 2
 - Earlier infrastructure-only failures: [GitHub Actions 29539778252](https://github.com/UiPath/skills/actions/runs/29539778252)
+- Follow-up branch: `experiment/maestro-case-schema-once-stage-batching`
+- Follow-up PR/run: pending
 
 ## Goal
 
@@ -115,6 +117,35 @@ The accuracy risk shifted rather than disappeared: narrow Edits reduce accidenta
 Do not merge PR #2098 as written. Close it as a documented negative experiment.
 
 The useful retained finding is that **one scaffold Write plus bounded Edits is accurate, but the Edit granularity must be much coarser**. A follow-up should target fewer inference turns and less context replay, not merely smaller output payloads.
+
+## Follow-up Experiment 2 — Schema Once + Stage Batching
+
+Status: implementation in progress on `experiment/maestro-case-schema-once-stage-batching`.
+
+This variant combines the first two recommended follow-ups because they attack separate sources of turns:
+
+1. **Run-scoped exact-request schema cache.** Phase 1 creates `tasks/schema-cache.json`. Every non-connector `tasks describe`, connector `case spec`, and `get-connection` request is keyed by all shape-affecting arguments; exact hits are reused by every consumer. The full response is retained, not a summary. A shared schema never shares generated task/input/output/binding IDs.
+2. **Prefer one populated connector request.** When the SDD already carries exact field keys and requires no reference/filter discovery, skip the lean `--skip-case-shape` request and let one populated response serve planning verification plus implementation. A lean request remains available for genuinely ambiguous mappings and is separately deduplicated; accuracy takes precedence over forcing unlike requests into one cache entry.
+3. **Stage-level mutation.** T01 remains the only whole-file Write. Phase 2 normally appends all complete stage/task shapes in one `schema.nodes` Edit. Phase 3 performs one final Edit per owning stage, folding connector detail, task I/O, stage/task conditions, SLA, and `$xref` resolution into that replacement. Case-level rules/SLA and bindings use one root finalization Edit.
+4. **Bounded exception.** A stage replacement over 30KB may split into at most two slices. The path never falls back to per-task/per-condition Edits or a populated whole-file Write.
+5. **Artifact-based progress.** `tasks.md` and `id-map.json` remain the T-by-T audit. Progress tracking stays at phase/stage-pass level instead of adding TaskCreate/TaskUpdate calls for every T-entry.
+
+### Acceptance Criteria
+
+The unchanged Golden Expense task and deterministic grader remain the correctness contract.
+
+| Measure | Previous experiment | Follow-up target |
+|---|---:|---:|
+| Deterministic score | 1.000 | 1.000 |
+| `caseplan.json` Writes | 1 | 1 (T01 only) |
+| `caseplan.json` Edits | 52 | 10–13 normal path; ≤16 acceptable |
+| `tasks describe` calls | 19 | ≤6 unique non-connector requests |
+| `case spec` calls | 4 | 2 populated unique needs on the Golden path; lean calls only if the SDD is ambiguous |
+| Task-ledger calls | 45 | Phase/section level; no per-T items |
+| Duration | 2,983.2s | At least 15% below the 3,175s baseline |
+| Cost | $12.1531 | No higher than the $9.7311 baseline |
+
+Any grader regression rejects the variant regardless of speed. A small duration improvement from a single run is directional only; two successful runs are still required before a merge recommendation.
 
 ## Recommended Next Experiments
 

@@ -1,6 +1,6 @@
 # event trigger — Implementation (Direct JSON Write)
 
-Configure the case-level event trigger by writing directly into the trigger node in `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md). Phase 3 calls `uip maestro case spec --type trigger --input-details` once and consumes the populated `caseShape`.
+Configure the case-level event trigger from its populated response in `tasks/schema-cache.json`. Field discovery, reference resolution, and the exact-request gather are done during [planning](planning.md); implementation consumes the cached `caseShape` and does not repeat the CLI call.
 
 For shared CLI invocation, placeholder substitution, anti-patterns, and the canonical form for filter expressions with variable references, see [connector-trigger-common.md](../../../connector-trigger-common.md). For the per-sink canonical-form table covering all expression-syntax decisions in this skill, see [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink). This doc covers only the **trigger-node-specific** parts.
 
@@ -23,9 +23,9 @@ Construct the input-details object literally from `tasks.md`:
 
 Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
 
-## Step 2 — Run `case spec` with input-details
+## Step 2 — Load the exact populated response
 
-Single CLI call replaces the legacy `get-connection` + `case tasks describe --type connector-trigger` two-call pattern. See [common § Phase 3 Implementation Step 2](../../../connector-trigger-common.md#step-2--run-case-spec-with-input-details) for the command and response handling.
+Read the T-entry's `connector-shape-key` from `tasks/schema-cache.json` and verify the stored request exactly matches Step 1 plus the trigger identity. On a hit, do not call CLI. On a miss, return to the schema gather pass, fetch once, persist the complete response, then resume. See [common § Phase 3 Implementation Step 2](../../../connector-trigger-common.md#step-2--load-the-populated-case-spec-response).
 
 ## Step 3 — Required-event-param validation (HARD GATE)
 
@@ -113,13 +113,13 @@ Write the un-minted `caseShape` into the shared sidecar artifact for the variabl
 
 The variables plugin consumes this in Phase 3 Step 6.2 — see [`../../variables/global-vars/impl-json.md` § Inputs the plugin reads](../../variables/global-vars/impl-json.md) and § Dispatcher Loop.
 
-## Step 9 — Append root-level bindings
+## Step 9 — Accumulate root-level bindings
 
 Per [common § Root-level bindings](../../../connector-trigger-common.md#root-level-bindings). Two entries (ConnectionId, FolderKey), `resourceKey` = `connection-id`. Deduplicate against existing root bindings.
 
-## Step 10 — Sync IS connection cache
+## Step 10 — Defer to the Phase 2 batch sync
 
-After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](../../../bindings-v2-sync.md). Skip if `case spec` failed.
+After all root triggers and Phase 2 task shapes are written, populate the IS connection cache from the cached `Kxx` response and regenerate `bindings_v2.json` once per [bindings-v2-sync.md](../../../bindings-v2-sync.md). This must complete before the optional Phase 2 publish-for-review branch. Skip if populated schema gathering failed.
 
 ## Placeholder fallback (unresolved connector / connection)
 

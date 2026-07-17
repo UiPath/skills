@@ -14,23 +14,22 @@ Execute approved `tasks.md` plan, building `caseplan.json` via direct JSON edits
 
 Every plugin uses direct JSON writes via its `impl-json.md`. Cross-cutting mechanics (ID generation, Pre-flight Checklist, primitive ops, the canonical write contract) are in [case-editing-operations.md](case-editing-operations.md).
 
-**Per-section batched writes — mandatory.** Process `tasks.md` one **section** at a time (§4.2.1 vars, §4.3 triggers, §4.4 stages, §4.6 task-shapes, §9.7 connector schema, §9.8 I/O binding, §10 conditions, §11 SLA):
+**Greenfield stage-batched Edits — mandatory.** After T01, `caseplan.json` is mutated only with Edit. Gather schemas first, then use the owning stage as the write unit:
 
-1. **One Read** of `caseplan.json` at section entry.
-2. **Writes sized to section** — pick by T-entry count:
-   - **<10 T-entries** — N Edits in sequence, one per T-entry. Skip the re-Read between sibling Edits.
-   - **≥10 T-entries** — single whole-section Edit or Write replacing the section's container (e.g., `schema.nodes`, a stage's `data.tasks`). Compose the complete post-section state in reasoning from the section-entry Read, then emit one write. Untouched siblings (other sections, root fields, unrelated nodes) MUST be copied verbatim — drop nothing.
-3. **One validate** at section boundary.
+1. Phase 2: one stage-array Edit appends every complete stage plus all task shapes; split by complete stage only above 30KB.
+2. Phase 3: one Edit replaces each complete stage with connector detail, task I/O, conditions, SLA, and resolved cross-references included.
+3. One bounded root Edit finalizes case-level rules/SLA and accumulated bindings.
+4. No Read between sibling stage Edits; validate only at the Phase 2 and Phase 3 boundaries.
 
-TaskUpdate items keyed by T-number are the audit trail — mark each `in_progress` before composing the entry's mutation, `completed` after the write returns success. The audit trail stays T-by-T even when the file diff collapses to one whole-section write.
+Use one progress item per phase/stage pass. `tasks.md` and `id-map.json` provide the T-by-T audit; do not create TaskUpdate items per T-entry.
 
 **Bundle status text with tool_use.** Any progress text emitted alongside writes MUST share the same assistant turn as the next tool_use (text block + tool_use block in one content array). Standalone text-only turns between Edits are forbidden — they each cost ~5s inference + full cache replay for no work. Cap inline status to ≤1 sentence / ~20 tokens. **Hard token cap:** any single text block >200 tokens (or >500 tokens for allow-listed exceptions — completion reports, AskUserQuestion preambles, validate result summaries) is a planning monologue, forbidden regardless of content. **Forbidden announcement verbs** at any length: text blocks starting with `Building`, `Composing`, `Writing`, `Drafting`, `Generating`, `Now I'll`, `Next:`, `Approach:`, `Strategy:`, `Plan:`, `Caveman push:`, `Big single Write:`, `Let me`, or any other narration of the imminent tool call. The tool_use input IS the announcement.
 
-**Cap single Write at ~15K out tok / ~40KB.** When a section's whole-section Write would exceed this, split into Phase 2 skeleton (root + nodes + vars, `edges` stays `[]`, empty task `data`) → Phase 3 fill (per-section Edits onto populated nodes). For cases with ≥40 tasks or ≥8 stages, NEVER emit the full populated caseplan.json in one Write — always Phase 2 → Phase 3 split. A single 15K-out-tok Write turn pays ~150s inference; smaller turns let validate gates catch field drops between phases. Build-assembler helper scripts (`/tmp/build-caseplan.js` etc.) are forbidden — they violate Rule 13 regardless of `/tmp` placement or framing.
+**Cap one stage Edit at ~30KB.** If one final stage exceeds that size, use at most two Edits for that stage: its full `data.tasks` slice, then its conditions/SLA slice. Do not split into per-task/per-condition writes. Build-assembler helper scripts remain forbidden.
 
-For CLI-gated sections (§4.6 non-connector schema, §9.7 connector schema), use **gather-then-write**: run all CLI calls first, collect results in reasoning, then enter the Read → writes → validate batch.
+For schema-gated data, use **cache-then-write**: consume `tasks/schema-cache.json`; gather an exact miss once and persist it before any stage Edit.
 
-Full contract — recovery, tool primitive selection (Edit default, whole-section Write at ≥10 T-entries), audit trail, scope — in [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical). Phase 1 `tasks.md` building uses the same section-batched contract per [planning.md §4.0a](planning.md).
+Full contract — mutation budget, recovery, size exception, and brownfield boundary — in [case-editing-operations.md § Greenfield stage-batched write contract](case-editing-operations.md#greenfield-stage-batched-write-contract--canonical). Schema request equality and cache consumption live in [schema-cache-guide.md](schema-cache-guide.md).
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-json.md`:
 > - Root case → `plugins/case/impl-json.md`
@@ -58,20 +57,17 @@ issues = []  # shared across all steps
 
 ## Seed Phase 2 progress todos — Before Step 6
 
-Before Step 6, seed TodoWrite with the section-level items below. Mark each `in_progress` on entry, `completed` on exit. Replace any Phase 1 todos — do not append.
+Before Step 6, seed TodoWrite with the phase-level items below. Mark each `in_progress` on entry, `completed` on exit. Replace any Phase 1 todos — do not append.
 
 1. Scaffold solution + project + root case (Step 6)
-2. Add triggers (Step 6.1)
-3. Declare variables + arguments (Step 6.2)
-4. Refresh entry-points.json input/output (Step 6.3)
-5. Add stages (Step 7)
-6. Write task shapes (Step 9)
-7. Regenerate bindings_v2.json (Step 9.4)
-8. Skeleton validate + hard stop (Step 9.5)
+2. Add root-owned triggers, variables, and entry-point shapes (Steps 6.1–6.3)
+3. Append complete Phase 2 stages and task shapes (Steps 7–9)
+4. Regenerate bindings_v2.json (Step 9.4)
+5. Skeleton validate + hard stop (Step 9.5)
 
 (No edge step — edges are retired; stage transitions are condition-driven and written in Phase 3 Step 10.)
 
-**Per-T-entry sub-items.** Inside each section, also seed one TodoWrite item per T-entry the section will Edit (e.g., `T04 stage "Intake"`, `T05 stage "Review"`). Mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit returns success. These per-T-entry items are the audit trail — section-level Edits collapse the file diff, but the todo log preserves T-by-T progress for reviewers (per [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical)).
+Do not seed per-T-entry sub-items. The T-numbered plan and `id-map.json` are the durable element-level audit.
 
 ---
 
@@ -108,9 +104,9 @@ For each variable/argument T-entry from `tasks.md §4.2.1`, write entries direct
 
 After Step 6.2, project the declared In/Out arguments onto every `entry-points.json` entry's `input`/`output` schema per [entry-points-sync.md](entry-points-sync.md). Triggers (Step 6.1) scaffold each entry with empty `input`/`output` because variables don't exist yet; this back-fills them. Prerequisites — all entries (Step 6.1) + all In/Out args (Step 6.2) — are complete here, and In/Out formal args never change in Phase 3, so the file is correct from the Phase-2 publish branch onward. Idempotent — re-run on regenerate. Verified by Step 12 Check 6.
 
-## Step 7 — Add stages
+## Step 7 — Prepare owning-stage batches
 
-For each stage in `tasks.md §4.4`, execute per [`plugins/stages/impl-json.md`](plugins/stages/impl-json.md). **Capture the generated `StageId` for every stage** into the name → ID map (and into `id-map.json`) — downstream tasks, conditions, and SLA all reference it.
+For each stage in `tasks.md §4.4`, execute the composition rules in [`plugins/stages/impl-json.md`](plugins/stages/impl-json.md) and mint its `StageId`, but do not issue a stage-only Edit. Associate every §4.6 task with its owning stage, read its schema entry from `tasks/schema-cache.json`, and compose the complete Phase 2 stage node for Step 9.
 
 `isRequired` from `tasks.md` is planning-only metadata; it is not written into the stage node. It is consumed later by case-exit-conditions with `rule-type: required-stages-completed` (Step 10).
 
@@ -120,23 +116,23 @@ Edges are retired; there is no edge-building step. `schema.edges` stays `[]`. St
 
 For multi-trigger cases, add the additional triggers via the appropriate trigger plugin (Step 6.1) — no edge wiring is needed; any trigger entering the case activates the first stage's `case-entered` condition.
 
-## Step 9 — Add tasks (Phase 2 shape, gather-then-write)
+## Step 9 — Append complete Phase 2 stages
 
-**Phase A — gather.** For each non-connector task in `tasks.md §4.6`, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` and collect the input schema in reasoning. Connector tasks (`connector-activity`, `connector-trigger`) skip the gather — `case spec` defers to Phase 3 Step 9.7. Unresolved tasks skip too — they become placeholders per Step 9.1. **Inline-built siblings (agent / api-workflow, Rule 17 Create) also skip the gather** — they were resolved + bound in Phase 1 with I/O read from the sibling's on-disk `entry-points.json`; their `taskTypeId` is a local audit-only key with no tenant resource, so tenant `tasks describe` does not apply. See the per-type Built-inline notes: [`plugins/tasks/agent/impl-json.md`](plugins/tasks/agent/impl-json.md), [`plugins/tasks/api-workflow/impl-json.md`](plugins/tasks/api-workflow/impl-json.md).
+All non-connector schemas were gathered in Phase 1 and live under each T-entry's `schema-cache-key`. Do not run `tasks describe` here. Connector tasks consume their resolved type/connection fields and defer populated `caseShape` consumption to Phase 3. Inline-built agent/API schemas are cached from their sibling `entry-points.json` rather than tenant CLI output.
 
-**Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per task in §4.6 order, appending the task node to its stage's `data.tasks` lane per the matching plugin's `impl-json.md`. **Capture each `TaskId`** — cross-task references and conditions in Phase 3 need it. Skip the re-Read between sibling Edits. One validate at section end.
+Read `caseplan.json` once. Compose all complete stage nodes in stage order, already containing every owned task, and accumulate/deduplicate all non-connector root bindings. Replace the `schema.nodes` slice in one Edit while preserving existing triggers verbatim, then apply the complete Phase 2 root `bindings[]` slice in one Edit. **Capture every StageId and TaskId** in the same batch and update all `id-map.json` entries together. If the node replacement exceeds 30KB, use one Edit per complete stage. Do not issue separate stage-only, task-only, or per-binding Edits, and do not validate between split stage Edits.
 
-Per-class shape inside each Edit:
+Per-class shape inside each owning-stage Edit:
 
 | Task class | Phase 2 `data` content |
 |---|---|
-| Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | Full `data.inputs[]` schema from the Phase A gather. Each input's `value` is `""`. Outputs populated per plugin. |
-| Connector (`connector-activity`, `connector-trigger`) | `data.typeId` + `data.connectionId` set. `data.inputs` omitted. **Do NOT call `case spec` in Phase 2** — schema discovery happens in Phase 3. |
+| Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | Full `data.inputs[]` schema from the cached `Nxx` response. Each input's `value` is `""`. Outputs populated per plugin. |
+| Connector (`connector-activity`, `connector-trigger`) | `data.typeId` + `data.connectionId` set. `data.inputs` omitted. Do not call `case spec` during the stage pass. |
 | Unresolved (any class) | Placeholder task per Step 9.1 — empty `data: {}` plus action-only extras. |
 
 **Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md).
 
-On context-compaction mid-gather: re-Read `caseplan.json`, scan for §4.6 tasks not yet appended, re-run Phase A for those only.
+On context compaction, re-Read `caseplan.json`, `tasks.md`, `id-map.json`, and `schema-cache.json`; if the single stage-array Edit was not applied, recompose it from cached state. If a size split was required, resume at the first stage not yet appended. Reuse cached responses.
 
 **Pass `lane: <n>` on every task** (or the plugin's equivalent JSON field). Default: increment per task within a stage starting at 0 — lane is FE-layout-only for these tasks. **Exception:** parallel members of a `runs-sequentially` group share the same `lane` (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get own lane.
 
@@ -188,76 +184,65 @@ Steps 9.6 onwards wire connector task schemas, input/output values, conditions, 
 Before any Phase 3 mutation:
 
 1. **Re-read `tasks.md`** — per Rule 7 of `SKILL.md`.
-2. **Re-read `caseplan.json`** — rebuild name → ID maps from authoritative artifact. See [phased-execution.md § Re-entry protocol](phased-execution.md#re-entry-protocol) for which fields to index.
-3. **Seed Phase 3 progress todos** — call TodoWrite with the section-level items below. Mark each `in_progress` on entry, `completed` on exit. Phase 2 todos (if any) are stale — replace, do not append.
-   1. Wire connector task schemas (Step 9.7)
-   2. Bind task I/O values (Step 9.8)
-   3. Add conditions (Step 10)
-   4. Configure SLA + escalation (Step 11)
-   5. Resolve in-expression `vars.$xref` markers (Step 11.5)
-
-   Inside each section, also seed per-T-entry sub-items (one per T-entry that section will Edit). Mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit returns success. Per-T-entry items are the audit trail under the per-section batched contract (per [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical)).
+2. **Re-read `schema-cache.json`.** Verify every schema key against its stored exact request before any mutation.
+3. **Re-read `caseplan.json`** — rebuild name → ID maps from authoritative artifact. See [phased-execution.md § Re-entry protocol](phased-execution.md#re-entry-protocol) for which fields to index.
+4. **Seed Phase 3 progress todos** with three items: gather missing configured connector responses; finalize stages; finalize root + sidecars. Do not add per-T sub-items.
 
 Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across hard stop.
 
-## Step 9.7 — Connector task detail (gather-then-write)
+## Step 9.7 — Complete the schema cache before mutation
 
-**Phase A — gather.** For each connector task (`connector-activity`, `connector-trigger`) in `tasks.md`:
+For every resolved connector task, event trigger, and connector-bound condition rule, locate its exact populated request in `connectorShapes` using `connector-shape-key`.
 
-1. Run `get-connection` (each task runs its own — never reuse).
-2. Run `uip maestro case spec --type <activity|trigger> --activity-type-id <id> --connection-id <id> --input-details '<json>' --output json` per the plugin's `impl-json.md`.
-3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders in `caseShape.context[*].value` with minted binding ids; mint `var` / `id` / `elementId` on `caseShape.inputs` / `outputs` per the plugin's uniqueness rule.
+- Cache hit with matching request: consume it; do not call CLI.
+- Missing populated entry: execute that exact `case spec --input-details` once, persist its complete response, and attach the new key to every exact-match consumer.
+- Reuse `connections.Kxx`; do not run `get-connection` again on a cache hit.
+- Placeholder targets need no populated response.
 
-Hold all gathered shapes (per-task `caseShape` + root-level Connection + FolderKey bindings) in reasoning. Skip connector tasks that are placeholders (unresolved `typeId` / `connectionId`).
+Finish this gather pass before the first stage Edit. Do not substitute binding placeholders or mint consumer IDs in the shared cache; those remain per-consumer composition steps.
 
-**Phase B — batched write.** One Read of `caseplan.json`. Then for each gathered task: one Edit setting `data.context = caseShape.context`, `data.inputs = caseShape.inputs`, `data.outputs = caseShape.outputs` plus the matching root-level Connection + FolderKey binding entries. Skip the re-Read between sibling Edits.
+## Steps 9.8–11.5 — Compose and finalize owning stages
 
-**Phase C — sync + validate.** Populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Regenerate `bindings_v2.json` once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md) — single pass includes non-connector bindings from Step 9 and Connection bindings from this step. Run validate.
+These steps are one two-pass operation, not four mutation sections. First precompute all generated input/output/rule IDs, the global output dedup pool, and every `$xref` target across tasks, triggers, and connector rules. Then compose each final stage from the authoritative Phase 2 node and issue one Edit replacing that stage.
 
-On context-compaction mid-gather: re-Read `caseplan.json`, scan for connector tasks without `data.context` populated, re-run Phase A for those only.
-
-## Step 9.8 — Bind task input/output values (per-task Edit batch)
-
-One Read of `caseplan.json` at Step 9.8 entry. Then **one Edit per task** replacing that task's full `data.inputs` array. Skip the re-Read between sibling Edits. Skip placeholder tasks entirely — they have no inputs.
-
-Per-task composition (in reasoning, before that task's Edit) per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md):
+For each task, apply [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md):
 
 1. Literals / expressions (`input = "<value>"`): write `<value>` to `input.value`.
 2. Cross-task references (`input <- "Stage"."Task".output`): resolve source output's `var` field from the just-Read `caseplan.json`, then write `=vars.<var>` to the target input's `value`.
 
-If a cross-task reference points to a task that does not exist in the just-Read `caseplan.json`, halt — `tasks.md` ordering is wrong; report to the user.
+If a cross-task reference points to a task that does not exist in the re-read Phase 2 artifact, halt and report the invalid plan before mutation.
 
-One validate at section end.
+## Step 10 — Fold conditions into the owning stage
 
-## Step 10 — Add conditions (per (scope, target) Edit batch)
+Group `tasks.md §4.7` entries by scope/target and compose them with the matching plugin. Stage-entry, stage-exit, and task-entry results are included in that stage's single final Edit; they are not written separately.
 
-One Read of `caseplan.json` at Step 10 entry. Group `tasks.md §4.7` entries by `(scope, target)` pair: each pair becomes one Edit replacing the relevant conditions array on its target node.
-
-| Scope | Target | Edit replaces |
+| Scope | Target | Composed field |
 |---|---|---|
 | Stage entry | one stage | `nodes[stage].data.entryConditions` |
 | Stage exit | one stage | `nodes[stage].data.exitConditions` |
 | Task entry | one task | `data.entryConditions` on the task object |
 | Case exit | root | `metadata.caseExitRules` |
 
-Skip the re-Read between sibling Edits. One validate at section end. Per-scope composition rules live in the matching plugin's `impl-json.md`:
+Per-scope composition rules live in the matching plugin's `impl-json.md`:
 
 - Stage entry → [`plugins/conditions/stage-entry-conditions/impl-json.md`](plugins/conditions/stage-entry-conditions/impl-json.md)
 - Stage exit → [`plugins/conditions/stage-exit-conditions/impl-json.md`](plugins/conditions/stage-exit-conditions/impl-json.md)
 - Task entry → [`plugins/conditions/task-entry-conditions/impl-json.md`](plugins/conditions/task-entry-conditions/impl-json.md)
 - Case exit → [`plugins/conditions/case-exit-conditions/impl-json.md`](plugins/conditions/case-exit-conditions/impl-json.md)
 
-> **Connector-bound rules need a CLI gather.** A `wait-for-connector` rule in any scope is NOT a pure JSON write — it requires a `uip maestro case spec --type trigger` call (like Step 9.7 connector tasks) to mint its `uipath` block, plus root bindings + IS-cache + deferred `bindings_v2` sync. Gather per `(scope, target)`, then write. See [connector-trigger-common.md § Target: connector-bound condition rule](connector-trigger-common.md#target-connector-bound-condition-rule). Full `validate` flags a missing `rule.uipath`/`context` (`connector activity missing`), not its internals.
+> **Connector-bound rules consume cache.** Their `uipath` blocks come from the matching `Cxx` response gathered in Step 9.7. Perform placeholder substitution and consumer-specific ID minting during stage composition. Accumulate Connection/Folder bindings for root finalization; do not issue a condition-only Edit or an extra schema call.
 
-> **Step 10 ends with a `bindings_v2` sync.** After all connector rules across the 4 scopes are written, run the third batched `bindings_v2.json` regeneration + IS-cache population — see [bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run) (point 3). Without this third sync, rule-introduced Connection/Folder bindings + IS-cache entries don't land until the post-Phase-3 catch-all and `resource refresh` misses them.
+Case-exit conditions are root-owned. Hold their composed result for the single root finalization Edit.
 
-## Step 11 — SLA and escalation (per-target Edit batch)
+## Step 11 — Fold SLA and escalation into the owning target
 
-One Read of `caseplan.json` at Step 11 entry. Group `tasks.md §4.8` entries by target (root or stage). For each target, one Edit replacing that target's full `slaRules[]` array per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Skip the re-Read between sibling Edits. Supports per-conditional-rule escalations, secondary-stage SLA, and multi-recipient single rules. One validate at section end.
+Group `tasks.md §4.8` entries by target. Include stage/task SLA in the owning stage's final Edit per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Hold case-level SLA for root finalization. Supports conditional rules, secondary-stage SLA, and multi-recipient rules without SLA-only Edits.
 
-## Step 11.5 — Resolve in-expression `vars.$xref` markers (whole-file pass)
+## Step 11.5 — Resolve in-expression markers before the stage Edit
 
-Runs after bindings (9.8), conditions (10), and SLA (11) — when every task / trigger / rule output is minted and deduped (the dedup pool spans tasks ∪ triggers ∪ rules, so a marker's target `var` is not final until Step 10's rule outputs are minted). Resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` in ONE pass: one Read, then Edit each string value holding a marker — substitute the source output's post-dedup `var` as bare `vars.<var>` (no leading `=`; the marker already sits inside `=js:`). Sink-blind: covers composite input payloads, `conditionExpression`, SLA `expression`, computed `=` outputs, and connector body fields in one place. An unresolved name-triple is an ERROR (Check 4 below). Algorithm + pseudocode: [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md#in-expression-marker-resolution-step-115). One validate at section end.
+After the precompute pass fixes every task/trigger/rule output ID and deduped `var`, replace every `vars.$xref('Stage','Task','output')` marker while composing its owning stage or root slice. Substitute bare `vars.<var>` inside the surrounding `=js:` expression. Do not run a later per-string Edit pass. An unresolved name triple is an error handled by Check 4 below.
+
+After all stages are composed, Edit each complete stage once in stage order. Then issue one root-owned Edit containing case-exit conditions, case-level SLA, and all accumulated bindings. Populate the IS connection cache and regenerate `bindings_v2.json` once after this root finalization. Run no full validate until Phase 4.
 
 ## Step 12 — End-of-Phase-3 validator pass
 

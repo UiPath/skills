@@ -5,7 +5,7 @@ Trust the SDD. Emit inputs/outputs exactly as declared. There is no `caseplan.js
 ## Discovering Input/Output Names
 
 1. **SDD per-task tables** — primary source. Each task lists input/output field names, types, and variable bindings.
-2. **`uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json`** — validates SDD names and discovers additional fields (e.g., standard `Error` output). The SDD per-task Outputs table uses TWO operators (per v1 contract — see [`assets/templates/sdd-template.md`](../../../../assets/templates/sdd-template.md) Section 2):
+2. **T-entry `schema-cache-key`** — read the complete `tasks describe` response already gathered once in `tasks/schema-cache.json`; it validates SDD names and discovers additional fields (e.g., standard `Error` output). Do not issue another schema command from this plugin. The SDD per-task Outputs table uses TWO operators (per v1 contract — see [`assets/templates/sdd-template.md`](../../../../assets/templates/sdd-template.md) Section 2):
 
    **`->` operator — extract a field into a case variable.** Left side is the **full runtime path** the value lives at relative to the task's root scope; right side is the target case variable name:
    ```markdown
@@ -37,9 +37,9 @@ Trust the SDD. Emit inputs/outputs exactly as declared. There is no `caseplan.js
      - Error            # bare — references top-level Error entry; produces vars.error (source = entry's =Error)
    ```
 
-3. **Unresolved taskTypeId** — `tasks describe` unavailable. Follow [placeholder-tasks](../../../placeholder-tasks.md) — omit `inputs:`/`outputs:`, capture wiring intent in a fenced code block.
+3. **Unresolved taskTypeId** — no schema cache entry is available. Follow [placeholder-tasks](../../../placeholder-tasks.md) — omit `inputs:`/`outputs:`, capture wiring intent in a fenced code block.
 
-Do not fabricate names not in the SDD or `tasks describe`. Validation of variable existence happens at planning time (Phase 2) for `=` rows (target must exist in Case Variables); at implementation time (Phase 3) for `->` rows (deferred to io-binding validator).
+Do not fabricate names not in the SDD or cached schema response. Validation of variable existence happens at planning time (Phase 2) for `=` rows (target must exist in Case Variables); at implementation time (Phase 3) for `->` rows (deferred to io-binding validator).
 
 ## Input/Output Notation
 

@@ -2,9 +2,9 @@
 
 > **Node `type` value: `execute-connector-activity` (schema-kebab).** NEVER write `connector-activity` (plugin folder name) or `connector_activity` into the JSON `type` field. The CLI `--type connector-activity` flag is a separate concept — used only when calling `uip maestro case tasks describe` (legacy) or `uip maestro case spec --type activity` (current). See SKILL.md Rule 16 + Plugin Index.
 
-> **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --input-details` once, reads the populated `caseShape`, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
+> **Phase split.** Phase 2 writes `data.typeId` + `data.connectionId` only. Phase 3 consumes the T-entry's cached populated `caseShape` and finalizes the task inside its owning-stage Edit. See [`../../../schema-cache-guide.md`](../../../schema-cache-guide.md).
 
-Fetch the populated connector task scaffold via `uip maestro case spec --input-details`, then drop it into `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `tasks.md` and threads them through the spec call.
+Load the populated connector task scaffold from `tasks/schema-cache.json`, then compose it into the owning stage. Field discovery, reference resolution, and exact-request gathering are done before stage mutation.
 
 ## Prerequisites from Planning
 
@@ -76,19 +76,11 @@ ERROR: bodyParameters key '<key>' contains literal '[*]'.
 
 The CLI accepts the literal `field[*]` key (well-formed JSON) and validate passes, but runtime APIs reject with HTTP 400 `UnableToDeserializePostBody`. The check repeats as a post-write verification — see [Step 8 Post-Write Verification](#post-write-verification) item #11.
 
-### Step 2 — Run `case spec` with input-details
+### Step 2 — Load the exact populated response
 
-```bash
-uip maestro case spec --type activity \
-  --activity-type-id "<type-id>" \
-  --connection-id "<connection-id>" \
-  --input-details "<json from Step 1>" \
-  --output json
-```
+Read the T-entry's `connector-shape-key` and load it from `tasks/schema-cache.json`. Verify that `type`, `activityTypeId`, `connectionId`, `objectName`, and the exact Step 1 `inputDetails` match the stored request. On an exact hit, do not call CLI. On a miss, return to the gather pass, execute this request once with `--output json`, persist the complete response, then resume before any stage Edit.
 
-The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details` — see [case-spec-input-details.md § Validation rules](../../../case-spec-input-details.md#validation-rules-invalidinputdetailserror-on-violation)). The CLI returns the full `caseShape` populated with values from `--input-details`.
-
-Save the response. The interesting parts:
+The interesting response parts are:
 
 > **`case spec --output json` returns PascalCase keys.** The `.Data.*` read paths below reflect that (`.Data.CaseShape.Context`, not `.Data.caseShape.context`). A camelCase jq path returns `null`. The spliced subtree is re-cased to camelCase on the way to disk — see Step 6.
 
@@ -101,7 +93,7 @@ Save the response. The interesting parts:
 | `spec.caseShape.context[]` | `.Data.CaseShape.Context` — 8-entry FE-canonical array, with `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders |
 | `spec.diagnostics.fallbacks[]` | `.Data.Diagnostics.Fallbacks` — surface to `build-issues.md` when non-empty. |
 
-> **Each connector task runs its own `case spec`.** Even when two tasks share the same `connection-id`, `caseShape` is task-shape-specific (different `objectName`, `httpMethod`, `inputs`, `outputs`). Never reuse another task's spec output.
+> **Reuse only exact requests.** Same connection alone is insufficient. Two consumers share a response only when the complete populated request, including `objectName` and `inputDetails`, is equal.
 
 ### Step 3 — Required-field validation (HARD GATE)
 
@@ -156,7 +148,7 @@ Replace the two placeholders with the minted ids:
 
 The **entire** `caseShape.context[]` array, and every nested subtree under it, is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above and the key-casing normalization below. **Every other key — current or future, top-level or nested — must be copied from the spec output, regardless of what those keys are or how many there are.** The doc cannot enumerate them all; the CLI's emitted shape is the contract. Composing or reconstructing any subtree of `caseShape.context` from agent memory is FORBIDDEN.
 
-> **Mechanical contract.** At gather time (Step 2), persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task). At write time, **Read that file and splice `Data.caseShape.context` verbatim** into `data.context`, then re-case keys (next paragraph). The skill is a substituter, not a composer — the only edits between Read and Write are the placeholder substitutions above and that keys-only re-casing. **Never retype `context` content from agent reasoning.**
+> **Mechanical contract.** The gather pass persists the full response under this task's `Cxx` entry in `tasks/schema-cache.json`. At composition time, **Read that entry and splice `Data.CaseShape.Context` verbatim** into `data.context`, then re-case keys (next paragraph). The skill is a substituter, not a composer — the only edits between Read and stage Edit are placeholder substitution, consumer ID minting, output deduplication, and keys-only re-casing. **Never retype `context` content from agent reasoning.**
 
 > **Normalize key casing (PascalCase → camelCase).** `case spec --output json` emits PascalCase keys (`Name`/`Type`/`Value`/`Target`/`Body`/`DisplayName`/`Source`; nested `ActivityPropertyConfiguration`/`UiPathActivityTypeId`/…; response-schema `Properties`/`Definitions`/`Title`/`Items`); the caseplan disk schema is camelCase. After splicing `context` / `inputs` / `outputs` (and their nested `body`), lower-case the first character of every object **key**, preserving the rest (`DisplayName`→`displayName`, `UiPathActivityTypeId`→`uiPathActivityTypeId`). **Keys only — never values:** `"name": "Subject"`, `"source": "=response.Subject"`, and `=jsonString:` / `=js:` blobs are case-sensitive identifiers and stay verbatim. Full rule + rationale: [connector-trigger-common.md § Normalize key casing](../../../connector-trigger-common.md#normalize-key-casing-pascalcase--camelcase).
 
@@ -183,7 +175,7 @@ When `caseShape.inputs[]` contains an entry with `target: "file"` (multipart sin
 - No `source`, no `body`, no `displayName` on the multipart file input entry — `case spec` returns just `{name, type, target}`; mint `var` / `id` / `elementId` / `value` per Step 7 and stop.
 - The runtime adapter dereferences `=vars.<fileVarId>` to the JobAttachment record at execution time and streams bytes from the JobAttachment store into the multipart `file` part of the outbound HTTP request.
 
-### Step 8 — Build `data` and write to caseplan.json
+### Step 8 — Build `data` for owning-stage composition
 
 Generate the task skeleton:
 
@@ -205,9 +197,9 @@ Generate the task skeleton:
 }
 ```
 
-Append the task to the target stage's `tasks[]` array. Default: own task set (one task per lane). **Exception:** if this task is a parallel member of a `runs-sequentially` group, push into the shared lane of that group (shared lane = parallel siblings inside the sequence, semantic).
+Place the task in the target stage's composed `tasks[]` array. Default: own task set (one task per lane). **Exception:** if this task is a parallel member of a `runs-sequentially` group, push into the shared lane of that group (shared lane = parallel siblings inside the sequence, semantic). Do not issue a task-only Edit; the complete stage is written once by the Phase 3 stage pass.
 
-### Step 9 — Append root-level bindings
+### Step 9 — Accumulate root-level bindings
 
 Read [bindings/impl-json.md § Full binding shape — connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape on each entry (all required — omitting any causes Studio Web render failure). Per-task value sources:
 
@@ -218,11 +210,11 @@ Read [bindings/impl-json.md § Full binding shape — connector tasks](../../var
 
 Dedup per [§ Deduplication](../../variables/bindings/impl-json.md). Source-of-truth code: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
 
-### Step 10 — Sync IS connection cache
+### Step 10 — Defer sidecar sync
 
-After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](../../../bindings-v2-sync.md). Skip if `case spec` failed.
+Hold the root bindings for Phase 3 root finalization, then populate the IS connection cache from the cached `Kxx` response and regenerate `bindings_v2.json` once per [bindings-v2-sync.md](../../../bindings-v2-sync.md). Skip this consumer if populated schema gathering failed.
 
-> **`bindings_v2.json` regeneration is deferred** — runs once at end of Step 9.7 in [implementation.md](../../../implementation.md) (after all connector tasks), not per-task. See [bindings-v2-sync.md § When to Run](../../../bindings-v2-sync.md).
+> **`bindings_v2.json` regeneration is deferred** — accumulate bindings and regenerate once at Phase 3 root finalization, not per task. See [bindings-v2-sync.md § When to Run](../../../bindings-v2-sync.md).
 
 ## Graceful degradation
 
@@ -230,7 +222,7 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 
 | Step failed | What gets populated | Log |
 |---|---|---|
-| `case spec` fails | Phase 2 shape preserved — `data.typeId` + `data.connectionId` only, no Phase 3 inputs/outputs/context enrichment. Distinct from a Rule 8 placeholder (`data: {}`) — typeId/connectionId are resolved, only the spec-driven enrichment is skipped. Log per Rule 8 reporting | `[SKIPPED] case spec failed — typeId/connectionId preserved, no enrichment` |
+| populated schema gather fails | Phase 2 shape preserved — `data.typeId` + `data.connectionId` only, no Phase 3 inputs/outputs/context enrichment. Distinct from a Rule 8 placeholder (`data: {}`) — typeId/connectionId are resolved, only the spec-driven enrichment is skipped. Log per Rule 8 reporting | `[SKIPPED] case spec failed — typeId/connectionId preserved, no enrichment` |
 | Required-field gate fails (user declines) | Placeholder per Rule 8 OR re-prompt | `[SKIPPED] required field <name> missing — placeholder task per Rule 8` |
 | All succeed | Full population per Steps 5-10 including bindings_v2 sync | — |
 
@@ -256,7 +248,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT add `designTimeMetadata` to the metadata body.** The FE does not include it for case management tasks.
 - **Do NOT add top-level `errorState` to the metadata body.** Error state belongs inside `activityPropertyConfiguration.errorState` only — that's already the shape in `caseShape.context`.
 - **Do NOT copy root bindings into `data.bindings[]`.** Leave it as `[]`. The FE crashes if activity tasks have task-level binding copies.
-- **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and splice `Data.caseShape.context` verbatim. See Step 6.
+- **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Read the full response from the T-entry's `Cxx` entry in `tasks/schema-cache.json` and splice `Data.CaseShape.Context` verbatim. See Step 6.
 - **Do NOT write the spec's PascalCase keys to disk verbatim.** `case spec` emits PascalCase; the caseplan disk schema is camelCase. After splicing, lower-case the first character of every object key in the spec subtree — keys only, never values. See Step 6 and [connector-trigger-common.md § Normalize key casing](../../../connector-trigger-common.md#normalize-key-casing-pascalcase--camelcase).
 - **Do NOT pass a raw CEQL string under `queryParameters.where`** (or whichever connector-specific name) when authoring a filter. Pass the structured tree under `filter:` in tasks.md and let the CLI compile both halves.
 - **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.

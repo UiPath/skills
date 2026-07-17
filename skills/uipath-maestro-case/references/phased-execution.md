@@ -42,7 +42,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 - Solution + project scaffolding (`uip solution init`, `uip solution project add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
 - Root case — `caseplan.json` with top-level fields + `metadata` block populated (name, `metadata.caseIdentifier`, empty `nodes[]`, empty `edges[]`).
 - Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared at top-level `variables`.
-- Stages — all StageIds generated and captured.
+- Stages — every complete stage and all Phase 2 task shapes appended in one stage-array Edit (split by complete stage only above 30KB); all StageIds/TaskIds captured together.
 - Edges — none authored; `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 3).
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
 - Entry-points input/output — `entry-points.json` `input`/`output` schemas refreshed from the declared In/Out arguments (Step 6.3, per [entry-points-sync.md](entry-points-sync.md)). Makes the Phase-2 publish-for-review contract correct; idempotent.
@@ -51,8 +51,8 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 | Task class | Resolved resources | Phase 2 shape |
 |---|---|---|
-| Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs and task-specific scalar fields (e.g. `action`'s `taskTitle`/`priority`/`recipient`/`labels`) populated per plugin — these are final at Step 2; only input `value`s defer to Phase 3. |
-| Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data.typeId` + `data.connectionId` set. `data.inputs` omitted or empty. **No `case spec` call in Phase 2** — schema discovery is deferred to Phase 3. |
+| Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written from the T-entry's `schema-cache-key`. Each input's `value` field is empty (`""`). Outputs and task-specific scalar fields are populated per plugin; only input values defer to Phase 3. |
+| Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data.typeId` + `data.connectionId` set. `data.inputs` omitted or empty. Populated schema responses are gathered/cached before Phase 3 stage mutation, never ad hoc inside a stage Edit. |
 | Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Placeholder task per Rule 8 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
 | `agent` / `api-workflow` built inline | Built + bound in Phase 1 at the Rule 17 gate | **Not a placeholder** — fully resolved task (name+folder binding, `resourceKey="solution_folder.<name>"`, **`folderPath` binding `default` = `""`** — co-located runtime folder; `solution_folder` stays only in `resourceKey`). Phase 2 treats it like any resolved resource. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery). |
 
@@ -129,12 +129,13 @@ Do **not** delete artifacts. User may want to inspect them, or re-run skill late
 Phase 3 begins after user selects `Continue to phase 3` (or `Skip publish and continue`). Before executing any Phase 3 step:
 
 1. **Re-read `tasks.md`** — per Rule 7. Declarative plan is the handoff.
-2. **Re-read `caseplan.json`** — authoritative source of all IDs generated in Phase 2:
+2. **Re-read `schema-cache.json`** — verify each referenced request before mutation and reuse exact hits.
+3. **Re-read `caseplan.json`** — authoritative source of all IDs generated in Phase 2:
    - Stage name → StageId (from `schema.nodes[]` where `type === "case-management:Stage"`, keyed on `data.label`; secondary stages are the same type with `data.stageType === "secondary"`).
    - Trigger ID (from `schema.nodes[]` where `type === "case-management:Trigger"`).
    - Task name → TaskId per stage (from `schema.nodes[<stage>].data.tasks[][]`).
    - Variable name → `var` ID (from top-level `variables.{inputs,outputs,inputOutputs}`).
-3. Optionally cross-check against `id-map.json` if JSON-strategy plugins wrote one. `caseplan.json` is source of truth; `id-map.json` is speed-up.
+4. Cross-check against `id-map.json`. `caseplan.json` is source of truth; `id-map.json` is the durable T-number correlation.
 
 Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across hard stop.
 
@@ -142,16 +143,16 @@ Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — c
 
 After re-entry:
 
-1. **Connector task detail** — for each connector task in `tasks.md`, run plugin's `impl-json.md` detail steps: `case spec --type {activity,trigger} --input-details`, then mint `data.context[]` / `data.inputs[]` / `data.outputs[]` from the populated `caseShape` (placeholder substitution + var/id minting).
-2. **Task I/O value binding (all task classes)** — per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). Applies to both non-connector and connector tasks. For each task's inputs in `tasks.md` order, write literal, expression, or cross-task reference (resolved to `=vars.<var>`) into `task.data.inputs[i].value`. Connector tasks have `data.inputs[]` schema written in step 1; value binding happens here in step 2, same as non-connector tasks.
-3. **Conditions** — per-scope plugin `impl-json.md`:
+1. **Finish connector gather** — for every resolved connector target, consume its exact `Cxx` entry. Fetch and persist a missing exact configured request once, before any stage Edit. Reuse `Kxx` connection results.
+2. **Precompute consumer state** — mint every connector/rule input/output ID, build the global output dedup pool, and resolve cross-task references before mutation.
+3. **Finalize each owning stage once** — one Edit per stage includes connector detail, all task I/O values, and per-scope plugin results:
    - Stage entry conditions
    - Stage exit conditions
    - Task entry conditions (depends on TaskIds from Phase 2)
-   - Case exit conditions
-4. **SLA + escalation** — per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Group `tasks.md §4.8` by target (root or stage); write full `slaRules[]` in one mutation per target.
-5. **In-expression marker resolution** — per [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md). After all outputs are minted/deduped and bindings/conditions/SLA are written, resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` to bare `vars.<var>` in one sink-blind whole-file pass (input payloads, conditions, SLA, connector bodies). Unresolved triple → ERROR.
-6. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-6 (=vars.X resolution, Out-arg producer presence, type mismatch, surviving `$xref` markers, resolved-resource I/O completeness, entry-point schema parity). AskUserQuestion for unresolved references (incl. `$xref` markers), pure orphan Out-args, and unbound required inputs / phantom output fields; option (c)/(d) "continue with best-effort emit" preserves forward progress. Check 6 is non-interactive (auto re-run, else log). Never HALT.
+   - Stage/task SLA and escalation
+   - Every in-expression `$xref` replacement owned by that stage
+4. **Finalize root once** — one root Edit adds case-exit conditions, case-level SLA, and accumulated bindings; regenerate `bindings_v2.json` and populate the IS cache once.
+5. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-6 (=vars.X resolution, Out-arg producer presence, type mismatch, surviving `$xref` markers, resolved-resource I/O completeness, entry-point schema parity). AskUserQuestion for unresolved references (incl. `$xref` markers), pure orphan Out-args, and unbound required inputs / phantom output fields; option (c)/(d) "continue with best-effort emit" preserves forward progress. Check 6 is non-interactive (auto re-run, else log). Never HALT.
 
 Phase 3 produces a `caseplan.json` that should pass authoritative validation. No hard stop on Phase 3 exit — agent proceeds directly to Phase 4.
 

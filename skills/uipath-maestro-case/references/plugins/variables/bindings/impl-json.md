@@ -117,7 +117,7 @@ Examples:
 | Binding | `name` | `propertyAttribute` | `default` | `resourceKey` |
 |---|---|---|---|---|
 | ConnectionBinding | `` `${connectorKey} connection` `` (templated, e.g. `"uipath-microsoft-outlook365 connection"`) | `"ConnectionId"` | `connection-id` from `tasks.md` | `connection-id` from `tasks.md` |
-| FolderKey binding (omit when `spec.connection.folderKey === null`) | `"FolderKey"` (PascalCase) | `"folderKey"` (camelCase — different from `name`) | `folderKey` from `get-connection` (Step 1) | `connection-id` from `tasks.md` (same as ConnectionBinding) |
+| FolderKey binding (omit when `spec.connection.folderKey === null`) | `"FolderKey"` (PascalCase) | `"folderKey"` (camelCase — different from `name`) | `folderKey` from cached `Kxx` response | `connection-id` from `tasks.md` (same as ConnectionBinding) |
 
 ### Task references
 
@@ -135,4 +135,4 @@ IDs use `b` prefix + 8 alphanumeric chars (e.g., `bG0SraLpg`).
 
 ## bindings_v2.json Sync
 
-`bindings_v2.json` must mirror top-level `bindings[]` in SDK format. Regenerated in batch (not per-task) at end of Step 9 and Step 9.7. See [bindings-v2-sync.md](../../../bindings-v2-sync.md).
+`bindings_v2.json` must mirror top-level `bindings[]` in SDK format. Regenerate in batch at the end of Phase 2, then once at Phase 3 root finalization — never per task/rule. See [bindings-v2-sync.md](../../../bindings-v2-sync.md).

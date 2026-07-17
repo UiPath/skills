@@ -31,6 +31,9 @@ T-number is T02 for the first trigger row in sdd.md, T03+ for subsequent rows in
 - type-id: <uiPathActivityTypeId>
 - connection-id: <connection-uuid>
 - connector-key: <connectorKey>
+- connection-cache-key: K01
+- connector-discovery-key: D01
+- connector-shape-key: C01             # required before Phase 2 for a resolved event trigger
 - object-name: <objectName>
 - event-operation: <eventOperation>
 - event-mode: <polling|webhooks>

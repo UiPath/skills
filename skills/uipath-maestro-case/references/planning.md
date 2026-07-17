@@ -4,7 +4,7 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 
 > **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip this planning pipeline — see [brownfield.md](brownfield.md).
 
-> **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file. When SLA escalations are present, also `tasks/recipients-resolved.json` — see [`plugins/sla/planning.md` § Identity Resolution](plugins/sla/planning.md#identity-resolution).
+> **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` + `tasks/schema-cache.json` in the same directory as the sdd.md file. When SLA escalations are present, also `tasks/recipients-resolved.json` — see [`plugins/sla/planning.md` § Identity Resolution](plugins/sla/planning.md#identity-resolution).
 >
 > **Exit gate:** User must explicitly approve `tasks.md` before Phase 2 begins.
 
@@ -87,7 +87,18 @@ For every task, trigger, and condition in the sdd.md:
 1. **Identify the plugin** by matching the sdd.md component description to an entry in the catalogs below (§3.1–§3.3).
 2. **Load the plugin's `planning.md`** — it lists the exact fields to resolve from sdd.md, the cache file(s) to consult, and any discovery steps required.
 3. **Apply registry discovery** via [registry-discovery.md](registry-discovery.md) when a taskTypeId is needed. Use the type-specific portable-name field as the query: `Resolved Resource` for process/agent/rpa/api-workflow, Action App title for action, and `Child Case` for case-management. A missing or `<UNRESOLVED>` portable name violates the SDD contract and must be surfaced instead of silently falling back to `Task Name`.
-4. **Persist every resolution** to `registry-resolved.json` using Rule 9's exact keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`). Keep the full exact-name match objects for debugging and stale-cache validation.
+4. **Persist every resolution** to `registry-resolved.json` using Rule 9's exact keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`). Keep the full exact-name match objects for debugging and stale-cache validation. After the schema gather pass below, add `schemaCacheKey` to the entry.
+
+### Schema gather within Step 3
+
+Before emitting task/connector T-entries, execute [schema-cache-guide.md](schema-cache-guide.md): inventory consumers, group exact requests, and write their complete metadata responses to `tasks/schema-cache.json`.
+
+- Non-connector `tasks describe`: once per `(type, entityKey, optional elementId)`, shared by every matching task declaration.
+- `get-connection`: once per `(cacheType, activityTypeId)` during this run; reuse the returned list while recording each consumer's selected connection separately.
+- Connector lean discovery: at most once per exact discovery request.
+- Populated connector `case spec --input-details`: once per exact configured request. Prefer gathering it before the planning approval hard stop. When exact input keys are already unambiguous, one populated response may supply both discovery and implementation data; otherwise the lean and populated requests remain separate cache entries.
+
+Write `schema-cache-key`, `connection-cache-key`, `connector-discovery-key`, and/or `connector-shape-key` on each affected T-entry. The plugin planning recipes still define field mapping and hard gates; this step changes only command ownership and reuse. A plugin MUST consume an existing cache hit instead of issuing its own duplicate CLI call.
 
 ### 3.1 Task Type catalog
 
@@ -149,7 +160,7 @@ Create a `tasks/` folder adjacent to the sdd.md file. Generate `tasks.md` using 
 
 Cross-reference: [case-schema.md](case-schema.md) for JSON shape, [bindings-and-expressions.md](bindings-and-expressions.md) for inputs/outputs wiring.
 
-Also write `registry-resolved.json` — full detail per task using Rule 9's exact keys: task type, searched cache filename, search query, all exact-name matches, selected entry, and rationale.
+Also write `registry-resolved.json` — full detail per task using Rule 9's exact keys: task type, searched cache filename, search query, all exact-name matches, selected entry, rationale, and the `schemaCacheKey` assigned by the Step 3 schema gather.
 
 ### 4.0 Completeness principle (no omissions)
 
@@ -187,7 +198,7 @@ Procedure:
 2. **Per section.** Sections are §4.2.1 vars → §4.3 triggers → §4.4 stages → §4.6 tasks → §4.7 conditions → §4.8 SLA. For each section:
    - **One Read** of `tasks.md` at section entry.
    - **N Edit-appends** in sequence, one per T-entry in the section. Skip the re-Read between sibling Edits — Edit's tool result confirms applied state in context.
-   - TaskUpdate marks each T-entry `in_progress` → `completed` as it goes — that is the per-T-entry audit trail, not the file diff.
+   - Keep one progress item per section, not per T-entry. The numbered entries in `tasks.md` are the per-T audit trail; extra TaskUpdate calls add latency without adding artifact evidence.
 3. **Inventory finalize.** After last T-entry, Edit the inventory section with class-by-class counts (per §4.0 cross-check table).
 4. **`registry-resolved.json`.** Same section-batched discipline — one Read per section, N Edit-appends, no re-Read between siblings.
 
@@ -195,9 +206,9 @@ Why: section-batched round-trips keep tool-call transcript reviewable, preserve 
 
 **Hard cap on tasks.md write size.** After the §4.0a Step 1 Seed Write (Inventory placeholder, <1KB), the only legal mutation of `tasks.md` is **Edit-append** per the section-batched contract above. A single Write replacing the whole `tasks.md` is **forbidden** regardless of size. A single Edit-append payload >30KB is also forbidden — split into per-section Edit-appends even when consecutive Edits would total >30KB combined. Rationale: a single 96KB Write of tasks.md emits ~40K output tokens in one turn = ~360s inference latency = ~20% of total session in one tool call. Section-batched Edit-appends spread that cost across ~7 turns of ~50s each, recovers reviewability, and matches the recovery contract (re-Read + resume from next un-applied T-entry).
 
-**Recovery on interruption:** re-Read `tasks.md`, scan for next un-applied T-entry (the audit trail in TaskUpdate identifies it), resume from there. No sidecar checkpoint file.
+**Recovery on interruption:** re-Read `tasks.md`, scan its T-numbers for the next un-applied entry, and resume from there. No sidecar checkpoint file and no per-T progress ledger are required.
 
-This contract mirrors Phase 3's per-section JSON-write contract (see [implementation.md § Per-plugin execution](implementation.md)).
+This planning-artifact contract is separate from Phase 2/3's stage-batched `caseplan.json` contract (see [implementation.md § Per-plugin execution](implementation.md)).
 
 ### 4.1 Task ordering
 
@@ -280,6 +291,7 @@ One task per task from the sdd.md — do NOT group multiple tasks under a single
 Every task entry includes at least:
 
 - **taskTypeId** — resolved from the registry in Step 3
+- **schema cache reference** — `schema-cache-key: Nxx` for a resolved non-connector task; connector tasks carry `connection-cache-key`, optional `connector-discovery-key`, and `connector-shape-key` when already materialized. Unresolved placeholders omit cache keys.
 - **inputs** / **outputs** — see [bindings-and-expressions.md](bindings-and-expressions.md) for the two input modes (literal/expression and cross-task reference)
 - **runOnlyOnce** — from sdd.md (default `true` if not specified)
 - **isRequired** — from sdd.md (default `true` if not specified)

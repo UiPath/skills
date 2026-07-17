@@ -26,6 +26,8 @@ Read `~/.uip/case-resources/typecache-activities-index.json` directly. Match on 
 
 ### 2. Resolve the connection
 
+Check `tasks/schema-cache.json` first using `(typecache-activities, uiPathActivityTypeId)`. Reuse an exact `Kxx` response; do not repeat the command for another matching consumer. Apply the connection choice per consumer and record it under `Kxx.selections[T-number]` because matching consumers may intentionally choose different connections. On a miss, run once and persist the complete response:
+
 ```bash
 uip maestro case registry get-connection \
   --type typecache-activities \
@@ -43,9 +45,11 @@ Record `connection-id`, `connector-key`, `object-name` from the response (or fro
 
 Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../../../../uipath-platform/references/integration-service/connections.md).
 
-### 3. Discover the operation contract via `case spec`
+### 3. Discover the operation contract via cached `case spec`
 
-One CLI call replaces the legacy `case tasks describe` + `is resources describe` dance:
+**Prefer the populated-only path.** When the SDD already supplies exact connector field keys, no reference lookup is needed, and no filter capability must be discovered, skip the lean request. Record the input-details template, gather one populated `Cxx` after final IDs exist, and use that response for both verification and implementation. This is the normal performance path.
+
+Only when SDD names must be mapped against live fields, reference choices must be discovered, required fields are unknown, or filter support is unknown, issue the lean request below. It replaces the legacy `case tasks describe` + `is resources describe` dance:
 
 ```bash
 uip maestro case spec --type activity \
@@ -55,7 +59,7 @@ uip maestro case spec --type activity \
   --output json
 ```
 
-`--skip-case-shape` returns a leaner response (no `caseShape`) — the right size for planning. Phase 3 re-runs the same command without the flag, plus `--input-details`, to mint the populated `caseShape`. See [`case-spec-input-details.md`](../../../case-spec-input-details.md) for the full `--input-details` JSON contract.
+`--skip-case-shape` returns a leaner response (no `caseShape`). Before calling, check for an exact `Dxx` hit by `(activity, activityTypeId, connectionId, objectName, skipCaseShape=true)`. On a miss, run once and persist the complete response. The populated request is separately keyed by exact `inputDetails`; see [`schema-cache-guide.md`](../../../schema-cache-guide.md) and [`case-spec-input-details.md`](../../../case-spec-input-details.md).
 
 > **Synthetic HTTP request branch.** When `spec.identity.objectName` is `"httpRequest"` or `"http-request"`, the activity is the synthetic generic-HTTP path — `bodyParameters` is rejected (no curated body schema). Pass HTTP body via `queryParameters` instead, or omit. Spec output reflects this in `inputs.bodyFields = []`.
 
@@ -119,7 +123,7 @@ Values can be:
 - **Pre-wrapped operator expressions** — `=js:(vars.amount > 5000)` (already canonical — pass-through)
 - **Cross-task refs** — `<- "Stage"."Task".output` (impl resolves to `=vars.<outputVar>` then wraps)
 
-> **tasks.md carries SDD-natural form.** The implementation step (Step 9.7 of connector-activity impl) rewrites every reference to its canonical sink form when constructing `--input-details`. Connector body sinks use `=js:(<expr>)`. Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
+> **tasks.md carries SDD-natural form.** The populated-shape gather rewrites every reference to its canonical sink form when constructing `--input-details`. Connector body sinks use `=js:(<expr>)`. Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ### 7. Optional — author a server-side filter
 
@@ -176,6 +180,10 @@ Planner emits to `tasks.md input-values.bodyParameters`:
 
 **Never** emit a key with literal `[*]` in `bodyParameters`. The CLI accepts it (well-formed JSON) and validate passes; runtime APIs (Microsoft Graph, Slack, etc.) reject with HTTP 400 `UnableToDeserializePostBody`. Pre-input scan in [`impl-json.md` § Step 1.b](impl-json.md#step-1b--array-of-object-body-fields-pre-input-scan-mandatory) halts on any literal `[*]` key.
 
+### 9. Gather the populated shape once when exact details are available
+
+Build the canonical `inputDetails` request from Step 8. If every reference already has its final ID, check `connectorShapes` for an exact hit, otherwise run the populated `case spec` once and persist it as `Cxx`. If task/output IDs are not available until Phase 2, record the complete request template and defer this one gather to Phase 3 Step 9.7; it must complete before any stage mutation. Never call once per consumer when their exact populated requests match.
+
 ## tasks.md Entry Format
 
 ```markdown
@@ -184,6 +192,9 @@ Planner emits to `tasks.md input-values.bodyParameters`:
 - connection-id: <connection-uuid>
 - connector-key: <connectorKey>
 - object-name: <objectName>
+- connection-cache-key: K01
+- connector-discovery-key: D01
+- connector-shape-key: C01             # omit until Phase 3 gather when final IDs are deferred
 - input-values: {"bodyParameters":{...},"queryParameters":{...},"pathParameters":{...}}
 - filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Active\"","value":"Active"},"uiId":null}]}
 - isRequired: true

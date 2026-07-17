@@ -29,6 +29,9 @@ Follow the pipeline in [connector-trigger-common.md § Planning Pipeline](../../
 - type-id: <uiPathActivityTypeId>
 - connection-id: <connection-uuid>
 - connector-key: <connectorKey>
+- connection-cache-key: K01
+- connector-discovery-key: D01
+- connector-shape-key: C01             # omit until Phase 3 gather when final IDs are deferred
 - object-name: <objectName>
 - event-operation: <eventOperation>
 - event-mode: <polling|webhooks>

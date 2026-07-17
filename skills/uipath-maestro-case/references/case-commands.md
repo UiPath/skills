@@ -171,7 +171,7 @@ uip maestro case spec --type <activity|trigger> \
   --connection-id <uuid> \
   --skip-case-shape --output json
 
-# Phase 3 (implementation) — populated caseShape from --input-details
+# Populated caseShape gather — run once per exact request, before stage mutation
 uip maestro case spec --type <activity|trigger> \
   --activity-type-id <uiPathActivityTypeId> \
   --connection-id <uuid> \
@@ -193,7 +193,7 @@ Returns a `ConnectorTaskSpec` with `identity`, `operation`, `connection`, `input
 
 ## uip maestro case tasks describe
 
-Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution for **non-connector tasks** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`). For connector tasks, use [`uip maestro case spec`](#uip-maestro-case-spec) instead.
+Read-only metadata fetch for a task type's input/output schema. The greenfield planning gather runs it once per exact non-connector tuple and stores the complete response in `tasks/schema-cache.json`; Phase 2/3 consume that response and do not repeat the command. For connector tasks, use [`uip maestro case spec`](#uip-maestro-case-spec) instead.
 
 ```bash
 uip maestro case tasks describe --type <type> --id <id> --output json

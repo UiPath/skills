@@ -27,7 +27,7 @@ Record the outcome (pulled from SW at `<SolutionId>`, or local-only) for the fre
 
 ## Large or sweeping edits
 
-Edit size never changes the journey — many edits still stay brownfield (in-place, IDs preserved). No complexity threshold escalates to greenfield. Batch multi-edit passes per [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical): one `validate` at the end, not per edit.
+Edit size never changes the journey — many edits still stay brownfield (in-place, IDs preserved). No complexity threshold escalates to greenfield. Batch the targeted operation per [case-editing-operations.md](case-editing-operations.md): preserve narrow slices and run one `validate` at the end, not per edit. The greenfield owning-stage replacement rule does not apply to brownfield.
 
 When an edit touches many nodes or reads like "rebuild this case", confirm scope first via AskUserQuestion — `Edit in place` (default) vs `Rebuild from an updated spec` (greenfield via [planning.md](planning.md), re-mints IDs). Only an explicit rebuild choice or a new/updated `sdd.md` escalates to greenfield.
 
