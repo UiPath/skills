@@ -77,11 +77,11 @@ If the CLI rejects a `--body` with *"Cannot read properties of undefined (readin
 
 ### MULTILINE_MAX fields
 
-Very large text. Contract differs from `MULTILINE_TEXT` in three ways — all three matter:
+Very large text. Contract differs from `MULTILINE_TEXT`:
 
-1. **Tenant-gated.** Schema creation requires the `MultilineMax` feature flag on the tenant. Where off, `entities create` / `addFields` naming the type returns 400 — report as an enablement gap (*"MultilineMax feature flag not enabled on this tenant"*), do NOT retry or silently substitute `MULTILINE_TEXT` (Rule 18).
-2. **Not filterable, not sortable.** Any `queryFilters` or `sortOptions` entry naming a `MULTILINE_MAX` field → 400: *"Field '<name>' is of type MULTILINE_MAX and cannot be used in filters."* / *"Sort field '<name>' is of type MULTILINE_MAX and cannot be used for sorting."* Never offer the field in filter/sort predicates. See [filter contract](filter-platform-contract.md#operator-support-by-field-type).
-3. **List/query reads return a size marker, not content.** `records list` / `records query` return a string starting `HasValue=true Length=N` (live form: `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`); only `records get <entity-id> <record-id>` returns the full value. Read + write-back rules in [records-query.md → MULTILINE_MAX fields](records-query.md#multiline_max-fields--marker-vs-full-content).
+1. **Not filterable, not sortable.** Any `queryFilters` or `sortOptions` entry naming a `MULTILINE_MAX` field → 400: *"Field '<name>' is of type MULTILINE_MAX and cannot be used in filters."* / *"Sort field '<name>' is of type MULTILINE_MAX and cannot be used for sorting."* Never offer the field in filter/sort predicates. See [filter contract](filter-platform-contract.md#operator-support-by-field-type).
+2. **List/query reads return a size marker, not content.** `records list` / `records query` return a string starting `HasValue=true Length=N` (live form: `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`); only `records get <entity-id> <record-id>` returns the full value. Read + write-back rules in [records-query.md → MULTILINE_MAX fields](records-query.md#multiline_max-fields--marker-vs-full-content).
+3. **On a 400 from `entities create` / `addFields` naming the type**, surface the error verbatim — do NOT retry or silently substitute `MULTILINE_TEXT` (Rule 18).
 
 Needs `@uipath/data-fabric-tool` `1.198.0+` (see data-fabric.md → Tool Version Requirements).
 
