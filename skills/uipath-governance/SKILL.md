@@ -147,9 +147,5 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 
 4. **`uip gov compliance-pack` (singular) and `uip gov compliance-packs` (plural) are not unified.** Singular hits the governance server (authoring flow + custom pack lifecycle). Plural hits Orchestrator/AOps via `@uipath/compliance-packs-sdk` (catalog browsing + per-tenant state). Different backends, different use cases — kept separate until the governance server exposes the full catalog/state surface.
 
-## Known Gaps
-
-- Generic `/compliance-packs/state/.../enable|disable` routes are not gated by `requireCustomComplianceStandardEnabled` for custom packs — a caller with a custom pack GUID can enable/disable it even with the flag off.
-- `analyze` fails in local dev with HTTP 400 — the handler requires the `x-uipath-internal-tenantid` header injected by APIM in production; absent in local dev. Server needs to fall back to deriving tenant from JWT.
 
 </details>
