@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Structural check for the group-by-transform script-task port.
+"""Structural check for the group-by script-task test.
 
-Asserts a Jint-safe JavaScript script task performs a group-by transform
+Asserts a Jint-safe JavaScript script task runs a group-by operation
 (grouping rows by a field and producing an aggregation): scriptFormat=
 "JavaScript", scriptVersion v3, a mapped input and output, no non-Jint runtime
 APIs, a diagram shape, and a source that implements a grouping + aggregation.
@@ -57,7 +57,7 @@ def assert_script_task(root, source_must_match, label):
 
     for pattern in source_must_match:
         if not re.search(pattern, source, re.IGNORECASE):
-            fail(f"script source does not implement a {label} transform (missing /{pattern}/)")
+            fail(f"script source does not implement a {label} operation (missing /{pattern}/)")
 
     shaped = {s.attrib.get("bpmnElement") for s in root.findall(".//bpmndi:BPMNShape", NS)}
     if attr(task, "id") not in shaped:
@@ -66,7 +66,7 @@ def assert_script_task(root, source_must_match, label):
 
 
 def main() -> None:
-    path, root = parse_bpmn("TransformGroupByDemo")
+    path, root = parse_bpmn("ScriptTaskGroupByDemo")
     # Grouping signal: reduce( / reduce.call( / "group" naming / keyed loop build,
     # plus an aggregation signal.
     assert_script_task(
@@ -76,7 +76,7 @@ def main() -> None:
     )
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)
-    print(f"OK: {path} has a Jint-safe scriptTask performing a group-by transform")
+    print(f"OK: {path} has a Jint-safe scriptTask performing a group-by operation")
 
 
 if __name__ == "__main__":

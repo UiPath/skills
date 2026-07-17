@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Structural check for the filter-transform script-task port.
+"""Structural check for the filter script-task test.
 
-Asserts a Jint-safe JavaScript script task performs a filter transform (keeping
+Asserts a Jint-safe JavaScript script task runs a filter operation (keeping
 rows whose amount meets a threshold): scriptFormat="JavaScript", scriptVersion
 v3, a mapped input and output, no non-Jint runtime APIs, a diagram shape, and a
 source that implements a filter/comparison.
@@ -57,7 +57,7 @@ def assert_script_task(root, source_must_match, label):
 
     for pattern in source_must_match:
         if not re.search(pattern, source, re.IGNORECASE):
-            fail(f"script source does not implement a {label} transform (missing /{pattern}/)")
+            fail(f"script source does not implement a {label} operation (missing /{pattern}/)")
 
     shaped = {s.attrib.get("bpmnElement") for s in root.findall(".//bpmndi:BPMNShape", NS)}
     if attr(task, "id") not in shaped:
@@ -66,7 +66,7 @@ def assert_script_task(root, source_must_match, label):
 
 
 def main() -> None:
-    path, root = parse_bpmn("TransformFilterDemo")
+    path, root = parse_bpmn("ScriptTaskFilterDemo")
     # Filter signal: .filter( / .filter.call( / .filter.apply( or a loop+push build.
     assert_script_task(
         root,
@@ -75,7 +75,7 @@ def main() -> None:
     )
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)
-    print(f"OK: {path} has a Jint-safe scriptTask performing a filter transform")
+    print(f"OK: {path} has a Jint-safe scriptTask performing a filter operation")
 
 
 if __name__ == "__main__":
