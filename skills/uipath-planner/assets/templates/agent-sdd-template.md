@@ -307,7 +307,7 @@ flowchart LR
 
 ### Coded Functions
 
-<!-- Atomic deterministic logic (transform, parse, score, custom-auth API call, IS-connection query) invoked as agent tools. Implementation routes to uipath-functions; each function is built and published BEFORE its consumers. OPTIONAL subsection — omit entirely when no coded function is in scope (exempt from the template-superset check). -->
+<!-- Atomic deterministic logic in TypeScript, JavaScript, or Python (transform, parse, score, custom-auth API call, IS-connection query) invoked as agent tools. Implementation routes to uipath-functions; each function is built and published BEFORE its consumers. OPTIONAL subsection — omit entirely when no coded function is in scope (exempt from the template-superset check). -->
 
 | Function | Used By Tool | Input → Output (typed) | Purpose / Dependencies |
 |---|---|---|---|
