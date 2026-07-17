@@ -12,11 +12,14 @@ description: >
   comes from the experiment environment.
 tags: [uipath-maestro-bpmn, e2e, "mode:operate", "lifecycle:setup", path-to-ga]
 
+# turn_timeout must cover the whole agent session (observed: a 902s session was
+# killed by the 900s default while iterating on variable bindings after a live
+# debug run); task_timeout adds headroom for grading on top.
 run_limits:
   expected_turns: 40
-  task_timeout: 1500
+  task_timeout: 1800
   max_turns: 120
-  turn_timeout: 900
+  turn_timeout: 1500
 
 sandbox:
   template_sources:
@@ -28,9 +31,11 @@ initial_prompt: |
 
   Author a minimal Maestro BPMN project named "ProductCalc" with its main file
   at `ProductCalc/ProductCalc.bpmn` for this process:
-    - a manual start event with two numeric input variables `a` and `b`,
-    - a single Jint script task that computes `product = a * b` into a `product`
-      variable,
+    - a manual start event with two numeric input variables named exactly `a`
+      and `b` (debug inputs bind to variables by name — a mismatched variable
+      name leaves the runtime values null),
+    - a single Jint script task that computes their product into a variable
+      named exactly `product`,
     - an end event.
 
   Then run a debug session for the project against Studio Web with inputs
