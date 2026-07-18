@@ -48,6 +48,18 @@ The version line mirrors the CLI's `MAJOR.MINOR` (e.g. CLI `1.197.x` → skills 
 
 Both tracks are **manually triggered** — there is no auto-publish on push to `main`. Alpha is dispatched on demand; stable runs when a GitHub Release is published. `npm install @uipath/skills` (no tag) always resolves to the last stable npmjs release — alphas live only under the `alpha` tag on GitHub Packages.
 
+### Maturity gate (stable track only)
+
+The stable publish excludes skills marked `in-development` in `assets/skill-status.json`. Before `npm publish`, the `publish-release` job runs `scripts/prune-dev-skills.mjs`: it deletes those `skills/<name>/` dirs from the working tree (uncommitted — same pattern as the alpha version stamp), rewrites the shipped manifest to stay bijective with the shipped dirs, and regenerates the README status table. The pruned list is written to the workflow step summary — an exclusion is never silent.
+
+| Channel | In-development skills |
+|---------|----------------------|
+| npm `latest` (stable) | **excluded** |
+| npm `alpha` | included |
+| Claude Code plugin (git) | included |
+
+Dry-run locally with `node scripts/prune-dev-skills.mjs --list`. To ship a skill in the next stable release, set its status to `preview` or `stable` in the manifest (and regenerate the README table).
+
 ### Registry routing
 
 `@uipath/skills` is a **scoped** package, so the publish target is set via the **scoped registry** (`@uipath:registry=<url>`) — not a `--registry` flag (which only sets the *unscoped* default and is ignored for scoped packages). There is **no committed `.npmrc` and no `publishConfig.registry`**: a static scoped-registry line would override the per-job target (and break `npm install` for anyone cloning this public repo).
