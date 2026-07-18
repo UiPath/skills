@@ -85,13 +85,14 @@ Emission rules:
 3. **Bare default rule is legal.** If a target has escalations but no default SLA T-entry, emit `{expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`.
 4. **Always emit `escalationRule` on every rule.** Use `"escalationRule": []` when a rule has no attached escalations. Never omit the key.
 5. **Omit `slaRules` key entirely** on targets with no SLA T-entries.
+6. **Every escalation carries a unique, non-blank `displayName`.** Use the T-entry's name when `sdd.md` supplies one; otherwise default to `"Escalation <n>"`, where `<n>` is a **1-based counter incremented across every escalation in the case** (root + every stage), in write order — so names are globally unique. Studio Web auto-labels un-named escalations identically and rejects the result as duplicate names; `uip maestro case validate` treats `displayName` as optional and will NOT flag this. (SLA *rules* themselves have no name field at schema v23 — only their escalations do.)
 
 ## Recipe — one escalation entry
 
 ```json
 {
   "id": "esc_xxxxxx",
-  "displayName": "<from T-entry, optional>",
+  "displayName": "<from T-entry; default \"Escalation <n>\" when none — see emission rule 6>",
   "action": {
     "type": "notification",
     "recipients": [
@@ -105,7 +106,7 @@ Emission rules:
 }
 ```
 
-- `displayName` omitted entirely when T-entry doesn't supply one (don't emit `undefined`).
+- `displayName` is **always emitted, never blank.** Use the T-entry's name when supplied; otherwise default to `"Escalation <n>"` (1-based counter across every escalation in the case, in write order — globally unique). Studio Web rejects blank/duplicate escalation names; the CLI's `validate` does not catch it.
 - `atRiskPercentage` included only when `triggerInfo.type === "at-risk"`.
 - `recipients` is an array — **one entry per sdd-declared recipient**.
 

@@ -319,6 +319,38 @@ def get_default_sla(target: dict) -> dict | None:
     return last if (last or {}).get("expression") == "=js:true" else None
 
 
+def assert_unique_sla_escalation_names(plan: dict) -> None:
+    """Every escalation rule must have a non-blank, case-unique ``displayName``.
+
+    Studio Web auto-labels un-named escalation rules identically and rejects the
+    result as duplicate names. ``uip maestro case validate`` treats ``displayName`` as
+    optional and does NOT catch this, so a caseplan can pass the CLI yet fail in SW.
+    (Escalation ``displayName`` is a v23 field; SLA *rules* themselves have no name
+    field until schema v26, so only their escalations are checked here.)
+    """
+    targets = [(plan.get("metadata") or {})]
+    targets += [(n.get("data") or {}) for n in (plan.get("nodes") or [])]
+    esc_names: list = []
+    for d in targets:
+        for r in (d.get("slaRules") or []):
+            for e in ((r or {}).get("escalationRule") or []):
+                esc_names.append((e or {}).get("displayName"))
+
+    blank = sum(1 for x in esc_names if not x)
+    if blank:
+        sys.exit(
+            f"FAIL: {blank} escalation rule(s) have a blank/missing displayName — Studio Web "
+            f"auto-labels un-named escalations identically and rejects them as duplicate names. "
+            f"Emit a unique default (e.g. 'Escalation 1', 'Escalation 2', ...)."
+        )
+    seen: set = set()
+    dups: set = set()
+    for x in esc_names:
+        (dups.add(x) if x in seen else seen.add(x))
+    if dups:
+        sys.exit(f"FAIL: duplicate escalation displayName(s) {sorted(dups)} — Studio Web requires unique names.")
+
+
 def _stringify(v: Any) -> str:
     return json.dumps(v, default=str)
 

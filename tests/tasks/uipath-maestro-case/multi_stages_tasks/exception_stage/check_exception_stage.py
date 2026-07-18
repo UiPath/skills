@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
+    assert_unique_sla_escalation_names,
     find_node_by_label,
     find_stages,
     first_rule_of_condition,
@@ -18,6 +19,7 @@ from _shared.case_check import (  # noqa: E402
 
 def main():
     plan = read_caseplan()
+    assert_unique_sla_escalation_names(plan)
 
     process = find_node_by_label(plan, "Process")
     if process.get("type") != "case-management:Stage":

@@ -404,6 +404,7 @@ All SLA data on a target (root or stage) lives in a single `slaRules[]` array. T
     "escalationRule": [
       {
         "id": "esc_aB3kL9",
+        "displayName": "Escalation 1",
         "triggerInfo": { "type": "sla-breached" },
         "action": {
           "type": "notification",
@@ -438,6 +439,8 @@ All SLA data on a target (root or stage) lives in a single `slaRules[]` array. T
 Time units: `"min"` (minutes), `"h"` (hours), `"d"` (days), `"w"` (weeks), `"m"` (months).
 Escalation `triggerInfo.type`: `"at-risk"` or `"sla-breached"`. `atRiskPercentage` is required when `type === "at-risk"` and omitted otherwise.
 Escalation `action.recipients[].scope`: `"User"` or `"UserGroup"`. `target` is the user / group UUID; `value` is the display string (email or group name).
+
+Every escalation rule carries a **unique, non-blank `displayName`** — author-supplied from `sdd.md`, else a default `"Escalation <n>"` (1-based counter across the whole case). Studio Web auto-labels un-named escalations identically and rejects duplicate names; `uip maestro case validate` treats `displayName` as optional and does NOT flag this. (SLA *rules* themselves have no name field at v23 — only their escalations do.)
 
 ### SlaRuleEntry
 
