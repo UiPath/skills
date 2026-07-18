@@ -51,15 +51,15 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 | Task class | Resolved resources | Phase 2 shape |
 |---|---|---|
-| Registry-backed non-connector (`process`, `agent`, `rpa`, `action` **App-based**, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs and task-specific scalar fields (e.g. App-based `action`'s `taskTitle`/`priority`/`recipient`/`labels`) populated per plugin — these are final at Step 2; only input `value`s defer to Phase 3. |
-| `action` **QuickForm** | Inline; no registry resource | `.hitl.json` fields + context + fully populated task-local runtime `data.inputs[]` / `data.outputs[]` bridge. Input/inOut values and output/inOut mappings are final in Phase 2. |
+| Registry-backed non-connector (`process`, `agent`, `rpa`, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs and task-specific scalar fields are populated per plugin; only input `value`s defer to Phase 3. |
+| `action` — QuickForm or App-based | Approved non-placeholder HITL intent | Delegated sequentially to `uipath-human-in-the-loop`. Case verifies target placement and a non-empty action, captures its ID, and otherwise falls back to a placeholder. |
 | Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data.typeId` + `data.connectionId` set. `data.inputs` omitted or empty. **No `case spec` call in Phase 2** — schema discovery is deferred to Phase 3. |
 | Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Placeholder task per Rule 8 of `SKILL.md` — empty `data: {}`. Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
 | `agent` / `api-workflow` built inline | Built + bound in Phase 1 at the Rule 17 gate | **Not a placeholder** — fully resolved task (name+folder binding, `resourceKey="solution_folder.<name>"`, **`folderPath` binding `default` = `""`** — co-located runtime folder; `solution_folder` stays only in `resourceKey`). Phase 2 treats it like any resolved resource. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery). |
 
 ### What does NOT get written in Phase 2
 
-- Registry-backed task input `value` bindings (literals, expressions, cross-task references). QuickForm's task-local input/inOut values are the exception and are complete in Phase 2.
+- Case-authored task input `value` bindings (literals, expressions, cross-task references). Delegated actions are excluded from the shared Case binding pass; downstream consumers still bind in Phase 3.
 - Connector task input/output schemas.
 - Conditions of any scope (stage-entry, stage-exit, task-entry, case-exit).
 - SLA rules (default, conditional) and escalation rules.

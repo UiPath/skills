@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that a Case QuickForm sidecar is mirrored into runtime task I/O."""
+"""Verify that a delegated Case QuickForm is mirrored into runtime task I/O."""
 
 from __future__ import annotations
 
@@ -265,7 +265,7 @@ def verify_packed_runtime(solution_dir: Path, task: dict, sidecar: dict) -> None
                 fail(f"packed output {field_id!r} is missing {missing}")
 
     print(
-        "OK: QuickForm sidecar matches task runtime I/O and packed BPMN "
+        "OK: delegated QuickForm sidecar matches task runtime I/O and packed BPMN "
         f"for {task.get('displayName')!r}"
     )
 
@@ -285,7 +285,7 @@ def main() -> None:
             fail("--pack requires an existing --solution directory")
         verify_packed_runtime(args.solution, task, sidecar)
     else:
-        print("OK: QuickForm sidecar matches task runtime I/O")
+        print("OK: delegated QuickForm sidecar matches task runtime I/O")
 
 
 if __name__ == "__main__":

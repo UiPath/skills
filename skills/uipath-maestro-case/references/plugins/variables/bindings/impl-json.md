@@ -1,6 +1,6 @@
 # Resource Bindings — Implementation
 
-Top-level binding creation. Referenced by **all** task plugins — non-connector tasks for name + folderPath bindings, connector tasks for ConnectionId + folderKey bindings. Every task type MUST create bindings; see each task plugin's §Root-level bindings section. **Exception: a QuickForm `action` task creates NO root bindings** — it has no deployed resource. Its `.hitl.json` declares form bindings, and the matching task-local runtime bridge lives in `data.inputs[]` / `data.outputs[]`. The `action` row below applies to **App-based** action tasks only.
+Top-level binding creation for Case-authored tasks. Non-connector tasks use name + folderPath bindings; connector tasks use ConnectionId + folderKey bindings. **Action tasks are excluded:** the `uipath-human-in-the-loop` delegate owns any HITL-specific binding changes, and Case only regenerates `bindings_v2.json` from the final top-level array.
 
 > **No `planning.md`** — bindings are created during implementation (driven by each task plugin's §Root-level bindings), not planned as standalone T-entries. Intentional, not a gap.
 
@@ -17,8 +17,7 @@ The bindings array stores resource metadata for tasks — process names, folder 
 | Task Type | `resource` | `resourceSubType` | Bindings Created |
 |---|---|---|---|
 | process | `"process"` | `"ProcessOrchestration"` | name + folderPath |
-| action (App-based) | `"app"` | — | name + folderPath |
-| action (QuickForm) | — | — | **none** — `.hitl.json` plus task-local `data.inputs[]` / `data.outputs[]`; no deployed resource binding |
+| action (delegated) | — | — | Case creates none; the HITL delegate owns this row |
 | agent | `"process"` | `"Agent"` | name + folderPath |
 | rpa | `"process"` | — | name + folderPath |
 | api-workflow | `"process"` | `"Api"` | name + folderPath |
@@ -27,13 +26,13 @@ The bindings array stores resource metadata for tasks — process names, folder 
 
 ## Binding Creation
 
-For every task, create **two** binding entries in top-level `bindings[]`. Both bindings share the same `resourceKey`. The shape is identical for all task types — only the field values differ per the Per Task Type table above.
+For every Case-authored task covered by the table above, create **two** binding entries in top-level `bindings[]`. Delegated actions are excluded. Both bindings share the same `resourceKey`. The shape is identical for the remaining task types — only the field values differ per the Per Task Type table above.
 
 **Every binding entry MUST include all 7 fields:** `id`, `name`, `type`, `resource`, `resourceKey`, `default`, `propertyAttribute` (plus optional `resourceSubType`). Omitting `name` or `type` causes Studio Web to fail to render the case.
 
 ### Full binding shape — non-connector tasks
 
-For non-connector tasks (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`), `name` and `propertyAttribute` carry the same value (`"name"` / `"folderPath"`):
+For Case-authored non-connector tasks (`process`, `agent`, `rpa`, `api-workflow`, `case-management`), `name` and `propertyAttribute` carry the same value (`"name"` / `"folderPath"`):
 
 ```json
 [
@@ -97,8 +96,8 @@ The FolderKey binding is **omitted entirely** when `spec.connection.folderKey` i
 
 | Field | Source |
 |---|---|
-| `name` | `tasks.md` `name` field (captured from registry during planning: `entry.name` for process types, `entry.deploymentTitle` for action) |
-| `folderPath` | `tasks.md` `folder-path` field (captured from registry during planning: `entry.folders[0].fullyQualifiedName` for process types, `entry.deploymentFolder.fullyQualifiedName` for action) |
+| `name` | `tasks.md` `name` field (captured from the selected registry entry) |
+| `folderPath` | `tasks.md` `folder-path` field (captured from `entry.folders[0].fullyQualifiedName`) |
 
 ### resourceKey construction — non-connector tasks
 

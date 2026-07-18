@@ -391,7 +391,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 ###### Action Task Detail (type: `action`)
 
-> Use this block for every task of type `action`. Two paths (see [action/planning.md § Path Selection](../../references/plugins/tasks/action/planning.md#path-selection)): **QuickForm** (default) authors an inline form — no deployed app — with fields from the Input/Output Schema rows below; **Action App** binds a deployed app registered in `action-apps-index.json`. Set `HITL Implementation` accordingly. A deployed app is never built inline; a named-but-missing app falls back to QuickForm or a Rule-8 placeholder at the Rule 17 gate.
+> Use this block for every task of type `action`. Record the approved HITL intent: **QuickForm** (default, no deployed app) or **Action App** (an existing deployment registered in `action-apps-index.json`). The Case build delegates the action implementation to `uipath-human-in-the-loop`; this SDD supplies the business schema and target Case variables.
 
 **HITL Implementation:** {`QuickForm` (default — inline form, no app) OR `Action App: <deploymentTitle>` (bind a deployed app; concrete intended title, registry canonical when resolved, else the user-requested title so Phase 1 can repeat discovery). REQUIRED and NEVER `<UNRESOLVED>`.}
 **Action App ID:** {`actionAppId` — concrete deployment id, or `<UNRESOLVED>` when no live app was selected; `N/A` for `QuickForm`}
@@ -400,7 +400,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 **Recipient:** {typed prefix only: `Role:<name>` \| `User:<uuid>` \| `UserGroup:<uuid>` \| `Email:<addr>` \| `Expression:=vars.<id>`}
 **Priority:** {Low \| Medium \| High \| Critical} · **Task Title:** {one-line Action Center prompt} · **Labels:** {csv or `—`}
 
-> The Action App title carries portable intent; `Action App ID` carries resolution status. A concrete ID plus the exact folder locates the deployed app, while an unresolved ID plus the intended title lets Phase 1 repeat discovery without `tasks/registry-resolved.json`. `actionType` is the human-decision app's behaviour selector — treat it as a closed enum sourced from the app, not a free-text label. **For a `QuickForm` task, `Action App ID` / `Deployment Folder` / `actionType` do not apply (`N/A`)** — the Input/Output Schema rows (fields) and Action buttons (outcomes) drive both the `.hitl.json` sidecar and the task-local runtime I/O bridge.
+> The Action App title carries portable intent; `Action App ID` carries resolution status. A concrete ID plus the exact folder locates the deployed app, while an unresolved ID plus the intended title lets Phase 1 repeat discovery without `tasks/registry-resolved.json`. `actionType` is the human-decision app's behaviour selector — treat it as a closed enum sourced from the app, not a free-text label. For a `QuickForm` task, `Action App ID` / `Deployment Folder` / `actionType` do not apply (`N/A`); preserve the Input/Output Schema and Actions rows verbatim for the HITL delegation brief.
 
 **Input Schema:**
 

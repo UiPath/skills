@@ -1,262 +1,148 @@
-# action task — Implementation (Direct JSON Write)
+# action task — Delegated HITL Implementation
 
-Two paths — **QuickForm** (default; inline form, no app) and **App-based** (deployed Action Center app). Pick per [planning.md § Path Selection](planning.md#path-selection); the `tasks.md` `hitl-kind` field (`quick` | `app`) records the choice.
+Case does not author action-specific JSON. For every approved, non-placeholder action T-entry, spawn a sub-agent that follows the `uipath-human-in-the-loop` skill and edits the existing Case project.
 
-> **Phase split.**
-> - **App-based:** Phase 2 writes shape with empty input values; Phase 3 binds values per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
-> - **QuickForm:** fully authored in Phase 2. The `.hitl.json` defines the form, while populated `data.inputs[]` / `data.outputs[]` deliver the same contract to the Case packer/runtime. The QuickForm task has **no** Phase-3 io-binding step of its own because its input values and output mappings are final in Phase 2. Downstream tasks that consume a QuickForm output bind it in *their* Phase 3 via `=vars.<variable>`.
->
-> See [phased-execution.md](../../../phased-execution.md).
+The delegate owns both QuickForm and App-based implementation details. This plugin owns only the handoff, target placement, failure fallback, and Case-level verification.
 
----
+## Phase and Concurrency
 
-## QuickForm (default — no deployed app)
+Run action delegation during Phase 2 after the Case root, variables, stages, and target lanes exist.
 
-Author two aligned artifacts: a `<TaskLabel>.hitl.json` schema file alongside `caseplan.json`, and the action task carrying `data.context[hitlType]="quick"` plus its runtime I/O bridge. No deployed app, no `tasks describe`, **no `root.data.uipath.bindings[]` entries**. Generate two fresh UUID v4 values up front: `schemaId` (schema identity) and `_schemaFileId` (placeholder file id — **must differ** from `schemaId`).
+- Delegate action tasks **sequentially**. Multiple sub-agents must never edit the same `caseplan.json` concurrently.
+- Re-read `caseplan.json` after every delegate returns and before starting the next action.
+- Phase 3 still applies shared task-entry conditions and binds downstream consumers. It does not rebuild or repair the delegated action's own data.
 
-### `<TaskLabel>.hitl.json`
+## Step 1 — Prepare a Self-Contained Brief
 
-Sits next to `caseplan.json`. Filename = the task's label. Unified `fields[]` array — `direction` sets each field's role.
+Read the approved action T-entry and the current `caseplan.json`. Supply only:
 
-```json
-{
-  "schemaId": "<schemaId-uuid-v4>",
-  "fields": [
-    { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input",  "binding": "=vars.invoiceId" },
-    { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input",  "binding": "=vars.amount" },
-    { "id": "decision",  "label": "Decision",   "type": "text",   "direction": "output", "variable": "decision", "required": true },
-    { "id": "notes",     "label": "Notes",      "type": "text",   "direction": "inOut",  "binding": "=vars.draftNotes", "variable": "notes" }
-  ],
-  "outcomes": [
-    { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true,  "action": "Continue" },
-    { "id": "reject",  "name": "Reject",  "type": "string", "isPrimary": false, "action": "End" }
-  ]
-}
+- absolute `caseplan.json` path and project directory;
+- target stage ID/display name and lane;
+- action display name and required/run-once settings;
+- exact `hitl-implementation` preference;
+- task title, priority, recipient, labels, action type, and assignment note;
+- exact Input Schema, Output Schema, Case-normalized `outputs`, and outcomes from `tasks.md`; resolve any upstream Case cross-task reference through the normal Case resolver before handoff and include the resolved binding alongside the approved row;
+- relevant declared Case variables and types;
+- selected Action App registry object and persisted I/O contract for an App-based task.
+
+Do not send unrelated stages/tasks or files from this skill. Do not read or quote the sibling skill's files; invoking it in the sub-agent is the runtime boundary.
+
+## Step 2 — Invoke the HITL Delegate
+
+Use this brief shape:
+
+```text
+Add one Human-in-the-Loop action task to an existing UiPath Case project by
+following the uipath-human-in-the-loop skill.
+
+The Case plan and HITL schema were already reviewed and approved by the user.
+Treat the supplied declaration as confirmed; do not ask the Case caller to
+redesign it. Do not debug, upload, publish, or deploy anything.
+
+Caseplan:           <absolute path to caseplan.json>
+Project directory:  <absolute path containing caseplan.json>
+Target stage:       <stage display name> (id: <stage id>)
+Target lane:        <lane index>
+Task display name:  <display name>
+Required:           <true|false>
+Run only once:      <true|false>
+
+HITL implementation: <QuickForm | Action App: deploymentTitle>
+Task title:          <title>
+Priority:            <level>
+Recipient:           <typed recipient or omitted>
+Labels:              <labels or omitted>
+Action type:         <resolved app selector or N/A>
+Assignment note:     <note or omitted>
+Input Schema:
+  <exact approved rows>
+Output Schema:
+  <exact approved rows>
+Case output contract:
+  <exact outputs rows used by Case lineage/xrefs>
+Outcomes:
+  <exact approved rows>
+Relevant Case variables:
+  <name + Case type>
+Resolved Action App:
+  <selected registry object + persisted tasks-describe I/O contract, or N/A>
+
+Preserve all unrelated Case content. Add exactly one action task to the target
+lane and create/update only HITL-owned artifacts required by your skill.
+If you cannot locate/load uipath-human-in-the-loop, do not improvise the action
+JSON. Return:
+  {"built":false,"error":"skill uipath-human-in-the-loop not installed"}
+
+Return JSON:
+  {
+    "built": true|false,
+    "taskId": "<id or empty>",
+    "elementId": "<elementId or empty>",
+    "hitlKind": "<quick|app|empty>",
+    "artifacts": ["<paths written>"],
+    "error": "<message when built=false>"
+  }
 ```
 
-| Field property | Rule |
-|---|---|
-| `id` | lowercase the label, spaces→`-`, strip non-alphanumeric. `"Invoice ID"`→`"invoiceid"`, `"Due Date"`→`"due-date"`. |
-| `label` | Display label — never empty (validator rejects). |
-| `type` | `.hitl.json` native type — see case-vocab map below. |
-| `direction` | `"input"` (reviewer reads) · `"output"` (reviewer enters) · `"inOut"` (reviewer edits a prefilled value). |
-| `binding` | Required for `input`/`inOut`: `"=vars.<v>"` — the case variable feeding the field. |
-| `variable` | Required for `output`/`inOut`: the var the entered value writes to; downstream reads `=vars.<variable>`. |
-| `required` | `true` for mandatory outputs; omit otherwise. |
+The delegate may determine the action-specific identifiers and artifacts required by its own contract. Case must not prescribe or reconstruct those shapes.
 
-`outcomes[]`: `{ id, name, type:"string", isPrimary:<bool>, action:"Continue"|"End" }` — first entry is the primary action; use domain names (Approve/Reject), never a bare Submit.
+## Step 3 — Verify the Handoff
 
-**case-vocab → `.hitl.json` native type** (the [SDD Case Variables](../../../sdd-generation-rules.md) type feeding each field):
+After the delegate returns:
 
-| case vocab | `.hitl.json` `type` |
-|---|---|
-| `string` | `text` |
-| `integer` / `float` / `double` | `number` |
-| `boolean` | `boolean` |
-| `date` | `date` |
-| `datetime` | `dateTime` |
-| `jsonSchema` / `file` | no native QuickForm type — use `text`, or prefer **App-based** when the reviewer needs rich/file I/O |
+1. Re-read `caseplan.json`.
+2. Find exactly one `type: "action"` task with the requested display name in the requested stage/lane.
+3. Confirm its `data` object is non-empty.
+4. Confirm the returned `taskId` and `elementId` match the written task.
+5. Confirm every returned artifact path exists inside the Case project.
+6. Capture the task ID in `id-map.json`.
+7. Continue the normal Case phase. The shared Phase-2 validation remains informational; Phase 4 is authoritative.
 
-### Runtime I/O bridge (required)
+These are boundary checks, not permission to inspect or reproduce the delegate's schema algorithm.
 
-The sidecar is the form-authoring schema; it is **not** the Case runtime binding surface. The Case packer builds the HITL task arguments and output mappings from the action task's `data.inputs[]` / `data.outputs[]`. Derive those arrays from the same `fields[]` in the same Phase-2 write:
+If a prior interrupted run already contains exactly one matching non-placeholder action in the target lane, adopt it and capture its ID instead of delegating a duplicate.
 
-| `.hitl.json` direction | `data.inputs[]` | `data.outputs[]` |
-|---|---|---|
-| `input` | one entry | — |
-| `output` | — | one entry |
-| `inOut` | one entry | one entry |
+## Failure — Placeholder, Never Local HITL Authoring
 
-**Input / inOut mapping:**
+Treat any of these as delegation failure:
+
+- the HITL skill is unavailable;
+- the sub-agent returns `built:false`, dies, or returns malformed output;
+- no matching action task was written;
+- multiple matching tasks were written;
+- the task landed in the wrong stage/lane;
+- the task has empty `data`;
+- a returned artifact is missing.
+
+Surface the error, then write the standard structural placeholder in the target lane. The booleans below are examples; copy their exact values from `tasks.md`.
 
 ```json
 {
-  "name": "<field.id>",
-  "type": "<original Case variable type>",
-  "id": "v<8 alphanumeric chars>",
-  "var": "<same value as id>",
+  "id": "t<8 alphanumeric chars>",
+  "type": "action",
+  "displayName": "<display name>",
   "elementId": "<stageId>-<taskId>",
-  "value": "<field.binding>"
-}
-```
-
-- Copy `field.binding` byte-for-byte into `value` (for example, `=vars.invoiceId`).
-- `type` is the pinned Case/runtime type from the SDD (`string`, `integer`, `float`, `double`, `boolean`, `date`, `datetime`, ...), **not** the sidecar-native type (`text`, `number`, ...).
-- Mint a distinct letter-leading input slot ID (`v` + 8 alphanumeric chars) and mirror it in `var`.
-
-**Output / inOut mapping:**
-
-```json
-{
-  "name": "<field.id>",
-  "type": "<target Case variable type>",
-  "id": "<field.variable>",
-  "var": "<field.variable>",
-  "value": "<field.variable>",
-  "source": "=<field.id>",
-  "target": "=<field.variable>",
-  "elementId": "<stageId>-<taskId>"
-}
-```
-
-- `source` reads the submitted QuickForm response by **field ID**.
-- `id` / `var` / `value` / `target` use the exact declared `field.variable`; do not substitute the display label.
-- `type` comes from the output target's pinned Case type.
-- `required` stays on the sidecar field. `outcomes[]` also stays in the sidecar; neither creates another task-I/O entry.
-
-Leaving either runtime array empty when matching fields exist is a functional defect: validation can still pass, but the packed HITL task has no argument/output mapping and an expression such as `=vars.invoiceId` can reach the form as literal text instead of a resolved value.
-
-### Task JSON
-
-```json
-{
-  "id": "ta1b2c3d4",
-  "type": "action",
-  "displayName": "InvoiceReview",
-  "elementId": "Stage_aB3kL9-ta1b2c3d4",
   "isRequired": true,
   "shouldRunOnlyOnce": false,
-  "data": {
-    "taskTitle": "Please review this invoice and approve or reject",
-    "context": [
-      { "name": "hitlType",                     "type": "string",  "value": "quick" },
-      { "name": "_schemaFileId",                "type": "string",  "value": "<_schemaFileId-uuid-v4>" },
-      { "name": "hitlSchemaId",                 "type": "string",  "value": "<schemaId-uuid-v4>" },
-      { "name": "taskTitle",                    "type": "string",  "value": "Please review this invoice and approve or reject" },
-      { "name": "labels",                       "type": "string" },
-      { "name": "priority",                     "type": "string",  "value": "Medium" },
-      { "name": "actionCatalogName",            "type": "string" },
-      { "name": "enableActionableNotifications","type": "boolean", "value": "false" },
-      { "name": "assignmentCriteria",           "type": "string",  "value": "user" },
-      { "name": "recipient",                    "type": "json",    "body": { "Type": 2, "Value": "approver@company.com" } }
-    ],
-    "inputs": [
-      { "name": "invoiceid", "type": "string", "id": "vA1b2C3d4", "var": "vA1b2C3d4", "elementId": "Stage_aB3kL9-ta1b2c3d4", "value": "=vars.invoiceId" },
-      { "name": "amount", "type": "double", "id": "vE5f6G7h8", "var": "vE5f6G7h8", "elementId": "Stage_aB3kL9-ta1b2c3d4", "value": "=vars.amount" },
-      { "name": "notes", "type": "string", "id": "vJ9k0L1m2", "var": "vJ9k0L1m2", "elementId": "Stage_aB3kL9-ta1b2c3d4", "value": "=vars.draftNotes" }
-    ],
-    "outputs": [
-      { "name": "decision", "type": "string", "id": "decision", "var": "decision", "value": "decision", "source": "=decision", "target": "=decision", "elementId": "Stage_aB3kL9-ta1b2c3d4" },
-      { "name": "notes", "type": "string", "id": "notes", "var": "notes", "value": "notes", "source": "=notes", "target": "=notes", "elementId": "Stage_aB3kL9-ta1b2c3d4" }
-    ]
-  }
+  "data": {}
 }
 ```
 
-- `id`: `t` + 8 alphanumeric chars. `elementId`: `${stageId}-${taskId}`.
-- `data.taskTitle` appears **both** top-level and in `context[]` — both required.
-- `hitlType` = `"quick"`. `hitlSchemaId` = the `.hitl.json` `schemaId` **exactly**. `_schemaFileId` = the other UUID (placeholder; Studio Web replaces it when it processes the project).
-- `labels` / `actionCatalogName`: leave the entry present but with no `value` for QuickForm.
-- `data.inputs[]` / `data.outputs[]`: required runtime mirrors of `.hitl.json` fields. Cardinality is `input + inOut` and `output + inOut`, respectively; use the mapping above.
-- No `data.name` / `data.folderPath` (those are App-based). No `root.data.uipath.bindings[]`.
-- **Entry conditions** are added by the shared Step 10 (`current-stage-entered`), same as any task — a task with none fails `validate` (`Task has no entry rules`). No QuickForm-specific handling.
-- `recipient` / `priority`: `context[recipient].body` is the `{ Type, Value }` object and `context[priority].value` the level — same values and Type rules as App-based (§ Action-Specific Fields).
+Capture its ID, keep structural task conditions, add the delegation failure to `build-issues.md`, and continue. Do not leave partial HITL sidecars or a partially populated action marked as resolved; report partial artifacts for manual cleanup rather than guessing which are safe to delete.
 
----
+## Post-Delegation Case Responsibilities
 
-## App-based (deployed Action Center app)
+- Apply the approved task-entry conditions through the shared condition plugin.
+- Bind downstream consumers to the delegated task's exposed outputs using the normal Case cross-task reference workflow.
+- Regenerate `bindings_v2.json` from the final top-level bindings after all tasks are present.
+- Run Case validation and solution packing through the normal Phase 4/6 workflow.
+- Report whether each action was delegated successfully or remained a placeholder.
 
-Binds to a resolved deployed app. `data.name` / `data.folderPath` are `=bindings.<id>` references; 2 root bindings are added.
+## Anti-Patterns
 
-### Task JSON Shape
-
-```json
-{
-  "id": "ty5UcykfU",
-  "type": "action",
-  "displayName": "Review Purchase Order",
-  "elementId": "Stage_aB3kL9-ty5UcykfU",
-  "isRequired": true,
-  "shouldRunOnlyOnce": false,
-  "data": {
-    "taskTitle": "Please review this PO and approve or reject",
-    "priority": "High",
-    "recipient": { "Type": 2, "Value": "approver@corp.com" },
-    "labels": "<labels string>",
-    "name": "=bindings.bG0SraLpg",
-    "folderPath": "=bindings.bH1iJK2lm",
-    "inputs": [],
-    "outputs": []
-  }
-}
-```
-
-- `id`: `t` + 8 alphanumeric chars. `elementId`: `${stageId}-${taskId}`.
-- `data.name` / `data.folderPath` MUST be `=bindings.<id>` references — never literals.
-
-### Action-Specific Fields
-
-| Field | Notes |
-|---|---|
-| `data.taskTitle` | Required on resolved action tasks — validator rejects empty. |
-| `data.priority` | `"Low"` \| `"Medium"` (default) \| `"High"` \| `"Critical"` |
-| `data.recipient` | `ActionTaskAssignee` object: `{ "Type": <int>, "Value": "<id-or-email>" }`. See fallback below. |
-| `data.actionCatalogName` | **Optional.** Must bind to an existing action catalog resource. Omit unless tasks.md references a known catalog. |
-| `data.labels` | Label set from tasks.md |
-
-`recipient.Type` values: `0` = user ID (sdd `User:`), `1` = group ID (sdd `UserGroup:` / `Role:`), `2` = email address, `3` = `"=vars.<varId>"` (sdd `Expression:`). **Fallback when sdd.md value is not a resolved UUID:** write `{ "Type": <picked>, "Value": "<sdd-string-as-is>" }` — schema-conformant placeholder, user resolves Value later. Drop `data.recipient` only when no Type maps. **Never invent a non-conforming shape** (`{ kind, id }`, `{ scope, target, value }`, etc.) — Studio Web canvas crashes silently; CLI validate misses it. (These Type rules apply to QuickForm's `context[recipient].body` too.)
-
-### Procedure
-
-**Step 0 — Get inputs/outputs schema:**
-
-```bash
-uip maestro case tasks describe --type action --id "<action-app-id>" --output json
-```
-
-Fallback: planning-captured schema from tasks.md. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
-
-**Step 1 — Root-level bindings:**
-
-Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape (all required — omitting any causes Studio Web render failure). Per-task overrides:
-
-- `resource`: `"app"`
-- `resourceSubType`: omit (no resourceSubType for action tasks)
-- `name` / `folderPath` defaults: from `tasks.md` `name` / `folder-path` fields
-
-Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
-
-**Step 2 — Write task:**
-
-1. Generate `id` (`t` + 8 chars) and `elementId` (`<stageId>-<taskId>`)
-2. Set `data.taskTitle`, `data.priority`, `data.labels` from tasks.md now (plain strings, not Phase-3 bindings); set `data.actionCatalogName` only when tasks.md references an existing catalog. **`data.recipient` is an object, NEVER a bare string.** The tasks.md `recipient:` line carries a bare value (the SDD typed prefix is stripped in planning) — wrap it as `{ "Type": <int>, "Value": <value> }`, inferring Type from the value shape (`=vars.X` → `3`, email → `2`, UUID → `0`/`1`). E.g. `recipient: =vars.assignedLoanOfficer` → `{ "Type": 3, "Value": "=vars.assignedLoanOfficer" }`. Do not copy the bare value through as `data.recipient`.
-3. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
-4. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
-
-   **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is the `tasks describe` output (Step 0 above).
-5. Append to target stage's `tasks[laneIndex][]`
-
-> Entry conditions added in Step 10. Only `data.inputs[].value` is deferred to Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md); the scalar `data.*` fields above are final at Step 2.
-
----
-
-## Placeholder (unresolved)
-
-> **Unresolved → `"data": {}`.** When neither path yields a real task (no deployed app resolves and no QuickForm is derivable, per [planning.md § Unresolved Fallback](planning.md#unresolved-fallback-placeholder)), the entire shape collapses to `"data": {}`. **No exception** for `taskTitle`, `priority`, `recipient`, `labels`, `name`, `folderPath`, `context`, `inputs`, `outputs`, or `actionCatalogName` — omit every `data.*` key, and write **no** `.hitl.json` file. See [placeholder-tasks.md](../../../placeholder-tasks.md).
-
-## Post-Write Verification
-
-**QuickForm:**
-- `type: "action"`; `data.taskTitle` non-empty and equal to `context[taskTitle].value`
-- a `<TaskLabel>.hitl.json` exists alongside `caseplan.json` with `schemaId`, `fields[]` (unified, `direction`-typed), `outcomes[]`
-- `context[]` has `hitlType:"quick"`, `_schemaFileId`, `hitlSchemaId` — and `context[hitlSchemaId].value` == `.hitl.json` `schemaId`; `_schemaFileId` ≠ `hitlSchemaId`
-- every sidecar `input`/`inOut` field has one matching `data.inputs[]` entry (`name == field.id`, `value == field.binding`, runtime Case type, unique `id == var`)
-- every sidecar `output`/`inOut` field has one matching `data.outputs[]` entry (`name == field.id`, `source == "=" + field.id`, `id == var == value == field.variable`, `target == "=" + field.variable`)
-- neither runtime array contains fields of the wrong direction; no `data.name`/`data.folderPath`; `root.data.uipath.bindings[]` NOT modified
-- `uip maestro case validate` Status `Valid`; `id` captured in `id-map.json`
-
-**App-based:**
-- `type: "action"`; `data.taskTitle` non-empty
-- `data.name` and `data.folderPath` start with `=bindings.`
-- the bindings array has 2 entries: `resource: "app"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
-- `data.inputs` and `data.outputs` populated
-- `data.recipient` is an **object** `{ Type, Value }`, never a bare string — present whenever tasks.md recorded a `recipient:` line (omitted only for group/role, Skip, or no-Type-maps)
-- `id` captured in `id-map.json`
-
-## Anti-patterns
-
-- **Do NOT emit `data.recipient` as a bare string, drop it, or "resolve" it.** It is always the object `{ Type, Value }` (App-based `data.recipient`; QuickForm `context[recipient].body`). The tasks.md value (`=vars.X`, email, UUID) is the `Value` — wrap it, don't pass it through. `Type 3` `=vars.X` is the finished runtime reference; copying it through as a string, deferring to Phase 3, or rewriting it to the var's email each break the task.
-- **Do NOT give a QuickForm task `data.name`/`data.folderPath` or root `bindings[]`** — those are App-based only. QuickForm uses its sidecar plus task-local runtime I/O arrays, not deployed-resource bindings.
-- **Do NOT leave QuickForm `data.inputs[]`/`data.outputs[]` empty when corresponding fields exist.** The sidecar controls the form schema; the task arrays control packed runtime delivery/extraction. Both artifacts are required and must agree.
-- **Do NOT copy sidecar-native `text` / `number` into task runtime types.** Use the pinned Case type (`string`, `double`, and so on).
-- **CLI `validate` does NOT check `data.recipient`, sidecar↔task I/O parity, or context completeness** — verify presence/shape explicitly (Post-Write Verification), then pack the solution when practical to exercise the runtime converter.
+- **Do not write QuickForm sidecars, action context, resource bindings, recipients, or runtime I/O in Case.**
+- **Do not copy a HITL JSON example or mapping table into this skill.**
+- **Do not read files from the sibling HITL skill.** Runtime invocation is allowed; structural dependency is not.
+- **Do not run two action delegates against one `caseplan.json` concurrently.**
+- **Do not convert a delegation failure into a locally improvised action.** Use `data: {}`.
+- **Do not report a placeholder as a completed HITL task.**

@@ -1,10 +1,9 @@
 task_id: skill-case-quickform-runtime-io
 description: >
-  Builds an inline QuickForm Case action and verifies that sidecar input,
-  output, and inOut fields are mirrored into task runtime I/O and survive
-  solution packing into BPMN.
+  Builds a Case that delegates its QuickForm action to the HITL skill and
+  verifies that sidecar input, output, and inOut fields are mirrored into
+  task runtime I/O and survive solution packing into BPMN.
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:single-node, node:hitl, feature:approval-gate, path-to-ga]
-max_iterations: 1
 
 run_limits:
   expected_turns: 90
@@ -123,6 +122,13 @@ initial_prompt: |
   publishing, and finish the local build in one pass.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Case build delegated HITL authoring to uipath-human-in-the-loop"
+    skill_name: "uipath-human-in-the-loop"
+    expected_skill: "uipath-human-in-the-loop"
+    weight: 3.0
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "caseplan.json exists at the conventional solution/project path"
     path: "QuickFormRuntimeIO/QuickFormRuntimeIO/caseplan.json"

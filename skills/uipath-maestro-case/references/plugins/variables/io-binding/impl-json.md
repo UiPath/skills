@@ -1,6 +1,6 @@
 # I/O Binding — Implementation
 
-> **Phase split.** Phase 3 for registry-backed and connector tasks. Input/output binding at Step 9.8; in-expression `vars.$xref` marker resolution at Step 11.5 (after conditions + SLA). Phase 2 normally writes task shape (schema with empty `value` fields) but does not bind values. **QuickForm action exception:** the action plugin owns its sidecar→runtime bridge and fully populates `data.inputs[]` / `data.outputs[]` in Phase 2; this shared plugin binds only downstream consumers of those outputs. See [`../../../phased-execution.md`](../../../phased-execution.md) and [`../../tasks/action/impl-json.md`](../../tasks/action/impl-json.md#runtime-io-bridge-required).
+> **Phase split.** Phase 3 for Case-authored registry-backed and connector tasks. Input/output binding runs at Step 9.8; in-expression `vars.$xref` marker resolution runs at Step 11.5 (after conditions + SLA). Phase 2 normally writes task shape with empty input `value` fields. **Delegated action tasks are excluded from this shared binding pass:** `uipath-human-in-the-loop` owns their internal I/O, while this plugin still binds downstream consumers of action outputs. See [`../../../phased-execution.md`](../../../phased-execution.md) and [`../../tasks/action/impl-json.md`](../../tasks/action/impl-json.md).
 
 Wire task inputs by editing `caseplan.json` directly. Runs after all tasks are created and enriched (Step 9) and after global variable + output wiring is complete.
 
@@ -32,7 +32,7 @@ Output IDs are name-based camelCase per [uniqueness rule](../global-vars/impl-js
 
 ## Output Binding Shapes
 
-Each task plugin emits `data.outputs[]` entries by combining its Step 0 schema (from `tasks describe` for non-connector plugins, `case spec --input-details` `caseShape.outputs[]` for connector plugins) with the SDD's `outputs:` row operators (`->`, `=`, or bare name). Apply these rules during the plugin's task-write step.
+Each Case-authored non-action task plugin emits `data.outputs[]` entries by combining its Step 0 schema (from `tasks describe` for non-connector plugins, `case spec --input-details` `caseShape.outputs[]` for connector plugins) with the SDD's `outputs:` row operators (`->`, `=`, or bare name). Apply these rules during the plugin's task-write step. The action planner still records `outputs:` as Case's producer/xref contract, but the HITL delegate realizes those outputs.
 
 For each entry in the Step 0 schema, check whether the SDD's `outputs:` row in tasks.md references it (matched by schema field name on the left side of `->`, or as a bare name).
 
@@ -71,7 +71,7 @@ The Output Binding Shapes above are operator-driven, not task-specific. The SAME
 
 ## Binding Procedure
 
-For each task input in `tasks.md`:
+For each Case-authored non-action task input in `tasks.md`:
 
 **Literals/expressions** — write the value string directly to `input.value`. Values shown are POST-rewrite — impl translates `=metadata.X` from `tasks.md` to `=js:metadata.X` per the [canonical-form table](../../../bindings-and-expressions.md#canonical-form-per-sink) (plain `=metadata.X` is not resolved by the lookup-path evaluator):
 ```
@@ -262,7 +262,7 @@ Pick one:
 
 Verifies each resolved task's binding contract **covers** its resource's declared I/O — the build-side re-check of [sdd-generation-rules.md § Resolved-resource I/O completeness](../../../sdd-generation-rules.md#resolved-resource-io-completeness) (Approve-gate item 9 / Finalization step 19). Where Checks 1–4 verify that references which *exist* resolve, Check 5 verifies the *right set of references exists*: required inputs are not silently missing, and extract outputs name real fields.
 
-Read each resolved task's persisted contract from `tasks/registry-resolved.json` (per-input `name` + `required` flag, declared output-field list — written at §Resolve). **Skip** any task with no persisted contract (Rule 17 placeholder / `<UNRESOLVED>`) — same treatment as Check 2's unresolved-producer branch.
+Read each resolved Case-authored non-action task's persisted contract from `tasks/registry-resolved.json` (per-input `name` + `required` flag, declared output-field list — written at §Resolve). **Skip** delegated actions and any task with no persisted contract (Rule 17 placeholder / `<UNRESOLVED>`) — same treatment as Check 2's unresolved-producer branch.
 
 ```text
 # pseudocode — not executed. Realize via Read → reason → Write/Edit.
@@ -362,6 +362,7 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | Check | Severity | Action |
 |---|---|---|
 | Placeholder task (no `data.inputs[]`) | `SKIPPED` | Skip all bindings |
+| Delegated action task | `SKIPPED` | HITL delegate owns internal bindings; retain its `outputs:` rows for Case producer/xref checks |
 | Placeholder connector rule (no `rule.uipath.outputs[]`) | `SKIPPED` | Skip rule output bindings (nothing minted) |
 | Input name not found (exact match) | `ERROR` | Skip binding — log available inputs |
 | Source output not found (exact match) | `ERROR` | Skip binding — log available outputs |
