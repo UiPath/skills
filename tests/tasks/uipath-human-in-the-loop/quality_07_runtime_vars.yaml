@@ -16,10 +16,9 @@ initial_prompt: |
   2. A HITL node (label: "Review Decision")
   3. A script node after HITL that reads the human's decision and logs it
 
-  The script node must read the reviewer's decision via the HITL output
-  runtime variable ($vars.<nodeId>.output) and ALSO check the completion
-  status via the status runtime variable ($vars.<nodeId>.status). Wire the
-  completed handle to the script node. Validate the flow.
+  After the review step completes, the script node should log the reviewer's
+  decision and the completion status of the task. Wire the completed handle
+  to the script node. Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
