@@ -6,7 +6,7 @@ When the planner is invoked without an SDD (the entry guard found no `## Planner
 
 ## Step 1 — Upfront elicitation (batched)
 
-Bundle every unresolved question from the table below into **one** `AskUserQuestion` call. Do not ask one at a time; do not split across turns. If a question is already resolved from the user's request, omit it from the batch. If **all** are resolved, do not call `AskUserQuestion` at all and record the inferred values in the plan header with a one-line note in Decisions & Trade-offs.
+Bundle every unresolved question from the table below into **one** `AskUserQuestion` call. Do not ask one at a time; do not split across turns. If a question is already resolved from the user's request, omit it from the batch. If **all** are resolved, do not call `AskUserQuestion` at all and record the inferred values in the plan header with a one-line note in Decisions & Trade-offs. If `AskUserQuestion` is unavailable, denied, or errors, do not stall and do not end the turn without the plan file: apply each unanswered question's default from the skip-rules table and proceed.
 
 Question phrasing follows the rules in [pdd-driven-lane-guide.md → Step 5](pdd-driven-lane-guide.md#step-5--ui-element-targeting-only-when-9-contains-ui-applications): no internal jargon, no domain or app names in question text.
 
@@ -35,10 +35,10 @@ The batch contains only the questions that survive the skip rules. Build the `As
 **If "explore first, then plan":**
 - You may run non-mutating discovery: `uip rpa analyze`, `uip rpa get-errors`, reading `project.json`.
 - Do NOT run commands that mutate the project (create files, register targets, install packages) — those belong to execution.
-- After Steps 2–4, call `EnterPlanMode` with the plan. User approves → `ExitPlanMode`.
+- After Steps 2–4, write the plan file (Step 5) FIRST, then call `EnterPlanMode` with its content. User approves → `ExitPlanMode`.
 
 **If "explore, plan, and execute simultaneously":**
-- Emit the plan as text in Step 5. The main agent loads the first specialist skill immediately and follows that skill's own workflow.
+- Write the plan file in Step 5 (the on-disk file is the deliverable — never plan-as-text only), then the main agent loads the first specialist skill immediately and follows that skill's own workflow.
 - Do NOT call `EnterPlanMode`.
 
 ### Question 2 — Execution autonomy
@@ -170,8 +170,10 @@ Option 2: parse the request fresh, run identity-matching against the old file (p
 
 ## Step 6 — Present the plan
 
-- **Explore first, then plan:** call `EnterPlanMode` with the plan content. User approves → `ExitPlanMode` → emit live `TaskCreate` calls.
-- **Explore, plan, and execute simultaneously:** emit the plan as text. Then immediately emit live `TaskCreate` calls. Main agent starts executing.
+The plan file written in Step 5 is the deliverable in both modes — it must exist on disk before this step. A plan that lives only in conversation text or an `EnterPlanMode` payload is a missing deliverable.
+
+- **Explore first, then plan:** call `EnterPlanMode` with the on-disk plan's content. User approves → `ExitPlanMode` → emit live `TaskCreate` calls.
+- **Explore, plan, and execute simultaneously:** summarize the on-disk plan. Then immediately emit live `TaskCreate` calls. Main agent starts executing.
 
 ## Lane B budget
 
