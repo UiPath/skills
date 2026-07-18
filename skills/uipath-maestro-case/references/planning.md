@@ -289,6 +289,15 @@ Every task entry includes at least:
 
 Additional fields are plugin-specific; read the plugin's `planning.md` before filling the entry.
 
+> **Registry handoff:** For a resolved `action` or `case-management` T-entry, translate the selected audit object into the canonical `tasks.md` labels and values:
+>
+> | Task type | `name` from | `folder-path` from | `taskTypeId` from |
+> |---|---|---|---|
+> | `action` | `selected.deploymentTitle` | `selected.deploymentFolder.fullyQualifiedName` | `selected.id` |
+> | `case-management` | `selected.name` | `selected.folders[0].fullyQualifiedName` | `selected.entityKey` |
+>
+> Before Step 5, confirm these labels and values match the `selected` object in `registry-resolved.json`.
+
 > **No shell commands in task entries.** Each task is a declarative specification. Never write `uip` invocations or any other shell commands inside a task body — the execution phase translates specs into JSON mutations.
 
 > **Record `lane: <n>` per task.** Default: increment within each stage starting at 0 — lane is FE layout only, task ordering comes from task-entry conditions. **Exception:** within a `runs-sequentially` group, tasks meant to run in parallel share the same `lane` (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get own lane.
