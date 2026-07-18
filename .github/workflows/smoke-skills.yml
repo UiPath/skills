@@ -615,10 +615,19 @@ jobs:
       # known-broken tasks through without blocking every PR, while still
       # catching systemic regressions. Cancellation (120m timeout) is
       # always a fail since a truncated run has no meaningful rate.
-      - name: Enforce pass-rate threshold (>= 95%)
+      #
+      # Threshold is 0.90, not 0.95: the suite is ~11 single-shot LLM tasks, and
+      # 0.95 of 11 needs all 11 to pass (10/11 = 90.9% < 95%) — i.e. 0.95 is
+      # effectively 100% and tolerates ZERO flakes, contradicting the intent
+      # above. A threshold only tolerates one flake once (N-1)/N >= it: for our
+      # N that means <= 0.909, so 0.90. At 0.90 one single-shot flake passes
+      # (10/11 = 90.9%) while 2+ failures still fail (9/11 = 81.8%), which keeps
+      # catching real regressions. Raise back toward 0.95 only once the suite is
+      # ~20+ tasks or per-task --repeats aggregation lands.
+      - name: Enforce pass-rate threshold (>= 90%)
         if: always()
         env:
-          PASS_RATE_THRESHOLD: "0.95"
+          PASS_RATE_THRESHOLD: "0.90"
         run: |
           if [ "${{ steps.smoke.outcome }}" = "cancelled" ]; then
             echo "::error::Smoke step cancelled (timeout) — failing without rate check"
