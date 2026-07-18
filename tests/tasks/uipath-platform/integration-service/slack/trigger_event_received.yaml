@@ -1,0 +1,71 @@
+task_id: skill-ipe-slack-trigger-event-received
+description: >
+  Webhook-trigger test on the Slack connector — config-only flow wiring the
+  "Webhook Event Received (Real Time)" (SLACK_EVENT) trigger node. No event simulation; the eval
+  environment cannot receive live webhooks.
+tags: [uipath-platform, integration, lifecycle:generate, shape:single-node, connector, connector-trigger, uipath-salesforce-slack, ipe]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1200
+
+initial_prompt: |
+  Use the `uipath-maestro-flow` skill to build this flow.
+
+  Create a new Flow project called "SlackTriggerEventReceivedTest" with a Slack "Webhook Event Received (Real Time)"
+  connector trigger (SLACK_EVENT). The flow must:
+
+  1. Use the Slack SLACK_EVENT webhook trigger as the entry node.
+     Use connection name 'is-sandboxes' for the Slack trigger.
+  2. Wire the trigger to at least one downstream Script node that logs
+     the received event payload.
+  3. Validate the final flow with `uip maestro flow validate`.
+
+  This is a webhook trigger (eventMode: webhook). Do NOT attempt to simulate
+  a live event or register a webhook — the eval environment cannot receive
+  live webhooks. Only the flow configuration is validated.
+
+  Auth failures and connection errors are expected in sandbox — build the
+  structure and wiring correctly; do not attempt a live debug run.
+
+  Confirm the trigger is registered before adding nodes:
+    uip maestro flow registry search "SLACK_EVENT"
+
+  Test connections for this task live in Orchestrator folder "uipath-maestro-flow".
+  Resolve its key with `uip or folders list --all -o json` (look for Name
+  "uipath-maestro-flow") and pass `--folder-key <key>` on every
+  `uip is connections list` call.
+
+  If the Slack trigger is not present in the registry, stop and report —
+  do not substitute a managed HTTP fallback for a trigger.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant has at least one Slack connection"
+    command: "python3 $TASK_DIR/check_connection_available.py uipath-salesforce-slack"
+    timeout: 35
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow structure: SLACK_EVENT webhook trigger node present"
+    command: "python3 $TASK_DIR/check_trigger_event_received.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 10.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "uip maestro flow validate was called"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
