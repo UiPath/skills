@@ -1,0 +1,100 @@
+task_id: skill-ixp-find-rename-upload-smoke
+description: >
+  Smoke: multi-step — agent locates a document file on disk, renames it to
+  Uploaded_file_25may (extension preserved, original name gone — a rename,
+  not a copy), and uploads the renamed file to an existing project via
+  `documents upload`. The original (pre-rename) filename must never reach
+  an executed uip call.
+
+  The prompt deliberately does NOT say "keep the extension" or "don't
+  leave a copy" — that a rename preserves the extension and removes the
+  old name IS the graded capability (ticket expected outcome), not
+  fixture. Do not add such hints back.
+
+  The rename-not-copy check is ADVISORY (pass_threshold: 0): unhinted,
+  current agents consistently copy and leave the original (0/3 local
+  samples) — a generic-competence gap, deliberately NOT patched with a
+  skill rule (teaching-to-the-test). The scorecard records it; the merge
+  gate doesn't hang on it. The dangerous half — an executed uip call
+  referencing the stale original name — stays a gating guard.
+
+  Positive name-check and both negative guards grade the mock's calls.log
+  (actual uip invocations, shell variables expanded) via file_contains — a
+  Bash-text regex would miss a filename passed through a variable and
+  false-match names merely quoted in comments or prose. The rename-not-copy
+  guard uses `python -c` (venv python is on run_command's PATH on every
+  platform; `test`/`if exist` are shell-specific).
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 8
+
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - type: starter_files
+      files:
+        - path: archive/2025-05/vendor_invoice_scan.png
+          content: "placeholder invoice scan (content never read: offline smoke mock, no real upload occurs)\n"
+
+initial_prompt: |
+  The invoice scan vendor_invoice_scan.png is saved somewhere in this
+  workspace. Find it, change its name to Uploaded_file_25may, and upload it
+  to the IXP project my_invoices-f1afa9ef-ixp.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent uploaded to the existing project via `documents upload <Name>`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+documents\s+upload\b(?=.*my_invoices-f1afa9ef-ixp).*'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "An executed uip call carried the renamed filename Uploaded_file_25may.png (mock call log; extension preserved)"
+    path: "mocks/calls.log"
+    includes: ["# seeded by mock_template", "Uploaded_file_25may.png"]
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "File was renamed in place — Uploaded_file_25may.png exists where the original lived"
+    path: "archive/2025-05/Uploaded_file_25may.png"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "ADVISORY — rename, not copy: the original filename no longer exists on disk (recorded for the scorecard, not gating)"
+    command: "python -c \"import os,sys; sys.exit(os.path.exists('archive/2025-05/vendor_invoice_scan.png'))\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 0
+
+  - type: file_contains
+    description: "Agent did NOT upload under the original (pre-rename) name: no executed uip call references vendor_invoice_scan"
+    path: "mocks/calls.log"
+    includes: ["# seeded by mock_template"]
+    excludes: ["vendor_invoice_scan"]
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent did NOT reach for `projects create` (bulk new-project upload) on an existing project"
+    path: "mocks/calls.log"
+    includes: ["# seeded by mock_template"]
+    excludes: ["ixp projects create"]
+    weight: 1.0
+    pass_threshold: 1.0
