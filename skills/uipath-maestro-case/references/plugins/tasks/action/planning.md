@@ -2,6 +2,23 @@
 
 A human-in-the-loop (HITL) action task. Assigns a task to a user or group for manual review, approval, or data entry via the Actions app.
 
+## Resource Interface Declaration
+
+```yaml
+interface-provider: tasks-describe
+placeholder-profile: task
+recovery-capabilities: select-alternate | adapt | defer
+provider-config:
+  cli-type: action
+  id-source: selected.id
+  inputs: Data.Inputs[]
+  outputs: Data.Outputs[]
+  field-map: {name: Name, type: Type, required: Required}
+  native-type-normalization: Case CLI native vocabulary; file -> JobAttachment
+```
+
+Apply [resource-interface-resolution.md](../../../resource-interface-resolution.md). Action App schema fidelity remains plugin-owned; the resolver gates canonical I/O.
+
 ## When to Use
 
 Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring manual user interaction: approval, review, sign-off, correction, classification by a person.

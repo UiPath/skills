@@ -1,5 +1,7 @@
 # action task — Implementation (Direct JSON Write)
 
+> **Interface gate.** Read this plugin's declaration and the exact owner record in `tasks/interface-resolved.json` before materialization. Only `compatible`, `adapted`, or `not-applicable` proceeds. A deferred/unavailable or blocking-drift result emits this task's structural `data: {}` placeholder; never retain partial/incompatible bindings. See [resource-interface-resolution.md](../../../resource-interface-resolution.md).
+
 > **Phase split.** Phase 2 writes shape with empty input values. Phase 3 binds values per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md). See [phased-execution.md](../../../phased-execution.md).
 
 ## Task JSON Shape

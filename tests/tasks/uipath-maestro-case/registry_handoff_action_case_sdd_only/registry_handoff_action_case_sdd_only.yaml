@@ -47,8 +47,9 @@ initial_prompt: |
   Action App references and child-case reference from the current SDD names.
 
   If a referenced resource is unavailable, use the normal placeholder path.
-  Produce `tasks/tasks.md` and a fresh `tasks/registry-resolved.json`, then stop
-  at the Phase 1 plan-approval gate. Do not create a solution or caseplan.
+  Produce `tasks/tasks.md`, a fresh `tasks/registry-resolved.json`, and
+  `tasks/interface-resolved.json`, then stop at the Phase 1 plan-approval gate.
+  Do not create a solution or caseplan.
   Before starting, load the uipath-maestro-case skill and follow its workflow.
 
 success_criteria:
@@ -69,6 +70,12 @@ success_criteria:
   - type: file_exists
     description: "Phase 1 replaced the stale registry cache"
     path: "tasks/registry-resolved.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Phase 1 created per-consumer interface results for resolved and placeholder owners"
+    path: "tasks/interface-resolved.json"
     weight: 2.0
     pass_threshold: 1.0
 
@@ -102,8 +109,8 @@ simulation:
     generated before the approved SDD was edited. You only need Phase 1
     planning regenerated from the authoritative SDD.
   goal: |
-    Produce tasks/tasks.md and a corrected registry audit from the staged
-    sdd.md, replacing stale selections and stopping before Phase 2.
+    Produce tasks/tasks.md plus corrected registry and interface audits from the
+    staged sdd.md, replacing stale selections and stopping before Phase 2.
   constraints:
     - "Do not change the SDD or provide alternate resource names."
     - "For purchaseorderapp-1782974854, choose the exact Shared-folder match and do not use a placeholder."

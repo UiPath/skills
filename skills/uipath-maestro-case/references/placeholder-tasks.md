@@ -1,6 +1,6 @@
 # Placeholder Tasks Reference
 
-How the skill handles unresolved task resources — what a placeholder task is, when one is created, what it preserves, what it leaves out, and how the user upgrades it to a fully wired task later.
+How the skill handles unresolved identities and deferred/unavailable interfaces — what a placeholder is, what it preserves, and how the user upgrades it after interface resolution succeeds.
 
 ## Why Placeholders Exist
 
@@ -32,11 +32,11 @@ The user reviews structure first, then attaches real resources once they exist.
 
 ## When a Placeholder Is Created
 
-During **execution** (Phase 2, Step 9), for any `tasks.md` entry whose `taskTypeId`, `typeId`, or `connectionId` is `<UNRESOLVED: …>`:
+During **execution** (Phase 2, Step 9), for any task whose identity is `<UNRESOLVED: …>` or whose `interface-resolved.json` status is `deferred`/`unavailable`:
 
-1. Skip the schema fetch (`uip maestro case spec` / `uip maestro case tasks describe`).
+1. Skip acquisition when identity is unresolved; otherwise preserve the failed/deferred snapshot for audit only.
 2. Write the task JSON node with structural fields only — no `taskTypeId` / `connectionId` / `inputs` / `outputs` keys (see JSON Shape below).
-3. Skip the `io-binding` plugin entirely for that task (see [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md) — placeholder tasks log a `SKIPPED` severity entry and move on, because there is no `data.inputs[]` schema to write into).
+3. Skip I/O binding entirely and remove any prior partial/incompatible schema.
 4. Generate and capture the `TaskId` normally — task-entry conditions and stage-exit rules still reference it.
 
 ## JSON Shape
@@ -115,7 +115,7 @@ These are **expected** and do not block the build. Errors only appear when cross
 
 ## Upgrade Procedure — Placeholder → Full Task
 
-> **Built-inline agents / API workflows are not placeholders.** An `agent` or `api-workflow` the user chose to **Create** at the Rule 17 gate is built and bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — it enters Phase 2 as a fully resolved task, never a placeholder, and skips this procedure. This procedure covers creatable resources the user **declined/skipped or whose build failed** (their recovery is the same as any other unresolved kind — register the real resource, below), plus every other unresolved kind.
+> **Built-inline Agent/API resources are full tasks only after the fresh interface gate passes.** Build/correction failure or a deferred interface leaves the sibling unregistered and uses this placeholder path.
 
 When the user has registered the real resource:
 
@@ -131,9 +131,9 @@ uip maestro case registry pull --force
 
 Read the relevant cache file directly per [registry-discovery.md](registry-discovery.md) — e.g., `process-index.json` for processes, `action-apps-index.json` for action apps. For a **manually-built in-solution sibling** (agent or api-workflow), find it offline by name with `uip maestro case registry search "<name>" --type <agent|api> --local --output json` (`agent` for an agent sibling, `api` for an api-workflow sibling; select the exact-name `Data.Resources[].Resource` entry; use `search` — `get --local` matches only the opaque `entityKey`, not the name). Its `Resource.EntityKey` is an opaque derived key (not the `.uipx` `Projects[].Id`), audit-only; the node binds by name+folder. Read the sibling's I/O field names from its raw `entry-points.json` (the `--output json` keys are PascalCased). For an **api-workflow sibling**, read its I/O per the fallback chain in [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution) — flat `entryPoints[0].input.properties` → `input.schema.document.properties` wrapper → `Workflow.json` root schemas when the entry-point I/O is `null`; note any fallback in the report.
 
-### 3. Fetch the schema
+### 3. Resolve the interface
 
-For non-connector tasks, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` to get the per-resource input/output schema. For connector tasks, run `uip maestro case registry get-connection` to obtain the `connectionId`, then `uip maestro case spec --type <activity|trigger> --activity-type-id <typeId> --connection-id <connId>` to get the unified spec output (identity, connection, inputs, outputs, filter, references, and a populated `caseShape` when `--input-details` is supplied).
+Run the owning plugin's declared provider and [resource-interface-resolution.md](resource-interface-resolution.md). Persist the exact owner in `interface-resolved.json`. Upgrade only a `compatible`/`adapted`/`not-applicable` result; otherwise leave the placeholder intact.
 
 ### 4. Edit the placeholder in place
 
@@ -168,7 +168,7 @@ The "task with no configuration" warning disappears once `data` is populated.
 
 ## Completion-Report Shape
 
-When the build finishes with placeholders, the skill's completion report must list them explicitly:
+When the build finishes with placeholders, the skill's completion report must list every consumer profile explicitly. Use the exact owner and status/reason from `interface-resolved.json`; do not report only unresolved identities and hide compatibility deferrals:
 
 ```
 ### Placeholder tasks (N)
@@ -179,6 +179,18 @@ When the build finishes with placeholders, the skill's completion report must li
 | Submission Review | Review Submission | action | ty5UcykfU | action-apps-index.json — "Review Submission" |
 | … | … | … | … | … |
 
+### Placeholder event triggers (N)
+
+| Trigger | Status | Reason | Attach |
+|---------|--------|--------|--------|
+| New urgent email | unavailable | case-spec-trigger failed twice | Outlook connection / trigger spec |
+
+### Placeholder connector rules (N)
+
+| Scope | Parent | Rule | Status | Reason | Placeholder |
+|-------|--------|------|--------|--------|-------------|
+| stage-entry | Submission Review | Await external update | deferred | payload field `riskCode` missing | validated stub `uipath` |
+
 ### External resources to register before upgrading placeholders
 
 - **Processes** (N): Validate Submission Completeness, Route Submission Decision, Finalize Case Closure
@@ -186,6 +198,8 @@ When the build finishes with placeholders, the skill's completion report must li
 - **Action Apps** (N): Review Submission, Schedule Huddle Meeting, …
 - **Custom IS connectors** (N): U Submit (GetSubmission), U Place (SubmitPlannedMarkets), …
 ```
+
+Each deferred/unavailable owner also appears once in `tasks/build-issues.md § Open Items for User`. An unchanged snapshot is one open item, not a new item per phase or provider reread.
 
 When agents / API workflows were **built inline** at the gate, list them separately — they are resolved, not placeholders:
 

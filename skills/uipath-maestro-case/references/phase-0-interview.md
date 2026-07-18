@@ -10,7 +10,8 @@ Produce a `sdd.md` shaped by [`assets/templates/sdd-template.md`](../assets/temp
 
 Phase 0 also writes:
 
-- `tasks/registry-resolved.json` — one entry per task using Rule 9's required association and lookup keys, plus the resolved I/O contract when applicable.
+- `tasks/registry-resolved.json` — one identity/search audit entry per resolved task using Rule 9's required lookup keys.
+- `tasks/interface-resolved.json` — one requested/effective/actual interface record per resource consumer.
 - `sdd.draft.md` — intermediate; deleted atomically at approval.
 - `sdd-viewer.html` — optional, written only if the user accepts the preview offer (§HTML preview).
 
@@ -311,20 +312,20 @@ Per-task AskUserQuestion (4 options max). **When candidate matches differ by fol
 
 **Empty registry match** across bucket C → AskUserQuestion `Force pull and re-resolve` / `Use placeholders for all` — plus, when ≥1 still-empty is an `agent` or `api-workflow` AND the CLI supports `registry --local`, `Create missing resources inline` (build as in-solution siblings; see [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — per Rule 17, applied per batch, not per task. When the user picks `Use placeholders for all`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
 
-#### Schema discovery — pull each resolved task's I/O contract
+#### Resolve every resource consumer interface
 
-Identity is not the whole contract. The SDD's task Inputs / Outputs `Field` cells MUST match the resource's real argument / field names verbatim (see [sdd-generation-rules.md § Task content rules](sdd-generation-rules.md#task-content-rules)), and a connector's *required* inputs stay invisible until its schema is read. For every task resolved to a **live instance** (skip tasks whose identity is `<UNRESOLVED>` — no identity, no schema), pull its contract and use it to fill the `Field` cells from the real names and to back-solve required inputs against the *actual* list, not the user's recollection.
+Identity is not the whole contract. The SDD's task Inputs / Outputs, connector-trigger payload extracts, and connector-bound rule fields MUST match the live resource contract verbatim; connector-required parameters may stay invisible until its spec is read. For every resource consumer with a live candidate, run its declared provider and the canonical resolver. Use actual names/types to correct the Phase 0 draft only through an approved adaptation, and back-solve required inputs/event parameters against the actual list rather than the user's recollection. A consumer with no live identity records deferred/unavailable and follows its placeholder profile instead of pretending it has an empty contract.
 
-Run in parallel after the picks land — `--output json`, connectors via `spec`, runnables via `tasks describe`:
+Run in parallel after the picks land through [resource-interface-resolution.md](resource-interface-resolution.md). Each plugin declares its provider, extraction paths, native normalization, recovery capabilities, and placeholder. The reusable providers map as follows:
 
 | Resolved task type | Discovery command | Yields |
 |---|---|---|
 | `process` / `agent` / `rpa` / `api-workflow` / `action` / `case-management` | `uip maestro case tasks describe --type <type> --id <resolved-id> --output json` | In / Out argument names + types |
 | `execute-connector-activity` | `uip maestro case spec --type activity --activity-type-id <typeId> --connection-id <connId> --skip-case-shape --output json` | required body / query / path fields, output fields, filterable fields |
-| `wait-for-connector` + connector **event trigger** | `uip maestro case spec --type trigger --activity-type-id <typeId> --connection-id <connId> --skip-case-shape --output json` | required event params, output payload fields |
-| `wait-for-timer` | — | no contract — skip |
+| `wait-for-connector` + connector **event trigger** + connector-bound condition rule | `case-spec-trigger` (`uip maestro case spec --type trigger ... --skip-case-shape --output json`) | required event params, output payload fields |
+| `wait-for-timer` | `none` | `not-applicable` |
 
-For each task with required inputs the sketch has not mapped, one AskUserQuestion in business terms — name the inputs, never the schema mechanics (§Forbidden vocabulary):
+For each consumer with required inputs/event parameters the sketch has not mapped, one AskUserQuestion in business terms — name the inputs, never the schema mechanics (§Forbidden vocabulary):
 
 > `Send Slack message needs a channel and a message body — what feeds each?`
 
@@ -336,9 +337,11 @@ Map each answer to a variable, a literal, or an upstream task's output (§Ask �
 
 **Cost.** One CLI call per resolved task, run in parallel and resolved-only. The trade is a longer Resolve for far fewer Phase 3 / 4 binding failures — wrong `Field` names and unmapped required inputs that otherwise surface only after Rule 2 locks the file.
 
-After all picks and schema discovery, write `tasks/registry-resolved.json` (Rule 9 shape — including each resolved task's fetched I/O contract). The persisted contract MUST record, per resolved task, each declared **input name + `required` flag** and the full **declared output-field list** — Phase 3 io-binding Check 5 re-verifies required-input coverage and output-field fidelity against this without re-fetching ([io-binding/impl-json.md § Check 5](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)). Update `sdd.draft.md`: a resolved task uses the selected entry's canonical type-specific name, exact folder, and identity; an unresolved task retains its requested portable name and uses `<UNRESOLVED>` only for its identity/folder fields. Also update the matching Section 4 roll-up row when that resource family has one. Any unresolved task carries a paired `review_items[]` entry in the same JSON when the file is written.
+After all picks and interface resolution, write both sidecars. `tasks/registry-resolved.json` remains identity/search only. `tasks/interface-resolved.json` records one exact owner plus requested/effective/actual contract and status for every consumer. Phase 0 never creates a resource. A compatible result continues; an adaptable or blocking result uses only the recovery declared by its plugin. An approved Phase 0 adaptation updates `sdd.draft.md`; defer/unavailable keeps the consumer unresolved and paired with a review item. Existing resources are never modified. Full classification and persistence rules: [resource-interface-resolution.md](resource-interface-resolution.md).
 
-> **Phase 1 handoff.** `sdd.md` is the authoritative handoff; `tasks/registry-resolved.json` is an optional cache/audit artifact. Phase 1 reuses an entry only after its type, searched cache, canonical name, exact folder, and identity match the current SDD per [planning.md § Phase 0 carryover](planning.md#step-2--locate-and-parse-the-design-document). A missing, unresolved, or mismatched field makes the entry stale and triggers discovery from the SDD's type-specific portable name (`Resolved Resource`, Action App title, or `Child Case`).
+Update `sdd.draft.md`: a resolved task uses the selected entry's canonical type-specific name, exact folder, identity, and any explicitly approved effective I/O names; an unresolved task retains its requested portable name and uses `<UNRESOLVED>` only for identity/folder fields. Also update the matching Section 4 roll-up row when that resource family has one.
+
+> **Phase 1 handoff.** `sdd.md` is authoritative. `registry-resolved.json` and `interface-resolved.json` are optional cache/audit artifacts. Phase 1 validates identity and interface snapshots independently; owner, resource identity/version, requested contract, and successful status must all still match. A legacy run without the interface sidecar resolves each interface once before reuse.
 
 ### Approve
 
@@ -397,7 +400,7 @@ Source-attribution examples: `(PascalCase derivation)`, `(no roles mentioned →
 | `Approve and proceed to Phase 1` | Exit Phase 0. Begin [planning.md](planning.md) Step 1. |
 | `Generate HTML preview` | Write `./sdd-viewer.html` (§HTML preview). Re-show this prompt. |
 | `Edit and re-validate` | Free-text correction → update affected section of `sdd.md` → re-run Finalization checks → re-show summary. |
-| `Restart or abort` | Follow-up AskUserQuestion (`Restart interview` / `Abort`). Restart wipes `sdd.md`, `sdd.draft.md`, `tasks/registry-resolved.json` and returns to §Entry. Abort exits skill, leaves artifacts in place. |
+| `Restart or abort` | Follow-up AskUserQuestion (`Restart interview` / `Abort`). Restart wipes `sdd.md`, `sdd.draft.md`, `tasks/registry-resolved.json`, `tasks/interface-resolved.json` and returns to §Entry. Abort exits skill, leaves artifacts in place. |
 
 **Free-text corrections are first-class refines.** A message like "actually the SLA on Compliance is 8 hours not 4" is treated as an edit — update the section in `sdd.md`, narrate the change, return to Approve. The user does not need to pick the `Edit` option to make corrections.
 
@@ -495,8 +498,8 @@ When `sdd.draft.md` is present at trigger time, AskUserQuestion (4 options):
 
 | Option | Effect |
 |---|---|
-| `Resume from where I left off` | Re-read `sdd.draft.md`. Infer position (all required fields present = Sketch + Ask done; `tasks/registry-resolved.json` present = Resolve done). Continue from the next mode. |
-| `Discard draft, restart` | Delete `sdd.draft.md` + `tasks/registry-resolved.json`. Return to §Entry. |
+| `Resume from where I left off` | Re-read `sdd.draft.md`. Infer position (all required fields present = Sketch + Ask done; both resolution sidecars present with complete owner coverage = Resolve done). A registry-only legacy/interrupted run resumes interface resolution before Approve. Continue from the next mode. |
+| `Discard draft, restart` | Delete `sdd.draft.md` + both resolution sidecars. Return to §Entry. |
 | `Use draft as-is, finalize` | Run Approve gate on the draft as-is. Edit validation may flag missing required fields. |
 | `Abort` | Exit. No file changes. |
 
@@ -506,7 +509,7 @@ Listen output is never persisted. Resumption picks up from Sketch onward.
 
 The user sees a conversation that produces a document. They don't see the machinery. Never surface in chat or in `sdd.md`:
 
-- `sdd.draft.md`, `tasks/registry-resolved.json`, internal filenames. (**Exception:** `sdd-viewer.html` is intentionally user-visible — the user opens it in a browser, so the filename must be named at generation time. Do not surface it anywhere else.)
+- `sdd.draft.md`, `tasks/registry-resolved.json`, `tasks/interface-resolved.json`, internal filenames. (**Exception:** `sdd-viewer.html` is intentionally user-visible — the user opens it in a browser, so the filename must be named at generation time. Do not surface it anywhere else.)
 - `<UNRESOLVED>` markers in narration (they may appear in the file; never in chat lines).
 - `Listen`, `Sketch`, `Ask`, `Resolve`, `Approve`, `Round 1`, `Round 2`, `Round 3`, `Round 4` — these are agent-facing mode names, not user-facing.
 - `the validator`, `the schema check`, `structural validation`, `edit-loop validation`.
@@ -533,6 +536,7 @@ After Approve:
 
 - `sdd.md` — always present. May include warning header, `<UNRESOLVED>` markers, or `—` placeholders, but every process/agent/rpa/api-workflow task has a concrete `Resolved Resource`, every action has a concrete Action App title, and every case-management task has a concrete `Child Case` name.
 - `tasks/registry-resolved.json` — **present only if Resolve ran successfully.** Absent when Resolve was skipped (registry pull failed, no auth, or the cache was unreachable — see Failure modes). Phase 1 ([planning.md § Step 2](planning.md#step-2--locate-and-parse-the-design-document)) validates every carry-over entry against the current SDD before reuse; stale or mismatched entries are re-resolved from the type-specific portable name and replaced. If the file is absent, Phase 1 runs full discovery and writes a fresh file. Either way, format matches Rule 9 when written.
+- `tasks/interface-resolved.json` — present when interface Resolve ran. Phase 1 reuses only exact successful owner/resource/requested-contract matches; missing legacy sidecars are created before materialization.
 - `sdd-viewer.html` — present only if user generated the preview. Phase 1 ignores it.
 - `sdd.draft.md` — deleted (atomic rename at Approve).
 
@@ -543,7 +547,7 @@ Phase 1 ([planning.md](planning.md) Step 2) reads `sdd.md` exactly as a user-pro
 - **Do NOT overwrite an existing `sdd.md`.** Strict binary trigger; presence = trust-as-written.
 - **Do NOT suggest or invoke any other skill on threshold breach or stuck detection.** Phase 0 stays self-contained — surface the warning header, give the user `Continue` / `Abort`, never push a redirect.
 - **Do NOT persist Listen output as a transcript.** Inferences live in the draft (the sketch), not in a separate file.
-- **Do NOT use `sed`/`awk`/`python`/`node` to mutate `sdd.draft.md`, `sdd.md`, `tasks/registry-resolved.json`, or `sdd-viewer.html`.** Read + Write/Edit only (Rule 13).
+- **Do NOT use `sed`/`awk`/`python`/`node` to mutate `sdd.draft.md`, `sdd.md`, either resolution sidecar, or `sdd-viewer.html`.** Read + Write/Edit only (Rule 13).
 - **Do NOT bundle questions in Ask.** One per message. Bundles re-introduce the form-feel Phase 0 is reframed to avoid.
 - **Do NOT silently auto-pick a registry match in Resolve.** AskUserQuestion every task; never infer (Rule 2 spirit).
 - **Do NOT proceed past the threshold check when counts already exceed thresholds.** Force soft-redirect prompt before continuing.

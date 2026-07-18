@@ -1,5 +1,7 @@
 # connector-activity task — Implementation (Direct JSON Write)
 
+> **Interface gate.** Read this plugin's declaration and the exact owner record in `tasks/interface-resolved.json` before materialization. Only `compatible`, `adapted`, or `not-applicable` proceeds. A deferred/unavailable or blocking-drift result emits this task's structural `data: {}` placeholder; never retain partial/incompatible bindings. See [resource-interface-resolution.md](../../../resource-interface-resolution.md).
+
 > **Node `type` value: `execute-connector-activity` (schema-kebab).** NEVER write `connector-activity` (plugin folder name) or `connector_activity` into the JSON `type` field. The CLI `--type connector-activity` flag is a separate concept — used only when calling `uip maestro case tasks describe` (legacy) or `uip maestro case spec --type activity` (current). See SKILL.md Rule 16 + Plugin Index.
 
 > **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --input-details` once, reads the populated `caseShape`, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
@@ -230,7 +232,7 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 
 | Step failed | What gets populated | Log |
 |---|---|---|
-| `case spec` fails | Phase 2 shape preserved — `data.typeId` + `data.connectionId` only, no Phase 3 inputs/outputs/context enrichment. Distinct from a Rule 8 placeholder (`data: {}`) — typeId/connectionId are resolved, only the spec-driven enrichment is skipped. Log per Rule 8 reporting | `[SKIPPED] case spec failed — typeId/connectionId preserved, no enrichment` |
+| `case spec` fails twice | Mark interface `unavailable`; replace Phase 2 partial data with the structural task placeholder `data: {}` and remove incompatible/partial bindings | `[DEFERRED] activity interface unavailable — task placeholder emitted` |
 | Required-field gate fails (user declines) | Placeholder per Rule 8 OR re-prompt | `[SKIPPED] required field <name> missing — placeholder task per Rule 8` |
 | All succeed | Full population per Steps 5-10 including bindings_v2 sync | — |
 

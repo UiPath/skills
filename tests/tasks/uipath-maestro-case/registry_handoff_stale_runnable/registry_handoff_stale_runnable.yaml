@@ -15,7 +15,8 @@ description: >
   searchQuery/selected names no longer match the SDD's portable `Resolved Resource` names.
   Phase 1 must reject the stale entries, re-resolve FinancialPostingFunction (api-workflow)
   and EmailDrafter (agent) from the current SDD, and write a corrected
-  tasks/registry-resolved.json before stopping at the Phase 1 approval gate. Complements
+  tasks/registry-resolved.json plus a fresh per-consumer interface sidecar before stopping
+  at the Phase 1 approval gate. Complements
   registry_handoff_action_case_sdd_only (action + case-management) by covering the RUNNABLE
   branch of the stale-cache carryover rule.
 tags:
@@ -49,8 +50,9 @@ initial_prompt: |
   from an earlier SDD revision that named the runnable resources differently, so it is
   stale. Run Phase 1 planning only: re-resolve the api-workflow and agent tasks from the
   concrete `Resolved Resource` names in the CURRENT SDD, replacing the mismatched cached
-  entries. Produce `tasks/tasks.md` and a fresh `tasks/registry-resolved.json`, then stop
-  at the Phase 1 plan-approval gate. Do not create a solution or caseplan.
+  entries. Produce `tasks/tasks.md`, a fresh `tasks/registry-resolved.json`, and
+  `tasks/interface-resolved.json`, then stop at the Phase 1 plan-approval gate.
+  Do not create a solution or caseplan.
 
   The `uip` CLI is already available and authenticated. Use the approved SDD as written:
   do not redo Phase 0, re-interview me, or trust the stale cached names. Before starting,
@@ -66,6 +68,12 @@ success_criteria:
   - type: file_exists
     description: "Phase 1 rewrote the registry cache"
     path: "tasks/registry-resolved.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Phase 1 resolved current interfaces instead of reusing a legacy missing sidecar"
+    path: "tasks/interface-resolved.json"
     weight: 2.0
     pass_threshold: 1.0
 
@@ -108,8 +116,8 @@ simulation:
     before the approved SDD's runnable resources were renamed. You only need Phase 1
     planning regenerated from the authoritative SDD.
   goal: |
-    Produce tasks/tasks.md and a corrected registry audit from the staged sdd.md,
-    replacing the stale api-workflow and agent selections and stopping before Phase 2.
+    Produce tasks/tasks.md plus corrected registry and interface audits from the
+    staged sdd.md, replacing stale selections and stopping before Phase 2.
   constraints:
     - "Do not change the SDD or provide alternate resource names."
     - "Do not trust the stale cached names (LegacyPostingFunction / PreviousEmailDrafter); the SDD's Resolved Resource names are authoritative."

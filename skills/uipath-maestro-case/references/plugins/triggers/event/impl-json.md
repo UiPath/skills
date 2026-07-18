@@ -1,5 +1,7 @@
 # event trigger — Implementation (Direct JSON Write)
 
+> **Interface gate.** Read the exact event-trigger owner in `tasks/interface-resolved.json`. Only `compatible`/`adapted` proceeds to `caseShape`; otherwise emit the serviceType-only placeholder and keep its entry-point. See [resource-interface-resolution.md](../../../resource-interface-resolution.md).
+
 Configure the case-level event trigger by writing directly into the trigger node in `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md). Phase 3 calls `uip maestro case spec --type trigger --input-details` once and consumes the populated `caseShape`.
 
 For shared CLI invocation, placeholder substitution, anti-patterns, and the canonical form for filter expressions with variable references, see [connector-trigger-common.md](../../../connector-trigger-common.md). For the per-sink canonical-form table covering all expression-syntax decisions in this skill, see [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink). This doc covers only the **trigger-node-specific** parts.
@@ -153,10 +155,10 @@ Three distinct conditions can trigger placeholder fallback for an event trigger.
 | Trigger | What's happening | Placeholder action | Log |
 |---|---|---|---|
 | **Planning-time unresolved** (tasks.md T-entry carries `<UNRESOLVED>` on `type-id` / `connection-id` / `connector-key`) | Registry lookup didn't find the connector or connection at planning time | Skip Steps 2–10 entirely; write the placeholder node directly per § Placeholder fallback | `[SKIPPED] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.` |
-| **`case spec` failure at Phase 3** (T-entry was resolved at planning, but the CLI call fails at implementation — connection deleted between phases, transient API error) | Spec call itself errored | Catch the exception; fall through to placeholder fallback shape | `[SKIPPED] case spec failed — event trigger downgraded to placeholder` |
+| **`case spec` failure twice at Phase 3** (connection deleted or repeated mechanical error) | Provider acquisition unavailable | Mark sidecar `unavailable`; fall through to the serviceType-only placeholder | `[DEFERRED] event interface unavailable — placeholder emitted` |
 | **Required-event-param gate failure at Phase 3** (spec call succeeded, but `caseShape.inputs[name="eventParameters"].body` is missing required fields after AskUserQuestion either declined or didn't fully resolve) | Required event parameter never collected | If user picked decline or re-prompt failed, fall through to placeholder | `[SKIPPED] required event parameter <name> missing — event trigger downgraded to placeholder` |
 
-**Why full placeholder (not `typeId`/`connectionId` preservation)?** Event triggers are sibling-file-coupled (`entry-points.json` entry, root variable bindings for In args). A partial in-place edit leaves siblings stale. Phase-3 `case spec` failure on event triggers therefore downgrades fully to placeholder — asymmetric with connector-task graceful-degradation, which preserves `data.typeId + data.connectionId` because the in-stage parent node can render without sibling-file coupling (see [`../../tasks/connector-activity/impl-json.md`](../../tasks/connector-activity/impl-json.md) for the connector-task fallback table — it preserves more state because the coupling profile is different).
+**Why full placeholder (not `typeId`/`connectionId` preservation)?** A blocking or unavailable interface cannot remain resolved through partial enrichment. The generic resolver routes every owner to its declared profile: event triggers become serviceType-only, connector tasks become structural tasks with `data: {}`, and connector rules become validated stubs. Each path also removes incompatible bindings while preserving only the owner's required render structure.
 
 All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 

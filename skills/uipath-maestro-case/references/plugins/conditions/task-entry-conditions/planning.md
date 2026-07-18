@@ -2,6 +2,19 @@
 
 Conditions that control **when a specific task within a stage starts**. Attach to a task.
 
+## Connector-rule Interface Declaration
+
+Applies only when `rule-type: wait-for-connector`; ordinary rules are outside the resolver.
+
+```yaml
+interface-provider: case-spec-trigger
+placeholder-profile: connector-rule
+recovery-capabilities: select-alternate | adapt | defer
+provider-config: {inputs: inputs.eventParameters[], outputs: outputs.responseFields[], native-type-normalization: spec dataType -> Case vocabulary}
+```
+
+Persist owner `kind: condition-rule`, `scope: task-entry`, exact stage/task parent and rule name. Apply [resource-interface-resolution.md](../../../resource-interface-resolution.md).
+
 ## When to Use
 
 Pick this plugin when the sdd.md **literally uses the phrase "task entry condition"** (or close variants: "task entry conditions", "entry rule on task", "task gate", "task precondition").

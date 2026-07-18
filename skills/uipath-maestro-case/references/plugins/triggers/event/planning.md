@@ -4,6 +4,21 @@ A case-level trigger that fires on an external connector event. Starts the case 
 
 The planning pipeline is shared with the [connector-trigger task](../../tasks/connector-trigger/planning.md) — see [connector-trigger-common.md](../../../connector-trigger-common.md) for the full 7-step resolution pipeline.
 
+## Resource Interface Declaration
+
+```yaml
+interface-provider: case-spec-trigger
+placeholder-profile: event-trigger
+recovery-capabilities: select-alternate | adapt | defer
+provider-config:
+  inputs: inputs.eventParameters[]
+  outputs: outputs.responseFields[]
+  field-map: {name: name, type: dataType, required: required}
+  native-type-normalization: spec dataType -> Case vocabulary
+```
+
+Apply [resource-interface-resolution.md](../../../resource-interface-resolution.md). A blocking/unavailable result emits the existing serviceType-only event-trigger placeholder while retaining the entry-point.
+
 ## When to Use
 
 Pick this plugin when the sdd.md describes the case as starting in response to an external event:

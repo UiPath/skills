@@ -2,6 +2,17 @@
 
 A timer task inside a stage. Suspends the stage for a duration, until a specific time, or on a repeating cycle.
 
+## Resource Interface Declaration
+
+```yaml
+interface-provider: none
+placeholder-profile: none
+recovery-capabilities: defer
+provider-config: {origin: none, inputs: [], outputs: []}
+```
+
+Record `not-applicable` in `interface-resolved.json`; no acquisition or interface placeholder is needed. Timer configuration validation remains in this plugin.
+
 ## When to Use
 
 Pick this plugin when the sdd.md describes a task that **pauses or delays execution** within a stage. Typical patterns:

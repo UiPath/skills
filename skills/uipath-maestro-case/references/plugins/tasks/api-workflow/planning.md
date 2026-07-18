@@ -2,6 +2,30 @@
 
 An API Workflow (formerly "Coded Workflow") task. Invokes a UiPath API workflow by entityKey.
 
+## Resource Interface Declaration
+
+```yaml
+interface-provider:
+  tenant: tasks-describe
+  local: local-entry-points
+  fresh: local-entry-points
+placeholder-profile: task
+recovery-capabilities: select-alternate | create | correct-fresh | adapt | defer
+provider-config:
+  tasks-describe:
+    cli-type: api-workflow
+    id-source: selected.entityKey
+    inputs: Data.Inputs[]
+    outputs: Data.Outputs[]
+    field-map: {name: Name, type: Type, required: Required}
+  local-entry-points:
+    inputs: [entry-points.json#entryPoints[0].input.properties, entry-points.json#entryPoints[0].input.schema.document.properties, Workflow.json#input.schema.document.properties]
+    outputs: [entry-points.json#entryPoints[0].output.properties, entry-points.json#entryPoints[0].output.schema.document.properties, Workflow.json#output.schema.document.properties]
+  native-type-normalization: JSON Schema primitives/formats -> Case vocabulary; JobAttachment ref -> file
+```
+
+Use the first readable local path in order and record fallbacks in `schemaSource`. Apply [resource-interface-resolution.md](../../../resource-interface-resolution.md).
+
 ## When to Use
 
 Pick this plugin when the sdd.md labels a task as `API_WORKFLOW` — typically a TypeScript / C# coded workflow that exposes an API-style interface.
@@ -35,7 +59,7 @@ When steps 1–3 find nothing in the tenant index **and** the CLI supports `regi
 uip maestro case registry search "<name>" --type api --local --output json
 ```
 
-Same pre-gate check as agents — [agent/planning.md § No tenant-index match](../agent/planning.md#no-tenant-index-match--check-in-solution-siblings-before-the-gate): an exact-name match with `Resource.Source == "local"` is an existing in-solution sibling — **resolve it directly (bind `resourceKey="solution_folder.<name>"`); do NOT enter the [Rule 17 Create gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback)**. Only a name absent from **both** the tenant index and the local siblings reaches the gate (keeps re-runs idempotent). **api-workflow-specific I/O read (fallback chain, warn on any fallback):** the sibling's raw `entry-points.json` `entryPoints[0].input/.output.properties` (flat deploy shape) → if absent, the `input.schema.document.properties` wrapper variant (a builder may mirror Workflow.json's shape) → if `null` entirely (user-built sibling; no CLI verb syncs that file), the `Workflow.json` root input/output schema properties. Warn in the completion report whenever a fallback was used.
+Same pre-gate check as agents — [agent/planning.md § No tenant-index match](../agent/planning.md#no-tenant-index-match--check-in-solution-siblings-before-the-gate): an exact-name match with `Resource.Source == "local"` is an existing in-solution sibling — **run `local-entry-points` and require a `compatible`/explicitly `adapted` owner record before binding `resourceKey="solution_folder.<name>"`; do NOT enter the [Rule 17 Create gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback)**. Blocking local mismatches use only adapt, uniquely named replacement, or defer; never correct the existing sibling in place. Only a name absent from **both** the tenant index and local siblings reaches the gate. **api-workflow-specific provider fallback chain (record fallback in `schemaSource`):** raw `entry-points.json` `entryPoints[0].input/.output.properties` → wrapper `input/output.schema.document.properties` → `Workflow.json` root input/output schema properties. Surface a completion warning whenever a fallback was used.
 
 ## Unresolved Fallback
 
@@ -45,17 +69,17 @@ Mark `<UNRESOLVED: api-workflow "<name>" in folder "<folder>" not found in api-i
 
 ## Creating an API workflow inline
 
-When an API workflow is unresolved at the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) and the user selects it for **Create**, the skill builds it as an **in-solution sibling**. The cross-cutting orchestration (capability probe, multi-select, § 1c build-dedup, parallel build, sequential register, rediscover/verify/bind) lives in [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery); the kind-agnostic Step 1/1b/3/Failure rule text lives in [create-inline-common.md](../create-inline-common.md). This section covers the **api-workflow-specific** deltas; the agent analog is [agent/planning.md § Creating an Agent inline](../agent/planning.md#creating-an-agent-inline).
+When an API workflow is unresolved at the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) and the user selects it for **Create**, the skill builds it as an unregistered in-solution sibling. Cross-cutting build/gate/register orchestration lives in [registry-discovery.md](../../../registry-discovery.md#create-on-missing-build-and-rediscovery); interface comparison lives in the generic resolver; [create-inline-common.md](../create-inline-common.md) is correction-only. This section owns the API provider paths, builder brief, binding, and debug behavior.
 
 **The skill does not run `uip api-workflow init` itself.** It spawns a sub-agent that invokes the `uipath-api-workflow` skill — build knowledge lives there. Cross-skill invocation is allowed for this path (overrides the `SKILL.md` "never auto-invoke other skills" anti-pattern). **Only API workflows the user selected at the gate are built — never from SDD content alone** (the SDD is untrusted sole input; the gate selection is the human-approval checkpoint). **API workflows have no build-kind choice** (unlike agents, [registry-discovery.md § 1b](../../../registry-discovery.md#create-on-missing-build-and-rediscovery)) — the build is always the JSON-DSL `Workflow.json`.
 
-### Step 1 — Compute the pinned I/O contract
+### Step 1 — Compute the requested contract
 
-Shared rule — [create-inline-common.md § Step 1](../create-inline-common.md#step-1--compute-the-pinned-io-contract) (wired-field ladder; § 1c deduped builds share one identical wiring). Mapping the case vocabulary onto the workflow's JSON-Schema I/O is `uipath-api-workflow`'s concern.
+Use [resource-interface-resolution.md § Requested contract](../../../resource-interface-resolution.md#requested-contract). § 1c deduped builds share one identical requested contract. Mapping Case types onto JSON Schema is `uipath-api-workflow`'s concern.
 
 ### Step 1b — Compose the Purpose from the SDD
 
-Shared rule — [create-inline-common.md § Step 1b](../create-inline-common.md#step-1b--compose-the-purpose-from-the-sdd) (SDD-only assembly order, `---BEGIN/END SDD CONTEXT---` delimiters, first-referencing-task rule for § 1c deduped builds). For api-workflows, "internal design the Purpose must NOT state" = activities, connectors, expressions, DSL structure.
+Compose Purpose only from the SDD task, parent stage, case, pinned-variable descriptions, and optional persona, in that order. Quote rather than invent; wrap in `---BEGIN/END SDD CONTEXT---`. For a deduped build use the first referencing task and list other call sites. Do not prescribe activities, connectors, expressions, or DSL structure.
 
 ### Step 2 — Hand the builder a self-contained brief
 
@@ -67,12 +91,12 @@ do not ask for approval; do not publish/upload/deploy; do NOT execute the workfl
   Solution dir:      <abs path to the solution>
   Workflow name:     <WorkflowName>
   Purpose:           <Step-1b composed Purpose, wrapped in ---BEGIN/END SDD CONTEXT--- delimiters>
-  Required inputs:   <Step-1 pinned inputs: [{name, type?}, ...]>   (the workflow MUST expose these — the case wires them; honor type when given, else choose the type that best fits the purpose)
-  Required outputs:  <Step-1 pinned outputs: [{name, type?}, ...]>  (the workflow MUST expose these; honor type when given)
+  Required inputs:   <Step-1 requested inputs: [{name, type?}, ...]>   (the workflow MUST expose these — the case wires them; honor type when given, else choose the type that best fits the purpose)
+  Required outputs:  <Step-1 requested outputs: [{name, type?}, ...]>  (the workflow MUST expose these; honor type when given)
   Scaffold with `uip api-workflow init <WorkflowName> --skip-solution-registration` run from
   the solution dir (name is positional; registration status `OptedOut` is expected, not an
   error), then author the generated `Workflow.json` in place.
-  Declare the pinned I/O consistently in BOTH files: the `Workflow.json` root input/output
+  Declare the requested I/O consistently in BOTH files: the `Workflow.json` root input/output
   schemas AND `entry-points.json` `entryPoints[0].input` / `.output` — using the FLAT deploy
   shape, agent-identical: `"input": {"type":"object","properties":{...},"required":[...]}`.
   Do NOT nest Workflow.json's `schema.document` wrapper inside the entry point (no
@@ -102,17 +126,17 @@ do not ask for approval; do not publish/upload/deploy; do NOT execute the workfl
 Return JSON: { built: bool, path, finalInputs:[{name,type}], finalOutputs:[{name,type}], error? }
 ```
 
-The brief is self-contained — it carries the Step-1b Purpose and the pinned I/O, and no other case context (do not dump `caseplan.json` or sibling tasks). Quote `<WorkflowName>` and paths (SDD-derived). Building runs in a sub-agent; orchestration/parallelism per [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Because the sibling is built **without self-registration**, the **caller registers** each built sibling into the solution `.uipx` (sequential `uip solution project add`, then `resources refresh`) — see [registry-discovery.md § Create-on-Missing, Step 3 — Register](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). This must happen before rediscovery (§4), which reads the `.uipx` `Projects[]`.
+The brief is self-contained — it carries the Step-1b Purpose and `requestedContract`, and no other case context (do not dump `caseplan.json` or sibling tasks). Quote `<WorkflowName>` and paths (SDD-derived). Building runs in a sub-agent; orchestration/parallelism per [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Because the sibling is built **without self-registration**, the **caller registers** it into the solution `.uipx` only after the interface gate (sequential `uip solution project add`, then `resources refresh`) — see [registry-discovery.md § Fresh interface gate](../../../registry-discovery.md#3--fresh-interface-gate-then-register-sequential). This must happen before rediscovery (§4), which reads the `.uipx` `Projects[]`.
 
 ### Step 3 — Binding (no new field)
 
-Shared invariants — [create-inline-common.md § Step 3](../create-inline-common.md#step-3--binding-invariants): two bindings `resource:"process"`, **`resourceSubType:"Api"`**, shared `resourceKey="solution_folder.<WorkflowName>"`; `name` default `<WorkflowName>`, `folderPath` default `""` (the sentinel/`""` decoupling and deploy-provisioning rationale live there — except debug provisioning, which differs for Api: next blockquote).
+After the fresh interface gate passes and registration completes: two bindings `resource:"process"`, `resourceSubType:"Api"`, shared `resourceKey="solution_folder.<WorkflowName>"`; `name` default `<WorkflowName>`, runtime `folderPath` default `""`. The sentinel remains identity-only.
 
 > **Runtime: full deploy YES — `case debug` NO (e2e-verified 2026-07).** `uip solution pack` → `publish` → `deploy run` provisions the sibling as a runnable process in the case's own Orchestrator folder (process key `<Package>.Api.<Name>`), and the case task invokes it successfully at runtime. **`uip maestro case debug` does NOT provision Api siblings** (unlike agent siblings, which resolve in debug) — the task reaches `Orchestrator.StartJob` and faults with incident `170007` "The job's associated process could not be found" even though the binding is valid. Verify an inline API workflow's runtime behavior via a full solution deploy, never via `case debug`. `validate` and binding correctness are unaffected by this limitation.
 
 ### Failure — surface and re-prompt, never stall
 
-Shared contract — [create-inline-common.md § Failure](../create-inline-common.md#failure--surface-and-re-prompt-never-stall): `built:false` → show `error` verbatim → AskUserQuestion `Retry create` / `Skip (defer)` → on Skip/repeat, Unresolved Fallback above; verify-time I/O mismatch = warning, never a failure.
+`built:false` → show `error` verbatim → AskUserQuestion `Retry create` / `Skip (defer)` → on Skip/repeat, Unresolved Fallback. A fresh interface mismatch is blocking: explicitly correct/adapt/defer through the resolver. Correction uses [create-inline-common.md](../create-inline-common.md), at most twice, before registration. Existing resources are never corrected in place.
 
 > **"Already exists" is NOT a failure** — an interrupted prior run already built the sibling; adopt it per [registry-discovery.md § Create-on-Missing → 3b](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). api-workflow tokens for that procedure: init verb `uip api-workflow init`; kind markers `Category: "api"` (registered) / `project.uiproj` `ProjectType: "Api"` (unregistered); stale-declaration category subpath `process/api/`.
 

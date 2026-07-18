@@ -29,8 +29,8 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 | Phase | What gets built | Output | Hard stop on exit |
 |---|---|---|---|
-| **2 — Prototyping** | Solution + project, root case, global variables, stages, triggers (full), tasks (name + type, no value binding), placeholder tasks for unresolved | `caseplan.json` emitted; placeholder-profile validate run (structural errors only) | `Publish for review` / `Skip publish and continue` / `Abort` |
-| **3 — Implementation** | Connector task schemas, task I/O value binding, conditions (all 4 scopes), SLA + escalation | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
+| **2 — Prototyping** | Solution + project, root case, global variables, stages, triggers (full or event-trigger placeholder), tasks (name + type, no value binding), task placeholders for unresolved/deferred owners | `caseplan.json` emitted; placeholder-profile validate run (structural errors only) | `Publish for review` / `Skip publish and continue` / `Abort` |
+| **3 — Implementation** | Connector schemas, all consumer I/O binding, conditions, SLA + escalation, Consumer Interface Integrity | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
 | **4 — Validate** | Run authoritative `uip maestro case validate`, dump `build-issues.md` | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Skip to Publish` |
 | **6 — Publish** | Optional Studio Web upload | `DesignerUrl` printed | `Publish to Studio Web` / `Done` |
@@ -51,10 +51,10 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 | Task class | Resolved resources | Phase 2 shape |
 |---|---|---|
-| Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs and task-specific scalar fields (e.g. `action`'s `taskTitle`/`priority`/`recipient`/`labels`) populated per plugin — these are final at Step 2; only input `value`s defer to Phase 3. |
+| Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | Interface status `compatible`, `adapted`, or `not-applicable` | Full approved schema written from the plugin provider. Each invokable input's `value` is empty (`""`); timer has no invocation I/O. |
 | Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data.typeId` + `data.connectionId` set. `data.inputs` omitted or empty. **No `case spec` call in Phase 2** — schema discovery is deferred to Phase 3. |
-| Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Placeholder task per Rule 8 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
-| `agent` / `api-workflow` built inline | Built + bound in Phase 1 at the Rule 17 gate | **Not a placeholder** — fully resolved task (name+folder binding, `resourceKey="solution_folder.<name>"`, **`folderPath` binding `default` = `""`** — co-located runtime folder; `solution_folder` stays only in `resourceKey`). Phase 2 treats it like any resolved resource. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery). |
+| Any task | Identity unresolved or interface status `deferred`/`unavailable` | Placeholder task per Rule 8 — structural fields plus empty `data: {}`; incompatible bindings are removed. See [resource-interface-resolution.md](resource-interface-resolution.md). |
+| `agent` / `api-workflow` built inline | Fresh interface passed before registration | Resolved task with name+folder binding, `resourceKey="solution_folder.<name>"`, and runtime `folderPath` default `""`. A fresh mismatch is corrected/adapted or deferred before registration; deferred emits a placeholder. |
 
 ### What does NOT get written in Phase 2
 
@@ -83,9 +83,9 @@ uip maestro case validate "<caseplan.json path>" --skeleton --output json
 
 Print before prompt:
 
-1. Counts: stages / primary stages / secondary stages / triggers / tasks total / placeholder tasks / unresolved resources.
+1. Counts: stages / primary stages / secondary stages / triggers / tasks total / placeholder tasks / placeholder event triggers / deferred-or-unavailable interface owners. Connector-rule placeholders are added in Phase 3 and appear in the completion report.
 2. Validate result (placeholder-profile): `<N> errors, <M> warnings` — remaining errors are structural (unreachable/orphan stage, missing trigger, duplicate names) and actionable. Surfacing counts is enough; do not dump full error list unless user asks.
-3. Paths: `caseplan.json`, `tasks.md`, `registry-resolved.json`.
+3. Paths: `caseplan.json`, `tasks.md`, `registry-resolved.json`, `interface-resolved.json`.
 
 Do not enumerate every task. Studio Web visualization fills that role after publish.
 
@@ -117,7 +117,7 @@ Proceed directly to Phase 3.
 #### On `Abort`
 
 1. Dump in-memory issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md).
-2. Print paths of `caseplan.json`, `tasks.md`, `registry-resolved.json`, and solution directory.
+2. Print paths of `caseplan.json`, `tasks.md`, both resolution sidecars, and solution directory.
 3. Exit skill.
 
 Do **not** delete artifacts. User may want to inspect them, or re-run skill later (regenerates `tasks.md` from scratch per Rule 6).
@@ -129,12 +129,13 @@ Do **not** delete artifacts. User may want to inspect them, or re-run skill late
 Phase 3 begins after user selects `Continue to phase 3` (or `Skip publish and continue`). Before executing any Phase 3 step:
 
 1. **Re-read `tasks.md`** — per Rule 7. Declarative plan is the handoff.
-2. **Re-read `caseplan.json`** — authoritative source of all IDs generated in Phase 2:
+2. **Re-read `interface-resolved.json`** — approved per-consumer contracts and decisions.
+3. **Re-read `caseplan.json`** — authoritative source of all IDs generated in Phase 2:
    - Stage name → StageId (from `schema.nodes[]` where `type === "case-management:Stage"`, keyed on `data.label`; secondary stages are the same type with `data.stageType === "secondary"`).
    - Trigger ID (from `schema.nodes[]` where `type === "case-management:Trigger"`).
    - Task name → TaskId per stage (from `schema.nodes[<stage>].data.tasks[][]`).
    - Variable name → `var` ID (from top-level `variables.{inputs,outputs,inputOutputs}`).
-3. Optionally cross-check against `id-map.json` if JSON-strategy plugins wrote one. `caseplan.json` is source of truth; `id-map.json` is speed-up.
+4. Optionally cross-check against `id-map.json` if JSON-strategy plugins wrote one. `caseplan.json` is source of truth; `id-map.json` is speed-up.
 
 Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across hard stop.
 
@@ -151,7 +152,7 @@ After re-entry:
    - Case exit conditions
 4. **SLA + escalation** — per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Group `tasks.md §4.8` by target (root or stage); write full `slaRules[]` in one mutation per target.
 5. **In-expression marker resolution** — per [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md). After all outputs are minted/deduped and bindings/conditions/SLA are written, resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` to bare `vars.<var>` in one sink-blind whole-file pass (input payloads, conditions, SLA, connector bodies). Unresolved triple → ERROR.
-6. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-6 (=vars.X resolution, Out-arg producer presence, type mismatch, surviving `$xref` markers, resolved-resource I/O completeness, entry-point schema parity). AskUserQuestion for unresolved references (incl. `$xref` markers), pure orphan Out-args, and unbound required inputs / phantom output fields; option (c)/(d) "continue with best-effort emit" preserves forward progress. Check 6 is non-interactive (auto re-run, else log). Never HALT.
+6. **End-of-Phase-3 validator pass** — run Checks 1-4, Consumer Interface Integrity, and Check 6. General expression/lineage checks retain their documented best-effort option. Interface failures never do: explicitly adapt/reselect/correct or emit the owner placeholder. Check 6 stays non-interactive.
 
 Phase 3 produces a `caseplan.json` that should pass authoritative validation. No hard stop on Phase 3 exit — agent proceeds directly to Phase 4.
 
@@ -199,7 +200,7 @@ After debug completes, return to Phase 5 prompt so user can re-run or move on. P
 1. File path of `caseplan.json`.
 2. What was built — summary of stages, tasks, conditions, SLA.
 3. Validation status — `validate` pass / remaining warnings.
-4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. Also list **agents / API workflows built inline** (built as in-solution siblings, already bound) and any **built but unreferenced** (reject case) separately — they need no user action. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
+4. Placeholder consumers + unresolved resources — list every placeholder task, event trigger, and connector rule with its exact owner, sidecar status/reason, emitted placeholder profile, required external resource, and wiring notes. Also list **agents / API workflows built inline** (built as in-solution siblings, already bound) and any **built but unreferenced** (reject case) separately — they need no user action. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
 5. Missing connections — connector tasks needing IS connections that don't exist yet.
 
 ### Debug notes
@@ -225,9 +226,9 @@ For further authoring changes (add task, tweak condition, etc.), user updates `s
 
 ## Placeholder tasks — unchanged semantics
 
-Placeholder tasks (empty `data: {}` for unresolved resources) behave the same in all phases. Phase 2 creates them; Phase 3 does **not** upgrade them to typed tasks — upgrading requires user to register missing resource externally. See [placeholder-tasks.md](placeholder-tasks.md).
+Placeholder tasks (empty `data: {}` for unresolved identities or deferred/unavailable interfaces) behave the same in all phases. Phase 3 does not silently upgrade them; resolution must pass first. See [resource-interface-resolution.md](resource-interface-resolution.md) and [placeholder-tasks.md](placeholder-tasks.md).
 
-> **Agents / API workflows built inline are not placeholders.** When the user picks **Create** at the Rule 17 gate, Phase 1 builds the resource (a side effect — spawns a sub-agent invoking `uipath-agents` / `uipath-api-workflow`, registers the sibling, binds it) so it enters Phase 2 as a fully resolved task. Phase 3 never upgrades it (nothing to upgrade). Only resources the user declined/skipped or whose build failed become placeholders. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery).
+> **Inline-built Agent/API resources register only after interface approval.** Phase 1 builds the sibling unregistered, resolves/corrects its local contract, then registers and binds only a `compatible`/`adapted` result. Build, correction, or interface failure defers to the task placeholder.
 
 Phase 3 still wires placeholder TaskIds into:
 - Task-entry conditions that reference the placeholder.
