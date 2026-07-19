@@ -99,3 +99,11 @@ success_criteria:
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Connector node shape matches connectorMethodInfo (endpoint template, parameter placement, JIT and FilterBuilder design-caches, required-param + default coverage)"
+    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_connector_node_shape.py"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
