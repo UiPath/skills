@@ -51,6 +51,8 @@ Pre-cutover minimums (authoritative source: `release-metadata.json`):
 | Agents Insights aggregates — `getSummary`, `getTopErrorCount`, `getTopConsumption`, `getIncidentDistribution`, `getUnitConsumptionSummary` | 1.5.0 |
 | AgentTraces governance — `getGovernanceDecisions`, `getGovernanceSummary` | 1.5.1 |
 | `EntityFieldDataType.MULTILINE_MAX` | 1.5.2 |
+| Maestro analytics on `MaestroProcesses` / `Cases` — `getTop*`, `getInstanceStatusTimeline`, `getElementStats`, `getInstanceStats`, `getIncidentsTimeline` | 1.3.9 to 1.5.1 by method — see `release-metadata.json` |
+| `Notifications` service | 1.5.1 |
 
 ## Anti-patterns
 
