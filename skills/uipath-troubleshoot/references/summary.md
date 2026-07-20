@@ -174,6 +174,15 @@ Namespaces: `UiPath.Web.Activities`
 - [activity-packages/web-activities/overview.md](./activity-packages/web-activities/overview.md) — Package overview, activity families, and common failure patterns
 - [activity-packages/web-activities/summary.md](./activity-packages/web-activities/summary.md) — All playbooks for Web Activities issues
 
+## Jira Activities
+
+Activities from the classic `UiPath.Jira.Activities` package for automating Atlassian Jira. Every operation runs inside a **Jira Scope** (`JiraApplicationScope`) that authenticates once against a Jira instance (the classic pack targets Jira **Cloud** and uses RestSharp under the hood); child activities — Get Issue, Search Issues, Create Issue, Add Comment — run REST calls on that session. Issues here involve `Authentication information is invalid` at scope open (`Api Token` bound as a plain `String` instead of `SecureString`, `Username` set to a Jira `accountId` instead of the account email, leftover `Client Id`/`Client Secret` conflicting with `Authentication Type = Api Token`, or basic password auth on an MFA/SSO-enforced org), `Response was not recognized as JSON` / HTTP `500` on a child activity (`Server URL` carrying an appended `/secure/Dashboard.jspa` or project path, or an on-premises Server / Data Center instance the Cloud-targeted pack does not support), and `This activity is either missing or could not be loaded properly` (a transitive **RestSharp** version conflict with another package — resolve the pin or migrate to the Integration Service Jira connector).
+
+Namespaces: `UiPath.Jira.Activities`
+
+- [activity-packages/jira-activities/overview.md](./activity-packages/jira-activities/overview.md) — Package overview, Jira Scope execution model and properties, and common failure patterns
+- [activity-packages/jira-activities/summary.md](./activity-packages/jira-activities/summary.md) — All playbooks for Jira Activities issues
+
 ## App Events (Workflow Events) Activities
 
 Internal activities that connect a **UiPath App** (or a Studio Web app preview) to the robot running the App's workflows. They are `[Internal]` — a user never places them — so failures surface as **a job invoked by an App faulting**, with the activity name (`HandleAppRequest`, `AppRequestTrigger`, `InitializeHubConnection`) appearing in the job error / trace spans rather than the user's project. The App↔robot channel runs in one of two modes: RobotJS (legacy local pipe) or SignalR (modern hub). These activities propagate raw .NET framework exceptions (no package-specific wrapper), so the faulted activity class + exception class is the discriminator: `HandleAppRequest` `NullReferenceException` (a null deref inside the App-invoked workflow), `AppRequestTrigger` `TimeoutException`/`IOException`/`InvalidOperationException` (App↔robot channel/transport lost), and `InitializeHubConnection` `AggregateException` (SignalR hub bootstrap failed — unwrap the inner).
