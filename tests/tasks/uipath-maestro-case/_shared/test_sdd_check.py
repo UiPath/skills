@@ -18,8 +18,8 @@ def test_stage_label_colon_is_rejected_but_heading_separator_is_allowed():
 def test_sla_title_colon_is_rejected():
     text = "| SLA Title | Notify: Manager |\n- display-name: \"Notify: Manager\""
     issues = _colon_issues(text)
-    assert len(issues) == 2
-    assert all("SLA title" in issue for issue in issues)
+    assert len(issues) == 1
+    assert "SLA title contains ':'" in issues[0]
 
 
 def test_names_without_colons_are_allowed():
