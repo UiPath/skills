@@ -1,2 +1,45 @@
-traces exit=0
---- stderr ---
+{
+  "Result": "Success",
+  "Code": "JobTraces",
+  "Data": [
+    {
+      "Id": "00000000-0000-0000-0000-000000000001",
+      "TraceId": "b7974725-4438-4315-a9cc-9ec41f8acd62",
+      "ParentId": null,
+      "Name": "Robot Job b7974725-4438-4315-a9cc-9ec41f8acd62",
+      "StartTime": "2026-06-09T10:49:38.483Z",
+      "EndTime": "2026-06-09T10:50:41.847Z",
+      "Attributes": "{\"Exception\":\"System.TimeoutException: The client did not complete the authentication after 30 seconds, and as a result the operation was canceled. Authentication type: InteractiveToken.\\n   at UiPath.MicrosoftOffice365.Services.GraphClientServiceFactory.LoginWithInteractiveTokenAsync()\\n   at UiPath.Shared.Activities.Utilities.TaskExtensions.TimeoutAfter()\"}",
+      "Status": 2,
+      "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "SpanType": "RobotJob",
+      "JobKey": "b7974725-4438-4315-a9cc-9ec41f8acd62"
+    },
+    {
+      "Id": "00000000-0000-0000-0000-000000000002",
+      "TraceId": "b7974725-4438-4315-a9cc-9ec41f8acd62",
+      "ParentId": "00000000-0000-0000-0000-000000000001",
+      "Name": "Microsoft 365 Scope",
+      "StartTime": "2026-06-09T10:49:39.313Z",
+      "EndTime": "2026-06-09T10:49:39.351Z",
+      "Attributes": "{\"Public.FullTypeName\":\"UiPath.MicrosoftOffice365.Activities.Office365ApplicationScope\",\"Public.AuthenticationType\":\"InteractiveToken\",\"Public.Environment\":\"Global\",\"Public.OAuthApplication\":\"UIPATH\",\"Public.DataStoreLocation\":\"DISK\",\"Public.UseConnectionService\":\"False\",\"Private.Account\":\"Please select an account.\",\"Private.DisplayName\":\"Microsoft 365 Scope\"}",
+      "Status": 1,
+      "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "SpanType": "Activity",
+      "JobKey": "b7974725-4438-4315-a9cc-9ec41f8acd62"
+    },
+    {
+      "Id": "00000000-0000-0000-0000-000000000003",
+      "TraceId": "b7974725-4438-4315-a9cc-9ec41f8acd62",
+      "ParentId": "00000000-0000-0000-0000-000000000001",
+      "Name": "Get Email List",
+      "StartTime": "2026-06-09T10:49:39.921Z",
+      "EndTime": "2026-06-09T10:50:41.847Z",
+      "Attributes": "{\"Exception\":\"System.TimeoutException: The client did not complete the authentication after 30 seconds, and as a result the operation was canceled. Authentication type: InteractiveToken.\",\"Public.FullTypeName\":\"UiPath.MicrosoftOffice365.Activities.Mail.GetEmailListConnections\",\"Private.MailFolderArg\":{\"FolderName\":\"Inbox\",\"SelectionMode\":\"EnterPath\"},\"Private.BrowserFolderName\":\"Inbox\",\"Public.MaxResults\":\"50\",\"Public.Connector\":\"uipath-microsoft-outlook365\",\"Private.DisplayName\":\"Get Email List\"}",
+      "Status": 2,
+      "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "SpanType": "Activity",
+      "JobKey": "b7974725-4438-4315-a9cc-9ec41f8acd62"
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 **Investigation guide:** [investigation_guide.md](./investigation_guide.md) — data correlation rules and testing prerequisites for Maestro investigations
 
-**Top-20 production errors (telemetry-ranked, last 7 days as of 2026-03-19):** the table below covers the highest-volume Maestro errors first, with a generic table after for additional symptoms. Source: [PO.BpmnEngine PR #3092](https://github.com/UiPath/PO.BpmnEngine/pull/3092).
+**Top-20 production errors (telemetry-ranked, last 7 days as of 2026-03-19):** the table below covers the highest-volume Maestro errors first, with a generic table after for additional symptoms. Source: BPMN engine production telemetry.
 
 ## Top 20 Production Errors
 
@@ -31,7 +31,7 @@
 
 > **API debuggability:** errors #1, #3, #5, #6, #8, #11, #13, #16, #19 are **Fully Troubleshootable** from PIMS API alone. Errors #2, #4, #10, #14, #17 are **Partially Troubleshootable** — incident gives a starting point but needs Orchestrator or BPMN inspection. Errors #7, #9, #12, #15, #18, #20 are **Not Troubleshootable** from API alone today; ask the user for additional artifacts (`.bpmn`, bindings, full stack trace).
 >
-> Error #9 (`NoOutgoingFlow`) becomes Fully Troubleshootable once [PR #3092](https://github.com/UiPath/PO.BpmnEngine/pull/3092) lands and the `IncludeGatewayDebugInfoInIncidents` targeted feature flag is enabled.
+> Error #9 (`NoOutgoingFlow`) becomes Fully Troubleshootable once the BPMN engine's gateway-debug-info incident enrichment lands and the `IncludeGatewayDebugInfoInIncidents` targeted feature flag is enabled.
 
 ## Additional Symptoms (Lower Volume)
 

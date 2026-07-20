@@ -1,0 +1,17 @@
+{
+  "instanceId": "debug-fault-777",
+  "elements": [
+    {
+      "elementId": "ScriptTask_ComputeDiscount",
+      "variables": [
+        { "name": "basePrice", "value": 240 },
+        { "name": "discountRate", "value": 1.75 }
+      ]
+    }
+  ],
+  "variables": [
+    { "name": "orderId", "value": "ORD-DBG-777" },
+    { "name": "basePrice", "value": 240 },
+    { "name": "discountRate", "value": 1.75 }
+  ]
+}

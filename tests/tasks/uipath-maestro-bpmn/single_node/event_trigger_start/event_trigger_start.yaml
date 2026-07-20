@@ -1,0 +1,86 @@
+task_id: skill-bpmn-event-trigger-start
+description: >
+  Connector trigger start-event eval: agent uses the uipath-maestro-bpmn skill to
+  start a process from an Integration Service connector event (e.g. an email
+  received) using the registry Intsvc.EventTrigger wrapper on a bpmn:startEvent,
+  kept as a public-safe draft because connection binding and trigger properties
+  are CLI-owned enrichment. Ports the Flow connector-trigger inbox test to a BPMN
+  connector-trigger start event. Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:single-node", connector, "feature:trigger"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 80
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a local BPMN project named "InboxTriggerBpmn" with the main file at
+  InboxTriggerBpmn/InboxTriggerBpmn.bpmn. Model a process that is started when an
+  email is received in an inbox through an Integration Service connector:
+  connector event-trigger start -> handle the message -> end.
+
+  Requirements:
+  - Discover the connector event-trigger extension type via the registry and
+    author its node from the registry template. Do not hand-author uipath:* XML
+    from prose.
+  - The process start MUST be a bpmn:startEvent carrying the Intsvc.EventTrigger
+    wrapper (with its bpmn:messageEventDefinition). There must be NO manual start
+    event.
+  - This connector trigger requires discovery, so keep it a DRAFT: connection
+    binding, the concrete connector/object, dynamic trigger schemas, and package
+    metadata are CLI-owned enrichment. Do not invent or paste connection IDs,
+    folder keys, tenant URLs, connector resource keys, generated schemas, or
+    package metadata, and do not hand-author bindings_v2.json / entry-points.json
+    / operate.json / package-descriptor.json.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+  - Validation: a well-formed-XML parse is sufficient for this draft, e.g.
+    `python3 -c "import xml.etree.ElementTree as ET; ET.parse('InboxTriggerBpmn/InboxTriggerBpmn.bpmn')"`.
+    The connector trigger legitimately stays a draft: do NOT invent a
+    connectionId / connection binding / connector key to satisfy an
+    enrichment-blocked validator, and do not loop on validation to clear that
+    CLI-owned blocker.
+  - Do not upload, publish, deploy, debug, run, or pack anything, and do not
+    pause for approval or confirmation.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "InboxTriggerBpmn/InboxTriggerBpmn.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run any cloud-side Maestro BPMN lifecycle command"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(upload|publish|deploy|debug|run|pack)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Connector event-trigger start is a public-safe draft with valid structure"
+    command: "python3 $TASK_DIR/check_event_trigger_start.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent kept the connector trigger local and avoided cloud-side operations"
+    weight: 2.0
+    pass_threshold: 0.7
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: >
+      Pass if the agent only authored a local BPMN draft and read-only registry
+      output, and did not run or request approval for any cloud-side mutation
+      (upload, publish, deploy, debug, run, pack) and did not invent concrete
+      connection IDs, tenant URLs, or connector resource keys. Fail if tool calls
+      or the final answer show any cloud-side lifecycle mutation, a request to
+      perform one, or fabricated private connector metadata.

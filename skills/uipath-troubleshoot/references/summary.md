@@ -11,6 +11,15 @@ CLI: `uip or --help`
 - [products/orchestrator/overview.md](./products/orchestrator/overview.md) — Product overview, features, and dependencies
 - [products/orchestrator/summary.md](./products/orchestrator/summary.md) — All playbooks for Orchestrator issues
 
+## Studio
+
+UiPath Studio (Desktop and Web) — the authoring IDE. This domain covers Studio-level *platform* failures that are not workflow-code or activity faults: license acquisition (License Provider = Orchestrator), profile entitlement (Studio vs StudioX), and in-IDE AI features (Autopilot for developers). Issues here involve Studio running unlicensed ("No license exist for this installation"), Autopilot greyed out / "disabled by your organization", and tenant-service enablement gaps. For `.xaml` / `.cs` authoring and activity faults use UI Automation / System Activities / Runtime Exceptions; for agent/product LLM routing use LLM Gateway.
+
+CLI: `uip login status`, `uip admin tenants get`, `uip admin tenants services enable`, `uip platform users licenses get`
+
+- [products/studio/overview.md](./products/studio/overview.md) — Profiles, license acquisition, Autopilot, tenant-service dependencies, and CLI surface
+- [products/studio/summary.md](./products/studio/summary.md) — All playbooks for Studio issues
+
 ## Runtime Exceptions
 
 General .NET runtime exceptions originating from the user's own workflow code — not from activity packages or platform internals. Covers null references, null arguments, and similar errors in workflow logic, variable handling, and data processing.
@@ -40,11 +49,20 @@ CLI: `uip is --help`
 - [products/integration-service/cns-error-codes-reference.md](./products/integration-service/cns-error-codes-reference.md) — CNS (Connection Service API) error-code catalog: wire format, fault buckets, overloaded-code traps, retry semantics, code → playbook map
 - [products/integration-service/summary.md](./products/integration-service/summary.md) — All playbooks for Integration Service issues
 
+## API Workflows
+
+Studio Web project type for real-time, system-to-system integration over APIs — JSON workflows (Serverless Workflow DSL) run by `uip api-workflow run` and published to Orchestrator as API processes (executions are Orchestrator jobs). No UI automation, no robot, no agent runtime. Issues here involve runtime execution faults (expression errors, `<name> is not defined`, undefined `$context.outputs.<Activity>`, loop/logic faults), connector-call 401/403 in cloud (401: wrong activity kind or stale connection binding; 403: broken/disabled or under-scoped Integration Service connection), designer-roundtrip corruption (runs locally, breaks after a Studio Web save), and pack/publish/deploy failures. Connection faults surface through Integration Service; job/trigger mechanics through Orchestrator.
+
+CLI: `uip api-workflow validate`, `uip api-workflow run --no-auth`, `uip is connections ping`, `uip or jobs get`/`logs`, `uip traces spans get --job-key`
+
+- [products/api-workflows/overview.md](./products/api-workflows/overview.md) — Product overview, dependencies, evidence surfaces, and fault families
+- [products/api-workflows/summary.md](./products/api-workflows/summary.md) — All playbooks for API Workflow issues
+
 ## Agents
 
 Low-code agents built with `uip agent`. Issues here involve LLM call failures, context grounding index misconfigurations, and input schema validation errors. Primary investigation surface: `uip traces spans get <traceId> --output json` — spans carry the full error text including error codes and field-level detail.
 
-CLI: `uip agent run status`, `uip traces spans get`, `uip agent context`, `uip context-grounding`, `uip agent validate`, `uip agent publish`
+CLI: `uip traces spans get`, `uip context-grounding`, `uip agent refresh`, `uip agent validate`, `uip agent debug` (only with explicit user approval because it uploads and executes the agent)
 
 - [products/agents/summary.md](./products/agents/summary.md) — All playbooks for Agents issues
 
@@ -120,6 +138,15 @@ Namespaces: `UiPath.MicrosoftOffice365.Activities`
 - [activity-packages/o365-activities/overview.md](./activity-packages/o365-activities/overview.md) — Package overview, activity types, and common failure patterns
 - [activity-packages/o365-activities/summary.md](./activity-packages/o365-activities/summary.md) — All playbooks for Microsoft Office 365 Activities issues
 
+## Mail Activities (classic)
+
+Activities from the classic mail packages that talk to a mail system directly from the Robot: Outlook desktop COM (`UiPath.Mail.Outlook.Activities` — `Send Outlook Mail Message`, `Get Outlook Mail Messages`, `Move Outlook Mail Message`, `Reply To Outlook Mail Message` driving a local OUTLOOK.EXE via COM interop under the Robot's Windows user) and protocol-level SMTP / IMAP / POP3 / Exchange. Distinct from the modern Graph/OAuth Microsoft Office 365 Activities and the Gmail activities in Google Workspace Activities. Issues here involve COM cast / library-not-registered failures (`REGDB_E_CLASSNOTREG`, `TYPE_E_LIBNOTREGISTERED` — Outlook missing/unregistered, bitness mismatch, orphaned OUTLOOK.EXE), timeouts and hangs (hidden security prompt, Work Offline mode, slow profile first-launch — fragile on unattended Robots with no interactive desktop to dismiss prompts), and uninitialized inputs (`Object reference not set to an instance of an object` from a null To/Subject/Body or attachment path).
+
+Namespaces: `UiPath.Mail.Outlook.Activities`, `UiPath.Mail.SMTP.Activities`, `UiPath.Mail.IMAP.Activities`, `UiPath.Mail.POP3.Activities`, `UiPath.Mail.EWS.Activities`
+
+- [activity-packages/mail-activities/overview.md](./activity-packages/mail-activities/overview.md) — Package overview, Outlook COM execution model, and common failure patterns
+- [activity-packages/mail-activities/summary.md](./activity-packages/mail-activities/summary.md) — All playbooks for classic Mail Activities issues
+
 ## Excel Activities
 
 Desktop Excel activities from `UiPath.Excel.Activities` — read, write, delete, and manipulate `.xlsx` / `.xls` workbooks, run VBA macros (`Invoke VBA`, `Execute Macro`), and look up ranges on the host filesystem via Excel COM (Excel installed) or the OpenXML provider (Excel not required). Issues here involve workbooks locked by other processes, sheet names not found, range parsing failures, provider-specific parsing errors on heavily formatted or sensitivity-labeled files, Trust Center macro blocks, entry-method / parameter marshaling errors, COM-interop instability (`0x80010100 RPC_E_SYS_CALL_FAILED` and related HRESULTs), and Application Scope / Use Excel File container failures. For cloud Excel via Microsoft Graph, see Microsoft Office 365 Activities above.
@@ -164,6 +191,15 @@ Namespaces: `UiPath.Web.Activities`
 
 - [activity-packages/web-activities/overview.md](./activity-packages/web-activities/overview.md) — Package overview, activity families, and common failure patterns
 - [activity-packages/web-activities/summary.md](./activity-packages/web-activities/summary.md) — All playbooks for Web Activities issues
+
+## Jira Activities
+
+Activities from the classic `UiPath.Jira.Activities` package for automating Atlassian Jira. Every operation runs inside a **Jira Scope** (`JiraApplicationScope`) that authenticates once against a Jira instance (the classic pack targets Jira **Cloud** and uses RestSharp under the hood); child activities — Get Issue, Search Issues, Create Issue, Add Comment — run REST calls on that session. Issues here involve `Authentication information is invalid` at scope open (`Api Token` bound as a plain `String` instead of `SecureString`, `Username` set to a Jira `accountId` instead of the account email, leftover `Client Id`/`Client Secret` conflicting with `Authentication Type = Api Token`, or basic password auth on an MFA/SSO-enforced org), `Response was not recognized as JSON` / HTTP `500` on a child activity (`Server URL` carrying an appended `/secure/Dashboard.jspa` or project path, or an on-premises Server / Data Center instance the Cloud-targeted pack does not support), and `This activity is either missing or could not be loaded properly` (a transitive **RestSharp** version conflict with another package — resolve the pin or migrate to the Integration Service Jira connector).
+
+Namespaces: `UiPath.Jira.Activities`
+
+- [activity-packages/jira-activities/overview.md](./activity-packages/jira-activities/overview.md) — Package overview, Jira Scope execution model and properties, and common failure patterns
+- [activity-packages/jira-activities/summary.md](./activity-packages/jira-activities/summary.md) — All playbooks for Jira Activities issues
 
 ## App Events (Workflow Events) Activities
 
