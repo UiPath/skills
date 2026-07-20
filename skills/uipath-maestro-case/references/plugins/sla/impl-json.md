@@ -23,7 +23,7 @@ Compose the `slaRules[]` array for each target (root or stage) in one write. Gro
 ## ID generation
 
 - Escalation: `esc_` + 6 chars. Per [`case-editing-operations.md § ID Generation`](../../case-editing-operations.md#id-generation).
-- Conditional SlaRuleEntry: **no `id` field**. Removal is by array index.
+- SlaRuleEntry: `sla` + 8 chars. **Required** on every entry (as of schema v26).
 
 Record every `T<n> → esc_xxxxxx` in `id-map.json` under `{kind: "escalation", ruleExpression: "<parent rule expression>", target: "root" | "<stageId>"}`.
 
@@ -43,12 +43,16 @@ After grouping T-entries by target, compose the `slaRules` array and write it in
 ```json
 [
   {
+    "id": "sla<8-rand>",
+    "displayName": "<condition label>",
     "expression": "=js:<translated-condition-1>",
     "count": <n>, "unit": "<min|h|d|w|m>",
     "escalationRule": [ <escalations with attach-to == conditional-1-T-number> ]
   },
   { "...additional conditional rules in sdd order..." },
   {
+    "id": "sla<8-rand>",
+    "displayName": "Default",
     "expression": "=js:true",
     "count": <default.count>, "unit": "<default.unit>",
     "escalationRule": [ <escalations with attach-to == default> ]
@@ -61,7 +65,7 @@ After grouping T-entries by target, compose the `slaRules` array and write it in
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "23.0.0",
+  "version": "27.0.0",
   "metadata": {
     "caseIdentifier": "<...>",
     "caseUnifiedSchemaEnabled": true,
@@ -85,13 +89,14 @@ Emission rules:
 3. **Bare default rule is legal.** If a target has escalations but no default SLA T-entry, emit `{expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`.
 4. **Always emit `escalationRule` on every rule.** Use `"escalationRule": []` when a rule has no attached escalations. Never omit the key.
 5. **Omit `slaRules` key entirely** on targets with no SLA T-entries.
+6. **Emit a unique `id` on every SlaRuleEntry.** `sla` + 8 chars — **required** (schema v26). `displayName` is optional (`"Default"` for the trailing `=js:true` entry).
 
 ## Recipe — one escalation entry
 
 ```json
 {
   "id": "esc_xxxxxx",
-  "displayName": "<from T-entry, optional>",
+  "displayName": "<from T-entry, or generated: Escalation rule <N> - <parent SLA displayName>>",
   "action": {
     "type": "notification",
     "recipients": [
@@ -105,7 +110,7 @@ Emission rules:
 }
 ```
 
-- `displayName` omitted entirely when T-entry doesn't supply one (don't emit `undefined`).
+- `displayName` is **required** (schema v27). Use the T-entry's `display-name` when supplied; otherwise generate `Escalation rule <N> - <parent SLA displayName>` (N = 1-based index within the parent rule's `escalationRule[]`).
 - `atRiskPercentage` included only when `triggerInfo.type === "at-risk"`.
 - `recipients` is an array — **one entry per sdd-declared recipient**.
 

@@ -154,8 +154,9 @@ def task_is_skeleton(task: dict) -> bool:
 # ── Schema-aware structural helpers ─────────────────────────────────────────
 #
 # Case-level metadata lives at the top level alongside a `metadata` block — the
-# flat schema introduced in v20 and inherited unchanged through v23. Node
-# internals are identical across those versions.
+# flat schema introduced in v20 and inherited through v27. Node internals are
+# stable across those versions except the trigger node, which v24 rewired from
+# `case-management:Trigger` to `uipath.case.trigger` (see find_triggers).
 
 
 def assert_count(actual: int, expected: int, what: str) -> None:
@@ -198,7 +199,13 @@ def find_stages(plan: dict, *, include_exception: bool = False) -> list[dict]:
 
 
 def find_triggers(plan: dict) -> list[dict]:
-    return list(iter_nodes_of_type(plan, "case-management:Trigger"))
+    # v24 renamed the trigger node type `case-management:Trigger` -> `uipath.case.trigger`.
+    # BACK-COMPAT: accept the legacy type for pre-v24 fixtures.
+    return [
+        n
+        for n in (plan.get("nodes") or [])
+        if n.get("type") in {"uipath.case.trigger", "case-management:Trigger"}
+    ]
 
 
 def find_node_by_label(plan: dict, label: str) -> dict:

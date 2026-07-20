@@ -33,7 +33,7 @@ return allVariables.find(v => v.id === variableId);
 | `variables.outputs[]` *(top level)* | YES (the formal entry) | But its `var` points elsewhere — see Out-arg shape below |
 | `task.data.outputs[]` | YES if `id` present | Self-declares — task plugin writes id matching the SDD-given name |
 | `task.data.inputs[]` | YES — by random `id` | Picker-invisible; used for the In-arg formal slot |
-| `triggerNode.data.uipath.outputs[]` | YES if `id` present; **NO if only `var` (no `id`)** | Pattern A entries (`id === var`) self-resolve; Pattern C entries (`var` only) require a companion in `root.inputOutputs[]` |
+| `triggerNode.data.inputs.outputs[]` | YES if `id` present; **NO if only `var` (no `id`)** | Pattern A entries (`id === var`) self-resolve; Pattern C entries (`var` only) require a companion in `root.inputOutputs[]` |
 
 **"Companion" = the paired `inputOutputs[]` entry whose `id` matches the lookup name.** Required for trigger outputs that lack `id`; load-bearing for Out-args with a `Default` value; optional when the producer (task output) already self-declares.
 
@@ -46,7 +46,7 @@ Under the B refactor, this plugin is **the sole owner** of:
 | `variables.inputs[]` *(top level)* | Yes |
 | `variables.outputs[]` *(top level)* | Yes |
 | `variables.inputOutputs[]` *(top level)* | Yes |
-| `triggerNode.data.uipath.outputs[]` | **Yes** — sole owner under B (was co-mutated with trigger plugin in previous design) |
+| `triggerNode.data.inputs.outputs[]` | **Yes** — sole owner under B (was co-mutated with trigger plugin in previous design) |
 | `task.data.outputs[]` | No — task plugins self-declare; this plugin's writes never touch them |
 | `task.data.inputs[].value` | No — io-binding owns this |
 | top-level `bindings[]` | No — connector / trigger plugins own resource bindings |
@@ -58,7 +58,7 @@ Under the B refactor, this plugin is **the sole owner** of:
 | In argument inputs | `variables.inputs[]` *(top level)* |
 | Out argument outputs | `variables.outputs[]` *(top level)* |
 | All internal variables | `variables.inputOutputs[]` *(top level)* |
-| Trigger output mappings | `nodes[<triggerIndex>].data.uipath.outputs[]` |
+| Trigger output mappings | `nodes[<triggerIndex>].data.inputs.outputs[]` |
 
 ## Uniqueness Rule
 
@@ -79,7 +79,7 @@ Build the uniqueness pool from EVERY `var` / `id` currently in `caseplan.json`. 
 |---|---|---|
 | Root variables | top-level `variables.{inputs,outputs,inputOutputs}[]` | The canonical case-variable namespace |
 | Task outputs | `nodes[<stage>].data.tasks[<lane>][].data.outputs[]` (for every task) | Self-declared task outputs |
-| Trigger outputs | `nodes[<trigger>].data.uipath.outputs[]` (for every trigger node) | Plain-name auto-emit + Pattern C wires |
+| Trigger outputs | `nodes[<trigger>].data.inputs.outputs[]` (for every trigger node) | Plain-name auto-emit + Pattern C wires |
 | **Stage entry / exit rule outputs** | `nodes[<stage>].data.entryConditions[].rules[][].uipath.outputs[]` AND `nodes[<stage>].data.exitConditions[].rules[][].uipath.outputs[]` | Connector-bound condition rules — outputs minted under `elementId = <stageId>-<ruleId>` |
 | **Case-exit rule outputs** | `metadata.caseExitRules[].rules[][].uipath.outputs[]` | Connector-bound case-exit rules — outputs minted under `elementId = root-<ruleId>` |
 | **Task-entry rule outputs** | `nodes[<stage>].data.tasks[<lane>][].entryConditions[].rules[][].uipath.outputs[]` (for every task) | Connector-bound task-entry rules — outputs minted under `elementId = <stageId>-<ruleId>` |
@@ -186,7 +186,7 @@ No trigger.outputs[] write, no root.inputs[] / outputs[] writes.
 SDD row: `Category=Variable`, `sourceTriggers: T02`, `sourceFields: response.subject`.
 
 ```json
-// triggerNode.data.uipath.outputs[]  (the trigger plugin's caseplan node — written by THIS plugin under B)
+// triggerNode.data.inputs.outputs[]  (the trigger plugin's caseplan node — written by THIS plugin under B)
 { "name": "subject", "var": "calendarTitle",
   "source": "=response.subject", "type": "string", "value": "calendarTitle" }
 // No `id`, no `elementId` — FE auto-emit convention. `name` is the last segment of sourceField path.
@@ -224,9 +224,9 @@ Resolver doesn't care that two trigger entries write to the same `vars.caseStart
 
 SDD row: `Category=In`, optional `sourceTriggers: T<N>` (a single T-number selecting the bound trigger; blank → primary trigger T02). `sourceFields` is empty for In rows. **Works on any trigger type — manual, timer, or event.** For event triggers, the bridge mechanics are identical; the formal slot's `default` propagates to the companion at trigger fire (no caller-override path since events have no API caller, but the structural emission is the same).
 
-**Trigger resolution.** `<triggerId>` in the entries below = `id-map.json[T<N>].id` for the trigger named by `sourceTriggers`; blank `sourceTriggers` → `id-map["T02"].id` (the primary trigger). Entries 1 (formal slot) and 2 (companion) carry it as `elementId`; entry 3 (bridge) is written on that same trigger node's `data.uipath.outputs[]`. `sourceFields` is not consulted for In.
+**Trigger resolution.** `<triggerId>` in the entries below = `id-map.json[T<N>].id` for the trigger named by `sourceTriggers`; blank `sourceTriggers` → `id-map["T02"].id` (the primary trigger). Entries 1 (formal slot) and 2 (companion) carry it as `elementId`; entry 3 (bridge) is written on that same trigger node's `data.inputs.outputs[]`. `sourceFields` is not consulted for In.
 
-> **Bare manual bound trigger:** a manual trigger has no `data.uipath` key (its signature — see [`../../triggers/manual/impl-json.md`](../../triggers/manual/impl-json.md)). When the bound trigger is manual (the common case — the primary trigger is usually manual), create `data.uipath = { "outputs": [] }` on that node before appending the bridge. Do NOT add a `serviceType` — its absence is what keeps the trigger manual.
+> **Bare manual bound trigger:** a manual trigger has no `data.inputs` key (its signature — see [`../../triggers/manual/impl-json.md`](../../triggers/manual/impl-json.md)). When the bound trigger is manual (the common case — the primary trigger is usually manual), create `data.inputs = { "outputs": [] }` on that node before appending the bridge. Do NOT add a `serviceType` — its absence is what keeps the trigger manual.
 
 Three entries — formal slot + companion + bridge:
 
@@ -239,14 +239,14 @@ Three entries — formal slot + companion + bridge:
 { "id": "applicantName", "name": "applicantName", "type": "string",
   "elementId": "<triggerId>" }
 
-// 3. triggerNode.data.uipath.outputs[]  — bridge from formal slot to companion
+// 3. triggerNode.data.inputs.outputs[]  — bridge from formal slot to companion
 { "name": "applicantName", "type": "string", "source": "=vars.v<random8>", "var": "applicantName" }
 // No `id`, no `elementId` on bridge — FE convention. `type` matches the SDD row's Type column.
 ```
 
 **Why three entries instead of one?** The runtime resolver (`VariablesService.findVariableByVariableId`) is a single string-equality find on `Variable.id`. The caller (or trigger fire for event triggers) writes the formal-arg's value into `vars.v<random8>` at trigger fire (because `inputs[].id` is `v<random8>`); downstream code wants to read it as `=vars.applicantName` (because that's the readable name). There is no automatic forwarding between the two slots — the bridge entry on `triggerNode.outputs[]` executes the copy at fire time: `source: "=vars.v<random8>"` reads the formal slot, `var: "applicantName"` writes to the companion's slot. Without the bridge, `=vars.applicantName` resolves to undefined. The companion's `inputOutputs[]` entry alone declares the *name* in the namespace, but holds no *value* because nobody writes to it.
 
-> **Placeholder trigger interaction:** if the **bound trigger** (the one named by `sourceTriggers`, or the primary trigger when blank) is a placeholder (any type), write entries 1 + 2 only; skip the bridge (entry 3) — the placeholder has no `data.uipath.outputs` array. The placeholder trigger never fires, so the bridge would never execute anyway. **Consequence:** at runtime `vars.<name>` (the companion slot) is undefined — the `default` on the `inputs[]` formal slot does NOT propagate to the companion without the bridge. This is expected: a placeholder case is structurally incomplete and not meant to run until the trigger is resolved. Re-generate from scratch (Rule 6) after the trigger resolves to get the working bridge.
+> **Placeholder trigger interaction:** if the **bound trigger** (the one named by `sourceTriggers`, or the primary trigger when blank) is a placeholder (any type), write entries 1 + 2 only; skip the bridge (entry 3) — the placeholder has no `data.inputs.outputs` array. The placeholder trigger never fires, so the bridge would never execute anyway. **Consequence:** at runtime `vars.<name>` (the companion slot) is undefined — the `default` on the `inputs[]` formal slot does NOT propagate to the companion without the bridge. This is expected: a placeholder case is structurally incomplete and not meant to run until the trigger is resolved. Re-generate from scratch (Rule 6) after the trigger resolves to get the working bridge.
 
 **File-type In-arg carve-out:** when `type === "file"`:
 - Formal slot (entry 1) MUST add `body: <FILE_TYPE_JSON_SCHEMA>` (see [`## file type`](#file-type)) — drives entry-points.json `$ref: "#/definitions/job-attachment"` at packaging

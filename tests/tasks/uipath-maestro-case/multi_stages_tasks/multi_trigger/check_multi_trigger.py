@@ -25,29 +25,29 @@ def main():
 
     service_types = []
     for t in triggers:
-        uipath = ((t.get("data") or {}).get("uipath")) or {}
+        uipath = ((t.get("data") or {}).get("inputs")) or {}
         service_types.append(uipath.get("serviceType"))
 
-    # Manual trigger accepts either form: no data.uipath key (serviceType None)
+    # Manual trigger accepts either form: no data.inputs key (serviceType None)
     # OR an explicit serviceType "None". See triggers/manual/impl-json.md.
     manual_count = sum(1 for s in service_types if s in (None, "None"))
     if manual_count != 1:
         sys.exit(
-            f"FAIL: expected exactly 1 manual trigger (no data.uipath key or "
+            f"FAIL: expected exactly 1 manual trigger (no data.inputs key or "
             f"serviceType='None'); got {service_types}"
         )
-    timer_count = sum(1 for s in service_types if s == "Intsvc.TimerTrigger")
+    timer_count = sum(1 for s in service_types if s == "timer")
     if timer_count != 2:
         sys.exit(
-            f"FAIL: expected 2 timer triggers (serviceType='Intsvc.TimerTrigger'); "
+            f"FAIL: expected 2 timer triggers (serviceType='timer'); "
             f"got {timer_count} ({service_types})"
         )
 
     timer_cycles = [
-        ((t.get("data") or {}).get("uipath") or {}).get("timeCycle")
+        ((t.get("data") or {}).get("inputs") or {}).get("timeCycle")
         for t in triggers
-        if ((t.get("data") or {}).get("uipath") or {}).get("serviceType")
-        == "Intsvc.TimerTrigger"
+        if ((t.get("data") or {}).get("inputs") or {}).get("serviceType")
+        == "timer"
     ]
 
     if "R/PT1H" not in timer_cycles:

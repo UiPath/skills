@@ -5,7 +5,7 @@ Shared planning and implementation logic for connector-based triggers. Used by t
 - [event trigger](plugins/triggers/event/planning.md) — case-level `Intsvc.EventTrigger` (case start)
 - **connector-bound condition rule** — a `wait-for-connector` rule in any condition scope (stage-entry / stage-exit / case-exit / task-entry). Also called "connector rule" or "connector condition rule" in shorthand; "wait-for-connector rule" when the rule-type is the salient property. All four refer to the same construct. See [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule) and each condition plugin's `impl-json.md`.
 
-All three use the same TypeCache (`typecache-triggers-index.json`), same single-call `case spec` discovery, same FE-canonical `caseShape` consumption. Only the target (task `data` / trigger node `data.uipath` / rule `uipath`), `serviceType`, and a few shape details differ — see each plugin's own docs.
+All three use the same TypeCache (`typecache-triggers-index.json`), same single-call `case spec` discovery, same FE-canonical `caseShape` consumption. Only the target (task `data` / trigger node `data.inputs` / rule `uipath`), `serviceType`, and a few shape details differ — see each plugin's own docs.
 
 > Mirrors the [connector-activity](plugins/tasks/connector-activity/planning.md) flow. Same CLI surface (`uip maestro case spec` with `--skip-case-shape` for planning, `--input-details` for Phase 3); `--type trigger` swaps in trigger-shaped inputs/outputs and, for event-parameter connectors, a `metadata.body.bindings[Property]` registration entry (Step 4).
 

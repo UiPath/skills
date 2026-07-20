@@ -71,7 +71,7 @@ When the sdd.md phrasing is ambiguous (missing start time, timezone, repeat coun
 - displayName: "<optional — defaults to Trigger N>"
 - sdd-intent: "<prose restatement for reviewer — e.g. Every 10 min, starting 2026-04-21 22:00 PDT, 12 times>"
 - order: after T01
-- verify: node added to schema.nodes with data.uipath.serviceType == Intsvc.TimerTrigger; entry-points.json has matching entry; timeCycle exact match
+- verify: node added to schema.nodes with data.inputs.serviceType == timer; entry-points.json has matching entry; timeCycle exact match
 ```
 
-`sdd-intent` is reviewer-only prose — the execution phase ignores it. `timeCycle` is the canonical executable field, written directly into `node.data.uipath.timeCycle` per [`impl-json.md`](impl-json.md).
+`sdd-intent` is reviewer-only prose — the execution phase ignores it. `timeCycle` is the canonical executable field, written directly into `node.data.inputs.timeCycle` per [`impl-json.md`](impl-json.md).

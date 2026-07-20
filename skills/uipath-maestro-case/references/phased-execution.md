@@ -8,7 +8,7 @@ Authoritative reference for the post-planning execution flow. Read before execut
 
 ## Downstream CLI compatibility
 
-The skill emits the `23.0.0` top-level shape (`{ id, version, name, metadata, bindings, variables, nodes, edges, layout }`). Phase-specific downstream caveats:
+The skill emits the `27.0.0` top-level shape (`{ id, version, name, metadata, bindings, variables, nodes, edges, layout }`). Phase-specific downstream caveats:
 
 | Phase | Behavior |
 |---|---|
@@ -131,7 +131,7 @@ Phase 3 begins after user selects `Continue to phase 3` (or `Skip publish and co
 1. **Re-read `tasks.md`** — per Rule 7. Declarative plan is the handoff.
 2. **Re-read `caseplan.json`** — authoritative source of all IDs generated in Phase 2:
    - Stage name → StageId (from `schema.nodes[]` where `type === "case-management:Stage"`, keyed on `data.label`; secondary stages are the same type with `data.stageType === "secondary"`).
-   - Trigger ID (from `schema.nodes[]` where `type === "case-management:Trigger"`).
+   - Trigger ID (from `schema.nodes[]` where `type === "uipath.case.trigger"`).
    - Task name → TaskId per stage (from `schema.nodes[<stage>].data.tasks[][]`).
    - Variable name → `var` ID (from top-level `variables.{inputs,outputs,inputOutputs}`).
 3. Optionally cross-check against `id-map.json` if JSON-strategy plugins wrote one. `caseplan.json` is source of truth; `id-map.json` is speed-up.

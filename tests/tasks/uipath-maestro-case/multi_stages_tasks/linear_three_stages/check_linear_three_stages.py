@@ -153,10 +153,10 @@ def main():
             "FAIL: In argument 'caseRef' is missing its inputOutputs companion entry"
         )
 
-    trigger_outputs = ((triggers[0].get("data") or {}).get("uipath") or {}).get("outputs") or []
+    trigger_outputs = ((triggers[0].get("data") or {}).get("inputs") or {}).get("outputs") or []
     if not any(o.get("name") == "caseRef" and o.get("var") == "caseRef" for o in trigger_outputs):
         sys.exit(
-            f"FAIL: trigger node missing data.uipath.outputs entry for In argument "
+            f"FAIL: trigger node missing data.inputs.outputs entry for In argument "
             f"'caseRef'; got {[(o.get('name'), o.get('var')) for o in trigger_outputs]}"
         )
 

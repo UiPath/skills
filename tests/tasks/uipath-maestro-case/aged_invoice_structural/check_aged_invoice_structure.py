@@ -101,7 +101,7 @@ def main() -> None:
     if len(triggers) != 1:
         _fail(f"expected exactly 1 trigger; got {len(triggers)}")
     tblob = _text(triggers[0])
-    stype = ((triggers[0].get("data") or {}).get("uipath") or {}).get("serviceType")
+    stype = ((triggers[0].get("data") or {}).get("inputs") or {}).get("serviceType")
     if stype != "Intsvc.EventTrigger":
         _fail(f"case must start from an Intsvc.EventTrigger, not {stype or 'Manual'}")
     if "aged_invoice_cases" not in tblob:

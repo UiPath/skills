@@ -4,7 +4,7 @@ Configure the case-level event trigger by writing directly into the trigger node
 
 For shared CLI invocation, placeholder substitution, anti-patterns, and the canonical form for filter expressions with variable references, see [connector-trigger-common.md](../../../connector-trigger-common.md). For the per-sink canonical-form table covering all expression-syntax decisions in this skill, see [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink). This doc covers only the **trigger-node-specific** parts.
 
-> **Layout-strip (Rule 18).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`.
+> **Layout-strip (Rule 18).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.typeVersion`, `data.display`, `data.description`, `data.inputs`.
 
 ## Prerequisites from Planning
 
@@ -53,7 +53,7 @@ For each entry in `caseShape.inputs[]` (these are trigger configuration: `eventP
 - `id` = same as `var`
 - **No `elementId`** on trigger inputs (different from in-stage task inputs).
 
-> **`caseShape.outputs[]` are NOT minted here.** Under B's redesign, all writes to `triggerNode.data.uipath.outputs[]` are owned by the variables plugin (see [`../../variables/global-vars/impl-json.md` § Dispatcher Loop](../../variables/global-vars/impl-json.md)). This plugin captures the un-minted `caseShape.outputs[]` into `tasks/trigger-spec-cache.json` (Step 8) for the variables plugin to consume.
+> **`caseShape.outputs[]` are NOT minted here.** Under B's redesign, all writes to `triggerNode.data.inputs.outputs[]` are owned by the variables plugin (see [`../../variables/global-vars/impl-json.md` § Dispatcher Loop](../../variables/global-vars/impl-json.md)). This plugin captures the un-minted `caseShape.outputs[]` into `tasks/trigger-spec-cache.json` (Step 8) for the variables plugin to consume.
 
 ## Step 7 — Build trigger node and write to caseplan.json
 
@@ -69,8 +69,9 @@ Set the trigger's display name from `tasks.md`. Record `T<N> → trigger_xxxxxx`
 
 ```json
 {
-  "label": "<display-name>",
-  "uipath": {
+  "typeVersion": "1.0.0",
+  "display": { "label": "<display-name>" },
+  "inputs": {
     "serviceType": "Intsvc.EventTrigger",
     "context": "<caseShape.context — placeholders substituted in Step 5>",
     "inputs":  "<caseShape.inputs  — var/id minted in Step 6; NO elementId>",
@@ -80,7 +81,8 @@ Set the trigger's display name from `tasks.md`. Record `T<N> → trigger_xxxxxx`
 }
 ```
 
-> `outputs: []` is initialized empty. The variables plugin populates it in Phase 3 Step 6.2 using the sidecar from Step 8 below.
+> Since v24 all trigger runtime config lives under `data.inputs` (the old `data.uipath` bag flattened in). The event trigger's CONFIG-input array is therefore `data.inputs.inputs`, its outputs `data.inputs.outputs`, its context `data.inputs.context`.
+> `data.inputs.outputs` is initialized empty (`[]`). The variables plugin populates it in Phase 3 Step 6.2 using the sidecar from Step 8 below.
 
 ## Step 8 — Write trigger-spec-cache.json sidecar
 
@@ -128,17 +130,18 @@ When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `conne
 ```json
 {
   "id": "<trigger_xxxxxx>",
-  "type": "case-management:Trigger",
+  "type": "uipath.case.trigger",
   "data": {
     "parentElement": { "id": "root", "type": "case-management:root" },
-    "label": "<display-name>",
     "description": "<description from sdd.md>",
-    "uipath": { "serviceType": "Intsvc.EventTrigger" }
+    "typeVersion": "1.0.0",
+    "display": { "label": "<display-name>" },
+    "inputs": { "serviceType": "Intsvc.EventTrigger" }
   }
 }
 ```
 
-`data.uipath` carries **only** `serviceType` — no `context[]`, `inputs[]`, `outputs[]`, `bindings[]`, `metadata`. Equivalent intent to a connector-task `data: {}` placeholder; trigger nodes need `label` / `description` / `parentElement` to render at all.
+`data.inputs` carries **only** `serviceType` — no `context[]`, `inputs[]`, `outputs[]`, `bindings[]`, `metadata`. Equivalent intent to a connector-task `data: {}` placeholder; trigger nodes need `label` / `description` / `parentElement` to render at all.
 
 **Sibling artifacts:** append the matching `entry-points.json` entry per [manual/impl-json.md § Recipe — entry-points.json](../manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints). No trigger-edge is created (edges retired) — the first stage's `case-entered` entry condition starts the case. No root bindings, no `inputOutputs[]` entries from this trigger.
 
@@ -162,13 +165,13 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 
 ## Post-Write Verification
 
-1. `data.uipath.serviceType` is `"Intsvc.EventTrigger"` (not `WaitForEvent` or `CuratedTrigger`).
-2. **Fully configured:** `context[]`, `inputs[]` (CONFIG inputs only — no `elementId`), `outputs[]` (empty array — populated later by variables plugin Step 6.2), and `bindings[] = []` all present per §7b.
+1. `data.inputs.serviceType` is `"Intsvc.EventTrigger"` (not `WaitForEvent` or `CuratedTrigger`).
+2. **Fully configured** (all under `data.inputs`): `context[]`, `inputs[]` (CONFIG inputs only — no `elementId`), `outputs[]` (empty array — populated later by variables plugin Step 6.2), and `bindings[] = []` all present per §7b. `data.typeVersion` is `"1.0.0"`; `data.display.label` set.
 3. **`tasks/trigger-spec-cache.json` exists** with this trigger's T-number as a top-level key, containing un-minted `context`, `inputs`, `outputs` from `caseShape`.
 4. **`id-map.json`** contains `"T<N>": { "kind": "trigger", "id": "<triggerId>" }` for this trigger.
-5. **Placeholder:** all four `data.uipath` fields beyond `serviceType` **absent** (not empty arrays); no root bindings entries from this trigger; no `trigger-spec-cache.json` entry from this trigger; `[SKIPPED]` log entry present.
-6. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify).
-7. When the trigger has event parameters: `data.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`).
+5. **Placeholder:** all four `data.inputs` fields beyond `serviceType` **absent** (not empty arrays); no root bindings entries from this trigger; no `trigger-spec-cache.json` entry from this trigger; `[SKIPPED]` log entry present.
+6. `data.inputs.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify).
+7. When the trigger has event parameters: `data.inputs.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`).
 8. No edge from this trigger (edges retired) — the case starts via the first stage's `case-entered` entry condition. `schema.edges` stays `[]`.
 9. `entry-points.json` has a matching entry referencing the trigger node ID.
 

@@ -171,7 +171,7 @@ closes on required-stages-completed.
                 {"id": f"{task_id}_folder", "default": "Shared"},
             ])
         plan = {
-            "version": "23.0.0",
+            "version": "27.0.0",
             "name": "AthenaCMEventCase",
             "metadata": {
                 "caseIdentifier": "=vars.instanceExternalId",
@@ -192,8 +192,8 @@ closes on required-stages-completed.
             "nodes": [
                 {
                     "id": "trigger",
-                    "type": "case-management:Trigger",
-                    "data": {"uipath": {"serviceType": "Intsvc.EventTrigger"}},
+                    "type": "uipath.case.trigger",
+                    "data": {"inputs": {"serviceType": "Intsvc.EventTrigger"}},
                 },
                 stage_a,
                 stage_b,

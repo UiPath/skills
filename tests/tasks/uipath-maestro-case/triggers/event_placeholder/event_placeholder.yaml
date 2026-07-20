@@ -3,7 +3,7 @@ description: >
   Build a Case Management definition from an sdd.md whose START is an EVENT
   trigger on a connector that cannot be resolved against the registry.
   Exercises Critical Rule 8's placeholder event-trigger fallback: the agent
-  must write a placeholder trigger node (`data.uipath.serviceType:
+  must write a placeholder trigger node (`data.inputs.serviceType:
   "Intsvc.EventTrigger"`, no fabricated connector IDs), append the matching
   `entry-points.json` entry, and start the case from the first stage's
   `case-entered` condition (no trigger edge). Local-only (validate, no debug) —
