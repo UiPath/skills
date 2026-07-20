@@ -1,0 +1,6 @@
+{
+  "Name": "StoredProcWriteBack",
+  "ProjectType": "Process",
+  "Description": "Finalizes an order by calling the usp_FinalizeOrder stored procedure over an ODBC connection via Execute Non Query and reading back its output parameter.",
+  "MainFile": "Main.xaml"
+}

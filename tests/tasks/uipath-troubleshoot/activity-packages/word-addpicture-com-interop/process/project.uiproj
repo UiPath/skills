@@ -1,0 +1,6 @@
+{
+  "Name": "WordContractStamp",
+  "ProjectType": "Process",
+  "Description": "Opens a contract draft document and stamps the company logo image into it via Word activities.",
+  "MainFile": "Main.xaml"
+}

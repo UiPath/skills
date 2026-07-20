@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Write Range overdue-invoice report scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "d7aedb669e.json"},
+    {"match": "or folders list --output json", "file": "d7aedb669e.json"},
+    {"match": "or jobs list --folder-key \"f0066666-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "4b0d4c39e8.json"},
+    {"match": "or jobs list --folder-key f0066666-3333-4444-5555-666677778888 --state Faulted --output json", "file": "4b0d4c39e8.json"},
+    {"match": "or jobs get \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "d665273ce3.json"},
+    {"match": "or jobs get ee222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "d665273ce3.json"},
+    {"match": "or jobs history \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "b78282fe56.json"},
+    {"match": "or jobs history ee222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "b78282fe56.json"},
+    {"match": "or jobs logs \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "223dcd840f.json"},
+    {"match": "or jobs logs ee222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "223dcd840f.json"}
+  ]
+}

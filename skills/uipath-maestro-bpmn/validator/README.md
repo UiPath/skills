@@ -8,6 +8,14 @@ PO.Frontend `Node[] / Edge[] / CanvasState` model from the parse tree, and runs
 (`VARIABLE_DOES_NOT_EXIST`, including element-local `result.X`, and the
 flow-order `VARIABLE_NOT_SET` warning) and an optional connection-liveness ping.
 
+> **Authoring scope:** everything under `test/fixtures/` is validator test data,
+> not authoring material. **Do not read the fixtures to infer the BPMN pattern**
+> — it is the top reason authoring runs out of time. Author from the complete
+> minimal file in
+> [../references/structural-bpmn.md](../references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-fixtures)
+> instead. This README documents the validator and its test suite; run the
+> validator (below) as your check, and leave the corpus to CI.
+
 ## Usage
 
 ```bash
@@ -50,8 +58,10 @@ npm test   # runs all three suites below; green = no drift from the frontend
 3. **Integration over real `.bpmn` files** (`test/integration.test.mjs`): every
    file in `test/fixtures/` is a real, externally-validated artifact (backend
    BpmnParser/Worker/Athena/V2-E2E TestData, and PO.Frontend editor mocks),
-   bundled so the suite is self-contained in CI. `fixtures/known-good/` must
-   produce **zero** ERROR-severity findings; `fixtures/expected-findings/` assert
+   bundled so the suite is self-contained in CI. These files exist to exercise
+   the rule engine — they are **not** authoring templates; see the authoring-scope
+   note at the top before reaching for one as an example. `fixtures/known-good/`
+   must produce **zero** ERROR-severity findings; `fixtures/expected-findings/` assert
    the exact ERROR codes the frontend would also raise (each verified by reading
    the file). Set `MAESTRO_BPMN_TESTDATA` / `MAESTRO_BPMN_FRONTEND_MOCKS` to also
    sweep a live corpus during development.

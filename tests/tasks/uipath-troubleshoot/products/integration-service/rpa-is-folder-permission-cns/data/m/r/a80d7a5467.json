@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    {
+      "Id": "8d2f4a6b-3c5e-4710-92a4-b6c8d0e2f4a6",
+      "Name": "Outlook - Finance Ops",
+      "ConnectorKey": "uipath-microsoft-outlook365",
+      "ConnectorName": "Microsoft Outlook 365",
+      "State": "Enabled",
+      "Owner": "finance.ops@acmecorp.test",
+      "IsDefault": "Yes",
+      "Folder": "Finance",
+      "FolderKey": "7c9e1f22-5b3a-4d48-9e10-6a2b8c4d0e5f",
+      "Created": "2026-05-12T09:14:02.950Z",
+      "Updated": "2026-07-06T07:50:51.870Z"
+    }
+  ]
+}

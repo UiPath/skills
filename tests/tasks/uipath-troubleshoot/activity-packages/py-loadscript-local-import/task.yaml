@@ -1,0 +1,96 @@
+task_id: skill-troubleshoot-python-loadscript-local-import
+description: >
+  UiPath troubleshooting agent must diagnose a Load Python Script failure where a
+  sibling local import fails: ledger_sync.py does `import ledger_utils` (a local
+  module that exists in the same scripts/ folder), but the Python Scope has no
+  WorkingFolder set, so the import resolves against the robot's package directory
+  and faults at load with ModuleNotFoundError: No module named 'ledger_utils'.
+  Success = agent matches the load-script-failures playbook, recognizes this as a
+  LOCAL sibling-module import resolved against the wrong WorkingFolder (L2c, NOT a
+  missing third-party pip package), AND recommends setting WorkingFolder to the
+  script's folder, without fabricating host actions.
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: data
+  mock_path_dirs:
+  - m
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My PyLedgerSync process faults in Orchestrator on every run. The folder is
+  "Finance Sync". It runs a Python script through a Python Scope and dies at
+  load with "No module named 'ledger_utils'". But ledger_utils.py is right
+  there next to my main script - I can see it in the project.
+
+  I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
+  only Orchestrator. Diagnose what you can from Orchestrator. If the answer
+  needs evidence from the host itself, give me the exact things to check on
+  the host the next time I'm in front of it; I'll do them and come back with
+  the result. Do not stall waiting for host data - hand me the list and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing PyLedgerSync process.
+    Your main script imports a helper module that sits in the same folder. You
+    are away from the robot host and only have Orchestrator access.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, python-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the host check list at the end."
+    - "If asked whether ledger_utils is a third-party package or your own file, say it is your own helper file in the same scripts folder."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

@@ -12,6 +12,8 @@ Both workflows are driven by live data — the catalog (`uip agent guardrails ca
 
 ## Step 0 — Fetch Catalog, Available Validators, and SDK Docs (MANDATORY — do this before any analysis)
 
+> Full three-fetch mandate applies to **Recommend mode**. In **Validate mode** of an existing guardrail the SDK docs are the authoritative, sufficient source for a validator's scope/stage — `catalog` (relevance metadata) and `list` (tenant entitlement) are recommended cross-checks, not a hard prerequisite for a scope/placement fix. See [Validate Mode](#validate-mode).
+
 ### Catalog (cacheable — 30-minute TTL)
 
 The catalog is the same for all tenants (authored metadata, rarely changes). Cache it locally for 30 minutes to avoid redundant calls.
@@ -189,6 +191,9 @@ Map catalog parameter shapes to Python:
 | `enum-list` (e.g. `entities`) | List of enum members (e.g. `[PIIDetectionEntityType.EMAIL, PIIDetectionEntityType.PHONE_NUMBER]`) — names taken from SDK docs |
 | `map-enum` (e.g. `entityThresholds`) | Dict from enum member → number (e.g. `{PIIDetectionEntityType.EMAIL: 0.5}`) — keys must exactly match the `enum-list` parameter's values |
 | `number` (e.g. `threshold`) | Plain `float` / `int` constructor argument |
+| `text` (e.g. `guardrailText`) | Plain `str` constructor argument |
+| `enum` (e.g. `model`) | `str` value from the allowed options list. When the catalog shows an empty options list (as with `llm_as_judge`'s `model`), ask the user which model ID to use — the available values depend on the LLM Gateway configuration in their tenant. |
+| `text-list` (e.g. `positiveExamples`, `negativeExamples`) | `List[str]` constructor argument |
 
 Use `BlockAction(...)`, `LogAction(severity_level=...)`, or `EscalateAction(app_name=..., app_folder_path=..., recipient=...)` for human-in-the-loop review — or any other action the SDK docs expose. Never invent action class names. For `EscalateAction`, the fetched SDK docs must expose the class/parameters, and the Action App must be deployed and declared in `bindings.json` using [../../lifecycle/bindings-reference.md](../../lifecycle/bindings-reference.md) (see [guardrails.md § Escalation action (HITL)](guardrails.md#escalation-action-human-in-the-loop)).
 
@@ -202,7 +207,7 @@ Write the recommended guardrails into the Python file using the patterns from [g
    ```bash
    python3 -c "import ast; ast.parse(open('graph.py').read())"
    ```
-2. **Runtime wiring (mandatory)** — the guardrails are actually attached. A guardrail whose symbols were imported from the wrong module parses fine but **silently never fires**. Run the adapter-registration and `_GuardedLLM` / `_GuardedTool` wrap checks from [guardrails.md § Verify Guardrails Are Actually Wired](guardrails.md#verify-guardrails-are-actually-wired-mandatory-after-writing). Do not report the guardrails as added until these pass.
+2. **Runtime wiring (mandatory)** — the guardrails are actually attached. A guardrail whose symbols were imported from the wrong module parses fine but **silently never fires**. Run the adapter-registration and `_GuardedLLM` / `_GuardedTool` wrap checks from [guardrails.md § Verify Guardrails Are Actually Wired](guardrails.md#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails). Do not report the guardrails as added until these pass.
 
 (Replace `graph.py` with the actual entrypoint file from Step 1.)
 
@@ -219,7 +224,7 @@ Report to the user:
 
 Use when the agent already has guardrails and the user asks whether they are correctly configured or appropriate.
 
-**Before any validation, run all three Step 0 fetches** (catalog with cache, guardrails list without cache, SDK docs via WebFetch). The SDK docs are the authoritative source for which Python class corresponds to which `validator_id` and which scopes/stages each class supports.
+**Fetch the SDK docs first (WebFetch) — they are the authoritative source** for which Python class corresponds to which `validator_id` and which scopes/stages each class supports; a scope/placement diagnosis is grounded there. Also run the `catalog` and `list` fetches to support the Relevance (`when_not_to_use`) and entitlement checks below — recommended, but not a hard prerequisite once the SDK docs settle the scope question.
 
 For each existing guardrail discovered in the Python file (Step 1 from Recommend Mode):
 
@@ -238,7 +243,7 @@ From the SDK docs and the catalog, look up the validator class referenced in the
 
 ### Actionability Check
 
-1. From the catalog entry, read `allowed_scopes` and the per-scope allowed stages.
+1. Read the validator's allowed scopes and per-scope stages from the **SDK docs** (authoritative for coded); cross-check against the `catalog` entry's `allowed_scopes` when it was fetched.
 2. Confirm the in-code scope is permitted:
    - Middleware — every `GuardrailScope` in the `scopes=[...]` argument is in `allowed_scopes`.
    - Decorator — the function the `@guardrail` decorates matches the implied scope: `@tool` for Tool scope, LLM factory for LLM scope, agent factory for Agent scope.
@@ -270,14 +275,14 @@ python3 -c "import ast; ast.parse(open('graph.py').read())"
 
 ## Critical Rules
 
-1. **Always fetch catalog first** (use cache if fresh); **always fetch guardrails list second** (no cache); **always fetch the two SDK doc pages via WebFetch third** (no cache). All three are required before any analysis or code edit.
+1. **Recommend mode / net-new adds:** fetch catalog first (use cache if fresh), guardrails list second (no cache), and the two SDK doc pages via WebFetch third (no cache) — all three required before any analysis or code edit. **Validate mode of an existing guardrail:** the SDK docs are the authoritative, sufficient grounding for a scope/placement fix; still fetch catalog + list for the Relevance and entitlement checks, but they are not a hard prerequisite.
 2. **If `GuardrailCatalogUnavailable`** → surface the message and stop. Do not fall back to guessing or hardcoded recommendations.
 3. **Only recommend `Available` validators**. Mention `Unauthorised` ones to the user so they can contact their administrator.
 4. **Every recommendation must cite** the catalog entry's `when_to_use` or a specific `use_cases` item that matched the agent's context. Do not recommend a guardrail without explaining why it applies.
 5. **Never recommend two validators with the same `security_category` at the same scope and stage** (e.g. `prompt_injection` + `user_prompt_attacks` at LLM PRE). De-duplicate per Step 3: drop catalog-deprecated entries, keep the best fit, mention the alternative. Derive the grouping and deprecation from the catalog's own fields — do not hardcode validator names.
 6. **Default the action to the catalog example's `action_type`; never silently downgrade Block → Log.** Security-critical guardrails (`adversarial_input`, `content_safety`) default to `Block`. If you use `LogAction` for a guardrail whose catalog default is `Block`, state it and the reason in the report (Step 6).
 7. **Block as early as possible — pick the outermost scope the validator allows.** For input protection (PII, jailbreak, injection) prefer `GuardrailScope.AGENT` · PRE over Llm over Tool, so the run halts before the LLM call. PII meant to stop the agent handling personal data goes at **Agent**, not Llm. Only narrow when the validator is scope-restricted (e.g. `prompt_injection` / `user_prompt_attacks` are Llm-only) or the user asks for a narrower scope. See Step 5.
-8. **For LangChain / LangGraph agents, import guardrail symbols from `uipath_langchain.guardrails`, not `uipath.platform.guardrails`.** Only `uipath_langchain.guardrails` registers the LangChain adapter as an import side effect; the platform module exposes identical names but registers nothing, so guardrails silently no-op. For any other framework (LlamaIndex, OpenAI Agents, plain Python), no UiPath framework adapter is published yet — use `uipath.platform.guardrails` (the framework-agnostic SDK) directly. After writing for LangChain, verify runtime wiring (adapter registered + `_GuardedLLM`/`_GuardedTool` wrap), not just `ast.parse`. See [guardrails.md § Imports Pattern](guardrails.md#imports-pattern) and [§ Verify Guardrails Are Actually Wired](guardrails.md#verify-guardrails-are-actually-wired-mandatory-after-writing).
+8. **For LangChain / LangGraph agents, import guardrail symbols from `uipath_langchain.guardrails`, not `uipath.platform.guardrails`.** Only `uipath_langchain.guardrails` registers the LangChain adapter as an import side effect; the platform module exposes identical names but registers nothing, so guardrails silently no-op. For any other framework (LlamaIndex, OpenAI Agents, plain Python), no UiPath framework adapter is published yet — use `uipath.platform.guardrails` (the framework-agnostic SDK) directly. After writing for LangChain, verify runtime wiring (adapter registered + `_GuardedLLM`/`_GuardedTool` wrap), not just `ast.parse`. See [guardrails.md § Imports Pattern](guardrails.md#imports-pattern) and [§ Verify Guardrails Are Actually Wired](guardrails.md#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails).
 9. **For Tool scope**: verify the tool exists as a `@tool` function in the agent code before adding the guardrail. If the agent has no tools, do not add a Tool-scoped guardrail.
 10. **For LLM-scope decorator**: the LLM must be inside a named factory function. If it is assigned directly (`llm = UiPathChat(...)`), refactor into a factory first — never decorate a module-level assignment.
 11. **For Agent-scope decorator**: `create_agent(...)` must be inside a named factory function. If it is called at module level, refactor into a factory first.

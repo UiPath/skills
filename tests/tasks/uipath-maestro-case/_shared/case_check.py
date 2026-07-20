@@ -126,7 +126,10 @@ def task_is_skeleton(task: dict) -> bool:
     """True when the task's resource hasn't been wired into ``data``.
 
     Caseplan markers for a populated task:
-    - ``execute-connector-activity`` / ``wait-for-connector``: ``data.typeId`` AND ``data.connectionId``
+    - ``execute-connector-activity`` / ``wait-for-connector``:
+        Phase 2 / graceful-degradation shape: ``data.typeId`` AND ``data.connectionId``
+        Phase 3 fully-populated shape: ``data.context`` non-empty (CLI-authoritative array
+        from ``case spec``; always has ≥1 entry when the connector resolved)
     - ``action``: ``data.inputs`` present (bare ``taskTitle`` / ``priority`` is still skeleton-equivalent)
     - everything else (``process`` / ``agent`` / ``rpa`` / ``api-workflow`` / ``case-management``):
       ``data.name`` AND ``data.folderPath`` (both as ``=bindings.<id>`` refs)
@@ -136,7 +139,13 @@ def task_is_skeleton(task: dict) -> bool:
         return True
     task_type = task.get("type")
     if task_type in {"execute-connector-activity", "wait-for-connector"}:
-        return not (data.get("typeId") and data.get("connectionId"))
+        # Phase 2 / graceful-degradation: typeId + connectionId set, no context yet
+        if data.get("typeId") and data.get("connectionId"):
+            return False
+        # Phase 3 fully-populated: context array from case spec (no typeId/connectionId in this shape)
+        if isinstance(data.get("context"), list) and data["context"]:
+            return False
+        return True
     if task_type == "action":
         return "inputs" not in data
     return not (data.get("name") and data.get("folderPath"))
@@ -442,12 +451,19 @@ def start_debug(
         "--solution-folder", solution_dir,
         "--output", "json",
     ]
+    already_refreshed = os.path.isdir(os.path.join(solution_dir, "resources"))
     r = subprocess.run(refresh_cmd, capture_output=True, text=True, timeout=refresh_timeout)
     if r.returncode != 0:
-        _fail(
-            f"solution resources refresh exit {r.returncode}\n"
-            f"stdout: {r.stdout}\nstderr: {r.stderr}"
-        )
+        # CLI 1.197-alpha: refresh is not idempotent — re-running it over its own
+        # output fails with "Node already added to the graph" (RetryWillNotFix).
+        # When the agent already refreshed, the resource docs are on disk and debug
+        # can proceed; only that exact re-refresh failure is tolerated.
+        duplicate_node = "Node already added to the graph" in (r.stdout + r.stderr)
+        if not (already_refreshed and duplicate_node):
+            _fail(
+                f"solution resources refresh exit {r.returncode}\n"
+                f"stdout: {r.stdout}\nstderr: {r.stderr}"
+            )
 
     debug_cmd = [
         "uip", "maestro", "case", "debug", project_dir,

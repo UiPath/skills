@@ -1,0 +1,40 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
+      "State": "Faulted",
+      "ProcessName": "RequestListener",
+      "ReleaseKey": "e8b3a1d5-9c42-4f17-b6a0-3d5e8c1f0a92",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-25T15:10:02.310Z",
+      "EndTime": "2026-06-25T15:11:08.640Z",
+      "CreationTime": "2026-06-25T15:10:01.900Z"
+    },
+    {
+      "Key": "3b8e0a17-9d52-4c6e-a014-7f2b9c5d83e0",
+      "State": "Successful",
+      "ProcessName": "RequestListener",
+      "ReleaseKey": "e8b3a1d5-9c42-4f17-b6a0-3d5e8c1f0a92",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-25T14:48:11.500Z",
+      "EndTime": "2026-06-25T14:49:55.220Z",
+      "CreationTime": "2026-06-25T14:48:11.180Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

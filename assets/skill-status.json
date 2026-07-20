@@ -73,6 +73,11 @@
       },
       "last_synced": null
     },
+    "uipath-functions": {
+      "status": "preview",
+      "confluence": { "page_id": null, "url": null },
+      "last_synced": null
+    },
     "uipath-governance": {
       "status": "in-development",
       "confluence": {
@@ -86,6 +91,14 @@
       "confluence": {
         "page_id": null,
         "url": null
+      },
+      "last_synced": null
+    },
+    "uipath-insights": {
+      "status": "preview",
+      "confluence": {
+        "page_id": "90824180832",
+        "url": "https://uipath.atlassian.net/wiki/spaces/CA/pages/90824180832"
       },
       "last_synced": null
     },

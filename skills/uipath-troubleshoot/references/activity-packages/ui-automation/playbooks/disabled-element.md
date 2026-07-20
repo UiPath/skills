@@ -77,3 +77,5 @@ Walk this tree from the top. Stop at the first branch that matches.
   Optional preventive add-ons (in addition to setting `AlterIfDisabled = True`):
   - If the disable is from a missing upstream step (e.g., the workflow forgot to type a query into a search box before clicking a dependent button), add that upstream step. `AlterIfDisabled = True` still belongs on the leaf as a defense-in-depth — it removes the abort even if the upstream step degrades.
   - If the workflow is sensitive to UI-version drift, keep Healing Agent enabled so future popup interferences get captured.
+
+**Applying these fixes.** Setting `AlterIfDisabled`, switching `Input Mode`, or adding a dismissal / upstream activity all change the workflow `.xaml` — interactive: the troubleshooter never edits the workflow itself; on the user's approval it delegates the apply, otherwise it recommends only. Enabling Healing Agent and any Studio Desktop Recovery Panel fix are Studio actions for the user — recommend them, do not execute.

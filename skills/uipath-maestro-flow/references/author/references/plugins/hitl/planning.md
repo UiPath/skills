@@ -8,16 +8,16 @@ The flow needs to pause for a human to review, approve, or fill in data. Two nod
 
 | Use case | Node type | Form source |
 | --- | --- | --- |
-| Inline form designed right now (fields + outcomes defined in the flow) | `uipath.human-in-the-loop` | Schema embedded in node inputs — no app needed |
-| Existing coded app or Action Center app | `uipath.core.human-task.{key}` | Deployed app from Orchestrator |
+| Inline form designed right now (fields + outcomes defined in the flow) | `uipath.human-in-the-loop.quick-form` | Schema embedded in node inputs — no app needed |
+| Existing coded app or Action Center app | `uipath.human-in-the-loop.coded-action-app` | Deployed app from Orchestrator |
 
-**Prefer `uipath.human-in-the-loop`** for new flows. It is an OOTB node — no registry discovery, no app publishing, no tenant dependency.
+**Prefer `uipath.human-in-the-loop.quick-form`** for new flows. It is an OOTB node — no registry discovery, no app publishing, no tenant dependency.
 
 ---
 
-## Option 1 — `uipath.human-in-the-loop` (Inline Schema — OOTB)
+## Option 1 — `uipath.human-in-the-loop.quick-form` (Inline Schema — OOTB)
 
-Node type: `uipath.human-in-the-loop`
+Node type: `uipath.human-in-the-loop.quick-form`
 Available: always — no `uip login` or registry pull required.
 
 ### When to Select
@@ -95,7 +95,7 @@ Trigger -> Process -> Decision (confidence ok?) ->
 
 In the node table:
 ```
-| hitlReview | Invoice Review | human-task | uipath.human-in-the-loop | inputs: [invoiceId, amount] outputs: [decision] outcomes: [Approve, Reject] | result, status |
+| hitlReview | Invoice Review | human-task | uipath.human-in-the-loop.quick-form | inputs: [invoiceId, amount] outputs: [decision] outcomes: [Approve, Reject] | output, status |
 ```
 
 ---

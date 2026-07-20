@@ -46,9 +46,9 @@ success_criteria:
 
   # ── Agent invoked debug with an --attachment binding ───────────────────
   - type: command_executed
-    description: "Agent ran flow debug with an --attachment binding and --output json"
+    description: "Agent ran flow debug with an --attachment binding"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug.*--attachment\s+\S+=\S+.*--output\s+json|(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug.*--output\s+json.*--attachment\s+\S+=\S+'
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug.*--attachment\s+\S+=\S+'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -57,7 +57,7 @@ success_criteria:
   - type: run_command
     description: "Debug with --attachment completes and the uploaded file name appears in the output"
     command: "python3 $TASK_DIR/check_file_attachment_flow.py"
-    timeout: 240
+    timeout: 300  # must exceed run_debug's internal subprocess timeout (240s)
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

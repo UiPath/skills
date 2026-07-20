@@ -71,7 +71,6 @@ fi
 
 echo "Word document: $output"
 if grep -q '```mermaid' "$input"; then
-  echo "NOTE: the SDD contains mermaid diagrams — they are embedded as code" >&2
-  echo "blocks, not rendered images. Render separately if the deliverable" >&2
-  echo "needs visuals." >&2
+  echo "NOTE: mermaid diagrams are kept as code blocks, not rendered images." >&2
+  echo "Render and place images separately if the deliverable needs visuals." >&2
 fi

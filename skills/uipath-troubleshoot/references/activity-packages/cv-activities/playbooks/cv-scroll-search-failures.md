@@ -99,7 +99,7 @@ Evidence: `CvElementExistsWithDescriptor` with `ScrollDirection != None` returns
 
 ## Post-presentation actions
 
-Branches A, B, C, and E may end in edits to the user's workflow files (changing `ScrollDirection` / `NumberOfScrolls` / `DelayScreenshotAfterScroll` on the activity, `ScrollOffset` on the CV Screen Scope, or restructuring the scope). When a recommended fix edits a source file, the resolution is **interactive**. The orchestrator MUST call `AskUserQuestion` before any edit.
+Branches A, B, C, and E may end in edits to the user's workflow files (changing `ScrollDirection` / `NumberOfScrolls` / `DelayScreenshotAfterScroll` on the activity, `ScrollOffset` on the CV Screen Scope, or restructuring the scope). When a recommended fix edits a source file, the resolution is **interactive**. You MUST call `AskUserQuestion` before any edit (approval gate).
 
 1. **Sharing a file path is not approval.** A path the user gave for reading the project does not authorize editing it. Issue a separate `AskUserQuestion` before any edit.
 2. **Never bundle "gather input" with "apply fix" in one option.** Split into two steps: gather input, then surface the concrete diff and confirm separately.

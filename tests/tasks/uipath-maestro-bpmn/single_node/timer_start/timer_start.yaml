@@ -1,0 +1,74 @@
+task_id: skill-bpmn-timer-start
+description: >
+  Timer start-event eval: agent uses the uipath-maestro-bpmn skill to author a
+  scheduled (timer) start event that fires on a recurring hourly cycle, using the
+  registry Intsvc.TimerTrigger wrapper on a bpmn:startEvent with a
+  bpmn:timerEventDefinition. Ports the Flow scheduled-trigger smoke test to a
+  BPMN timer start event. Authoring only — a timer only fires in a live engine,
+  so this validates the structure locally.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "feature:trigger"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 45
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a local BPMN project named "ScheduledReportBpmn" with the main file at
+  ScheduledReportBpmn/ScheduledReportBpmn.bpmn. Model a process that is started
+  by a schedule (not a manual start) and runs every hour:
+  scheduled timer start -> a script task that assembles a report -> end.
+
+  Requirements:
+  - Discover the timer-trigger extension type via the registry and author its
+    node from the registry template. Do not hand-author uipath:* XML from prose.
+  - The process start MUST be a bpmn:startEvent carrying the Intsvc.TimerTrigger
+    wrapper and a bpmn:timerEventDefinition. There must be NO manual start event.
+  - Configure a recurring hourly schedule using a bpmn:timeCycle with a valid
+    ISO-8601 repeating interval (for example R/PT1H). Do not use a never-firing
+    interval.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+  - Validate the file is well-formed XML with an explicit Bash command before
+    finishing, e.g.:
+    `python3 -c "import xml.etree.ElementTree as ET; ET.parse('ScheduledReportBpmn/ScheduledReportBpmn.bpmn')"`.
+  - Do not upload, publish, deploy, debug, run, or pack anything, and do not
+    pause for approval or confirmation.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "ScheduledReportBpmn/ScheduledReportBpmn.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN uses the timer-trigger wrapper and a timer event definition"
+    path: "ScheduledReportBpmn/ScheduledReportBpmn.bpmn"
+    includes:
+      - "Intsvc.TimerTrigger"
+      - "timerEventDefinition"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran an explicit well-formed-XML validation on the authored BPMN"
+    tool_name: "Bash"
+    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*ScheduledReportBpmn\.bpmn'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Timer start event is a recurring scheduled start with valid structure"
+    command: "python3 $TASK_DIR/check_timer_start.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

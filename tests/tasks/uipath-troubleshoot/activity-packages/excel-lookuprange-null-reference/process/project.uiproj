@@ -1,0 +1,6 @@
+{
+  "Name": "OrderLookup",
+  "ProjectType": "Process",
+  "Description": "Looks up an order in the orders workbook with Lookup Range to retrieve its details.",
+  "MainFile": "Main.xaml"
+}

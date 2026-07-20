@@ -1,0 +1,6 @@
+{
+  "Name": "OnboardingMailer",
+  "ProjectType": "Process",
+  "Description": "Sends onboarding emails to a recipient address with Send Outlook Mail Message.",
+  "MainFile": "Main.xaml"
+}

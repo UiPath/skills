@@ -6,8 +6,10 @@ This document describes how the troubleshooting knowledge base is structured, wh
 
 ```
 references/
-  summary.md                            <- Entry point. Routes agents to the correct product.
+  summary.md                            <- Domain descriptions, CLI entry points, no-signature routing.
   investigation_guide.md                <- Generic investigation rules (all products).
+  presenting.md                         <- Resolution formatting, fix assembly, approval gate.
+  escalation.md                         <- Competitive-hypothesis protocol (probes, verifier).
   templates/                            <- Templates for creating new playbooks.
   products/{id}/                        <- One folder per product.
     overview.md                         <- (optional) Product overview and dependencies.
@@ -39,11 +41,11 @@ Each product has different concerns. UI Automation needs to verify the correct a
 
 ### presentation.md (optional)
 
-Product-specific display rules for how to format entity names, IDs, and labels in user-facing output. Defines how to refer to the product's entities (e.g., connections by display name, jobs by process name, instances by BPMN process name). The presenter agent discovers and reads these directly based on the domains in `state.json.scope.domain`.
+Product-specific display rules for how to format entity names, IDs, and labels in user-facing output. Defines how to refer to the product's entities (e.g., connections by display name, jobs by process name, instances by BPMN process name). Read at presentation time (`references/presenting.md` § 1) for every domain in the causal chain.
 
 ### summary.md (required)
 
-The playbook index. Lists all playbooks for this product, organized by confidence level. This is how agents discover which playbooks exist and their confidence. Every new playbook must be added here.
+The playbook index. Lists all playbooks for this product, organized by confidence level. Runtime routing greps playbook files directly; this index is the browse and fallback surface (family-playbook routing, escalation, silent failures). Every new playbook must be added here.
 
 ### playbooks/ (required)
 
@@ -75,36 +77,32 @@ All playbooks use the same three headers:
 
 | Section | What goes here | Who reads it |
 |---------|---------------|-------------|
-| `## Context` | What the issue is, what causes it, what to look for. Always present. | Generator (to produce hypotheses — 1 for high-confidence, 2-5 for medium/low). Tester (for understanding). |
-| `## Investigation` | Steps to troubleshoot or verify. Can be absent for low-confidence playbooks. | Tester (follows steps if present, reasons freely if absent). |
-| `## Resolution` | Known fixes. Can be absent if the fix depends on what the investigation finds. | Presenter (assembles fixes for the user). |
+| `## Context` | What the issue is, what causes it, what to look for. Always present. | The investigator, to confirm the match fits the evidence and learn the cause list. |
+| `## Investigation` | Steps to troubleshoot or verify. Can be absent for low-confidence playbooks. | The investigator (follows steps in decision-tree order if present, reasons freely if absent). Escalation probes inherit these as their only allowed commands. |
+| `## Resolution` | Known fixes. Can be absent if the fix depends on what the investigation finds. | Presentation phase (`references/presenting.md` assembles fixes for the user). |
 
 Template: `templates/playbook-template.md`
 
-> **Note:** The canonical confidence-level behavior table (how each agent acts per confidence level) is in `agents/shared.md`. Keep this guide aligned with that table.
+### Greppable Signatures
+
+Routing greps playbook files directly, so a playbook is reachable only if its `## Context` quotes the failure's signals verbatim:
+
+1. Quote in "What this looks like" the exact strings the real failure produces — exception class (FQN), verbatim message fragments, localization resource keys, error codes, HTTP statuses. Never paraphrase; trim placeholder segments.
+2. When two playbooks share a signal (same exception class, same message), each body must state its discriminator and explicitly redirect to the sibling playbook for the other case ("NOT for X → other-playbook.md").
+3. A playbook with no crisp greppable signal (silent failure, hang, wrong result) is a last resort — a distinctive log line or state combination is still a signature. Such playbooks are reachable only via the no-signature routing table in `references/summary.md` and the domain's `summary.md`.
+4. `confidence` (frontmatter) is a cap on root-cause certainty, not a routing rank.
 
 ### Cross-Product References
 
-Playbooks may reference other product domains (e.g., an Orchestrator playbook mentioning "ProcessOrchestration" or "BPMN", a Maestro playbook referencing child Orchestrator jobs). When writing playbooks, use explicit product names when describing cross-domain behavior — the scope checker agent detects these references and flags missing domains for the orchestrator to expand scope.
+Playbooks may reference other product domains (e.g., an Orchestrator playbook mentioning "ProcessOrchestration" or "BPMN", a Maestro playbook referencing child Orchestrator jobs). Use explicit product names when describing cross-domain behavior — cross-domain signals (entity keys, exception namespaces) are what route the investigator across the domain boundary.
 
-## How Agents Use This
+## How the Investigator Uses This
 
-### Triage
-
-Reads `summary.md` to find the right product, then reads the product's `summary.md` to find ALL matching playbooks. Records every match with its confidence in `state.json`. Multiple playbooks may describe the same issue — all are recorded. Triage does NOT read playbook contents or do cross-domain expansion — the scope checker handles domain detection separately.
-
-### Hypothesis Generation
-
-The generator reads `## Context` from matched playbooks and produces hypotheses per the confidence-level behavior table in `agents/shared.md`. Hypotheses are tested in confidence order (high first).
-
-### Testing
-
-The tester reads `## Context` for understanding, then scopes work per the confidence-level behavior table in `agents/shared.md`.
-
-### Investigation Guides
-
-The investigation guide (generic + product-specific) tells agents how to verify their data is correct before drawing conclusions. Applied regardless of playbook confidence.
+1. **Route** — greps the playbook corpus with extracted signals; loads only the matched playbook plus its domain's `investigation_guide.md`.
+2. **Walk** — confirms the match against `## Context`, executes `## Investigation` in decision-tree order, verifies the cause against the "What can cause it" list before presenting.
+3. **Escalate** — on ambiguity, `references/escalation.md` drafts one candidate per plausible playbook; probes gather evidence using only commands documented in the playbook or product overview.
+4. **Investigation guides** (generic + product-specific) define how to verify data correlation before drawing conclusions. Applied regardless of playbook confidence.
 
 ## Creating New Content
 
-Template is in `references/templates/playbook-template.md`. Copy it, set the `confidence` field in the frontmatter (high, medium, or low), fill in the sections, and add the entry to the product's `summary.md`. The summary's Confidence column must match the playbook's frontmatter.
+Template is in `references/templates/playbook-template.md`. Copy it, set the `confidence` field, quote the failure's verbatim signature strings in `## Context` per Greppable Signatures above, fill in the sections, and add the entry to the product's `summary.md` (Confidence column must match the frontmatter).

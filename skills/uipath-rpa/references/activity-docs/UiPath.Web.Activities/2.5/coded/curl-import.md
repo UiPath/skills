@@ -12,7 +12,7 @@ Read this file completely before generating code. The workflow is: **import ? ac
 
 ### Scope of this skill
 
-This skill is concerned **only** with producing a correct `HttpRequestOptions` from a cURL command. Once the object is ready, hand it off to `http.SendRequestAsync()`. Diagnosing HTTP responses, iterating on failures, and processing response content are handled by [NetHttpRequest.md](../../UiPath.Web.Activities.Package.Design/docs/activities/NetHttpRequest.md) and [service-discovery.md](service-discovery.md).
+This skill is concerned **only** with producing a correct `HttpRequestOptions` from a cURL command. Once the object is ready, hand it off to `http.SendRequestAsync()`. Diagnosing HTTP responses, iterating on failures, and processing response content are handled by [NetHttpRequest.md](../activities/NetHttpRequest.md) and [service-discovery.md](service-discovery.md).
 
 ## When to use
 
@@ -201,7 +201,7 @@ var response = await http.SendRequestAsync(imported.Options);
 
 ## See Also
 
-- [NetHttpRequest Activity](../../UiPath.Web.Activities.Package.Design/docs/activities/NetHttpRequest.md) — modern HTTP activity behavior spec, inputs, outputs, and defaults
-- [HttpClient Activity (Legacy)](../../UiPath.Web.Activities.Package.Design/docs/activities/HttpClient.md) — legacy HTTP activity reference
+- [NetHttpRequest Activity](../activities/NetHttpRequest.md) — modern HTTP activity behavior spec, inputs, outputs, and defaults
+- [HttpClient Activity (Legacy)](../activities/HttpClient.md) — legacy HTTP activity reference
 - [Service Discovery](service-discovery.md) — discovering unknown service endpoints and generating working requests
 - [HTTP Request Upgrade](http-request-upgrade.md) — migrating from the legacy HTTP Request activity

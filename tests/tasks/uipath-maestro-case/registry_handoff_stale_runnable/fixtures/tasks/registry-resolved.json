@@ -1,0 +1,58 @@
+[
+  {
+    "stage": "Resolve Resources",
+    "task": "Post Invoice",
+    "taskType": "api-workflow",
+    "cacheFile": "api-index.json",
+    "searchQuery": "LegacyPostingFunction",
+    "matches": [
+      {
+        "entityKey": "stale-api-0000",
+        "name": "LegacyPostingFunction",
+        "folder": "Shared/legacy/BillingDispute",
+        "entitySubType": "Api",
+        "entityType": "Process",
+        "source": "Orchestrator",
+        "folderType": "Standard"
+      }
+    ],
+    "selected": {
+      "entityKey": "stale-api-0000",
+      "name": "LegacyPostingFunction",
+      "folder": "Shared/legacy/BillingDispute",
+      "entitySubType": "Api",
+      "entityType": "Process",
+      "source": "Orchestrator",
+      "folderType": "Standard"
+    },
+    "rationale": "Resolved from an earlier SDD revision that named the workflow LegacyPostingFunction. This cache is STALE relative to the current SDD."
+  },
+  {
+    "stage": "Resolve Resources",
+    "task": "Draft Notification",
+    "taskType": "agent",
+    "cacheFile": "agent-index.json",
+    "searchQuery": "PreviousEmailDrafter",
+    "matches": [
+      {
+        "entityKey": "stale-agent-0000",
+        "name": "PreviousEmailDrafter",
+        "folder": "Shared/legacy/Agents",
+        "entitySubType": "Agent",
+        "entityType": "Process",
+        "source": "Orchestrator",
+        "folderType": "Solution"
+      }
+    ],
+    "selected": {
+      "entityKey": "stale-agent-0000",
+      "name": "PreviousEmailDrafter",
+      "folder": "Shared/legacy/Agents",
+      "entitySubType": "Agent",
+      "entityType": "Process",
+      "source": "Orchestrator",
+      "folderType": "Solution"
+    },
+    "rationale": "Resolved from an earlier SDD revision that named the agent PreviousEmailDrafter. This cache is STALE relative to the current SDD."
+  }
+]

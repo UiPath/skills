@@ -1,7 +1,16 @@
 #!/usr/bin/env python3
-"""Verify artifacts produced by the IXP full-lifecycle e2e task.
+"""Verify the IXP full-lifecycle e2e artifacts.
 
-Run from the sandbox working directory. Exits 0 on success, 1 on failure.
+Grades artifact integrity, NOT whether the model's F1 improved. On the ~3-doc
+fixture set a single flipped prediction moves a field's F1 by a large fraction,
+so a small regression tolerance is noise the agent doesn't control, not signal.
+Asserts: artifacts present & well-formed; Fields[] populated; ModelVersion an int
+and not backwards; target field resolves to a numeric F1 in both snapshots. The F1
+delta is printed but never gates. An advanced version with byte-identical Fields[]
+only WARNs — on the coarse fixture a genuine retrain can flip no prediction, so
+identical metrics are the same noise this check refuses to grade, and it cannot be
+told from a counter bump by the artifacts alone. "Did the agent run the improve loop"
+(update-prompts, two metric fetches, publish) is graded by the command_executed criteria.
 """
 from __future__ import annotations
 
@@ -11,10 +20,6 @@ from pathlib import Path
 from typing import NoReturn
 
 CWD = Path.cwd()
-
-# F1 delta; negative = regression. Coarse because this task scores over only
-# ~3 documents, where a single flipped prediction swings F1 by ~0.33.
-TARGET_REGRESSION_LIMIT = -0.15  # the field the agent chose to improve
 
 
 def log_fail(msg: str) -> NoReturn:
@@ -44,8 +49,7 @@ def load_json(name: str) -> dict:
 
 
 def unwrap_metrics(blob: dict, label: str) -> dict:
-    """Accept either the full CLI response ({Code, Data: {...}}) or
-    a pre-unwrapped Data payload. Returns the Data-shaped dict."""
+    """Accept the full CLI response ({Code, Data: {...}}) or a pre-unwrapped Data payload."""
     if "Data" in blob and isinstance(blob["Data"], dict):
         return blob["Data"]
     if "Fields" in blob and "ModelVersion" in blob:
@@ -61,8 +65,7 @@ def find_field(fields: list[dict], field_id: str) -> dict | None:
 
 
 def read_f1(field: dict) -> float | None:
-    """Parse a field's F1 as a float; None if missing or non-numeric.
-    Callers that gate on F1 must handle None explicitly."""
+    """Field's F1 as a float; None if missing or non-numeric."""
     raw = field.get("F1")
     if raw is None:
         return None
@@ -82,10 +85,9 @@ def main() -> int:
     baseline = unwrap_metrics(load_json("baseline_metrics.json"), "baseline_metrics.json")
     improved = unwrap_metrics(load_json("improved_metrics.json"), "improved_metrics.json")
 
-    # Best-effort integrity hint. Not a failure: when retrain produces no new
-    # training signal, a genuine second fetch legitimately matches the first.
+    # Not a failure: if retrain hadn't completed, a genuine second fetch can match the first.
     if improved == baseline:
-        log_warn("improved_metrics matches baseline_metrics exactly — verify a real second measurement was taken (acceptable only if retrain was a no-op)")
+        log_warn("improved_metrics == baseline_metrics — retrain may not have completed (acceptable) or no real second measurement (not)")
 
     baseline_fields = baseline.get("Fields")
     improved_fields = improved.get("Fields")
@@ -100,12 +102,22 @@ def main() -> int:
     if not isinstance(baseline_version, int) or not isinstance(improved_version, int):
         log_fail(f"ModelVersion not an int (baseline={baseline_version!r}, improved={improved_version!r})")
     if improved_version < baseline_version:
-        log_fail(f"ModelVersion went backwards (baseline={baseline_version}, improved={improved_version}) — improved_metrics is stale, from another project, or the artifacts are swapped")
+        log_fail(f"ModelVersion went backwards ({baseline_version} -> {improved_version}) — improved_metrics is stale, from another project, or swapped")
     if improved_version == baseline_version:
-        log_info(f"ModelVersion unchanged at {baseline_version} — re-label produced no new training signal (acceptable)")
+        log_info(f"ModelVersion unchanged at {baseline_version} — no new version yet (acceptable)")
     else:
         log_info(f"ModelVersion advanced {baseline_version} -> {improved_version}")
+        # Advanced version + byte-identical Fields[] *can* be a copied snapshot with the counter
+        # bumped, but on the ~3-doc fixture it is far more often a genuine second measurement where
+        # the retrain flipped no prediction, so every field's F1 is unchanged — the same coarse-metric
+        # noise this check deliberately refuses to grade (see docstring / #1814). The artifacts alone
+        # cannot tell the two apart; whether the agent actually re-measured is enforced by the
+        # command_executed criteria (get-metrics >=2, update-prompts, publish). So warn, don't fail.
+        if improved_fields == baseline_fields:
+            log_warn(f"ModelVersion advanced {baseline_version} -> {improved_version} but Fields[] is identical to baseline — retrain likely flipped no prediction on the coarse fixture; re-measurement is graded by the command_executed criteria")
 
+    # Chosen field must resolve to a numeric F1 in both snapshots (catches a hallucinated
+    # field_id or truncated metrics), regardless of which way F1 moved.
     base_target = find_field(baseline_fields, field_id)
     impr_target = find_field(improved_fields, field_id)
     if base_target is None:
@@ -117,12 +129,12 @@ def main() -> int:
     impr_f1 = read_f1(impr_target)
     if base_f1 is None or impr_f1 is None:
         log_fail(f"target field {field_id} has missing or non-numeric F1 (baseline={base_target.get('F1')!r}, improved={impr_target.get('F1')!r})")
-    delta = impr_f1 - base_f1
-    print(f"target field F1: {base_f1:.3f} -> {impr_f1:.3f} (delta {delta:+.3f})")
-    if delta < TARGET_REGRESSION_LIMIT:
-        log_fail(f"target field F1 regressed by more than {-TARGET_REGRESSION_LIMIT:.2f} ({delta:+.3f})")
-    log_info("target field F1 did not regress significantly")
 
+    # Informational only — F1 direction is noise on ~3 docs (see docstring).
+    delta = impr_f1 - base_f1
+    log_info(f"target field F1: {base_f1:.3f} -> {impr_f1:.3f} (delta {delta:+.3f}) [not graded]")
+
+    log_info("full-lifecycle artifacts present, well-formed, and coherent")
     return 0
 
 
