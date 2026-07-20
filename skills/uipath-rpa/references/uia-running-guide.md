@@ -19,6 +19,23 @@
 
 Skipping steps 4-5 causes the next run's open-if-not-open behavior to reuse a stale window in whatever state it was left in, or -- if the selector doesn't match -- to spawn a duplicate instance.
 
+## Known failure — `Project build failed. Error code: 1` while `validate` and `build` pass
+
+`uip rpa debug start` / `run` fails its internal "Compiling files" step with a bare `Project build failed. Error code: 1` (all log entries from `Compile`, no `CS####`, no file/line), while per-file `validate`, standalone `build`, and Studio all pass. `--skip-build` does not bypass it. The CLI output is opaque — read the real exception from `%LOCALAPPDATA%\UiPath\Logs\<date>_UiPath.Studio.log` (or `<date>_Execution.log`):
+
+```
+System.InvalidOperationException: The project contains C# source files but the JIT library produced no coded-workflow assembly
+```
+
+**Cause:** `{PROJECT_DIR}/.local/.codedworkflows/` exists in a project with **no coded workflow files** (no `.cs` with `[Workflow]`/`[TestCase]`). Headless `uip rpa` commands scaffold the folder, and Object Repository registration can leave only the generated `ObjectRepository.cs` descriptor surface in it — the run executor's JIT then detects C# sources, produces no coded-workflow assembly from them (a descriptor class is not a workflow), and aborts before any activity runs.
+
+**Fix:**
+1. Confirm the project has no coded workflow files: `grep -rl "\[Workflow\]\|\[TestCase\]" --include="*.cs" "<PROJECT_DIR>"` (excluding `.local/`) returns nothing.
+2. Delete `{PROJECT_DIR}/.local/.codedworkflows/` and re-run. The folder is generated state; Studio regenerates it when a real coded surface exists.
+3. Do NOT delete it in projects that have coded workflows — there it is required (see the package guide's Finding Descriptors section for regeneration).
+
+Deleting authored XAML, variables, or `.objects/` data does NOT clear this failure — the trigger is the `.local/.codedworkflows/` folder, not workflow content.
+
 ## Advanced Debugging — Profiling
 
 For advanced debugging, add `--profiling` to collect insightful per-activity execution data, timings, and before- and after-execution screenshots:
