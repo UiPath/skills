@@ -34,6 +34,18 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | `adhoc` | Ad hoc tasks run only when a user triggers them from the case app. | `conditionExpression` (optional) |
 | `runs-sequentially` | Sequential tasks run in the order they appear in the stage from top to bottom. The frontend toggle writes this rule as the task's entry condition. | `conditionExpression` (optional) |
 
+### Frontend task-mode mapping
+
+The Case App selector has three distinct modes:
+
+| UI mode | JSON/task-entry meaning | Required behavior |
+|---|---|---|
+| Sequential | `runs-sequentially` only | Preserve task order. The first task starts when the stage is entered; each later task starts after its predecessor completes. |
+| Event-triggered | An authored event/condition, normally `wait-for-connector` for an external event | Do not add `runs-sequentially`. A stage-entered task is not automatically an event-triggered task; retain the explicit event rule and its connector configuration. |
+| Manually-triggered (adhoc) | `adhoc` only | Set `isRequired: false`; the user launches it from the Case App. Do not add another entry event or treat it as sequential. |
+
+`adhoc` is task-entry-only. It is never a stage entry rule and never a substitute for `wait-for-connector`.
+
 ## Ordering
 
 Task entry conditions are created **after** all tasks in the stage have been added (so `selected-tasks-ids` can resolve).

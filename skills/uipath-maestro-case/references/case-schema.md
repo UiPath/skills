@@ -127,6 +127,8 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 
 Rule structure uses DNF — see §4.
 
+`marksCaseComplete` is the case-close bit, not a stage-completion bit. A valid case has at least one root `metadata.caseExitRules[]` entry with `marksCaseComplete: true` (normally `required-stages-completed`). Entries with `marksCaseComplete: false` describe non-completing exits and must not be the only case-exit rules.
+
 ---
 
 ## 2. nodes (three types, discriminated on `type`)
@@ -358,6 +360,8 @@ Rules = Rule[][]
 | `user-selected-stage` | `id?`, `conditionExpression?` | Fires when a user manually selects/routes to this stage |
 | `adhoc` | `id?`, `conditionExpression?` | Ad-hoc expression-based condition |
 | `runs-sequentially` | `id?`, `conditionExpression?` | Sequential tasks run in the order they appear in the stage from top to bottom | 
+
+At task level, the frontend's manually-triggered/adhoc mode is represented by an `adhoc`-only entry condition and `isRequired: false`; it is not an event rule. External event mode uses an explicit event rule such as `wait-for-connector`; it is not implied by task order or lane placement.
 
 Not every rule type is valid at every level — see each condition plugin's `impl-json.md` for the allowed subset per location.
 
