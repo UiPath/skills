@@ -179,8 +179,8 @@ Run `uip agent guardrails list --output json` (from Step 0) and find the matchin
 | CLI field | What to check |
 |-----------|---------------|
 | `Required: true` | Parameter must be present in `validatorParameters` |
-| `Type` | Must match `$parameterType` — `"enum-list"`, `"map-enum"`, or `"number"` |
-| `Options` | For `enum-list`: every value must be in this list; array must be non-empty |
+| `Type` | Must match `$parameterType` — `"enum-list"`, `"map-enum"`, `"number"`, `"enum"`, `"text"`, or `"text-list"` |
+| `Options` | For `enum-list`: every value must be in this list; array must be non-empty. For a scalar `enum` (e.g. `model` on `llm_as_judge`) whose `Options` is **empty**, the values come from LLM Gateway, not the catalog — run `uip agent guardrails llm-as-judge-models --output json` and use a `ModelId`; do **not** treat empty `Options` as invalid in that case |
 | `KeySource` | For `map-enum`: keys must **exactly** match the values of the `Options`-sourced parameter named by `KeySource` — no extra, no missing keys |
 | `Min` / `Max` | For `number` and `map-enum`: values must fall within this range |
 | `Step` | For `number` and `map-enum`: values must be multiples of Step (e.g. Step=2, Min=0, Max=6 → valid values are 0, 2, 4, 6) |
