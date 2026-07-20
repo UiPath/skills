@@ -34,11 +34,11 @@ Archive shape: an `ExportDiagnoseArchive` folder (or a loose `combined.log` / `R
 - **NuGet feeds** — process packages download from Orchestrator/feed on first start. Feed-unreachable → `NU1101` / package errors.
 - **Network** — VPN, proxy, firewall, DNS between the machine and cloud/on-prem Orchestrator.
 
-## Source repositories (for drill-down)
+## Reading the named flow
 
-When a log names a specific flow and you need to know what it should do:
+`Robot.log` traces name the flow that failed (class/method, e.g. `InteractiveConnectFlow.SignIn`, `CloudConnectFlow.TryOpenFlow`) — that name, plus the namespace, tells you which layer to attribute the failure to without needing product source:
 
-- **`UiPath/Assistant`** — the Electron app. IPC route handlers (`projects/electron-host/src/server/controllers/`), Robot bridge (`projects/electron-host/src/providers/robot/`), UI services (`projects/shared/angular/src/providers/services/`).
-- **`UiPath/Studio`** (`Robot/` subtree) — the native Robot service. Flow classes like `InteractiveConnectFlow`, `CloudConnectFlow`.
-- **`UiPath/Orchestrator`** — 4xx/5xx from `/odata/*` or `/api/*`.
-- **`UiPath/Identity.Service`** — OAuth / token / `/identity_/*` issues.
+- **`UiPath.Service.*` / `UiPath.RobotJS.*`** in `Robot.log` — the native Robot service (sign-in, Orchestrator connect, package/process work).
+- **IPC routes** in `combined.log` (`/robot/*`, `/process/*`) — the Assistant Electron app.
+
+Use the flow name to route to the right playbook via `summary.md` and to describe the failing step precisely in your report. If the evidence points at a defect inside the Assistant or Robot itself — not the user's network, configuration, or tenant — capture the exact trace and report it to UiPath support.

@@ -88,7 +88,7 @@ CLI: `uip codedapp --help`, `uip admin external-apps get <client-id>`
 
 The UiPath Assistant Windows desktop app (Electron host + native .NET Robot service) that end users run to sign in, connect to Orchestrator, and start processes. Diagnosis is from an exported **diagnostic archive** (`ExportDiagnoseArchive` folder), reading two log files: `combined.log` (Electron/main-process — IPC routes, UI state) and `Robot.log` (native Robot service — the actual sign-in/connect/package work, machine-local time with an offset). Issues here involve sign-in failures, Orchestrator connection failures, processes missing or not starting, and crashes. There is **no `uip` CLI job/trace/log surface** — evidence is the on-disk log files plus the reported symptom (like Coded Apps). Cross-references: Orchestrator (`401`/`403`, assignment, license), Identity/cloud (OAuth on `/identity_`/`/discovery_`), NuGet feeds (`NU1101`). Exception namespaces: `UiPath.Service.*`, `UiPath.RobotJS.*`.
 
-- [products/assistant/overview.md](./products/assistant/overview.md) — Two-log architecture, evidence model, dependencies, and source repositories
+- [products/assistant/overview.md](./products/assistant/overview.md) — Two-log architecture, evidence model, dependencies, and flow attribution
 - [products/assistant/summary.md](./products/assistant/summary.md) — All playbooks for UiPath Assistant desktop issues
 
 ## UI Automation

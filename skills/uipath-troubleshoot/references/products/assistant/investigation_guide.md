@@ -5,7 +5,7 @@ Read `overview.md` for the two-log architecture and evidence model before this g
 ## Rules for this domain
 
 1. **Anchor on the reported symptom before opening any log.** A log is a wall of noise; know what you are looking for first. If the user hasn't said what happened, ask in one sentence: what they tried, what they saw, roughly when.
-2. **A stack trace with a function name beats log grepping.** If the user can paste one (e.g. `at InteractiveConnectFlow.SignIn`), skip straight to source drill-down.
+2. **A stack trace with a function name beats log grepping.** If the user can paste one (e.g. `at InteractiveConnectFlow.SignIn`), use it to route straight to the matching playbook via `summary.md`.
 3. **Never grep blindly for "error".** Every archive holds hundreds of benign errors (offline-state noise, expected shutdown IPC timeouts). Correlate to the anchored symptom, not to the string `error`.
 4. **Mind the timezones.** `Robot.log` is machine-local with an offset (e.g. `+03:00`); `combined.log` is usually UTC. Convert before correlating timestamps across the two files.
 5. **Never speculate past the evidence.** A timeout means "timeout — likely network"; do not guess DNS vs proxy vs firewall without data. Ask for `curl`/network output instead.
@@ -39,25 +39,18 @@ The native Robot service (C#/.NET). Apply the timezone rule (Rule 4) before matc
 Look for:
 - `[ERROR]` entries near the failing-action timestamp.
 - Stack traces with `UiPath.Service.*` or `UiPath.RobotJS.*` namespaces — the class name (e.g. `InteractiveConnectFlow.SignIn`, `CloudConnectFlow.TryOpenFlow`) tells you exactly which flow failed.
-- The failing HTTP endpoint — note the host. `cloud.uipath.com`, `alpha.uipath.com`, `staging.uipath.com`, or an on-prem Orchestrator URL tells you the environment.
+- The failing HTTP endpoint — note the host. `cloud.uipath.com` (production), another UiPath cloud environment, or an on-prem Orchestrator URL tells you which environment the app is pointed at.
 
 Route the exception class/endpoint to the matching playbook via `summary.md`.
 
-## Step 4 — Drill into source when a log names a specific flow
+## Step 4 — Attribute the flow and decide the next action
 
-If `Robot.log` names a class/method (e.g. `InteractiveConnectFlow.SignIn`) and you need to know what it should do or why it returned a given value, search the repos in `overview.md` § Source repositories.
+If `Robot.log` names a class/method (e.g. `InteractiveConnectFlow.SignIn`), use the flow name and namespace (`overview.md` § Reading the named flow) to attribute the failure to a layer and route to the matching playbook via `summary.md`.
 
-**Prefer a local checkout, read-only.** If a repo is checked out locally, grep its subtree in place — **do not switch branches or pull**, which would disturb the user's working tree:
-```bash
-ls ~/projects/Studio 2>/dev/null || ls ~/repos/Studio 2>/dev/null   # is it local?
-grep -rn "InteractiveConnectFlow" <path>/Robot                      # read where it sits
-```
-If not local, search GitHub instead of cloning:
-```bash
-gh search code --owner UiPath "InteractiveConnectFlow.SignIn" --repo UiPath/Studio
-gh api repos/UiPath/Studio/contents/Robot/UiPath.Service/UserServices/InteractiveConnectFlow.cs
-```
-Confirm a repo name with `gh search repos UiPath/<guess>` if unsure. Treat any hard-coded example path as a guess — if `gh api` returns 404, the file has moved; fall back to `gh search code`.
+Then split on where the root cause lives:
+
+- **User-side cause** (network, VPN/proxy/firewall, DNS, wrong environment, tenant/license/assignment) — the playbook's resolution steps apply; give the user the exact fix and commands to verify.
+- **Product-side cause** — the evidence points at a defect inside the Assistant or Robot itself, not anything the user controls. Capture the exact trace (flow name, exception, timestamps) and report it to UiPath support; do not speculate past what the log shows.
 
 ## Data correlation
 

@@ -1,7 +1,7 @@
 # UiPath Assistant Playbooks
 
 **Overview:** [overview.md](./overview.md) — the two-log architecture (`combined.log` / `Robot.log`) and evidence model (on-disk logs, no `uip` CLI surface)
-**Investigation guide:** [investigation_guide.md](./investigation_guide.md) — anchor-on-symptom rules, high-value artifacts to request, combined.log-first scan, Robot.log timezone correlation, source drill-down
+**Investigation guide:** [investigation_guide.md](./investigation_guide.md) — anchor-on-symptom rules, high-value artifacts to request, combined.log-first scan, Robot.log timezone correlation, flow attribution and escalation
 
 | Issue | Confidence | Description | Playbook |
 |-------|:---:|-------------|----------|

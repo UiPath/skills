@@ -16,7 +16,7 @@ What this looks like:
 What can cause it:
 1. **Cloud/Identity unreachable** — `HttpRequestException` / `TaskCanceledException` on `/discovery_*` or `/identity_/*`: DNS, VPN, proxy, or firewall between the machine and Identity.
 2. **Auth rejected** — `401` / `403` from Identity: expired/invalid token, MFA/Conditional Access the desktop flow can't satisfy, or the account lacks tenant access.
-3. **Wrong/stale environment** — the endpoint host in `Robot.log` is not the tenant the user expects (e.g. `staging.uipath.com` for a production user), or a stale cached URL.
+3. **Wrong/stale environment** — the endpoint host in `Robot.log` is not the tenant the user expects (e.g. a non-production environment for a production user), or a stale cached URL.
 4. **Browser-callback not returned** — the system browser completed sign-in but the redirect never reached the Assistant (default-browser/protocol-handler issue) — the DevTools console / no callback line is the tell.
 
 What to look for:

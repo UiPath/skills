@@ -32,7 +32,7 @@ What to look for:
 
 ## Resolution
 
-- **Cause 1 (renderer):** capture the DevTools stack, drill into the named component/service in `UiPath/Assistant`, and file the fix upstream; workaround per the specific error.
-- **Cause 2 (main process):** drill into the `combined.log` exception's handler in `UiPath/Assistant` (`electron-host`); file upstream.
+- **Cause 1 (renderer):** capture the DevTools stack (component/service name + error); apply a workaround for the specific error and report the crash to UiPath support with the stack.
+- **Cause 2 (main process):** capture the `combined.log` exception (handler + stack) and report it to UiPath support.
 - **Cause 3 (Robot service):** route the `Robot.log` fatal exception via `summary.md`; if it maps to sign-in/connect/start, fix that root cause.
 - **Cause 4 (environment):** disable GPU acceleration for the white-screen/driver case, raise available memory, or add an AV exclusion for the Assistant/Robot executables per the Event Viewer evidence.
