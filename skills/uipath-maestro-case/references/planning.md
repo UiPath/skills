@@ -16,7 +16,7 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 > - Conditions → `plugins/conditions/<scope>/planning.md`
 > - SLA → `plugins/sla/planning.md`
 > - Global variables & arguments → `plugins/variables/global-vars/planning.md`
-> - Task I/O binding → `plugins/variables/io-binding/planning.md`
+> - Task I/O binding → `plugins/variables/io-binding/planning.md` (**always read alongside the matching task plugin**)
 
 ---
 
@@ -277,7 +277,7 @@ The skill does not author edges. Emit no edge T-entries. Stage transitions deriv
 
 Title format: `Add <type> task "<name>" to "<stage>"`
 
-One task per task from the sdd.md — do NOT group multiple tasks under a single T-number. The plugin for the task's type (`plugins/tasks/<type>/planning.md`) lists exactly which fields to record.
+One task per task from the sdd.md — do NOT group multiple tasks under a single T-number. Read both the task-type plugin (`plugins/tasks/<type>/planning.md`) and the shared I/O-binding plugin (`plugins/variables/io-binding/planning.md`) before writing the entry. The task plugin owns resource-specific fields; the I/O-binding plugin is the single source of truth for the common output-row grammar.
 
 Every task entry includes at least:
 
@@ -290,6 +290,8 @@ Every task entry includes at least:
 - **verify** — what the execution phase should check after running
 
 Additional fields are plugin-specific; read the plugin's `planning.md` before filling the entry.
+
+> **Outputs are a lossless handoff, not a discovered-name summary.** Project each SDD Outputs table row through the common grammar in [`plugins/variables/io-binding/planning.md` § SDD table → `tasks.md` projection](plugins/variables/io-binding/planning.md#sdd-table-to-tasksmd-projection-mandatory), then preserve the resulting list item exactly. Schema discovery may add truly undeclared fields as bare items, but it must not rewrite an SDD row. An explicit equal-name extract such as `greeting -> greeting` stays exactly that; collapsing it to bare `greeting` changes the binding from "write the existing case variable" to "auto-mint a task output." Before the Step 5 approval gate, compare every SDD Outputs row to its task T-entry and fix any missing or changed operator/operand or leaked table placeholder.
 
 > **Registry handoff:** For a resolved `action` or `case-management` T-entry, translate the selected audit object into the canonical `tasks.md` labels and values:
 >

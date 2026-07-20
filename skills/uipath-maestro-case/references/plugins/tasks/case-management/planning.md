@@ -20,7 +20,7 @@ If sdd.md describes a simple stage-to-stage flow within the same case, do not us
 | `folder-path` | Selected registry `folders[0].fullyQualifiedName` | Binds to `data.folderPath`; use the SDD `Folder Path` only as a concrete lookup hint. `<UNRESOLVED>` means name-only discovery. |
 | `task-type-id` | Registry resolution (below) | `entityKey` in `caseManagement-index.json`; mirrors sdd.md `Resource Identity` when already resolved. |
 | `inputs` | sdd.md task data mapping | Passed as case-instance inputs to the sub-case |
-| `outputs` | Discovered via `tasks describe` | Returned when the sub-case completes |
+| `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
 | `runOnlyOnce` | sdd.md (default `true`) | |
 | `isRequired` | sdd.md (default `true`) | |
 
@@ -47,7 +47,8 @@ Mark `<UNRESOLVED: case "<name>" in folder "<folder>" not found in caseManagemen
 - folder-path: "<folder>"
 - inputs:
   - <input_name> = "<value>"
-- outputs: <out1>, <out2>
+- outputs:
+  - <SDD output row, copied verbatim>
 - runOnlyOnce: true
 - isRequired: true
 - order: after T<m>

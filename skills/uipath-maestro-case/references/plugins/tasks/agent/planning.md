@@ -16,7 +16,7 @@ Pick this plugin when the sdd.md describes a task as `AGENT` — an AI agent tha
 | `task-type-id` | Registry resolution (below) | Enables auto-enrichment via `tasks describe` |
 | `element-id` | (optional) | Required only when the agent has multiple element bindings |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
-| `outputs` | Discovered via `tasks describe` | For downstream cross-task references |
+| `outputs` | sdd.md task Outputs + resolved schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
 | `runOnlyOnce` | sdd.md (default `true`) |  |
 | `isRequired` | sdd.md (default `true`) |  |
 
@@ -112,7 +112,8 @@ Shared contract — [create-inline-common.md § Failure](../create-inline-common
 - folder-path: "<folder>"
 - inputs:
   - <input_name> <- "<Stage>"."<Task>".<output>
-- outputs: <out1>, <out2>
+- outputs:
+  - <SDD output row, copied verbatim>
 - runOnlyOnce: true
 - isRequired: true
 - order: after T<m>

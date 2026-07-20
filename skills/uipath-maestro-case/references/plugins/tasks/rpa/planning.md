@@ -18,7 +18,9 @@ Same shape as [process/planning.md](../process/planning.md):
 | `name` | from task `Resolved Resource` (concrete intended resource name and registry query) |
 | `folder-path` | Resolved registry `folders[0].fullyQualifiedName` — NOT the sdd.md "Folder" (which may be a parent path). Binds to `data.folderPath`; Orchestrator starts the job here at runtime. See [§ Registry Resolution](#registry-resolution). |
 | `task-type-id` | from registry (`entityKey` in `process-index.json`) |
-| `inputs`, `outputs`, `runOnlyOnce`, `isRequired` | see [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
+| `inputs` | see [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
+| `outputs` | follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list) |
+| `runOnlyOnce`, `isRequired` | from sdd.md |
 
 ## Registry Resolution
 
@@ -42,7 +44,8 @@ Mark `<UNRESOLVED: rpa "<name>" in folder "<folder>" not found in registry>`. Om
 - folder-path: "<folder>"
 - inputs:
   - <input_name> = "<value>"
-- outputs: <out1>
+- outputs:
+  - <SDD output row, copied verbatim>
 - runOnlyOnce: true
 - isRequired: true
 - order: after T<m>

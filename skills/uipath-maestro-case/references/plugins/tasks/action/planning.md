@@ -19,7 +19,7 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 | `priority` | sdd.md (default `Medium`) | `Low` / `Medium` / `High` / `Critical`.  |
 | `recipient` | sdd.md assignee email; **prompt the user if silent** | See Recipient Handling below. |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
-| `outputs` | Discovered via `tasks describe` | Decision, comments, structured form fields |
+| `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
 | `isRequired` | sdd.md (default `true`) |  |
 
 ## Task Title Fallback
@@ -81,7 +81,8 @@ Resolved action task. For the unresolved placeholder shape, see [placeholder-tas
 - inputs:
   - <input_name> <- "<Stage>"."<Task>".<output>
   - <input_name> = "<literal-or-expression>"
-- outputs: decision, comments
+- outputs:
+  - <SDD output row, copied verbatim>
 - isRequired: true
 - order: after T<m>
 - lane: <n>  # FE layout; increment per task. Within `runs-sequentially` group, parallel members share a lane (semantic).
