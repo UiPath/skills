@@ -39,7 +39,9 @@ Persist the exact failed and recovered selector strings verbatim in notes.md (e.
 ## Resolution
 
 Follow the fix-application procedures in [interpretations/healing-agent-data.md](../interpretations/healing-agent-data.md) (section "Applying HA Fixes" and "Applying Fixes — MUST Ask the User"):
-- For `update-target` (self-healing) or `InferredRecoveryInfo.RecoveredTarget` (recommendation-only): use `uia-improve-selector` skill if available, otherwise direct XAML edit. When the data is `InferredRecoveryInfo` or `RecoverySuccessful: false`, attach the runtime-not-validated warning to the apply-fix prompt.
-- For `dismiss-popup` / `RecoveredExternally`: create a Click activity before the failing activity, validate the workflow compiles.
+- For `update-target` (self-healing) or `InferredRecoveryInfo.RecoveredTarget` (recommendation-only): apply the recovered selector. When the data is `InferredRecoveryInfo` or `RecoverySuccessful: false`, attach the runtime-not-validated warning to the apply-fix prompt.
+- For `dismiss-popup` / `RecoveredExternally`: add a Click activity before the failing activity to dismiss the popup.
+
+The apply is interactive — the troubleshooter never edits the workflow itself; on the user's approval it delegates the apply (detailed UIA procedure in `interpretations/healing-agent-data.md`), otherwise it recommends only.
 
 This resolution path is **interactive** — it requires `AskUserQuestion` to be called at the end of the troubleshooting to (a) print the Failed / Recovered Partial / Recovered Fuzzy selectors as plain text, (b) ask the user whether to apply the fix and which selector variant. Execute this interactive step per `references/presenting.md` § Interactive resolutions before closing the investigation. Do not collapse this into a generic "fix the selector" recommendation — the recovered selector text and the apply-fix prompt are part of the documented resolution.
