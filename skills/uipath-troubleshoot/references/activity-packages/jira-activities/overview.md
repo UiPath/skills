@@ -21,7 +21,7 @@ Three properties of this model drive most failures:
 
 - **Jira Scope** (`UiPath.Jira.Activities.JiraApplicationScope`) — authenticate and host all child Jira activities. Properties: `Server URL`, `Authentication Type` (`Api Token` / `Basic` / `OAuth 2.0`), `Username`, `Api Token` (`SecureString`), `Password` (`SecureString`), `Client Id`, `Client Secret`.
 - **Get Issue / Search Issues / Get Issues by JQL** — read issues from the open session.
-- **Create Issue / Update Issue / Add Comment / Transition Issue** — write operations against the open session.
+- **Create Issue / Update Issue / Add Comment / Transition Issue** — write operations against the open session. `Add Comment` (`UiPath.Jira.Activities.AddComment`) takes an `IssueKey` (full `PROJECT-NNN` key), the comment `Text`, and optional `Visibility` (type + value); it must run inside a Jira Scope.
 - **Get Transitions** — list the transitions legal from an issue's **current** status, with each transition's runtime `Id`, `name`, and required screen fields. Drive `Transition Issue` from this rather than a hardcoded ID.
 
 ## Common Failure Patterns
@@ -30,6 +30,7 @@ Three properties of this model drive most failures:
 - **`Response was not recognized as JSON` / HTTP `500`** — structural / routing problem, not a credential problem. The `Server URL` points past the root instance (e.g. ends in `/secure/Dashboard.jspa` or a project path) so the REST call hits an HTML page; or the target is an on-premises **Server / Data Center** instance whose endpoints diverge from the Cloud shape the pack expects.
 - **`This activity is either missing or could not be loaded properly`** — dependency conflict. The legacy pack's transitive **RestSharp** (or similar) version is overridden by another package in the project, so the activity assembly cannot bind. Surfaces at design time in Studio, or at runtime as a `FileLoadException` / `TypeLoadException`.
 - **`Transition Issue` rejected** — moving a ticket to a new status fails because the UiPath config does not match the active Jira workflow: a required transition-screen field was not supplied (`Field '<name>' is required`), a hardcoded transition ID is not legal from the issue's current status (`Transition '<id>' is not valid ...`), a workflow Condition/Validator or missing permission blocks the robot account, or an older pack version hits the `Atlassian.Jira.IssueFieldEditMetadataOperation` deserialization bug. Resolve transition IDs and required fields dynamically with `Get Transitions`.
+- **`Add Comment` fails to post** — the activity is outside a Jira Scope, the `IssueKey` is missing its project prefix (`Issue Not Found` / `404`), the account authenticated but lacks the **Add Comments** permission in that project (`403 Forbidden`), or the comment `Visibility` names a group/project role that does not exist or the account is not in (`400`). Leave `Visibility` blank for a public comment.
 
 ## Package
 
