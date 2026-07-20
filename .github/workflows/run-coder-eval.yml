@@ -385,14 +385,11 @@ jobs:
             --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
             --store-password-in-clear-text
 
-      # Two-feed install: `@uipath/cli` comes from the internal GitHub
-      # Packages feed (so the `cli_version` input — e.g. `dev`, pinned
-      # prereleases — resolves the same way as the Linux Docker build).
-      # `@uipath/rpa-tool` + `@uipath/rpa-legacy-tool` come from public npm
-      # because the internal feed carries a divergent `1.0.0-alpha.*`
-      # rpa-tool line under the same scope; pulling those from the public
-      # feed (with the `^0.9` pin) keeps Helm on the known-good 0.9.x
-      # line. See smoke-rpa-skills.yml for the full rationale.
+      # Single-feed install: `@uipath/cli` AND the RPA tool plugins come from the
+      # internal GitHub Packages feed on the same prerelease train (default `dev`),
+      # so the Helm/RPA host matches the Linux Docker image. A public-npm STABLE
+      # rpa-tool fails to load against a `-dev` CLI (the `rpa` group never
+      # registers), so both must ride the same train. See smoke-rpa-skills.yml.
       - name: Install uip CLI + RPA tools (GH Packages @dev)
         shell: bash
         env:
@@ -404,24 +401,31 @@ jobs:
           cd "$install_dir"
           npm config get registry
 
-          # Install the CLI AND the RPA tool plugins from the SAME GitHub Packages
-          # feed at the CLI's dist-tag (default `dev`). Use a scratch
+          # Install the CLI at CLI_VERSION and the RPA tool plugins at the dist-tag
+          # DERIVED from it, all from the SAME GitHub Packages feed. Use a scratch
           # NPM_CONFIG_USERCONFIG so the @uipath→npm.pkg.github.com mapping and
           # auth token don't leak into other steps. Mirrors tests/docker/Dockerfile.
           #
-          # RPA from @dev (not public-npm stable): under `dev`, rpa-tool ships a
-          # matching 1.199.x-dev build (cli PR #2650 aligned it), so it
+          # RPA from the @dev train (not public-npm stable): under `dev`, rpa-tool
+          # ships a matching 1.199.x-dev build (cli PR #2650 aligned it), so it
           # version-matches the dev CLI. A public-npm STABLE rpa-tool fails to load
           # against a -dev CLI — the `rpa` group never appears. Raw npm, not `uip
           # tools install`: `dev` is a publish dist-tag, not a release channel, so
           # `uip tools install` resolves to `stable` and can't find a `-dev` tool.
-          # npm resolves `@dev` directly; the CLI discovers the plugin on disk
+          # npm resolves the tag directly; the CLI discovers the plugin on disk
           # under $(npm root -g)/@uipath/*.
           #
-          # NOTE on pinning: rpa-tool publishes on its own pipeline (date-stamped
-          # `-dev.<YYYYMMDD>.<n>`), so pinning cli_version to an exact monorepo
-          # `-dev.<run>` won't resolve rpa-tool. Keep cli_version=`dev` (the
-          # default) to track main; pin only to freeze the monorepo CLI + tools.
+          # Pin contract: CLI_VERSION may be a dist-tag (`dev`) or an exact CLI pin
+          # (`1.199.0-dev.<run>`). rpa-tool/rpa-legacy-tool publish on their own
+          # date-stamped pipelines, so an exact CLI pin has no matching rpa build —
+          # install the tools at the TRAIN's tag instead. A pin freezes the CLI
+          # shell; the tools always ride the train's tag.
+          case "$CLI_VERSION" in
+            *-*)    TOOL_TAG="${CLI_VERSION#*-}"; TOOL_TAG="${TOOL_TAG%%.*}" ;;
+            [0-9]*) TOOL_TAG="latest" ;;
+            *)      TOOL_TAG="$CLI_VERSION" ;;
+          esac
+          echo "CLI_VERSION=$CLI_VERSION -> RPA tool dist-tag @$TOOL_TAG"
           tmp_npmrc="$(mktemp)"
           cat > "$tmp_npmrc" <<EOF
           @uipath:registry=https://npm.pkg.github.com/
@@ -429,8 +433,8 @@ jobs:
           EOF
           NPM_CONFIG_USERCONFIG="$tmp_npmrc" npm install -g \
             "@uipath/cli@${CLI_VERSION}" \
-            "@uipath/rpa-tool@${CLI_VERSION}" \
-            "@uipath/rpa-legacy-tool@${CLI_VERSION}"
+            "@uipath/rpa-tool@${TOOL_TAG}" \
+            "@uipath/rpa-legacy-tool@${TOOL_TAG}"
           rm -f "$tmp_npmrc"
           uip --version
           echo "--- Installed @uipath/* packages ---"
