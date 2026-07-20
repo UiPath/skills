@@ -29,7 +29,7 @@ A subpath, service class, method, or enum member you need is not in the installe
 - Installed copy: `node_modules/@uipath/uipath-typescript/release-metadata.json` (matches the installed version).
 - Latest copy: `https://unpkg.com/@uipath/uipath-typescript@latest/release-metadata.json` (needed to see capabilities newer than what is installed).
 
-Look the capability up under `services.<PublicName>` (methods under `.methods.<name>`; enum members under `enums.<Enum>.values.<MEMBER>`). A method with no entry **inherits its service's `since`**. Then:
+Find the service by `name` in the `services` array (its methods in that service's `methods` array; enum members in the matching `enums[].values`). A method with no entry **inherits its service's `since`**. Then:
 
 1. **Present in the installed `.d.ts`** → use it (you are not in this flow).
 2. **Absent locally, in the latest metadata with `since` = `V`** → tell the user: *"`<capability>` requires `@uipath/uipath-typescript` ≥ `V`; installed is `<version>` — upgrade to use it."*
