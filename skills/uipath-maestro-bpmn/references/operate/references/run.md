@@ -50,6 +50,15 @@ Parse and report returned identifiers such as `Data.jobKey`, `Data.instanceId`, 
 and `Data.finalStatus`.
 If Studio Web URL is not returned, print `Studio Web URL: <not returned by CLI>`.
 
+> **The debug command output has element statuses, not variable values.** Its
+> `Data.elementExecutions[]` reports each element's `status` (Completed/Faulted)
+> but never the runtime *values*. `finalStatus: Completed` and all elements green
+> prove the process ran — NOT that any output variable holds the expected value.
+> To read a computed business result, take `Data.instanceId` and run
+> `uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json`
+> (below). Debug instances are ephemeral — read variables in the same session,
+> right after the debug run.
+
 ## Process run - deployed process
 
 Use process run only for a process already deployed to Orchestrator.
