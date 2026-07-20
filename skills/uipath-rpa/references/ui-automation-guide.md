@@ -8,13 +8,13 @@ Quick reference for UI automation in UiPath workflows — covers both coded work
 
 **Required package:** `UiPath.UIAutomation.Activities`
 
-> **For full activity details:** check `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`.
+> **Package docs routing:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/overview.md` is the index of the UIA package docs. When this skill points at a package reference by purpose (window baseline, advancing UI state, input methods, SelectItem usage, element interaction, target attachment, indication fallback, ...), open `overview.md` and read the reference it lists for that purpose. NEVER read the package's CLI reference end-to-end — it is large; if no listed guide matches the purpose, search it for the specific subcommand instead. Per-activity details: `activities/<Activity>.md` under the same package folder.
 
 ---
 
 ## Pre-flight: Window Baseline
 
-Before configuring any target or writing any UIA workflow, list top-level windows **once** via the UIA snapshot CLI to check whether the target app is open. Subcommand and flags: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. Two outcomes:
+Before configuring any target or writing any UIA workflow, list top-level windows **once** via the UIA snapshot CLI to check whether the target app is open. Subcommand and flags: the window-baseline guide listed in the package docs `overview.md` (§ Package docs routing above). Two outcomes:
 
 - **Target window present** → proceed directly to `uia-configure-target`; it will attach.
 - **Target window absent** → launch the app yourself, then proceed directly to `uia-configure-target`; the skill picks up the new window as part of its own capture.
@@ -187,7 +187,7 @@ Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors
 2. **NEVER guess selector attributes** from HTML/DOM structure, element tag names, or CSS classes. Selectors are generated from the live application tree by probing elements — not from source code inspection.
 3. **ALWAYS follow the target configuration steps** from [uia-configure-target-workflows.md](uia-configure-target-workflows.md). Use the returned XAML/references exactly as provided. Do not modify selectors, content hashes, or reference IDs.
 4. **NEVER substitute external browser automation for UIA.** Do not use PowerShell, Selenium, Playwright, Chrome DevTools Protocol, raw DOM JavaScript, HTTP form posts, or `InvokeCode` to drive a browser/app when the user asked for a UiPath RPA automation. Use those tools only for non-UI setup, diagnostics, or data preparation; the visible application interaction must remain in UiPath UIA activities or coded `uiAutomation` calls backed by Object Repository descriptors.
-5. **Use UiPath UIA for exploration.** App/window discovery, UI probing, selector discovery, and target capture must use the UI Automation skills and the `uip rpa uia` CLI flows (the UIA snapshot CLI, `uia-configure-target`, the `uip rpa uia interact` CLI, Object Repository capture). Subcommands and flags: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. Do not use Playwright, Selenium, DOM inspection, process lists, or ad hoc scripts to decide what UI targets/selectors to author.
+5. **Use UiPath UIA for exploration.** App/window discovery, UI probing, selector discovery, and target capture must use the UI Automation skills and the `uip rpa uia` CLI flows (the UIA snapshot CLI, `uia-configure-target`, the `uip rpa uia interact` CLI, Object Repository capture). Subcommands and flags: the task guides listed in the package docs `overview.md` (§ Package docs routing). Do not use Playwright, Selenium, DOM inspection, process lists, or ad hoc scripts to decide what UI targets/selectors to author.
 
 > This gate applies regardless of how simple the target seems. Even a `<webctrl tag='BODY' />` selector will fail validation without proper attributes. The cost of running target configuration is always lower than debugging hand-written selectors.
 
@@ -199,22 +199,22 @@ When a procedure exists specifically to check something against ground truth, do
 
 ## Common UIA Pitfalls
 
-- **Choosing SelectItem vs click-to-open for dropdowns/lists** — whether `SelectItem` drives a control is independent of its UI stack, tag, or role (native `<select>`, WinForms/WPF combo, Java/SAP list, ARIA combobox — all candidates). Don't guess from the selector — query the control's `items` attribute via the interact CLI: if it lists options → `SelectItem` drives it (pass one of them), no option-element capture needed; if empty/absent → fall back to click-to-open + click-option (or `TypeInto`). Procedure and syntax: [uia-elements-interaction-guide.md § Dropdowns, lists, and comboboxes](uia-elements-interaction-guide.md).
+- **Choosing SelectItem vs click-to-open for dropdowns/lists** — whether `SelectItem` drives a control is independent of its UI stack, tag, or role (native `<select>`, WinForms/WPF combo, Java/SAP list, ARIA combobox — all candidates). Don't guess from the selector — query the control's `items` attribute via the interact CLI: if it lists options → `SelectItem` drives it (pass one of them), no option-element capture needed; if empty/absent → fall back to click-to-open + click-option (or `TypeInto`). Procedure and syntax: the SelectItem usage guide listed in the package docs `overview.md` (§ Package docs routing).
 - **ScreenPlay overuse** — UITask/ScreenPlay is non-deterministic and slow. Always try proper selectors first.
 - **Wrong Object Repository references** — never copy references from examples or other projects. Always use `uia-configure-target` to generate them for the current application state.
 - **Using `InjectJsScript` instead of standard activities** — do NOT use `InjectJsScript` when standard UI activities (GetText, Click, TypeInto, ExtractTableData, etc.) with configured targets would work. `InjectJsScript` is a last resort — it's hard to debug, fragile to page changes, and bypasses the Object Repository.
 - **Hallucinated keyboard shortcuts instead of UIA targets** — do NOT send keyboard shortcuts (`Ctrl+S`, `Alt+F4`, `Tab` navigation, menu mnemonics, etc.) as a substitute for clicking or typing into a real UI element. `Click` and `TypeInto` against configured targets are deterministic, survive layout changes, and are observable in logs; guessed shortcuts depend on focus, locale, and version. Reserve keyboard shortcuts for genuinely hotkey-only operations (commands with no clickable surface) and confirm the shortcut exists in the live app — never infer from OS convention or muscle memory.
 - **Chaining keystrokes in one `NKeyboardShortcuts` after one navigates away faults on a stale node.** The activity resolves its `Target` **once**; if the first shortcut destroys/replaces that element (a navigation key that changes the view), a second shortcut chained in the same activity (multi-shortcut `Shortcuts` string or `DelayBetweenShortcuts`) hits the stale node and throws `InvalidNodeException: "The UI element is invalid..."`. Example: Explorer `Alt+Up` (go to parent, auto-selecting the current folder) + `Alt+Enter` (open Properties) in one activity targeting "Items View" — `Alt+Up` navigates, then `Alt+Enter` faults on the destroyed node. **Fix:** use **separate** `NKeyboardShortcuts` activities so the follow-up **re-resolves** its target against the new screen, plus a small `DelayBefore` to let it settle.
-- **An interaction faults though the selector still resolves** — the interaction may have changed the element (e.g. click-before-typing, or a click that expands a popup, remounts the target so the next action hits a detached node and throws `UI element is invalid`). Debug + fix: [uia-elements-interaction-guide.md § Debugging a failed interaction with an element](uia-elements-interaction-guide.md).
-- **Unnecessary `Delay` activities before UIA actions** — UIA activities (`NClick`, `NTypeInto`, `NSelectItem`, `NGoToUrl`, etc.) have embedded target-finding resilience: they retry the selector lookup for a configurable timeout before failing. A `Delay` placed in front of a UIA activity to "let the UI settle" is almost always redundant and inflates workflow runtime without changing correctness. Include `Delay` only when ALL of: the wait is NOT for a UI element that a following UIA activity will target; a concrete non-retry reason exists (post-action animation with no UIA anchor, fixed-duration business pause, background job the UI doesn't reflect); and the caller can state in one sentence why the next UIA activity's built-in retry is insufficient. A button that is present but **disabled** during async validation/load/refresh is a separate case retry does not cover — use the activity's `DelayBefore`/`DelayAfter` *properties* (not a `Delay` activity): [uia-elements-interaction-guide.md § Buttons disabled during async operations](uia-elements-interaction-guide.md).
-- **`Cannot send input ... outside of screen bounds` on hover-revealed elements** — pop-up menu items, autocomplete entries, and dropdown rows that only appear after a hover/click frequently fail under the default input method. Switch the affected activity (or its UIA interact CLI counterpart) to a simulated input method. Available input-method values: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
+- **An interaction faults though the selector still resolves** — the interaction may have changed the element (e.g. click-before-typing, or a click that expands a popup, remounts the target so the next action hits a detached node and throws `UI element is invalid`). Debug + fix: the UI Elements Interaction guide (§ Debugging a failed interaction with an element) listed in the package docs `overview.md`.
+- **Unnecessary `Delay` activities before UIA actions** — UIA activities (`NClick`, `NTypeInto`, `NSelectItem`, `NGoToUrl`, etc.) have embedded target-finding resilience: they retry the selector lookup for a configurable timeout before failing. A `Delay` placed in front of a UIA activity to "let the UI settle" is almost always redundant and inflates workflow runtime without changing correctness. Include `Delay` only when ALL of: the wait is NOT for a UI element that a following UIA activity will target; a concrete non-retry reason exists (post-action animation with no UIA anchor, fixed-duration business pause, background job the UI doesn't reflect); and the caller can state in one sentence why the next UIA activity's built-in retry is insufficient. A button that is present but **disabled** during async validation/load/refresh is a separate case retry does not cover — use the activity's `DelayBefore`/`DelayAfter` *properties* (not a `Delay` activity): the UI Elements Interaction guide (§ Buttons disabled during async operations) listed in the package docs `overview.md`.
+- **`Cannot send input ... outside of screen bounds` on hover-revealed elements** — pop-up menu items, autocomplete entries, and dropdown rows that only appear after a hover/click frequently fail under the default input method. Switch the affected activity (or its UIA interact CLI counterpart) to a simulated input method. Input-method values and when to switch: the input-methods guide listed in the package docs `overview.md`.
 - **`HealingAgentBehavior` enum split between card and child activities.** `NApplicationCard` (Use Application/Browser) accepts `NHealingAgentBehavior` — values `Job`, `Disabled`, `RecommendationOnly`. Child activities (`NClick`, `NTypeInto`, `NCheckState`, etc.) accept `NChildHealingAgentBehavior`, which adds `SameAsCard`. Putting `SameAsCard` on the card itself fails with `Failed to create a 'HealingAgentBehavior' from the text 'SameAsCard'`. When introducing a new card (e.g., a nested card for a sign-in subprocess), set its `HealingAgentBehavior` to `Job`/`Disabled`/`RecommendationOnly` — never copy the value from a child activity. Confirm via `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/activities/common/NHealingAgentBehavior.md` and `NChildHealingAgentBehavior.md`.
 
 ---
 
 ## Control-Specific Interaction Patterns
 
-> **MANDATORY — read and apply before authoring.** Before writing any `TypeInto`, `SelectItem`, or `Click` (XAML `NTypeInto` / `NSelectItem` / `NClick`, or coded `uiAutomation.*`) against a captured target, classify the control. If **any** target is a date / time input, a dropdown, or a button that can be disabled during async work, you MUST read [uia-elements-interaction-guide.md](uia-elements-interaction-guide.md) IN FULL and apply it **before** authoring that activity — the same bar as target capture ([§ Configuring Targets](#configuring-targets-object-repository)). The correct technique is type-specific and documented there: a date field must be typed in its **displayed** format (not ISO) via a key-event method, for dropdowns/lists you decide by querying the control's `items` attribute (via the interact CLI) rather than by tag/role — items listed → `SelectItem`, none → click-to-open, and async-disabled buttons need `DelayBefore`. Apply the documented method up front — do not guess a value (e.g. ISO into a date field) and iterate against the running app.
+> **MANDATORY — read and apply before authoring.** Before writing any `TypeInto`, `SelectItem`, or `Click` (XAML `NTypeInto` / `NSelectItem` / `NClick`, or coded `uiAutomation.*`) against a captured target, classify the control. If **any** target is a date / time input, a dropdown, or a button that can be disabled during async work, you MUST read the UI Elements Interaction guide (listed in the package docs `overview.md`, § Package docs routing) IN FULL and apply it **before** authoring that activity — the same bar as target capture ([§ Configuring Targets](#configuring-targets-object-repository)). The correct technique is type-specific and documented there: a date field must be typed in its **displayed** format (not ISO) via a key-event method, for dropdowns/lists you decide by querying the control's `items` attribute (via the interact CLI) rather than by tag/role — items listed → `SelectItem`, none → click-to-open, and async-disabled buttons need `DelayBefore`. Apply the documented method up front — do not guess a value (e.g. ISO into a date field) and iterate against the running app.
 
 After a target is captured, these control types need type-specific handling to drive correctly:
 
@@ -222,7 +222,7 @@ After a target is captured, these control types need type-specific handling to d
 - **Dropdowns / lists / comboboxes** — query the control's `items` attribute (via the interact CLI); items listed → `SelectItem`, none → click-to-open + click option (or `TypeInto`). Independent of tag / role / UI technology.
 - **Buttons disabled during async ops** — present but `disabled` during validation/load/refresh; use the activity's `DelayBefore`/`DelayAfter` properties (not a `Delay` activity).
 
-Patterns there cover web-specific controls (date inputs) plus cross-technology ones (dropdowns/lists, async-disabled buttons): [uia-elements-interaction-guide.md](uia-elements-interaction-guide.md).
+Patterns there cover web-specific controls (date inputs) plus cross-technology ones (dropdowns/lists, async-disabled buttons).
 
 ---
 
@@ -257,7 +257,7 @@ Application (InvoicePortal)
 Precondition: the source project has captured descriptors (`.objects/` content). If it has none, capture targets first ([§ Configuring Targets](#configuring-targets-object-repository)) — there is nothing to promote, and hand-writing descriptors is forbidden.
 
 1. Develop the first process against its **local** Object Repository, configuring targets as usual ([§ Configuring Targets](#configuring-targets-object-repository)).
-2. Promote the reusable descriptors into a dedicated UI Library project — a library project ([library-authoring-guide.md](library-authoring-guide.md)) holding the shared Object Repository; pack and upload per [library-authoring-guide.md § Pack & Publish](library-authoring-guide.md). Concrete Object Repository manipulation steps: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`.
+2. Promote the reusable descriptors into a dedicated UI Library project — a library project ([library-authoring-guide.md](library-authoring-guide.md)) holding the shared Object Repository; pack and upload per [library-authoring-guide.md § Pack & Publish](library-authoring-guide.md). Concrete Object Repository manipulation steps: the Object Repository reference listed in the package docs `overview.md` (§ Package docs routing).
 3. **One UI Library per corporate application** (SAP, Salesforce, Workday) — an update to one app's selectors must not force re-deployment of another's.
 4. New automations against that application consume the UI Library from the start. Process-specific one-off descriptors stay in the local Object Repository.
 
@@ -279,7 +279,7 @@ Install the UI Library as a package dependency; its descriptors appear under **U
 
 **Every debug run** must follow this procedure to prevent stale windows from accumulating or being reused in a dirty state:
 
-1. **Record the window baseline** — list top-level windows via the UIA snapshot CLI and note which w-refs and titles are already present. Subcommand and flags: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
+1. **Record the window baseline** — list top-level windows via the UIA snapshot CLI and note which w-refs and titles are already present. Procedure: the window-baseline guide listed in the package docs `overview.md` (§ Package docs routing).
 2. **Run the workflow:**
    ```bash
    uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
@@ -290,7 +290,7 @@ Install the UI Library as a package dependency; its descriptors appear under **U
    uip rpa execution cancel --project-dir "<PROJECT_DIR>" --output json
    ```
 4. **List windows again** via the UIA snapshot CLI.
-5. **Diff before vs after.** Any window present now that was NOT in the baseline was opened by the workflow. Close each such window via the `uip rpa uia interact` CLI (see `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md` for the close subcommand and its flags).
+5. **Diff before vs after.** Any window present now that was NOT in the baseline was opened by the workflow. Close each such window via the `uip rpa uia interact` CLI (diff and close procedure: the window-baseline guide, package docs `overview.md`).
 
 Skipping steps 4-5 causes the next run's open-if-not-open behavior to reuse a stale window in whatever state it was left in, or -- if the selector doesn't match -- to spawn a duplicate instance.
 
@@ -330,7 +330,7 @@ The UIA activity-docs version folder may contain additional guides (selector cre
 
 **Service accessor:** `uiAutomation` (type `IUiAutomationAppService`)
 
-For coded-specific API: `.local/docs/packages/UiPath.UIAutomation.Activities/`.
+For coded-specific API: the Coded Workflow API reference listed in the package docs `overview.md` (§ Package docs routing).
 
 ### Workflow Pattern
 
@@ -421,7 +421,7 @@ ScreenPlay (`UITask`) is an AI-powered agent that performs UI interactions witho
 
 ## For XAML Workflows
 
-For XAML-specific activity details: `.local/docs/packages/UiPath.UIAutomation.Activities/`.
+For XAML-specific activity details: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/activities/<Activity>.md`.
 
 ### Multi-Screen Authoring
 
@@ -527,9 +527,9 @@ Example — copy a value from App A and paste it into App B. Outer card → App 
 
 #### Target Configuration
 
-[uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first — it covers registering the Application Card's screen and each activity's elements in the Object Repository. Then write plain activities (NApplicationCard, NClick, NTypeInto, ...) with unique `sap2010:WorkflowViewState.IdRef` attributes and no `.Target` children, and attach targets per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
+[uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first — it covers registering the Application Card's screen and each activity's elements in the Object Repository. Then write plain activities (NApplicationCard, NClick, NTypeInto, ...) with unique `sap2010:WorkflowViewState.IdRef` attributes and no `.Target` children, and attach targets per the target-attachment guide listed in the package docs `overview.md`.
 
-Do NOT hand-write `<uix:TargetApp>` or `<uix:TargetAnchorable>` XAML from scratch. Attach targets per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` — never fabricate them.
+Do NOT hand-write `<uix:TargetApp>` or `<uix:TargetAnchorable>` XAML from scratch. Attach targets per the target-attachment guide (package docs `overview.md`) — never fabricate them.
 
 ### Common Activities
 

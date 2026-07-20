@@ -9,7 +9,7 @@
 **Execute `uia-configure-target` steps inline in the main conversation.** Do NOT delegate the entire skill to a subagent. The skill's internal steps already spawn their own subagents.
 
 Why this matters:
-- **OR references** must be visible in the main conversation so they can be attached to workflow activities as the workflow is created. See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
+- **OR references** must be visible in the main conversation so they can be attached to workflow activities as the workflow is created. See the target-attachment guide listed in the package docs index (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/overview.md` — open it and read the reference it lists for the purpose at hand; same routing for every package reference named below).
 - **Context continuity** — as the main conversation proceeds, it already knows which screens and elements are registered: the references were returned in earlier turns, and the OR itself is queryable via the OR CLI. This is what "knowing what's registered" means here — the in-conversation state plus live OR queries — so duplicate captures are avoided and the workflow build stays coherent.
 
 Read the SKILL.md, then execute each step of the internal procedure yourself. Only spawn `Agent` where the skill explicitly says to.
@@ -41,11 +41,11 @@ Some UI elements only become visible after interacting with earlier elements (e.
 
 ### Advancing UI State
 
-After registering an element in the Object Repository, advance to the next screen by interacting with it (or a sibling element) via the `uip rpa uia interact` CLI. Interact here **only to move the app to the next state you need to capture** — as many verbs as that legitimately takes (e.g. open a menu then click an item, or type then press Enter), never to map the app ahead of need or to verify behavior (see complete-then-advance above). Read `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. Read it rather than improvising from `--help`. Do not use `interact` to read attributes and hand-write or edit a selector; selector construction and improvement are the configure-target flow's job.
+After registering an element in the Object Repository, advance to the next screen by interacting with it (or a sibling element) via the `uip rpa uia interact` CLI. Interact here **only to move the app to the next state you need to capture** — as many verbs as that legitimately takes (e.g. open a menu then click an item, or type then press Enter), never to map the app ahead of need or to verify behavior (see complete-then-advance above). Verbs, ref rules, and flags: the advancing-UI-state guide listed in the package docs `overview.md` — read it rather than improvising from `--help`. Do not use `interact` to read attributes and hand-write or edit a selector; selector construction and improvement are the configure-target flow's job.
 
 **Reuse refs from the current `uia-configure-target` capture — do not re-inspect.** The `uip rpa uia interact` CLI resolves element refs against the most recent snapshot in memory regardless of which CLI wrote it (the two write to different folders, but the snapshot is shared). Pass the same e-refs (`e28`, `e35`, etc.) directly to the interact subcommands. Re-running the UIA snapshot CLI just to re-mint refs for an unchanged UI is wasted work — the refs you have are still live.
 
-Re-inspect (or re-capture via the UIA snapshot CLI) only when the UI has actually advanced since the last capture; refs from a pre-advance snapshot will not resolve against the new state. Subcommands and flags: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
+Re-inspect (or re-capture via the UIA snapshot CLI) only when the UI has actually advanced since the last capture; refs from a pre-advance snapshot will not resolve against the new state. Subcommands and flags: the advancing-UI-state guide listed in the package docs `overview.md`.
 
 ### Capture Loop
 
@@ -66,7 +66,7 @@ Per screen, use the batched entry points the OR CLI already exposes — one roun
 - **Screen-XAML retrieval is per-screen.** That entry point is single-target by design — one extra call per screen, not per element.
 - **Cross-screen batching is not currently exposed.** N screens = N rounds of the steps above, gated by `interact`-driven state advances.
 
-Concrete subcommands, flag names, and accepted argument shapes for each batched entry point: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. The package owns the syntax; this skill owns only the per-screen call-count shape above.
+Concrete subcommands, flag names, and accepted argument shapes for each batched entry point: search the CLI reference listed in the package docs `overview.md` (do not read it in full). The package owns the syntax; this skill owns only the per-screen call-count shape above.
 
 ## Cross-Process Helper Dialogs (Sign-in, OAuth, System Pop-ups)
 
@@ -160,11 +160,11 @@ The helper process is a separate UIA-visible window once it appears, so the stan
 
 > **Use indication when elements appear only after user interaction** (e.g., a compose form that opens after clicking a button), so `uia-configure-target`'s automated capture cannot see them. Indication requires the user to physically click on the target.
 
-Workflow steps, response shape, downstream OR regeneration for coded vs XAML, and pointers to the full CLI flag reference: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/indication-fallback-workflow.md`.
+Workflow steps, response shape, downstream OR regeneration for coded vs XAML, and pointers to the full CLI flag reference: the indication-fallback guide listed in the package docs `overview.md`.
 
 ## Attaching Targets to Workflow Activities
 
-Once targets are registered in the OR (via `uia-configure-target` or indication fallback), attach them to XAML activities per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`. That doc owns the concrete subcommands, flags, and response shapes for both attachment paths.
+Once targets are registered in the OR (via `uia-configure-target` or indication fallback), attach them to XAML activities per the target-attachment guide listed in the package docs `overview.md`. That guide owns the concrete subcommands, flags, and response shapes for both attachment paths.
 
 **Path-choice policy (this skill's scope — which path to take, not how to invoke it).** The attachment guide describes two paths:
 
@@ -175,11 +175,11 @@ Take the link path first. On a link failure for a reference, drop straight to th
 
 ### Multi-Screen Workflows
 
-For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its OR references become available. Each batch aligns with the Complete-then-advance rule in § Multi-Step UI Flows — everything configured before the next `uip rpa uia interact` advance belongs to one batch. Validate with `validate` after each batch. Attach each target per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
+For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its OR references become available. Each batch aligns with the Complete-then-advance rule in § Multi-Step UI Flows — everything configured before the next `uip rpa uia interact` advance belongs to one batch. Validate with `validate` after each batch. Attach each target per the target-attachment guide listed in the package docs `overview.md`.
 
 ## CLI Pitfalls
 
-Runtime symptoms that have wasted entire capture sessions. Canonical flag list, accepted values, and artifact filenames for every UIA subcommand: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
+Runtime symptoms that have wasted entire capture sessions. Canonical flag list, accepted values, and artifact filenames for every UIA subcommand: search the CLI reference listed in the package docs `overview.md` (do not read it in full).
 
 - **Filter mode of the UIA snapshot CLI fails with a missing-argument error.** It requires a target definition file argument in addition to the folder argument.
 - **Selector resolution rejects bare element refs (`Invalid --refs entry`).** Each ref must be paired with the definition file that owns it.

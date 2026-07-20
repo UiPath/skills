@@ -22,7 +22,7 @@ Non-UIA `uip rpa` commands (`focus-activity`, `test-data add-queue`, `run`, `val
 
 ## Pitfall-callout exception
 
-A **short pitfall callout** (1–3 lines per item) MAY name a runtime symptom (error string or broken behavior) AND the UIA subcommand category it occurs in, when the callout warns about a known waste-of-calls failure mode. Each callout MUST anchor to `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md` for canonical syntax.
+A **short pitfall callout** (1–3 lines per item) MAY name a runtime symptom (error string or broken behavior) AND the UIA subcommand category it occurs in, when the callout warns about a known waste-of-calls failure mode. Each callout MUST anchor to the UIA package docs for canonical syntax — name the purpose guide listed in `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/overview.md`, or say to search the CLI reference it lists.
 
 What stays out, even in pitfall callouts: concrete flag names, flag values, artifact filenames, bash blocks, runnable examples, and full flag tables. Name the failure and the fix direction; the package owns the exact syntax. Use this exception sparingly. The default is still the category-pointer pattern below.
 
@@ -35,7 +35,7 @@ Describe capability at the category level and route to UIA docs for concrete syn
 - "the indication commands" — not `indicate-application` / `indicate-element`
 - "recover mode" — not `--mode recover`
 - "the target definition file" — not `Target_Definition.json`
-- Path pointers: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/<path>`
+- Doc routing: point at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/overview.md` and name the listed reference by purpose ("the window-baseline guide listed in the package docs `overview.md`") — never hard-code a `references/<file>.md` package path. Fixed package paths are allowed only for `overview.md`, `activities/<Activity>.md`, `activities/common/<Type>.md`, and `skills/<skill>/…`
 
 ## Example
 
@@ -45,14 +45,14 @@ Describe capability at the category level and route to UIA docs for concrete syn
 
 **Correct** (points at UIA docs for concrete syntax):
 
-> Query existing screens via the OR CLI, then attach the screen per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
+> Query existing screens via the OR CLI, then attach the screen per the target-attachment guide listed in `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/overview.md`.
 
 ## Where to put new content
 
 | New content | Home |
 |-------------|------|
-| CLI subcommand syntax, flag tables, troubleshooting | UIA package: `docs/references/cli-reference.md` |
-| CLI workflow recipe | UIA package: `docs/references/<workflow>.md` |
+| CLI subcommand syntax, full flag tables, troubleshooting | UIA package: `docs/references/cli-reference.md` (searched for specific sections — never read in full) |
+| Single-purpose CLI task recipe (window baseline, input methods, advancing UI state, …) | UIA package: `docs/references/<purpose>-guide.md`, listed with a purpose description in `docs/overview.md` § References |
 | Skill invocation guide for callers | UIA package: `docs/skills/<skill>/USAGE.md` |
 | Skill internal procedure | UIA package: `docs/skills/<skill>/SKILL.md` |
 | Policy, decision logic, orchestration, critical rules | `skills/uipath-rpa/references/` with pointer to UIA docs for concrete syntax |

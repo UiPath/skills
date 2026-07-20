@@ -276,7 +276,7 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 | **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
 | **Build multi-screen UIA XAML workflow** | XAML | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md § Multi-Step UI Flows](references/uia-configure-target-workflows.md) |
 | **Share Object Repository selectors across projects (UI Library)** | Both | [ui-automation-guide.md § Object Repository as a Published UI Library](references/ui-automation-guide.md) |
-| **Drive a captured control** (date inputs, native vs custom dropdowns, buttons disabled during async) | Both | [ui-automation-guide.md § Control-Specific Interaction Patterns](references/ui-automation-guide.md) → [uia-elements-interaction-guide.md](references/uia-elements-interaction-guide.md) |
+| **Drive a captured control** (date inputs, native vs custom dropdowns, buttons disabled during async) | Both | [ui-automation-guide.md § Control-Specific Interaction Patterns](references/ui-automation-guide.md) → UI Elements Interaction guide listed in the UIA package docs `overview.md` |
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `references/activity-docs/{PackageId}/{closest}/` |
 | **Manipulate data (DataTable/LINQ, strings, RegEx, DateTime, collections, JSON)** | Both | [data-manipulation-guide.md](references/data-manipulation-guide.md) |
 | **Use Data Fabric entities** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [activity-docs overview](references/activity-docs/UiPath.DataService.Activities/overview.md) |
@@ -450,17 +450,13 @@ UIA references live in two locations. Always cite by location so the reader know
 
 ### In the UIA activity pack (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`)
 
-- `overview.md` — Package overview and entry point
-- `references/cli-reference.md` — Full `uip rpa uia` CLI: subcommands, flags, accepted values, artifact filenames
-- `references/object-repository.md` — Object Repository concepts and CLI flows
-- `references/selector-variables.md` — Selector variable substitution
-- `references/uia-target-attachment-guide.md` — Attaching OR targets to XAML activities (TargetApp / TargetAnchorable)
-- `references/indication-fallback-workflow.md` — Indication-mode capture when `uia-configure-target` is unavailable
-- `coded/coded-api.md` — Coded API surface for `uiAutomation.*` service calls
-- `activities/<Activity>.md` — Per-activity property surface (`NClick`, `NTypeInto`, `NApplicationCard`, …)
-- `activities/common/<Type>.md` — Shared enums and types (`NHealingAgentBehavior`, `Target`, `NClickType`, …)
-- `skills/uia-configure-target/{SKILL.md,USAGE.md}` — Target-configuration skill: procedure + invocation modes
-- `skills/uia-improve-selector/{SKILL.md,USAGE.md}` — Selector recovery / improvement skill
+Hard entry points — the only package paths this skill references directly:
+
+- `overview.md` — the package docs index. Route every package reference-doc read through it: open it and read the reference it lists for the purpose at hand (window baseline, advancing UI state, input methods, SelectItem usage, element interaction patterns, target attachment, indication fallback, Object Repository, selector variables, SAP, coded API). Its CLI Reference entry is large — search it for a specific subcommand only when no listed guide matches the purpose; NEVER read it in full.
+- `activities/<Activity>.md` — per-activity property surface, addressed by activity name (`Click.md`, `TypeInto.md`, `ApplicationCard.md`, …)
+- `activities/common/<Type>.md` — shared enums and types (`NHealingAgentBehavior.md`, `NAppAttachMode.md`, …)
+- `skills/uia-configure-target/{SKILL.md,USAGE.md}` — target-configuration skill: procedure + invocation modes (fixed path — also the Rule 7a availability check)
+- `skills/uia-improve-selector/{SKILL.md,USAGE.md}` — selector recovery / improvement skill
 
 ## Completion Output
 

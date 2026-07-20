@@ -276,4 +276,4 @@ Diagnose by error category, apply the recovery, retry **once** — do not loop t
 
 ## UI Automation (`uip rpa uia ...`)
 
-`uip rpa uia --help` deliberately exposes no standard subcommands — the UIA CLI surface is owned and co-versioned by the `UiPath.UIAutomation.Activities` package. Subcommands, flags, accepted values, and artifact filenames live in `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. Read that file rather than improvising from `--help`.
+`uip rpa uia --help` deliberately exposes no standard subcommands — the UIA CLI surface is owned and co-versioned by the `UiPath.UIAutomation.Activities` package. Subcommands, flags, accepted values, and artifact filenames live in the package docs: open `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/overview.md` and read the reference it lists for the task at hand (single-purpose task guides first; search its CLI Reference entry only for what they don't cover — never read it in full). Route through those docs rather than improvising from `--help`.
