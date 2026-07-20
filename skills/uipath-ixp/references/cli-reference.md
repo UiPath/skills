@@ -129,7 +129,7 @@ Structural edits to a field within an existing field group. For instruction-only
 
 ## Deployments
 
-For working with runtime (deployed) IXP models — separate from the training workflow above. Publishing/tagging a model does not deploy it to an Orchestrator folder — folder deployment is not supported through `uip ixp`; a published model is referenced directly by downstream consumers (e.g. Maestro Flow).
+For working with runtime (deployed) IXP models — separate from the training workflow above. Publishing/tagging **does not** deploy a model to an Orchestrator folder, and there is no CLI workaround — folder/environment binding is completed **by the user in-product**. A published model is referenced directly by downstream consumers (e.g. Maestro Flow).
 
 | Command | Description |
 |---------|-------------|
