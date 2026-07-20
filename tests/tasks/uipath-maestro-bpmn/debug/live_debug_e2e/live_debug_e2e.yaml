@@ -21,13 +21,15 @@ description: >
 tags: [uipath-maestro-bpmn, e2e, "mode:operate", "lifecycle:setup", path-to-ga]
 
 # turn_timeout must cover the whole agent session (observed: a 902s session was
-# killed by the 900s default while iterating on variable bindings after a live
-# debug run); task_timeout adds headroom for grading on top.
+# killed by the 900s default, then a 1500s turn timed out while the agent
+# wandered on solution scaffolding + variable scoping under slow Bedrock latency
+# on the shared runner). task_timeout adds headroom for grading (incl. the
+# check's possible live-recovery debug run) on top.
 run_limits:
   expected_turns: 30
-  task_timeout: 1800
+  task_timeout: 3300
   max_turns: 120
-  turn_timeout: 1500
+  turn_timeout: 2400
 
 sandbox:
   template_sources:
@@ -44,6 +46,11 @@ initial_prompt: |
       the script body and writes the result to a process variable named
       exactly `product`,
     - an end event.
+
+  Declare `product` as a ROOT-scoped process variable (its `uipath:inputOutput`
+  must NOT carry an `elementId`) so its runtime value is readable via
+  `variables-all`. Build exactly one project — do not scaffold extra projects,
+  boilerplate copies, or duplicate .bpmn files.
 
   Then run a debug session for the project against Studio Web and confirm from
   the runtime that the `product` variable is 42. You have explicit consent to

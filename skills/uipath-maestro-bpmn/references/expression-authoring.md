@@ -76,6 +76,11 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
 
 - Root variables are visible across the root process after they are declared and
   reachable by control flow.
+- An output variable you intend to READ at runtime (via `debug-instance
+  variables-all` or `instance variables`) must be root-scoped — declare its
+  `uipath:inputOutput` WITHOUT an `elementId`. A variable scoped with `elementId`
+  is bound to that element and is not surfaced as a readable root/global runtime
+  variable, so its computed value will not appear in a `variables-all` read.
 - Subprocess variables stay scoped to that subprocess.
 - Output mappings should target `uipath:inputOutput` or `uipath:output`
   variables, not read-only `uipath:input` variables.
