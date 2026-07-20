@@ -192,7 +192,7 @@ Map catalog parameter shapes to Python:
 | `map-enum` (e.g. `entityThresholds`) | Dict from enum member → number (e.g. `{PIIDetectionEntityType.EMAIL: 0.5}`) — keys must exactly match the `enum-list` parameter's values |
 | `number` (e.g. `threshold`) | Plain `float` / `int` constructor argument |
 | `text` (e.g. `guardrailText`) | Plain `str` constructor argument |
-| `enum` (e.g. `model`) | `str` value from the allowed options list. When the catalog shows an empty options list (as with `llm_as_judge`'s `model`), ask the user which model ID to use — the available values depend on the LLM Gateway configuration in their tenant. |
+| `enum` (e.g. `model`) | `str` value from the allowed options list. When the catalog shows an empty options list (as with `llm_as_judge`'s `model`), run `uip agent guardrails llm-as-judge-models --output json` and use a `ModelId` from the result. Ask the user for a model ID only if the command returns nothing or fails. |
 | `text-list` (e.g. `positiveExamples`, `negativeExamples`) | `List[str]` constructor argument |
 
 Use `BlockAction(...)`, `LogAction(severity_level=...)`, or `EscalateAction(app_name=..., app_folder_path=..., recipient=...)` for human-in-the-loop review — or any other action the SDK docs expose. Never invent action class names. For `EscalateAction`, the fetched SDK docs must expose the class/parameters, and the Action App must be deployed and declared in `bindings.json` using [../../lifecycle/bindings-reference.md](../../lifecycle/bindings-reference.md) (see [guardrails.md § Escalation action (HITL)](guardrails.md#escalation-action-human-in-the-loop)).
