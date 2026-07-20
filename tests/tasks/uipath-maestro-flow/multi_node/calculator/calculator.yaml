@@ -30,7 +30,7 @@ success_criteria:
   - type: run_command
     description: "Flow debug runs and output contains 391 (17 * 23)"
     command: "python3 $TASK_DIR/check_calculator_flow.py"
-    timeout: 120
+    timeout: 300  # must exceed run_debug's internal subprocess timeout (240s)
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

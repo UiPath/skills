@@ -3,6 +3,10 @@
 # If none is found, prints a one-line nudge pointing at /uipath:install-permissions.
 # Non-blocking — never fails the session, even if detection fails.
 # Cross-platform (macOS, Linux, Windows via Git Bash / MSYS / Cygwin).
+#
+# TWIN SCRIPT: hooks/suggest-permissions.ps1 is the PowerShell twin of this
+# file — any behavioral change here MUST be mirrored there in the same PR (see
+# CLAUDE.md).
 
 # Only run inside a Claude Code plugin context.
 if [ -z "${CLAUDE_PLUGIN_ROOT:-}" ]; then

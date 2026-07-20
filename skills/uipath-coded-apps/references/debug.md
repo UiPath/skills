@@ -258,12 +258,7 @@ Match the observation to the correct fix section. **Jump directly to the matchin
 
 Read the app's current configuration:
 
-1. **Find `.env`** — look for `.env`, `.env.local`, `.env.development`. Extract:
-   - `VITE_UIPATH_CLIENT_ID`
-   - `VITE_UIPATH_SCOPE`
-   - `VITE_UIPATH_ORG_NAME`
-   - `VITE_UIPATH_TENANT_NAME`
-   - `VITE_UIPATH_BASE_URL`
+1. **Find SDK config.** The app initializes the SDK with `new UiPath()` (no config) and reads everything from `<meta name="uipath:*">` tags injected at runtime. During local dev those tags come from **`uipath.json`** (committed, project root) — the single config source, holding `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` (the local dev URL). To change any of these, edit `uipath.json`. The remediation scripts (Playwright OAuth helpers, base-URL/scope rules) below operate on that file.
 
 2. **Identify SDK services in use** — grep for `new Assets(`, `new Entities(`, `new Buckets(`, `new Processes(`, `new Tasks(`, `new Queues(`, `new MaestroProcesses(`, `new Cases(`, `new ConversationalAgent(` in `**/*.ts` and `**/*.tsx`.
 
@@ -277,15 +272,15 @@ Fix these immediately — they are common config-level issues that Step 0 might 
 
 ### 2a — Scope mismatch
 
-Map each SDK service found in Step 1 to its required scopes using [oauth-scopes.md](oauth-scopes.md). Compare against the scope string in `.env`.
+Map each SDK service found in Step 1 to its required scopes using [oauth-scopes.md](oauth-scopes.md). Compare against the `scope` field in `uipath.json`.
 
 If scopes are missing:
-1. Update `VITE_UIPATH_SCOPE` in `.env` to add the missing scopes.
-2. **Copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script) (one script for all ops), save to `~/.uipath-skills/playwright/uipath-oauth.mjs`, then run with `--op add-scopes` — substituting `--cloud-host`, `--org-name`, `--client-id` (from `.env` → `VITE_UIPATH_CLIENT_ID`), and `--scopes-by-resource` per the [mapping table](oauth-client-setup.md#scope--resource-mapping-reference). Do not rewrite the script or "mirror the pattern" — the selectors are battle-tested and rewriting drops the bug fixes. Do not ask the user to click through the portal manually. Only fall back to [manual instructions](oauth-client-setup.md#adding-scopes-to-an-existing-app) if Chrome isn't available.
+1. Update the `scope` field in `uipath.json` to add the missing scopes.
+2. **Copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script) (one script for all ops), save to `~/.uipath-skills/playwright/uipath-oauth.mjs`, then run with `--op add-scopes` — substituting `--cloud-host`, `--org-name`, `--client-id` (from `uipath.json` → `clientId`), and `--scopes-by-resource` per the [mapping table](oauth-client-setup.md#scope--resource-mapping-reference). Do not rewrite the script or "mirror the pattern" — the selectors are battle-tested and rewriting drops the bug fixes. Do not ask the user to click through the portal manually. Only fall back to [manual instructions](oauth-client-setup.md#adding-scopes-to-an-existing-app) if Chrome isn't available.
 
 ### 2b — Base URL
 
-`VITE_UIPATH_BASE_URL` **must** use the API subdomain — not the portal domain:
+The `baseUrl` in `uipath.json` **must** use the API subdomain — not the portal domain:
 
 | Environment | Correct | Wrong |
 |---|---|---|
@@ -293,16 +288,16 @@ If scopes are missing:
 | staging | `https://staging.api.uipath.com` | `https://staging.uipath.com` |
 | alpha | `https://alpha.api.uipath.com` | `https://alpha.uipath.com` |
 
-Fix in `.env` if wrong.
+Fix by setting `baseUrl` in `uipath.json` to the correct API-subdomain URL, then restart the dev server so the plugin re-injects the `<meta name="uipath:base-url">` tag.
 
 ### 2c — Redirect URI
 
-The SDK uses `window.location.origin + window.location.pathname` at runtime as the redirect URI — no `VITE_UIPATH_REDIRECT_URI` env var is needed. The URI that must be registered in the External Application is determined by where the app is running:
+The SDK reads the redirect URI from the `uipath:redirect-uri` meta tag — locally the `redirectUri` field in `uipath.json`. That value **must** match both the URL the app actually runs at and a redirect URI registered on the External Application:
 - Vite default: `http://localhost:5173` (and `http://localhost:5173/` — register both)
 - CRA default: `http://localhost:3000` (and `http://localhost:3000/`)
-- Custom port: check `vite.config.ts` for `server.port`
+- Custom port: check `vite.config.ts` for `server.port`, and set `redirectUri` in `uipath.json` to match
 
-If you see a `redirect_uri_mismatch` error, identify the actual URL the browser is on. Then **copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script), save to `~/.uipath-skills/playwright/uipath-oauth.mjs`, and run with `--op add-redirects` — passing `--cloud-host`, `--org-name`, `--client-id` (from `.env`), and `--redirects` with both the failing URL and its trailing-slash variant. Do not rewrite the script or invent a different approach — rewrites drop the bug fixes (truncated column handling, pencil-Edit button) and the script fails. Do not ask the user to click through the portal.
+If you see a `redirect_uri_mismatch` error, identify the actual URL the browser is on. Then **copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script), save to `~/.uipath-skills/playwright/uipath-oauth.mjs`, and run with `--op add-redirects` — passing `--cloud-host`, `--org-name`, `--client-id` (from `uipath.json`), and `--redirects` with both the failing URL and its trailing-slash variant. Do not rewrite the script or invent a different approach — rewrites drop the bug fixes (truncated column handling, pencil-Edit button) and the script fails. Do not ask the user to click through the portal.
 
 ---
 
@@ -362,7 +357,7 @@ rm ~/.uipath-skills/playwright/clear-state.mjs 2>/dev/null
 
 ### `redirect_uri_mismatch` / Login Loop
 
-**Cause:** The redirect URI the SDK sends at runtime (`window.location.origin + window.location.pathname`) is not registered in the UiPath External Application.
+**Cause:** The redirect URI the SDK sends (from the `uipath:redirect-uri` meta tag — locally the `redirectUri` in `uipath.json`) is not registered in the UiPath External Application, or does not match the URL the app is actually served from.
 
 > **You fix this yourself with Playwright.** Do not tell the user *"register the URI in UiPath Cloud"* and stop there. Do not run `open <portal URL>`. Do not present a bullet list of admin-portal clicks. The consolidated `uipath-oauth.mjs` script (in [`oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script)) launches Chrome and performs every one of those clicks automatically when run with `--op add-redirects`.
 
@@ -376,8 +371,7 @@ rm ~/.uipath-skills/playwright/clear-state.mjs 2>/dev/null
      --client-id <uuid> \
      --redirects 'http://localhost:5173,http://localhost:5173/'
    ```
-4. Verify stdout contains `{"status":"ok"}`. Clear browser state (Step 3), re-run Step 0c to confirm the fix.
-5. There is no `VITE_UIPATH_REDIRECT_URI` env var to update — the redirect URI is derived dynamically.
+4. Verify stdout contains `{"status":"ok"}`. Clear browser state (Step 3), re-run Step 0c to confirm the fix. On the app side, confirm the `redirectUri` in `uipath.json` matches the URL you just registered (and the URL the dev server serves).
 
 Fall back to [manual instructions](oauth-client-setup.md#adding-redirect-uris-to-an-existing-app) only if Step 0b reported `chrome-missing` or the script has genuinely failed after 2–3 runs with captured errors.
 
@@ -391,7 +385,7 @@ Fall back to [manual instructions](oauth-client-setup.md#adding-redirect-uris-to
 
 **Fix (autonomous) — execute these steps yourself without deferring to the user:**
 1. Read [oauth-scopes.md](oauth-scopes.md) and determine every scope the SDK services in use require.
-2. Update `VITE_UIPATH_SCOPE` in `.env` to list all required scopes (space-separated).
+2. Update the `scope` field in `uipath.json` to list all required scopes (space-separated).
 3. **Copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script) into `~/.uipath-skills/playwright/uipath-oauth.mjs`. Do **not** rewrite the script.
 4. Run with `--op add-scopes` from the directory the script lives in (Setup B default below; for Setup A use the project root):
    ```bash
@@ -408,7 +402,7 @@ Fall back to the [manual instructions](oauth-client-setup.md#adding-scopes-to-an
 ### API Calls Fail with 401 After Login
 
 **Cause 1:** Token has the wrong scopes for the API being called.
-**Fix:** Update `VITE_UIPATH_SCOPE` in `.env` with the missing scope (see [oauth-scopes.md](oauth-scopes.md)), then run the [Add Scopes to an Existing App](oauth-client-setup.md#add-scopes-to-an-existing-app) script to register it on the External App. Clear browser storage (Step 3) and re-authenticate so the new token includes the added scope.
+**Fix:** Update the `scope` field in `uipath.json` with the missing scope (see [oauth-scopes.md](oauth-scopes.md)), then run the [Add Scopes to an Existing App](oauth-client-setup.md#add-scopes-to-an-existing-app) script to register it on the External App. Clear browser storage (Step 3) and re-authenticate so the new token includes the added scope.
 
 **Cause 2:** Token expired.
 **Fix:** Clear browser storage (Step 3) and re-authenticate.
@@ -416,7 +410,7 @@ Fall back to the [manual instructions](oauth-client-setup.md#adding-scopes-to-an
 ### API Calls Fail with CORS Error
 
 **Cause:** App is calling `cloud.uipath.com` directly. The portal domain does not allow browser CORS requests.
-**Fix:** Set `VITE_UIPATH_BASE_URL` to `https://api.uipath.com` (the API subdomain does allow CORS).
+**Fix:** Set `baseUrl` in `uipath.json` to `https://api.uipath.com` (the API subdomain allows CORS), then restart the dev server so the plugin re-injects the `<meta name="uipath:base-url">` tag.
 
 ### `sdk.isAuthenticated()` Returns `false` After Callback
 
@@ -449,7 +443,7 @@ if (!sdk.isAuthenticated()) {
 **Cause:** `sdk.initialize()` redirects the browser — if the redirect doesn't return to the app, the OAuth flow never completes.
 
 **Check:**
-1. Is the current app URL (`window.location.origin + window.location.pathname`) registered as a redirect URI in the External Application? If not, run the [Add Redirect URIs to an Existing App](oauth-client-setup.md#add-redirect-uris-to-an-existing-app) script (include both with and without trailing slash).
+1. Does the `redirectUri` in `uipath.json` (injected as the `uipath:redirect-uri` meta tag, e.g. `http://localhost:5173`) match the URL the app runs at **and** a redirect URI registered on the External Application? If not, fix `uipath.json` and/or run the [Add Redirect URIs to an Existing App](oauth-client-setup.md#add-redirect-uris-to-an-existing-app) script (include both with and without trailing slash).
 2. Is the dev server running on the expected port (default: 5173)?
 3. Clear browser storage and retry.
 

@@ -7,7 +7,7 @@ description: >
   `$resourceType: "mcp"` (distinct from `$resourceType: "tool"`) with
   the documented sparse shape, and that a `uipath.agent.resource.mcp.*`
   flow node is wired to the autonomous agent node's `tool` handle.
-tags: [uipath-agents, e2e-blocked, mode:build, low-code, inline-flow]
+tags: [uipath-agents, e2e-blocked, mode:build, low-code, inline-flow, path-to-ga]
 skip: true
 # Skipped for now — wiring an inline MCP server tool into the flow is not yet
 # reliable on the run tenant. Re-enable once the inline MCP flow-node path works.
@@ -32,7 +32,7 @@ success_criteria:
     command_pattern: 'uip\s+solution\s+init'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: command_executed
     description: "Agent scaffolded the inline agent with --inline-in-flow"
@@ -69,14 +69,6 @@ success_criteria:
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 0.0
 
   - type: file_exists
     description: "Flow file was created"

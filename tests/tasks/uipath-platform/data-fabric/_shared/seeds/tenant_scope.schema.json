@@ -1,0 +1,13 @@
+{
+  "displayName": "Tenant Scope Test",
+  "description": "Schema-only seed for integration_entity_scope brownfield test. Tenant-level entity (no folder flag) used to verify tenant-scoped entities are visible from all folder contexts.",
+  "fields": [
+    {
+      "fieldName": "Name",
+      "displayName": "Name",
+      "type": "STRING",
+      "isRequired": true,
+      "lengthLimit": 100
+    }
+  ]
+}

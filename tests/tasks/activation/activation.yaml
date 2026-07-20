@@ -14,10 +14,12 @@ dataset:
     - uipath-api-workflow.jsonl
     - uipath-automation-discovery.jsonl
     - uipath-coded-apps.jsonl
+    - uipath-functions.jsonl
     - uipath-troubleshoot.jsonl
     - uipath-feedback.jsonl
     - uipath-governance.jsonl
     - uipath-human-in-the-loop.jsonl
+    - uipath-insights.jsonl
     - uipath-ixp.jsonl
     - uipath-maestro-bpmn.jsonl
     - uipath-maestro-case.jsonl
@@ -34,7 +36,7 @@ dataset:
 
 initial_prompt: "${row.prompt}"
 
-# 22 skill_triggered criteria — one per skill. Each derives expected internally
+# 23 skill_triggered criteria — one per skill. Each derives expected internally
 # from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~1100 no
 # per skill) means recall.yes is the meaningful gate; recall.no is trivially high.
 success_criteria:
@@ -64,6 +66,11 @@ success_criteria:
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
+    description: "uipath-functions activation"
+    skill_name: uipath-functions
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
     description: "uipath-troubleshoot activation"
     skill_name: uipath-troubleshoot
     expected_skill: "${row.expected_skill}"
@@ -81,6 +88,11 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-human-in-the-loop activation"
     skill_name: uipath-human-in-the-loop
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-insights activation"
+    skill_name: uipath-insights
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered

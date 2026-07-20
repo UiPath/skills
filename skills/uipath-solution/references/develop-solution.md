@@ -243,7 +243,7 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 | `--source <source>` | `local`, `remote` | **required** |
 | `--kind <kind>` | Any kind RCS indexes (e.g. Queue, Asset, Bucket, Process, Connection, App, Index, Trigger). Case-insensitive lookup; trimmed and lowerFirstChar-applied before persistence | **required** |
 | `--name <name>` | Resource name (max 256 chars; path separators, control chars, and `: * ? " < > |` are rejected). Per-kind Orchestrator limits are stricter — queues cap at 50 | **required** |
-| `--type <type>` | Resource subtype (e.g. `Text`/`Bool`/`Integer` for Asset, connector type for Connection) | None |
+| `--type <type>` | Resource subtype (e.g. `Text`/`Bool`/`Integer` for Asset, connector type for Connection). On `--source remote` it is inferred from the matched resource when omitted; pass it only to override | None |
 | `--folder-path <path>` | Orchestrator folder for remote lookup. **Not valid with `--source local`** — virtual stubs live under the solution folder | None |
 | `--cloud-key <guid>` | Skip RCS search, import this exact resource key. Only valid with `--source remote`; must be a GUID | None |
 | `--solution-folder <path>` | Path to solution root (must directly contain a `.uipx`) | Current working directory |
@@ -272,17 +272,36 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 
 ### Ambiguous remote match
 
-When `--source remote` is given without `--cloud-key` and the RCS search returns multiple resources with the same `(kind, name)` across different folders, `add` does **not** guess — it emits a structured error with every candidate inline so an agent can re-call without a separate `resource list`:
+When `--source remote` is given without `--cloud-key` and the RCS search returns multiple resources with the same `(kind, name)`, `add` does **not** guess — it emits a structured error listing every candidate (with its folder, subtype, and key) inline so an agent can re-call without a separate `resources list`:
 
 ```json
 {
   "Result": "Failure",
-  "Message": "Ambiguous match: 3 remote resources matching kind=queue name=InvoiceQueue",
-  "Instructions": "Candidates (use one folder via --folder-path, or pass --cloud-key directly):\n  - Folder=Sales/CRM  Key=8f3a1b2c-...\n  - Folder=Operations/Reporting  Key=21a07d4e-...\n  - Folder=Shared  Key=c0e9f7a3-..."
+  "Message": "Ambiguous match: 2 remote resources matching kind=connection name=orders@example.com",
+  "Instructions": "Candidates (disambiguate with --cloud-key <key>; --folder-path only helps when they are in different folders):\n  - Folder=Shared  Type=uipath-google-gmail  Key=8f3a1b2c-...\n  - Folder=Shared  Type=uipath-google-drive  Key=21a07d4e-..."
 }
 ```
 
-Resolve by re-running with `--folder-path <one-of-the-candidates>` or `--cloud-key <one-of-the-keys>`.
+Two cases produce this:
+
+- **Same name across different folders** — resolve with `--folder-path <one-of-the-candidates>` *or* `--cloud-key <one-of-the-keys>`.
+- **Same name *and* folder, different subtype** (e.g. a `uipath-google-gmail` and a `uipath-google-drive` connection both named `orders@example.com` in the same folder). `--folder-path` can't separate these — only `--cloud-key` will. The `Type` column in each candidate tells them apart.
+
+### `--cloud-key` that can't be resolved
+
+`--cloud-key` skips the name search and looks the resource up by key to recover its source folder (the folder context is required — without it the deploy-time FPS export of connection/app resources fails). If the key resolves to nothing — wrong key, a resource not visible to your user, or (when `--folder-path` is also given) a resource that isn't in that folder — `add` fails clearly instead of importing a folderless resource:
+
+```json
+{
+  "Result": "Failure",
+  "Message": "No remote resource found with key 8f3a1b2c-... in folder \"Sales/CRM\"",
+  "Instructions": "Verify the key via 'uip solution resources list --source remote' (and that --folder-path, if given, matches the resource's folder)."
+}
+```
+
+Distinguish this from a **transient lookup failure**: if the Orchestrator search itself errors (RCS/API outage), `add` reports a separate `"Failed to look up the resource in Orchestrator by key"` instead of the not-found message above. Treat that one as retry-able; treat `"No remote resource found with key …"` as a key/folder to fix.
+
+An *already-imported* key is not an error — the idempotency check runs first, so re-adding it returns `Status: "Unchanged"`. On a successful by-key import the resource's subtype is taken from the match automatically (same as the name-search path), so `--type` is only needed to override it.
 
 ### How it relates to `refresh`
 

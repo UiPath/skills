@@ -24,7 +24,6 @@ Both share the same task row schema. The difference is the prelude — `<feature
 **App type:** <web / desktop / citrix / N/A>
 **App state:** <open-and-ready / user-will-open / skip-discovery / N/A>
 **UI targeting:** <agent-builds-you-review / user-indicates / N/A>
-**Solution scope:** <SW | local>  <!-- Flow plans only; omit this line entirely for non-Flow plans -->
 
 ## Understanding
 
@@ -92,7 +91,7 @@ Every task — in both file types — uses this exact structure. The fields belo
 | Field | Required | Notes |
 |---|---|---|
 | `Task T<N>` | yes | Sequential within the file. Renumber on regeneration. |
-| `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-maestro-flow`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-mcp-servers`, `uipath-human-in-the-loop`, `uipath-test`. The planner emits this skill in the live `TaskCreate` call. |
+| `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-functions`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-connector-builder`, `uipath-ixp`, `uipath-mcp-servers`, `uipath-human-in-the-loop`, `uipath-test`. The planner emits this skill in the live `TaskCreate` call. |
 | `Identity` | yes | Stable tuple `<skill>:<project>:<subject>`. Used to match tasks across regenerations. **Parsing rule:** split on the first two colons only; `<subject>` may itself contain colons (typed-resource form `<kind>:<name>` for platform resources). Examples: `rpa:VendorInvoice_Performer:Process/CalculateTotal.xaml` (file-path subject), `platform:VendorInvoice:queue:VendorQueue` (typed-resource subject = `queue:VendorQueue`), `agents:InvoiceClassifier:tools/extract_amount.py` (file-path subject), `rpa:VendorInvoice:testing` (single-token subject). |
 | `Status` | yes | One of `[ ]` pending, `[~]` in_progress, `[x]` completed, `[!]` blocked. |
 | `Completed` | only when `[x]` | `YYYY-MM-DD by agent` or `YYYY-MM-DD by human`. The planner sets `agent` when its TaskUpdate flips the checkbox; `human` only when the user manually edits the file. |
@@ -109,15 +108,17 @@ Append this exact line to every `Skill prompt` block, with the SDD path filled i
 Use values, mappings, and structure exactly as documented in the SDD at <sdd-path>. Do not infer or guess.
 ```
 
-For non-PDD lane, the prompt references the plan file:
+For non-PDD lane, reference the plan file **by path** — never "this plan" (prompts are copied verbatim into `TaskCreate`):
 
 ```
-Use values, mappings, and structure exactly as documented in this plan. Do not infer or guess.
+Use values, mappings, and structure exactly as documented in the plan at <PLAN_FILE_PATH>. Do not infer or guess.
 ```
 
 ## Testing task is mandatory
 
-Every plan with a generation skill (`uipath-rpa`, `uipath-maestro-flow`, `uipath-agents`, `uipath-coded-apps`) gets a dedicated Testing task per generation skill, placed immediately after that skill's generation tasks and **before** any deploy task (`uipath-solution` for `.uipx`-bundled solutions; `uipath-platform` for non-solution Orchestrator ops).
+Every plan with a generation skill (`uipath-rpa`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-agents`, `uipath-coded-apps`) gets a dedicated Testing task per generation skill, placed immediately after that skill's generation tasks and **before** any deploy task (`uipath-solution` for `.uipx`-bundled solutions; `uipath-platform` for non-solution Orchestrator ops).
+
+Plans that build a **custom connector** (`uipath-connector-builder`) or an **IXP model** (`uipath-ixp`) also get a validation task per artifact — connector validate/import check, IXP model metrics review — placed immediately after that build task and **before** any consumer's build task.
 
 ```markdown
 ## Task T<N> — <generation-skill> — Testing (MANDATORY)
@@ -227,4 +228,4 @@ Both files are valid `EnterPlanMode` payloads.
 8. **Skill order is correct** — RPA before platform deploy; integrated components before consumers; testing before deploy.
 9. **No specialist-internal flow leakage.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe the skill's internal flow (target-configuration, OR registration, XAML authoring pipelines, auth flows, testing procedures). Each specialist's own docs own those details.
 10. **Autonomous plans MUST include a populated Stop conditions section.** Without concrete stop items, downstream specialists have no way to distinguish "keep going" from "ask the user" and will default to asking — defeating autonomous mode. Populate with hard blockers realistic for this specific plan (auth, app state, element-capture limits, missing resources); never leave a generic placeholder.
-11. **Solution scope field is Flow-only.** Include `**Solution scope:** <SW | local>` in the plan header only when the plan loads `uipath-maestro-flow`. Omit the line entirely for RPA / AI Agent / Application plans — no other specialist reads it.
+11. **Authoring surfaces are never plan fields.** Studio, Studio Web, VS Code are presentation layers — no plan-header field, task condition, or routing decision references them; each specialist owns its surface. A user-stated surface preference travels as ordinary requirement prose inside the relevant task prompt.

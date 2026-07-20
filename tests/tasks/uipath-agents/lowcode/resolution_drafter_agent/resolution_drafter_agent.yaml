@@ -53,7 +53,7 @@ success_criteria:
     command_pattern: 'uip\s+solution\s+init'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: command_executed
     description: "Agent scaffolded the agent project with uip agent init"
@@ -90,14 +90,6 @@ success_criteria:
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 0.0
 
   - type: file_exists
     description: "ResolutionDrafterAgent/agent.json was created"

@@ -1,0 +1,6 @@
+{
+  "Name": "TermsLetterGen",
+  "ProjectType": "Process",
+  "Description": "Generates a terms letter by opening the terms template and inserting the standard termination clause into the placeholder.",
+  "MainFile": "Main.xaml"
+}

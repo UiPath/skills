@@ -1,4 +1,4 @@
-﻿# Service Discovery
+# Service Discovery
 
 An agent skill for progressively exploring an unknown service URL and producing a working coded workflow.
 
@@ -501,6 +501,6 @@ User provides URL
 
 ## See Also
 
-- [NetHttpRequest Activity](../../UiPath.Web.Activities.Package.Design/docs/activities/NetHttpRequest.md) — HTTP activity behavior spec, inputs, outputs, and defaults
+- [NetHttpRequest Activity](../activities/NetHttpRequest.md) — HTTP activity behavior spec, inputs, outputs, and defaults
 - [cURL Import](curl-import.md) — converting raw cURL commands to HttpRequestOptions
 - [HTTP Request Upgrade](http-request-upgrade.md) — migrating from legacy HTTP Request activity

@@ -1,0 +1,125 @@
+task_id: skill-case-event-trigger-placeholder
+description: >
+  Build a Case Management definition from an sdd.md whose START is an EVENT
+  trigger on a connector that cannot be resolved against the registry.
+  Exercises Critical Rule 8's placeholder event-trigger fallback: the agent
+  must write a placeholder trigger node (`data.uipath.serviceType:
+  "Intsvc.EventTrigger"`, no fabricated connector IDs), append the matching
+  `entry-points.json` entry, and start the case from the first stage's
+  `case-entered` condition (no trigger edge). Local-only (validate, no debug) —
+  the connector is intentionally unresolvable so no cloud connection is needed.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:trigger]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "EventStartCase" containing a
+  project also named "EventStartCase" from the sdd.md below. Write the sdd.md to
+  disk first, then build from it.
+
+  ```
+  # SDD — EventStartCase
+
+  Two-stage case started by an external connector EVENT. Exercises the event
+  trigger plugin's placeholder fallback.
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | EventStartCase |
+  | Case Description | Two-stage case kicked off by an AcmeShipping shipment event. |
+  | Case Identifier | Prefix: ESC, Type: constant |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | event | AcmeShipping connector — "Shipment Delivered" event | Object: ShipmentEvent | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Receive (`receive`)
+  **Type:** Stage
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once |
+  |---|---------|-----------|------|----------|---------------|
+  | 1 | `receive.holdBriefly` | Hold briefly | wait-for-timer | Yes | No |
+
+  ### Stage 2: Process (`process`)
+  **Type:** Stage
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed (Receive) | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once |
+  |---|---------|-----------|------|----------|---------------|
+  | 1 | `process.holdBriefly` | Hold briefly | wait-for-timer | Yes | No |
+  ```
+
+  The AcmeShipping connector is NOT available in the tenant registry — its
+  lookup will return no matches. When that happens, do NOT stop to ask: proceed
+  directly with the skill's placeholder-fallback path for an unresolved event
+  trigger.
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the HARD
+  STOP / AskUserQuestion approval steps. Do NOT run `uip maestro case debug`.
+  Do NOT ask for approval, confirmation, or feedback. Build end-to-end in a
+  single pass and finish with `uip maestro case validate` passing on the
+  resulting caseplan.json.
+
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate EventStartCase/EventStartCase/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Placeholder event trigger (serviceType only) + entry-points.json entry + first-stage case-entered start, no fabricated connector IDs and no trigger edge"
+    command: "python3 $TASK_DIR/check_event_placeholder.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

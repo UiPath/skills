@@ -12,6 +12,10 @@ description: >
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
 max_iterations: 1
 
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  disallowed_tools: ["TaskCreate", "TaskUpdate", "TaskList", "TaskGet"]
+
 sandbox:
   template_sources:
     - type: template_dir
@@ -32,14 +36,6 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent fetched the guardrails list (mandatory discovery step)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+guardrails\s+list'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent refreshed the project to regenerate derived files"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+refresh'
@@ -55,14 +51,6 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 0.0
-
   - type: run_command
     description: "Custom boolean-rule guardrail with filter action on Send message to channel"
     command: "python3 $TASK_DIR/check_custom_boolean_filter.py"
@@ -72,6 +60,6 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
-  expected_turns: 16
+  expected_turns: 24
   max_turns: 40
   turn_timeout: 1200

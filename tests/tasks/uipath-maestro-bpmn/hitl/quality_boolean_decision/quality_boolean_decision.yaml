@@ -1,0 +1,64 @@
+task_id: skill-bpmn-hitl-boolean-decision
+description: >
+  Quality test (ported from flow hitl/quality_03): agent models the approval
+  decision as a genuine boolean — a boolean-typed HITL output bound to a
+  boolean-typed variable — and the gateway condition treats it as a boolean
+  (not compared to a quoted string literal / stringly-typed).
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl", "node:decision", "feature:approval-gate"]
+
+run_limits:
+  expected_turns: 24
+  max_turns: 105
+
+initial_prompt: |
+  Create a local BPMN project named "VendorApprovalBpmn" for vendor onboarding:
+
+  1. Manual start.
+  2. A script task sets vendor context (mock: vendor name and credit score as
+     process variables).
+  3. HITL user task — a compliance officer reviews the vendor (sees vendor name
+     and credit score read-only) and records a boolean approval decision plus
+     optional risk notes. Capture the approval as a boolean output of the HITL
+     activity bound to a boolean-typed process variable.
+  4. An exclusive gateway branches on the boolean approval: true onboards the
+     vendor, false rejects it — each to its own step and end.
+
+  Requirements:
+  - This is a UiPath Maestro BPMN project authored with the uipath-maestro-bpmn
+    skill: `.bpmn` XML, main file `VendorApprovalBpmn/VendorApprovalBpmn.bpmn`.
+    Do NOT build a `.flow`.
+  - Model the review as a `bpmn:userTask` using the documented `Actions.HITL`
+    `uipath:activity` shell from the registry template.
+  - The approval decision MUST be a boolean output field bound to a
+    boolean-typed variable — do NOT model it as a string.
+  - The gateway condition MUST reference the boolean variable via `vars.<id>`
+    and treat it as a boolean (e.g. `== true`), not compare it to a quoted
+    string.
+  - Declare process variables with the registry BPMN.Variables template.
+  - Use synthetic placeholder resource names only.
+  - Include BPMN DI for every visible node and sequence flow.
+  - Do not upload, publish, deploy, debug, or run the process. Do not pause for
+    approval, confirmation, or feedback.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "VendorApprovalBpmn/VendorApprovalBpmn.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL modeled with the documented Actions.HITL activity type"
+    path: "VendorApprovalBpmn/VendorApprovalBpmn.bpmn"
+    includes:
+      - "Actions.HITL"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Boolean approval is typed boolean and routed as a boolean (not stringly-typed)"
+    command: "python3 $TASK_DIR/check_quality_boolean_decision.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

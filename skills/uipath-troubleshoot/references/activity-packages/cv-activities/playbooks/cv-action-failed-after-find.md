@@ -86,7 +86,7 @@ Walk the branches; pick the first whose evidence holds. Name the evidence that r
 
 ## Post-presentation actions
 
-This resolution is **interactive** whenever a fix edits user source files — Branch A (credential wiring), Branch B (add wait / change `DelayBefore` / drop a stale `InRegion`), Branch C (`MethodType` change), and Branch D (`Text` edit) all touch the workflow. The orchestrator MUST call `AskUserQuestion` before any edit.
+This resolution is **interactive** whenever a fix edits user source files — Branch A (credential wiring), Branch B (add wait / change `DelayBefore` / drop a stale `InRegion`), Branch C (`MethodType` change), and Branch D (`Text` edit) all touch the workflow. You MUST call `AskUserQuestion` before any edit (approval gate).
 
 1. **Sharing a file path is not approval.** A path given so you could read the project does not authorize editing it. Issue a separate `AskUserQuestion` before any write.
 2. **Never bundle "gather input" with "apply fix" in one option.** Split into two steps: gather the input, then surface the concrete diff and confirm separately.

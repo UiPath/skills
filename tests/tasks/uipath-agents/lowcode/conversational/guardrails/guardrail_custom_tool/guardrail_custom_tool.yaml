@@ -1,0 +1,89 @@
+task_id: skill-agent-conversational-guardrail-custom-tool
+description: >
+  Positive integration test. Builds a conversational agent with a tool and
+  adds the ONE guardrail type conversational agents support: a `$guardrailType:
+  "custom"` deterministic word rule scoped to that Tool. Verifies the skill
+  teaches that built-in validators are autonomous-only, and that the custom
+  guardrail is authored at the `agent.json` root `guardrails[]` (authoritative
+  for UI + runtime, per conversational Critical Rule 1) with no built-in
+  validator anywhere. The prompt states the goal (block a word on a tool) and
+  lets the skill choose the custom-guardrail shape and placement.
+tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code, feature:conversational, guardrail]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+run_limits:
+  max_turns: 50
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath low-code conversational agent "DocGuardBot" that lets
+  users upload documents and ask questions about their content. For
+  compliance, the document tool must never surface material marked
+  confidential — add a guardrail so that tool is blocked whenever its
+  output contains the word "CONFIDENTIAL", returning the message
+  "Confidential content blocked." The solution should be named
+  "DocGuardSol".
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution new/init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(new|init)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "DocGuardBot/agent.json was created"
+    path: "DocGuardSol/DocGuardBot/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "agent.json has conversational shape — isConversational true + engine conversational-v1"
+    path: "DocGuardSol/DocGuardBot/agent.json"
+    assertions:
+      - expression: "metadata.isConversational"
+        operator: "equals"
+        expected: true
+      - expression: "settings.engine"
+        operator: "equals"
+        expected: "conversational-v1"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Custom word Tool-guardrail in agent.json root guardrails[] (authoritative), no built-in validator (conversational Critical Rule 1)"
+    command: "python3 $TASK_DIR/check_conversational_custom_guardrail.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

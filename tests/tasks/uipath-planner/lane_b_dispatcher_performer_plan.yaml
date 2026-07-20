@@ -41,13 +41,24 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "Deploy step routes to the solution/platform specialist (not left to uipath-rpa)"
-    command: "grep -Eiq 'uipath-solution|uipath-platform' rpa-build-plan.md"
-    timeout: 10
-    expected_exit_code: 0
+  - type: file_contains
+    description: "Deploy routes to uipath-solution — two queue-connected projects are Master-Project shape, so Packaging: solution (.uipx) is the deterministic layer-4 outcome"
+    path: "rpa-build-plan.md"
+    includes:
+      - "uipath-solution"
     weight: 2.0
     pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Plan uses the task row schema with a mandatory Testing task and embeds the plan path in prompts"
+    path: "rpa-build-plan.md"
+    includes:
+      - "Task T"
+      - "Blocked by"
+      - "Testing (MANDATORY)"
+      - "rpa-build-plan.md"
+    weight: 2.0
+    pass_threshold: 0.75
 
   - type: run_command
     description: "Stayed in planning — did not start building (no .xaml authored)"

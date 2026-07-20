@@ -1,0 +1,101 @@
+task_id: skill-coded-apps-integration-scope-mismatch-fix
+description: >
+  Integration test (mode:diagnose, offline): Rule #16 negative path —
+  mismatched OAuth scopes fail SILENTLY with 401/403 on the first SDK
+  call. Agent receives a working-looking app where `Tasks.complete` (a
+  WRITE method) fails with 403, and the seeded `.env.example` scope line
+  only carries the READ scope (`OR.Tasks.Read`). Agent must diagnose the
+  scope↔method mismatch and fix the scope (not the code). Promotes Rule
+  16 from Indirect (positive scope assertions only) to Direct, and adds
+  a D7-adjacent diagnose archetype (config/permission health).
+tags: [uipath-coded-apps, integration, mode:diagnose, lifecycle:generate]
+run_limits:
+  expected_turns: 12
+  turn_timeout: 600
+
+initial_prompt: |
+  You're debugging a UiPath Coded Web App. A teammate reports: "the app
+  loads fine and lists tasks correctly, but clicking Complete on any task
+  fails with HTTP 403. Nothing in the code changed."
+
+  Reproduce the app state by writing these files at the sandbox root
+  EXACTLY as shown, then find and fix the root cause.
+
+  `.env.example`:
+  ```
+  VITE_UIPATH_BASE_URL=https://api.uipath.com
+  VITE_UIPATH_ORG_NAME=acme
+  VITE_UIPATH_TENANT_NAME=Production
+  VITE_UIPATH_CLIENT_ID=00000000-0000-0000-0000-000000000000
+  VITE_UIPATH_REDIRECT_URI=http://localhost:5173
+  VITE_UIPATH_SCOPE=OR.Tasks.Read
+  ```
+
+  `src/taskActions.ts`:
+  ```
+  import { Tasks } from '@uipath/uipath-typescript/tasks';
+  import { sdk } from './uipath';
+
+  const tasks = new Tasks(sdk);
+
+  export async function listMyTasks() {
+    return tasks.getAll();
+  }
+
+  export async function completeTask(taskId: number, payload: object) {
+    return tasks.complete(taskId, payload);
+  }
+  ```
+
+  The code is correct — do NOT modify `src/taskActions.ts`. Diagnose why
+  the read path works but the write path 403s, consult the skill's
+  scope guidance, and fix the configuration. Write a one-paragraph
+  `diagnosis.txt` naming the root cause.
+
+  Do NOT run `uip` or `npm` commands — this environment is not
+  authenticated; the fault is fully visible in the files above.
+
+success_criteria:
+  - type: file_exists
+    description: ".env.example still exists after the fix"
+    path: ".env.example"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "THE FIX — scope line now includes a write-capable Tasks scope: bare `OR.Tasks` or `OR.Tasks.Write` (not just OR.Tasks.Read). Rule #16: write/action methods need broader scopes than read-only flows. (Trailing space appended before matching so `OR.Tasks` at end-of-line matches without relying on `$`-in-alternation.)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=' .env.example | sed 's/$/ /' | grep -E 'OR\\.Tasks( |\\.Write)'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/taskActions.ts was NOT modified — the fault is config, not code (agent didn't 'fix' the wrong layer)"
+    command: "grep -qE 'tasks\\.complete\\(taskId, payload\\)' src/taskActions.ts && grep -qE 'tasks\\.getAll\\(\\)' src/taskActions.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "no token/auth workaround was added to the code (Rule #7 guard — the fix must be scope config, not manual auth handling)"
+    command: "grep -v -E '^\\s*(/\\*|\\*/|\\*)' src/taskActions.ts | sed 's|//.*||' | grep -iE 'access_token|bearer|authorization'"
+    timeout: 10
+    expected_exit_code: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "diagnosis.txt was written"
+    path: "diagnosis.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "diagnosis names the scope mismatch as root cause (mentions scope AND the read-vs-write distinction or the 403)"
+    command: "grep -qiE 'scope' diagnosis.txt && grep -qiE 'write|complete|403|read' diagnosis.txt"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

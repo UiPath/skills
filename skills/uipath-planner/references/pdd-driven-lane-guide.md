@@ -6,10 +6,18 @@ When the planner detects a Solution Design Document (SDD) at entry, it runs Lane
 
 ## Step 1 — Read the SDD's Planner Handoff header
 
-The header appears near the top of every SDD — immediately after `## Document History` in per-project SDDs, or as section 2 (right after Solution Overview) in a solution-overview SDD. Read these 7 fields:
+The header appears near the top of every SDD — immediately after `## Document History` in per-project SDDs, or as section 2 (right after Solution Overview) in a solution-overview SDD.
+
+**Status gate — check before everything else.** `Status: draft` marks an unfinished Phase D run: sections or the completeness check are missing, or an architecture-blocking SME item is open. Do NOT derive tasks from it. Tell the user the SDD is an unfinished draft and offer: **resume Phase D** (finish the remaining sections, resolve blocking SME items, run the superset check, flip Status to ready) or **regenerate from the PDD**. A missing Status field (hand-written or legacy SDD) → treat as `ready` for backward compatibility and note it in the Step 8 summary. Only `ready` (explicit or legacy-implied) proceeds.
+
+**Open SME items travel as assumptions.** A `ready` SDD may carry `## Action Required — SME Review Items` with default-carried rows — that is a normal enterprise SDD, not a defect. Do not refuse it and do not spawn tasks for the items. When deriving tasks (Step 6), append one line to each task whose SDD section is named by an item: `Assumption pending SME confirmation: <ITEM> — proceeding with default <DEFAULT>`. List the open items in the closing summary so production sign-off stays visible. A `Blocking = yes` row in a `ready` SDD contradicts its Status — treat the SDD as `draft` (gate above).
+
+Read these fields:
 
 | Field | What the planner does with it |
 |---|---|
+| **Status** | `draft` → refuse task derivation (gate above). `ready` → proceed. |
+| **Solution root SDD / Solution ID / Project SDD role** | Solution scope only. `child` → resolve the root and run the Step 3 root algorithm; `root` → this file's Project Inventory + SDD Index are canonical. `Solution ID` must match across root and children. |
 | **Execution autonomy** | `interactive` → enter plan mode for task review before execution. `autonomous` → emit live tasks directly. |
 | **Delivery model** | `cloud` / `automation-suite <version>` / `standalone` / `unspecified`. Propagated as a platform-constraint line into every specialist task prompt (Step 6). |
 | **SDD scope** | `single-product` → one SDD file owns one task list. `solution` → one solution-overview SDD plus one per-project SDD; tasks span all projects. |
@@ -38,7 +46,16 @@ If the file does not exist (first run), proceed to Step 3.
 
 ## Step 3 — Parse the SDD project list
 
-Read the section named in the `Project list section` header field. The project list is the canonical source for tasks — every project becomes a subset of tasks routed to the appropriate specialist.
+**Solution scope → run the root algorithm.** When the handoff says `SDD scope: solution`, never derive tasks from a single file — a child alone yields a partial task list; the root alone lacks implementation detail. Deterministic algorithm:
+
+1. **Resolve the Solution root.** `Project SDD role: child` → open the `Solution root SDD` path (fallbacks: `*-solution-sdd.md` beside the file, else ask the user). `Project SDD role: root` (or the file IS the overview) → it is the root.
+2. **Read the root's Project Inventory and Per-Project SDD Index** — the canonical project list.
+3. **Verify every indexed child**: the file exists, carries the same `Solution ID`, and is `Status: ready`. Any child missing, ID-mismatched, or still `draft` → STOP and ask via `AskUserQuestion`: finish/regenerate the child first *(recommended)*, or derive a partial task list with the exclusions named explicitly in the plan header.
+4. **Read every child SDD's detailed architecture** (its `Project list section` — nodes, workflows, tools, pages, schemas, integrated components). The overview alone is never enough to derive implementation-level tasks.
+5. **Merge shared resources and cross-project dependencies** from the root's Shared Assets & Queues and Cross-Project Data Flow sections — each shared queue/asset/connection is created ONCE (one task, at solution level), and dependency edges follow build-before-consume ordering.
+6. **Write exactly ONE canonical tasks file** — the root's `Tasks file` value. Never write a per-project tasks file in solution scope; the end-to-end testing and packaging tasks come last, after every component's build + testing tasks.
+
+For single-product scope: read the section named in the `Project list section` header field. The project list is the canonical source for tasks — every project becomes a subset of tasks routed to the appropriate specialist.
 
 Common section locations per template:
 
@@ -47,6 +64,7 @@ Common section locations per template:
 | RPA single project | §11 Project Structure (workflow inventory) |
 | RPA Master Project | §10 Master Project Architecture (sub-project list) + §11 Workflow Inventory per sub-project |
 | Flow | §3 Nodes Inventory + §7 Integrated Components |
+| BPMN | §4 Activities Inventory + §9 Integrated Components |
 | Case | §15 Project Structure + §14 Integrated Components |
 | Agent | §9 Project Structure + §3 Tools |
 | Coded App | §10 Project Structure + §9 Integrated Components |
@@ -56,7 +74,7 @@ Common section locations per template:
 Extract per project:
 
 - Project name (used for the `Identity` tuple)
-- Product (RPA / Flow / Case / Agent / Coded App / API Workflow)
+- Product (RPA / Flow / BPMN / Case / Agent / Coded App / API Workflow / IXP / Function)
 - Sub-type (for RPA: Process / Library / Test Automation)
 - Role (Dispatcher / Performer / Reporting / Library / Test / etc.)
 - Framework (Sequence / REFramework, for RPA)
@@ -74,6 +92,10 @@ Based on the project list, pick the matching pattern from [multi-skill-patterns-
 | RPA Master Project | Pattern 1 per sub-project, integrated via shared queues; cross-project deploy via `uipath-solution` (single `.uipx`) |
 | Flow with §7 Integrated Components that reference unbuilt resources | Pattern 2 |
 | Flow whose §7 integrated components are pre-existing | Pattern 3 |
+| BPMN with §9 Integrated Components that reference unbuilt resources | Pattern 2 (substitute `uipath-maestro-bpmn` for `uipath-maestro-flow`) |
+| BPMN whose §9 integrated components are pre-existing | Pattern 3 (substitute `uipath-maestro-bpmn`) |
+| Any SDD with a filled "IXP / Document Understanding Models" table | Add an IXP model build + validation task via `uipath-ixp` per model, ordered before its consumer's build tasks |
+| Any SDD with a filled "Coded Functions" table | Add a Function build + validation task via `uipath-functions` per function, ordered before its consumer's build tasks |
 | Agent with RPA tools in §3 Tools | Pattern 5 |
 | Coded App | Coded App build + `uipath-solution` deploy + testing (when wrapped in `.uipx`); otherwise `uipath-coded-apps` self-deploys |
 | API Workflow | API Workflow build + `uipath-solution` publish + testing |

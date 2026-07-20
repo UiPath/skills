@@ -1,0 +1,82 @@
+task_id: skill-review-rpa-transaction-shape
+description: >
+  Judgment test for uipath-review's Unit-of-Work / Transaction-Shape analysis
+  (SKILL.md Step 3a). Each queue transaction is a batch header; Process.xaml
+  loops over the batch's line items and posts each one to a downstream queue
+  with no idempotency key or already-posted check. This is a one-to-many
+  (bulk-in-transaction) shape: if the transaction fails partway and is
+  retried, the already-posted line items are posted again. The reviewer must
+  classify the transaction shape as one-to-many AND flag the missing
+  idempotency guard / duplicate-on-retry risk.
+
+  Integration tier: longer, non-gating run. `uip rpa validate/build/analyze`
+  require Windows and may not run on Linux CI — those CLI checks are advisory.
+  The defect is caught by reading the workflows, which is platform-independent.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1500
+  task_timeout: 1800
+  max_turns: 50
+
+sandbox:
+  driver: tempdir
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  A UiPath REFramework project exists at `TxnShapeBot` in the current
+  directory. Review it for quality and reliability, paying particular
+  attention to how a single queue transaction maps to the work it performs,
+  and produce a structured review report with Critical / Warning / Info
+  findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `TxnShapeBot/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `TxnShapeBot/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside TxnShapeBot/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*TxnShapeBot'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside TxnShapeBot/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*TxnShapeBot'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Advisory: uip rpa validate/build/analyze ran (Critical Rule 2) — recorded, not gating"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+(validate|build|analyze)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Report classifies one-to-many shape AND flags missing idempotency"
+    command: "python3 $TASK_DIR/check_transaction_shape.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

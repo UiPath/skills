@@ -28,7 +28,7 @@ Every node in a `.flow` file has exactly one author. The validator enforces this
 | Triggers | `core.trigger.manual`, `core.trigger.scheduled` |
 | Control flow | `core.logic.decision`, `core.logic.switch`, `core.logic.loop`, `core.logic.merge`, `core.control.end`, `core.logic.terminate`, `core.subflow` |
 | Logic | `core.action.script`, `core.action.transform`, `core.logic.delay`, `core.logic.mock` |
-| Human-in-the-loop | `uipath.human-in-the-loop` (inline + app-task forms) |
+| Human-in-the-loop | `uipath.human-in-the-loop.quick-form` (inline form), `uipath.human-in-the-loop.coded-action-app` (app-based) |
 | Patterns | `uipath.pattern.batch-transform`, `uipath.pattern.deep-rag` |
 | Agents | `uipath.agent.autonomous` (inline; after `uip agent init --inline-in-flow`) |
 | Resource nodes | `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, `uipath.core.human-task.*` |
@@ -111,7 +111,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 
 ## Anti-patterns
 
-- **Never run `uip maestro flow init` outside a solution directory** — see [SKILL.md rule #6](../../SKILL.md#critical-rules-universal) for the required double-nested `<Solution>/<Project>/<Project>.flow` layout and the self-check.
+- **Prefer running `uip maestro flow init` from inside the solution you named** — run outside one it auto-scaffolds `<Project>Solution/`, but the auto name won't match your chosen solution name. Never pass `--skip-solution-registration` for a project you intend to upload (it leaves a bare single-nested layout). See [SKILL.md rule #6](../../SKILL.md#critical-rules-universal) for the required double-nested `<Solution>/<Project>/<Project>.flow` layout and the self-check.
 - **Never guess node schemas** — use `registry get` for all node types. Guessed port names or input fields cause silent wiring failures.
 - **Never skip capability discovery for connector nodes** — run `registry search` to confirm the connector exists and what operations it supports before building. See [connector/planning.md](references/plugins/connector/planning.md). Skipping this is the #1 cause of designing around a connector that doesn't exist or an operation it doesn't support.
 - **Never replace a registered connector operation with `core.logic.mock` because configuration cannot run** — if `registry search` / `registry get` finds `uipath.connector.<connector-key>.<operation>`, add that real connector node via `uip maestro flow node add`. Missing live connections, missing tenant access, or prompts that ask you to only plan `--detail` mean: run `node add`, write the planned `--detail` payload to a sidecar file (e.g. `<nodeId>.detail.json`), and surface "configure pending" as an Open Question. **Do not leave a partial `inputs.detail` on the node** — the validator rejects hand-authored envelopes, and the node will not pass `flow validate` until `node configure` is run. Studio Web and reviewers need the real connector key in the `.flow`; the agent must report this explicitly rather than letting the user discover it via a later validation failure. See [§ Node ownership](#node-ownership--who-authors-the-node) and [connector/impl.md — No-Live-Tenant / Planned Configuration](references/plugins/connector/impl.md#no-live-tenant--planned-configuration).
@@ -145,8 +145,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 - [planning-arch.md](references/planning-arch.md) — capability discovery, plugin index, topology design
 - [planning-impl.md](references/planning-impl.md) — registry lookups, connection binding, wiring rules
 - [plugins/](references/plugins/) — per-node-type planning + impl docs:
-  - [connector](references/plugins/connector/) — IS connector nodes
-    - [connector/data-fabric](references/plugins/connector/data-fabric/) — Data Fabric entity activities (Query / Create / Update / Delete / Get by ID)
+  - [connector](references/plugins/connector/) — IS connector nodes (incl. Data Fabric activities)
   - [connector-trigger](references/plugins/connector-trigger/)
   - [script](references/plugins/script/) — Jint ES2020 JavaScript
   - [http](references/plugins/http/) — `core.action.http.v2` (Managed HTTP Request)

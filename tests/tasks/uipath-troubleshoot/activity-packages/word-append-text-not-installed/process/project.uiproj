@@ -1,0 +1,6 @@
+{
+  "Name": "ServerAppend",
+  "ProjectType": "Process",
+  "Description": "Opens a Word document on an unattended robot and appends a processing note to it.",
+  "MainFile": "Main.xaml"
+}

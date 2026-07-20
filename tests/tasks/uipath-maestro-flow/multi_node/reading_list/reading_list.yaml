@@ -57,7 +57,7 @@ success_criteria:
   - type: run_command
     description: "Flow debug runs and transform output contains the 3 curated books"
     command: "python3 $TASK_DIR/check_reading_list.py"
-    timeout: 120
+    timeout: 300  # must exceed run_debug's internal subprocess timeout (240s)
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

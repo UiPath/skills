@@ -106,6 +106,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
 | **connector** | flat, present iff applicable | Marks tasks that use any IS connector. The specific connector is in the YAML body / file path. |
 | **windows** | flat, present iff applicable | Marks tasks that require a Windows host (e.g. RPA `.xaml`/`.cs` projects that need Studio Helm). Used by `smoke-rpa-skills.yml` to route the task to a `windows-latest` runner; Linux/macOS smoke runs skip it. |
+| **path-to-ga** | flat, optional | Marks exhaustive, difficult, currently blocked, or historically fragile tasks that represent must-pass scenarios on the path to GA. | `path-to-ga` |
 | **feature** | `feature:X`, repeatable | Cross-cutting capability orthogonal to node/resource/connector. Closed vocabulary: `http`, `trigger`, `registry`, `transform`, `eval`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks`, `conversational`. Do not invent leaf names like `feature:ceql-where` or directory-name markers like `feature:connector-feature` — those duplicate the file path. |
 
 ### Rules
@@ -113,7 +114,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 1. **Required on every task: `skill` + `tier` + `mode:*` + `lifecycle:*`.** These drive `make` targets, coverage, and evalboard dashboards.
 2. **One value per singular dimension** (`tier`, `mode`, `shape`). A task doesn't have two tiers.
 3. **`node:` and `feature:` are repeatable.** A flow exercising decision and switch nodes gets both `node:decision` and `node:switch`.
-4. **`connector`, `resource`, and `windows` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path, `task_id`, or YAML body. Adding `connector:slack` etc. is no longer the convention.
+4. **`connector`, `resource`, `windows`, and `path-to-ga` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path, `task_id`, or YAML body. Adding `connector:slack` etc. is no longer the convention.
 5. **Use only the vocabularies above.** Propose new values in the PR — do not invent tags inline. New values should apply to at least two tasks in practice.
 6. **Don't repeat the skill name as a feature tag.** Don't tag a flow task with `rpa` (bare) or `uipath-rpa` as a feature.
 
@@ -129,6 +130,7 @@ tags: [uipath-maestro-flow, e2e, mode:build, shape:multi-node, node:decision, co
 - `make tags TAGS="smoke windows"` → Windows-only smoke tasks (the slice `smoke-rpa-skills.yml` runs on `windows-latest`).
 - `make tags TAGS="integration connector"` → connector coverage across skills.
 - `make tags TAGS="e2e mode:build"` → end-to-end build tasks across skills.
+- `make tags TAGS="path-to-ga"` → GA-critical exhaustive, blocked, or historically fragile tasks.
 - `make tags TAGS="mode:diagnose"` → diagnosis-mode coverage across skills.
 - Evalboard: `where tag == "connector"` → pass-rate across all connector-using tasks.
 - Evalboard: `where tag == "shape:multi-node"` → composite-flow reliability.
@@ -223,7 +225,7 @@ directly.
 ```yaml
 pre_run:
   - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
-    timeout: 30
+    timeout: 60
 ```
 
 A single helper script (`tests/tasks/uipath-platform/seed.py`) writes
@@ -407,12 +409,12 @@ Verify a file contains (or excludes) expected strings. From `uipath-maestro-flow
   description: "Flow contains the inline HITL node type"
   path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
   includes:
-    - '"uipath.human-in-the-loop"'
+    - '"uipath.human-in-the-loop.quick-form"'
   weight: 3.0
   pass_threshold: 1.0
 ```
 
-`excludes:` is also supported — useful for asserting a file does not contain a deprecated flag or forbidden value.
+`excludes:` is also supported — useful for asserting a file does not contain a deprecated flag or forbidden value. `includes` is a required field: an excludes-only criterion fails schema validation, so pair `excludes` with at least one positive `includes` entry.
 
 ### `json_check`
 
@@ -444,18 +446,18 @@ Or byte-equality for upload/download round-trips:
 
 ### `skill_triggered`
 
-Verify the agent invoked a Claude Code Skill tool. Useful for "did the agent recognize this scenario calls for skill X?" Supports positive (`expected: "yes"`) and negative (`expected: "no"`) assertions:
+Verify the agent invoked a Claude Code Skill tool. Useful for "did the agent recognize this scenario calls for skill X?" Both `skill_name` and `expected_skill` are required; the expected label is "yes" iff `expected_skill == skill_name`:
 
 ```yaml
 - type: skill_triggered
   description: "Agent invoked the uipath-human-in-the-loop skill"
   skill_name: "uipath-human-in-the-loop"
-  expected: "yes"
+  expected_skill: "uipath-human-in-the-loop"
   weight: 3.0
   pass_threshold: 1.0
 ```
 
-Un-fakeable — the criterion inspects `turn_records.commands` directly. The negative form (`expected: "no"`) is the right primitive for smoke tests where the agent should NOT trigger a particular skill.
+Un-fakeable — the criterion inspects `turn_records.commands` directly. The negative form (`expected_skill: ""`) is the right primitive for smoke tests where the agent should NOT trigger a particular skill.
 
 ### `command_not_executed`
 
