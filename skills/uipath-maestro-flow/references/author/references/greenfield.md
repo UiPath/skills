@@ -332,11 +332,13 @@ When you finish building the flow, report to the user:
 4. **Format status** — confirm `flow format` was run
 5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
 6. **Missing connections** — any connector nodes that need connections the user must create
-7. **What's next** — ask the user, presenting the dropdown below (see the dropdown question rule in [SKILL.md](../../../SKILL.md))
+7. **What's next** — ask the user, following the two questions below (see the dropdown question rule in [SKILL.md](../../../SKILL.md))
 
-### What's next dropdown
+### What's next
 
-Authoring terminates here. Each option below hands off to Operate — read [operate/CAPABILITY.md](../../operate/CAPABILITY.md) for the command sequence.
+First ask a **yes/no** question — **Open the flow in editor?** Skip this question **only when the generated `<ProjectName>.flow` file itself is already open** (e.g. you opened it earlier this session, or the user already has that exact file open) — then do not ask, do not re-open. Having other/unrelated files open does NOT count — still ask when only other files are open. On **Yes**, run `code -r "<ProjectName>.flow"` (`.flow` opens in the visual Flow editor by default — no viewType/flags; if `code` isn't on `PATH`, try `code-insiders` then `cursor`; if none resolve, report the file path; skip in headless/CI). On **No**, continue. Independent of the next action — opening the flow does not replace publish/debug/deploy.
+
+Then present the **next-action** dropdown. Authoring terminates here. Each option below hands off to Operate — read [operate/CAPABILITY.md](../../operate/CAPABILITY.md) for the command sequence.
 
 | Option | What it does |
 | --- | --- |
