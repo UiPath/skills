@@ -138,6 +138,15 @@ Namespaces: `UiPath.MicrosoftOffice365.Activities`
 - [activity-packages/o365-activities/overview.md](./activity-packages/o365-activities/overview.md) — Package overview, activity types, and common failure patterns
 - [activity-packages/o365-activities/summary.md](./activity-packages/o365-activities/summary.md) — All playbooks for Microsoft Office 365 Activities issues
 
+## Mail Activities (classic)
+
+Activities from the classic mail packages that talk to a mail system directly from the Robot: Outlook desktop COM (`UiPath.Mail.Outlook.Activities` — `Send Outlook Mail Message`, `Get Outlook Mail Messages`, `Move Outlook Mail Message`, `Reply To Outlook Mail Message` driving a local OUTLOOK.EXE via COM interop under the Robot's Windows user) and protocol-level SMTP / IMAP / POP3 / Exchange. Distinct from the modern Graph/OAuth Microsoft Office 365 Activities and the Gmail activities in Google Workspace Activities. Issues here involve COM cast / library-not-registered failures (`REGDB_E_CLASSNOTREG`, `TYPE_E_LIBNOTREGISTERED` — Outlook missing/unregistered, bitness mismatch, orphaned OUTLOOK.EXE), timeouts and hangs (hidden security prompt, Work Offline mode, slow profile first-launch — fragile on unattended Robots with no interactive desktop to dismiss prompts), and uninitialized inputs (`Object reference not set to an instance of an object` from a null To/Subject/Body or attachment path).
+
+Namespaces: `UiPath.Mail.Outlook.Activities`, `UiPath.Mail.SMTP.Activities`, `UiPath.Mail.IMAP.Activities`, `UiPath.Mail.POP3.Activities`, `UiPath.Mail.EWS.Activities`
+
+- [activity-packages/mail-activities/overview.md](./activity-packages/mail-activities/overview.md) — Package overview, Outlook COM execution model, and common failure patterns
+- [activity-packages/mail-activities/summary.md](./activity-packages/mail-activities/summary.md) — All playbooks for classic Mail Activities issues
+
 ## Excel Activities
 
 Desktop Excel activities from `UiPath.Excel.Activities` — read, write, delete, and manipulate `.xlsx` / `.xls` workbooks, run VBA macros (`Invoke VBA`, `Execute Macro`), and look up ranges on the host filesystem via Excel COM (Excel installed) or the OpenXML provider (Excel not required). Issues here involve workbooks locked by other processes, sheet names not found, range parsing failures, provider-specific parsing errors on heavily formatted or sensitivity-labeled files, Trust Center macro blocks, entry-method / parameter marshaling errors, COM-interop instability (`0x80010100 RPC_E_SYS_CALL_FAILED` and related HRESULTs), and Application Scope / Use Excel File container failures. For cloud Excel via Microsoft Graph, see Microsoft Office 365 Activities above.
