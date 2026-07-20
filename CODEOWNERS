@@ -136,6 +136,8 @@
 /tests/tasks/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /tests/tasks/activation/uipath-troubleshoot.jsonl @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /skills/uipath-troubleshoot/references/products/agents/ @UiPath/llmops-team @andreibalas-uipath
+# Assistant desktop diagnostics domain (diagnostic archives — combined.log / Robot.log)
+/skills/uipath-troubleshoot/references/products/assistant/ @vasyop @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 
 # Governance skill
 /skills/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath
@@ -167,6 +169,3 @@
 
 # Automation Discovery skill
 /skills/uipath-automation-discovery/ @uisherif
-
-# Assistant Diagnostics skill (desktop-app diagnostic archives — combined.log / Robot.log)
-/skills/uipath-assistant-diagnostics/ @vasyop
