@@ -92,7 +92,7 @@ For any task whose business behavior is "open an app/browser, click, type, scrap
 
 If target configuration is unavailable, fall back to the documented UIA indication path — never to an external browser automation shortcut.
 
-The full prohibited-tool list, the UIA-only exploration requirement, and the `InvokeJS`/`InjectJsScript` exception scope are in [ui-automation-guide.md](references/ui-automation-guide.md) § Mandatory: Generate Targets Before Writing Any UI Code — read it in full per Rule 7 before any UIA work.
+The full prohibited-tool list, the UIA-only exploration requirement, and the `InvokeJS`/`InjectJsScript` exception scope are in the UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) § Mandatory: Generate Targets Before Writing Any UI Code — read it in full per Rule 7 before any UIA work.
 
 ### Placeholder-Selector Stub Pattern (when live app access is unavailable)
 
@@ -102,7 +102,7 @@ When generating a UI automation workflow **without** live app access (target cap
 
 **Required:** the **real** UIA activity (`NTypeInto`, `NClick`, `NGetText`, `NApplicationCard`, etc.) with the target descriptor's selector left as a placeholder string and a `TODO Indicate` marker embedded in the activity's `DisplayName` (XAML) or in a `// TODO[Indicate]` comment immediately adjacent to the coded call. A developer opens Studio, clicks **Indicate** on each marked activity, and the workflow runs.
 
-This applies to **both** XAML and coded modes. The full pattern with XAML and coded examples is in [ui-automation-guide.md](references/ui-automation-guide.md) § Placeholder-Selector Stub Pattern (read in full per Rule 7).
+This applies to **both** XAML and coded modes. The full pattern with XAML and coded examples is in [uia-placeholder-stub-guide.md](references/uia-placeholder-stub-guide.md) — read it in full before authoring stub-mode workflows. It requires no UIA package or CLI.
 
 **Hybrid pattern** — XAML orchestration + coded fallback for logic with no matching activity:
 
@@ -115,11 +115,11 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 
 When the request is "automate this dialog/form" or "build a UI test from these manual steps" — i.e. the bulk of the work is target capture, not coding — **defer authoring-phase prerequisites until target capture is complete**. The capture surface is interactive, app-state-sensitive, and time-bound; project-context discovery adds nothing during capture and steals time from it.
 
-**Fast-path order for capture-first tasks.** Read [ui-automation-guide.md](references/ui-automation-guide.md) and [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) in full first (Rule 7; the second is used in step 3). Then:
+**Fast-path order for capture-first tasks.** Read the UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) and its `references/uia-configure-target-workflows.md` in full first (Rule 7; the second is used in step 3). Then:
 
-1. **Pre-flight Window Baseline** — list top-level windows once; decide whether to launch the app ([§ Pre-flight: Window Baseline](references/ui-automation-guide.md)).
-2. **Inventory targets from manual steps** (Test Manager test case, PDD, or written script). Each "Click X" / "Enter Y" / "Select Z" / "Verify W" step maps to one OR element. Group by screen state ([§ Capturing from Manual Test Steps](references/ui-automation-guide.md)).
-3. **Capture all targets** screen by screen via `uia-configure-target` and screen advancement ([§ Multi-Step UI Flows](references/uia-configure-target-workflows.md)).
+1. **Pre-flight Window Baseline** — list top-level windows once; decide whether to launch the app (package guide § Pre-flight: Window Baseline).
+2. **Inventory targets from manual steps** (Test Manager test case, PDD, or written script). Each "Click X" / "Enter Y" / "Select Z" / "Verify W" step maps to one OR element. Group by screen state (package guide § Capturing from Manual Test Steps).
+3. **Capture all targets** screen by screen via `uia-configure-target` and screen advancement (package `references/uia-configure-target-workflows.md` § Multi-Step UI Flows).
 4. **Then enter authoring phase:** project-context discovery (the precondition above), write code, validate.
 
 Skip this path when the task has no UI surface (data transforms, IS connector calls, headless file/email automation). Also skip it when the task HAS a UI surface but **no live app to capture against** (app not installed, no GUI, capture deferred to a developer) — there is nothing to capture, so use the § Placeholder-Selector Stub Pattern above instead. The Window Baseline does not tell you if the app is installed and has a GUI — validate that separately (e.g. look for the executable on disk) or ask the user.
@@ -163,7 +163,7 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 6a. **Pre-edit verification gate.** Two authoring actions are hard to roll back once `build` fails — verify before serialization, not after.
    - **Removing a dependency** — grep the project for usages before deleting an entry. A package may be the sole supplier of an activity used elsewhere (`MergePDFs` lives in the IntelligentOCR.StudioWeb family).
    - **Writing a new activity tag** — confirm via `uip rpa activities find --query "<verb>" --output json` and use the returned `ClassName`. Do not derive tag names from Studio display names. See [common-pitfalls.md § Common Activity Name Confusions](references/xaml/common-pitfalls.md).
-7. **[UIA] Before writing ANY UIA activity (XAML `<uix:N*>` or coded `uiAutomation.*` / `Descriptors.*`), MUST read [references/ui-automation-guide.md](references/ui-automation-guide.md) IN FULL** — including the mode-specific section (For Coded Workflows or For XAML Workflows) and Running UI Automation Workflows. No exceptions for "simple" UIs. Skipping this rule is the most common cause of hallucinated selectors, wrong target XML, and missing OR descriptors. NEVER hand-write selectors — use `uia-configure-target` exclusively (the guide explains how). This guide is the single entry point for UIA work: it routes you to [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md), [uia-prerequisites.md](references/uia-prerequisites.md), and the package docs in order — the other UIA sections in this file point back here rather than restating the read mandate.
+7. **[UIA] Before writing ANY UIA activity (XAML `<uix:N*>` or coded `uiAutomation.*` / `Descriptors.*`), MUST read the UIA package's guide at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md` IN FULL** — including the mode-specific section (For Coded Workflows or For XAML Workflows). No exceptions for "simple" UIs. Skipping this rule is the most common cause of hallucinated selectors, wrong target XML, and missing OR descriptors. NEVER hand-write selectors — use `uia-configure-target` exclusively (the guide explains how). The guide ships with the package, so it exists only after the package is installed — verify prerequisites per Rule 7a first; if the package is installed but the guide file is absent, the installed version predates it — treat as below the minimum version ([uia-prerequisites.md](references/uia-prerequisites.md)). The guide is the single entry point for UIA authoring; this skill adds three UIA policies of its own: [uia-running-guide.md](references/uia-running-guide.md) (run/debug procedure + runtime selector recovery — read before running any UIA workflow), [uia-placeholder-stub-guide.md](references/uia-placeholder-stub-guide.md) (deliverable shape when live capture is unavailable), and [ui-library-guide.md](references/ui-library-guide.md) (sharing OR descriptors as a published UI Library).
 7a. **[UIA] Verify UIA prerequisites before invoking `uia-configure-target`.** The minimum version and the prerequisite check live in [uia-prerequisites.md](references/uia-prerequisites.md) — read it and run that check first (do not hardcode the version from memory; that file is the only source of truth). If `UiPath.UIAutomation.Activities` is below the minimum or `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md` is absent, the `uip rpa uia` CLI is unavailable — and **both** target capture and indication depend on it, so indication is *not* a fallback when the package itself is missing. Ask the user to install/upgrade per uia-prerequisites.md. If they decline or the package cannot be installed, fall back to the **Placeholder-Selector Stub Pattern** (§ above) — real activities with `TODO Indicate` markers need no CLI. Never silently route to a non-existent skill path. Use indication capture only when a compatible UIA package *is* installed but `uia-configure-target` cannot see the element; record `UI capture: indication-only` in the plan header to skip `uia-configure-target` in that case. **Runtime failure counts too:** when the package is present but the UIA snapshot CLI's live scans fail persistently (driver/COM errors on every scan), first rule out a locked or non-interactive Windows session (`LogonUI` running = lock screen) — that needs an unlock, not a fallback. Only if scans still fail on an unlocked interactive session, treat capture as unavailable and use the Placeholder-Selector Stub Pattern.
 8. **Use `--output json`** on all CLI commands whose output is parsed programmatically.
 8a. **`run` / `debug start` success/failure verdict comes from the outer `Result` (and equivalently the inner `HasErrors`), NEVER from any log entry's `Level`.** A successful workflow may emit `Log Message` activities at `Error` or `Warning` level as observability — those are workflow-emitted data, not CLI failures. Compile failures, validation failures, and unhandled runtime exceptions all flip `HasErrors` and propagate to the outer `Result`. Treating log-entry levels as a failure signal flips green runs to "failed" and burns retries on healthy workflows. In a debug session, check `DebugState` first — a `Suspended` response means an exception awaits your decision (continue / retry / ignore / cancel) while `HasErrors` is still `false`. See [cli-reference.md § run](references/cli-reference.md) and [debugging.md § Reading Debug Output Effectively](references/debugging.md).
@@ -241,7 +241,7 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 21. **[XAML] Reading `<Activity>.md` from `{PROJECT_DIR}/.local/docs/packages/...` is a precondition for `activities get-default-xaml` — for every activity not on the common-activity card.**
     - **Card-listed activities:** check [references/common-activity-card.md](references/common-activity-card.md) first; if the activity is on the card, author from the card entry alone — skip `activities find`, skip `activities get-default-xaml`, skip the per-activity MD read.
     - **All other activities:** (1) `activities find` → class name, (2) **read `<Activity>.md` first** and extract a property checklist (required + use-case-relevant), (3) `activities get-default-xaml` → starter element, (4) **diff your checklist against the starter and add what's missing** — an empty checklist means you skipped step 2, go back.
-    - **Doc lookup order:** primary `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Activity>.md`; fallback `references/activity-docs/<PackageId>/<closest-version>/<Activity>.md` for older package versions where `.local/docs` is empty. **Exception — `UiPath.UIAutomation.Activities` has no bundled fallback:** `.local/docs` (present only after the package is installed) is its sole activity-doc source. If it is absent, do not hunt for a bundled copy — follow Rule 7a (install with consent per [uia-prerequisites.md](references/uia-prerequisites.md), or use the Placeholder-Selector Stub Pattern).
+    - **Doc lookup order:** primary `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Activity>.md`; fallback `references/activity-docs/<PackageId>/<closest-version>/<Activity>.md` for older package versions where `.local/docs` is empty. **Exception — `UiPath.UIAutomation.Activities` has no bundled fallback:** `.local/docs` (present only after the package is installed) is its sole activity-doc source. If it is absent, do not hunt for a bundled copy — follow Rule 7a (install with consent per [uia-prerequisites.md](references/uia-prerequisites.md), or use the Placeholder-Selector Stub Pattern — [uia-placeholder-stub-guide.md](references/uia-placeholder-stub-guide.md)).
     - **Trigger activities are special — read BOTH docs.** When the class name ends in `Trigger`, the namespace contains `.Triggers`, or the description mentions "starts a job" / "Monitor Events" / "Trigger Scope", also read the bundled `references/activity-docs/<PackageId>/<closest-version>/activities/<Activity>.md` **and** the package's bundled `overview.md`. The auto-generated `.local/docs` version is sparse for triggers; the bundled hand-written docs carry placement guidance (entry-point vs. `ui:TriggerScope`), deployment context, and cross-cutting namespace/assembly gotchas that the extractor does not capture. See Common Rule 12 and [trigger-pattern-guide.md](references/trigger-pattern-guide.md).
     - **Skip-tax — concrete:** `activities get-default-xaml` omits any property whose value equals the type default. For `NGetText` the starter is literally `<uix:NGetText HealingAgentBehavior="SameAsCard" />` with **zero** output properties — authoring from this alone produces `NGetText.Value="..."` (does not exist; the output member is `TextString`), which `validate` accepts and `build` rejects. For `NTypeInto` that's 2 of 20 properties hidden.
     - **Self-extending the card — "this activity feels simple, I'll add it to the card mentally" — is the failure mode.** The card is the only allowlist; for non-card activities the MD read is the only check.
@@ -273,10 +273,11 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 | **Create/edit Flowchart** | XAML | [xaml/flowchart-guide.md](references/xaml/flowchart-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Create StateMachine** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Create/edit Long Running Workflow (ProcessDiagram)** | XAML | [xaml/long-running-workflow-guide.md](references/xaml/long-running-workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
-| **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
-| **Build multi-screen UIA XAML workflow** | XAML | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md § Multi-Step UI Flows](references/uia-configure-target-workflows.md) |
-| **Share Object Repository selectors across projects (UI Library)** | Both | [ui-automation-guide.md § Object Repository as a Published UI Library](references/ui-automation-guide.md) |
-| **Drive a captured control** (date inputs, native vs custom dropdowns, buttons disabled during async) | Both | [ui-automation-guide.md § Control-Specific Interaction Patterns](references/ui-automation-guide.md) → UI Elements Interaction guide listed in the UIA package docs `overview.md` |
+| **Write UI automation** | Both | UIA package guide `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md` (Rule 7) → its `references/uia-configure-target-workflows.md` |
+| **Build multi-screen UIA XAML workflow** | XAML | UIA package guide (Rule 7) → its `references/uia-configure-target-workflows.md` § Multi-Step UI Flows |
+| **Share Object Repository selectors across projects (UI Library)** | Both | [ui-library-guide.md](references/ui-library-guide.md) |
+| **Run / debug a UIA workflow** | Both | [uia-running-guide.md](references/uia-running-guide.md) — baseline, debug session, window cleanup, selector recovery |
+| **Drive a captured control** (date inputs, native vs custom dropdowns, buttons disabled during async) | Both | UIA package guide § Control-Specific Interaction Patterns → its `references/uia-elements-interaction-guide.md` |
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `references/activity-docs/{PackageId}/{closest}/` |
 | **Manipulate data (DataTable/LINQ, strings, RegEx, DateTime, collections, JSON)** | Both | [data-manipulation-guide.md](references/data-manipulation-guide.md) |
 | **Use Data Fabric entities** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [activity-docs overview](references/activity-docs/UiPath.DataService.Activities/overview.md) |
@@ -379,7 +380,7 @@ Check `expressionLanguage` in `project.json`. VB.NET uses `[brackets]` for expre
 
 | Activity | Package | Purpose |
 |----------|---------|---------|
-| **UI automation** (Use Application/Browser, Click, Type Into, Get Text, Select Item, …) | `UiPath.UIAutomation.Activities` | **Never author from memory or from this row.** Selectors and targets are captured, not hand-written — read [ui-automation-guide.md](references/ui-automation-guide.md) in full first (Rule 7). |
+| **UI automation** (Use Application/Browser, Click, Type Into, Get Text, Select Item, …) | `UiPath.UIAutomation.Activities` | **Never author from memory or from this row.** Selectors and targets are captured, not hand-written — read the UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) in full first (Rule 7). |
 | If | built-in | Conditional branching |
 | Assign | built-in | Set variable/argument values |
 | For Each | built-in | Iterate over a collection |
@@ -408,7 +409,7 @@ The XAML file anatomy template (namespace declarations, root Activity element, b
 
 ### Multi-Screen UI Automation Workflows
 
-For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets get registered in the OR — validating with `validate` after each batch. [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) MUST be read IN FULL first (see § Multi-Step UI Flows for the capture loop and the Complete-then-advance rule).
+For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets get registered in the OR — validating with `validate` after each batch. The package's `references/uia-configure-target-workflows.md` (under `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`) MUST be read IN FULL first (see § Multi-Step UI Flows for the capture loop and the Complete-then-advance rule).
 
 ## Resolving Packages & Activity Docs
 
@@ -439,22 +440,24 @@ uip rpa packages install --packages 'id=<PackageId>,version=<LATEST_VERSION>' --
 
 UIA references live in two locations. Always cite by location so the reader knows which tree to open:
 
-- **This skill** (`references/`, relative to this SKILL.md) — policy, decision logic, target-capture orchestration, debug/recovery flows.
-- **UIA activity pack** (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`, installed via `uip rpa packages install`) — concrete `uip rpa uia` CLI syntax, per-activity property surfaces, coded API surface, and the UIA skill internal procedures. Co-versioned with the package, so always source-of-truth over anything in this skill when they diverge.
+- **This skill** (`references/`, relative to this SKILL.md) — policy this skill owns: prerequisites/version gating, run/debug orchestration, stub-mode deliverables, UI Library publishing.
+- **UIA activity pack** (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`, installed via `uip rpa packages install`) — the UIA authoring guide, target-capture orchestration, single-purpose task guides, concrete `uip rpa uia` CLI syntax, per-activity property surfaces, coded API surface, and the UIA skill internal procedures. Co-versioned with the package, so always source-of-truth over anything in this skill when they diverge.
 
 ### In this skill (`references/`, relative to this SKILL.md)
 
-- [ui-automation-guide.md](references/ui-automation-guide.md) — **the entry point for all UIA work** (Rule 7; read in full first). Mode-specific UIA patterns (coded vs XAML), prohibited-tool list, exploration-tool boundaries, Running & debugging procedure.
 - [uia-prerequisites.md](references/uia-prerequisites.md) — Package version requirements, upgrade-consent rules
-- [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target-capture orchestration, multi-step UI flows, indication-fallback routing
+- [uia-running-guide.md](references/uia-running-guide.md) — Run/debug procedure for UIA workflows (baseline → debug → cancel → window cleanup), profiling, runtime selector failure recovery
+- [uia-placeholder-stub-guide.md](references/uia-placeholder-stub-guide.md) — Deliverable shape when live capture is unavailable: real activities with placeholder selectors + `TODO Indicate` markers, never Log stubs
+- [ui-library-guide.md](references/ui-library-guide.md) — Sharing Object Repository descriptors across projects as a published UI Library
 
 ### In the UIA activity pack (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`)
 
-Hard entry points — the only package paths this skill references directly:
+Entry points this skill references directly:
 
-- `overview.md` — the package docs index. Route every package reference-doc read through it: open it and read the reference it lists for the purpose at hand (window baseline, advancing UI state, input methods, SelectItem usage, element interaction patterns, target attachment, indication fallback, Object Repository, selector variables, SAP, coded API). Its CLI Reference entry is large — search it for a specific subcommand only when no listed guide matches the purpose; NEVER read it in full.
-- `activities/<Activity>.md` — per-activity property surface, addressed by activity name (`Click.md`, `TypeInto.md`, `ApplicationCard.md`, …)
-- `activities/common/<Type>.md` — shared enums and types (`NHealingAgentBehavior.md`, `NAppAttachMode.md`, …)
+- `ui-automation-guide.md` — **the entry point for all UIA authoring** (Rule 7; read in full first). Window baseline, capture orchestration, common pitfalls, control-specific interaction, coded and XAML patterns; routes to the package's task guides and references.
+- `references/uia-configure-target-workflows.md` — target-capture orchestration: execution model, multi-step UI flows, per-screen batching, cross-process helper dialogs, indication fallback, target attachment
+- `overview.md` — package docs index (activity catalog + reference list). The package's CLI reference is large — search it for a specific subcommand; NEVER read it end-to-end.
+- `activities/<Activity>.md` / `activities/common/<Type>.md` — per-activity property surfaces (`Click.md`, `TypeInto.md`, `ApplicationCard.md`, …) and shared enums (`NHealingAgentBehavior.md`, `NAppAttachMode.md`, …), addressed by name
 - `skills/uia-configure-target/{SKILL.md,USAGE.md}` — target-configuration skill: procedure + invocation modes (fixed path — also the Rule 7a availability check)
 - `skills/uia-improve-selector/{SKILL.md,USAGE.md}` — selector recovery / improvement skill
 

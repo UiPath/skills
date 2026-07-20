@@ -4,9 +4,9 @@ This skill must work against every future version of `UiPath.UIAutomation.Activi
 
 ## Boundary
 
-**Stays in `skills/uipath-rpa/`:** policy, decision logic, critical rules, skill names, data-model names, public UIA API surface (`NApplicationCard`, `Descriptors`, `uiAutomation` service, etc.), and pointers to UIA docs.
+**Stays in `skills/uipath-rpa/`:** policy this skill owns — UIA prerequisites/version gating and upgrade consent (`uia-prerequisites.md`), the run/debug orchestration for UIA workflows (`uia-running-guide.md`), the placeholder-stub deliverable policy (`uia-placeholder-stub-guide.md`), UI Library publishing (`ui-library-guide.md`), critical rules, and pointers into the package docs.
 
-**Lives in the UIA package docs** (ships to `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`): CLI subcommand syntax, skill invocation arguments, internal procedure step numbers, artifact filenames, bash blocks invoking `uip rpa uia ...`, flag tables, troubleshooting entries.
+**Lives in the UIA package docs** (ships to `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`): the UIA authoring guide (`ui-automation-guide.md` — window baseline, capture orchestration, pitfalls, control-specific interaction, coded/XAML patterns), target-capture orchestration (`references/uia-configure-target-workflows.md`), single-purpose task recipes, CLI subcommand syntax, skill invocation arguments, internal procedure step numbers, artifact filenames, bash blocks invoking `uip rpa uia ...`, flag tables, troubleshooting entries.
 
 ## Forbidden in skill files
 
@@ -22,7 +22,7 @@ Non-UIA `uip rpa` commands (`focus-activity`, `test-data add-queue`, `run`, `val
 
 ## Pitfall-callout exception
 
-A **short pitfall callout** (1–3 lines per item) MAY name a runtime symptom (error string or broken behavior) AND the UIA subcommand category it occurs in, when the callout warns about a known waste-of-calls failure mode. Each callout MUST anchor to the UIA package docs for canonical syntax — name the purpose guide listed in `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/overview.md`, or say to search the CLI reference it lists.
+A **short pitfall callout** (1–3 lines per item) MAY name a runtime symptom (error string or broken behavior) AND the UIA subcommand category it occurs in, when the callout warns about a known waste-of-calls failure mode. Each callout MUST anchor to the UIA package docs for canonical syntax — link the relevant package doc directly (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/<guide>.md`). UIA behavior pitfalls belong in the package guide's own § Common UIA Pitfalls, not in skill files.
 
 What stays out, even in pitfall callouts: concrete flag names, flag values, artifact filenames, bash blocks, runnable examples, and full flag tables. Name the failure and the fix direction; the package owns the exact syntax. Use this exception sparingly. The default is still the category-pointer pattern below.
 
@@ -35,7 +35,7 @@ Describe capability at the category level and route to UIA docs for concrete syn
 - "the indication commands" — not `indicate-application` / `indicate-element`
 - "recover mode" — not `--mode recover`
 - "the target definition file" — not `Target_Definition.json`
-- Doc routing: point at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/overview.md` and name the listed reference by purpose ("the window-baseline guide listed in the package docs `overview.md`") — never hard-code a `references/<file>.md` package path. Fixed package paths are allowed only for `overview.md`, `activities/<Activity>.md`, `activities/common/<Type>.md`, and `skills/<skill>/…`
+- Doc pointers: reference package docs directly by installed path (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/<path>`). Keep the set of package files referenced from skill files small and entry-point-shaped — prefer `ui-automation-guide.md` (the authoring entry point; it routes onward) over deep links; deep-link a `references/<purpose>-guide.md` only when the pointer serves exactly that one purpose
 
 ## Example
 
@@ -45,17 +45,19 @@ Describe capability at the category level and route to UIA docs for concrete syn
 
 **Correct** (points at UIA docs for concrete syntax):
 
-> Query existing screens via the OR CLI, then attach the screen per the target-attachment guide listed in `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/overview.md`.
+> Query existing screens via the OR CLI, then attach the screen per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
 
 ## Where to put new content
 
 | New content | Home |
 |-------------|------|
+| UIA authoring guidance (capture flows, pitfalls, coded/XAML patterns, control-specific interaction) | UIA package: `docs/ui-automation-guide.md` (or the reference it routes to) |
+| Target-capture orchestration | UIA package: `docs/references/uia-configure-target-workflows.md` |
 | CLI subcommand syntax, full flag tables, troubleshooting | UIA package: `docs/references/cli-reference.md` (searched for specific sections — never read in full) |
 | Single-purpose CLI task recipe (window baseline, input methods, advancing UI state, …) | UIA package: `docs/references/<purpose>-guide.md`, listed with a purpose description in `docs/overview.md` § References |
 | Skill invocation guide for callers | UIA package: `docs/skills/<skill>/USAGE.md` |
 | Skill internal procedure | UIA package: `docs/skills/<skill>/SKILL.md` |
-| Policy, decision logic, orchestration, critical rules | `skills/uipath-rpa/references/` with pointer to UIA docs for concrete syntax |
+| uipath-rpa-owned UIA policy (prerequisites/consent, run/debug orchestration, stub deliverables, UI Library publishing) | `skills/uipath-rpa/references/` with pointers to package docs for concrete syntax |
 
 New UIA docs go into the UIA package's source repo under `UiPath.UIAutomation.Activities.Package/docs/`. When the package is installed in a project, these docs land at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`.
 
