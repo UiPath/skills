@@ -40,6 +40,15 @@ CLI: `uip is --help`
 - [products/integration-service/cns-error-codes-reference.md](./products/integration-service/cns-error-codes-reference.md) — CNS (Connection Service API) error-code catalog: wire format, fault buckets, overloaded-code traps, retry semantics, code → playbook map
 - [products/integration-service/summary.md](./products/integration-service/summary.md) — All playbooks for Integration Service issues
 
+## API Workflows
+
+Studio Web project type for real-time, system-to-system integration over APIs — JSON workflows (Serverless Workflow DSL) run by `uip api-workflow run` and published to Orchestrator as API processes (executions are Orchestrator jobs). No UI automation, no robot, no agent runtime. Issues here involve runtime execution faults (expression errors, `<name> is not defined`, undefined `$context.outputs.<Activity>`, loop/logic faults), connector-call 401/403 in cloud (401: wrong activity kind or stale connection binding; 403: broken/disabled or under-scoped Integration Service connection), designer-roundtrip corruption (runs locally, breaks after a Studio Web save), and pack/publish/deploy failures. Connection faults surface through Integration Service; job/trigger mechanics through Orchestrator.
+
+CLI: `uip api-workflow validate`, `uip api-workflow run --no-auth`, `uip is connections ping`, `uip or jobs get`/`logs`, `uip traces spans get --job-key`
+
+- [products/api-workflows/overview.md](./products/api-workflows/overview.md) — Product overview, dependencies, evidence surfaces, and fault families
+- [products/api-workflows/summary.md](./products/api-workflows/summary.md) — All playbooks for API Workflow issues
+
 ## Agents
 
 Low-code agents built with `uip agent`. Issues here involve LLM call failures, context grounding index misconfigurations, and input schema validation errors. Primary investigation surface: `uip traces spans get <traceId> --output json` — spans carry the full error text including error codes and field-level detail.
