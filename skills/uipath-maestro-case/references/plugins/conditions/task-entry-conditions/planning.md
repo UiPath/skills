@@ -32,11 +32,13 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | `selected-tasks-completed` | Fires when specific sibling tasks in the same stage complete | `selectedTasksIds` |
 | `wait-for-connector` | Waits for a connector event (binds an IS connector trigger under `uipath`) | connector fields; `conditionExpression` optional |
 | `adhoc` | Ad hoc tasks run only when a user triggers them from the case app. | `conditionExpression` (optional) |
-| `runs-sequentially` | Sequential tasks run in the order they appear in the stage from top to bottom. Parallel members of the group share a `lane`; solo members get own lane. | `conditionExpression` (optional) |
+| `runs-sequentially` | Sequential tasks run in the order they appear in the stage from top to bottom. The frontend toggle writes this rule as the task's entry condition. | `conditionExpression` (optional) |
 
 ## Ordering
 
 Task entry conditions are created **after** all tasks in the stage have been added (so `selected-tasks-ids` can resolve).
+
+For a sequential chain, preserve the task order in the stage's `data.tasks` structure and add one `runs-sequentially` entry condition to every task in the chain. The first task uses the rule as its stage-entry trigger; later tasks use it as the preceding-task-completed trigger. Do not add a separate `current-stage-entered` condition to the first sequential task.
 
 ## tasks.md Entry Format
 

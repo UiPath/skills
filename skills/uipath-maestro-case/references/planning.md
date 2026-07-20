@@ -286,7 +286,7 @@ Every task entry includes at least:
 - **runOnlyOnce** — from sdd.md (default `true` if not specified)
 - **isRequired** — from sdd.md (default `true` if not specified)
 - **order** — dependency on previous tasks (`after T05`, etc.)
-- **lane** — integer, default increments per task within the stage starting at 0 (FE layout). **Exception:** parallel members of a `runs-sequentially` group share the same `lane` (semantic — same lane = parallel siblings inside the sequential group). Solo runs-sequentially tasks still get their own lane.
+- **lane** — integer, default increments per task within the stage starting at 0 for structural/layout compatibility. Lane does not express sequencing; preserve task order in `data.tasks` and use task entry conditions for execution semantics.
 - **verify** — what the execution phase should check after running
 
 Additional fields are plugin-specific; read the plugin's `planning.md` before filling the entry.
@@ -302,7 +302,7 @@ Additional fields are plugin-specific; read the plugin's `planning.md` before fi
 
 > **No shell commands in task entries.** Each task is a declarative specification. Never write `uip` invocations or any other shell commands inside a task body — the execution phase translates specs into JSON mutations.
 
-> **Record `lane: <n>` per task.** Default: increment within each stage starting at 0 — lane is FE layout only, task ordering comes from task-entry conditions. **Exception:** within a `runs-sequentially` group, tasks meant to run in parallel share the same `lane` (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get own lane.
+> **Record `lane: <n>` per task only when required by the artifact contract.** It is structural/layout state, not a sequencing control. For sequential tasks, preserve their order in `data.tasks` and add the `runs-sequentially` entry condition to each task.
 
 > **Placeholder shape for unresolved resources.** If `taskTypeId` / `typeId` / `connectionId` is `<UNRESOLVED: …>`, omit `inputs:` and `outputs:` entirely and capture wiring intent in a trailing comment block. Execution creates a bare task node — structural only. See [placeholder-tasks.md](placeholder-tasks.md) for the full pattern and upgrade path.
 

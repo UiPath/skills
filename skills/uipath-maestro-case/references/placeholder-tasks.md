@@ -41,7 +41,7 @@ During **execution** (Phase 2, Step 9), for any `tasks.md` entry whose `taskType
 
 ## JSON Shape
 
-Placeholders occupy a `laneIndex` in `stageNode.data.tasks[laneIndex][]`, the same way full tasks do — default one task per lane for FE readability, lane is layout-only. **Exception:** when a placeholder participates in a `runs-sequentially` group and is meant to run in parallel with sibling tasks in that group, it shares the same `laneIndex` as those siblings (shared lane = parallel siblings inside the sequential group, semantic).
+Placeholders occupy a position in `stageNode.data.tasks`, the same way full tasks do. Preserve their order and retain any `runs-sequentially` entry condition from the task plan; lane-sharing does not express sequence.
 
 A placeholder task in `caseplan.json.nodes[<stage>].data.tasks[<lane>][]`:
 

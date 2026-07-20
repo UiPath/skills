@@ -46,6 +46,6 @@ Mark `<UNRESOLVED: rpa "<name>" in folder "<folder>" not found in registry>`. Om
 - runOnlyOnce: true
 - isRequired: true
 - order: after T<m>
-- lane: <n>  # FE layout; increment per task. Within `runs-sequentially` group, parallel members share a lane (semantic).
+- lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
 - verify: Confirm Result: Success, capture TaskId
 ```

@@ -138,7 +138,7 @@ Per-class shape inside each Edit:
 
 On context-compaction mid-gather: re-Read `caseplan.json`, scan for §4.6 tasks not yet appended, re-run Phase A for those only.
 
-**Pass `lane: <n>` on every task** (or the plugin's equivalent JSON field). Default: increment per task within a stage starting at 0 — lane is FE-layout-only for these tasks. **Exception:** parallel members of a `runs-sequentially` group share the same `lane` (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get own lane.
+**Pass `lane: <n>` on every task** only when required by the artifact contract. Default: increment per task within a stage starting at 0; lane is structural/layout state. Sequencing comes from the task's `entryConditions` and the task's order in `data.tasks`, not from lane-sharing.
 
 ### Step 9.1 — Placeholder tasks for unresolved resources
 
