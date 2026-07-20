@@ -105,7 +105,7 @@ Emission rules:
 }
 ```
 
-- `displayName` omitted entirely when T-entry doesn't supply one (don't emit `undefined`).
+- `displayName` omitted entirely when T-entry doesn't supply one (don't emit `undefined`). When supplied, it is the SLA title shown in the UI and MUST NOT contain `:`; reject the T-entry before writing JSON if it does.
 - `atRiskPercentage` included only when `triggerInfo.type === "at-risk"`.
 - `recipients` is an array — **one entry per sdd-declared recipient**.
 
@@ -129,4 +129,3 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 - Confirm the trailing entry's `expression === "=js:true"` when any SLA T-entry targeted this node.
 - Confirm every generated `esc_` ID appears in `id-map.json`.
 - Run `uip maestro case validate <file> --output json` after all SLA targets have been written (not per-target).
-

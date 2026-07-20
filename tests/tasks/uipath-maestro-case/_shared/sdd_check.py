@@ -63,10 +63,61 @@ def _rule_token(cell: str) -> str | None:
     return m.group(1) if m else None
 
 
+def _colon_issues(text: str, source: str = "sdd.md") -> list[str]:
+    """Reject names whose literal value contains the heading/task delimiter."""
+    issues: list[str] = []
+    for line_no, line in enumerate(text.splitlines(), 1):
+        stage = re.match(r"###\s+(Stage \d+|Exception Stage|Secondary Stage):\s*(.+)", line.strip())
+        if stage:
+            # The first colon belongs to the SDD heading grammar. Any later colon
+            # is part of the authored stage label and would make FE/SDD parsing
+            # ambiguous.
+            label = re.sub(r"\s*\([^)]*\)\s*$", "", stage.group(2)).strip()
+            if ":" in label:
+                issues.append(f"naming: stage name contains ':' at {source}:{line_no}: {label!r}")
+
+        # SDDs may expose an explicit SLA title, while Phase 1 carries the same
+        # value as tasks.md `display-name` on an SLA escalation T-entry.
+        sla_title = re.match(r"^\|\s*SLA Title\s*\|\s*([^|]*)\|", line, re.I)
+        if sla_title and ":" in sla_title.group(1):
+            issues.append(f"naming: SLA title contains ':' at {source}:{line_no}")
+
+        display_name = re.match(r"^\s*-\s*display-name:\s*(.+?)\s*$", line, re.I)
+        if display_name:
+            value = display_name.group(1).strip()
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in {'\"', "'"}:
+                value = value[1:-1]
+            if ":" in value:
+                issues.append(f"naming: SLA title/display-name contains ':' at {source}:{line_no}")
+    return issues
+
+
 def main() -> None:
     path = _find_sdd()
     text = open(path, encoding="utf-8").read()
     issues: list[str] = []
+    issues.extend(_colon_issues(text, path))
+
+    # When Phase 1 has already generated tasks.md next to the SDD, validate its
+    # SLA escalation titles too. This keeps the same rule effective before JSON
+    # emission without treating colons in unrelated task names as invalid.
+    tasks_path = glob.glob("**/tasks/tasks.md", recursive=True)
+    for candidate in sorted(tasks_path):
+        tasks_text = open(candidate, encoding="utf-8").read()
+        for line_no, line in enumerate(tasks_text.splitlines(), 1):
+            if re.match(r"^##\s+T\d+.*\bSLA\b", line, re.I):
+                block = tasks_text.splitlines()[line_no:]
+                for offset, block_line in enumerate(block, line_no + 1):
+                    if block_line.startswith("## T"):
+                        break
+                    display_name = re.match(r"^\s*-\s*display-name:\s*(.+?)\s*$", block_line, re.I)
+                    if display_name:
+                        value = display_name.group(1).strip().strip('"\'')
+                        if ":" in value:
+                            issues.append(
+                                f"naming: SLA title/display-name contains ':' at {candidate}:{offset}"
+                            )
+                break
 
     # --- §Case Variables: | name | In/Out/Variable | type | srcTrig | srcFld | default | desc |
     declared: set[str] = set()

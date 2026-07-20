@@ -193,6 +193,8 @@ Defines what `sdd.md` Section 1 (Case Definition) must contain.
 | Case App | optional | `Enabled` / `Disabled` — whether the in-product Case App UI is on (`metadata.caseAppEnabled`). | Default `Disabled`; record in source ledger. |
 | Task-output passing | optional | `Direct` / `Shared` — `metadata.caseDirectlyPassTaskOutputs`. `Direct` passes a task's outputs straight to downstream tasks (default). | Default `Direct`. |
 
+**Naming constraint.** Stage names and SLA titles/display names MUST NOT contain `:`. The colon is reserved by the SDD stage-heading and task-entry syntax. If the user supplies one, ask for a replacement that preserves the meaning (for example, use ` - ` or parentheses); never silently truncate or reinterpret the name.
+
 ### 1.2 Case-level SLA escalation
 
 Required when Case SLA is set. Always renders with both rows; no `—` allowed in any cell.

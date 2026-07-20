@@ -60,7 +60,7 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 | `recipient-scope` | sdd.md | `User` \| `UserGroup` |
 | `recipient-target` | sdd.md → resolver | Recipient UUID. When sdd gives an email or group name, run [§ Identity Resolution](#identity-resolution) — resolved UUID written inline. On resolver failure or user decline, mark `<UNRESOLVED: user-uuid for <email>>` / `<UNRESOLVED: group-uuid for <name>>`. |
 | `recipient-value` | sdd.md | Display value (typically the email for User, group name for UserGroup). |
-| `display-name` | sdd.md (optional) | |
+| `display-name` | sdd.md (optional) | SLA title shown in the UI. MUST NOT contain `:`. |
 | `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
 | `attach-to` | sdd.md | `default` (attach to the `=js:true` rule) or `T<m>` pointing to the conditional-rule T-entry the escalation fires under. |
 

@@ -166,6 +166,8 @@ The generated SDD must start with:
 | Task-output passing | {Direct \| Shared} — `caseDirectlyPassTaskOutputs` (Direct = a task's outputs flow straight to downstream tasks; default Direct) |
 | Case Identifier source | {`=metadata.ExternalId` (platform-generated — the default) \| custom} — what every `caseId` task input binds to |
 
+> **Naming constraint:** Stage names and SLA titles/display names must not contain `:`. The colon is reserved by the SDD heading and task-entry syntax; replace it with a dash, parentheses, or another punctuation mark while preserving the user's wording.
+
 ### Case-Level SLA Escalation Rules
 
 | SLA Status | Threshold | Action |
