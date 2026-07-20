@@ -1,4 +1,9 @@
-"""Contract guard for the skills telemetry hook (``hooks/send-telemetry.sh``).
+"""Contract guard for the skills telemetry hook — BOTH twins
+(``hooks/send-telemetry.sh`` under bash, ``hooks/send-telemetry.ps1`` under
+pwsh). Every test is parametrized over the two implementations, so this suite
+is the executable form of the twin keep-in-sync rule in CLAUDE.md: a
+behavioral change to one twin without the equivalent change to the other
+fails here.
 
 Runs the hook as a subprocess with a stubbed ``uip`` on ``PATH``, pipes a Claude
 Code hook payload on stdin, and asserts the single flat JSON object the hook
@@ -16,12 +21,13 @@ forwards to ``uip track``. Covers:
   Codex-only extras are never forwarded;
 * the drop paths — a non-UiPath tool call, an unrecognized event, and opt-out.
 
-The hook forwards in a detached subshell (``( … | uip track & )``), so the
-stubbed ``uip`` writes the payload to a capture file and we poll for it.
+The stubbed ``uip`` writes the payload to a capture file and we poll for it
+(the hook is fire-and-forget, so we never parse its stdout).
 
-POSIX-only: the stub is a ``bash`` script invoked via a real ``uip`` name on
-``PATH``. Skipped on native Windows (Git Bash path translation makes the stub
-unreliable) — CI runs it on ubuntu.
+POSIX-only: the hooks run under ``bash`` and ``pwsh`` (both preinstalled on
+GitHub ubuntu runners) and the stub is a shebang script invoked via a real
+``uip`` name on ``PATH``. Skipped on native Windows (PATHEXT resolution makes
+the stub unreliable) — CI runs it on ubuntu.
 
 Run from repo root:
     pytest tests/scripts/test_send_telemetry_hook.py
@@ -40,12 +46,34 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-HOOK = REPO_ROOT / "hooks" / "send-telemetry.sh"
+HOOKS_DIR = REPO_ROOT / "hooks"
+
+# One argv per twin. The autouse fixture below parametrizes EVERY test over
+# both, enforcing the keep-in-sync rule (CLAUDE.md).
+TWINS = [
+    pytest.param(["bash", str(HOOKS_DIR / "send-telemetry.sh")], id="bash"),
+    pytest.param(
+        ["pwsh", "-NoProfile", "-File", str(HOOKS_DIR / "send-telemetry.ps1")],
+        id="pwsh",
+    ),
+]
 
 pytestmark = pytest.mark.skipif(
-    sys.platform == "win32" or shutil.which("bash") is None,
-    reason="requires bash on a POSIX filesystem (CI runs this on ubuntu)",
+    sys.platform == "win32",
+    reason="stub uip requires a POSIX filesystem (CI runs this on ubuntu)",
 )
+
+HOOK_ARGV = None
+
+
+@pytest.fixture(autouse=True, params=TWINS)
+def hook_argv(request):
+    """Select the twin under test; skip if its interpreter is absent."""
+    global HOOK_ARGV
+    argv = request.param
+    if shutil.which(argv[0]) is None:
+        pytest.skip(f"{argv[0]} not available")
+    HOOK_ARGV = argv
 
 
 # ── event-mapping tests ────────────────────────────────────────────────────
@@ -183,6 +211,69 @@ def test_v2_key_set_has_no_env_fields_or_legacy_session_id():
     assert "sessionSource" not in event
 
 
+# ── Autopilot / Delegate tool-name tests ───────────────────────────────────
+# UiPath Autopilot / Delegate honor hooks.json with the same envelope but rename
+# the shell and file tools (ExecuteBashCommand / ExecutePowershellCommand,
+# ReadFile / WriteFile / EditFile / LsDirectory). tool_input still carries
+# command / file_path, so attribution + derivation must fire on the renamed
+# names exactly as for Claude's Bash / Read / Write / Edit.
+
+
+def test_autopilot_execute_bash_command_uip_maps_to_tool_use():
+    event = run_hook(
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "ExecuteBashCommand",
+            "tool_input": {"command": "uip solution publish --output json"},
+            "tool_response": {"success": True},
+        }
+    )
+    assert event["eventName"] == "tool-use"
+    assert event["toolName"] == "ExecuteBashCommand"
+    assert event["uipSubcommand"] == "solution publish"
+    assert event["outcome"] == "ok"
+
+
+def test_autopilot_execute_powershell_command_uip_maps_to_tool_use():
+    event = run_hook(
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "ExecutePowershellCommand",
+            "tool_input": {"command": "uip pack --output json"},
+            "tool_response": {"success": True},
+        }
+    )
+    assert event["eventName"] == "tool-use"
+    assert event["uipSubcommand"] == "pack"
+
+
+def test_autopilot_write_file_uipath_ext_maps_to_tool_use():
+    event = run_hook(
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "WriteFile",
+            "tool_input": {"file_path": "/proj/Process/Main.xaml"},
+            "tool_response": {"success": True},
+        }
+    )
+    assert event["eventName"] == "tool-use"
+    assert event["toolName"] == "WriteFile"
+    assert event["fileExtension"] == ".xaml"
+
+
+def test_autopilot_read_file_agent_json_maps_to_tool_use():
+    event = run_hook(
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "ReadFile",
+            "tool_input": {"file_path": "/proj/agent.json"},
+            "tool_response": {"success": True},
+        }
+    )
+    assert event["eventName"] == "tool-use"
+    assert event["fileExtension"] == "agent.json"
+
+
 # ── drop-path tests ────────────────────────────────────────────────────────
 
 
@@ -193,6 +284,38 @@ def test_non_uipath_tool_call_is_dropped():
                 "hook_event_name": "PostToolUse",
                 "tool_name": "Bash",
                 "tool_input": {"command": "ls -la"},
+            },
+            expect_drop=True,
+        )
+        is None
+    )
+
+
+def test_autopilot_shell_without_uip_is_dropped():
+    """The `uip` matcher is anchored, NOT a bare substring — a command that
+    merely contains the letters 'uip' (e.g. 'equipment') must not attribute.
+    Guards against loosening the gate to a substring match, which would
+    over-attribute unrelated commands under the renamed Autopilot tools."""
+    assert (
+        run_hook(
+            {
+                "hook_event_name": "PostToolUse",
+                "tool_name": "ExecuteBashCommand",
+                "tool_input": {"command": "echo equipment inventory"},
+            },
+            expect_drop=True,
+        )
+        is None
+    )
+
+
+def test_autopilot_read_file_non_uipath_ext_is_dropped():
+    assert (
+        run_hook(
+            {
+                "hook_event_name": "PostToolUse",
+                "tool_name": "ReadFile",
+                "tool_input": {"file_path": "/proj/notes.txt"},
             },
             expect_drop=True,
         )
@@ -228,8 +351,8 @@ def run_hook(payload, *, telemetry_disabled="0", expect_drop=False):
     """Invoke the hook with a stubbed ``uip``; return the forwarded JSON object
     (parsed) or ``None`` when the hook drops the event.
 
-    The hook pipes to ``uip track`` in a detached subshell, so we poll a capture
-    file. A dropped event never writes it, so ``expect_drop`` polls a short grace
+    The stubbed ``uip`` writes the forwarded payload to a capture file, which we
+    poll. A dropped event never writes it, so ``expect_drop`` polls a short grace
     window instead of the full timeout.
     """
     with tempfile.TemporaryDirectory() as tmp:
@@ -249,7 +372,7 @@ def run_hook(payload, *, telemetry_disabled="0", expect_drop=False):
         env.pop("UIPATH_SESSION_ID", None)
 
         subprocess.run(
-            ["bash", str(HOOK)],
+            HOOK_ARGV,
             input=json.dumps(payload),
             text=True,
             env=env,

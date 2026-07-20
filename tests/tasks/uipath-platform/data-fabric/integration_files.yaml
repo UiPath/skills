@@ -12,6 +12,8 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
+  Use the `uip df files` CLI (upload / download / delete) — no workflow, no API stub.
+
   `CE_IntegrationAssets` has one row with a Document attachment slot.
   Walk the full attach-swap-remove cycle:
 

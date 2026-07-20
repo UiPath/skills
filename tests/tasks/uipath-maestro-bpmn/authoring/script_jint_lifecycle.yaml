@@ -2,7 +2,7 @@ task_id: skill-bpmn-script-jint-lifecycle
 description: >
   Author a complete Maestro BPMN script-task project, covering the full
   local lifecycle for the Jint-backed script path with package metadata.
-tags: [uipath-maestro-bpmn, e2e, lifecycle:generate, "node:script", "feature:jint"]
+tags: [uipath-maestro-bpmn, e2e, "mode:build", lifecycle:generate, "node:script", "feature:jint"]
 
 run_limits:
   expected_turns: 22

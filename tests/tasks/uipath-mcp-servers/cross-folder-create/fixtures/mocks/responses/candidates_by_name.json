@@ -1,0 +1,10 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpToolsCandidates",
+  "Data": {
+    "items": [
+      { "connectorKey": "uipath-atlassian-jira", "id": "mock-conn-jira-id", "displayName": "Jira", "description": "Mock Jira connector for testing" }
+    ],
+    "total": 1
+  }
+}

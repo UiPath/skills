@@ -13,7 +13,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Set up an entity `CE_FilterEdgeTest` with three columns: Title (required
+  Set up a UiPath Data Fabric entity `CE_FilterEdgeTest` with three columns: Title (required
   text, up to 200 chars), Score (optional whole number), Notes (optional
   long text). Then load the 10 rows from `feedback_batch.json` in the
   working directory — some rows have `Score: null`, some omit `Notes`,

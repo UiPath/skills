@@ -11,6 +11,15 @@ CLI: `uip or --help`
 - [products/orchestrator/overview.md](./products/orchestrator/overview.md) — Product overview, features, and dependencies
 - [products/orchestrator/summary.md](./products/orchestrator/summary.md) — All playbooks for Orchestrator issues
 
+## Studio
+
+UiPath Studio (Desktop and Web) — the authoring IDE. This domain covers Studio-level *platform* failures that are not workflow-code or activity faults: license acquisition (License Provider = Orchestrator), profile entitlement (Studio vs StudioX), and in-IDE AI features (Autopilot for developers). Issues here involve Studio running unlicensed ("No license exist for this installation"), Autopilot greyed out / "disabled by your organization", and tenant-service enablement gaps. For `.xaml` / `.cs` authoring and activity faults use UI Automation / System Activities / Runtime Exceptions; for agent/product LLM routing use LLM Gateway.
+
+CLI: `uip login status`, `uip admin tenants get`, `uip admin tenants services enable`, `uip platform users licenses get`
+
+- [products/studio/overview.md](./products/studio/overview.md) — Profiles, license acquisition, Autopilot, tenant-service dependencies, and CLI surface
+- [products/studio/summary.md](./products/studio/summary.md) — All playbooks for Studio issues
+
 ## Runtime Exceptions
 
 General .NET runtime exceptions originating from the user's own workflow code — not from activity packages or platform internals. Covers null references, null arguments, and similar errors in workflow logic, variable handling, and data processing.
@@ -40,11 +49,20 @@ CLI: `uip is --help`
 - [products/integration-service/cns-error-codes-reference.md](./products/integration-service/cns-error-codes-reference.md) — CNS (Connection Service API) error-code catalog: wire format, fault buckets, overloaded-code traps, retry semantics, code → playbook map
 - [products/integration-service/summary.md](./products/integration-service/summary.md) — All playbooks for Integration Service issues
 
+## API Workflows
+
+Studio Web project type for real-time, system-to-system integration over APIs — JSON workflows (Serverless Workflow DSL) run by `uip api-workflow run` and published to Orchestrator as API processes (executions are Orchestrator jobs). No UI automation, no robot, no agent runtime. Issues here involve runtime execution faults (expression errors, `<name> is not defined`, undefined `$context.outputs.<Activity>`, loop/logic faults), connector-call 401/403 in cloud (401: wrong activity kind or stale connection binding; 403: broken/disabled or under-scoped Integration Service connection), designer-roundtrip corruption (runs locally, breaks after a Studio Web save), and pack/publish/deploy failures. Connection faults surface through Integration Service; job/trigger mechanics through Orchestrator.
+
+CLI: `uip api-workflow validate`, `uip api-workflow run --no-auth`, `uip is connections ping`, `uip or jobs get`/`logs`, `uip traces spans get --job-key`
+
+- [products/api-workflows/overview.md](./products/api-workflows/overview.md) — Product overview, dependencies, evidence surfaces, and fault families
+- [products/api-workflows/summary.md](./products/api-workflows/summary.md) — All playbooks for API Workflow issues
+
 ## Agents
 
 Low-code agents built with `uip agent`. Issues here involve LLM call failures, context grounding index misconfigurations, and input schema validation errors. Primary investigation surface: `uip traces spans get <traceId> --output json` — spans carry the full error text including error codes and field-level detail.
 
-CLI: `uip agent run status`, `uip traces spans get`, `uip agent context`, `uip context-grounding`, `uip agent validate`, `uip agent publish`
+CLI: `uip traces spans get`, `uip context-grounding`, `uip agent refresh`, `uip agent validate`, `uip agent debug` (only with explicit user approval because it uploads and executes the agent)
 
 - [products/agents/summary.md](./products/agents/summary.md) — All playbooks for Agents issues
 
@@ -56,6 +74,15 @@ CLI: `uip llm-configuration --help`, `uip traces spans get`, `uip gov aops-polic
 
 - [products/llm-gateway/overview.md](./products/llm-gateway/overview.md) — Service model, dependencies, CLI surface, and what the CLI does NOT expose
 - [products/llm-gateway/summary.md](./products/llm-gateway/summary.md) — All playbooks for LLM Gateway / BYO LLM issues
+
+## Coded Apps
+
+Custom TypeScript/React web front-ends (coded web apps) and Action Center form apps (coded action apps) that call UiPath APIs through the `@uipath/uipath-typescript` SDK, built and shipped with `uip codedapp`. A coded app runs in the user's browser, so failures surface as OAuth redirect errors (`redirect_uri_mismatch`, `invalid_scope`), failed HTTP calls (401/403/404), CORS blocks, or a broken deployed URL — not as a faulted job with a trace. Config lives in `uipath.json` (what the app requests); the External Application backing it (`uip admin external-apps`) governs what redirect URIs and scopes are allowed. There is no runtime job/trace/log CLI — diagnosis is current-state (`uipath.json`, `uip admin external-apps get`, `.uipath/app.config.json`, `vite.config.ts`) plus the error signature the user reports.
+
+CLI: `uip codedapp --help`, `uip admin external-apps get <client-id>`
+
+- [products/coded-apps/overview.md](./products/coded-apps/overview.md) — Runtime/auth model (PKCE public client), CLI surface, and evidence sources
+- [products/coded-apps/summary.md](./products/coded-apps/summary.md) — All playbooks for Coded Apps issues
 
 ## UI Automation
 
@@ -155,6 +182,15 @@ Namespaces: `UiPath.Web.Activities`
 
 - [activity-packages/web-activities/overview.md](./activity-packages/web-activities/overview.md) — Package overview, activity families, and common failure patterns
 - [activity-packages/web-activities/summary.md](./activity-packages/web-activities/summary.md) — All playbooks for Web Activities issues
+
+## Jira Activities
+
+Activities from the classic `UiPath.Jira.Activities` package for automating Atlassian Jira. Every operation runs inside a **Jira Scope** (`JiraApplicationScope`) that authenticates once against a Jira instance (the classic pack targets Jira **Cloud** and uses RestSharp under the hood); child activities — Get Issue, Search Issues, Create Issue, Add Comment — run REST calls on that session. Issues here involve `Authentication information is invalid` at scope open (`Api Token` bound as a plain `String` instead of `SecureString`, `Username` set to a Jira `accountId` instead of the account email, leftover `Client Id`/`Client Secret` conflicting with `Authentication Type = Api Token`, or basic password auth on an MFA/SSO-enforced org), `Response was not recognized as JSON` / HTTP `500` on a child activity (`Server URL` carrying an appended `/secure/Dashboard.jspa` or project path, or an on-premises Server / Data Center instance the Cloud-targeted pack does not support), and `This activity is either missing or could not be loaded properly` (a transitive **RestSharp** version conflict with another package — resolve the pin or migrate to the Integration Service Jira connector).
+
+Namespaces: `UiPath.Jira.Activities`
+
+- [activity-packages/jira-activities/overview.md](./activity-packages/jira-activities/overview.md) — Package overview, Jira Scope execution model and properties, and common failure patterns
+- [activity-packages/jira-activities/summary.md](./activity-packages/jira-activities/summary.md) — All playbooks for Jira Activities issues
 
 ## App Events (Workflow Events) Activities
 

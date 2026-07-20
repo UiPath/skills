@@ -1,0 +1,70 @@
+task_id: skill-ixp-preprocessing-by-doc-shape-smoke
+description: >
+  Smoke: agent maps document characteristics to the right `configure-model`
+  preprocessing option across three projects in one run — prose with no tables →
+  `none`, simple line-items table → `table_mini`, complex multi-page/merged-cell
+  tables → `table`. The enum values appear only in the criteria, never the prompt;
+  the agent must infer each from the documents described (the skill's project-setup
+  guide teaches the mapping). Retires the none/table_mini/table preprocessing cases
+  and subsumes the "typical invoices → default (table_mini)" case.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 8
+
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
+initial_prompt: |
+  Set the extraction-model preprocessing for each of these three IXP projects,
+  based on what their documents look like:
+
+  - service-agreements-a1b2c3d4-ixp — multi-page service agreements: prose
+    paragraphs and clauses, no tables anywhere.
+  - vendor-invoices-e5f6a7b8-ixp — standard vendor invoices, each with a single
+    straightforward line-items table.
+  - settlement-statements-c9d0e1f2-ixp — settlement statements with multi-row,
+    multi-page line-item tables and merged header cells.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in this
+    environment. Commands will fail with auth errors — that is expected. You have
+    the document characteristics above, so decide from those; do not try to
+    download or view the files. Run each command once and move on. Do NOT retry
+    or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # Prose, no tables → none. `table\b` below cannot match `table_mini` (the
+  # underscore blocks the word boundary), so the three options are distinguishable.
+  - type: command_executed
+    description: "Prose/no-table project configured with --preprocessing none"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+configure-model\b(?=.*service-agreements-a1b2c3d4-ixp)(?=.*--preprocessing\s+none\b).*'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Simple line-items table → table_mini (also the skill's documented default).
+  - type: command_executed
+    description: "Simple-table invoices project configured with --preprocessing table_mini"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+configure-model\b(?=.*vendor-invoices-e5f6a7b8-ixp)(?=.*--preprocessing\s+table_mini\b).*'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Complex multi-page / merged-cell tables → full table.
+  - type: command_executed
+    description: "Complex-table settlements project configured with --preprocessing table"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+configure-model\b(?=.*settlement-statements-c9d0e1f2-ixp)(?=.*--preprocessing\s+table\b).*'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

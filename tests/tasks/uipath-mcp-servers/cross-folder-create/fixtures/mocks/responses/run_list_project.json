@@ -1,0 +1,12 @@
+{
+  "Result": "Success",
+  "Code": "ExecuteOperation",
+  "Data": {
+    "items": [
+      { "id": "1001", "key": "MOCKPROJ", "name": "Mock Project",     "projectTypeKey": "software" },
+      { "id": "1002", "key": "DEMO",     "name": "Demo Project",     "projectTypeKey": "software" },
+      { "id": "1003", "key": "SAMPLE",   "name": "Sample Project",   "projectTypeKey": "software" }
+    ],
+    "Pagination": { "HasMore": "false" }
+  }
+}

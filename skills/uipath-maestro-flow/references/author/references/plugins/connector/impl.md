@@ -33,6 +33,7 @@ Connector nodes come in two flavors:
 
 To classify a node, read `Node.form.sections[0].fields[0].componentProps.connectorDetail.configuration` from the `registry get` response, parse it as JSON, and check `activityType`. `"Generic"` → run Step 2a to discover `objectName` (and capture `operation` from the same marker for the `--operation` flag in Step 3). Anything else → skip Step 2a.
 
+
 ## Critical: Connector Definition Must Include `form`
 
 > Connector definitions in `definitions[]` are CLI-owned (see [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node)) — `uip maestro flow node add` copies them verbatim from the registry, and you should never hand-write or hand-edit them. If `node configure` fails with `No instanceParameters found in definition`, the definition in `definitions[]` is missing the `form` field — typically because the local registry cache is stale (the definition was copied in before the CLI started emitting `form`). Recovery: `uip maestro flow registry pull --force`, delete the stale `definitions[]` entry, re-run `uip maestro flow node add <file> <node-type>` so the CLI re-copies the definition with `form`. Do not paste `form` in by hand — re-running `node add` is the supported path.

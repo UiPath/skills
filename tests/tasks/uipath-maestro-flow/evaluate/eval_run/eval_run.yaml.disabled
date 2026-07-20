@@ -23,7 +23,7 @@ description: >
   the data point scores 1.0 (deterministic agent + deterministic evaluator).
   Tests the full Author → Operate → Evaluate handoff in the
   uipath-maestro-flow skill.
-tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:execute, feature:eval]
+tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:execute, feature:eval, path-to-ga]
 
 run_limits:
   max_turns: 90

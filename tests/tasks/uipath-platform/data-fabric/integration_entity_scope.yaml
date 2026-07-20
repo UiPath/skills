@@ -12,7 +12,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  We already have a tenant-wide list called `CE_TenantScopeTest` (one
+  We already have a tenant-wide entity called `CE_TenantScopeTest` (one
   required name column, up to 100 characters). Please don't recreate
   it.
 

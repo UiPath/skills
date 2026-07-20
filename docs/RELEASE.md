@@ -9,21 +9,21 @@ The whole skills repo is published as an npm package, **`@uipath/skills`**, vers
 | File | Field | Purpose |
 |------|-------|---------|
 | `version-manifest.json` | `skillsVersion`, `targetCli` | CLI↔skills pairing record |
-| `.claude-plugin/plugin.json` | `version` | Claude Code plugin version (shared `major.minor`, independent patch) — the canonical plugin version |
+| `.claude-plugin/plugin.json` | `version` | Claude Code plugin version — always equals `package.json`'s base `M.N.P` (pre-release suffix stripped) — the canonical plugin version |
 | `.claude-plugin/marketplace.json` | `plugins[0].version` | Always equals `plugin.json` `version` |
 | `.codex-plugin/plugin.json` | `version` | Codex plugin version — always equals `plugin.json` `version` |
 
-### One `major.minor`, three patch counters
+### One version line
 
-All channels share `major.minor` (the CLI-compatibility signal); the **patch diverges deliberately per channel**:
+All channels carry `package.json`'s version; only the alpha track adds a pre-release stamp:
 
-| Channel | Version | Patch cadence |
-|---------|---------|---------------|
+| Channel | Version | Cadence |
+|---------|---------|---------|
 | npm `latest` | `M.N.<release>` | per stable release — what the CLI pins |
-| npm `alpha` | `M.N.<release>-alpha.<date>.<run>` | per alpha dispatch |
-| plugin manifests (`.claude-plugin/plugin.json`, `marketplace.json`, `.codex-plugin/plugin.json`) | `M.N.<daily-counter>` | daily (`daily-version-bump.yml`) — drives Claude Code / Codex plugin auto-update |
+| npm `alpha` | `M.N.<release>-alpha.<date>.<run>` | per alpha dispatch (stamp never committed) |
+| plugin manifests (`.claude-plugin/plugin.json`, `marketplace.json`, `.codex-plugin/plugin.json`) | `M.N.<release>` (base version, no pre-release suffix) | per `package.json` bump — drives Claude Code / Codex plugin auto-update |
 
-`sync-version.mjs` enforces the shared line: if the plugin `major.minor` differs from `package.json`, it resets the plugin version to `M.N.0` (and **refuses to downgrade** if `package.json`'s minor is below the plugin's); if they match, `--bump-patch` advances the daily counter, otherwise the patch is left untouched. The marketplace and Codex versions must always equal the plugin version exactly. `--check` fails on any violation, so a hand-bumped plugin manifest cannot drift the line. The bump rule lives only in `sync-version.mjs` (`daily-version-bump.yml` calls `--bump-patch` rather than reimplementing it).
+`sync-version.mjs` enforces the line: the plugin version always equals `package.json`'s base `M.N.P` — there is **no independent plugin patch counter**. It **refuses to downgrade** (plugin auto-update never goes backwards, so a reverted `package.json` would freeze users), and it strips pre-release suffixes so the alpha stamp from `publish.yml` never lands in the plugin manifests. The marketplace and Codex versions must always equal the plugin version exactly. `--check` fails on any violation, so a hand-bumped plugin manifest cannot drift the line. To bump the plugin version, bump `package.json` and run the sync — that is the only lever.
 
 Run after any version change:
 
@@ -36,7 +36,7 @@ npm run version:check     # CI guard — non-zero exit if drifted
 
 The version line mirrors the CLI's `MAJOR.MINOR` (e.g. CLI `1.197.x` → skills `1.197.x`). `version-manifest.json.targetCli` records the matching line as `^MAJOR.MINOR.0`. The CLI pins this line, so it never pulls a skills package from a different minor.
 
-> **The CLI resolves `@uipath/skills` from npm, matched to its own minor line.** `uip skills install` lists the published versions and picks the one matching the CLI's `MAJOR.MINOR` (`packages/cli/src/commands/skills/contentStore.ts` → `fetchMatchingSkillsPackageInfo` / `pickMatchingSkillsVersion`, registry `registry.npmjs.org`), then fetches that tarball into the content store. So a given CLI release always resolves a compatible skills package and the loop this section describes is closed — for the `uip skills install` **content** path. The Claude Code / Codex plugin marketplace is a **separate** channel (a git ref, not the npm package) and is what the daily plugin-version bump serves.
+> **The CLI resolves `@uipath/skills` from npm, matched to its own minor line.** `uip skills install` lists the published versions and picks the one matching the CLI's `MAJOR.MINOR` (`packages/cli/src/commands/skills/contentStore.ts` → `fetchMatchingSkillsPackageInfo` / `pickMatchingSkillsVersion`, registry `registry.npmjs.org`), then fetches that tarball into the content store. So a given CLI release always resolves a compatible skills package and the loop this section describes is closed — for the `uip skills install` **content** path. The Claude Code / Codex plugin marketplace is a **separate** channel (a git ref, not the npm package); its manifests carry the package version, so bumping `package.json` (plus `version:sync`) is what drives plugin auto-update.
 
 ## Publishing tracks (`.github/workflows/publish.yml`)
 

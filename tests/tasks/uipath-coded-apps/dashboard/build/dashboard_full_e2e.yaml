@@ -17,16 +17,16 @@ sandbox:
   driver: tempdir
   node: {}
 
-# No per-task cleanup needed: the experiment-level post_run prunes node_modules
-# (the heavy artifact) after every task, and the tempdir sandbox is discarded.
-# This build-only e2e creates no remote/tenant artifacts to tear down.
-
-# Reclaim the build's node_modules before artifact preservation. The build
-# installs a full ~200MB node_modules; the experiment-default prune (30s) can
-# time out on it, bloating the preserved artifact. This task-level prune runs
-# FIRST (post_run is cleanup-last: task commands, then experiment defaults) with
-# a generous timeout so the heavy tree is gone before the sandbox is preserved.
+# Cleanup: the dashboard build mints a fresh OAuth external app per run
+# (build/impl.md Phase 3 — `uip admin external-apps create`). Left behind it
+# orphans one external app per run on the tenant. The prompt records the minted
+# Client ID into `.external_app_to_cleanup`; the first post_run step deletes it.
+# The second step reclaims the build's ~200MB node_modules before artifact
+# preservation (the experiment-default prune's 30s can time out on it and bloat
+# the preserved sandbox). Task post_run runs before experiment defaults.
 post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_external_app.py"
+    timeout: 60
   - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
     timeout: 180
 
@@ -38,6 +38,10 @@ initial_prompt: |
   This is a non-interactive automated test — there is NO user to approve the plan.
   Treat the plan as pre-approved and complete the whole build in this same turn. Do NOT end your turn at the plan, do
   NOT wait for confirmation, and do NOT ask any question.
+
+  If you create an OAuth external application during the build, write ONLY its
+  Client ID (the bare UUID) to a file named `.external_app_to_cleanup` at the
+  sandbox root, so the test can tear it down afterward.
 
 success_criteria:
   - type: skill_triggered

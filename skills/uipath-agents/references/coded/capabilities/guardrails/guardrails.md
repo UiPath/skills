@@ -37,7 +37,7 @@ installed/published SDK documentation does not currently support HITL guardrail 
 
 ## Check Tenant Availability (mandatory for built-in AI validators)
 
-For built-in AI validators (PII, harmful content, user prompt attacks, IP), confirm the validator is enabled on this tenant **before authoring** — run:
+For built-in AI validators (PII, harmful content, user prompt attacks, IP, LLM as Judge), confirm the validator is enabled on this tenant **before authoring** — run:
 
 ```bash
 uip agent guardrails list --output json
@@ -46,6 +46,8 @@ uip agent guardrails list --output json
 If the requested validator has `Status != "Available"` → tell the user and stop. Actually adding one that is not entitled produces a guardrail that always fails.
 
 **Skip this step only for deterministic guardrails** — they run locally with no backend dependency.
+
+> **LLM as Judge also requires LLM Gateway.** If the target is `llm_as_judge`, confirm with the user that a model is configured in their LLM Gateway before proceeding. Ask the user which model ID to use for the `model` parameter — the available values depend on the LLM Gateway configuration in their tenant.
 
 ---
 
