@@ -451,12 +451,19 @@ def start_debug(
         "--solution-folder", solution_dir,
         "--output", "json",
     ]
+    already_refreshed = os.path.isdir(os.path.join(solution_dir, "resources"))
     r = subprocess.run(refresh_cmd, capture_output=True, text=True, timeout=refresh_timeout)
     if r.returncode != 0:
-        _fail(
-            f"solution resources refresh exit {r.returncode}\n"
-            f"stdout: {r.stdout}\nstderr: {r.stderr}"
-        )
+        # CLI 1.197-alpha: refresh is not idempotent — re-running it over its own
+        # output fails with "Node already added to the graph" (RetryWillNotFix).
+        # When the agent already refreshed, the resource docs are on disk and debug
+        # can proceed; only that exact re-refresh failure is tolerated.
+        duplicate_node = "Node already added to the graph" in (r.stdout + r.stderr)
+        if not (already_refreshed and duplicate_node):
+            _fail(
+                f"solution resources refresh exit {r.returncode}\n"
+                f"stdout: {r.stdout}\nstderr: {r.stderr}"
+            )
 
     debug_cmd = [
         "uip", "maestro", "case", "debug", project_dir,

@@ -121,8 +121,6 @@ jobs:
       # deps). Windows RPA tasks run under the tempdir driver, so no agent image.
       - name: Install coder-eval
         shell: bash
-        env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
 
       - name: Configure NuGet feed for Helm packages

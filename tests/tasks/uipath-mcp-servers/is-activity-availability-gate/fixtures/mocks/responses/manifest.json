@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "rules": [
+    { "match": "or folders list",                                    "file": "or_folders_list.json" },
+    { "match": "agenthub mcp list",                                  "file": "agenthub_mcp_list.json" },
+    { "match": "agenthub mcp-tools list",                            "file": "agenthub_mcp_tools_list.json" },
+    { "match": "agenthub mcp-tools candidates --category is-activity", "file": "candidates_unavailable.json", "exit_code": 1 },
+    { "match": "agenthub mcp-tools create-is-activity",              "file": "create_unavailable.json", "exit_code": 1 },
+    { "match": "processType",                                        "file": "create_unavailable.json", "exit_code": 1 },
+    { "match": "agenthub mcp-tools create-raw",                      "file": "create_raw_missing_input.json", "exit_code": 1 }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\":\"Failure\",\"Message\":\"command not mocked in this scenario\"}\n",
+    "exit_code": 1
+  }
+}

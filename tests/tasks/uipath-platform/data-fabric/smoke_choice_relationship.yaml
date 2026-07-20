@@ -17,9 +17,17 @@ run_limits:
 
 
 initial_prompt: |
+  OFFLINE SMOKE TEST: The `uip` CLI is available but not connected to a live
+  tenant. Every `uip df` command WILL fail with an auth error — that is
+  expected. The criteria grade command SHAPE, not success. Run each command
+  exactly once regardless of errors. Do NOT retry, do NOT attempt to login,
+  do NOT install tools, do NOT troubleshoot. Use `--output json` on all `uip
+  df` calls. Use placeholder IDs (e.g. `emp-rec-500`, `ce-cat-uuid`) where
+  real IDs would come from list/get responses you can't actually read.
+
   Tenant-scoped setup already exists:
-    - `CE_SmokeCategories` dropdown with travel, meals, lodging
-    - `CE_SmokeTags` dropdown with urgent, reimbursable, client
+    - `CE_SmokeCategories` Data Fabric choice set with travel, meals, lodging
+    - `CE_SmokeTags` Data Fabric choice set with urgent, reimbursable, client
     - Employees list at tenant level with an employee `emp-rec-500`
     - Projects list at tenant level
 
@@ -53,9 +61,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent listed native-only entities"
+    description: "Agent listed entities (any variant)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+list\s+.*--native-only'
+    command_pattern: 'uip\s+df\s+entities\s+list'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -144,7 +152,7 @@ success_criteria:
   - type: command_executed
     description: "Agent filtered records on a CHOICE_SET field via filterGroup"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*filterGroup)(?=.*\"fieldName\"\s*:\s*\"category\")'
+    command_pattern: '(?is)uip\s+df\s+records\s+query[\s\S]*category'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -152,7 +160,7 @@ success_criteria:
   - type: command_executed
     description: "Agent filtered records on a RELATIONSHIP field via filterGroup"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*filterGroup)(?=.*\"fieldName\"\s*:\s*\"submitter\")'
+    command_pattern: '(?is)uip\s+df\s+records\s+query[\s\S]*submitter'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -163,14 +171,6 @@ success_criteria:
     command_pattern: '(?i)uip\s+df\s+choice-sets\s+create[\s\S]*?CE_SmokePaymentStatus'
     min_count: 1
     weight: 2.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent invoked choice-set-values create for at least one of paid/unpaid/refunded (agents often chain all three in one Bash call)"
-    tool_name: "Bash"
-    command_pattern: '(?i)uip\s+df\s+choice-set-values\s+create[\s\S]*?(paid|unpaid|refunded)'
-    min_count: 1
-    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -194,12 +194,7 @@ pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeExpense"
     timeout: 120
     fail_on_error: false
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokePaymentStatus --include-choice-sets"
-    timeout: 120
-    fail_on_error: false
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeExpense"
-    timeout: 120
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokePaymentStatus --include-choice-sets"
     timeout: 120

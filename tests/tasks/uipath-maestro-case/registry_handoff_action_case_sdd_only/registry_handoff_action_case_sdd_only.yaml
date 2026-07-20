@@ -1,0 +1,114 @@
+# --- Tenant fixtures (LIVE registry) --------------------------------------------------
+# This task resolves against the real tenant registry, so it is only valid when the
+# tenant:
+#   * CONTAINS  action app "purchaseorderapp-1782974854" (Shared folder)
+#   * is MISSING "PortableReviewActionProbeQ91" and "PortableChildCaseProbeQ91"
+# A "test precondition failed ..." from the checker means one of these is off — an
+# ENVIRONMENT gap to fix, NOT a skill regression.
+# --------------------------------------------------------------------------------------
+task_id: skill-case-registry-handoff-action-case-sdd-only
+description: >
+  PHASE 1 STALE-CACHE HANDOFF — an approved sdd.md is staged with a Phase 0
+  registry cache from an earlier SDD revision. Phase 1 must replace the stale
+  task-associated entries from the authoritative SDD. A resolved Action App
+  retains its runtime name/folder bindings, while missing action and
+  case-management tasks record the exact type-specific cache match set and
+  become placeholders without entering inline creation.
+tags:
+  - uipath-maestro-case
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+  - feature:registry
+  - feature:approval-gate
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite"]
+  sdk_options:
+    max_thinking_tokens: 10000
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 100
+  turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  This approved `sdd.md` is authoritative. Its staged
+  `tasks/registry-resolved.json` came from an earlier SDD revision and is stale.
+  Run Phase 1 planning only, replacing mismatched task entries by resolving the
+  Action App references and child-case reference from the current SDD names.
+
+  If a referenced resource is unavailable, use the normal placeholder path.
+  Produce `tasks/tasks.md` and a fresh `tasks/registry-resolved.json`, then stop
+  at the Phase 1 plan-approval gate. Do not create a solution or caseplan.
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Phase 1 refreshed the tenant registry before resolving the transferred SDD"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+registry\s+pull\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Phase 1 produced tasks.md from the authoritative SDD"
+    path: "tasks/tasks.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Phase 1 replaced the stale registry cache"
+    path: "tasks/registry-resolved.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Action and child-case discovery replaced stale task entries using the correct caches and kept resolved Action bindings"
+    command: "python3 $TASK_DIR/check_registry_handoff.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Non-creatable Action App and child-case misses did not invoke an inline builder"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(?:agent|codedagent|api-workflow)\s+(?:init|new)\b'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The run stopped after Phase 1 and did not create a caseplan"
+    command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+simulation:
+  enabled: true
+  persona: |
+    You are a solution designer testing a handoff whose registry audit was
+    generated before the approved SDD was edited. You only need Phase 1
+    planning regenerated from the authoritative SDD.
+  goal: |
+    Produce tasks/tasks.md and a corrected registry audit from the staged
+    sdd.md, replacing stale selections and stopping before Phase 2.
+  constraints:
+    - "Do not change the SDD or provide alternate resource names."
+    - "For purchaseorderapp-1782974854, choose the exact Shared-folder match and do not use a placeholder."
+    - "For PortableReviewActionProbeQ91 and PortableChildCaseProbeQ91, choose Use placeholders for all; neither resource should be built inline."
+    - "When shown tasks.md for approval, say the plan is sufficient and ask the agent to stop before Phase 2."
+    - "Do not request Phase 0 or any design changes."
+    - "Keep replies short — one sentence or a single option pick."
+  max_turns: 10

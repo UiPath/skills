@@ -1,0 +1,87 @@
+name: Path-to-GA Approval
+
+# Content-sensitive gate for the high-signal `path-to-ga` tag. This check passes
+# for ordinary PRs, and only blocks when a PR adds the tag to task/test YAML.
+# Keep this on pull_request_target and do not checkout PR code: the job only
+# reads GitHub API metadata from the trusted base-repo workflow.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  gate:
+    name: path-to-ga approval
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      # GitHub logins whose latest PR review may approve new path-to-ga tags.
+      # Sherif: sherifmak / uisherif
+      # Bai Li: bai-uipath
+      # Tomasz Religa: uipreliga
+      # Rocky Madden: rockymadden
+      APPROVERS: sherifmak,uisherif,bai-uipath,uipreliga,rockymadden
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Require allowlisted approval for path-to-ga additions
+        run: |
+          set -euo pipefail
+
+          if [ -z "${PR_NUMBER:-}" ]; then
+            echo "No pull request context; nothing to gate."
+            exit 0
+          fi
+
+          echo "Inspecting PR #$PR_NUMBER for path-to-ga task tag additions."
+
+          pr_json="$(gh api "repos/$REPO/pulls/$PR_NUMBER")"
+          head_sha="$(printf '%s' "$pr_json" | jq -r '.head.sha')"
+
+          additions="$(
+            gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate \
+              --jq '.[] | select(.filename | test("^tests/tasks/.*\\.ya?ml(\\.disabled)?$")) | .patch // ""' |
+            grep -E '^\+[^+].*(^|[^[:alnum:]_-])path-to-ga([^[:alnum:]_-]|$)' || true
+          )"
+
+          if [ -z "$additions" ]; then
+            echo "No path-to-ga additions under tests/tasks/**/*.yaml."
+            exit 0
+          fi
+
+          echo "Detected path-to-ga additions that require an allowlisted approval:"
+          printf '%s\n' "$additions"
+
+          latest_approvals="$(
+            gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" --paginate |
+            jq -r --arg head_sha "$head_sha" '
+              reduce (.[] | select(.state != "COMMENTED")) as $review ({};
+                .[$review.user.login] = {
+                  state: $review.state,
+                  commit_id: $review.commit_id
+                }
+              )
+              | to_entries[]
+              | select(.value.state == "APPROVED" and .value.commit_id == $head_sha)
+              | .key
+            '
+          )"
+
+          IFS=',' read -r -a approvers <<< "$APPROVERS"
+          for approver in "${approvers[@]}"; do
+            if printf '%s\n' "$latest_approvals" | grep -Fxq "$approver"; then
+              echo "path-to-ga addition approved by allowlisted reviewer: $approver"
+              exit 0
+            fi
+          done
+
+          echo "::error::This PR adds path-to-ga to task/test YAML and needs approval on the current head commit from one of: $APPROVERS"
+          exit 1

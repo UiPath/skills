@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "_doc": "Fixture set for a troubleshoot replay scenario; mock dispatcher data only \u2014 do not treat this file as investigation evidence.",
+  "rules": [
+    {
+      "match": "or jobs get b7e3d2a4-5f61-48c9-a0d2-4e9b1c7f8a23",
+      "file": "e6713ce2cf.json"
+    },
+    {
+      "match": "or jobs logs b7e3d2a4-5f61-48c9-a0d2-4e9b1c7f8a23",
+      "file": "e4666ce9a5.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "24539b3934.json"
+    },
+    {
+      "match": "or queues list",
+      "file": "bdc1f30950.json",
+      "_doc": "Both tenant folders have zero queues; one empty fixture serves every queue listing."
+    },
+    {
+      "match": "or folders list",
+      "file": "a95a80e5c4.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}

@@ -28,7 +28,7 @@ What to look for:
 
 
 1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
-2. **If `IncludeGatewayDebugInfoInIncidents` is enabled** ([PO.BpmnEngine PR #3092](https://github.com/UiPath/PO.BpmnEngine/pull/3092)): `errorDetails` already lists each outgoing flow's condition expression, the default flow config, and variable values at evaluation time — no further data gathering needed
+2. **If `IncludeGatewayDebugInfoInIncidents` is enabled:** `errorDetails` already lists each outgoing flow's condition expression, the default flow config, and variable values at evaluation time — no further data gathering needed
 3. **If the flag is not enabled:** pull the BPMN XML to read gateway conditions: `uip maestro <type> instance asset <instance-id> -f <folder-key> --output json`
 4. Pull the variables snapshot just before the gateway element: `uip maestro <type> instance variables <instance-id> -f <folder-key> --parent-element-id <gateway-id> --output json`
 5. Walk element executions to confirm which gateway: `uip maestro <type> instance element-executions <instance-id> -f <folder-key> --output json`
@@ -43,12 +43,11 @@ What to look for:
 
 ## Notes
 
-- Pre-PR #3092: this error is **Not Troubleshootable** from PIMS API alone — agents had to ask the user for the `.bpmn` and walk variables manually
-- Post-PR #3092 with the targeted feature flag enabled: this error is **Fully Troubleshootable** — incident `errorDetails` contains everything needed
+- Without the gateway-debug-info enrichment: this error is **Not Troubleshootable** from PIMS API alone — agents had to ask the user for the `.bpmn` and walk variables manually
+- With the enrichment and the targeted feature flag enabled: this error is **Fully Troubleshootable** — incident `errorDetails` contains everything needed
 - Variable values in enriched `errorDetails` are truncated to 200 chars per variable
 
 ## References
 
-- [PR #3092 — Enrich NoOutgoingFlow incident with gateway debug info](https://github.com/UiPath/PO.BpmnEngine/pull/3092)
 - [Docs: Gateways and Flow Logic](https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/gateways-flow-logic)
 - [Docs: Gateways](https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/gateways)

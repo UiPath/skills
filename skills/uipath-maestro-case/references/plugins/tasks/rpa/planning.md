@@ -14,8 +14,8 @@ Same shape as [process/planning.md](../process/planning.md):
 
 | Field | Notes |
 |-------|-------|
-| `display-name` | from Process Reference |
-| `name` | from Process Reference |
+| `display-name` | from task `Task Name` |
+| `name` | from task `Resolved Resource` (concrete intended resource name and registry query) |
 | `folder-path` | Resolved registry `folders[0].fullyQualifiedName` — NOT the sdd.md "Folder" (which may be a parent path). Binds to `data.folderPath`; Orchestrator starts the job here at runtime. See [§ Registry Resolution](#registry-resolution). |
 | `task-type-id` | from registry (`entityKey` in `process-index.json`) |
 | `inputs`, `outputs`, `runOnlyOnce`, `isRequired` | see [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
@@ -37,6 +37,7 @@ Mark `<UNRESOLVED: rpa "<name>" in folder "<folder>" not found in registry>`. Om
 
 ```markdown
 ## T<n>: Add rpa task "<display-name>" to "<stage>"
+- name: "<resource-name>"
 - taskTypeId: <entityKey>
 - folder-path: "<folder>"
 - inputs:

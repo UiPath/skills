@@ -17,7 +17,7 @@ initial_prompt: |
   I need a product catalogue set up for our e-commerce team. Just
   build it.
 
-  A list called `CE_ProductCatalogue` with these columns:
+  A UiPath Data Fabric entity called `CE_ProductCatalogue` with these columns:
     - product name
     - category — one of Electronics, Clothing, or Home
     - price — dollars with cents

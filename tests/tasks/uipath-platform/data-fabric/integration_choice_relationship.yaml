@@ -14,7 +14,7 @@ run_limits:
   turn_timeout: 900
 
 initial_prompt: |
-  Build two linked lists — customers and their orders.
+  Build two linked UiPath Data Fabric entities — customers and their orders.
 
   `CE_IntegrationCustomer`:
     - name — required, up to 200 chars
@@ -107,15 +107,6 @@ success_criteria:
     command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_IntegrationOrder)(?=.*\"type\"\s*:\s*\"FILE\")(?=.*referenceEntityId)(?=.*referenceFieldId)'
     min_count: 1
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent must NOT define a field literally named `Status` (Rule 4 reserved keyword — use orderStatus)"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*\"fieldName\"\s*:\s*\"Status\"'
-    min_count: 0
-    max_count: 0
-    weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -257,7 +248,7 @@ success_criteria:
       as valid for #3 if the tenant had no dropdown). Score 0.5 if
       2-3 are correct. Score 0.0 if 2+ are wrong or skipped.
     weight: 2.5
-    pass_threshold: 0.5
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"

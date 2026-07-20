@@ -39,21 +39,35 @@
 #                            (resolvedModel)
 #
 # CROSS-AGENT: registered as a PostToolUse hook, this also runs under other
-# coding agents that honor hooks.json (e.g. Codex). Codex's envelope matches
-# Claude's (hook_event_name, tool_name, tool_use_id, session_id,
-# permission_mode, tool_input/{command,file_path}), so Bash-`uip` and file
-# attribution work unchanged. Differences handled / accepted: agent spawns use
-# `spawn_agent` + tool_input.agent_type (see is_uipath_call + outkey); Codex
-# omits duration_ms / effort.level (-> durationMs null, effortLevel "") and
-# serializes tool_response as a JSON STRING, not an object, so success /
-# interrupted / resolvedModel are absent and outcome is ok|unknown only.
-# Only derived, low-cardinality, PII-free values ever leave the machine.
+# coding agents that honor hooks.json (e.g. Codex, UiPath Autopilot / Delegate).
+# Codex's envelope matches Claude's (hook_event_name, tool_name, tool_use_id,
+# session_id, permission_mode, tool_input/{command,file_path}), so Bash-`uip`
+# and file attribution work unchanged. Differences handled / accepted: agent
+# spawns use `spawn_agent` + tool_input.agent_type (see is_uipath_call +
+# outkey); Codex omits duration_ms / effort.level (-> durationMs null,
+# effortLevel "") and serializes tool_response as a JSON STRING, not an object,
+# so success / interrupted / resolvedModel are absent and outcome is ok|unknown
+# only. UiPath Autopilot / Delegate keep the same envelope but rename the shell
+# and file tools — ExecuteBashCommand / ExecutePowershellCommand (vs Bash /
+# PowerShell) and ReadFile / WriteFile / EditFile / LsDirectory (vs Read / Write
+# / Edit / Glob / Grep); their tool_input still carries command / file_path, so
+# the same attribution + derivation fire once those names are gated (see
+# is_uipath_call + derive_fields). Only derived, low-cardinality, PII-free
+# values ever leave the machine.
+#
+# TWIN SCRIPT: hooks/send-telemetry.ps1 is the PowerShell twin of this file —
+# any behavioral change here MUST be mirrored there in the same PR (see
+# CLAUDE.md). hooks.json runs whichever twin matches the executing shell via a
+# bash/PowerShell polyglot command.
 #
 # Non-blocking by contract: registered as an async hook in hooks.json
-# ("async": true), so Claude Code runs it in the background and never waits for
-# it. Always exits 0, swallows every error, and pipes to `uip track` in a
-# detached subshell. Cross-platform (macOS, Linux, Windows via Git Bash /
-# MSYS). Pure bash + grep/sed/awk — no jq, node, or python.
+# ("async": true) on every event EXCEPT SessionEnd, so Claude Code runs it in
+# the background and never waits for it. SessionEnd is registered
+# SYNCHRONOUSLY (30s timeout): async hooks still running at session teardown
+# are killed after a short grace window, which would silently drop the
+# session-end event. Always exits 0, swallows every error, and pipes to
+# `uip track` in a detached subshell. Cross-platform (macOS, Linux, Windows
+# via Git Bash / MSYS). Pure bash + grep/sed/awk — no jq, node, or python.
 #
 # Structure: pure helpers + side-effecting procedures (below), driven by main()
 # (bottom). Configuration is env only:
@@ -239,11 +253,11 @@ is_uipath_call() {
         general-purpose|Explore|Plan|claude|claude-code-guide|statusline-setup|fork|default) return 0 ;;
       esac
       ;;
-    Bash|PowerShell)
+    Bash|PowerShell|ExecuteBashCommand|ExecutePowershellCommand)
       printf '%s' "$command" \
         | grep -Eq '(^|[\\"[:space:];|&(])(uip|rpa-tool)[[:space:]]|\$UIP\b' && return 0
       ;;
-    Edit|Write|Read|Glob|Grep)
+    Edit|Write|Read|Glob|Grep|ReadFile|WriteFile|EditFile|LsDirectory)
       printf '%s' "$file_path" \
         | grep -Eiq '\.(cs|flow|xaml|uipx|bpmn)$|(^|[/\\])(agent|caseplan|project|app\.config|action-schema)\.json$' && return 0
       ;;
@@ -261,13 +275,13 @@ derive_fields() {
     Skill)
       skill_name="$skill"
       ;;
-    Bash|PowerShell)
+    Bash|PowerShell|ExecuteBashCommand|ExecutePowershellCommand)
       # e.g. "solution publish" from "uip solution publish --output json".
       uip_subcommand="$(printf '%s' "$command" \
         | grep -oE '(uip|\$UIP)[[:space:]]+[a-z][a-z-]*([[:space:]]+[a-z][a-z-]*)?' \
         | head -1 | sed -E 's/^(uip|\$UIP)[[:space:]]+//')"
       ;;
-    Edit|Write|Read|Glob|Grep)
+    Edit|Write|Read|Glob|Grep|ReadFile|WriteFile|EditFile|LsDirectory)
       file_ext="$(printf '%s' "$file_path" | grep -oE '\.[A-Za-z0-9]+$' | head -1)"
       case "$file_path" in
         *agent.json)    file_ext="agent.json" ;;

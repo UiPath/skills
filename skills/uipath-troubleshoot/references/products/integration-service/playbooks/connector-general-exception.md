@@ -30,7 +30,7 @@ What can cause it:
 
 The error code already names the cause class; the remaining work is confirming ownership/permission. Read the connection identity first.
 
-1. **Read the connection resource file** — glob `**/connection/<connector-key>/*.json` from the project root (see "Connection Resource File" in [overview.md](../overview.md)). Extract `resource.key` (connection ID — must match the ID in the error), `resource.name` (owner), `resource.folders[*].fullyQualifiedName` (binding), `spec.connectorName`. This is the only way to distinguish "deleted" from "cross-workspace ownership" for DAP-GE-3000 invalid/no-access. If no source is available, say so and proceed on the error text.
+1. **Read the connection resource file** — glob `**/connection/<connector-key>/*.json` from the project root (see "Connection Resource File" in [overview.md](../overview.md)). Extract `resource.key` (connection ID — must match the ID in the error), `resource.name` (owner), `resource.folders[*].fullyQualifiedName` (binding), `spec.connectorName`. If no source is available, record that fact and use the exact-ID, bound-folder, and visibility-qualified inventory procedure in [connection-invalid.md](./connection-invalid.md). A job's `ResourceOverwrites[*].EntityDisplayName` is a display label, not ownership proof.
 2. For **DAP-GE-3005** the cause is unambiguous — skip to Resolution.
 3. `uip is connections ping <connection-id>` — confirms current state (disabled / not accessible).
 4. For the **Connections.View** detail: identify whether the failing identity is a robot account (deployed) vs the user (debug). Robot accounts often lack the permission the user has.

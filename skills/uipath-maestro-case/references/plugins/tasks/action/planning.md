@@ -11,6 +11,9 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 | Field | Source | Notes |
 |-------|--------|-------|
 | `display-name` | sdd.md task name |  |
+| `resource-name` | `Action App: <deploymentTitle>` in sdd.md `HITL Implementation` | Concrete registry query; REQUIRED and never `<UNRESOLVED>`. Do not substitute `display-name`. |
+| `name` | Selected registry `deploymentTitle` | Runtime resource binding consumed by Phase 2; use the selected app's canonical title. |
+| `folder-path` | Selected registry `deploymentFolder.fullyQualifiedName` | Runtime folder binding consumed by Phase 2; use the selected app's exact deployment folder. |
 | `task-type-id` | Registry resolution (below) | Action-app ID |
 | `task-title` | sdd.md task title or description (see fallback below) | Required for `action` type. |
 | `priority` | sdd.md (default `Medium`) | `Low` / `Medium` / `High` / `Critical`.  |
@@ -34,13 +37,16 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 3. **Name field:** `deploymentTitle` (not `name`).
 4. **Folder field:** `deploymentFolder.fullyQualifiedName`.
 5. **CLI search known to fail** for action-apps — always use direct cache-file inspection.
-6. Discover form fields / inputs / outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
+6. Set `name` to the selected entry's canonical `deploymentTitle` and `folder-path` to its exact `deploymentFolder.fullyQualifiedName`. Never substitute the task display name or a parent/truncated folder.
+7. Discover form fields / inputs / outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
+
+Query by the exact concrete `resource-name` from the SDD. `Action App ID` determines whether the prior phase resolved the app; an unresolved ID does not erase or replace the intended title. Action lookups stay in `action-apps-index.json` — never adopt a same-named resource from another cache type.
 
 See [registry-discovery.md](../../../registry-discovery.md#cli-search-gaps) for the fallback rationale.
 
 ## Unresolved Fallback
 
-Mark `<UNRESOLVED: action-app "<deploymentTitle>" in folder "<folder>" not found in action-apps-index.json>`. Emit only structural fields — drop every action-specific line (`task-title`, `priority`, `recipient`, `inputs`, `outputs`). See [placeholder-tasks.md](../../../placeholder-tasks.md) for the full placeholder entry shape and wiring-block convention.
+Mark `<UNRESOLVED: action-app "<resource-name>" in folder "<folder>" not found in action-apps-index.json>`, using the SDD's preserved Action App title even when its ID/folder are unresolved. Emit only structural fields — drop every action-specific line (`task-title`, `priority`, `recipient`, `inputs`, `outputs`). See [placeholder-tasks.md](../../../placeholder-tasks.md) for the full placeholder entry shape and wiring-block convention.
 
 ## Recipient Handling
 
@@ -65,6 +71,8 @@ Resolved action task. For the unresolved placeholder shape, see [placeholder-tas
 ```markdown
 ## T<n>: Add action task "<display-name>" to "<stage>"
 - taskTypeId: <action-app-id>
+- name: "<selected-deployment-title>"
+- folder-path: "<selected-deployment-folder>"
 - task-title: "<title-shown-to-user>"
 - priority: Medium
 - recipient: user@company.com   # omit when group-assigned or when user chose Skip

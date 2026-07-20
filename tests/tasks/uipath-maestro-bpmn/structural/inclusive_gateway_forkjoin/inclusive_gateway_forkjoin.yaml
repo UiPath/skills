@@ -1,0 +1,80 @@
+task_id: skill-bpmn-inclusive-gateway-forkjoin
+description: >
+  Structural advanced-event eval: agent uses the uipath-maestro-bpmn skill to
+  author an INCLUSIVE (OR) gateway fork with conditioned branches and a real
+  inclusive join. Exercises the FAKE_JOIN / SUPERFLUOUS_GATEWAY rules (join with
+  a gateway, not by pointing two flows at one activity). Authoring only — no
+  cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "node:gateway"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 70
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a single Maestro BPMN file `NotificationFanout.bpmn` in the working
+  directory that fans out to independently-chosen channels and rejoins:
+    - a manual start,
+    - a bpmn:inclusiveGateway SPLIT (one incoming, two outgoing) where each
+      outgoing branch carries its own conditionExpression (e.g. email wanted,
+      SMS wanted) so any subset can run,
+    - each branch runs a notification task,
+    - a SECOND bpmn:inclusiveGateway JOIN (two incoming, one outgoing) that
+      synchronizes the branches,
+    - a final task and end event after the join.
+
+  Requirements:
+  - Synchronize with an inclusive JOIN gateway — do NOT point two flows at one
+    activity (that is a FAKE_JOIN), and do NOT use a one-in/one-out gateway
+    (SUPERFLUOUS_GATEWAY). Each split branch must be conditioned.
+  - Discover any UiPath extension node's type via the registry and author it from
+    the registry template — do not hand-author uipath:* XML from prose. Structural
+    BPMN (gateways, conditions, sequence flows) comes from the skill's structural
+    reference.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+  - Validate the file locally before finishing (the bundled validator, or a
+    well-formed-XML parse plus the structural checklist).
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback, and do NOT pause between planning and
+  implementation. Build the complete file end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "NotificationFanout.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run any cloud-side Maestro BPMN lifecycle command"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(upload|publish|deploy|debug|run|pack)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN has a diagram, an inclusive gateway, and branch conditions"
+    path: "NotificationFanout.bpmn"
+    includes:
+      - "bpmndi:BPMNDiagram"
+      - "inclusiveGateway"
+      - "conditionExpression"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Conditioned inclusive split rejoins at a real inclusive join (no fake/superfluous gateway), fully shaped"
+    command: "python3 $TASK_DIR/check_inclusive_gateway_forkjoin.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

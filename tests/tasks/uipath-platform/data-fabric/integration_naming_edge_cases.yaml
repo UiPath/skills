@@ -15,7 +15,7 @@ run_limits:
 
 initial_prompt: |
   Migrating a schema from another system — `schema_migration.json` in
-  the working directory has 6 lists to attempt (each with one `Title`
+  the working directory has 6 UiPath Data Fabric entities to attempt (each with one `Title`
   column, short text) and 12 columns to add to the first successful
   list (`CE_NameOK1`). Try each item verbatim. For rejections, capture
   the error verbatim — don't rewrite names or retry.

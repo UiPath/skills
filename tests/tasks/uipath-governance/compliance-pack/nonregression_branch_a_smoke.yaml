@@ -9,8 +9,22 @@ tags: [uipath-governance, smoke, mode:build, lifecycle:setup]
 sandbox:
   python: {}
 
+# CI passes live tenant auth into every smoke sandbox, and this task REQUIRES
+# `aops-policy create` — every run creates a real AOps policy on the shared
+# tenant. A leftover one blocked AITL model calls and broke maestro flow/case
+# tests. The prompt pins the name `test-nonreg-block-chatgpt`; delete exactly
+# that policy (prefix match) before and after via the shared cleanup_policy.py.
+pre_run:
+  - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="test-nonreg-block-chatgpt" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_policy.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="test-nonreg-block-chatgpt" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_policy.py''))"'
+    timeout: 120
+
 initial_prompt: |
   Block ChatGPT (OpenAI provider) for all Studio developers in my tenant.
+  Name the policy exactly `test-nonreg-block-chatgpt` so it is easy to identify.
   Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 

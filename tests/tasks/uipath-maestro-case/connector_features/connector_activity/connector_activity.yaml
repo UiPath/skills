@@ -14,9 +14,9 @@ tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-no
 max_iterations: 1
 
 run_limits:
-  task_timeout: 1800
-  max_turns: 120
-  turn_timeout: 1800
+  task_timeout: 2100
+  max_turns: 150
+  turn_timeout: 2100
 
 initial_prompt: |
   Build a UiPath Case Management solution named "ConnectorActivityCase"
@@ -104,7 +104,7 @@ initial_prompt: |
   **Connector Key:** uipath-salesforce-slack
   **Activity:** Send Message to a Channel
   **Type ID:** 37a305b2-89b1-315d-b73f-1778839a6c47
-  **Connection ID:** 849e85d8-1aa9-4d52-8bbd-20041c8f05d8
+  **Connection ID:** e03f734e-0f80-4e8a-a7c1-0ece309b0ca4
   **Inputs:** channel: "#general", text: "Case started"
   ```
 

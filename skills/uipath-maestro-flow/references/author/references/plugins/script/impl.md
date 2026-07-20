@@ -30,12 +30,15 @@ See [Action Node Structure — Adding and editing procedures](../../../../shared
 
 ## Script rules
 
-1. **Must `return` an object** — `return { key: value }`, not a bare scalar. The return value becomes `$vars.{nodeId}.output`.
-2. **`$vars` is a global** — use it directly: `return { upper: $vars.input1.toUpperCase() }`
-3. **JavaScript ES2020 (Jint engine)** — see [variables-and-expressions.md](../../../../shared/variables-and-expressions.md) for supported features and Jint constraints.
-4. **No `console.log`** — `console` is not available. Use `return { debug: value }` to inspect values.
-5. **No external calls** — use the HTTP node or a connector node for API calls.
-6. **30-second timeout** — long-running computations will be killed.
+1. **Top-level body — no `function main()` wrapper.** Node runs the `script` text directly (as a function body); a wrapper is never called → `output` null. Read workflow variables via `$vars.<variableId>` and upstream node outputs via `$vars.<nodeId>.output`; end with top-level `return {…}`. Not a coded Function: no `main`, no injected args.
+   - Correct: `const n = $vars.ixp1.output.field; return { n };`
+   - Wrong: `function main({ ixp1 }) { … }`
+2. **Must `return` an object** — `return { key: value }`, not a bare scalar. The return value becomes `$vars.<nodeId>.output`.
+3. **`$vars` is a global** — use it directly: `return { upper: $vars.customerName.toUpperCase() }`
+4. **JavaScript ES2020 (Jint engine)** — see [variables-and-expressions.md](../../../../shared/variables-and-expressions.md) for supported features and Jint constraints.
+5. **No `console.log`** — `console` is not available. Use `return { debug: value }` to inspect values.
+6. **No external calls** — use the HTTP node or a connector node for API calls.
+7. **30-second timeout** — long-running computations will be killed.
 
 ## Common patterns
 
@@ -83,6 +86,7 @@ Property access is **case-sensitive** — these casings resolve: `.FullName`, `.
 | Error | Cause | Fix |
 | --- | --- | --- |
 | Script did not return a value | Missing `return` statement | Add `return { ... }` |
+| `output` is `null` but script has a `return` | `return` is inside an uncalled `function main(){}` wrapper | Remove wrapper; code + `return` at top level (rule 1) |
 | Return value is not an object | Returned a scalar (`return 42`) | Wrap in object: `return { value: 42 }` |
 | `$vars.nodeId` is undefined | Upstream node not connected or wrong ID | Check edges and node IDs |
 | Timeout after 30s | Script too expensive | Simplify logic or split into multiple scripts |

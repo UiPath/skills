@@ -31,7 +31,7 @@ pre_run:
     fail_on_error: false
 
 initial_prompt: |
-  There's an existing list `CE_LargePaginationTest` with 500 rows already in
+  There's an existing UiPath Data Fabric entity `CE_LargePaginationTest` with 500 rows already in
   it. Each row has a `Name` (Record-001 through Record-500), a `Score` (the
   row number, 1-500), and an `Active` flag (yes for rows 1-300, no for
   rows 301-500). I'd like you to paginate through it three different ways.

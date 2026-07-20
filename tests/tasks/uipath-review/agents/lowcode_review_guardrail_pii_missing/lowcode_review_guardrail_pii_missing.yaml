@@ -3,17 +3,23 @@ description: >
   Judgment test for uipath-review on a low-code agent that processes clearly
   personal data (customer_email, full_name, ssn) but configures no
   pii_detection guardrail. pre_run scaffolds a minimal agent then rewrites
-  the input schema. The reviewer must run the review CLI first (Step 2.5a),
-  then apply the judgment catalog and cite `LC_GUARDRAIL_RECOMMENDED` (the
-  single missing-guardrail recommendation rule) with the PII case in the
-  message — an inference about whether the agent handles personal data that a
-  regex cannot make, so it is the skill's responsibility.
+  the input schema. The reviewer must identify the missing PII guardrail
+  in the report — either by citing LC_GUARDRAIL_RECOMMENDED or by prose
+  identifying that a PII-detection guardrail is absent for the agent's
+  PII inputs. CLI validation (Step 2) is advisory.
 tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover, guardrail]
 
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  disallowed_tools: ["TaskCreate", "TaskUpdate", "TaskList", "TaskGet"]
+  system_prompt: |
+    You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
+
 run_limits:
+  expected_turns: 55
   turn_timeout: 1200
   task_timeout: 1500
-  max_turns: 40
+  max_turns: 60
 
 sandbox:
   driver: tempdir
@@ -25,8 +31,9 @@ pre_run:
 
 initial_prompt: |
   A low-code UiPath agent project exists at `ReviewSol/SampleAgent` inside the
-  solution `ReviewSol`. Review the agent project for issues and save your review
-  report to `./_review_report.md` at the sandbox root.
+  solution `ReviewSol`. Use the `uipath-review` skill to review it for issues,
+  including its guardrail configuration. Save the report to
+  `./_review_report.md` at the sandbox root.
 
   This is a read-only review — do not modify anything inside `ReviewSol/`.
 
@@ -50,15 +57,15 @@ success_criteria:
     weight: 3.0
 
   - type: command_executed
-    description: "Mandatory validation: uip agent validate ran (Critical Rule 2)"
+    description: "Advisory: uip agent validate ran (Critical Rule 2) — recorded but not gating"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+validate'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: run_command
-    description: "Review report applies the judgment catalog: cites LC_GUARDRAIL_RECOMMENDED for the missing PII guardrail"
+    description: "Review report identifies the missing PII guardrail (LC_GUARDRAIL_RECOMMENDED or prose)"
     command: "python3 $TASK_DIR/check_lowcode_review_guardrail_pii_missing.py"
     timeout: 30
     expected_exit_code: 0

@@ -1,0 +1,79 @@
+task_id: skill-review-rpa-logging-pii
+description: >
+  Judgment test for uipath-review on an RPA (XAML) project with logging
+  anti-patterns: a Write Line activity instead of Log Message (ST-MRD-011), a
+  Log Message that writes customer PII (email + SSN) into the logs (Critical),
+  and a Verbose-level log dumping the same PII in production. The reviewer must
+  read the XAML and flag the PII leakage into logs (Critical) and the Write
+  Line / log-level issues (ST-MRD-011 / ST-USG-020 or prose).
+
+  Platform note: `uip rpa validate/build/analyze` require Windows and may not
+  run on Linux CI — those CLI checks are advisory. The defects are caught by
+  reading the workflow, which is platform-independent.
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  driver: tempdir
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  A UiPath RPA project exists at `LoggingBot` in the current directory.
+  Review it for quality and security issues, focusing on logging and data
+  handling, and produce a structured review report with Critical / Warning /
+  Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `LoggingBot/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `LoggingBot/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside LoggingBot/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*LoggingBot'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside LoggingBot/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*LoggingBot'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Advisory: uip rpa validate/build/analyze ran (Critical Rule 2) — recorded, not gating"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+(validate|build|analyze)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Report flags PII in logs (and/or Write Line vs Log Message)"
+    command: "python3 $TASK_DIR/check_logging_pii.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

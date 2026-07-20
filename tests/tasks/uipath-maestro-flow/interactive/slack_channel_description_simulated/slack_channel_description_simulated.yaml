@@ -1,0 +1,112 @@
+task_id: skill-flow-slack-channel-description-simulated
+description: >
+  Single-connector Slack flow (read a channel's description and output it),
+  driven by a simulated non-technical user who withholds the channel and project
+  name until asked. Tests the agent's ability to clarify an ambiguous ask before
+  building. Executes: builds the uipath-salesforce-slack connector node, validates,
+  then runs cloud debug and asserts the fetched channel description (the Bellevue
+  office address) lands in the output — needs a live Slack connection.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, simulation]
+
+run_limits:
+  # max_turns = simulation rounds x ~5 (~4 build turns/round + headroom)
+  max_turns: 70
+  task_timeout: 2400
+  turn_timeout: 1200
+
+# No initial_prompt — the simulator generates turn 1 from its persona + goal.
+
+simulation:
+  enabled: true
+
+  persona: |
+    You are a non-technical office manager. You have heard of UiPath but have
+    never built a flow yourself. You speak in plain English, never in code. You
+    are friendly but impatient: if the agent dithers, prod it to just build
+    something. You cannot read or write code — if the agent shows you code, say
+    "I trust you, just make it work."
+
+  goal: |
+    You ultimately want a UiPath Flow that grabs the description text from one of
+    your team's Slack channels and shows it to you. You want it validated before
+    you accept it.
+
+    CRITICAL: do NOT volunteer these details up front. Reveal each fact ONLY if
+    the agent explicitly asks about it:
+      - The project name should be "SlackChannelDescription".
+      - The information you want lives in Slack (if asked where the description
+        should come from).
+      - The specific channel is "#office-bellevue".
+      - The flow should output that channel's description text.
+      - You want the flow validated before you sign off.
+      - You do not require the project to execute before signing off.
+
+    If the agent asks a clarifying question that covers several of these at
+    once, answer only what they asked — do not pre-empt the rest.
+
+  constraints:
+    - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
+    - "Do not mention 'Slack', 'connector', 'channel', 'node', or 'validate' unless the agent brings them up first."
+    - "Do not reveal the channel '#office-bellevue' unless asked which channel."
+    - "The flow must work for #office-bellevue without you supplying anything at run time. If the agent asks you to provide a channel ID when it runs, tell it to wire the #office-bellevue channel in directly so it runs unattended."
+    - "Do not reveal the project name 'SlackChannelDescription' unless asked what to name it."
+    - "You expect a UiPath Maestro Flow — i.e. a `.flow` file in the workspace. If the agent builds anything else (e.g. an API workflow), tell it you specifically want a Maestro Flow and are not satisfied until there is a `.flow` file."
+    - "When you are satisfied that the flow is built and validated, reply with exactly <<<END>>> on its own line."
+
+  max_turns: 14
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+  parallel_trials: true
+
+success_criteria:
+  # Name-agnostic: any .flow the agent built must validate. The exact project
+  # name is scored separately below so a working-but-misnamed flow still earns
+  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  - type: run_command
+    description: "uip flow validate passes (any .flow)"
+    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Runtime check (mirrors the retired non-simulated original, check_channel_description.py):
+  # a node targets the Slack connector AND flow debug retrieves the channel
+  # description into the OUTPUT (the Bellevue office address). Supersedes a static
+  # connector-key grep, which a flow that never executes would still pass.
+  - type: run_command
+    description: "Flow debug runs; Slack connector executed and output has the channel description"
+    command: "python3 $TASK_DIR/check_channel_description.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  # The channel #office-bellevue is a withheld requirement the persona reveals
+  # only when asked which channel. The debug check above already proves the right
+  # channel was read (its description IS the Bellevue office address); this static
+  # check separately grades the elicitation. Scored on its own (partial credit) —
+  # a flow that legitimately encodes the channel as an ID rather than its name
+  # should not hard-fail the whole task.
+  - type: run_command
+    description: "Flow targets the #office-bellevue channel (elicited from the user)"
+    command: "python3 -c \"import glob,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(0 if 'office-bellevue' in open(flows[0]).read().lower() else 'flow does not reference the #office-bellevue channel')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The project name is a WITHHELD, COSMETIC requirement (persona reveals it only
+  # if asked what to name it) — the flow behaves identically whatever it's called.
+  # Non-gating: reports whether the agent elicited the exact name (score 1/0), but
+  # pass_threshold 0 keeps a cosmetic miss from failing the task and the low weight
+  # keeps it from dominating the score.
+  - type: run_command
+    description: "Project/flow is named SlackChannelDescription (elicited from the user)"
+    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/SlackChannelDescription.flow',recursive=True) else 'expected a flow named SlackChannelDescription.flow')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

@@ -1,0 +1,62 @@
+task_id: skill-bpmn-timer
+description: >
+  Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author an
+  intermediate timer catch event (the BPMN analogue of a Flow Delay) that waits a
+  fixed ISO-8601 duration between the start and end. Authoring only — no cloud
+  effects.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "shape:single-node", "feature:timer"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 50
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a single Maestro BPMN file `TimerWait.bpmn` in the working directory
+  with the shape: start event -> intermediate timer catch event -> end event.
+
+  Requirements:
+  - The middle node is a bpmn:intermediateCatchEvent carrying a
+    bpmn:timerEventDefinition with a fixed ISO-8601 duration (e.g. PT15M). Week
+    designators (PnW) are unsupported.
+  - The timer event has one incoming and one outgoing sequence flow.
+  - Author the structural BPMN and the timer event-definition payload per the
+    skill's structural reference; do not hand-author uipath:* XML from prose.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node (including the
+    timer event) and a BPMNEdge for every sequence flow.
+  - Validate the file locally before finishing (the bundled validator, or a
+    well-formed-XML parse).
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback, and do NOT pause between planning and
+  implementation. Build the complete file end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "TimerWait.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN file has a diagram and a timer event definition"
+    path: "TimerWait.bpmn"
+    includes:
+      - "bpmndi:BPMNDiagram"
+      - "timerEventDefinition"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN has a wired intermediate timer catch event with a valid ISO-8601 definition, full DI, resolvable flows"
+    command: "python3 $TASK_DIR/check_timer.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

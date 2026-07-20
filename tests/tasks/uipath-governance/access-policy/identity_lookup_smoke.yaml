@@ -64,7 +64,7 @@ success_criteria:
   - type: command_executed
     description: "Agent did NOT use the retired `uip or users list` path for User UUID resolution"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+users\s+list'
+    command_pattern: 'uip\s+(or|orchestrator)\s+users\s+list'
     min_count: 0
     max_count: 0
     weight: 1.0
@@ -73,7 +73,7 @@ success_criteria:
   - type: command_executed
     description: "Agent did NOT use the retired `uip or users current` subcommand"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+users\s+current'
+    command_pattern: 'uip\s+(or|orchestrator)\s+users\s+current'
     min_count: 0
     max_count: 0
     weight: 1.0

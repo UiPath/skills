@@ -1,0 +1,37 @@
+task_id: skill-agent-guardrail-coded-llm-as-judge
+description: >
+  Smoke test: the guardrails.md skill adds a UiPathLLMAsJudgeMiddleware guardrail to a
+  coded LangGraph agent. Verifies the skill checks LLM Gateway model availability for
+  the llm-as-judge-validator feature, then adds the middleware with guardrail_text and
+  model parameters at Agent scope with BlockAction.
+tags: [uipath-agents, smoke, coded, mode:build, guardrail]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/SimpleCodedAgent
+
+initial_prompt: |
+  I have a coded LangGraph agent in graph.py that answers customer support questions.
+  Add an LLM as Judge guardrail using middleware style at Agent scope. The guardrail
+  rule is: "The agent must only provide factual account information and must never offer
+  refunds or price negotiation." Use a block action. Use "gpt-4o-2024-08-06" as the model.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
+  Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: run_command
+    description: "LLM as Judge middleware correctly added to graph.py"
+    command: "python3 $TASK_DIR/check_llm_as_judge.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 12
+  turn_timeout: 300

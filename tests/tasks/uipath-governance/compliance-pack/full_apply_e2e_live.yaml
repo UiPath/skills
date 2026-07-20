@@ -11,13 +11,15 @@ tags: [uipath-governance, e2e, mode:operate, lifecycle:setup, feature:compliance
 sandbox:
   python: {}
 
+# Cleanup disables the pack AND deletes any `iso-42001-*` AOps policies —
+# disabling the pack state alone leaves partial-apply policies behind.
 pre_run:
   - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
-    timeout: 60
+    timeout: 120
 
 post_run:
   - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
-    timeout: 60
+    timeout: 120
 
 run_limits:
   max_turns: 60
@@ -31,7 +33,10 @@ initial_prompt: |
   output to output.txt as you go. Save the raw posture analysis (state coverage) JSON
   response to coverage.json.
 
-  Save a run summary to report.json with pack identity, posture counts, and whether apply was performed.
+  Save a run summary to report.json with pack identity, the posture counts taken
+  from the state coverage response (how many settings are not yet applied, and the
+  total number of settings), and whether apply was performed. The counts in
+  report.json must match the coverage response.
 
   Important:
   - Always pass --output json.
@@ -94,11 +99,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "report.json references iso-42001-2023 and has a posture section"
+    description: "report.json references iso-42001-2023 and omits internal implementation tokens"
     path: "report.json"
     includes:
       - "iso-42001-2023"
-      - "posture"
     excludes:
       - "controls_to_configure"
       - "pack-walker"

@@ -76,13 +76,28 @@ Manage the reusable type definitions (entity_defs) that fields reference via `fi
 | `uip ixp data-types rename <project-name> --name <name> --new-name <name> --output json` | Rename a data type. Existing field references (via `field_type_id`) stay intact. |
 | `uip ixp data-types delete <project-name> --name <name> -y --output json` | Delete a data type. **IRREVERSIBLE** — any field referencing it via `field_type_id` will break. `-y, --yes` is **required** (the CLI never prompts). |
 
+### Default data types
+
+Every IXP project ships with the built-in data types below (the project's `entity_defs` from `projects get-taxonomy` are the authoritative list). **Before `data-types add`, or before choosing a field's `--type` (in `fields add` / `groups add`), check the existing `entity_defs` and reuse a matching default.** A redundant custom type (e.g. a `Currency Amount` when `Monetary Quantity` already exists) splits annotations across two types and forfeits the default's pre-trained model. Add a new data type only when it carries something no default does — a `Choice`, or a reusable concept that needs its own tailored extraction instructions — not as a clone of a default.
+
+| Default type | `--kind` | `--input-value` | Reuse for |
+|--------------|----------|-----------------|-----------|
+| `Exact Text` | `text` | `exact-match` | Text copied verbatim from the document — names, IDs, addresses, codes |
+| `Inferred Text` | `text` | `inferred` | Text derived/computed, not appearing verbatim in the document |
+| `Number` | `number` | — | Counts, quantities, plain numbers |
+| `Date` | `date` | — | Dates |
+| `Monetary Quantity` | `money` | — | Any currency / monetary amount — total, subtotal, tax, unit price, freight |
+| `Boolean` | `boolean` | — | True / false values |
+
+`Date`, `Number`, and `Monetary Quantity` carry pre-trained models with a fixed output format (e.g. `Monetary Quantity` normalises `"1M USD"`, `"USD 1000000"`, and `"1,000,000 usd"` all to `1,000,000.00 USD`) — instructions cannot change their formatting, so a hand-rolled equivalent is strictly worse. `Choice` is the only `--kind` with no default: choice types are always project-specific (`data-types add --kind choice --choices …`).
+
 ## Groups
 
 Manage field groups (label_defs) — the document type containers for fields. To edit fields **inside** an existing group, use the `fields` subject below.
 
 | Command | Description |
 |---------|-------------|
-| `uip ixp groups add <project-name> --name <group-name> --instructions <text> --fields <json> --output json` | Create a new field group with its fields. `--instructions` describes what document/section the group covers (the model sees it during extraction). `--fields` is a JSON array `[{"name":"...","type":"<type-name>","instructions":"..."}]` — **put ALL of the new group's fields in this one array (batch); do NOT create the group then add its fields one at a time.** Every entry must include `name`, `type`, and a non-empty `instructions`. `type` resolves against the project's `entity_defs`. To add a field to an **already-existing** group, use `fields add` instead. |
+| `uip ixp groups add <project-name> --name <group-name> --instructions <text> --fields <json> --output json` | Create a new field group with its fields. `--instructions` describes what document/section the group covers (the model sees it during extraction). `--fields` is a JSON array `[{"name":"...","type":"<type-name>","instructions":"..."}]` — **put ALL of the new group's fields in this one array (batch); do NOT create the group then add its fields one at a time.** Every entry must include `name`, `type`, and a non-empty `instructions`. `type` resolves against the project's `entity_defs` — reuse a [default data type](#default-data-types) before inventing a new one. To add a field to an **already-existing** group, use `fields add` instead. |
 | `uip ixp groups delete <project-name> --name <group-name> -y --output json` | Delete a field group. **IRREVERSIBLE** — deletes all annotations on all fields in the group. `-y, --yes` is **required** (the CLI never prompts). |
 | `uip ixp groups rename <project-name> --name <group-name> --new-name <name> --output json` | Rename a field group. Preserves all fields and annotations. |
 | `uip ixp groups update-prompts <project-name> --updates <json> --output json` | Bulk-update field group (label_def) instructions. `--updates` is a JSON array `[{"name":"<group>","instructions":"..."}]` matched by group name. Existing fields are preserved. Unmatched names are reported in the response without failing the command. |
@@ -93,7 +108,7 @@ Structural edits to a field within an existing field group. For instruction-only
 
 | Command | Description |
 |---------|-------------|
-| `uip ixp fields add <project-name> --group <field-group-name> --field <name> --type <type-name> --instructions <text> --output json` | Add a new field to an **existing** field group. `--type` is the name of an entity_def in the project's taxonomy (see `projects get-taxonomy`). `--instructions` is required — describe what to extract and where it appears. |
+| `uip ixp fields add <project-name> --group <field-group-name> --field <name> --type <type-name> --instructions <text> --output json` | Add a new field to an **existing** field group. `--type` is the name of an entity_def in the project's taxonomy (see `projects get-taxonomy`) — reuse a [default data type](#default-data-types) (e.g. `Monetary Quantity` for a currency amount) before adding a custom one. `--instructions` is required — describe what to extract and where it appears. |
 | `uip ixp fields delete <project-name> --group <field-group-name> --field <name> -y --output json` | Remove a field from a field group. `-y, --yes` is **required** (the CLI never prompts). |
 | `uip ixp fields rename <project-name> --group <field-group-name> --field <name> --new-name <name> --output json` | Rename a field. Preserves `field_id` and existing annotations. |
 | `uip ixp fields change-type <project-name> --group <field-group-name> --field <name> --type <type-name> -y --output json` | Change a field's type. **IRREVERSIBLE** — the server creates a new field under the hood, so all existing annotations for that field are deleted. `-y, --yes` is **required** (the CLI never prompts). |

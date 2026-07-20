@@ -4,7 +4,7 @@ description: >
   Diagnose guidance. The agent inspects a mocked failed BPMN run, follows the
   diagnostic priority ladder, and recommends the safe next operate action
   without performing lifecycle mutations.
-tags: [uipath-maestro-bpmn, smoke, "mode:diagnose", "lifecycle:execute"]
+tags: [uipath-maestro-bpmn, smoke, "mode:diagnose", "lifecycle:discover"]
 
 run_limits:
   expected_turns: 16

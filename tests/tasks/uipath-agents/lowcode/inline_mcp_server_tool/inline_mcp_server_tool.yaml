@@ -7,7 +7,7 @@ description: >
   `$resourceType: "mcp"` (distinct from `$resourceType: "tool"`) with
   the documented sparse shape, and that a `uipath.agent.resource.mcp.*`
   flow node is wired to the autonomous agent node's `tool` handle.
-tags: [uipath-agents, e2e-blocked, mode:build, low-code, inline-flow]
+tags: [uipath-agents, e2e-blocked, mode:build, low-code, inline-flow, path-to-ga]
 skip: true
 # Skipped for now — wiring an inline MCP server tool into the flow is not yet
 # reliable on the run tenant. Re-enable once the inline MCP flow-node path works.

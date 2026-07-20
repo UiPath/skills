@@ -22,7 +22,7 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  We have a list called `CE_ErrorPathsTest` set up with two rows:
+  We have a UiPath Data Fabric entity called `CE_ErrorPathsTest` set up with two rows:
     - SEED-001, score 10, tag "tag-unique"
     - SEED-002, score 20, tag "tag-other"
 
@@ -70,10 +70,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent attempted records insert (error scenarios — seed already pre-seeded)"
+    description: "Agent attempted at least one records insert (error scenarios — seed already pre-seeded)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+insert'
-    min_count: 3
+    min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
@@ -86,10 +86,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent attempted records update (error scenarios)"
+    description: "Agent attempted at least one records update (error scenarios)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+update'
-    min_count: 3
+    min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 

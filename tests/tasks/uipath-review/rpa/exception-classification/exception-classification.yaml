@@ -1,0 +1,81 @@
+task_id: skill-review-rpa-exception-classification
+description: >
+  Judgment test for uipath-review on an RPA (XAML) project with several
+  exception-handling anti-patterns: a Catch that does
+  `throw new Exception(exception.Message)` (destroys the original stack trace
+  instead of Rethrow), `ContinueOnError=True` on an external file operation
+  (silently swallows failures), and a single generic System.Exception catch
+  with no BusinessRuleException-vs-system distinction. The reviewer must read
+  the XAML and flag at least the stack-trace loss or the ContinueOnError
+  misuse (ST-DBP-003 / UI-ANA-017 or equivalent prose).
+
+  Platform note: `uip rpa validate/build/analyze` require Windows and may not
+  run on Linux CI — those CLI checks are advisory. The defects are caught by
+  reading the workflow, which is platform-independent.
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  driver: tempdir
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  A UiPath RPA project exists at `ExceptionBot` in the current directory.
+  Review it for quality and best-practice issues, focusing on error and
+  exception handling, and produce a structured review report with Critical /
+  Warning / Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `ExceptionBot/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `ExceptionBot/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside ExceptionBot/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*ExceptionBot'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside ExceptionBot/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*ExceptionBot'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Advisory: uip rpa validate/build/analyze ran (Critical Rule 2) — recorded, not gating"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+(validate|build|analyze)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Report flags stack-trace loss (rethrow) or ContinueOnError misuse"
+    command: "python3 $TASK_DIR/check_exception_classification.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

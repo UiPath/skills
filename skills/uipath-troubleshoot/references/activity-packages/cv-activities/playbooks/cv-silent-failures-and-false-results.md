@@ -111,7 +111,7 @@ Fix: set `CvMethod` to include the families the descriptors need (control detect
 
 ## Post-presentation actions
 
-This resolution path is **interactive** whenever the fix edits the user's workflow — changing `ContinueOnError`, clearing or rebinding `InRegion`, changing `MethodType` / `RefreshBefore`, correcting a cell descriptor, or changing the scope's `CvMethod`. The orchestrator MUST call `AskUserQuestion` before any edit, and follow these rules:
+This resolution path is **interactive** whenever the fix edits the user's workflow — changing `ContinueOnError`, clearing or rebinding `InRegion`, changing `MethodType` / `RefreshBefore`, correcting a cell descriptor, or changing the scope's `CvMethod`. You MUST call `AskUserQuestion` before any edit (approval gate), and follow these rules:
 
 1. **Sharing a file path is not approval.** A path the user gave for reading the project does not authorize editing it. Issue a separate `AskUserQuestion` before any edit.
 2. **Never bundle "gather input" with "apply fix" in one option.** Split into two steps: gather the input, then surface the specific diff and confirm separately.
