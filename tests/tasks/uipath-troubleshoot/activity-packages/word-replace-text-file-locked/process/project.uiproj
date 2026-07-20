@@ -1,0 +1,6 @@
+{
+  "Name": "ContractMerge",
+  "ProjectType": "Process",
+  "Description": "Iterates over a recipient list and personalizes a contract Word document by replacing the recipient placeholder for each one.",
+  "MainFile": "Main.xaml"
+}

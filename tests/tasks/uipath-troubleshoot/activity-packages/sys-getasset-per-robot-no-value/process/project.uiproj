@@ -1,0 +1,6 @@
+{
+  "Name": "PerRobotConfigReader",
+  "ProjectType": "Process",
+  "Description": "Reads an asset value from Orchestrator and logs it.",
+  "MainFile": "Main.xaml"
+}

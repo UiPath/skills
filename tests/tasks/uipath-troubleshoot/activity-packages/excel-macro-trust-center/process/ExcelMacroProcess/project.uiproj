@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelMacroProcess",
+  "ProjectType": "Process",
+  "Description": "Runs the Module1.ProcessData macro in the macro-enabled workbook at C:\\Robot\\Data\\sales-macro.xlsm via Execute Macro inside a Use Excel File scope.",
+  "MainFile": "Main.xaml"
+}

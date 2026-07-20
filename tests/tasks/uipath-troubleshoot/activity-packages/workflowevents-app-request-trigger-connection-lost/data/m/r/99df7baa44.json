@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-25T15:11:08.140Z",
+      "Message": "Apps Request Trigger: SignalR connection did not establish within 60 seconds. Current state: Connecting\r\nin Main.xaml\r\n    at AppRequestTrigger\r\n    at Main\r\n\r\n--- .NET stack trace ---\r\nSystem.TimeoutException\r\n   at UiPath.WorkflowEvents.Activities.Services.HubConnectionService.EnsureChannelConnectedAsync(CancellationToken cancellationToken)\r\n   at UiPath.WorkflowEvents.Activities.AppRequestTrigger.GetWorkflowRequest(IExecutorRuntime executorRuntime, Action`1 sendTrigger, Bookmark bookmark, BookmarkResumptionHelper bookmarkHelper, CancellationToken cancellationToken)\r\n   at UiPath.WorkflowEvents.Activities.AppRequestTrigger.Throw(NativeActivityContext context, Bookmark bookmark, Object value)\r\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}

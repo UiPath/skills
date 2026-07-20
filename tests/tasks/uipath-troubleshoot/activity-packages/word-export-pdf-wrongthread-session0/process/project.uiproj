@@ -1,0 +1,6 @@
+{
+  "Name": "NightlyReportPdf",
+  "ProjectType": "Process",
+  "Description": "Opens the nightly report Word document and saves it as a PDF in the output folder.",
+  "MainFile": "Main.xaml"
+}

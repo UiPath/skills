@@ -77,4 +77,6 @@ The case file lives inside a solution + project structure. After T01 completes, 
 
 Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution init` and `uip solution project add` bookend T01 as Step 6.0 and Step 6.0b.
 
+**Naming (canonical) — the solution identity is derived ONCE and reused by every step that scaffolds or references the solution.** `<SolutionName>` = the case Name (SDD §1 Metadata), sanitized to a valid directory name; `<SolutionDir>` = `<workingRoot>/<SolutionName>` (the working root adjacent to `sdd.md`). **Step 6.0 AND the Rule-17 Create prerequisite ([registry-discovery.md § Create-on-Missing → 0](../../registry-discovery.md#create-on-missing-build-and-rediscovery)) MUST derive `<SolutionName>` + `<SolutionDir>` identically** — so a solution scaffolded early by a Phase-1 Create is the *same* `.uipx` Step 6.0 then finds and skips. A divergent name or location forks the solution: the built agent sibling registers in one `.uipx`, the case project lands in another, and the case cannot resolve its own agent at runtime. (`<ProjectName>` is T01's to choose under `<SolutionDir>/`.)
+
 See [implementation.md Step 6](../../implementation.md) for the authoritative 3-step execution sequence.

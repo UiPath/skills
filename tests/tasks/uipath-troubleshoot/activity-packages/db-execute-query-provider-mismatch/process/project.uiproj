@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceReconciliation",
+  "ProjectType": "Process",
+  "Description": "Reconciles invoices by running a SELECT of InvoiceId, Amount and Status from the Invoices table via Execute Query into a DataTable.",
+  "MainFile": "Main.xaml"
+}

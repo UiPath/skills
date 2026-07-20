@@ -1,0 +1,81 @@
+task_id: skill-review-rpa-legacy-precision
+description: >
+  Precision (false-positive discipline) test for uipath-review. The project is
+  a clean, valid Windows-Legacy (.NET Framework) RPA process that integrates
+  with an on-premise SOAP web service — a legitimate reason to stay on Legacy.
+  There is no genuine Critical defect. The reviewer must NOT flag the
+  Windows-Legacy targetFramework itself as a Critical issue (the skill's
+  anti-patterns forbid this — Legacy is supported indefinitely in Studio LTS),
+  must offer tailored migration guidance naming concrete trade-offs, and must
+  not fabricate Workflow Analyzer rule IDs. This is a NEGATIVE grader: it
+  fails an over-eager reviewer and passes a precise one.
+
+  Platform note: `uip rpa validate/build/analyze` require Windows and may not
+  run on Linux CI — those CLI checks are advisory.
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  driver: tempdir
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  A UiPath RPA project exists at `LegacyBot` in the current directory.
+  Review it and produce a structured review report with Critical / Warning /
+  Info findings. Assess whether it is production-ready and advise whether the
+  team should migrate it to a newer project type.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `LegacyBot/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `LegacyBot/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside LegacyBot/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*LegacyBot'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside LegacyBot/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*LegacyBot'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Advisory: uip rpa validate/build/analyze ran (Critical Rule 2) — recorded, not gating"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+(validate|build|analyze)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Report does NOT flag Legacy as Critical and gives tailored migration guidance"
+    command: "python3 $TASK_DIR/check_legacy_precision.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -1,0 +1,64 @@
+task_id: skill-bpmn-calculator
+description: >
+  Skill-guided evaluation (ported from the Flow calculator eval): agent uses the
+  uipath-maestro-bpmn skill to author a BPMN process that routes on an operator
+  variable through a multi-way exclusive gateway to one script task per
+  arithmetic operation. Exercises multi-branch exclusive-gateway routing, script
+  tasks, and BPMN DI. Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision"]
+
+run_limits:
+  expected_turns: 22
+  max_turns: 80
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project named "CalculatorBpmn" with the main file
+  at `CalculatorBpmn/CalculatorBpmn.bpmn` for this process:
+  - Manual start with input variables `operandA` and `operandB` (numbers) and
+    `operator` (string: "add", "subtract", "multiply", or "divide").
+  - An exclusive gateway routes on `operator` to one branch per operation.
+  - Each branch is its own script task that computes the result into a `result`
+    variable, then reaches an end event.
+
+  Requirements:
+  - Declare variables and author script-task payloads per the skill's structural
+    reference; do not hand-author uipath:* XML from prose.
+  - The exclusive gateway must have a condition on each non-default outgoing flow
+    and exactly one default flow.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback. Do NOT pause between planning and
+  implementation. Build the complete local project end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "CalculatorBpmn/CalculatorBpmn.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN file contains a diagram and an exclusive gateway"
+    path: "CalculatorBpmn/CalculatorBpmn.bpmn"
+    includes:
+      - "bpmndi:BPMNDiagram"
+      - "exclusiveGateway"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN has multi-way exclusive-gateway routing, one script task per branch, and valid DI"
+    command: "python3 $TASK_DIR/check_calculator.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -1,0 +1,6 @@
+{
+  "Name": "VendorLookup",
+  "ProjectType": "Process",
+  "Description": "Looks up a vendor in the vendors workbook with Lookup Range inside an Excel Application Scope.",
+  "MainFile": "Main.xaml"
+}

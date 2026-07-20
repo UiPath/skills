@@ -1,0 +1,42 @@
+#!/bin/sh
+# Discovery-mode `uip` mock for the rename-ambiguity smoke. Overlays the base
+# mock_template (list it SECOND in template_sources so this file wins).
+#
+# Serves canned JSON for the read verbs so the agent can DISCOVER the fixture
+# itself: `projects list` shows a project TITLED "subscriptions";
+# `projects get-taxonomy` shows a field group "subscriptions" containing a
+# field "subscriptions". Mutations return success (grading catches them via
+# calls.log); anything else fails offline like the base mock.
+#
+# Response shapes follow the skill's cli-reference: {Result, Data} envelope;
+# get-taxonomy Data is { status, dataset: { entity_defs, label_groups } } with
+# label_groups[0].label_defs[] as the field groups and moon_form[] as fields.
+printf '%s\n' "$*" >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Data":[{"Name":"subscriptions-4c1d9e2a-ixp","Title":"subscriptions","Description":"Vendor subscription documents","CreatedTime":"2026-05-02T09:14:33Z"},{"Name":"expense_reports-9b31c07d-ixp","Title":"Expense Reports","Description":"Employee expense reports","CreatedTime":"2026-03-18T11:02:51Z"}]}
+EOF
+exit 0
+;;
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Data":{"Name":"subscriptions-4c1d9e2a-ixp","Title":"subscriptions","Description":"Vendor subscription documents","CreatedTime":"2026-05-02T09:14:33Z"}}
+EOF
+exit 0
+;;
+"ixp projects get-taxonomy")
+cat <<'EOF'
+{"Result":"Success","Data":{"status":"ready","dataset":{"entity_defs":[{"id":"b3a63e6483adaaba","name":"Exact Text","title":"","inherits_from":[],"trainable":true,"color":2,"instructions":""},{"id":"c128ad65bd8af3f8","name":"Date","title":"","inherits_from":["0000000000000007"],"trainable":true,"color":1,"instructions":""}],"label_groups":[{"name":"default","label_defs":[{"name":"subscriptions","id":"5f21c88ab90d4e17","instructions":"Fields describing the vendor subscription contract.","moon_form":[{"field_id":"9a3f5d2c81b7e604","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"subscriptions","instructions":"The subscription plan name as printed on the document. Example: 'Enterprise Annual'.","rule_set":null},{"field_id":"1d8e42b7c3a95f60","id":"c128ad65bd8af3f8","field_type_id":"c128ad65bd8af3f8","kind":"Date","name":"Renewal Date","instructions":"The next renewal date of the subscription.","rule_set":null}]},{"name":"Billing","id":"7be409c2d15fa833","instructions":"Billing header fields of the subscription invoice.","moon_form":[{"field_id":"c47a91e05d2b3f68","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Invoice Number","instructions":"The invoice identifier.","rule_set":null}]}]}]}}}
+EOF
+exit 0
+;;
+"ixp projects update-title"|"ixp groups rename"|"ixp fields rename"|"ixp projects delete"|"ixp groups delete"|"ixp fields delete")
+echo '{"Result":"Success"}'
+exit 0
+;;
+esac
+
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1

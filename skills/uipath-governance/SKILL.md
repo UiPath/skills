@@ -1,6 +1,6 @@
 ---
 name: uipath-governance
-description: "UiPath governance via `uip gov` — author and deploy policies on two layers. AOps product policies (`uip gov aops-policy`): block/restrict/enforce features in Studio, StudioX, Assistant, Robot, AI Trust Layer, Agent Builder; deploy to user/group/tenant. Access ToolUsePolicy (`uip gov access-policy`): allow/deny when one workflow invokes another as a tool (Agent→Agent/Maestro/Flow/RPA/API/Case), gated by tag, caller, or actor (User/Group). Skill classifies product-layer vs resource/tool-use intent before authoring. Operate: deploy/undeploy policies to user/group/tenant, query effective deployed policy, list deployment subjects. Diagnose: investigate policy not taking effect, debug deployment precedence (user>group>tenant), evaluate access-policy rules, troubleshoot blocked tool invocations. For platform ops→uipath-platform."
+description: "UiPath governance via `uip gov` — author, deploy, and diagnose policies on three layers. AOps product policies (`uip gov aops-policy`): block/restrict/enforce features in Studio, StudioX, Assistant, Robot, AI Trust Layer, Agent Builder; deploy to user/group/tenant. Access ToolUsePolicy (`uip gov access-policy`): allow/deny when one workflow invokes another as a tool (Agent→Agent/Maestro/Flow/RPA/API/Case), gated by tag, caller, or actor (User/Group). Compliance Standards (ISO 42001): check posture and configure recommended settings across products in one operation. Operate: deploy/undeploy, query effective deployed policy. Diagnose: policy not taking effect, deployment precedence (user>group>tenant), blocked tool invocations. For platform ops→uipath-platform."
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
@@ -25,6 +25,11 @@ Activate on **any** governance / policy / rule intent — even when the user did
 - `allow only / permit only / limit to / restrict to` X
 - `who can / which … can / on behalf of` — actor- or identity-shaped governance
 - `compliance / posture / audit` framing on top of policies
+- `.uipolicy` file path, `compliance standard`, `apply standard`
+- Standard names: `ISO 42001`
+- `check compliance`, `compliance posture`, `posture against`, `drift check`
+- `is my tenant compliant`, `am I compliant with`
+- `organization-wide`, `all tenants`, `entire org`, `across all tenants` — org-scope full apply
 
 ### Troubleshoot
 
@@ -45,21 +50,26 @@ Activate on **any** governance / policy / rule intent — even when the user did
 2. **Classification lives at the top.** Mechanic libraries assume the branch is chosen. Do not let those flows ask "did you mean the other branch?" — that question belongs here.
 3. **One branch per mutation.** A single user request produces a policy on one branch only. If the user wants both, run two sequential flows with two confirmation gates.
 4. **Each mechanic owns its own Critical Rules.** Once routed, follow the branch's rules — do not relax them from this top level.
-5. **Always `uip login` before any `uip gov …` command.** `evaluate` (Access) additionally requires tenant-scoped login — see [`access-policy-overview-guide.md` § Critical Rules](./references/access-policy/access-policy-overview-guide.md#critical-rules).
-6. **Never fabricate UUIDs.** Resolve every named user / group / process / agent / flow / robot / tenant via the relevant branch's lookups.
+5. **Never apply compliance settings without posture analysis + user confirmation.** Run posture analysis first, show the plan (summary + detail), require `y` before any settings are configured.
+6. **Always show a receipt after any apply.** Present the post-apply report (settings configured, manual steps needed, Applied by / date) so the user has a record. No local file write is needed — the CLI and UiPath platform are the source of truth.
+7. **Compliance Standards is a preview feature — gate every compliance-pack flow.** Append the preview disclaimer to user-facing compliance-standard responses, and on any `uip gov compliance-packs …` call returning **HTTP 403 / Forbidden**, stop immediately (do not retry, run no further compliance commands) and tell the user the feature requires enrolling in the preview program. Exact wording + placement in [`references/compliance-pack/preview-gate.md`](./references/compliance-pack/preview-gate.md). A **403** is preview-not-enabled; a **401** is a normal login failure — do NOT conflate them.
+8. **Always `uip login` before any `uip gov …` command.** `evaluate` (Access) additionally requires tenant-scoped login — see [`access-policy-overview-guide.md` § Critical Rules](./references/access-policy/access-policy-overview-guide.md#critical-rules).
+9. **Never fabricate UUIDs.** Resolve every named user / group / process / agent / flow / robot / tenant via the relevant branch's lookups.
 
 ## Workflow
 
-1. **Classify the intent.** Read [`references/disambiguation-guide.md`](./references/disambiguation-guide.md) — it lists the strong signals for each branch, the phrase patterns that need disambiguation, and the canonical worked example. If a strong signal matches, route silently. If the phrasing is ambiguous (matches both branches), ask the [disambiguation question](#disambiguation-question) and wait for a digit reply. If the user replies with anything other than `1` or `2`, treat it as a re-statement of intent and re-classify. **Do not run any CLI command before classification is settled** — the disambiguation question itself does not need `uip`, and an unrelated request (platform ops, agent authoring) must redirect to a sibling skill before any setup happens here.
-2. **Verify `uip` and login** *(only after classification routes to a governance branch).*
+1. **Classify the intent silently — never announce routing to the user.** Internal flow labels (AOps / Access / Compliance standard) are implementation details; the user sees only the outcome. Read [`references/disambiguation-guide.md`](./references/disambiguation-guide.md) — it lists the strong signals for each flow, the phrase patterns that need disambiguation, and the canonical worked example. If a strong signal matches, route silently. If the phrasing is ambiguous (matches AOps or Access), ask the [disambiguation question](#disambiguation-question) and wait for a digit reply. If the user replies with anything other than `1` or `2`, treat it as a re-statement of intent and re-classify. **Do not run any CLI command before classification is settled** — the disambiguation question itself does not need `uip`, and an unrelated request (platform ops, agent authoring) must redirect to a sibling skill before any setup happens here. If the request contains a standard name (`ISO 42001`), `apply standard`, `compliance posture`, `drift check`, `am I compliant`, `is my tenant compliant`, `what packs are available`, `what packs are configured`, `which standards are enabled`, `organization-wide`, or `disable standard` → route silently to the appropriate compliance standard plugin. Read `partial-apply/planning.md` for scoped requests; `coverage/impl.md` for posture checks; `catalog/impl.md` for discovery; `query/impl.md` for information queries; `full-apply/impl.md` after confirming the posture plan; `disable/impl.md` for removal; `catalog/impl.md` + `state list` for listing currently configured packs.
+2. **Verify `uip` and login** *(only after classification routes to a governance flow).*
    ```bash
    which uip && uip --version
    uip login status --output json
    ```
-   If not installed: `npm install -g @uipath/uipcli`. If not logged in: `uip login` (`--authority <URL>` for non-prod). For Access `evaluate`, login MUST be tenant-scoped.
+   If not installed: `npm install -g @uipath/cli`. If not logged in: `uip login` (`--authority <URL>` for non-prod). For Access `evaluate`, login MUST be tenant-scoped.
+   If logged in to the **wrong tenant** within the same org — use the fast path: `uip login tenant list --output json` then `uip login tenant set <NAME>`. Full re-login only needed for a different org or authority. See [`references/auth-context.md`](./references/auth-context.md) § Switching tenants.
 3. **Route to the chosen mechanic** and follow its flow end-to-end.
-   - Branch A → [`references/aops-policy/aops-policy-overview-guide.md`](./references/aops-policy/aops-policy-overview-guide.md)
-   - Branch B → [`references/access-policy/access-policy-overview-guide.md`](./references/access-policy/access-policy-overview-guide.md)
+   - AOps product policy → [`references/aops-policy/aops-policy-overview-guide.md`](./references/aops-policy/aops-policy-overview-guide.md)
+   - Access ToolUsePolicy → [`references/access-policy/access-policy-overview-guide.md`](./references/access-policy/access-policy-overview-guide.md)
+   - Compliance standard → use plugin routing from step 1 above (catalog / coverage / full-apply / partial-apply / disable / query)
 
 ## Disambiguation Question
 
@@ -91,6 +101,14 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 | **Diagnose a governance failure (capability index)** | [`references/diagnose/CAPABILITY.md`](./references/diagnose/CAPABILITY.md) |
 | **Recognize a known governance failure pattern** | [`references/diagnose/references/failure-modes.md`](./references/diagnose/references/failure-modes.md) |
 | **Walk the diagnostic priority ladder** | [`references/diagnose/references/troubleshooting-guide.md`](./references/diagnose/references/troubleshooting-guide.md) |
+| **Discover available compliance standards** | [`references/compliance-pack/catalog/impl.md`](./references/compliance-pack/catalog/impl.md) |
+| **List which compliance standards are currently configured** | [`references/compliance-pack/catalog/impl.md`](./references/compliance-pack/catalog/impl.md) — use `state list tenant <id>` |
+| **Posture analysis** — what settings are configured vs recommended | [`references/compliance-pack/coverage/impl.md`](./references/compliance-pack/coverage/impl.md) |
+| **Apply full compliance pack** | Run coverage first, then [`references/compliance-pack/full-apply/impl.md`](./references/compliance-pack/full-apply/impl.md) |
+| **Apply specific controls / clauses** | [`references/compliance-pack/partial-apply/planning.md`](./references/compliance-pack/partial-apply/planning.md) |
+| **Remove compliance standard settings** | [`references/compliance-pack/disable/impl.md`](./references/compliance-pack/disable/impl.md) |
+| **Query — what does a clause / control recommend?** | [`references/compliance-pack/query/impl.md`](./references/compliance-pack/query/impl.md) |
+| **Preview disclaimer + 403 opt-in gate (all compliance flows)** | [`references/compliance-pack/preview-gate.md`](./references/compliance-pack/preview-gate.md) |
 
 ## Anti-patterns
 
@@ -99,3 +117,14 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 - Do NOT merge AOps and Access intent into one policy. Different artifacts, different CLIs, different schemas.
 - Do NOT activate this skill for platform ops. Route to `uipath-platform`.
 - Do NOT propose skill edits when intent doesn't map to either branch. Ask the user to clarify.
+- Do NOT use `deployed-policy list` for gap detection — it returns all rules in priority order, not the merged effective value. Use `deployed-policy get <licenseType> <productName> <tenantId>` to get the single effective merged policy.
+- Do NOT skip the post-apply report even if apply partially fails — show what succeeded and what needs manual attention.
+- For compliance pack posture analysis, use `uip gov compliance-packs state coverage` — do NOT use `aops-policy deployed-policy` commands; those are for AOps policy debugging (Branch A), not compliance pack flows.
+- For full pack configuration, use `state enable` — do NOT manually call `aops-policy create` for each product; that path is only for partial/scoped configuration.
+- For partial/scoped configuration (specific clauses, products, or areas only), use `synthesize-formdata.mjs` + `aops-policy create` — do NOT call `state enable`; `state enable` applies the FULL standard and cannot be scoped to specific clauses or products.
+- For org-wide apply, do NOT call `state enable organization` — the backend does not implement org-scope enable. Instead: list tenants with `uip login tenant list`, then call `state enable tenant <id>` for each tenant individually. See [`references/compliance-pack/full-apply/impl.md`](./references/compliance-pack/full-apply/impl.md) § Org-scope deployment.
+- NEVER claim a tenant is "compliant" with a standard — only that recommended settings are configured. Compliance status is determined by the customer's auditor.
+- Do NOT surface policy names, product identifiers (AITrustLayer, Robot, Development), or clause IDs (A.6.2.8) as the main response unit — lead with plain-English control names and clause descriptions. Policy is an internal implementation detail. Clause IDs appear only as secondary reference in parentheses.
+- Do NOT use the word "controls" in user-facing output — use "settings". The UiPath UI uses "settings" for what the standard recommends be configured.
+- Do NOT narrate internal steps to the user. Never say "I ran…", "The CLI returned…", "Calling the governance CLI…", or "The API responded with…". Run commands silently and present only the interpreted result using the output templates in the reference docs. Raw JSON, UUIDs, error stacks, and CLI output are never shown — summarise errors in plain English.
+- Do NOT dump raw command output. Parse every CLI response and render it as a formatted table or plain-English summary. The user sees the outcome, never the mechanism.

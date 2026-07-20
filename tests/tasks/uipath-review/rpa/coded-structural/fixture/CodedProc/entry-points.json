@@ -1,0 +1,80 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "entryPoints": [
+    {
+      "filePath": "AddToQueue.cs",
+      "uniqueId": "cfd7fe1c-1eff-42be-ba17-891840a12f35",
+      "type": "process",
+      "input": {
+        "type": "object",
+        "properties": {
+          "queueName": {
+            "type": "string",
+            "description": "Name of the Orchestrator queue to add items to."
+          },
+          "excelData": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "DataTable containing the rows to add as queue items."
+          }
+        },
+        "required": [
+          "queueName",
+          "excelData"
+        ]
+      }
+    },
+    {
+      "filePath": "Main.cs",
+      "uniqueId": "f5ecd3ba-31b9-47b5-8a91-5ecef2090c81",
+      "type": "process",
+      "input": {
+        "type": "object",
+        "properties": {
+          "excelFilePath": {
+            "type": "string",
+            "description": "Full path to the Excel file to read."
+          },
+          "queueName": {
+            "type": "string",
+            "description": "Name of the Orchestrator queue to add items to."
+          }
+        },
+        "required": [
+          "excelFilePath",
+          "queueName"
+        ]
+      }
+    },
+    {
+      "filePath": "ReadExcelData.cs",
+      "uniqueId": "11f49b0b-86f1-495d-a53a-04a4264ad4de",
+      "type": "process",
+      "input": {
+        "type": "object",
+        "properties": {
+          "filePath": {
+            "type": "string",
+            "description": "Full path to the Excel file to read."
+          }
+        },
+        "required": [
+          "filePath"
+        ]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "Output": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

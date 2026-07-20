@@ -1,0 +1,64 @@
+task_id: skill-bpmn-hitl-brownfield-insert
+description: >
+  Quality test (ported from flow hitl/quality_04): agent inserts a HITL approval
+  gate into an EXISTING .bpmn (shipped as a fixture) with a surgical edit —
+  preserving every original element ID and script, removing only the one edge it
+  splices, and adding the HITL node with a diagram shape.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl", "feature:approval-gate"]
+
+run_limits:
+  expected_turns: 22
+  max_turns: 110
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  An existing UiPath Maestro BPMN project is at `OrderFulfillmentBpmn/` in the
+  current directory. Its process is:
+    Start -> Validate order (script) -> Compute total (script) -> End
+
+  Insert a human approval gate BETWEEN the "Compute total" script task and the
+  End event: after computing the total, a reviewer must approve before the
+  process ends. After the edit the flow must be:
+    Start -> Validate order -> Compute total -> HITL approval -> End
+
+  Requirements:
+  - Edit the existing `.bpmn` XML in place with the uipath-maestro-bpmn skill.
+    Do NOT convert it to a `.flow` or regenerate it from scratch.
+  - Model the approval as a `bpmn:userTask` using the documented `Actions.HITL`
+    `uipath:activity` shell from the registry template. Do not hand-author the
+    uipath:* payload from prose.
+  - Make a SURGICAL edit: preserve every existing element ID, variable, and
+    script body untouched. Remove only the single Compute total -> End sequence
+    flow and re-route it through the new HITL task. Do not regenerate the file.
+  - Add a BPMN DI shape for the new HITL node and edges for the new sequence
+    flows; keep all existing diagram elements.
+  - Use synthetic placeholder resource names only.
+  - Do not upload, publish, deploy, debug, or run the process. Do not pause for
+    approval, confirmation, or feedback.
+
+success_criteria:
+  - type: file_exists
+    description: "The existing BPMN file is still present"
+    path: "OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL approval inserted with the documented Actions.HITL activity type"
+    path: "OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn"
+    includes:
+      - "Actions.HITL"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "HITL spliced in surgically: original IDs/scripts preserved, only the target edge re-routed"
+    command: "python3 $TASK_DIR/check_quality_brownfield_insert.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

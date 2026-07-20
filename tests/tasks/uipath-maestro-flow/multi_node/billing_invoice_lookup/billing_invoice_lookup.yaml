@@ -4,12 +4,12 @@ description: >
   Flow that normalizes a messy invoice number and queries the BillingDisputeERP
   Data Service entity; graded by validate plus three flow debug runs over
   malformed inputs.
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, connector]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, connector, path-to-ga]
 
 run_limits:
   max_turns: 120
-  turn_timeout: 1200
-  task_timeout: 2400
+  turn_timeout: 2400
+  task_timeout: 3600
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"

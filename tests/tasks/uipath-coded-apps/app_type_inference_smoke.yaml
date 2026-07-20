@@ -1,0 +1,80 @@
+task_id: skill-coded-apps-app-type-inference-smoke
+description: >
+  Smoke test (mode:build): Rule #1 — identify the app type BEFORE
+  scaffolding. The prompt describes a business scenario whose signals
+  (reviewers open the form from their Action Center inbox, process
+  passes data in, form submits a decision back) imply a Coded ACTION
+  App, but never names the type. Agent must infer Action-app and produce
+  the Action-specific artifacts: `-t Action` on publish and NO
+  `sdk.initialize()` (host-injected session). Complements
+  `action_sdk_construction_smoke` (where the type IS named in the
+  prompt) — this test grades the identification step itself, promoting
+  Rule 1 from Indirect to Direct.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+  turn_timeout: 600
+
+initial_prompt: |
+  Our claims processors get work items in their UiPath task inbox. When
+  they open one, a form should show the claim details the automation
+  passed in, let them add a note, and submit an approve-or-deny decision
+  back to the waiting process.
+
+  Set up the two wiring files for this app at the sandbox root:
+
+  1. `src/uipath.ts` — construct the UiPath TypeScript SDK the way that
+     is correct for THIS kind of app, and export it.
+  2. `deploy.sh` — the shell command(s) that publish this app to UiPath
+     via the `uip codedapp` CLI, with whatever flags this kind of app
+     requires.
+
+  First decide what kind of Coded App this scenario calls for — the
+  skill distinguishes the types and each has different SDK wiring and
+  publish flags. Do NOT run `uip` or `npm` commands — this environment
+  is not authenticated.
+
+success_criteria:
+  - type: file_exists
+    description: "src/uipath.ts was created"
+    path: "src/uipath.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "deploy.sh was created"
+    path: "deploy.sh"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "RULE #1 SIGNAL — agent inferred Action app from the scenario (task inbox + host-passed data + decision outcomes) and publishes with `-t Action` / `--type Action`, though the prompt never names the type"
+    command: "grep -E '(-t|--type)[[:space:]]+Action' deploy.sh"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/uipath.ts does NOT call .initialize() in executable code (Rule #17 follows from the correct type inference — Action apps use the host-injected session; JSDoc/`//` comments allowed)"
+    command: "grep -v -E '^\\s*(/\\*|\\*/|\\*)' src/uipath.ts | sed 's|//.*||' | grep -F '.initialize('"
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "deploy.sh runs `uip codedapp publish` (the publish step carries the type flag)"
+    command: "grep -E 'uip\\s+codedapp\\s+publish' deploy.sh"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/uipath.ts constructs an Action-app SDK — either `new UiPath()` (no args) from `@uipath/uipath-typescript` OR `new CodedActionAppService()` from `@uipath/coded-action-app` (both correct Action-app wirings)"
+    command: "( grep -q '@uipath/uipath-typescript' src/uipath.ts && grep -qE 'new\\s+UiPath\\s*\\(' src/uipath.ts ) || ( grep -q '@uipath/coded-action-app' src/uipath.ts && grep -qE 'new\\s+CodedActionAppService\\s*\\(' src/uipath.ts )"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

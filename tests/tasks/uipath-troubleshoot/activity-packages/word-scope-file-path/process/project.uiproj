@@ -1,0 +1,6 @@
+{
+  "Name": "OfferLetterGen",
+  "ProjectType": "Process",
+  "Description": "Generates an offer letter by opening the letter document and replacing the candidate placeholder with the recipient name via Word activities.",
+  "MainFile": "Main.xaml"
+}

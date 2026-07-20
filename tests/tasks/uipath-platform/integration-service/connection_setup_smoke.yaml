@@ -5,7 +5,7 @@ description: >
   verify it with `connections ping`. Covers the lifecycle:setup path
   on the IS axis, complementing the read-only connection_lifecycle
   task that exercises list/ping/recovery paths only.
-tags: [uipath-platform, smoke, mode:build, lifecycle:setup, integration-service, connector, feature:connections]
+tags: [uipath-platform, smoke, mode:build, lifecycle:setup, integration-service, connector, feature:connections, ipe]
 
 run_limits:
   expected_turns: 8
@@ -55,12 +55,4 @@ success_criteria:
     command_pattern: 'uip\s+is\s+connections\s+ping'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on connection commands"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+connections\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0

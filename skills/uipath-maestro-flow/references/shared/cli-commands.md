@@ -283,7 +283,7 @@ uip maestro flow hitl add <path/to/file.flow> \
 ### Success output
 
 ```json
-{ "Result": "Success", "Code": "HitlNodeAdded", "Data": { "NodeId": "invoiceReview1", "NodeType": "uipath.human-in-the-loop", "Label": "Invoice Review", "DefinitionAdded": true } }
+{ "Result": "Success", "Code": "HitlNodeAdded", "Data": { "NodeId": "invoiceReview1", "NodeType": "uipath.human-in-the-loop.quick-form", "Label": "Invoice Review", "DefinitionAdded": true } }
 ```
 
 After adding, wire the `completed` port to the next node — an unwired `completed` blocks the flow indefinitely. See the [Author HITL plugin reference](../author/references/plugins/hitl/impl.md) for edge format.

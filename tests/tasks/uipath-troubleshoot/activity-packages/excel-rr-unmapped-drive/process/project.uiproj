@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDailyImport",
+  "ProjectType": "Process",
+  "Description": "Reads the 'Data' sheet from the sales workbook on the mapped data drive into a DataTable via Read Range inside a Use Excel File scope.",
+  "MainFile": "Main.xaml"
+}

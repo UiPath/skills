@@ -1,0 +1,6 @@
+{
+  "Name": "OracleLedgerSync",
+  "ProjectType": "Process",
+  "Description": "Posts general-ledger batches to an Oracle database by running a parameterized UPDATE on GL_ENTRIES via Execute Non Query.",
+  "MainFile": "Main.xaml"
+}

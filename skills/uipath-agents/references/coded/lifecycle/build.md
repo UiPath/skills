@@ -8,7 +8,6 @@ Read **only** the reference matching the selected framework. Do NOT load other f
 
 | Framework | Reference |
 |-----------|-----------|
-| Coded Function | `../frameworks/coded-function-agents.md` + `../frameworks/agent-patterns.md` |
 | LangGraph | `../frameworks/langgraph-integration.md` |
 | LlamaIndex | `../frameworks/llamaindex-integration.md` |
 | OpenAI Agents | `../frameworks/openai-agents-integration.md` |
@@ -45,6 +44,7 @@ Load capability references **only if the task requires them** — do not preload
 
 ## Additional Instructions
 
+- **File/document input → `Attachment`, never a filesystem path string.** If the prompt says the agent "takes a CSV/PDF/file as input" (or similar), read `../capabilities/file-attachments.md` before defining the `Input` model. A `str` path field runs locally with `uip codedagent run` but breaks on Studio Web/Orchestrator, where no such path exists in the container.
 - **Select a framework before writing any code.** Infer from the prompt if possible (tools/orchestration → LangGraph, RAG → LlamaIndex, simple LLM → OpenAI Agents, no LLM → Coded Function). If ambiguous, ask the user to choose.
 - **Structured input contract → not OpenAI Agents.** OpenAI Agents always require a `messages` input field and cannot express an input contract without it (see `../frameworks/openai-agents-integration.md` § Input). When the user needs a strict typed/structured input (e.g. a single named field, no `messages`), choose LangGraph (custom `StateGraph` with arbitrary input state) instead. Do NOT silently fall back to a Coded Function to satisfy the input shape — a Coded Function produces `ProjectType: Function`, not a coded agent, so it does not fulfill a request for an agent.
 - **Read ONLY the single framework reference** for the selected framework before writing code. Do NOT read other framework references or capability references unless the task explicitly requires that capability.

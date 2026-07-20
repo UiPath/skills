@@ -47,7 +47,7 @@ Analyze:
 
 ### Step 1.2: Discover Activity Documentation (Primary Source)
 
-**This is the most important discovery step. Read `<Activity>.md` BEFORE `activities get-default-xaml`, every time, even for activities that look simple.** Installed activity packages ship structured markdown at `{projectRoot}/.local/docs/packages/{PackageId}/activities/<Activity>.md`. The doc is the property surface; the CLI starter is not. `activities get-default-xaml` strips every property at its type default — for `NGetText` that means **all** output properties are absent from the starter, and authoring from the starter produces `NGetText.Value="..."` instead of `NGetText.Text="..."`. `validate` does not catch the wrong member name; only `build` does, after a wasted round-trip.
+**This is the most important discovery step. Read `<Activity>.md` BEFORE `activities get-default-xaml`, every time, even for activities that look simple.** Installed activity packages ship structured markdown at `{projectRoot}/.local/docs/packages/{PackageId}/activities/<Activity>.md`. The doc is the property surface; the CLI starter is not. `activities get-default-xaml` strips every property at its type default — for `NGetText` that means **all** output properties are absent from the starter, and authoring from the starter produces `NGetText.Value="..."` instead of the real output member `NGetText.TextString`. `validate` does not catch the wrong member name; only `build` does, after a wasted round-trip.
 
 **Availability:** Docs exist only for **installed packages** and typically only for **newer package versions**. When the package is not installed, install it first. When docs are missing, update to the latest version, or fall back to `skills/uipath-rpa/references/activity-docs/<PackageId>/<closest-version>/`.
 
@@ -203,7 +203,7 @@ Edit: file_path=... old_string=<exact text> new_string=<modified text>
 
 ### Step 3.1: Check for Errors
 
-Run both validators per iteration. `validate` catches structural / reference / analyzer issues; `build` catches member-name and enum-value mistakes that `validate` misses (e.g. `NGetText.Value` when the property is `Text`, `Operator="StartsWith"` when the enum has no such member). See [../validation-guide.md § Validation Iteration Loop](../validation-guide.md#validation-iteration-loop) for the canonical loop.
+Run both validators per iteration. `validate` catches structural / reference / analyzer issues; `build` catches member-name and enum-value mistakes that `validate` misses (e.g. `NGetText.Value` when the property is `TextString`, `Operator="StartsWith"` when the enum has no such member). See [../validation-guide.md § Validation Iteration Loop](../validation-guide.md#validation-iteration-loop) for the canonical loop.
 
 ```bash
 uip rpa validate --file-path "Workflows/MyWorkflow.xaml" --output json

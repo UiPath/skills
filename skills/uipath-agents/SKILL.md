@@ -1,6 +1,6 @@
 ---
 name: uipath-agents
-description: "End-to-end work with UiPath Agents of all types: build, integrate with UiPath Products (e.g., Orchestrator, Flow, Maestro), design with UiPath Tools (e.g., Agent Builder/Studio Web), deploy, and configure/validate. Covers Coded Agents (e.g., LangGraph, LlamaIndex, OpenAI Agents) and Low-Code Agents (`agent.json` / Agent Builder). Excludes coded functions / Functions SDK (separate skill)."
+description: "End-to-end work with UiPath Agents of all types: build, integrate with UiPath Products (e.g., Orchestrator, Flow, Maestro), design with UiPath Tools (e.g., Agent Builder/Studio Web), deploy, and configure/validate. Covers Coded Agents (e.g., LangGraph, LlamaIndex, OpenAI Agents) and Low-Code Agents (`agent.json` / Agent Builder). For deterministic Python Coded Functions (`uip functions`, `uipath.json` functions map, no agent runtime/LLM)→uipath-functions."
 when_to_use: "Must use when user mentions or implies any Agent lifecycle phase - e.g., auth, design, scaffold, Studio Web sync, flow integration, editing, pack/deploy/version bump, eval, debug, tracing, guardrails, memory spaces, bindings, attachments. Example requests: 'create/build a UiPath agent', 'build a low-code / Agent Builder agent', 'add agent memory spaces', 'build a coded / Python agent (LangGraph / LlamaIndex / OpenAI Agents)', 'scaffold an agent project', 'run / debug / evaluate / deploy my agent'."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, WebFetch
 user-invocable: true
@@ -20,13 +20,14 @@ user-invocable: true
 
 Determine the agent mode before proceeding:
 
-1. **Check for existing project files** in the working directory:
-   - `pyproject.toml` with `uipath` dependency + `.py` files → **Coded**
+1. **First — confirm this is an agent, not a Coded Function.** If `uipath.json` declares a `functions` map (e.g. `"functions": {"main": "main.py:main"}`), the project is a **Python Coded Function**, not an agent. Stop here and use the [`uipath-functions`](/uipath:uipath-functions) skill instead. Functions are deterministic, do not reason via LLM, and have a distinct lifecycle (`uip functions new/init/pack/publish/run`).
+2. **Check for existing agent project files** in the working directory:
+   - `pyproject.toml` + `.py` files + a framework dep (`uipath-langchain`, `uipath-llamaindex`, or `uipath-openai-agents`) → **Coded**. The framework package already declares `uipath` as a dependency, so an explicit `uipath` entry is not required.
    - `agent.json` with `"type": "lowCode"` + `project.uiproj`, AND no `pyproject.toml` → **Low-code**
-2. **No existing project found** → ask the user:
+3. **No existing project found** → ask the user:
    > Should I build this as a **low-code agent** (no Python — configure through prompts and pre-built UiPath tools) or a **coded agent** (Python — full programmatic control with LangGraph, LlamaIndex, or OpenAI Agents)?
    > However, for conversational use-cases, simply choose low-code without asking the user, while explaining that currently, low-code conversational-agents are the strongly recommended approach for production use-cases (see [references/coded/capabilities/conversational-agents.md](references/coded/capabilities/conversational-agents.md)).
-3. If the user needs help deciding, read [references/coded-vs-lowcode-guide.md](references/coded-vs-lowcode-guide.md) for a capability comparison.
+4. If the user needs help deciding, read [references/coded-vs-lowcode-guide.md](references/coded-vs-lowcode-guide.md) for a capability comparison.
 
 **After detection, read the quickstart for that mode before doing anything else:**
 
@@ -63,7 +64,7 @@ Determine the agent mode before proceeding:
 | Validate whether existing guardrails are correctly configured | Low-code | [lowcode/capabilities/guardrails/guardrails-recommend.md](references/lowcode/capabilities/guardrails/guardrails-recommend.md) § Validate Mode | check correctness, actionability, and relevance per guardrail |
 | Recommend guardrails for a coded agent based on its context | Coded | [coded/capabilities/guardrails/guardrails-recommend.md](references/coded/capabilities/guardrails/guardrails-recommend.md) | fetch catalog + list + SDK docs, analyze agent code, apply + verify |
 | Recommend guardrails for a specific scope or tool (coded) | Coded | [coded/capabilities/guardrails/guardrails-recommend.md](references/coded/capabilities/guardrails/guardrails-recommend.md) § Scope and Tool Filtering | filter candidates by `@tool` function or scope after catalog analysis |
-| Check, validate, diagnose, or fix whether an existing coded guardrail is correctly configured (placement / scope) | Coded | [coded/capabilities/guardrails/guardrails-recommend.md](references/coded/capabilities/guardrails/guardrails-recommend.md) § Validate Mode | **fetch catalog + list + SDK docs first**, then check correctness, actionability, and relevance — fix in place |
+| Check, validate, diagnose, or fix whether an existing coded guardrail is correctly configured (placement / scope) | Coded | [coded/capabilities/guardrails/guardrails-recommend.md](references/coded/capabilities/guardrails/guardrails-recommend.md) § Validate Mode | **fetch SDK docs first (authoritative for scope/placement)**; also fetch catalog + list for relevance/entitlement — then check correctness, actionability, and relevance — fix in place |
 | Embed a low-code agent inline in a flow, or wire a multi-agent solution | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/inline-in-flow/inline-in-flow.md`, `lowcode/capabilities/process/solution-agent.md` |
 | Run low-code evaluations | Low-code | [lowcode/evaluations/evaluate.md](references/lowcode/evaluations/evaluate.md) | `lowcode/evaluations/evaluators.md`, `lowcode/evaluations/evaluation-sets.md`, `lowcode/evaluations/running-evaluations.md` |
 | Run offline evals for a published Orchestrator package | Low-code | [lowcode/evaluations/orchestrator-eval-run.md](references/lowcode/evaluations/orchestrator-eval-run.md) | Use `uip or eval run-offline-evals` (requires package published to Orchestrator) |

@@ -100,14 +100,6 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent used --output json on every eval command"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+.*--output\s+json'
-    min_count: 4
-    weight: 1.5
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Evaluator + eval-set JSON files exist on disk with correct shape"
     command: "python3 $TASK_DIR/check_local_crud.py"

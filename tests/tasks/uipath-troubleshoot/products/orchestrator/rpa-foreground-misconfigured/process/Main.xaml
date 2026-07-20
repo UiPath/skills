@@ -61,8 +61,8 @@
         <x:Boolean x:Key="IsExpanded">True</x:Boolean>
       </scg:Dictionary>
     </sap:WorkflowViewStateService.ViewState>
-    <ui:LogMessage DisplayName="Log: start" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[MisconfiguredForeground] Starting pure-compute task. This workflow performs no UI interaction, yet runtimeOptions.requiresUserInteraction is true so it occupies the foreground slot.&quot;]" />
+    <ui:LogMessage DisplayName="Log: start" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[ExpenseValidation] Starting pure-compute task. This workflow performs no UI interaction, yet runtimeOptions.requiresUserInteraction is true so it occupies the foreground slot.&quot;]" />
     <Delay DisplayName="Simulate non-UI work" Duration="00:00:30" sap2010:WorkflowViewState.IdRef="Delay_1" />
-    <ui:LogMessage DisplayName="Log: end" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[MisconfiguredForeground] Done. Fix: set runtimeOptions.requiresUserInteraction = false in project.json so this workflow runs in background and no longer competes for the foreground slot.&quot;]" />
+    <ui:LogMessage DisplayName="Log: end" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[ExpenseValidation] Done. Fix: set runtimeOptions.requiresUserInteraction = false in project.json so this workflow runs in background and no longer competes for the foreground slot.&quot;]" />
   </Sequence>
 </Activity>

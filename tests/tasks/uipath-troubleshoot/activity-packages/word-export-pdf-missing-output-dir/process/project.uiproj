@@ -1,0 +1,6 @@
+{
+  "Name": "InvoicePdfExport",
+  "ProjectType": "Process",
+  "Description": "Opens a Word invoice document and exports it to a PDF file in the output folder.",
+  "MainFile": "Main.xaml"
+}

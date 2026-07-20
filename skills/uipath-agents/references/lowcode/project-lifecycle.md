@@ -115,6 +115,15 @@ uip agent refresh [path] --output json
 
 **Workflow:** run `uip agent refresh` to apply writes and regenerate derived files, then `uip agent validate` to verify the project is clean. For routine edits with no schema migration pending, refresh is still needed to keep `entry-points.json` and `bindings_v2.json` in sync.
 
+### Common refresh / validate errors
+
+`refresh` and `validate` share the same static checks. Two errors are easy to misread — resolve at the source, do not spelunk the CLI schema:
+
+| Error (in `Data.Errors[]`) | Cause | Fix |
+|---|---|---|
+| `resources/<Folder>/resource.json: folder must be named after the resource name "<Name>" (found "<Folder>")` | Resource folder name must exactly equal the resource's `name` field — case- and whitespace-sensitive (`Count Sources`, not `CountSources`). | Rename the folder to match `name` verbatim, spaces included. |
+| `resources/<Name>/resource.json: Invalid input` (no field path) | A required field on that tool resource is missing or malformed. The path-less message does not name it. Most common cause: the required `guardrail` object is absent (every tool resource requires it, schema V21+). | Add `"guardrail": { "policies": [] }` to the resource. If already present, diff the resource against a CLI-generated one (`uip agent tool add`) for the missing/mistyped field. |
+
 ### `uip agent memory`
 
 Manage low-code agent memory space features and seed items. These commands write `features/{FeatureName}/feature.json`; run refresh and validate afterwards to regenerate bindings.

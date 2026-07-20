@@ -1,0 +1,84 @@
+task_id: skill-review-rpa-e2e-multi-project-solution
+description: >
+  End-to-end review of a two-project RPA solution (a Dispatcher + a Performer
+  under RetailSolution/). The reviewer must discover and classify BOTH projects
+  and report issues in each: the Dispatcher has a brittle idx-only selector and
+  a hardcoded production URL + queue name (Warnings); the Performer hardcodes a
+  finance password (Critical), swallows a System.Exception with no Rethrow
+  (Critical), and re-hardcodes the same "InvoiceQueue" name (config drift across
+  projects). Graded on solution-wide coverage + severity discipline: the report
+  must name both projects, use both severity bands, and catch a Performer
+  Critical and a Dispatcher issue — proving it reviewed the whole solution,
+  not just one project.
+
+  Platform note: `uip rpa validate/build/analyze` require Windows and may not
+  run on Linux CI — those CLI checks are advisory. The review is produced by
+  reading the projects, which is platform-independent.
+tags: [uipath-review, e2e, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1800
+  task_timeout: 2400
+  max_turns: 60
+
+sandbox:
+  driver: tempdir
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  A UiPath solution exists at `RetailSolution` in the current directory. It
+  contains more than one automation project. Perform a full quality review:
+  discover every project, classify each, read their workflows, and produce a
+  single structured review report with Critical / Warning / Info findings that
+  covers the whole solution (include a per-project view).
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `RetailSolution/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `RetailSolution/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside RetailSolution/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*RetailSolution'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside RetailSolution/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*RetailSolution'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Advisory: uip rpa validate/build/analyze ran (Critical Rule 2) — recorded, not gating"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+(validate|build|analyze)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Solution-wide review: both projects named, issues caught in each, severities used"
+    command: "python3 $TASK_DIR/check_e2e_multi_project_solution.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

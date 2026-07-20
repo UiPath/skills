@@ -1,0 +1,15 @@
+{
+  "jobKey": "job-triage-001",
+  "instanceId": "inst-triage-001",
+  "spans": [
+    { "elementId": "Start_Sync", "elementType": "startEvent", "status": "Completed", "durationMs": 4 },
+    { "elementId": "ServiceTask_LoadConfig", "elementType": "serviceTask", "status": "Completed", "durationMs": 120 },
+    {
+      "elementId": "ServiceTask_CallVendorApi",
+      "elementType": "serviceTask",
+      "status": "TimedOut",
+      "durationMs": 30000,
+      "message": "Outbound call exceeded the 30000 ms timeout and the span was aborted."
+    }
+  ]
+}

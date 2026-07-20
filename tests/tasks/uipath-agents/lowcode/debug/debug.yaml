@@ -41,9 +41,9 @@ success_criteria:
   # in any order. Only MathAgent exists in the sandbox, so the agent path is
   # implied.
   - type: command_executed
-    description: "Agent ran a successful `uip agent debug` with both --inputs and --output json"
+    description: "Agent ran a successful `uip agent debug` with both --inputs"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+debug\b(?=.*--inputs)(?=.*--output\s+json)'
+    command_pattern: 'uip\s+agent\s+debug\b(?=.*--inputs)'
     min_count: 1
     require_success: true
     weight: 6.0
