@@ -1,12 +1,15 @@
 task_id: skill-api-workflow-diagnose-validate-fix
 description: >
   Diagnose + repair: a pre-seeded Workflow.json fails `uip api-workflow validate`
-  because the If_1 switch routes its true branch to If_1#Then, but that branch
-  block is missing (rule 7 dangling reference), so a passing score can never set
-  grade="PASS". Tests whether the skill teaches the validate -> read errors -> fix
-  -> re-validate loop (rule 20) on a broken artifact, not happy-path authoring.
-  mode:diagnose — the first diagnose task for this skill. Graded on behavior: after
-  the fix, validation passes AND the once-broken PASS branch actually produces PASS.
+  because the If_1 activity has no `switch` block (validateIfBranches requires
+  every If to have a switch child). Both branch blocks (If_1#Then -> PASS,
+  If_1#Else -> FAIL) are present; only the routing switch is missing, so the fix is
+  to restore the switch mapping score>=60 -> If_1#Then and default -> If_1#Else.
+  Tests whether the skill teaches the *static* validate -> read errors -> fix ->
+  re-validate loop (rule 20) on a broken artifact, not happy-path authoring.
+  Complements diagnose/runtime_fix (a *runtime* fault that passes validate).
+  mode:diagnose. Graded on behavior: after the fix, validation passes AND the
+  workflow routes score>=60 -> PASS, else FAIL.
 tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
 
 sandbox:

@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 """Seed a deliberately BROKEN API workflow into the sandbox working dir.
 
-The break (rule 7): the `If_1` switch routes its true branch to `If_1#Then`, but
-that branch block is not defined — a dangling branch reference. `uip api-workflow
-validate` must reject it. The agent's job is to diagnose from the validator output
-and restore the missing `#Then` branch so validation passes, WITHOUT discarding the
-score->grade PASS/FAIL intent.
+The break is a genuine STATIC fault that `uip api-workflow validate` rejects: the
+`If_1` activity has NO `switch` block. The validator's `validateIfBranches` check
+requires every If to have a switch child, so validation fails outright (this is
+the one If-structure rule the static validator enforces). Both branch blocks
+(`If_1#Then` -> PASS, `If_1#Else` -> FAIL) are present and correct — only the
+routing switch is missing, so the agent's fix is to restore the switch that maps
+score >= 60 to #Then and the default to #Else, WITHOUT discarding the score->grade
+PASS/FAIL intent.
+
+Contrast with diagnose/runtime_fix, whose fault PASSES validate and only surfaces
+at run time. This task exercises the *static* validate -> read errors -> fix ->
+re-validate loop (rule 20).
 
 Writes Workflow.json to the current working directory (the agent's sandbox).
 """
@@ -80,19 +87,35 @@ broken = {
                             "do": [
                                 {
                                     "If_1": {
-                                        "switch": [
-                                            {
-                                                "case": {
-                                                    "when": "${$workflow.input.score >= 60}",
-                                                    "then": "If_1#Then",
-                                                }
-                                            },
-                                            {"default": {"then": "If_1#Else"}},
-                                        ],
+                                        # NOTE: the "switch" block is intentionally
+                                        # absent. validateIfBranches requires an If
+                                        # to have a switch child, so `uip api-workflow
+                                        # validate` rejects this. Both branch blocks
+                                        # below are present and correct; the fix is to
+                                        # restore the switch routing score>=60 -> #Then,
+                                        # default -> #Else.
                                         "metadata": {"displayName": "If"},
                                     }
                                 },
-                                # NOTE: the "If_1#Then" branch block is intentionally absent.
+                                {
+                                    "If_1#Then": {
+                                        "do": [
+                                            {
+                                                "Assign_Pass": {
+                                                    "set": {"grade": "${'PASS'}"},
+                                                    "export": {"as": VAR_EXPORT},
+                                                    "metadata": {
+                                                        "activityType": "Assign",
+                                                        "displayName": "Set PASS",
+                                                        "fullName": "Assign",
+                                                        "isTransparent": False,
+                                                    },
+                                                }
+                                            }
+                                        ],
+                                        "then": "exit",
+                                    }
+                                },
                                 {
                                     "If_1#Else": {
                                         "do": [
