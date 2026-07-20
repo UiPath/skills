@@ -22,12 +22,14 @@ Three properties of this model drive most failures:
 - **Jira Scope** (`UiPath.Jira.Activities.JiraApplicationScope`) — authenticate and host all child Jira activities. Properties: `Server URL`, `Authentication Type` (`Api Token` / `Basic` / `OAuth 2.0`), `Username`, `Api Token` (`SecureString`), `Password` (`SecureString`), `Client Id`, `Client Secret`.
 - **Get Issue / Search Issues / Get Issues by JQL** — read issues from the open session.
 - **Create Issue / Update Issue / Add Comment / Transition Issue** — write operations against the open session.
+- **Get Transitions** — list the transitions legal from an issue's **current** status, with each transition's runtime `Id`, `name`, and required screen fields. Drive `Transition Issue` from this rather than a hardcoded ID.
 
 ## Common Failure Patterns
 
 - **`Authentication information is invalid. Please check your credentials...`** — Atlassian rejected the credential at scope open. Sub-causes: the `Api Token` was passed as a plain `String` instead of a `SecureString`; the `Username` is an alphanumeric Jira `accountId` instead of the account email; leftover `Client Id` / `Client Secret` from a different auth method conflict with `Authentication Type = Api Token`; or basic password auth is used on an org that enforces MFA/SSO (Atlassian blocks password auth — an API token is required).
 - **`Response was not recognized as JSON` / HTTP `500`** — structural / routing problem, not a credential problem. The `Server URL` points past the root instance (e.g. ends in `/secure/Dashboard.jspa` or a project path) so the REST call hits an HTML page; or the target is an on-premises **Server / Data Center** instance whose endpoints diverge from the Cloud shape the pack expects.
 - **`This activity is either missing or could not be loaded properly`** — dependency conflict. The legacy pack's transitive **RestSharp** (or similar) version is overridden by another package in the project, so the activity assembly cannot bind. Surfaces at design time in Studio, or at runtime as a `FileLoadException` / `TypeLoadException`.
+- **`Transition Issue` rejected** — moving a ticket to a new status fails because the UiPath config does not match the active Jira workflow: a required transition-screen field was not supplied (`Field '<name>' is required`), a hardcoded transition ID is not legal from the issue's current status (`Transition '<id>' is not valid ...`), a workflow Condition/Validator or missing permission blocks the robot account, or an older pack version hits the `Atlassian.Jira.IssueFieldEditMetadataOperation` deserialization bug. Resolve transition IDs and required fields dynamically with `Get Transitions`.
 
 ## Package
 
