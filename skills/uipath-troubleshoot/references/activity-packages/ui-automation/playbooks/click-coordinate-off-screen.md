@@ -118,3 +118,5 @@ Pick the fix that matches the identified sub-cause. The interaction-mode switch 
 - **Enable Healing Agent on the process** — set `AutopilotForRobots.HealingEnabled=true` in the release's `ProcessSettings`. Healing can relocate an off-screen coordinate on retry. Use as defense-in-depth; it does not fix the underlying authoring gap.
 
 Do NOT "fix" the selector (adding wildcards, switching to `automationId`, tightening attributes). The selector resolved correctly — selector hardening is wrong for this fault class and masks the real defect.
+
+**Applying these fixes.** Switching `InteractionMode` or inserting a scroll / sizing / dismissal activity changes the workflow `.xaml` — interactive: the troubleshooter never edits the workflow itself; on the user's approval it delegates the apply, otherwise it recommends only. Enabling Healing Agent and any re-capture / re-publish are Studio / Orchestrator actions for the user — recommend them, do not execute.

@@ -1,0 +1,71 @@
+task_id: skill-bpmn-expr-multiinstance-iterator
+description: >
+  Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author
+  a multi-instance SUBPROCESS whose body reads the current item and loop index at
+  subprocess depth — `iterator[0].item` and `iterator[0].loopCounter` — not the
+  task-level `iterator.item`. Grades the iterator-depth indexing rule from
+  references/expression-authoring.md. Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "node:loop"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 80
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project named "MultiInstanceIteratorBpmn" with the
+  main file at `MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn` for
+  this process:
+  - Manual start with an `Items` collection variable.
+  - A multi-instance SUBPROCESS (`bpmn:subProcess` carrying a
+    `bpmn:multiInstanceLoopCharacteristics` marker) that iterates the collection.
+  - Inside the subprocess body, map the current item into a `CurrentLine`
+    variable and the current 0-based loop index into a `CurrentIndex` variable.
+  - A single end event.
+
+  Requirements:
+  - Because this element sits at subprocess depth, the body must read the current
+    item as `iterator[0].item` and the loop index as `iterator[0].loopCounter`
+    (the task-level `iterator.item` / `iterator.loopCounter` forms are WRONG at
+    subprocess depth). Bind the collection through the `uipath:loopCharacteristics`
+    extension (`inputCollection`, `inputElement`) per the skill's structural
+    reference — the registry serves no template for multi-instance markers, so
+    author it from the canvas contract.
+  - Declare variables and author any `uipath:*` payloads per the skill's
+    references; do not hand-author registry-owned XML from prose.
+  - Use synthetic placeholder values only — no tenant URLs, folder keys,
+    connection IDs, release keys, or real names.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+  - Validate locally by parsing the BPMN and walking the skill's structural
+    checklist. Do NOT upload, publish, deploy, debug, run, or pack anything, and
+    do NOT pause for approval — build the complete local project in one pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN uses a multi-instance loop marker"
+    path: "MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn"
+    includes:
+      - "multiInstanceLoopCharacteristics"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Subprocess body reads iterator[0].item / iterator[0].loopCounter and the graph is sound"
+    command: "python3 $TASK_DIR/check_multiinstance_iterator.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
