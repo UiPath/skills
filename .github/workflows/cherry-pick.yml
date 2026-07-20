@@ -187,9 +187,11 @@ jobs:
 
           title_prefix=""
           [ "$HAD_CONFLICTS" = "true" ] && title_prefix="[CONFLICTS]"
-          jira_prefix=""
-          [ -n "$JIRA_ID" ] && jira_prefix="[${JIRA_ID}]"
-          pr_title="${title_prefix}${jira_prefix}[${TARGET_BRANCH}] ${source_pr_title}"
+          jira_suffix=""
+          [ -n "$JIRA_ID" ] && jira_suffix=" (${JIRA_ID})"
+          # Strip the branch prefix (e.g. release/v1.197 → v1.197), like Studio.
+          version="${TARGET_BRANCH##*/}"
+          pr_title="🍒 ${title_prefix}[${version}] ${source_pr_title}${jira_suffix}"
 
           body_file="$(mktemp)"
           {

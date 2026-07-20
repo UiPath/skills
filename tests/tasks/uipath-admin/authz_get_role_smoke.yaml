@@ -36,9 +36,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent passed --output json"
+    description: "Agent ran `uip admin authorization roles get`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+get\s+.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+get'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

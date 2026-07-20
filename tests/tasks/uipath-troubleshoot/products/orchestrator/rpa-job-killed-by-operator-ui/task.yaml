@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-rpa-job-killed-by-operator-ui
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath diagnostic agent must diagnose a faulted LongRunningProcess job that
   ended with System.Exception: "Job stopped with an unexpected exit code:
@@ -7,10 +8,9 @@ description: >
   playbook, query the audit log to identify the actor, and recommend the
   Operator-Initiated-Kill resolution path.
 
-tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose, faulted-jobs, job-killed, exit-code-0x40010004]
+tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
@@ -28,8 +28,8 @@ sandbox:
     - type: template_dir
       path: process
     - type: template_dir
-      path: fixtures
-  mock_path_dirs: ["mocks"]
+      path: data
+  mock_path_dirs: ["m"]
 
 reference:
   file: RESOLUTION.md

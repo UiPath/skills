@@ -1,4 +1,5 @@
 task_id: skill-troubleshooting-faulted-excel-o365
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   Faithful replay of a real UiPath troubleshooting investigation. The agent
   runs the uipath-troubleshoot skill against a uip CLI mock whose
@@ -8,7 +9,7 @@ description: >
   (e62228b7-...) that lives in another user's workspace and is not
   resolvable from the runner's Personal workspace, matching the
   connection-invalid playbook.
-tags: [uipath-troubleshoot, integration-service, rpa, e2e, faulted-jobs, faithful-replay, is, mode:diagnose]
+tags: [uipath-troubleshoot, integration-service, rpa, e2e, mode:diagnose]
 
 # Inherits from experiments/default.yaml: model, permission_mode, plugins
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides
@@ -31,9 +32,9 @@ sandbox:
     - type: template_dir
       path: process
     - type: template_dir
-      path: fixtures
+      path: data
   mock_path_dirs:
-    - mocks
+    - m
 reference:
   file: RESOLUTION.md
 

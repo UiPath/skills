@@ -1,0 +1,79 @@
+task_id: skill-bpmn-event-based-gateway
+description: >
+  Structural advanced-event eval: agent uses the uipath-maestro-bpmn skill to
+  author an EVENT-BASED gateway racing a message catch against a timer catch
+  (first-catcher-wins). Exercises the event-based gateway target contract
+  (outgoing flows target intermediate catch events). Authoring only — no cloud
+  effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "node:gateway"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 80
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a single Maestro BPMN file `PaymentRace.bpmn` in the working directory
+  that waits for whichever of two events fires first:
+    - a manual start,
+    - a task that submits a payment,
+    - a bpmn:eventBasedGateway with two outgoing flows,
+    - one flow to an intermediateCatchEvent carrying a bpmn:messageEventDefinition
+      (payment confirmed), the other to an intermediateCatchEvent carrying a
+      bpmn:timerEventDefinition (confirmation timeout, valid ISO-8601 duration),
+    - each catch event leads to its own follow-up task and end event.
+
+  Requirements:
+  - The event-based gateway's outgoing flows MUST target intermediate catch
+    events (that is the only valid target for an event-based gateway).
+  - Discover any UiPath extension node's type via the registry and author it from
+    the registry template — do not hand-author uipath:* XML from prose. Structural
+    BPMN (the gateway, catch events, event definitions, sequence flows) comes
+    from the skill's structural reference.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+  - Validate the file locally before finishing (the bundled validator, or a
+    well-formed-XML parse plus the structural checklist).
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback, and do NOT pause between planning and
+  implementation. Build the complete file end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "PaymentRace.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run any cloud-side Maestro BPMN lifecycle command"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(upload|publish|deploy|debug|run|pack)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN has a diagram, an event-based gateway, and both event definitions"
+    path: "PaymentRace.bpmn"
+    includes:
+      - "bpmndi:BPMNDiagram"
+      - "eventBasedGateway"
+      - "messageEventDefinition"
+      - "timerEventDefinition"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Event-based gateway races a message catch and a timer catch with full DI edges"
+    command: "python3 $TASK_DIR/check_event_based_gateway.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

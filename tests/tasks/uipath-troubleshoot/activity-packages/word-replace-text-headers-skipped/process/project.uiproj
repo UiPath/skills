@@ -1,0 +1,6 @@
+{
+  "Name": "BrandedLetterFill",
+  "ProjectType": "Process",
+  "Description": "Opens a branded letter Word document and replaces the company-name placeholder with the configured company value.",
+  "MainFile": "Main.xaml"
+}

@@ -273,12 +273,11 @@ All values below come directly from the `ParsedActionSchema` assembled in Step 4
 ```json
 {
   "id": "<NODE_ID>",
-  "type": "uipath.human-in-the-loop",
+  "type": "uipath.human-in-the-loop.coded-action-app",
   "typeVersion": "1.0.0",
   "display": { "label": "<LABEL>" },
   "ui": { "position": { "x": 474, "y": 144 } },
   "inputs": {
-    "type": "custom",
     "channels": [],
     "recipient": {
       "channels": ["ActionCenter"],
@@ -318,7 +317,7 @@ All values below come directly from the `ParsedActionSchema` assembled in Step 4
 "recipient": { "channels": ["ActionCenter"], "assignee": { "type": "group", "value": "Finance Team" } }
 ```
 
-**Definition entry** — same as QuickForm. See [hitl-node-quickform.md](hitl-node-quickform.md) for the full definition block. Add once to `workflow.definitions`, deduplicated by `nodeType`.
+**Definition entry** — uses `nodeType: "uipath.human-in-the-loop.coded-action-app"` (NOT the QuickForm nodeType). See [hitl-node-apptask.md](hitl-node-apptask.md#definition-entry) for the full definition block. Add once to `workflow.definitions`, deduplicated by `nodeType`.
 
 **Edge wiring** — wire `completed` (only handle available in v1.0). See [hitl-node-quickform.md](hitl-node-quickform.md) for edge format.
 

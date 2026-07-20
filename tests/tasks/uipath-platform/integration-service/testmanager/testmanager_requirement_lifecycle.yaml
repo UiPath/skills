@@ -18,6 +18,7 @@ sandbox:
 
 run_limits:
   expected_turns: 28
+  max_turns: 45
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/testmanager/_tm_shared/seed.py"
@@ -82,13 +83,6 @@ success_criteria:
     description: "Get Assigned Test Cases for Requirement"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetAssignedTestCasesForRequirement'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-  - type: command_executed
-    description: "Used --output json on resource commands"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

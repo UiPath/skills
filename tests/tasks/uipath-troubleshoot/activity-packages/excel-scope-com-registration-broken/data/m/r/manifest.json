@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Excel Application Scope ledger-report scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "8140b32704.json"},
+    {"match": "or folders list --output json", "file": "8140b32704.json"},
+    {"match": "or jobs list --folder-key \"f00eeeee-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "6097e75792.json"},
+    {"match": "or jobs list --folder-key f00eeeee-3333-4444-5555-666677778888 --state Faulted --output json", "file": "6097e75792.json"},
+    {"match": "or jobs get \"aa444444-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "5280357351.json"},
+    {"match": "or jobs get aa444444-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "5280357351.json"},
+    {"match": "or jobs history \"aa444444-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "e66a824b5d.json"},
+    {"match": "or jobs history aa444444-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "e66a824b5d.json"},
+    {"match": "or jobs logs \"aa444444-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "45e7959dc5.json"},
+    {"match": "or jobs logs aa444444-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "45e7959dc5.json"}
+  ]
+}

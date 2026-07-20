@@ -21,6 +21,8 @@ What this looks like — any of the following messages:
 
 **Design-time variant:** when picking a Drive/Sheets item in the Studio browse dialog fails with *"Items cannot be retrieved"*, the underlying cause is frequently a `ConnectionHttpException` with **HTTP 403** and code `CNS1044` (insufficient permissions) or `CNS1045` (insufficient folder permissions). This is the same authorization problem surfacing at design time instead of run time.
 
+**Any `CNS…` code in the `ConnectionHttpException` detail** identifies the exact Connection Service failure and outranks the status class — route it via the [CNS error-code reference](../../../products/integration-service/cns-error-codes-reference.md). The ones seen from these activities: `CNS1008` (connection not in authorized state → re-authenticate), `CNS1006`/`CNS1049` (connection deleted / personal-workspace), `CNS1045` (folder permission — the message names which one), `CNS2xxx` (Connection Service dependency failure — retry, then escalate).
+
 What activities can produce these errors:
 Every `*Connections` activity (all Gmail, Drive, Sheets, Docs, Calendar, Tasks, Forms, Apps Script modern activities) and every legacy `GSuiteApplicationScope` child, because all of them resolve a connection and acquire a token before doing any work. Auth-timeout is most visible on the scope/connection itself and on the first activity to execute after a cold token.
 
@@ -49,7 +51,7 @@ What can cause it:
 - **If the token is expired or revoked (401 / `authError`):** Reconnect/re-authorize the Integration Service connection (or refresh the legacy scope's credential). Confirm the Google account password/2FA didn't change and that authorization wasn't revoked in the Google account security settings.
 - **If authorization is insufficient (403 / `insufficientFilePermissions`):** Grant the authenticated account access to the target resource, or recreate the connection with the OAuth scopes the operation requires (e.g., full Drive scope rather than read-only). For the design-time `CNS1044`/`CNS1045` browse failure, the same scope/permission grant fixes the picker.
 - **If a domain policy blocks the app (`domainPolicy`):** Escalate to the Google Workspace administrator to allow the connector/app.
-- **If the connection itself failed (raw `ConnectionHttpException`):** Confirm the connection exists and is enabled in Integration Service; recreate it if it was deleted. Verify the robot has network reachability to the connection service.
+- **If the connection itself failed (raw `ConnectionHttpException`):** Confirm the connection exists and is enabled in Integration Service; recreate it if it was deleted. Verify the robot has network reachability to the connection service. If the detail carries a `CNS…` code, apply the exact remediation from the [CNS error-code reference](../../../products/integration-service/cns-error-codes-reference.md) instead of guessing from the status class.
 - **If authentication timed out:** Confirm network reachability and latency to Google's OAuth endpoint. Raise the legacy scope's `TimeoutMS` if the auth path is legitimately slow; for interactive OAuth, ensure the consent flow can complete in the robot's session (unattended robots cannot answer an interactive prompt).
 
 If the connection reconnects cleanly, the account demonstrably has access, and the error persists, the cause is outside the connection layer — re-triage against the resource-not-found or transient-error playbooks.

@@ -1,6 +1,0 @@
-{
-  "Name": "PyRecordCleaner",
-  "ProjectType": "Process",
-  "Description": "Reproduces an Invoke Python Method failure: the target function is defined only under if __name__ == '__main__', so Load Python Script never binds it and Invoke Python Method faults with AttributeError.",
-  "MainFile": "Main.xaml"
-}

@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelMultiReportProcess",
+  "ProjectType": "Process",
+  "Description": "Reads the 'Sales' sheet from the Q1 and Q2 sales workbooks via Read Range across two Use Excel File scopes to build a multi-quarter report.",
+  "MainFile": "Main.xaml"
+}

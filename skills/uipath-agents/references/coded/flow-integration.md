@@ -10,7 +10,7 @@ The coded agent lives as a sibling folder inside the same solution as the flow. 
 
 - **Agent-side scaffolding:** [embedding-in-flows.md](embedding-in-flows.md)
 - **Wiring the agent's inputs:** [embedding-in-flows.md § Wiring the Agent's Inputs](embedding-in-flows.md#wiring-the-agents-inputs)
-- **Flow node JSON shape + top-level `bindings[]` + `definitions[]` entry:** [agent/impl.md § In-solution variant](../../../uipath-maestro-flow/references/plugins/agent/impl.md#node-instance-inside-nodes--in-solution-variant)
+- **Flow node JSON shape + top-level `bindings[]` + `definitions[]` entry:** uipath-maestro-flow skill, agent-plugin reference (In-solution variant)
 
 The node-type's `{key}` is the local `resource.key` minted by `uip solution project add` (written to `resources/solution_folder/process/agent/<name>.json`) and surfaced by `uip maestro flow registry list --local`.
 
@@ -36,7 +36,7 @@ Fallback discovery paths if the deploy output is unavailable or unparseable, **t
 
 If all paths return empty / 404, the deploy command's stdout JSON is authoritative — re-run the deploy and capture its output rather than chasing post-hoc discovery endpoints.
 
-For the flow node JSON shape, see [agent/impl.md § Published variant](../../../uipath-maestro-flow/references/plugins/agent/impl.md#node-instance-inside-nodes--published-variant). `model.section` is `"Published"`.
+For the flow node JSON shape, see the uipath-maestro-flow skill agent-plugin reference (Published variant). `model.section` is `"Published"`.
 
 ---
 

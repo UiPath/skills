@@ -35,7 +35,7 @@ Steps 0–6 are **logical phases**, not separate turns. A typical greenfield bui
 
 | Turn | Steps | What you emit in ONE assistant message |
 |---|---|---|
-| **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (scaffold + register + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s) **+** optional `uip login status` |
+| **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (scaffold + register + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s) **+** optional `uip login status`. **If existing `.uipx` solutions are present, the Step 2 gate fires first in its own turn** — resolve it before this chain. |
 | **T2 — Read + author** | 4 | One `Read` of the `.flow` **+** a batch of `Edit` calls (or one `Write` if ≥70% of nodes change). Claude Code serializes Edits on the same file, so they don't race |
 | **T3 — Finalize** | 5, 6 | One chained `Bash` (`node configure && validate && format`). On validate failure: one Edit turn, then re-chain `validate && format` |
 
@@ -75,7 +75,7 @@ When you do need it, emit `uip login status --output json` as a parallel `Bash` 
 
 > **A Flow project cannot exist outside a solution** (universal rule in [SKILL.md](../../../SKILL.md)). Scaffold or select a solution (Step 2a) BEFORE running `uip maestro flow init` (Step 2b). Skipping the solution step produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload and packaging. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested — see the tree after Step 2c).
 
-Check the current directory for existing `.uipx` files. If existing solutions are found, ask the user, presenting a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option (for a custom path). If no existing solutions are found, create a new one automatically. See the dropdown question rule in [SKILL.md](../../../SKILL.md).
+Check for existing solutions with `ls *.uipx */*.uipx 2>/dev/null` (each solution is its own folder — `<Solution>/<Solution>.uipx` — so a bare `*.uipx` misses them). If any are found, **STOP before the T1 chain — do not run `uip solution init` yet** — and ask via `AskUserQuestion`, presenting a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option. The user wanting a new solution does not let you skip this; you only learn that by asking. If none are found, create a new one automatically. See the dropdown question rule in [SKILL.md](../../../SKILL.md).
 
 - If the user specifies an existing `.uipx` file path or solution name, use that (skip to Step 2b)
 - Otherwise, create a new solution (Step 2a)
@@ -299,6 +299,8 @@ uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<D
 > **The plugin `impl.md` is authoritative — follow its full procedure, not just its `--detail` schema, and let it override this turn map.** A plugin may prescribe steps the three-turn collapse does not show — most importantly a **pre-`configure` live fetch** whose output you must read before you can author `--detail` (the value depends on the live response, so it cannot be guessed or copied from a doc example). When `impl.md` defines such a step, run it in its **own turn before T3** and build `--detail` from its result; do not batch it into the chain, skip it, or hand-author the payload. An empty or static base response is expected for these steps and is not a signal the step is unavailable. This is general to every CLI-owned node type — defer to the owning `impl.md` rather than assuming static config.
 
 **On validate failure:** one `Edit` turn to fix, then re-chain `validate && format` in one Bash. Do not validate after every individual Edit during T2 — intermediate states are expected to be invalid.
+
+> **A passing exit code with warnings is NOT done.** `flow validate` returns 0 even when `Data.Warnings` is non-empty — read the warnings, don't just check the exit code. The connector-keyword warning (`node "…" mentions the "<connector>" connector keyword but uses the generic Managed HTTP type core.action.http.v2 with no connection binding`) means the flow took the brand-name shortcut and will run against an undefined endpoint at debug time — resolve it by switching to the connector before reporting the flow complete (see [SKILL.md rule #3](../../../SKILL.md#critical-rules-universal) and the anti-pattern list). Treat this class of warning as a build failure for your own definition of "done."
 
 ### Common error categories
 

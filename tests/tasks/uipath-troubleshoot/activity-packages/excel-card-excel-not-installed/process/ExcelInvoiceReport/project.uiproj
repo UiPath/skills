@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelInvoiceReport",
+  "ProjectType": "Process",
+  "Description": "Reads the 'Invoices' sheet from the invoice report workbook at C:\\Robot\\Data\\invoice-report.xlsm into a DataTable via Read Range inside an Excel Application Scope.",
+  "MainFile": "Main.xaml"
+}

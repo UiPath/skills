@@ -21,8 +21,8 @@ Three properties of this model drive most failures:
 
 - **Jira Scope** (`UiPath.Jira.Activities.JiraApplicationScope`) — authenticate and host all child Jira activities. Properties: `Server URL`, `Authentication Type` (`Api Token` / `Basic` / `OAuth 2.0`), `Username`, `Api Token` (`SecureString`), `Password` (`SecureString`), `Client Id`, `Client Secret`.
 - **Get Issue / Search Issues / Get Issues by JQL** — read issues from the open session.
-- **Get Transitions** — list the transitions legal from an issue's **current** status, with each transition's runtime `Id`, `name`, and required screen fields. Drive `Transition Issue` from this rather than a hardcoded ID.
 - **Create Issue / Update Issue / Add Comment / Transition Issue** — write operations against the open session.
+- **Get Transitions** — list the transitions legal from an issue's **current** status, with each transition's runtime `Id`, `name`, and required screen fields. Drive `Transition Issue` from this rather than a hardcoded ID.
 
 ## Common Failure Patterns
 

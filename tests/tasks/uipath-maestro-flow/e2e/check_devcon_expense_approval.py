@@ -51,9 +51,9 @@ def main() -> None:
     if not isinstance(nodes, list) or not isinstance(edges, list):
         fail("Flow must contain nodes[] and edges[]")
 
-    hitl_nodes = [n for n in nodes if n.get("type") == "uipath.human-in-the-loop"]
+    hitl_nodes = [n for n in nodes if str(n.get("type", "")).startswith("uipath.human-in-the-loop")]
     if len(hitl_nodes) != 1:
-        fail(f"Expected exactly one uipath.human-in-the-loop node, found {len(hitl_nodes)}")
+        fail(f"Expected exactly one HITL node, found {len(hitl_nodes)}")
     hitl = hitl_nodes[0]
     hitl_id = hitl.get("id")
     if not hitl_id:
