@@ -4,7 +4,7 @@ description: >
   documented Orchestrator, A2A, queue, business-rule, call-activity,
   message-event, case-management, wait-event, migration, and preserve-only
   extension variants.
-tags: [uipath-maestro-bpmn, integration, lifecycle:generate, contract:xml, node:service-task, node:call-activity, connector]
+tags: [uipath-maestro-bpmn, integration, "mode:build", lifecycle:generate, contract:xml, node:service-task, node:call-activity, connector]
 
 run_limits:
   expected_turns: 20

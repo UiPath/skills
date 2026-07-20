@@ -1,0 +1,8 @@
+{
+  "instanceId": "debug-fault-777",
+  "variables": [
+    { "name": "orderId", "value": "ORD-DBG-777" },
+    { "name": "basePrice", "value": 240 },
+    { "name": "discountRate", "value": 1.75 }
+  ]
+}

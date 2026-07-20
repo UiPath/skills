@@ -1,0 +1,79 @@
+task_id: skill-bpmn-debug-workflow-mocked
+description: >
+  Skill-guided evaluation of the correct Maestro BPMN debug workflow against a
+  mocked `uip` CLI. The agent debugs an existing local project with inputs,
+  captures the instance id the debug command returns, then inspects the run via
+  the `debug-instance` commands and summarizes the runtime variable values. The
+  summary values are only discoverable from the mocked CLI JSON, so a prose
+  guess cannot pass. No cloud side effects — the CLI is backed by a local
+  fixture harness.
+tags: [uipath-maestro-bpmn, integration, "mode:operate", "lifecycle:discover"]
+
+run_limits:
+  expected_turns: 14
+  max_turns: 22
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+initial_prompt: |
+  A local Maestro BPMN project already exists at `./OrderApproval`. Debug it
+  and report what the run produced.
+
+  Steps:
+  - Start a debug session for the project, passing these inputs:
+    `{"orderId": "ORD-9001", "amount": 1875}`.
+  - Read the identifiers the debug command returns (job key, instance id,
+    final status) from its JSON output.
+  - Using the returned instance id, inspect the debug session's runtime
+    variables with the appropriate `debug-instance` command.
+  - Write a concise `summary.md` that reports the final status and names every
+    runtime variable value the debug session produced.
+
+  The `uip` CLI is already available and is backed by a local test harness.
+  You have consent to run this debug session. Use
+  `uip maestro bpmn ... --output json` for CLI reads. Do NOT inspect `mocks/`,
+  `fixtures/`, or any response JSON files directly — get every value from the
+  CLI. Do NOT upload, publish, deploy, or pack anything.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent started a debug session with inputs"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug\s+[\s\S]*--inputs'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected the debug instance's runtime variables"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug-instance\s+variables(-all)?\s+debug-run-042'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Summary reports the runtime variable values only obtainable from the debug session"
+    path: "summary.md"
+    includes:
+      - "1875"
+      - "AutoApproved"
+      - "Tier2"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not read the mocked fixture JSON directly instead of the CLI"
+    tool_name: "Bash"
+    command_pattern: '(cat|less|head|tail|grep)\s+[\s\S]*mocks/responses'
+    weight: 1.0
+    pass_threshold: 1.0

@@ -6,24 +6,25 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 ## uip maestro flow init
 
-Scaffold a new Flow project directory. **Always create a solution first** (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).
+Scaffold a new Flow project directory. Outside a solution, `flow init` auto-scaffolds `<ProjectName>Solution/` and nests the project in it. **Prefer creating the solution first** so its name matches the project name (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).
 
 ```bash
-# 1. Create solution first
+# 1. Create solution first (for naming control)
 uip solution init "<SolutionName>" --output json
 
 # 2. Init the flow project inside the solution folder.
-#    When run from inside a solution directory, `flow init` auto-registers
-#    the project with the parent `.uipx` (pass `--skip-solution-registration` to skip) —
-#    no manual `solution project add` is required. Confirm via
-#    `Data.SolutionRegistration.Status` in the response (`Registered` or
-#    `AlreadyRegistered`).
+#    Inside a solution directory, `flow init` auto-registers the project with
+#    the parent `.uipx`. Outside any solution, it auto-scaffolds
+#    `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project in it,
+#    and adds `Data.AutoCreatedSolution` to the response. Either way confirm via
+#    `Data.SolutionRegistration.Status` (`Registered` or `AlreadyRegistered`).
+#    `--skip-solution-registration` opts out of both (Status `OptedOut`).
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 
-# 3. (Fallback only) Wire the project manually if auto-registration was
-#    `NotInSolution` / `Skipped` / `Failed` — typically because init was run
-#    outside the solution dir and produced a single-nested layout. (`OptedOut`
-#    means `--skip-solution-registration` was passed and the skip was intentional.)
+# 3. (Fallback only) Wire the project manually if registration was
+#    `Skipped` / `Failed` (ambiguous discovery or `.uipx` write error), or the
+#    rare `NotInSolution`. (`OptedOut` means `--skip-solution-registration` was
+#    passed and the skip was intentional.)
 uip solution project add \
   <directory>/<SolutionName>/<ProjectName> \
   <directory>/<SolutionName>/<SolutionName>.uipx

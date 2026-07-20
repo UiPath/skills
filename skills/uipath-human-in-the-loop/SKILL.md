@@ -100,7 +100,7 @@ cd <SolutionName> && uip maestro flow init <ProjectName>
 # Creates: <SolutionName>/<ProjectName>/<ProjectName>.flow
 ```
 
-The flow file path is `<SolutionName>/<ProjectName>/<ProjectName>.flow` (double-nested). `<SolutionName>/` is the solution directory (contains the `.uipx` file); `<ProjectName>/` inside it is the flow project. By convention `<SolutionName>` and `<ProjectName>` are often the same string, but they are two distinct scaffolding arguments. Running `uip maestro flow init` without first running `uip solution init` produces a broken single-nested `<ProjectName>/<ProjectName>.flow` layout that fails Studio Web upload, packaging, and downstream tooling.
+The flow file path is `<SolutionName>/<ProjectName>/<ProjectName>.flow` (double-nested). `<SolutionName>/` is the solution directory (contains the `.uipx` file); `<ProjectName>/` inside it is the flow project. By convention `<SolutionName>` and `<ProjectName>` are often the same string, but they are two distinct scaffolding arguments. Run `uip maestro flow init` outside a solution and it auto-scaffolds `<ProjectName>Solution/<ProjectName>/` for you; running `uip solution init` first lets you control the solution name (otherwise it defaults to `<ProjectName>Solution`). Passing `--skip-solution-registration` leaves a bare single-nested `<ProjectName>/<ProjectName>.flow` layout that fails Studio Web upload, packaging, and downstream tooling.
 
 ---
 

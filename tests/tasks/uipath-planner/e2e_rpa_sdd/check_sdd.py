@@ -21,6 +21,8 @@ REQUIRED_SECTIONS = [
     "Application Inventory",
     "Credentials",
     "Project Structure",
+    "Project Mode Decision",
+    "Recommended Scope",
     "Implementation Mode",
     "Testing Strategy",
     "Planner Handoff",
@@ -36,6 +38,7 @@ MIN_CREDENTIALS = 3
 
 # Required fields in the Planner Handoff header
 PLANNER_HANDOFF_FIELDS = [
+    "Status",
     "Execution autonomy",
     "SDD scope",
     "Project list section",
@@ -95,12 +98,14 @@ def collect_headings(content: str) -> list[str]:
 
 
 def check_line_count(content: str) -> list[str]:
-    """SDD should be between 100 and 1200 lines."""
+    """SDD should be between 100 and 1500 lines (template carries the
+    production-design subsections: queue configuration, sizing, operational
+    support, security, delivery gates, extended testing)."""
     lines = content.strip().split("\n")
     if len(lines) < 100:
         return [f"SDD too short: {len(lines)} lines (minimum 100)"]
-    if len(lines) > 1200:
-        return [f"SDD too long: {len(lines)} lines (maximum 1200)"]
+    if len(lines) > 1500:
+        return [f"SDD too long: {len(lines)} lines (maximum 1500)"]
     return []
 
 
@@ -182,6 +187,13 @@ def check_planner_handoff(content: str) -> list[str]:
     if "uipath-planner" not in content:
         failures.append("SDD does not reference uipath-planner (Next Steps handoff missing)")
 
+    status_match = re.search(r"\*\*Status\*\*\s*\|\s*([a-zA-Z]+)", content)
+    if status_match and status_match.group(1).lower() != "ready":
+        failures.append(
+            f"Planner Handoff Status is '{status_match.group(1)}' — a finished Phase D run "
+            "must flip Status to ready (draft = interrupted; Lane A refuses it)"
+        )
+
     return failures
 
 
@@ -208,6 +220,14 @@ def check_decisions_made_when_autonomous(content: str) -> list[str]:
             "(sdd-generation-guide.md Phase 3 Step 2 item 3)"
         ]
 
+    return []
+
+
+def check_need_profile(content: str) -> list[str]:
+    """The Recommended Scope block must carry the Need profile line — the
+    durable record of the need→product reasoning (sdd-generation-guide Step 3.5)."""
+    if "Need profile" not in content:
+        return ["Recommended Scope missing the `Need profile:` line (Step 3.5 output)"]
     return []
 
 
@@ -254,6 +274,7 @@ def main():
     all_failures.extend(check_table_minimums(content))
     all_failures.extend(check_planner_handoff(content))
     all_failures.extend(check_decisions_made_when_autonomous(content))
+    all_failures.extend(check_need_profile(content))
     all_failures.extend(check_content_markers(content))
     all_failures.extend(check_no_unfilled_placeholders(content))
     all_failures.extend(check_mermaid_diagram(content))

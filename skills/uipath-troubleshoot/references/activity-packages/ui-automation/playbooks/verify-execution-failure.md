@@ -118,3 +118,5 @@ Walk this tree from the top. Stop at the first branch that matches.
   - **Timing — DOM not ready.** The action runs against a stale DOM (page was re-rendered between action and verify). Add a Check App State before the action; or set `WaitForReady = COMPLETE` on the action's target.
 
   Once the action's actual effect is restored, the verify assertion will hold without changes.
+
+**Applying these fixes.** Re-targeting the verify selector, changing `Mode`, raising `Timeout`, or adding a dismiss / focus / Check App State step all change the workflow `.xaml` — interactive: the troubleshooter never edits the workflow itself; on the user's approval it delegates the apply, otherwise it recommends only. Never strip `VerifyOptions` to silence the exception (see branches A and D); configure or re-target it. Any Studio Desktop Recovery Panel fix or re-publish is a user action — recommend it, do not execute.

@@ -73,7 +73,7 @@ When you do need it, emit `uip login status --output json` as a parallel `Bash` 
 
 ## Step 2 — Create a solution, THEN a Flow project inside it **[T1]**
 
-> **A Flow project cannot exist outside a solution** (universal rule in [SKILL.md](../../../SKILL.md)). Scaffold or select a solution (Step 2a) BEFORE running `uip maestro flow init` (Step 2b). Skipping the solution step produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload and packaging. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested — see the tree after Step 2c).
+> **A Flow project cannot exist outside a solution** (universal rule in [SKILL.md](../../../SKILL.md)). Run `uip maestro flow init` (Step 2b) outside a solution and it now **auto-scaffolds** one — `<Project>Solution/<Project>Solution.uipx` with the project nested at `<Project>Solution/<Project>/` (response carries `Data.AutoCreatedSolution`). Still scaffold or select the solution first (Step 2a) so the solution name matches the project name rather than the auto `<Project>Solution`, and so discovery is unambiguous. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested — see the tree after Step 2c). Passing `--skip-solution-registration` opts out of both auto-scaffold and registration, leaving a bare single-nested layout that fails Studio Web upload and packaging.
 
 Check for existing solutions with `ls *.uipx */*.uipx 2>/dev/null` (each solution is its own folder — `<Solution>/<Solution>.uipx` — so a bare `*.uipx` misses them). If any are found, **STOP before the T1 chain — do not run `uip solution init` yet** — and ask via `AskUserQuestion`, presenting a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option. The user wanting a new solution does not let you skip this; you only learn that by asking. If none are found, create a new one automatically. See the dropdown question rule in [SKILL.md](../../../SKILL.md).
 
@@ -117,7 +117,7 @@ Creates `<cwd>/<SolutionName>/<SolutionName>.uipx`. **`cd` into the new solution
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 ```
 
-The `cd` is required. Running `uip maestro flow init` from outside the solution directory (or from the parent of `<SolutionName>/`) is wrong — it produces a single-nested layout and breaks every later step.
+The `cd` puts the project inside the solution you just created. Skip it and `flow init` won't find that solution (discovery walks **up**, not down into `<SolutionName>/`) — it auto-scaffolds a **second, separate** `<ProjectName>Solution/` beside your empty `<SolutionName>/`, leaving two solutions. The project no longer single-nests, but `cd` first to land in the right one.
 
 > **Bash session state persists across tool calls.** This `cd` is **not scoped to one Bash invocation** — your cwd remains inside `<SolutionName>/` for every subsequent `Bash` call until you `cd` somewhere else. Plan the rest of Step 2 (and Steps 3–6) accordingly: either keep using paths relative to the solution dir, or anchor with `$(pwd)` / the absolute `Data.Path` returned by `flow init`. Do NOT prefix later commands with the original `<directory>/<SolutionName>/...` — that would resolve as `<SolutionName>/<directory>/<SolutionName>/...` and look like a layout bug when it isn't.
 
@@ -125,7 +125,7 @@ The `cd` is required. Running `uip maestro flow init` from outside the solution 
 
 ### 2c. Verify the project is registered in the solution
 
-When `uip maestro flow init` is run from inside a solution directory (Step 2b), it **auto-registers** the project with the nearest parent `.uipx` (pass `--skip-solution-registration` to skip this). The success envelope always reports the outcome in `Data.SolutionRegistration`:
+When `uip maestro flow init` is run from inside a solution directory (Step 2b), it **auto-registers** the project with the nearest parent `.uipx`. Run outside any solution, it **auto-scaffolds** `<Project>Solution/` and registers the project in it — the response then also carries `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`) and `Status: Registered`. Pass `--skip-solution-registration` to opt out of both (Status `OptedOut`, bare single-nested layout). The success envelope always reports the outcome in `Data.SolutionRegistration`:
 
 ```json
 {
@@ -146,7 +146,7 @@ When `uip maestro flow init` is run from inside a solution directory (Step 2b), 
 
 If `Data.SolutionRegistration.Status` is `Registered` or `AlreadyRegistered`, **you are done** with this step — proceed to the layout check. If it is `OptedOut`, you passed `--skip-solution-registration` and the skip was intentional.
 
-**Fallback** — when `Status` is `NotInSolution` (no parent `.uipx` found — `init` was run outside the solution directory and produced a single-nested layout), `Skipped` (ambiguous discovery), or `Failed` (the `.uipx` write failed): wire the project manually.
+**Fallback** — when `Status` is `Skipped` (ambiguous discovery — e.g. multiple `.uipx`), `Failed` (the `.uipx` write failed), or `NotInSolution` (rare — auto-scaffold did not run and no parent `.uipx` was found): wire the project manually.
 
 ```bash
 uip solution project add \
@@ -154,7 +154,7 @@ uip solution project add \
   <directory>/<SolutionName>/<SolutionName>.uipx
 ```
 
-If the registration was skipped because of single-nesting, **delete the partial scaffold and restart from Step 2a** — do not try to patch the layout by hand. See [diagnose/references/failure-modes.md — Single-nested layout](../../diagnose/references/failure-modes.md#single-nested-layout).
+If you ended up with a bare single-nested layout (e.g. `--skip-solution-registration` was passed), **delete the partial scaffold and restart from Step 2a** — do not try to patch the layout by hand. See [diagnose/references/failure-modes.md — Single-nested layout](../../diagnose/references/failure-modes.md#single-nested-layout).
 
 ### Expected layout after Steps 2a–2c
 

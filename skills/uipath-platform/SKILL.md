@@ -63,7 +63,7 @@ For `uip solution` lifecycle (init / pack / publish / deploy / activate / upload
 
 The default login stores credentials at **`~/.uipath/.auth`**:
 ```
-UIPATH_URL=https://alpha.uipath.com
+UIPATH_URL=https://cloud.uipath.com
 UIPATH_ORGANIZATION_NAME=my_org
 UIPATH_TENANT_NAME=my_tenant
 UIPATH_ACCESS_TOKEN=eyJ...
