@@ -10,7 +10,7 @@ call.
 The user asked only *"why did my last job from folder Shared fail?"*. The agent:
 
 1. Listed folders → resolved **Shared** to key `1965a46b-db4e-469e-aaaa-7e0b379cb34d`.
-2. Listed Faulted jobs in Shared → newest is **GSuite_GetFileInfoMalformedUrl**,
+2. Listed Faulted jobs in Shared → newest is **DriveFileInspector**,
    job `0e3938d5-e2b0-480b-99d5-bcaf0e9123d6`.
 3. Read the job's `Info` → a `System.ArgumentOutOfRangeException` thrown from
    `CloudObjectIdentifier.FromUrl` / `CreateFromUrlOrId` inside

@@ -72,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created a fresh per-run folder via `uip or folders create` (isolated for cleanup)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+folders\s+create\b'
+    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+create\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

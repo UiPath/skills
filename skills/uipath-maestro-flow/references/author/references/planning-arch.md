@@ -142,7 +142,7 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 | `core.logic.delay` | [delay](plugins/delay/planning.md) | Pause execution for a duration or until a specific date |
 | `core.action.queue.create` | [queue](plugins/queue/planning.md) | Distribute work to robots — fire-and-forget |
 | `core.action.queue.create-and-wait` | [queue](plugins/queue/planning.md) | Distribute work to robots — wait for result |
-| `uipath.human-in-the-loop` | [hitl](plugins/hitl/planning.md) | Pause flow for a human to review, approve, or fill in data — inline schema, no app required |
+| `uipath.human-in-the-loop.quick-form` | [hitl](plugins/hitl/planning.md) | Pause flow for a human to review, approve, or fill in data — inline schema, no app required |
 
 ### Control Flow
 
@@ -163,7 +163,6 @@ Connector nodes call external services via Integration Service. They are **not**
 | When to Select | Plugin |
 | --- | --- |
 | A pre-built connector exists for the target service (Jira, Slack, Salesforce, etc.) | [connector](plugins/connector/planning.md) |
-| The flow needs to read/write UiPath Data Fabric entities (Query / Create / Update / Delete / Get by ID) | [connector/data-fabric](plugins/connector/data-fabric/planning.md) |
 
 **In this phase:** Use [Capability Discovery](#capability-discovery) to confirm the connector exists and note it as `connector: <service-name>` with the intended operation. Phase 2 resolves the exact type, connection, and fields via [connector/impl.md](plugins/connector/impl.md).
 
@@ -247,7 +246,7 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `uipath.connector.*` (activities) | `input` | `output`, `error` |
 | `core.action.queue.create` | `input` | `success` |
 | `core.action.queue.create-and-wait` | `input` | `success` |
-| `uipath.human-in-the-loop` | `input` | `completed` |
+| `uipath.human-in-the-loop.quick-form` | `input` | `completed` |
 | `uipath.core.human-task.{key}` | `input` | `output` |
 
 > **`error` is an implicit source port** on every action node (any node with `supportsErrorHandling: true`). Wire it whenever the flow needs to survive a failed HTTP call, script exception, transform error, agent fault, etc. — otherwise the flow faults as a whole. This is a **different mechanism** from content-based `inputs.branches` on HTTP. See [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes) for wiring, when it fires, and the decision matrix vs branches/decision/switch.

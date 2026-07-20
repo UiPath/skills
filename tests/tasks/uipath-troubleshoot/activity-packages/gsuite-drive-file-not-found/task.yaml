@@ -1,15 +1,16 @@
 task_id: skill-troubleshooting-gsuite-drive-file-not-found
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   Faithful replay of a real UiPath troubleshooting investigation. The agent
   runs the uipath-troubleshoot skill against a uip CLI mock whose responses
   are the verbatim, scrubbed sub-agent outputs from the real session
   (.local/investigations/raw/*.json). The most-recent Faulted job in folder
-  Shared (GSuite_DriveFileNotFound, job f41ed418-163b-487b-8077-e51f8af4a1af)
+  Shared (DriveDocSync, job f41ed418-163b-487b-8077-e51f8af4a1af)
   ran a single GSuite Download File activity that hit a Google Drive HTTP 404
   ("File not found: 1AbCnonexistentFILEid000000000000000."). Success = the
   agent reaches the same root cause as RESOLUTION.md: a Drive resource-resolution
   404 on the configured file id, NOT a connection/auth/transient failure.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, faithful-replay, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 # Inherits from experiments/default.yaml: model, permission_mode, plugins
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides

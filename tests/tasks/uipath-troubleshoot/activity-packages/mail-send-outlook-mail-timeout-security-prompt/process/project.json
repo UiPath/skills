@@ -1,7 +1,7 @@
 {
   "name": "NightlyReportMailer",
   "projectId": "c6d7e8f9-a0b1-4c23-8d4e-5f6a7b8c9d0e",
-  "description": "Reproduces a Send Outlook Mail Message timeout/hang caused by a hidden Outlook Object Model Guard security prompt awaiting input on an unattended Robot session, blocking the COM send until TimeoutMS elapses.",
+  "description": "Sends a nightly report email with Send Outlook Mail Message on an unattended Robot session.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Mail.Activities": "[1.18.3]",

@@ -1,7 +1,7 @@
-# Resolution — GSuite_ConnectionInvalid (Shared)
+# Resolution — WorkspaceSheetSync (Shared)
 
 ## Fault
-The last job in folder **Shared** (`GSuite_ConnectionInvalid`, job `4e00b4ca-b35b-4457-bb12-74f270d20cb0`, Unattended on `MOCK-HOST`) ended **Faulted** ~7s after start. It ran a single GSuite **Download File** (`UiPath.GSuite.Activities.DownloadFileConnections`) activity.
+The last job in folder **Shared** (`WorkspaceSheetSync`, job `4e00b4ca-b35b-4457-bb12-74f270d20cb0`, Unattended on `MOCK-HOST`) ended **Faulted** ~7s after start. It ran a single GSuite **Download File** (`UiPath.GSuite.Activities.DownloadFileConnections`) activity.
 
 ## Cause
 **Integration Service connection layer** failure — the activity could not resolve or authorize the connection it references. The job dispatched and started normally, then faulted during OAuth token acquisition (`ConnectionClient.GetAccessToken`), **before** any Google Drive API call:

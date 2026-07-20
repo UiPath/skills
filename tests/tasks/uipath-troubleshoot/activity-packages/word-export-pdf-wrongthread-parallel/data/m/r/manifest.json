@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures for export-pdf-wrongthread-parallel. Save Document as PDF faults with InvalidCastException / RPC_E_WRONG_THREAD (0x8001010E) because a Parallel between scope-open and the export runs the export on a non-creator thread, off the STA that owns the document. The stack trace includes the Parallel frame; the run is attended/foreground with no external Word, isolating the threading-construct cause to the workflow source.",
+  "_doc": "Synthetic fixture set for the export-pdf wrongthread-parallel scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

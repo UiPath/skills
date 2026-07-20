@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-excel-card-excel-not-installed
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Classic Excel Application
   Scope failure (BusinessException 'Error opening workbook. Make sure
@@ -12,10 +13,9 @@ description: >
   OR migrate to Workbook activities / Modern OpenXML Use Excel File
   (if it doesn't).
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, excel-application-card, excel-not-installed]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

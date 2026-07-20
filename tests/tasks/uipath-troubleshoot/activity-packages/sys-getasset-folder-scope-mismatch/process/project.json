@@ -1,5 +1,5 @@
 {
-  "name": "AssetFolderMismatch",
+  "name": "ConfigAssetReader",
   "projectId": "6b1f3c2d-7e4a-49d8-b210-c3a5e7d9b1f2",
   "description": "Blank Process",
   "main": "Main.xaml",

@@ -197,7 +197,7 @@ The generated SDD must start with:
 
 | Trigger type | What to write |
 |---|---|
-| Event trigger | The operation in business terms (e.g., `Calendar created`, `Email received`). Append a filter expression if the user wants filtering (e.g., `Email received in Inbox; filter: subject contains "URGENT"`). Append a required event-param value only when the user supplies it explicitly (e.g., `Email received in folder "<folder name>"`). |
+| Event trigger | The operation in business terms (e.g., `Calendar created`, `Email received`, `Record created`). For tenant case-entity / business data-object starts, preserve the object name in Source (e.g., `expense_requests`) and write the business event in Configuration (e.g., `Record created`). Append a filter expression if the user wants filtering (e.g., `Email received in Inbox; filter: subject contains "URGENT"`). Append a required event-param value only when the user supplies it explicitly (e.g., `Email received in folder "<folder name>"`). |
 | Timer trigger | Cycle or duration (e.g., `every 24 hours`, `daily at 09:00 UTC`). |
 | Manual | `N/A` or omit. |
 
@@ -206,6 +206,13 @@ DO NOT include in Configuration:
 - Default modes like `polling` vs `webhook` (the skill defaults; the user only overrides when they care).
 - Meta notes like `No required event parameters` or `No user filter` (absence is the default; the skill discovers required params at `case spec` time).
 - Connector activity slug, HTTP method, or any spec-discovered detail.
+
+> **Tenant object starts are still event triggers.** If the user says a case starts
+> when a tenant case-entity / data-object record is created, author
+> `Intsvc.EventTrigger` with that object name as Source. Do NOT downgrade to
+> `Manual` just because the eval sandbox or current tenant may not have the
+> object provisioned. Planning/implementation preserve unresolved event triggers
+> as placeholders.
 
 ### Case Exit Conditions
 
@@ -386,14 +393,14 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > Use this block for every task of type `action`. The action plugin authors action tasks ONLY from a deployed Action App registered in `action-apps-index.json`; inline JSON-Schema HITL forms are not authored by the skill (an unresolved app falls back to a Rule-8 placeholder).
 
-**HITL Implementation:** Action App: {`deploymentTitle` from `action-apps-index.json` — must be deployed}
-**Action App ID:** {`actionAppId` — concrete deployment id, or `<UNRESOLVED>`}
-**Deployment Folder:** {`deploymentFolder.fullyQualifiedName`}
+**HITL Implementation:** Action App: {the concrete intended `deploymentTitle`. REQUIRED and NEVER `<UNRESOLVED>`: use the selected registry entry's canonical title when resolved; otherwise retain the user-requested title so Phase 1 can repeat discovery from this SDD alone.}
+**Action App ID:** {`actionAppId` — concrete deployment id, or `<UNRESOLVED>` when no live app was selected}
+**Deployment Folder:** {`deploymentFolder.fullyQualifiedName`, or `<UNRESOLVED>` when Action App ID is unresolved}
 **actionType:** {the dispatch code the app's code-behind switches on — e.g., `GRNConfirmation`, `ApLeadApproval`. **A recognised code is REQUIRED; passing a human display name instead fails result mapping at runtime.** `—` only when the app is not a code-switched app.}
 **Recipient:** {typed prefix only: `Role:<name>` \| `User:<uuid>` \| `UserGroup:<uuid>` \| `Email:<addr>` \| `Expression:=vars.<id>`}
 **Priority:** {Low \| Medium \| High \| Critical} · **Task Title:** {one-line Action Center prompt} · **Labels:** {csv or `—`}
 
-> `Action App ID` + `Deployment Folder` make the SDD replicable standalone (a reader can locate the exact deployed app). `actionType` is the human-decision app's behaviour selector — treat it as a closed enum sourced from the app, not a free-text label.
+> The Action App title carries portable intent; `Action App ID` carries resolution status. A concrete ID plus the exact folder locates the deployed app, while an unresolved ID plus the intended title lets Phase 1 repeat discovery without `tasks/registry-resolved.json`. `actionType` is the human-decision app's behaviour selector — treat it as a closed enum sourced from the app, not a free-text label.
 
 **Input Schema:**
 
@@ -467,7 +474,9 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > Use this block for tasks that spawn a child case.
 
-**Child Case:** {PascalCase case project name}
+**Child Case:** {the concrete intended child-case resource `name`. REQUIRED and NEVER `<UNRESOLVED>`: use the selected registry entry's canonical name when resolved; otherwise retain the user-requested name so Phase 1 can repeat discovery from this SDD alone.}
+**Folder Path:** {resolved `folders[0].fullyQualifiedName`, or `<UNRESOLVED>` when no live child case was selected}
+**Resource Identity:** {resolved `entityKey`, or `<UNRESOLVED>`; this cell, not `Child Case`, determines whether registry resolution succeeded}
 **Data Passed (parent -> child):**
 
 | Parent Variable | Child Variable |
@@ -488,13 +497,13 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > Use this block for `process`, `agent`, `rpa`, and `api-workflow` tasks. These tasks do NOT support SLA — SLA column in the task summary should be "—".
 
-**Resolved Resource:** {the deployed resource's `name` — e.g. `AgedInvoiceMockIntegrationApi` (api-workflow), `InvoiceTriageAgent` (agent), `AgedInvoice_StatementReconciliation` (rpa). This is the `name`-binding default — REQUIRED so the SDD names which resource the task invokes.}
-**Folder Path:** {resolved `folders[0].fullyQualifiedName` — the `folderPath`-binding default. MUST be the resource's exact folder (never a parent path, or the job faults at runtime).}
-**Resource Identity:** {resolved id (+version) — `apiWorkflowId` / `agentId` / `processOrchestrationId` — or `<UNRESOLVED>`. Recommended in the SDD body so it is replicable standalone; also carried in `tasks/registry-resolved.json`.}
+**Resolved Resource:** {the concrete intended resource `name` — e.g. `AgedInvoiceMockIntegrationApi` (api-workflow), `InvoiceTriageAgent` (agent), `AgedInvoice_StatementReconciliation` (rpa). REQUIRED and NEVER `<UNRESOLVED>`: use the selected registry entry's canonical name when resolved; otherwise retain the user-requested name so Phase 1 can re-run discovery from this SDD alone.}
+**Folder Path:** {resolved `folders[0].fullyQualifiedName` — the `folderPath`-binding default — or `<UNRESOLVED>` when no live resource was selected. A concrete value MUST be the resource's exact folder (never a parent path, or the job faults at runtime).}
+**Resource Identity:** {REQUIRED resolution status: resolved id (+version) — `apiWorkflowId` / `agentId` / `processOrchestrationId` — or `<UNRESOLVED>`. This cell, not `Resolved Resource`, determines whether registry resolution succeeded. Also carried in `tasks/registry-resolved.json` when that optional cache exists.}
 **Binding Sub-Type:** {`Api` (api-workflow) \| `Agent` (agent) \| `ProcessOrchestration` (process) \| `—` (rpa) — the `resourceSubType` on the name/folderPath bindings. Omitting it makes Studio Web report the resource as not found.}
 **Dispatch / Operation:** {when the resource is a shared façade dispatched by a parameter, name the selector and value — e.g. `requestSource = "RegisterCaseShell"`. Render `—` for single-purpose resources. The selector itself is also an Inputs row (a literal binding).}
 
-> The resource **name + folder** make this task replicable from the SDD alone; without them a reader knows the I/O contract but not which deployed resource to bind. When one façade resource (e.g. a generic mock-integration API, or a code-switched action app) backs many tasks, the **Dispatch / Operation** value is what distinguishes their behaviour — capture it explicitly, not just as an opaque input.
+> `Resolved Resource` carries portable intent; `Resource Identity` carries resolution status. A concrete identity plus the exact folder makes the selected deployment replicable, while an unresolved identity plus the intended name lets Phase 1 repeat discovery on another machine without `tasks/registry-resolved.json`. When one façade resource (e.g. a generic mock-integration API, or a code-switched action app) backs many tasks, the **Dispatch / Operation** value is what distinguishes their behaviour — capture it explicitly, not just as an opaque input.
 
 **Inputs:**
 
@@ -537,7 +546,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 ## Section 4: Integrations
 
-**Purpose:** The complete inventory of every deployed resource and external system the case binds — **one subsection per resource family**, so the full integration/resource footprint is visible and replicable from the SDD alone. Render only the subsections whose task type appears in the case; for a family with no tasks, either omit the subsection or render the heading with `> None.`. Every resource row carries the **folder** and **resource id** so a reader can locate the exact deployed artifact (mirrors the per-task `Resolved Resource` / `Folder Path` cells in Section 2 — this section is the de-duplicated roll-up).
+**Purpose:** The complete inventory of every intended or deployed resource and external system the case binds — **one subsection per resource family**, so the full integration/resource footprint is visible and replicable from the SDD alone. Render only the subsections whose task type appears in the case; for a family with no tasks, either omit the subsection or render the heading with `> None.`. Every runnable resource row always carries its concrete intended **name**; its **folder** and **resource id** are concrete when resolved and `<UNRESOLVED>` otherwise (mirrors the per-task `Resolved Resource` / `Folder Path` / `Resource Identity` cells in Section 2 — this section is the de-duplicated roll-up).
 
 ### Integration Service Connectors
 
@@ -587,9 +596,9 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > For `case-management` tasks. Render only if the case launches a child case.
 
-| Child Case | Identifier Prefix | Wait for Completion | Used By Tasks |
-|------------|-------------------|---------------------|---------------|
-| {child case name} | {2-4 char prefix} | {Yes \| No} | {comma-separated task names} |
+| Child Case | Folder | Resource ID | Identifier Prefix | Wait for Completion | Used By Tasks |
+|------------|--------|-------------|-------------------|---------------------|---------------|
+| {child case name} | {folders[0].fullyQualifiedName, or `<UNRESOLVED>`} | {entityKey, or `<UNRESOLVED>`} | {2-4 char prefix} | {Yes \| No} | {comma-separated task names} |
 
 ### External Agents
 

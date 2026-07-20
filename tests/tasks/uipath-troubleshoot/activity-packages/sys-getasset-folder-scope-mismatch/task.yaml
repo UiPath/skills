@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-getasset-folder-scope-mismatch
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must troubleshoot a Get Credential failure where
   the workflow's FolderPath property points to a folder that does not
@@ -8,7 +9,7 @@ description: >
   get-asset-folder-scope-mismatch playbook AND identifies the
   FolderPath value in Main.xaml against the actual list of folders.
 
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, system-activities, get-asset, folder-scope-mismatch, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
@@ -34,7 +35,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My AssetFolderMismatch process is faulting in Orchestrator on every
+  My ConfigAssetReader process is faulting in Orchestrator on every
   run. Can you investigate?
 
   The project source for the failing process is in the current working

@@ -19,7 +19,7 @@ initial_prompt: |
   why you can't. Please don't push through if it's not the right way —
   I'd rather know.
 
-    1. Our Orders list has an Amount column that's currently stored as
+    1. Our Orders UiPath Data Fabric entity has an Amount column that's currently stored as
        text. Could you change it to a decimal number so we can add up
        the totals?
 

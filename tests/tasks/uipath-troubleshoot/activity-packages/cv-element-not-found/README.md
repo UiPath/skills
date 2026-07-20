@@ -11,7 +11,7 @@ job, process **CV** (key `37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9`), faulted with
 `UiPath.CV.ElementNotFoundException: Element not found` thrown from the
 Computer Vision **CV Click** activity (`CvClickWithDescriptor`, "CV Click -
 'Button'") inside the **CV Screen Scope** (`CVScope`, "CV Screen Scope
-'msedge.exe  Google'") in `CV_ElementNotFound.xaml`. The find could not match
+'msedge.exe  Google'") in `InvoiceEntryUI.xaml`. The find could not match
 its locked descriptor geometry against the live `msedge.exe / Google` screen
 and the retry loop exhausted its timeout — timeout expiry surfaces AS
 `ElementNotFoundException` (there is no separate `TimeoutException`).
@@ -38,7 +38,7 @@ server / auth / throttling / network, scope-setup failure, action-failed-after-f
 | `mocks/uip` + `mocks/uip.cmd` | shared from `../_shared/mock_template/` (manifest-driven Python dispatcher) |
 | `fixtures/mocks/responses/*.json` | real stdout extracted verbatim from the session's investigation `raw/` outputs |
 | `fixtures/mocks/responses/manifest.json` | dispatch table mapping each command pattern to its recorded fixture |
-| `process/` | snapshot of the failing `CV` project — `project.json` + `CV_ElementNotFound.xaml` only |
+| `process/` | snapshot of the failing `CV` project — `project.json` + `InvoiceEntryUI.xaml` only |
 
 ### Trace spans
 
@@ -61,7 +61,7 @@ adds the verbatim stack but no attribute-level disambiguation beyond `jobs get`.
 - Standard scrubs applied: run-machine hostname → `MOCK-HOST`; workspace /
   Orchestrator-identity email → `original_email@test.com`; local Windows account
   → `UIPATH\REPLACEMENT_USER`; the CV Screen Scope `ApiKey` literal in the
-  snapshotted `CV_ElementNotFound.xaml` → `MOCK_CV_API_KEY`. Job and folder keys
+  snapshotted `InvoiceEntryUI.xaml` → `MOCK_CV_API_KEY`. Job and folder keys
   and the `Element not found` / `ElementNotFoundException` error text are kept
   verbatim.
 

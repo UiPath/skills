@@ -335,8 +335,6 @@ jobs:
       # feed; its UiPath deps resolve from the ml-packages feed (both as extra
       # indexes). No source checkout.
       - name: Install coder-eval
-        env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
 
       # Pull the pinned agent image from GHCR (never built from source); the
@@ -428,8 +426,6 @@ jobs:
             echo "UIPATH_CLI_TENANT_NAME=$TENANT_NAME"
             echo "UIPATH_CLI_TENANT_ID=$TENANT_ID"
             echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
-            echo "CODED_APPS_TEST_PROJECT_ID=${{ secrets.CODED_APPS_TEST_PROJECT_ID }}"
-            echo "CODED_APPS_TEST_SOLUTION_ID=${{ secrets.CODED_APPS_TEST_SOLUTION_ID }}"
           } >> "$GITHUB_ENV"
           mkdir ~/.uipath
           run_uip_with_tenant "$TENANT_NAME" login status --output json
@@ -514,8 +510,6 @@ jobs:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
-          CODED_APPS_TEST_PROJECT_ID: ${{ secrets.CODED_APPS_TEST_PROJECT_ID }}
-          CODED_APPS_TEST_SOLUTION_ID: ${{ secrets.CODED_APPS_TEST_SOLUTION_ID }}
         run: |
           python - <<'PY'
           import os
@@ -526,8 +520,6 @@ jobs:
               "AWS_BEARER_TOKEN_BEDROCK",
               "ANTHROPIC_API_KEY",
               "TRACES_SMOKE_PROCESS_KEY",
-              "CODED_APPS_TEST_PROJECT_ID",
-              "CODED_APPS_TEST_SOLUTION_ID",
           )
           values = [os.environ[name] for name in names if len(os.environ.get(name, "")) >= 8]
           if not values:
@@ -692,8 +684,6 @@ jobs:
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). `coder-eval plan` validates schemas on the runner -- no image.
       - name: Install coder-eval
-        env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
 
       - name: Validate every task YAML against the pinned coder_eval schema

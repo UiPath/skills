@@ -1,6 +1,6 @@
 **Root Cause:** The **CV Click** descriptor's locked geometry no longer matches the live screen, so the Computer Vision find returned no matching region within the timeout and the job faulted with `UiPath.CV.ElementNotFoundException: Element not found` (**Branch A — descriptor mismatch — is the operative cause**).
 
-**What went wrong:** The last job in folder Shared — process **CV** (job `37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9`, started 2026-06-12 07:26:49Z, attended, machine MOCK-HOST) — faulted after ~41 seconds. Faulting activity: `CvClickWithDescriptor` ("CV Click - 'Button'") inside `CVScope` ("CV Screen Scope 'msedge.exe  Google'") in `CV_ElementNotFound.xaml`.
+**What went wrong:** The last job in folder Shared — process **CV** (job `37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9`, started 2026-06-12 07:26:49Z, attended, machine MOCK-HOST) — faulted after ~41 seconds. Faulting activity: `CvClickWithDescriptor` ("CV Click - 'Button'") inside `CVScope` ("CV Screen Scope 'msedge.exe  Google'") in `InvoiceEntryUI.xaml`.
 
 **Why:** The `CvClickWithDescriptor` could not match its target on the live `msedge.exe / Google` screen and the find retry loop exhausted its timeout. Timeout expiry surfaces AS `UiPath.CV.ElementNotFoundException` — there is **no** separate `TimeoutException`. Faulting frame: `UiPath.CV.Activities.CvClickWithDescriptor.EndExecute(...)`, propagated through `UiPath.CV.Activities.CVScope.OnFault(...)`.
 

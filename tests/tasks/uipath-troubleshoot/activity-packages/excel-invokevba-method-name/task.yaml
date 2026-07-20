@@ -1,14 +1,14 @@
 task_id: skill-troubleshoot-invokevba-method-name
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose an Invoke VBA failure caused by
   EntryMethodName="ProcessInvoces" (typo, missing an "i") not matching the
   Sub declared in macro.txt (Sub ProcessInvoices). Success = agent matches
   the invoke-vba-entry-method-name playbook AND identifies the typo against
   the correctly-spelled Sub in the code file.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, excel-activities, invoke-vba, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

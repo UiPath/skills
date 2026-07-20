@@ -13,7 +13,7 @@
     "BatchExecutionKey": "3a5c7e9b-2d4f-4a6b-8c1d-9e2f3a4b5c6d",
     "Info": "Get Credential: Orchestrator information is not available. Connection timed out connecting to https://cloud.uipath.com after 30000 ms.\r\n\r\nin Main.xaml\r\n    at GetRobotCredential \"Get Credential\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nUiPath.Core.Activities.OrchestratorCommunicationException: Orchestrator information is not available. Connection timed out connecting to https://cloud.uipath.com after 30000 ms.\r\n   Inner exception: System.Net.WebException: The operation has timed out.",
     "CreationTime": "2026-05-13T19:18:41.864Z",
-    "ReleaseName": "AssetNetworkConnectivity",
+    "ReleaseName": "TenantConfigReader",
     "Type": "Unattended",
     "EnvironmentVariables": "",
     "OutputArguments": "{}",

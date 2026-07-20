@@ -4,7 +4,7 @@ description: >
   a non-firing Integration Service trigger by inspecting the trigger object's
   payload schema (`uip is triggers describe`) and the webhook configuration
   (`uip is webhooks config`). First diagnose-mode test on the IS axis.
-tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, integration-service, connector]
+tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, integration-service, connector, ipe]
 
 run_limits:
   expected_turns: 8

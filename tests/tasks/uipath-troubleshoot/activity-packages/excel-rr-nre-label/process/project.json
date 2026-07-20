@@ -1,7 +1,7 @@
 {
   "name": "ExcelDailyImport",
   "projectId": "e1c2d3e4-5f60-4178-92a3-aa1111bbc8d9",
-  "description": "Repro: Excel Read Range process; workbook is Purview-labeled, Robot user lacks permission, activity fails with bare NRE. Exercises sensitivity-label branch of read-range-null-reference playbook.",
+  "description": "Reads the 'Data' sheet from the daily sales workbook at C:\\Robot\\Data\\sales-2026-05.xlsx into a DataTable via Read Range.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.24.7]",

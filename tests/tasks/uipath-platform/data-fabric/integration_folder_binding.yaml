@@ -12,11 +12,11 @@ description: >
 tags: [uipath-platform, data-fabric, integration, entity-scope, complex-fields, mode:diagnose, lifecycle:setup]
 run_limits:
   expected_turns: 30
-  max_turns: 45
+  max_turns: 60
   turn_timeout: 600
 
 initial_prompt: |
-  I'm setting up two linked lists for a folder-scoped test.
+  I'm setting up two linked UiPath Data Fabric entities for a folder-scoped test.
 
   First, take a look at the folders on the tenant. Pick one and call
   it folder A — that's where these lists will live. If the tenant has
@@ -57,7 +57,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed folders to pick folder A"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+folders\s+list'
+    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+list'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -105,10 +105,12 @@ success_criteria:
       Read the agent's final walk-through. Score 1.0 if the agent correctly
       reported the outcome (succeeded / failed) for ALL FOUR checks AND
       cited a specific platform error string for the two failures. Score
-      0.5 if outcomes are correct for 3 of 4 checks OR failure reasoning is
-      generic ("it failed") without the platform's error text. Score 0.0
-      if 2+ outcomes are wrong (e.g., "scenario 1 succeeded") OR the final
-      schema-read wasn't performed.
+      0.5 if the three scenario outcomes are all correct with cited error
+      strings for the failures, even if the final schema-read is missing or
+      truncated — OR if outcomes are correct for 3 of 4 checks — OR if
+      failure reasoning is generic ("it failed") without the platform's
+      error text. Score 0.0 only if 2+ scenario outcomes are wrong (e.g.,
+      "scenario 1 succeeded").
     weight: 3.5
     pass_threshold: 0.5
 

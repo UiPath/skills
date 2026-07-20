@@ -1,7 +1,7 @@
 {
   "name": "ExcelInvoiceProcess",
   "projectId": "e2c2d3e4-5f60-4178-92a3-ee2222ccd8d9",
-  "description": "Repro: Excel Write Range fails with BusinessException 'Ignore empty source is ineffective' because the source DataTable has 0 rows (Filter DataTable removed everything) and ExcludeHeaders is False. Exercises the empty-source branch of write-range-failures playbook.",
+  "description": "Reads invoices from the source workbook, filters them to the overdue ones, and writes the result to the invoice report workbook via Write Range.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.24.7]",

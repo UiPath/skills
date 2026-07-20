@@ -1,6 +1,6 @@
 {
   "Name": "ContractMerge",
   "ProjectType": "Process",
-  "Description": "Reproduces a Replace Text file-lock failure: Use Word File with Auto Save edits the same shared file every loop iteration, so a save races another access and faults with IOException (being used by another process).",
+  "Description": "Iterates over a recipient list and personalizes a contract Word document by replacing the recipient placeholder for each one.",
   "MainFile": "Main.xaml"
 }

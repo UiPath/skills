@@ -49,9 +49,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete list command: `uip tm requirements list --project-key HEALTH --labels eval-export`"
+    description: "Label-scoped verification list: `uip tm requirements list --project-key HEALTH --labels eval-export` OR `uip tm objectlabel list --project-key HEALTH --object-type Requirement --filter eval-export`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--labels\s+["\x27]?eval-export)uip\s+tm\s+requirements?\s+list\s'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?:(?=.*--labels\s+["\x27]?eval-export)uip\s+tm\s+requirements?\s+list\s|(?=.*--object-type\s+Requirement)(?=.*--filter\s+["\x27]?eval-export)uip\s+tm\s+objectlabel\s+list\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

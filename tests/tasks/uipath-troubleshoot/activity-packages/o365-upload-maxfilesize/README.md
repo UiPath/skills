@@ -7,10 +7,10 @@ agent reached a verified resolution. The fixtures are the verbatim
 ## What the original session uncovered
 
 The user asked why their last job in folder `Shared` failed. The most recent
-job, `ERN_O365_UploadQuotaSize` (key `7fd5e890-f162-4591-a895-e649b09aea02`),
+job, `DocumentUploader` (key `7fd5e890-f162-4591-a895-e649b09aea02`),
 faulted at the legacy **Upload File** activity ("Upload File (point at
 oversize file or near-full drive for quota/size errors)" in
-`O365_UploadQuotaSize.xaml`) inside the Microsoft 365 Scope. Microsoft Graph
+`Main.xaml`) inside the Microsoft 365 Scope. Microsoft Graph
 rejected the chunked upload at upload-session creation with a raw
 `Microsoft.Graph.ServiceException`: `Code: invalidRequest`, `Message: The
 payload of the request was too large`, `Inner error: Code:

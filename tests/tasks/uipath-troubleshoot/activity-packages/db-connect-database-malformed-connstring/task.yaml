@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-connect-database-malformed-connstring
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath diagnostic agent must diagnose a Connect to Database failure where a
   Windows process reads an Excel workbook as a database through an ACE OLE DB
@@ -11,7 +12,7 @@ description: >
   Extended Properties value (Extended Properties="Excel 12.0 Xml;HDR=YES;") and
   recognize this as the Connect to Database failures playbook, branch 1.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

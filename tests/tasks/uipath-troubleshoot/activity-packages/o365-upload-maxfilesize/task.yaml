@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-o365-upload-maxfilesize
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   Faithful replay of a real UiPath troubleshooting investigation. The agent
   runs the uipath-troubleshoot skill against a uip CLI mock whose responses
@@ -15,7 +16,7 @@ description: >
   retrieving trace ID for job") and the replay reproduces that failure —
   the diagnosis must come from jobs get + error logs alone. Success = the
   agent reaches the same root cause as RESOLUTION.md.
-tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, mode:diagnose, o365-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

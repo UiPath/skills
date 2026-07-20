@@ -16,8 +16,8 @@ For RPA robot tasks specifically, prefer [rpa](../rpa/planning.md). For Coded wo
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `display-name` | Process Reference "Name" | Shown in the UI |
-| `name` | Process Reference "Name" |  |
+| `display-name` | Task `Task Name` | Shown in the UI |
+| `name` | Task `Resolved Resource` | Concrete intended resource name and registry query |
 | `folder-path` | Resolved registry `folders[0].fullyQualifiedName` (NOT the sdd.md "Folder") | This is the binding's `folderPath` default — Orchestrator starts the job here at runtime. The sdd.md "Folder" only seeds the registry lookup; it may be a parent/truncated path. See [§ Registry Resolution](#registry-resolution). |
 | `task-type-id` | Registry resolution (see below) | Enables auto-enrichment via `tasks describe`. |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
@@ -47,6 +47,7 @@ If no match is found across both cache files after `registry pull`:
 
 ```markdown
 ## T<n>: Add process task "<display-name>" to "<stage>"
+- name: "<resource-name>"
 - taskTypeId: <entityKey>
 - folder-path: "<folder>"
 - inputs:

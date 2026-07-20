@@ -1,7 +1,7 @@
-# Resolution — GSuite_DriveNameConflict (Shared)
+# Resolution — DriveFileCreator (Shared)
 
 ## Fault
-The last job in folder **Shared** (`GSuite_DriveNameConflict`, job `6c8b1949-2603-437d-86a6-6b82b989fd6a`, Unattended on `MOCK-HOST`) ended **Faulted** ~4s after start. It ran a single GSuite **Create Folder** (`UiPath.GSuite.Activities.CreateFolderConnections`) activity.
+The last job in folder **Shared** (`DriveFileCreator`, job `6c8b1949-2603-437d-86a6-6b82b989fd6a`, Unattended on `MOCK-HOST`) ended **Faulted** ~4s after start. It ran a single GSuite **Create Folder** (`UiPath.GSuite.Activities.CreateFolderConnections`) activity.
 
 ## Cause
 The destination (My Drive root) **already contains more than one item named `dupe-folder`**, and the activity's `ConflictResolution` required resolving to a single existing item (`UseExisting`). Because the name is ambiguous — multiple matches — the activity could not resolve it and threw:

@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-move-outlook-mail-type-mismatch
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Move Outlook Mail Message
   failure caused by a modern-vs-classic type mismatch (Branch 3 of the
@@ -13,10 +14,9 @@ description: >
   recommends the + resource picker OR switching to the classic Move
   Outlook Mail Message (MoveOutlookMessage) with string/MailMessage
   inputs.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

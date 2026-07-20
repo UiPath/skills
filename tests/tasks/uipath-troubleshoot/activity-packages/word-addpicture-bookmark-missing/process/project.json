@@ -1,7 +1,7 @@
 {
   "name": "WordTemplateFill",
   "projectId": "c3c2e1f0-5a60-4178-92a3-cc335599c8d9",
-  "description": "Repro: Word Add Picture process configured InsertRelativeTo=Bookmark with BookmarkName=LogoAnchor, but the runtime document instance lacks that bookmark. Exercises the insertion-target / bookmark-not-found branch of the add-picture-failures playbook (C3).",
+  "description": "Opens an offer-letter template and inserts the signature logo image into the document via Word activities.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.21.0]",

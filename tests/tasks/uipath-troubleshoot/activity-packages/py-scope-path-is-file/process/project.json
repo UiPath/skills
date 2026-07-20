@@ -1,7 +1,7 @@
 {
   "name": "PythonHelloWorld",
   "projectId": "f2b22222-7777-4bbb-8ccc-bb2222229999",
-  "description": "Repro: Python Scope whose Path points at python.exe (the executable) instead of the install folder. Exercises the 'specified Python path is not valid' branch of the python-activities playbook.",
+  "description": "Runs a simple Python hello-world script inside a Python Scope.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Python.Activities": "[1.9.1]",

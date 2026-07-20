@@ -14,7 +14,7 @@ read the null `pass` SecureString. The job faults with an NRE that
 has **no apparent connection to the asset layer** — the asset itself
 is fine.
 
-**What went wrong:** The `AssetSilentFailure` job (started
+**What went wrong:** The `SettingsAssetFetcher` job (started
 2026-05-13T18:02:11Z) faulted ~1.3 seconds after launch with a
 `NullReferenceException` at the `LogMessage` activity, downstream of
 a `Get Credential` activity that completed without any error of its
@@ -53,7 +53,7 @@ layer.
 **Evidence:**
 
 ### Orchestrator (Propagation)
-- Job: AssetSilentFailure — Faulted at 2026-05-13T18:02:12.318Z (ran for ~1.3 seconds)
+- Job: SettingsAssetFetcher — Faulted at 2026-05-13T18:02:12.318Z (ran for ~1.3 seconds)
 - Folder: Remote Debugging (key `5a8c4d3e-9f2b-4a6c-8e1f-2b3c4d5e6f7a`)
 - Executing robot: `RobotUser1` (Connected, Licensed, Asset Administrator)
 - Error log entry count from `Get Credential`: **0** (no error from the activity itself)

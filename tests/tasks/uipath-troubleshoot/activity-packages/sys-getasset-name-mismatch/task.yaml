@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-getasset-name-mismatch
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must troubleshoot a Get Credential failure where
   the workflow's AssetName property is misspelled ("myHiddenAset" —
@@ -6,7 +7,7 @@ description: >
   Success = agent matches the get-asset-not-found playbook AND
   identifies the typo against the correctly-spelled asset
   ("myHiddenAsset") that exists in the target folder.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, system-activities, get-asset, asset-not-found, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 # Inherits from experiments/default.yaml: model, permission_mode, plugins
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides
@@ -36,7 +37,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My GetAssetFailure process is faulting in Orchestrator on every run.
+  My AssetLookupRunner process is faulting in Orchestrator on every run.
   The folder is "Remote Debugging". Can you investigate?
 
   The project source for the failing process is in the current working

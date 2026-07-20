@@ -1,14 +1,14 @@
 task_id: skill-troubleshoot-web-http-timeout
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a FetchReport job fault
   (System.Net.WebException: The operation has timed out.) and match the
   activity-packages/web-activities/playbooks/http-request-timeout.md playbook.
   Replayed from a real staging faulted job.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, web-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "TodoWrite"]
 
 run_limits:
@@ -36,7 +36,7 @@ initial_prompt: |
   My last job in folder Shared just faulted. Job key 3bdb5a85-b6ae-4e1f-b5a5-2488ca74de12. Why
   did it fail and how do I fix it?
 
-  The project source for the failing process is at ./WebRepro/ in the
+  The project source for the failing process is at ./WebApiClient/ in the
   current working directory.
 
 success_criteria:

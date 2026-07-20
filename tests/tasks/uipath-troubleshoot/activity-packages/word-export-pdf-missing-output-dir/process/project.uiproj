@@ -1,6 +1,6 @@
 {
   "Name": "InvoicePdfExport",
   "ProjectType": "Process",
-  "Description": "Reproduces an Export to PDF generic 'Command Failed' caused by the output directory not existing (the activity does not auto-create it; no Create Folder precedes the scope).",
+  "Description": "Opens a Word invoice document and exports it to a PDF file in the output folder.",
   "MainFile": "Main.xaml"
 }

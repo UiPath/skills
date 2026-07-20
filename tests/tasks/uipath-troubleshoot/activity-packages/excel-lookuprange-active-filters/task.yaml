@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-lookup-filters
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Lookup Range "value not found"
   failure caused by an active AutoFilter applied earlier in the same workflow:
@@ -7,10 +8,9 @@ description: >
   hidden from the lookup and the workflow throws "not found". Success = agent
   matches the lookup-range-active-filters playbook AND identifies the active
   filter as the reason the present value is not matched.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, excel-activities, lookup-range, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

@@ -1,6 +1,6 @@
 {
   "Name": "BrandedLetterFill",
   "ProjectType": "Process",
-  "Description": "Reproduces a Replace Text silent miss where the [CompanyName] placeholder in the header/footer is left unchanged because an older UiPath.Word.Activities version scans only the document body.",
+  "Description": "Opens a branded letter Word document and replaces the company-name placeholder with the configured company value.",
   "MainFile": "Main.xaml"
 }

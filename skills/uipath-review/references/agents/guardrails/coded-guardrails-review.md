@@ -77,6 +77,16 @@ Build a `{ validator_id → { middleware_class, validator_class, entity_enum, al
 import_path } }` lookup by joining catalog entries with the SDK class names. Use the fetched content as the sole
 source of truth for class/enum/import names — never memory.
 
+**If `WebFetch` is unavailable or denied**, fall back in order; stop at the first source that yields the
+class/scope/enum names:
+
+1. `curl -fsSL <URL>` via Bash (same two URLs).
+2. Read the installed SDK sources. Locate the packages
+   (`python3 -c "import uipath; print(uipath.__file__)"`, same for `uipath_langchain`) and read the guardrail
+   modules (`uipath/platform/guardrails/`, `uipath_langchain/guardrails/`) for middleware/validator/action classes,
+   scopes, stages, and entity enums.
+3. Neither reachable → SDK-docs skip path in the next section.
+
 ### If the catalog (or SDK docs) is unavailable
 
 Do **not** guess:
@@ -87,6 +97,10 @@ Do **not** guess:
 - **Recommend Mode** (`CODED_GUARDRAIL_RECOMMENDED`) can still detect a missing guardrail from the entry source
   alone (prompt / schema / tool inference); phrase the recommended scope/action generically and note
   "catalog-limited" in the message.
+- **SDK docs unreachable by every fallback** (WebFetch, curl, installed sources) → the
+  `validator_id ↔ Python class` mapping is unverified. Checks that need only the catalog still run; record
+  mapping-dependent checks (scope/stage validity, import paths, class names) under "Rules Skipped" with reason
+  `"SDK docs unavailable"`.
 
 ---
 

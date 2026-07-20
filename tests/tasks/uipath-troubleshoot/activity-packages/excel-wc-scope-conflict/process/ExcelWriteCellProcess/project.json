@@ -1,7 +1,7 @@
 {
   "name": "ExcelWriteCellProcess",
   "projectId": "f3d4e5f6-7081-4289-93b4-11aa1111ccdc",
-  "description": "Repro: Excel Write Cell; Classic Workbook Write Cell nested inside Modern Use Excel File scope on the same workbook. Exercises the scope-conflict variant of branch 1 of the write-cell-failures playbook.",
+  "description": "Reads the 'Sales' sheet from the sales workbook at C:\\Robot\\Data\\sales-2026-05.xlsx and writes a 'Done' status into cell D1 via Write Cell.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.24.7]",

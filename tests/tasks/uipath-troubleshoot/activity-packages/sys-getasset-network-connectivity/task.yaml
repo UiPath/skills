@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-getasset-network-connectivity
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must troubleshoot a Get Credential failure where
   the asset, folder, robot license, and robot roles are all correctly
@@ -10,10 +11,10 @@ description: >
   playbook with multiple sub-causes — the agent's job is to identify
   the family, not pinpoint the exact sub-cause).
 
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, system-activities, get-asset, network-connectivity, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "TodoWrite"]
 
 run_limits:
   expected_turns: 300
@@ -37,7 +38,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My AssetNetworkConnectivity process is faulting in Orchestrator on
+  My TenantConfigReader process is faulting in Orchestrator on
   every run. Can you investigate?
 
   The project source for the failing process is in the current working

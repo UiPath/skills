@@ -227,3 +227,4 @@ If the user asks to fix identified issues: apply corrections to `agent.json`, ru
 11. **Do not create separate guardrails per scope** — combine multiple scopes into a single guardrail's `scopes` array.
 12. **All map-enum keys must exactly match the corresponding enum-list values** — no extra or missing keys. This is the most common correctness error.
 13. **Read [guardrails.md](guardrails.md) before writing any JSON** — discriminator fields, PascalCase constraints, and parameter shapes are specified there and cannot be safely inferred.
+14. **Do NOT use TaskCreate, TaskUpdate, or other task-tracking tools for guardrail edits.** Edit `agent.json` directly — task management tools add bookkeeping turns without benefit and push runs over their turn budget.

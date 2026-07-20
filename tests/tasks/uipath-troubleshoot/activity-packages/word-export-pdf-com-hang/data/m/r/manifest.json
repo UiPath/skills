@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures for export-pdf-com-hang. Export to PDF faults with a COMException because an orphaned WINWORD.EXE blocks the export.",
+  "_doc": "Synthetic fixture set for the Word export-pdf com-hang scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

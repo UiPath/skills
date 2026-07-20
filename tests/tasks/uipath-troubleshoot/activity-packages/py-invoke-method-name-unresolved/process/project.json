@@ -1,7 +1,7 @@
 {
   "name": "PyRecordCleaner",
   "projectId": "e3f4a5b6-c7d8-4293-a4b5-c6d7e8f90234",
-  "description": "Reproduces an Invoke Python Method failure: the target function is defined only under if __name__ == '__main__', so Load Python Script never binds it and Invoke Python Method faults with AttributeError.",
+  "description": "Loads a Python script in a Python Scope and invokes one of its methods to clean a set of records.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Python.Activities": "[1.10.0]",

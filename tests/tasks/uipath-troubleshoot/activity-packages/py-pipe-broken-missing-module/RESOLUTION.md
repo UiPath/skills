@@ -4,7 +4,8 @@
 
 **Root Cause:** The `UiPath.Python.Activities` package runs Python in a
 separate host process and communicates with it over an IPC pipe. The invoked
-script `parse_invoice.py` begins with `import pandas`. The interpreter that
+function `extract_total` in `parse_invoice.py` starts by executing
+`import pandas`. The interpreter that
 `Python Scope` resolves on the robot host (`C:\Program Files\Python311`,
 `Version=Python_311`, `Target=x64`) does **not** have `pandas` installed, so
 when `Invoke Python Method: extract_total` runs, the Python host hits
@@ -58,8 +59,10 @@ interpreter match the script's dependencies.
   underlying cause is hidden.
 
 ### Workflow source (decisive)
-- `process/parse_invoice.py`: first line is `import pandas as pd` — a
-  third-party dependency. `extract_total` calls `pd.read_csv(...)`.
+- `process/parse_invoice.py`: `extract_total` begins with
+  `import pandas as pd` — a third-party dependency — then calls
+  `pd.read_csv(...)`. The import runs at method invocation, which is
+  exactly where the job faulted.
 - `process/Main.xaml`: `Python Scope` `Path="C:\Program Files\Python311"`,
   `Target="x64"`, `Version="Python_311"`. The scope itself opened fine, so
   this is not a path / engine-init failure — the host died at method
@@ -98,7 +101,7 @@ Reproduce out-of-band from the robot's interpreter so the hidden Python
 traceback is visible:
 
 ```bash
-"C:\Program Files\Python311\python.exe" parse_invoice.py
+"C:\Program Files\Python311\python.exe" -c "import pandas"
 ```
 
 This prints the true `ModuleNotFoundError: No module named 'pandas'` that
@@ -112,5 +115,5 @@ UiPath swallowed, confirming the cause before installing.
 - Wrap the invoked Python in `try/except`, log the real exception, and
   re-raise — so a future failure surfaces the Python error instead of a bare
   `Pipe is broken`.
-- Validate the script runs standalone from the robot interpreter before
+- Validate the script's imports resolve from the robot interpreter before
   wiring it into the workflow.

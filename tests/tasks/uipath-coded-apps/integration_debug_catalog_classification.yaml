@@ -39,7 +39,7 @@ initial_prompt: |
   {
     "faultA": {
       "root_cause": "<one-sentence root cause>",
-      "fix": "<the canonical fix from debug.md — name the env var / file / rule that needs to change>"
+      "fix": "<the canonical fix from debug.md — name the config field / file / rule that needs to change>"
     },
     "faultB": { "root_cause": "...", "fix": "..." },
     "faultC": { "root_cause": "...", "fix": "..." }
@@ -67,23 +67,28 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # Skill change #1562 moved SDK config from .env/VITE_UIPATH_* to uipath.json;
+  # debug.md's canonical fixes now say "set baseUrl in uipath.json" / "update
+  # the scope field in uipath.json". The regexes accept the current canonical
+  # phrasing and the specific value — but still reject vague answers
+  # ('check CORS settings', 'check your scopes') and dead VITE_* env vars.
   - type: json_check
-    description: "Fault A — fix names the correct API subdomain or the env var being changed (debug.md: 'Use https://api.uipath.com not cloud.uipath.com'). Tight regex: agent must mention the API hostname or VITE_UIPATH_BASE_URL — NOT just 'cloud.uipath.com' (which is the wrong value, valid only for the OAuth redirect/UI host elsewhere)."
+    description: "Fault A — fix names the API hostname or the baseUrl config field (debug.md: 'Set baseUrl in uipath.json to https://api.uipath.com'). NOT just 'cloud.uipath.com' (the wrong value)."
     path: "diagnosis.json"
     assertions:
       - expression: "faultA.fix"
         operator: regex
-        expected: "(?i)(VITE_UIPATH_BASE_URL|api\\.uipath\\.com)"
+        expected: "(?i)(api\\.uipath\\.com|\\bbaseUrl\\b)"
     weight: 2.5
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Fault B — fix names the scope env var being changed or the specific OR.Tasks scope being added (debug.md: 'Mismatched scopes fail silently with 401/403' — Rule #16). Tight regex: bare 'scope' alone no longer passes; agent must name the env var or the specific OR.Tasks scope."
+    description: "Fault B — fix names the specific OR.Tasks scope or the uipath.json scope field (debug.md: 'Update the scope field in uipath.json with the missing scope' — Rule #16). Bare 'scope' with no config location still fails."
     path: "diagnosis.json"
     assertions:
       - expression: "faultB.fix"
         operator: regex
-        expected: "(?i)(VITE_UIPATH_SCOPE|OR\\.Tasks)"
+        expected: "(?i)(OR\\.Tasks|scope[^.;]{0,60}uipath\\.json|uipath\\.json[^.;]{0,60}scope)"
     weight: 2.5
     pass_threshold: 1.0
 

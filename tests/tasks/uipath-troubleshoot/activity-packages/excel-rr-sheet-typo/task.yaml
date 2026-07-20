@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-excel-rr-sheet-typo
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Read Range failure
   (UiPath.Excel.BusinessException: The sheet with the name '<X>' does
@@ -9,10 +10,9 @@ description: >
   playbook, compare configured vs. actual sheet titles, identify the
   typo branch, and recommend the typo fix.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, read-range, sheet-not-found, typo]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-lookup-invalid-range
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a classic Lookup Range failure
   caused by the Range property set to a literal empty string "" instead of
@@ -7,10 +8,9 @@ description: >
   range value (a whole-sheet search requires the Range field to be blank, not
   ""). Success = agent matches the lookup-range-invalid-range playbook AND
   identifies the empty-string Range (found in Main.xaml) as the cause.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, excel-activities, lookup-range, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

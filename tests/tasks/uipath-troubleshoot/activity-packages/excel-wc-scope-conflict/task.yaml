@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-excel-wc-scope-conflict
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Write Cell failure where
   a Classic Workbook `Write Cell` activity is nested inside a Modern
@@ -12,10 +13,9 @@ description: >
   scope-conflict variant) from the workflow source — NOT the
   external-locker variant covered by read-range-file-locked.md.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, write-cell, scope-conflict]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

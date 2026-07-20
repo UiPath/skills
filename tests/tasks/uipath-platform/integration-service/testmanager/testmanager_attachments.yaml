@@ -8,6 +8,7 @@ tags: [uipath-platform, integration, integration-service, test-manager, resource
 
 run_limits:
   expected_turns: 20
+  max_turns: 35
 
 sandbox:
   driver: tempdir

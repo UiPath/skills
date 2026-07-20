@@ -14,7 +14,7 @@ run_limits:
   turn_timeout: 900
 
 initial_prompt: |
-  We have a movie list called `CodeEvalTestEntity` already loaded up
+  We have a movie UiPath Data Fabric entity called `CodeEvalTestEntity` already loaded up
   with 20 rows. Please help me poke at it — no changes I don't ask
   for, and please don't delete anything.
 

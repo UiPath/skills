@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-replace-text-com-busy
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Replace Text COM-interop
   failure where WINWORD.EXE is busy (another Word instance already running on
@@ -7,10 +8,9 @@ description: >
   replace-text-com-busy playbook AND recommends clearing the busy/locked Word
   session (Kill Process WINWORD before the scope, ensure not open elsewhere)
   and/or surfacing a blocking dialog, without fabricating host actions.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, replace-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

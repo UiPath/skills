@@ -2,7 +2,7 @@
 
 ---
 
-**Root Cause:** The robot host running the `AssetNetworkConnectivity`
+**Root Cause:** The robot host running the `TenantConfigReader`
 job (`RobotUser1` on `MOCK-HOST`) cannot reach the Orchestrator URL.
 The HTTP call from the `Get Credential` activity to Orchestrator times
 out. Orchestrator's runtime surfaces this as "Orchestrator information
@@ -21,7 +21,7 @@ we cannot narrow it further from the troubleshooting evidence alone:
 - TLS Extended Master Secret (EMS) incompatibility (~1 in 256 intermittent failures)
 - Orchestrator auth session expired in a long-running process
 
-**What went wrong:** The `AssetNetworkConnectivity` job (started
+**What went wrong:** The `TenantConfigReader` job (started
 2026-05-13T19:18:42Z) faulted ~31 seconds after launch — the time
 it took the HTTP client to give up on the Orchestrator connection.
 
@@ -45,7 +45,7 @@ network path or its local SDK configuration.
 **Evidence:**
 
 ### Orchestrator (Propagation — but from CLI session, not robot)
-- Job: AssetNetworkConnectivity — Faulted at 2026-05-13T19:19:13.812Z (ran for ~31 seconds — typical HTTP-timeout duration)
+- Job: TenantConfigReader — Faulted at 2026-05-13T19:19:13.812Z (ran for ~31 seconds — typical HTTP-timeout duration)
 - Folder: Remote Debugging (key `6b9d2c5e-3a4f-4b8c-9d1e-2f3a4b5c6d7e`) — folder exists when queried from the CLI session
 - Executing robot: `RobotUser1` (Connected, Licensed, has Asset Administrator role)
 

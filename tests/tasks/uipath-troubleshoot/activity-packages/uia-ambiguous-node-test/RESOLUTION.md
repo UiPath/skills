@@ -1,8 +1,8 @@
 # Final Resolution
 
-Root Cause: `NClick "Click 'Airi Satou'"` in `Amb.xaml` (IdRef `NClick_1`) faulted with `UiPath.UIAutomationNext.Exceptions.NodeAmbiguousException`. The target-find service walked the live DataTables grid, accumulated more than one node satisfying the activity's `FuzzySelectorArgument`, and refused to dispatch — the click never executed. Source inspection of `Amb.xaml` proves the cause is branch **(B)** of the `ambiguous-selector.md` playbook decision tree: the failure happens against a repeated UI pattern (table rows / cells), and the authored selector does not narrow to one specific cell.
+Root Cause: `NClick "Click 'Airi Satou'"` in `EmployeeRow.xaml` (IdRef `NClick_1`) faulted with `UiPath.UIAutomationNext.Exceptions.NodeAmbiguousException`. The target-find service walked the live DataTables grid, accumulated more than one node satisfying the activity's `FuzzySelectorArgument`, and refused to dispatch — the click never executed. Source inspection of `EmployeeRow.xaml` proves the cause is branch **(B)** of the `ambiguous-selector.md` playbook decision tree: the failure happens against a repeated UI pattern (table rows / cells), and the authored selector does not narrow to one specific cell.
 
-The activity's selector (verbatim from `Amb.xaml`, `SearchSteps='FuzzySelector'`, no `FullSelectorArgument`):
+The activity's selector (verbatim from `EmployeeRow.xaml`, `SearchSteps='FuzzySelector'`, no `FullSelectorArgument`):
 
 ```
 <webctrl id='example' matching:id='fuzzy' fuzzylevel:id='0.0' tag='TABLE' />
@@ -11,7 +11,7 @@ The activity's selector (verbatim from `Amb.xaml`, `SearchSteps='FuzzySelector'`
 
 The outer segment uniquely identifies the DataTables demo grid via `id='example'` (`fuzzylevel:id='0.0'` = exact match). The inner segment `<webctrl tag='TD' />` uses ONLY the generic `tag` attribute and matches EVERY `<td>` cell rendered in that table — the literal `Airi Satou` row value appears nowhere in the selector (only in the activity's `DisplayName`). The find phase short-circuits as soon as >1 match is detected.
 
-What went wrong: The robot started job `79e6d2c6-ab69-4e32-a831-d80f2f6036b6` (process `ERN`, entry point `Amb.xaml`) at 2026-05-22T09:26:21Z on host `MOCK-HOST` (scrubbed from `UIP-PW06WJSK`). The NApplicationCard "Edge DataTables  Javascript table library" attached `ByInstance` to an Edge browser window matching `<html app='msedge.exe' title='DataTables | Javascript table library' />` on `https://datatables.net/`. The NClick "Click 'Airi Satou'" then began target resolution. `TargetCommonLogic.GetSearchResultAsync` walked the page DOM, found multiple `<td>` cells satisfying the inner selector segment, and threw `NodeAmbiguousException` with friendly message: "Multiple similar matches found. Could not uniquely identify the user-interface element for this action. Edit the element, run Validation, and add anchors in order to ensure the element is uniquely identified." Job duration ~32 s. Healing Agent is disabled at the job level (`AutopilotForRobots.Enabled=false`, `HealingEnabled=false`), and per the `ambiguous-selector.md` playbook, HA's `FindAlternativeOriginalTargetHiddenStrategy` short-circuits on `NodeAmbiguousException` even when enabled — so the absence of recovery data is correct behavior, not a misconfiguration.
+What went wrong: The robot started job `79e6d2c6-ab69-4e32-a831-d80f2f6036b6` (process `ERN`, entry point `EmployeeRow.xaml`) at 2026-05-22T09:26:21Z on host `MOCK-HOST` (scrubbed from `UIP-PW06WJSK`). The NApplicationCard "Edge DataTables  Javascript table library" attached `ByInstance` to an Edge browser window matching `<html app='msedge.exe' title='DataTables | Javascript table library' />` on `https://datatables.net/`. The NClick "Click 'Airi Satou'" then began target resolution. `TargetCommonLogic.GetSearchResultAsync` walked the page DOM, found multiple `<td>` cells satisfying the inner selector segment, and threw `NodeAmbiguousException` with friendly message: "Multiple similar matches found. Could not uniquely identify the user-interface element for this action. Edit the element, run Validation, and add anchors in order to ensure the element is uniquely identified." Job duration ~32 s. Healing Agent is disabled at the job level (`AutopilotForRobots.Enabled=false`, `HealingEnabled=false`), and per the `ambiguous-selector.md` playbook, HA's `FindAlternativeOriginalTargetHiddenStrategy` short-circuits on `NodeAmbiguousException` even when enabled — so the absence of recovery data is correct behavior, not a misconfiguration.
 
 Playbook branch walk (`ambiguous-selector.md` → ## Resolution → Decision tree):
 
@@ -25,7 +25,7 @@ Playbook branch walk (`ambiguous-selector.md` → ## Resolution → Decision tre
 Evidence:
 
 ### UI Automation (Root Cause)
-- Failing activity: `NClick "Click 'Airi Satou'"` (`IdRef=NClick_1`, Version=V5) in `Amb.xaml`, inside `NApplicationCard "Edge DataTables  Javascript table library"` (`IdRef=NApplicationCard_1`), inside Sequence "Do" inside Sequence "Amb".
+- Failing activity: `NClick "Click 'Airi Satou'"` (`IdRef=NClick_1`, Version=V5) in `EmployeeRow.xaml`, inside `NApplicationCard "Edge DataTables  Javascript table library"` (`IdRef=NApplicationCard_1`), inside Sequence "Do" inside Sequence "Amb".
 - Exception: `UiPath.UIAutomationNext.Exceptions.NodeAmbiguousException`, friendly message (resource key `Strings.NodeNotFoundMultipleMatches`):
   > Multiple similar matches found.
   >
@@ -43,7 +43,7 @@ Evidence:
 - No `Retry Scope`, no `Try/Catch`, no `Check App State` wraps the failing `NClick` — direct child of Sequence "Do" inside `NApplicationCard.Body`. Ambiguity surfaces as a fault, not masked.
 
 ### Orchestrator (Propagation)
-- Process `ERN`, entry point `Amb.xaml`.
+- Process `ERN`, entry point `EmployeeRow.xaml`.
 - Job `79e6d2c6-ab69-4e32-a831-d80f2f6036b6` in folder `Shared` (key `defb8e05-e36b-4c36-bf11-0b4d08ce6cd1`).
 - Job state: `Faulted`. Healing Agent: disabled (`AutopilotForRobots.Enabled=false`, `HealingEnabled=false`) — no recovery data produced.
 
@@ -75,10 +75,10 @@ After applying the fix, re-run Studio's **Validation** on the `NClick`'s Target 
 - **Do NOT match a `selector-failure-*.md` playbook.** Those target `NodeNotFoundException` / `SelectorNotFoundException` (zero matches). This case is `NodeAmbiguousException` (multiple matches) — a different exception with a different fix path.
 
 ### Orchestrator (Propagation)
-Restart the job from Orchestrator after the `Amb.xaml` fix is published. Faulted jobs do not auto-retry process-level faults; the user must restart manually or republish a new version of `ERN`.
+Restart the job from Orchestrator after the `EmployeeRow.xaml` fix is published. Faulted jobs do not auto-retry process-level faults; the user must restart manually or republish a new version of `ERN`.
 
 ## Investigation summary
 
 | # | Hypothesis | Confidence | Status | Root Cause? | Key Evidence | Resolution |
 |---|------------|------------|--------|-------------|--------------|------------|
-| H1 | `NClick "Click 'Airi Satou'"` faulted with `NodeAmbiguousException` because its `FuzzySelectorArgument` inner segment `<webctrl tag='TD' />` matches every `<td>` cell in the DataTables demo grid (`id='example'`). Branch (B) of the `ambiguous-selector.md` playbook — repeated UI pattern without a row anchor or idx qualifier. | high | confirmed | yes | Friendly message "Multiple similar matches found"; stack origin `TargetCommonLogic.GetSearchResultAsync → NClick.SearchAndSetTargetAsync` (find-phase short-circuit, no verify frames, no HA frames); selector verbatim from `Amb.xaml` has no row-disambiguating attribute; outer segment specific (`id='example'`) eliminates branch (A); single-window scope eliminates branch (C); no Retry Scope wrapper. | Branch (B) — add a row anchor (preferred) OR `aaname='Airi Satou'` / `innertext='Airi Satou'` on the inner `<webctrl tag='TD' />` segment. Validate in Studio before publishing. Do NOT extend Timeout, switch InteractionMode, enable HA, or wrap in Retry Scope. |
+| H1 | `NClick "Click 'Airi Satou'"` faulted with `NodeAmbiguousException` because its `FuzzySelectorArgument` inner segment `<webctrl tag='TD' />` matches every `<td>` cell in the DataTables demo grid (`id='example'`). Branch (B) of the `ambiguous-selector.md` playbook — repeated UI pattern without a row anchor or idx qualifier. | high | confirmed | yes | Friendly message "Multiple similar matches found"; stack origin `TargetCommonLogic.GetSearchResultAsync → NClick.SearchAndSetTargetAsync` (find-phase short-circuit, no verify frames, no HA frames); selector verbatim from `EmployeeRow.xaml` has no row-disambiguating attribute; outer segment specific (`id='example'`) eliminates branch (A); single-window scope eliminates branch (C); no Retry Scope wrapper. | Branch (B) — add a row anchor (preferred) OR `aaname='Airi Satou'` / `innertext='Airi Satou'` on the inner `<webctrl tag='TD' />` segment. Validate in Studio before publishing. Do NOT extend Timeout, switch InteractionMode, enable HA, or wrap in Retry Scope. |

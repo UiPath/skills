@@ -1,0 +1,48 @@
+task_id: skill-platform-queue-progress-e2e
+description: >
+  E2E queue-item metadata lifecycle: create a queue, add one item, then triage
+  it (reprioritize to High and edit its specific content). Verifies tenant state
+  directly. The New → InProgress → terminal transitions are driven by a robot
+  dequeuing the item (Orchestrator's StartTransaction, no management CLI surface),
+  so they're out of scope here; this covers the metadata surface the skill exposes.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, queues]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  I need a work queue set up in one of my folders, with a single item in it that
+  I've triaged. The folder path (`folder_a_path`) and a unique prefix (`uuid8`)
+  are in `seed.json` — use the prefix in the names so nothing clashes.
+
+  - Create a queue named `e2e-q-<uuid8>`.
+  - Add one work item to it.
+  - Triage that item: bump it to High priority and set its content so it carries
+    `status` = `triaged`.
+
+  Leave the item in place at the end so I can review it. Don't ask for approval,
+  don't pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: queue holds a High-priority item with status=triaged"
+    command: "python3 $TASK_DIR/check_queue_progress.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

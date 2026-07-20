@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-healing-agent-disabled-no-consumption
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   Faithful replay of a real uipath-troubleshoot investigation. A user asks
   whether the Healing Agent ran on their last job in folder Shared, whether
@@ -9,7 +10,7 @@ description: >
   archive is an empty 22-byte ZIP, and zero units were consumed. The job
   itself faulted on an unrelated UI Automation NodeNotFoundException.
   Success = the agent reaches the same conclusion as RESOLUTION.md.
-tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, healing-agent, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

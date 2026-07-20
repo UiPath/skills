@@ -1,6 +1,6 @@
 {
   "Name": "DailyInvoiceLoad",
   "ProjectType": "Process",
-  "Description": "Reproduces a Connect to Database failure caused by the target Excel workbook being held open by another process (file lock / sharing violation).",
+  "Description": "Loads the daily invoice workbook by connecting to it as a database and running a SELECT over [Invoices$] into a DataTable.",
   "MainFile": "Main.xaml"
 }

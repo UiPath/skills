@@ -11,11 +11,16 @@ UiPath.Excel.BusinessException: The sheet with the name 'Quarterly Data' does no
 
 ## What this scenario uncovers
 
-**Expected outcome:** The agent matches the playbook AND
-recommends a host-side byte-compare (the PowerShell snippet from
-the playbook) to identify the differing code points. The agent
-must NOT confidently pick a branch (typo, case, rename) the CLI
-evidence cannot confirm.
+**Expected outcome:** The agent matches the playbook AND either
+(a) identifies the `U+00A0` vs `U+0020` mismatch from the byte
+content of the `Get Workbook Sheets` log evidence — the JSON tool
+output preserves the real code points, and an LLM agent reads
+bytes, not pixels — or (b) narrows to the whitespace/look-alike
+branches and recommends the host-side byte-compare (the PowerShell
+snippet from the playbook) to identify the code point. The agent
+must NOT assert a specific code point without byte-level evidence,
+and must NOT pick a branch (typo, case, rename) the CLI evidence
+rules out.
 
 **The branches that COULD apply** without further evidence:
 
@@ -37,9 +42,10 @@ evidence cannot confirm.
 - Dynamic expression resolved wrong (branch 7) — workflow source
   shows a literal `SheetName: "Quarterly Data"`.
 
-The agent must NOT guess between the remaining branches without
-host-side evidence. Confident guessing is the failure mode this
-test catches.
+The agent may resolve between the remaining branches by inspecting
+the bytes the job-log evidence already carries; what it must NOT do
+is assert a specific code point it never inspected. Unsupported
+confident guessing is the failure mode this test catches.
 
 ## How this test reproduces it
 
@@ -52,12 +58,14 @@ test catches.
 
 The expected investigation chain: `folders list-current-user` →
 `jobs list --state Faulted` → `jobs get` → `jobs logs` → workflow
-source review → recognize that all visible names match → STOP and
-recommend the host-side byte-compare command from the playbook.
+source review → recognize that all visible names match → identify
+the NBSP from the log bytes, or recommend the host-side
+byte-compare command from the playbook.
 
 > **Note on fixtures.** Synthetic. The actual sheet name in the
-> fixture log message uses the Unicode escape ` ` in JSON,
-> which serializes as a real non-breaking space in the response.
-> When the agent reads it, the NBSP renders identically to a
-> regular space in every terminal and editor — but the bytes
-> differ.
+> fixture log message is stored as a real non-breaking space byte
+> in the mock response. It renders identically to a regular space
+> for a human reader, but the bytes reach the agent's tool output
+> intact — so byte-level identification is a legitimate diagnosis
+> path. Keep the raw NBSP byte in the mock (a six-character
+> backslash-u escape would disclose the answer as plain ASCII).

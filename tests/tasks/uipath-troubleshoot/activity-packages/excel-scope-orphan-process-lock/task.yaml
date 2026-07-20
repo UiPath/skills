@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-excel-scope-orphan-lock
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Classic Excel Application
   Scope failure (BusinessException 'Failed opening the Excel file.
@@ -12,10 +13,9 @@ description: >
   recommend clearing the orphan plus fixing what leaves orphans, and
   scope any Kill Process EXCEL advice to dedicated unattended hosts.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, excel-application-scope, orphan-process-lock]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

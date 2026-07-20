@@ -4,7 +4,7 @@ description: >
   runs the uipath-troubleshoot skill against a uip CLI mock whose responses
   are the verbatim, scrubbed sub-agent outputs from the real session
   (.local/investigations/raw/*.json). The most-recent Faulted job in folder
-  Shared (GSuite_AddSheetNameConflict, job 2fbf6ba4-b347-462f-a83e-33c6c34bbea6)
+  Shared (SheetTabBuilder, job 2fbf6ba4-b347-462f-a83e-33c6c34bbea6)
   ran a single GSuite Add Sheet activity that hit a duplicate sheet-name
   conflict: the target spreadsheet already contained a tab matching the
   configured SheetName and ConflictResolution was left at Fail, so the activity
@@ -12,7 +12,7 @@ description: >
   the same root cause as RESOLUTION.md: a deterministic name-conflict
   (ConflictResolution=Fail + a pre-existing same-named sheet), NOT a
   connection/auth, 404, invalid-range, or transient failure.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, faithful-replay, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 # Inherits from experiments/default.yaml: model, permission_mode, plugins
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides

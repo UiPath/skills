@@ -1,7 +1,7 @@
 {
   "name": "ServerAppend",
   "projectId": "f4a5b6c7-d8e9-4193-c4a5-b6c7d8e9f001",
-  "description": "Reproduces an Append Text COM startup failure on a server with no desktop Word installed (REGDB_E_CLASSNOTREG / 'make sure Word application is installed').",
+  "description": "Opens a Word document on an unattended robot and appends a processing note to it.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

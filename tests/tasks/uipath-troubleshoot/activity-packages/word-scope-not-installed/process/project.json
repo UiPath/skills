@@ -1,7 +1,7 @@
 {
   "name": "DocGenerator",
   "projectId": "a1b2c3d4-e5f6-4071-8293-a4b5c6d7e801",
-  "description": "Reproduces a classic Word Application Scope failure caused by Microsoft Word not being installed on the robot host (REGDB_E_CLASSNOTREG).",
+  "description": "Generates a document by opening a template and replacing the customer-name placeholder with the customer name via Word activities.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

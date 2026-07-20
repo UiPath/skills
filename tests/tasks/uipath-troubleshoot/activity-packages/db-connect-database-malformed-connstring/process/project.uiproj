@@ -1,6 +1,6 @@
 {
   "Name": "MonthlyReconImport",
   "ProjectType": "Process",
-  "Description": "Reproduces a Connect to Database failure caused by a malformed ACE OLE DB connection string (unquoted Extended Properties).",
+  "Description": "Imports the monthly reconciliation data by connecting to an Excel workbook as a database and running a SELECT over [Sheet1$] into a DataTable.",
   "MainFile": "Main.xaml"
 }

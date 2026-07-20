@@ -1,7 +1,7 @@
 {
   "name": "ContractPdfExport",
   "projectId": "a1b2c3d4-e5f6-4708-9a1b-2c3d4e5f6071",
-  "description": "Reproduces a Save Document as PDF COM wrong-thread fault (0x8001010E RPC_E_WRONG_THREAD) where Word Application Scope attaches to an already-open external WINWORD.EXE that closes mid-run before the export.",
+  "description": "Opens a contract Word document and saves it as a PDF in the output folder.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",
