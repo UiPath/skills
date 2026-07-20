@@ -240,7 +240,7 @@ Never re-ask for anything the user already provided. The same pattern applies to
 **Creating the OAuth app:** Run this single command. `--redirect-uri` takes **comma-separated** values — register BOTH the local dev server and the org portal base, so login works in dev and after deploy:
 
 - `http://localhost:25173` — local dev server
-- `<CLOUD_URL>/<ORG>/portal_` — deployed app base; `<CLOUD_URL>` and `<ORG>` are the `cloudUrl` (`Data.BaseUrl`) and `orgName` (`Data.Organization`) extracted in Phase 1, so they track the logged-in environment (e.g. `https://alpha.uipath.com/acme/portal_`)
+- `<CLOUD_URL>/<ORG>/portal_` — deployed app base; `<CLOUD_URL>` and `<ORG>` are the `cloudUrl` (`Data.BaseUrl`) and `orgName` (`Data.Organization`) extracted in Phase 1, so they track the logged-in environment (e.g. `https://cloud.uipath.com/acme/portal_`)
 
 ```bash
 uip admin external-apps create "UiPath Dashboard - <DASHBOARD_NAME>" \
