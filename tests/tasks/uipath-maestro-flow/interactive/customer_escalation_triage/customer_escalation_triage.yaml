@@ -89,7 +89,12 @@ success_criteria:
 
   - type: run_command
     description: "Generated customer-escalation Flow validates without errors"
-    command: "uip maestro flow validate CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow --output json"
+    # Routes the raw `uip maestro flow validate ... --output json` through the
+    # shared harness so the grader's FIRST `uip maestro` call survives the
+    # maestro-tool plugin cold-start race ("unknown command 'maestro'") that
+    # fails a bare CLI command string. Same verb, same assertion (exit 0), just
+    # retried past the transient plugin-load error.
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0

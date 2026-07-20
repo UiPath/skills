@@ -39,6 +39,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from typing import Any, Iterable, Sequence
 
 
@@ -53,7 +54,45 @@ from typing import Any, Iterable, Sequence
 _LAST_DEBUG_RAW: str | None = None
 
 
+# The `maestro` command group is a lazily-registered `uip` plugin
+# (`maestro-tool`, CommandPrefix "maestro"), not a core verb. The FIRST
+# `uip maestro ...` invocation in a fresh process can race plugin registration
+# and fail with "unknown command 'maestro'" before the plugin loads; the next
+# invocation succeeds once it is registered. This surfaced in the interactive
+# customer-escalation-triage eval: the grader's first post-run call
+# (`uip maestro flow validate`) cold-started and returned exit 3 /
+# "unknown command 'maestro'", while the very next call (`flow debug`, same
+# sandbox, seconds later) ran clean. Retry only on this signature so a genuine
+# validation or runtime error is still returned immediately.
+_COLD_PLUGIN_MARKER = "unknown command 'maestro'"
+
+
 # ── Public helpers ──────────────────────────────────────────────────────────
+
+
+def _run_maestro_flow(
+    args: Sequence[str],
+    *,
+    timeout: int,
+    retries: int = 3,
+    backoff_seconds: float = 2.0,
+) -> subprocess.CompletedProcess:
+    """Run ``uip maestro flow <args>`` capturing output, retrying past the
+    transient cold plugin-load error (see ``_COLD_PLUGIN_MARKER``).
+
+    Returns the ``CompletedProcess`` of the last attempt. A non-cold-start
+    failure (real validation/runtime error) is returned on the first attempt so
+    callers observe the true result without waiting out the retries."""
+    cmd = ["uip", "maestro", "flow", *args]
+    result = None
+    for attempt in range(retries):
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        combined = f"{result.stdout}\n{result.stderr}"
+        if result.returncode == 0 or _COLD_PLUGIN_MARKER not in combined:
+            return result
+        if attempt + 1 < retries:
+            time.sleep(backoff_seconds)
+    return result
 
 
 def run_debug(
@@ -71,12 +110,12 @@ def run_debug(
     ``id`` must match a ``variables.globals[]`` entry with ``direction:"in"`` and
     ``type:"file"`` — see :func:`read_flow_file_input_vars`."""
     project_dir = _find_project(project_glob)
-    cmd = ["uip", "maestro", "flow", "debug", project_dir, "--output", "json"]
+    args = ["debug", project_dir, "--output", "json"]
     if inputs is not None:
-        cmd.extend(["--inputs", json.dumps(inputs)])
+        args.extend(["--inputs", json.dumps(inputs)])
     for var_id, local_path in (attachments or {}).items():
-        cmd.extend(["--attachment", f"{var_id}={local_path}"])
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        args.extend(["--attachment", f"{var_id}={local_path}"])
+    r = _run_maestro_flow(args, timeout=timeout)
     global _LAST_DEBUG_RAW
     _LAST_DEBUG_RAW = r.stdout
     if r.returncode != 0:
@@ -89,6 +128,47 @@ def run_debug(
     if status != "Completed":
         _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}")
     return payload
+
+
+def run_validate(
+    flow_file: str | None = None,
+    *,
+    project_glob: str = "**/project.uiproj",
+    strict_bindings: bool = False,
+    timeout: int = 180,
+) -> None:
+    """Validate a generated ``.flow`` against the Flow schema via
+    ``uip maestro flow validate --output json``, retrying past the transient
+    cold plugin-load error. Exits nonzero (via ``_fail``) on any real
+    validation error, so it drops straight into a ``run_command`` criterion with
+    ``expected_exit_code: 0`` while staying resilient to the plugin cold-start
+    that a raw ``uip maestro flow validate`` command string cannot survive.
+
+    ``flow_file`` — explicit path to the ``.flow``. When omitted, the single
+    ``.flow`` under the located Flow project is used."""
+    if flow_file is None:
+        project_dir = _find_project(project_glob)
+        flows = glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
+        if not flows:
+            _fail(f"No .flow file found under {project_dir}")
+        if len(flows) > 1:
+            joined = "\n  - ".join(sorted(flows))
+            _fail(f"Multiple .flow files found — pass an explicit path:\n  - {joined}")
+        flow_file = flows[0]
+    elif not os.path.isfile(flow_file):
+        _fail(f"Flow file not found: {flow_file}")
+    args = ["validate", flow_file, "--output", "json"]
+    if strict_bindings:
+        args.append("--strict-bindings")
+    r = _run_maestro_flow(args, timeout=timeout)
+    if r.returncode != 0:
+        _fail(f"flow validate exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}")
+    data = _parse_json(r.stdout)
+    if data is not None:
+        result = _get_ci(data, "Result")
+        if isinstance(result, str) and result.lower() not in ("success", "valid"):
+            _fail(f"flow validate reported Result={result!r}\n{r.stdout}")
+    print(f"OK: {flow_file} validates against the Flow schema")
 
 
 def assert_flow_has_node_type(

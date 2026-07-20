@@ -6,12 +6,14 @@ real tenant run (as happened with the nested-output flattening bug).
 """
 
 import os
+import subprocess
 import sys
 
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import flow_check  # noqa: E402
 from flow_check import (  # noqa: E402
     assert_flow_has_any_node_type,
     assert_flow_has_api_node_targeting,
@@ -22,6 +24,7 @@ from flow_check import (  # noqa: E402
     assert_output_value,
     assert_outputs_contain,
     collect_outputs,
+    run_validate,
 )
 
 
@@ -613,3 +616,97 @@ def test_collect_outputs_pascalcase_matches_camelcase():
         }
     }
     assert sorted(map(str, collect_outputs(camel))) == sorted(map(str, collect_outputs(pascal)))
+
+
+# ── maestro-tool plugin cold-start resilience ────────────────────────────────
+
+
+_COLD_STDOUT = (
+    '{\n  "Result": "ValidationError",\n  "ErrorCode": "invalid_argument",\n'
+    '  "Message": "error: unknown command \'maestro\'",\n'
+    '  "Retry": "RetryWillNotFix"\n}'
+)
+_VALID_STDOUT = (
+    '{\n  "Result": "Success",\n  "Code": "FlowValidate",\n'
+    '  "Data": {"Status": "Valid"}\n}'
+)
+
+
+def _cp(returncode, stdout="", stderr=""):
+    return subprocess.CompletedProcess(
+        args=["uip", "maestro", "flow"], returncode=returncode, stdout=stdout, stderr=stderr
+    )
+
+
+def _stub_runs(monkeypatch, results):
+    """Feed ``_run_maestro_flow`` a queue of CompletedProcess results and record
+    how many subprocess invocations happened. Also stubs sleep to keep the
+    retry backoff instant under test."""
+    calls = {"n": 0}
+    queue = list(results)
+
+    def fake_run(cmd, **kwargs):
+        calls["n"] += 1
+        return queue.pop(0)
+
+    monkeypatch.setattr(flow_check.subprocess, "run", fake_run)
+    monkeypatch.setattr(flow_check.time, "sleep", lambda *_: None)
+    return calls
+
+
+def test_run_maestro_flow_retries_past_cold_plugin(monkeypatch):
+    """First call cold-starts the plugin ('unknown command maestro'); the retry
+    succeeds. The success result is returned."""
+    calls = _stub_runs(monkeypatch, [_cp(3, _COLD_STDOUT), _cp(0, _VALID_STDOUT)])
+    r = flow_check._run_maestro_flow(["validate", "x.flow"], timeout=10)
+    assert r.returncode == 0
+    assert calls["n"] == 2
+
+
+def test_run_maestro_flow_does_not_retry_real_error(monkeypatch):
+    """A genuine validation error (no cold-start marker) is returned on the
+    first attempt — no wasted retries."""
+    real_err = '{\n  "Result": "ValidationError",\n  "Message": "node X missing port"\n}'
+    calls = _stub_runs(monkeypatch, [_cp(3, real_err)])
+    r = flow_check._run_maestro_flow(["validate", "x.flow"], timeout=10)
+    assert r.returncode == 3
+    assert calls["n"] == 1
+
+
+def test_run_maestro_flow_exhausts_retries(monkeypatch):
+    """A persistent cold-start marker exhausts the retry budget and returns the
+    last (failed) result rather than looping forever."""
+    calls = _stub_runs(monkeypatch, [_cp(3, _COLD_STDOUT)] * 3)
+    r = flow_check._run_maestro_flow(["validate", "x.flow"], timeout=10, retries=3)
+    assert r.returncode == 3
+    assert calls["n"] == 3
+
+
+def test_run_validate_passes_on_valid_flow(monkeypatch, tmp_path, capsys):
+    flow = tmp_path / "Sample.flow"
+    flow.write_text("{}", encoding="utf-8")
+    _stub_runs(monkeypatch, [_cp(0, _VALID_STDOUT)])
+    run_validate(str(flow))
+    assert "validates against the Flow schema" in capsys.readouterr().out
+
+
+def test_run_validate_survives_cold_plugin_then_valid(monkeypatch, tmp_path):
+    flow = tmp_path / "Sample.flow"
+    flow.write_text("{}", encoding="utf-8")
+    calls = _stub_runs(monkeypatch, [_cp(3, _COLD_STDOUT), _cp(0, _VALID_STDOUT)])
+    run_validate(str(flow))  # must not raise
+    assert calls["n"] == 2
+
+
+def test_run_validate_fails_on_validation_error(monkeypatch, tmp_path):
+    flow = tmp_path / "Sample.flow"
+    flow.write_text("{}", encoding="utf-8")
+    real_err = '{\n  "Result": "ValidationError",\n  "Message": "node X missing port"\n}'
+    _stub_runs(monkeypatch, [_cp(3, real_err)])
+    with pytest.raises(SystemExit):
+        run_validate(str(flow))
+
+
+def test_run_validate_missing_file_fails(tmp_path):
+    with pytest.raises(SystemExit):
+        run_validate(str(tmp_path / "does-not-exist.flow"))
