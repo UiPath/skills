@@ -1,6 +1,6 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, cases, sets, executions; generate reports. For Orchestrator→uipath-platform. For test automation→uipath-rpa."
+description: "UiPath Test Manager — manage test projects, cases, sets, executions; generate reports. For Playwright test packages→uipath-test-playwright. For Orchestrator→uipath-platform. For test automation→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
