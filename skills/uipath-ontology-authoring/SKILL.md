@@ -1,6 +1,6 @@
 ---
 name: uipath-ontology-authoring
-description: "Use when a user provides an SDD (Software Design Document / domain spec) and wants to create a fully deployed UiPath Ontology: read the SDD, select or create Data Fabric entities, generate OWL 2 QL schema (.ofn) + SHACL constraints (rules.ttl) + YARRRML mapping (mapping.yarrrml.yml), validate all artifacts via the backend, and push the ontology."
+description: "Use when a user provides an SDD (Software Design Document / domain spec) and wants to create a fully deployed UiPath Ontology: read the SDD, select or create Data Fabric entities, generate OWL 2 QL schema (.ofn) + SHACL constraints ({name}-constraints.ttl) + YARRRML mapping ({name}-mapping.yarrrml.yml), validate all artifacts via the backend, and push the ontology."
 when_to_use: "User provides an SDD or domain spec and wants to author/publish an ontology end-to-end; user says 'create an ontology from this SDD', 'generate ontology artifacts', 'deploy ontology', 'wire ontology to Data Fabric', 'generate mapping'."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 user-invocable: true
@@ -8,12 +8,12 @@ user-invocable: true
 
 # UiPath Ontology Authoring — SDD to Deployed Ontology
 
-Scope: SDD → silent login check → folder selection → entity matching + creation → domain definition (4 phases) → invoke `uipath-ontology-modeler` (generates schema.ofn + rules.ttl + mapping.yarrrml.yml + validates) → create ontology → push.
+Scope: SDD → silent login check → folder selection → entity matching + creation → domain definition (4 phases) → invoke `uipath-ontology-modeler` (generates {name}.ofn + {name}-constraints.ttl + {name}-mapping.yarrrml.yml + validates) → create ontology → push.
 
-**Separation of Concerns** — enforce this throughout: facts go in `schema.ofn`, rules go in USAGE POLICY blocks (mapping + functions), bindings go in `mapping.yarrrml.yml`. Never let domain facts drift into USAGE POLICY, and never let query routing rules drift into `rdfs:comment`. See the modeler's SoC table for the full breakdown.
+**Separation of Concerns** — enforce this throughout: facts go in `{name}.ofn`, rules go in USAGE POLICY blocks (mapping + functions), bindings go in `{name}-mapping.yarrrml.yml`. Never let domain facts drift into USAGE POLICY, and never let query routing rules drift into `rdfs:comment`. See the modeler's SoC table for the full breakdown.
 
-> **Functions (SPARQL reads):** if the SDD describes query operations, the modeler generates `functions.ttl` (all in one file). See `references/functions-actions.md`.
-> **Actions (SQL writes):** if the SDD describes write operations, the modeler generates one `{actionName}.ttl` per action. See `references/functions-actions.md`.
+> **Functions (SPARQL reads):** if the SDD describes query operations, the modeler generates `{name}-functions.ttl` (all in one file). See `references/functions-actions.md`.
+> **Actions (SQL writes):** if the SDD describes write operations, the modeler generates one `{name}-{actionName}.ttl` per action. See `references/functions-actions.md`.
 
 ---
 
@@ -39,7 +39,7 @@ As soon as the ontology name is confirmed, derive the IRI:
 ONTOLOGY_IRI = https://ontology.uipath.com/{name}#
 ```
 
-`{name}` is the exact slug — verbatim, no transformation. Show it to the user and confirm before generating any files. This value must be **identical** in all three artifact files (`schema.ofn`, `rules.ttl`, `mapping.yarrrml.yml`). It is immutable — renaming the ontology later does not change the IRI.
+`{name}` is the exact slug — verbatim, no transformation. Show it to the user and confirm before generating any files. This value must be **identical** in all three artifact files (`{name}.ofn`, `{name}-constraints.ttl`, `{name}-mapping.yarrrml.yml`). It is immutable — renaming the ontology later does not change the IRI.
 
 ---
 
@@ -93,6 +93,8 @@ Which folder(s) should this ontology scope to? (select one or more)
 
 Record the selected folder keys as `SELECTED_FOLDERS`.
 
+If only one folder was selected, set `PRIMARY_FOLDER_KEY` to that folder. If multiple were selected, ask: "Which folder should the ontology record itself be registered in?" Record the answer as `PRIMARY_FOLDER_KEY`.
+
 > **Wait for folder selection before moving to Phase 2.**
 
 ---
@@ -118,7 +120,7 @@ Run for each folder in `SELECTED_FOLDERS`. Identify each entity's type from the 
 **Federated entity rules:**
 - **Use existing only** — federated entities connect to external systems (SQL Server, Salesforce, SAP, etc.) via UiPath Integration Service. New federated entities cannot be created via CLI or API — the connection must be set up through the Data Fabric UI. If an SDD class needs a federated entity that doesn't exist yet, stop and tell the user to create it in the portal first.
 - **Read-only** — federated entity data is managed by the external system. Mark these classes as `readOnly: true` in CLASS_MAP. SHACL constraints will apply structurally but violations cannot be fixed by writing through the platform.
-- **No write actions** — SQL write actions (`{actionName}.ttl`) cannot target federated entities. If the SDD describes write operations on a federated class, flag this to the author — those writes must go through the external system directly.
+- **No write actions** — SQL write actions (`{name}-{actionName}.ttl`) cannot target federated entities. If the SDD describes write operations on a federated class, flag this to the author — those writes must go through the external system directly.
 - **YARRRML mapping is identical** — the mapping syntax for a federated entity (`access: datafabric`, `entityId`, `folderId`) is the same as native. The FQS runtime handles the federation transparently. Functions (SPARQL reads) work with federated entities.
 
 **How federated entity connections work:**
@@ -142,6 +144,20 @@ CLASS_MAP:
 ```
 
 > **Wait for CLASS_MAP confirmation before moving to Phase 3.**
+
+**Ontology creation (enables inline validation in the modeler):**
+
+Once CLASS_MAP is confirmed, create the ontology stub so the modeler can validate each artifact against the backend inline during artifact generation:
+
+```bash
+uip ont create {name} \
+  --display-name "{Display Name}" \
+  --description "{description}" \
+  --folder-key {PRIMARY_FOLDER_KEY}
+```
+
+- `"Code": "OntologyCreated"` → record the returned `id`, proceed to Phase 3.
+- `409 Conflict` → name already taken; run `uip ont get {name}` to inspect; stop for user guidance.
 
 ---
 
@@ -290,88 +306,12 @@ Update any Phase 5 annotation that differs from what the actual data shows. Reco
 - `CLASS_MAP` from Phase 2 (entityId + folderId per class)
 - Working directory for output (from Step 1)
 
-The modeler skips its own Steps 1 and 2 — it uses the confirmed domain model from Phases 3–4 directly. It generates each artifact through a build → preview → check → confirm → write flow, presenting each preview to the author before writing. It returns only after the author has confirmed all artifact files and they are written to disk.
+The modeler skips its own Steps 1 and 2 — it uses the confirmed domain model from Phases 3–4 directly (the ontology was already created at the end of Phase 2). It generates each artifact through a build → preview → check → confirm → write → **backend validate → upsert** flow. Each artifact is upserted to the backend immediately after it passes Gate 5, except `{name}-mapping.yarrrml.yml` which is held (uploading it triggers deploy). The modeler returns once all artifacts are confirmed, validated, and uploaded — only the mapping remains.
 
 The modeler generates:
-- `schema.ofn`, `rules.ttl`, `mapping.yarrrml.yml` — always
-- `functions.ttl` — if the SDD describes query operations an AI agent should answer
-- `{actionName}.ttl` (one per action) — if the SDD describes write/update operations
-
-**Do not proceed to Step 3 until the modeler returns confirmed file paths for all three artifacts:**
-```
-{workdir}/schema.ofn        ✓ confirmed
-{workdir}/rules.ttl         ✓ confirmed
-{workdir}/mapping.yarrrml.yml  ✓ confirmed
-```
-
----
-
-## Step 3 — Create ontology and validate via SDK
-
-> **Trigger:** All three artifact files are confirmed and written to disk. Now use the `uip ont` SDK to create the ontology on the backend and validate each file before uploading.
-
-### 3a — Create the ontology
-
-```bash
-uip ont create {name} \
-  --display-name "{Display Name}" \
-  --description "{description}" \
-  --folder-key {PRIMARY_FOLDER_KEY}
-```
-
-`{PRIMARY_FOLDER_KEY}` is the ontology's home folder. If only one folder was selected in Phase 1, use it. If multiple were selected, ask the author: "Which folder should the ontology itself be registered in?" (the CLASS_MAP handles per-class folder routing; this is only the ontology record's home folder).
-
-Check the response:
-- `"Code": "OntologyCreated"` → record the returned `id` (GUID), proceed to 3b
-- `409 Conflict` → ontology name already taken; run `uip ont get {name}` to inspect, then either delete it (`uip ont delete {name}`) or choose a different name
-
-### 3b — Backend syntactic validate (Gate 5)
-
-Gates 1–4 ran inside the modeler (text scans, no API). Gate 5 needs the ontology to exist, so it runs here. Validate all three files against the backend parser. The API always returns HTTP 200 — check `Data.valid`, not the exit code.
-
-```bash
-uip ont artifacts validate {name} schema.ofn \
-  --type schema \
-  --media-type text/owl-functional \
-  --file {workdir}/schema.ofn
-```
-Expected: `Data.valid: true`. If false → read `Data.violations`, fix `schema.ofn` in the modeler (re-run modeler steps 3a–3d), then re-validate.
-
-```bash
-uip ont artifacts validate {name} rules.ttl \
-  --type constraints \
-  --media-type text/turtle \
-  --file {workdir}/rules.ttl
-```
-Expected: `Data.valid: true`. If false → fix `rules.ttl` in the modeler (re-run modeler steps 4a–4d), then re-validate.
-
-```bash
-# If functions.ttl was generated:
-uip ont artifacts validate {name} functions.ttl \
-  --type functions \
-  --media-type text/turtle \
-  --file {workdir}/functions.ttl
-```
-Expected: `Data.valid: true`. If false → fix `functions.ttl` in the modeler (re-run modeler steps 6a–6d), then re-validate.
-
-```bash
-# For each action file generated:
-uip ont artifacts validate {name} {actionName}.ttl \
-  --type actions \
-  --media-type text/turtle \
-  --file {workdir}/{actionName}.ttl
-```
-Expected: `Data.valid: true`. If false → fix the action file in the modeler (re-run modeler steps 7a–7d), then re-validate.
-
-```bash
-uip ont artifacts validate {name} mapping.yarrrml.yml \
-  --type mapping \
-  --media-type application/yaml \
-  --file {workdir}/mapping.yarrrml.yml
-```
-Expected: `Data.valid: true`. If false → fix `mapping.yarrrml.yml` in the modeler (re-run modeler steps 5a–5d), then re-validate.
-
-**Do not proceed to Step 4 until all generated files return `Data.valid: true`.**
+- `{name}.ofn`, `{name}-constraints.ttl`, `{name}-mapping.yarrrml.yml` — always
+- `{name}-functions.ttl` — if the SDD describes query operations an AI agent should answer
+- `{name}-{actionName}.ttl` (one per action) — if the SDD describes write/update operations
 
 All five gates summary:
 
@@ -381,65 +321,35 @@ All five gates summary:
 | 2 — Naming | Modeler step 3c | No `has{Prop}` DataProperty names | Zero hits |
 | 3 — Cross-file | Modeler step 5c | Every `ont:` term in mapping/rules declared in schema | All found |
 | 4 — Annotation | Modeler step 3c | Every declared class and property has `rdfs:label` and `rdfs:comment` | All covered |
-| 5 — Backend validate | **Here (step 3b)** | Backend syntactic parse of all generated files | `Data.valid: true` each |
+| 5 — Backend validate + upsert | Modeler (inline, Steps 3e–7e) | Backend syntactic parse → immediate upsert on valid (except mapping) | `Data.valid: true` + `ArtifactUpserted` each |
+| 6 — Semantic consistency | Modeler (inline Steps 3f–7f per artifact; Step 8 cross-artifact) | LLM judge: domain completeness, constraint coverage, column alignment, USAGE POLICY coherence | All checks `✓` |
+
+**Do not proceed to Step 3 until the modeler confirms all artifacts validated and uploaded (except mapping):**
+```
+{workdir}/{name}.ofn           ✓ validated + uploaded
+{workdir}/{name}-constraints.ttl            ✓ validated + uploaded
+{workdir}/{name}-functions.ttl        ✓ validated + uploaded  (if generated)
+{workdir}/{name}-{actionName}.ttl     ✓ validated + uploaded  (if generated)
+{workdir}/{name}-mapping.yarrrml.yml  ✓ validated — awaiting deploy upload
+```
 
 ---
 
-## Step 4 — Upload artifacts via SDK
+## Step 3 — Deploy (mapping upload)
 
-> **Trigger:** All five gates passed. Upload in strict order — mapping last because uploading it transitions the ontology from `DRAFT` to `DEPLOYED`.
+> **Trigger:** All artifacts are uploaded except the mapping. Upload mapping last — it transitions the ontology from `DRAFT` to `DEPLOYED`.
 
-### 4a — Upload schema
-
-```bash
-uip ont artifacts upsert {name} schema.ofn \
-  --type schema \
-  --media-type text/owl-functional \
-  --file {workdir}/schema.ofn
-```
-Check response: `"Code": "ArtifactUpserted"` → continue. Any error → fix and re-run step 3b before retrying.
-
-### 4b — Upload constraints
+### 3a — Upload mapping (deploy trigger)
 
 ```bash
-uip ont artifacts upsert {name} rules.ttl \
-  --type constraints \
-  --media-type text/turtle \
-  --file {workdir}/rules.ttl
-```
-Check response: `"Code": "ArtifactUpserted"` → continue.
-
-### 4c — Upload functions (if generated)
-
-```bash
-uip ont artifacts upsert {name} functions.ttl \
-  --type functions \
-  --media-type text/turtle \
-  --file {workdir}/functions.ttl
-```
-Check response: `"Code": "ArtifactUpserted"` → continue. Skip this step if functions.ttl was not generated.
-
-### 4d — Upload actions (one per file, if generated)
-
-```bash
-uip ont artifacts upsert {name} {actionName}.ttl \
-  --type actions \
-  --media-type text/turtle \
-  --file {workdir}/{actionName}.ttl
-```
-Repeat for each action file. Check `"Code": "ArtifactUpserted"` on each. Skip if no actions were generated.
-
-### 4e — Upload mapping (deploy trigger)
-
-```bash
-uip ont artifacts upsert {name} mapping.yarrrml.yml \
+uip ont artifacts upsert {name} {name}-mapping.yarrrml.yml \
   --type mapping \
   --media-type application/yaml \
-  --file {workdir}/mapping.yarrrml.yml
+  --file {workdir}/{name}-mapping.yarrrml.yml
 ```
 Check response: `"Code": "ArtifactUpserted"` → mapping upload triggers `DRAFT → DEPLOYED`.
 
-### 4f — Verify deployment
+### 3b — Verify deployment
 
 ```bash
 uip ont get {name}
@@ -448,8 +358,8 @@ uip ont get {name}
 | `state` | Meaning | Action |
 |---|---|---|
 | `DEPLOYED` | All artifacts accepted, ontology live | Done |
-| `BROKEN` | Mapping references a term not in schema | Run `uip ont artifacts list {name}` — find the mismatched `ont:` term, fix `mapping.yarrrml.yml`, re-upload mapping |
-| `DRAFT` | Mapping not uploaded yet, or uploaded before schema/rules | Re-upload schema and rules first, then mapping |
+| `BROKEN` | Mapping references a term not in schema | Run `uip ont artifacts list {name}` — find the mismatched `ont:` term, fix `{name}-mapping.yarrrml.yml`, re-upload mapping |
+| `DRAFT` | Mapping not uploaded yet, or uploaded before schema/rules | Check Steps 3e and 4e in the modeler completed; re-upload mapping |
 
 ---
 
@@ -457,11 +367,11 @@ uip ont get {name}
 
 | File | `--type` | Media type | Required for deploy |
 |---|---|---|---|
-| `schema.ofn` | `schema` | `text/owl-functional` | Yes |
-| `rules.ttl` | `constraints` | `text/turtle` | Yes |
-| `functions.ttl` | `functions` | `text/turtle` | Optional — generated when SDD describes query operations; freely add/removable without breaking a deployed ontology |
-| `{actionName}.ttl` | `actions` | `text/turtle` | Optional, one file per action — generated when SDD describes write operations; freely add/removable |
-| `mapping.yarrrml.yml` | `mapping` | `application/yaml` | Yes — upload last, triggers `DRAFT → DEPLOYED` |
+| `{name}.ofn` | `schema` | `text/owl-functional` | Yes |
+| `{name}-constraints.ttl` | `constraints` | `text/turtle` | Yes |
+| `{name}-functions.ttl` | `functions` | `text/turtle` | Optional — generated when SDD describes query operations; freely add/removable without breaking a deployed ontology |
+| `{name}-{actionName}.ttl` | `actions` | `text/turtle` | Optional, one file per action — generated when SDD describes write operations; freely add/removable |
+| `{name}-mapping.yarrrml.yml` | `mapping` | `application/yaml` | Yes — upload last, triggers `DRAFT → DEPLOYED` |
 
 ---
 
@@ -469,8 +379,8 @@ uip ont get {name}
 
 | Error | Cause | Fix |
 |---|---|---|
-| `422` on validate or upload | Malformed OWL or Turtle | Read `Data.violations`; fix syntax |
+| `422` on validate or upload | Malformed OWL or Turtle | Read `Data.violations`; the modeler's inline fix loop handles this automatically — re-run the relevant modeler step if bypassed |
 | `409` on create | Ontology name taken | `uip ont get {name}` to check; rename or delete first |
-| `BROKEN` after deploy | Mapping references undeclared property | Check every `ont:` term in mapping exists in `schema.ofn` |
+| `BROKEN` after deploy | Mapping references undeclared property | Check every `ont:` term in mapping exists in `{name}.ofn` |
 | `DRAFT` after mapping upload | schema or constraints not uploaded first | Upload schema and rules, then re-upload mapping |
 | `Not Found` on any `uip ont` command | Datafabric service not reachable | Backend not deployed on this environment |

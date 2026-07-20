@@ -30,11 +30,11 @@ Use the modeler directly only when you're describing the domain yourself.
 
 | File | What it is |
 |---|---|
-| `schema.ofn` | OWL 2 QL Functional Syntax — classes, properties, labels, descriptions |
-| `rules.ttl` | SHACL Turtle — one shape per business rule (required fields, cardinality) |
-| `mapping.yarrrml.yml` | YARRRML — wires each class to a Data Fabric entity and each property to a column |
-| `functions.ttl` | W3C FnO — SPARQL read queries (generated if your description includes query operations) |
-| `{actionName}.ttl` | W3C FnO — SQL write operations, one file per action (generated if your description includes writes) |
+| `{name}.ofn` | OWL 2 QL Functional Syntax — classes, properties, labels, descriptions |
+| `{name}-constraints.ttl` | SHACL Turtle — one shape per business rule (required fields, cardinality) |
+| `{name}-mapping.yarrrml.yml` | YARRRML — wires each class to a Data Fabric entity and each property to a column |
+| `{name}-functions.ttl` | W3C FnO — SPARQL read queries (generated if your description includes query operations) |
+| `{name}-{actionName}.ttl` | W3C FnO — SQL write operations, one file per action (generated if your description includes writes) |
 
 ---
 
@@ -66,10 +66,10 @@ Each artifact has a distinct job. The modeler enforces this — do not mix them:
 
 | What | Where |
 |---|---|
-| What a value means, grain, FK provenance | `rdfs:comment` in `schema.ofn` |
-| Business constraint (must-have, exactly-one) | `rules.ttl` SHACL shape |
-| Query routing and LIMIT/DISTINCT discipline | USAGE POLICY block in `mapping.yarrrml.yml` |
-| Class → entity, property → column, FK join | `mapping.yarrrml.yml` bindings |
-| What a function returns and when to use it | `rdfs:comment` in `functions.ttl` |
-| Which function answers which question type | USAGE POLICY block in `functions.ttl` |
-| What a SQL action changes | `rdfs:comment` in `{actionName}.ttl` |
+| What a value means, grain, FK provenance | `rdfs:comment` in `{name}.ofn` |
+| Business constraint (must-have, exactly-one) | `{name}-constraints.ttl` SHACL shape |
+| Query routing and LIMIT/DISTINCT discipline | USAGE POLICY block in `{name}-mapping.yarrrml.yml` |
+| Class → entity, property → column, FK join | `{name}-mapping.yarrrml.yml` bindings |
+| What a function returns and when to use it | `rdfs:comment` in `{name}-functions.ttl` |
+| Which function answers which question type | USAGE POLICY block in `{name}-functions.ttl` |
+| What a SQL action changes | `rdfs:comment` in `{name}-{actionName}.ttl` |

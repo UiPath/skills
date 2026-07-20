@@ -1,6 +1,6 @@
 ---
 name: uipath-ontology-modeler
-description: "Use when the user describes a domain in a prompt and wants to generate ontology artifact files (schema.ofn, rules.ttl, mapping.yarrrml.yml, functions.ttl, actions). No SDD required — a plain description of classes, fields, and relationships is enough. Also invoked by uipath-ontology-authoring as the artifact-generation step."
+description: "Use when the user describes a domain in a prompt and wants to generate ontology artifact files ({name}.ofn, {name}-constraints.ttl, {name}-mapping.yarrrml.yml, {name}-functions.ttl, actions). No SDD required — a plain description of classes, fields, and relationships is enough. Also invoked by uipath-ontology-authoring as the artifact-generation step."
 when_to_use: "User describes a domain in plain language ('I have Orders, Customers, Products…') and wants to generate OWL schema, SHACL constraints, or YARRRML mapping. Also use for: regenerating a single artifact, modeling a domain without an SDD, or when the authoring skill passes a confirmed domain model and CLASS_MAP."
 allowed-tools: Bash, Read, Write, Edit
 user-invocable: true
@@ -18,15 +18,15 @@ Two entry points:
 | You have an SDD file or Confluence page | `uipath-ontology-authoring` — it reads the SDD then calls this skill |
 
 Artifacts generated:
-- `schema.ofn` — OWL 2 QL Functional Syntax (classes, properties, labels, descriptions)
-- `rules.ttl` — SHACL constraints (one shape per business rule)
-- `mapping.yarrrml.yml` — YARRRML binding (class → entity, property → column, FK joins)
-- `functions.ttl` — SPARQL read functions (optional — only if the domain includes query operations)
-- `{actionName}.ttl` — SQL write actions (optional — one file per action)
+- `{name}.ofn` — OWL 2 QL Functional Syntax (classes, properties, labels, descriptions)
+- `{name}-constraints.ttl` — SHACL constraints (one shape per business rule)
+- `{name}-mapping.yarrrml.yml` — YARRRML binding (class → entity, property → column, FK joins)
+- `{name}-functions.ttl` — SPARQL read functions (optional — only if the domain includes query operations)
+- `{name}-{actionName}.ttl` — SQL write actions (optional — one file per action)
 
 Every file follows a build → preview → check → confirm → write flow. Nothing is written to disk before you confirm it.
 
-> **Called by `uipath-ontology-authoring`?** Skip Steps 1 and 2 — the caller already collected the ontology name, IRI, confirmed domain model (Phases 3–4), confirmed annotations (Phases 5–6), and `CLASS_MAP`. Start at Step 3 directly with those inputs. Do not upload — return the confirmed file paths to the caller.
+> **Called by `uipath-ontology-authoring`?** Skip the ontology creation sub-step at the end of Step 1 (authoring creates the ontology before invoking you) and skip Steps 1 and 2 domain-gathering — the caller already collected the ontology name, IRI, confirmed domain model (Phases 3–4), confirmed annotations (Phases 5–6), and `CLASS_MAP`. Start at Step 3 directly with those inputs. The backend validate + upsert loop (Step Xe) runs normally — validate, then upsert immediately on valid, for all artifacts **except mapping**. Skip Step 9 — return the confirmed file paths to the authoring skill, which uploads the mapping as the final deploy trigger.
 
 ---
 
@@ -36,22 +36,22 @@ Each artifact owns exactly one type of information. Never mix them across files:
 
 | Type | What it is | Where it lives |
 |---|---|---|
-| **Fact** | What a value means, what a class is, grain, value domain, FK provenance | `rdfs:comment` in `schema.ofn` |
-| **Constraint** | Business rule that must hold (must have, must be one) | `rules.ttl` SHACL shape |
-| **Rule** | How to query, join routing, LIMIT/DISTINCT discipline | USAGE POLICY block in `mapping.yarrrml.yml` |
-| **Binding** | Class → entity, property → column, object property → FK join condition | `mapping.yarrrml.yml` source/po blocks |
-| **Function fact** | What a function returns, when to use it vs other functions | `rdfs:comment` in `functions.ttl` |
-| **Function rule** | Which function answers which question type, query output discipline | USAGE POLICY block in `functions.ttl` |
-| **Function binding** | Which ontology terms the SPARQL traverses to answer the question | `ont:statement` in `functions.ttl` |
-| **Action fact** | What a SQL action changes, what params it takes | `rdfs:comment` in `{actionName}.ttl` |
+| **Fact** | What a value means, what a class is, grain, value domain, FK provenance | `rdfs:comment` in `{name}.ofn` |
+| **Constraint** | Business rule that must hold (must have, must be one) | `{name}-constraints.ttl` SHACL shape |
+| **Rule** | How to query, join routing, LIMIT/DISTINCT discipline | USAGE POLICY block in `{name}-mapping.yarrrml.yml` |
+| **Binding** | Class → entity, property → column, object property → FK join condition | `{name}-mapping.yarrrml.yml` source/po blocks |
+| **Function fact** | What a function returns, when to use it vs other functions | `rdfs:comment` in `{name}-functions.ttl` |
+| **Function rule** | Which function answers which question type, query output discipline | USAGE POLICY block in `{name}-functions.ttl` |
+| **Function binding** | Which ontology terms the SPARQL traverses to answer the question | `ont:statement` in `{name}-functions.ttl` |
+| **Action fact** | What a SQL action changes, what params it takes | `rdfs:comment` in `{name}-{actionName}.ttl` |
 | **Action binding** | Which entity table and field columns the SQL writes | `{{Entity.field}}` in `ont:statements` |
 
 **What this means in practice — do not:**
 - Put query routing rules in `rdfs:comment` — they belong in USAGE POLICY
-- Put FK join logic as OWL axioms in `schema.ofn` — note FK provenance as a fact in `rdfs:comment`, implement the join in mapping
+- Put FK join logic as OWL axioms in `{name}.ofn` — note FK provenance as a fact in `rdfs:comment`, implement the join in mapping
 - Put value domain meanings in USAGE POLICY — they belong in `rdfs:comment`
-- Put entity IDs or column names in `schema.ofn` — they belong in mapping
-- Explain what status codes mean inside a SPARQL rdfs:comment — that fact is already in `schema.ofn`
+- Put entity IDs or column names in `{name}.ofn` — they belong in mapping
+- Explain what status codes mean inside a SPARQL rdfs:comment — that fact is already in `{name}.ofn`
 
 ---
 
@@ -72,6 +72,20 @@ Once the name is confirmed, derive the IRI internally — do not ask the user fo
 ONTOLOGY_IRI = https://ontology.uipath.com/{name}#
 ```
 Show it once so the user can verify: `IRI: https://ontology.uipath.com/{name}#`
+
+**File name derivation — compute once, use everywhere:**
+
+Derive artifact file names from the ontology name slug at the same time as the IRI. Do not use fixed names:
+
+```
+{name}.ofn                       ← OWL 2 QL schema
+{name}-constraints.ttl           ← SHACL constraints
+{name}-mapping.yarrrml.yml       ← YARRRML mapping
+{name}-functions.ttl             ← SPARQL functions (if needed)
+{name}-{actionName}.ttl          ← SQL action files (one per action, if needed)
+```
+
+Show the file list once so the user can verify before any file is written.
 
 **Login check (silent):**
 ```bash
@@ -115,6 +129,21 @@ CLASS_MAP:
 ```
 
 If the description is vague after reading the prompt, ask one clarifying question at a time — do not block on a long questionnaire.
+
+**Ontology creation (before artifact generation):**
+
+Once CLASS_MAP is confirmed, determine `PRIMARY_FOLDER_KEY` — the folder the ontology record itself is registered in. Use the folder key shared by the entities in CLASS_MAP. If entities span multiple folders, ask the user: "Which folder should the ontology record itself be registered in?"
+
+Then create the ontology stub so backend validation can run inline during Steps 3–7:
+
+```bash
+uip ont create {name} --display-name "{name}" --folder-key {PRIMARY_FOLDER_KEY}
+```
+
+- `"Code": "OntologyCreated"` → record the returned `id`, continue.
+- `409 Conflict` → name already taken (collision check already passed — unexpected); show the error and stop for user guidance.
+
+> Do **not** run this step when called by `uipath-ontology-authoring` — the authoring skill creates the ontology before invoking the modeler.
 
 ---
 
@@ -168,7 +197,7 @@ Fields like `CreatedAt`, `UpdatedAt`, `CreatedBy`, `UpdatedBy`, and `Id` are sys
 
 ---
 
-## Step 3 — Generate schema.ofn
+## Step 3 — Generate {name}.ofn
 
 Follow [owl-patterns.md](owl-patterns.md) exactly. This step has four sub-steps: build → preview → W3C check → confirm → write.
 
@@ -183,7 +212,7 @@ Construct the full file content in memory (do not write yet). Cover all three re
 - DataProperty: `DataPropertyDomain` + `DataPropertyRange(xsd:{type})` for every property from the confirmed domain model
 - ObjectProperty: `ObjectPropertyDomain` + `ObjectPropertyRange` for every relationship
 - `InverseObjectProperties` for inverse pairs; `SubObjectPropertyOf` for sub-properties
-- Cardinality is QL-inexpressible as axioms — express in `rdfs:comment` text and enforce via SHACL in rules.ttl
+- Cardinality is QL-inexpressible as axioms — express in `rdfs:comment` text and enforce via SHACL in {name}-constraints.ttl
 
 **2. Labels, descriptions, and synonyms**
 
@@ -278,15 +307,86 @@ Show the user:
 
 Then ask:
 
-> **Confirm schema.ofn?** ({N} classes, {N} data properties, {N} object properties — W3C checks passed)
+> **Confirm {name}.ofn?** ({N} classes, {N} data properties, {N} object properties — W3C checks passed)
 > Reply `yes` to write the file, or describe any changes needed.
 
-Wait for explicit confirmation. On confirmation, write `{workdir}/schema.ofn`.
+Wait for explicit confirmation. On confirmation, write `{workdir}/{name}.ofn`.
 On revision request, update the draft and return to step 3b.
 
 ---
 
-## Step 4 — Generate rules.ttl
+### 3e — Backend validate + agent-fix loop
+
+```bash
+uip ont artifacts validate {name} {name}.ofn \
+  --type schema \
+  --media-type text/owl-functional \
+  --file {workdir}/{name}.ofn
+```
+
+Always HTTP 200 — check `Data.valid`:
+
+- **`true`** → Upsert immediately:
+  ```bash
+  uip ont artifacts upsert {name} {name}.ofn \
+    --type schema \
+    --media-type text/owl-functional \
+    --file {workdir}/{name}.ofn
+  ```
+  Check `"Code": "ArtifactUpserted"` → `✓ {name}.ofn — uploaded.` Proceed to Step 4.
+- **`false`** → Show violations verbatim and offer auto-fix:
+
+```
+Backend validation failed — {name}.ofn
+Violations:
+{Data.violations}
+
+Attempt auto-fix? [yes / no]
+(If no: fix the file manually then reply `done`. On `done`, re-validate once.)
+```
+
+**Auto-fix loop (max 3 attempts):**
+1. Read `{workdir}/{name}.ofn` + the violations
+2. Generate corrected content in memory
+3. Re-run the Step 3c local gates (QL blacklist + naming check) on the corrected content
+4. Show a change summary — one sentence per violation addressed
+5. Ask: `Apply this fix? [yes / no]`
+   - `yes` → overwrite `{name}.ofn`, return to top of Step 3e (re-validate)
+   - `no` → show violations, user chooses: try again / fix manually
+
+After 3 failed auto-fix attempts:
+> "Auto-fix exhausted 3 attempts. Please fix `{name}.ofn` manually, then reply `done`."
+Wait for `done`, then re-validate once.
+
+---
+
+### 3f — Semantic eval (LLM judge)
+
+Judge `{name}.ofn` against the confirmed domain model from Step 2. No API call — reasoning only.
+
+**Checks:**
+1. Every class in the domain model is declared — none missing, none invented
+2. Every data property (name + XSD type) matches the domain model exactly
+3. Every object property and relationship is declared with correct domain and range
+4. Every `rdfs:comment` on a class opens with a grain statement; every data property `rdfs:comment` uses the correct fact type form from `owl-patterns.md`
+5. No phantom terms — no class or property declared beyond what the domain model describes
+
+**Verdict format:**
+```
+Semantic eval — {name}.ofn
+  ✓ Class coverage — all {N} classes present
+  ✓ Property coverage — all {N} data properties, {N} object properties present
+  ✗ Type mismatch — ont:Order.totalAmount declared xsd:string, domain model says decimal
+  ✗ Missing property — ont:Customer.email described as required, not declared
+```
+
+On any `✗`: offer agent fix. Fix loop: generate corrected content → re-run local gates (3c) → re-run G5 (validate → upsert) → re-run 3f. Max 3 attempts.
+
+All checks `✓` → proceed to Step 4.
+
+---
+
+## Step 4 — Generate {name}-constraints.ttl
 
 Follow [shacl-patterns.md](shacl-patterns.md) exactly. Same build → preview → check → confirm → write flow as Step 3.
 
@@ -300,7 +400,7 @@ Construct the full file content in memory. One `sh:NodeShape` per business rule 
 - Prefixes: `ont:`, `rdfs:`, `sh:`, `shape:`, `xsd:`
 - Shape name: `shape:{ClassName}Must{BehaviorName}` (e.g. `shape:doctorMustBeLicensed`)
 - Each shape: `rdfs:label` (human description) + `sh:message` (violation sentence) + `sh:targetClass` + one or more `sh:property` blocks
-- Property path always `ont:{ClassName}.{propName}` — must match exactly what is declared in `schema.ofn`
+- Property path always `ont:{ClassName}.{propName}` — must match exactly what is declared in `{name}.ofn`
 - Cardinality forms:
 
 | Business rule | SHACL |
@@ -318,7 +418,7 @@ Every business rule from the confirmed model must have a matching shape. No shap
 ### 4b — Show draft summary to user
 
 ```
-SHACL draft: {ontology-name} rules.ttl
+SHACL draft: {ontology-name} {name}-constraints.ttl
 
 Shapes ({N}):
   shape:doctorMustBeLicensed
@@ -342,15 +442,15 @@ Shapes ({N}):
 
 ---
 
-### 4c — SHACL consistency check (against schema.ofn)
+### 4c — SHACL consistency check (against {name}.ofn)
 
-Verify the SHACL draft is consistent with the already-confirmed `schema.ofn`:
+Verify the SHACL draft is consistent with the already-confirmed `{name}.ofn`:
 
 **Check 1 — Property path alignment:**
-Every `sh:path` value in the draft must match a `Declaration(DataProperty(:…))` or `Declaration(ObjectProperty(:…))` in `schema.ofn`. Any mismatch → `BROKEN` state after deploy.
+Every `sh:path` value in the draft must match a `Declaration(DataProperty(:…))` or `Declaration(ObjectProperty(:…))` in `{name}.ofn`. Any mismatch → `BROKEN` state after deploy.
 
 **Check 2 — Target class alignment:**
-Every `sh:targetClass` must match a `Declaration(Class(:…))` in `schema.ofn`.
+Every `sh:targetClass` must match a `Declaration(Class(:…))` in `{name}.ofn`.
 
 **Check 3 — Coverage:**
 Every business rule from the confirmed model has a shape. No business rule is missing a shape.
@@ -359,8 +459,8 @@ Report:
 
 ```
 SHACL consistency checks:
-  ✓ Property paths — all sh:path values declared in schema.ofn
-  ✓ Target classes — all sh:targetClass values declared in schema.ofn
+  ✓ Property paths — all sh:path values declared in {name}.ofn
+  ✓ Target classes — all sh:targetClass values declared in {name}.ofn
   ✓ Coverage — all {N} business rules have a shape
 ```
 
@@ -370,15 +470,84 @@ Fix any issues in the draft before proceeding.
 
 ### 4d — Confirm and write
 
-> **Confirm rules.ttl?** ({N} shapes covering {N} business rules — consistency checks passed)
+> **Confirm {name}-constraints.ttl?** ({N} shapes covering {N} business rules — consistency checks passed)
 > Reply `yes` to write the file, or describe any changes needed.
 
-Wait for explicit confirmation. On confirmation, write `{workdir}/rules.ttl`.
+Wait for explicit confirmation. On confirmation, write `{workdir}/{name}-constraints.ttl`.
 On revision request, update the draft and return to step 4b.
 
 ---
 
-## Step 5 — Generate mapping.yarrrml.yml
+### 4e — Backend validate + agent-fix loop
+
+```bash
+uip ont artifacts validate {name} {name}-constraints.ttl \
+  --type constraints \
+  --media-type text/turtle \
+  --file {workdir}/{name}-constraints.ttl
+```
+
+Always HTTP 200 — check `Data.valid`:
+
+- **`true`** → Upsert immediately:
+  ```bash
+  uip ont artifacts upsert {name} {name}-constraints.ttl \
+    --type constraints \
+    --media-type text/turtle \
+    --file {workdir}/{name}-constraints.ttl
+  ```
+  Check `"Code": "ArtifactUpserted"` → `✓ {name}-constraints.ttl — uploaded.` Proceed to Step 5.
+- **`false`** → Show violations verbatim and offer auto-fix:
+
+```
+Backend validation failed — {name}-constraints.ttl
+Violations:
+{Data.violations}
+
+Attempt auto-fix? [yes / no]
+(If no: fix the file manually then reply `done`. On `done`, re-validate once.)
+```
+
+**Auto-fix loop (max 3 attempts):**
+1. Read `{workdir}/{name}-constraints.ttl` + the violations
+2. Generate corrected content in memory
+3. Re-run the Step 4c consistency checks (property path alignment, target class alignment, coverage) on the corrected content
+4. Show a change summary — one sentence per violation addressed
+5. Ask: `Apply this fix? [yes / no]`
+   - `yes` → overwrite `{name}-constraints.ttl`, return to top of Step 4e (re-validate)
+   - `no` → show violations, user chooses: try again / fix manually
+
+After 3 failed auto-fix attempts:
+> "Auto-fix exhausted 3 attempts. Please fix `{name}-constraints.ttl` manually, then reply `done`."
+Wait for `done`, then re-validate once.
+
+---
+
+### 4f — Semantic eval (LLM judge)
+
+Judge `{name}-constraints.ttl` against the confirmed domain model's business rules.
+
+**Checks:**
+1. Every "must have" / "required" business rule has a shape with `sh:minCount 1`
+2. Every "exactly one" cardinality rule has `sh:minCount 1 ; sh:maxCount 1`
+3. No business rule from the domain model is missing a shape
+4. No shape enforces a constraint not present in the domain model (invented constraint)
+
+**Verdict format:**
+```
+Semantic eval — {name}-constraints.ttl
+  ✓ Coverage — all {N} business rules have a shape
+  ✗ Missing shape — "Prescription must have a status" has no corresponding NodeShape
+  ✗ Invented constraint — shape:OrderMustHaveReview not in domain model
+```
+
+On any `✗`: offer agent fix. Fix loop: generate corrected content → re-run local gates (4c) → re-run G5 → re-run 4f. Max 3 attempts.
+
+All checks `✓` → proceed to Step 5.
+
+---
+
+## Step 5 — Generate {name}-mapping.yarrrml.yml
 
 Follow [mapping-yarrrml.md](mapping-yarrrml.md). Same build → preview → check → confirm → write flow.
 
@@ -396,7 +565,7 @@ Construct the full file content in memory. Use `entityId` and `folderId` from `C
   - `s:` — subject template: `ont:{ClassName}/$(primaryKeyColumn)`
   - `po:` — type triple `a: ont:{ClassName}`, then one pair per data property (`ont:{ClassName}.{propName}: $({columnName})`), then object property joins via `condition: function: equal`
 
-Every `ont:` term used in the mapping must be declared in `schema.ofn`. Column names are case-sensitive — use the exact field name as it appears in the Data Fabric entity.
+Every `ont:` term used in the mapping must be declared in `{name}.ofn`. Column names are case-sensitive — use the exact field name as it appears in the Data Fabric entity.
 
 **This file must be uploaded last** — uploading the mapping flips the ontology from `DRAFT` to `DEPLOYED`.
 
@@ -405,7 +574,7 @@ Every `ont:` term used in the mapping must be declared in `schema.ofn`. Column n
 ### 5b — Show draft summary to user
 
 ```
-Mapping draft: {ontology-name} mapping.yarrrml.yml
+Mapping draft: {ontology-name} {name}-mapping.yarrrml.yml
 
 USAGE POLICY: {first line of policy block}
 
@@ -426,10 +595,10 @@ Mappings ({N} classes):
 
 ---
 
-### 5c — Mapping consistency check (against schema.ofn)
+### 5c — Mapping consistency check (against {name}.ofn)
 
 **Check 1 — Term coverage:**
-Every `ont:` predicate in the mapping must be declared in `schema.ofn`. Extract all `ont:` terms from the draft and compare against `Declaration(…)` lines in `schema.ofn`.
+Every `ont:` predicate in the mapping must be declared in `{name}.ofn`. Extract all `ont:` terms from the draft and compare against `Declaration(…)` lines in `{name}.ofn`.
 
 **Check 2 — Column name plausibility:**
 Every `$(columnName)` must correspond to a field that exists in the Data Fabric entity. Cross-check against the entity field names collected during Phase 2 entity matching.
@@ -441,7 +610,7 @@ Report:
 
 ```
 Mapping consistency checks:
-  ✓ Term coverage — all ont: predicates declared in schema.ofn
+  ✓ Term coverage — all ont: predicates declared in {name}.ofn
   ✓ Column names — all $(…) fields match entity schema
   ✓ Class coverage — all {N} classes have a mapping block
 ```
@@ -452,15 +621,78 @@ Fix any issues in the draft before proceeding.
 
 ### 5d — Confirm and write
 
-> **Confirm mapping.yarrrml.yml?** ({N} classes mapped — consistency checks passed)
+> **Confirm {name}-mapping.yarrrml.yml?** ({N} classes mapped — consistency checks passed)
 > Reply `yes` to write the file, or describe any changes needed.
 
-Wait for explicit confirmation. On confirmation, write `{workdir}/mapping.yarrrml.yml`.
+Wait for explicit confirmation. On confirmation, write `{workdir}/{name}-mapping.yarrrml.yml`.
 On revision request, update the draft and return to step 5b.
 
 ---
 
-## Step 6 — Generate functions.ttl (skip if SDD has no query operations)
+### 5e — Backend validate + agent-fix loop
+
+```bash
+uip ont artifacts validate {name} {name}-mapping.yarrrml.yml \
+  --type mapping \
+  --media-type application/yaml \
+  --file {workdir}/{name}-mapping.yarrrml.yml
+```
+
+Always HTTP 200 — check `Data.valid`:
+
+- **`true`** → `✓ {name}-mapping.yarrrml.yml — backend validation passed.` **Do not upsert yet** — mapping is the deploy trigger and must be uploaded last, after all other artifacts. Proceed to Step 6.
+- **`false`** → Show violations verbatim and offer auto-fix:
+
+```
+Backend validation failed — {name}-mapping.yarrrml.yml
+Violations:
+{Data.violations}
+
+Attempt auto-fix? [yes / no]
+(If no: fix the file manually then reply `done`. On `done`, re-validate once.)
+```
+
+**Auto-fix loop (max 3 attempts):**
+1. Read `{workdir}/{name}-mapping.yarrrml.yml` + the violations
+2. Generate corrected content in memory
+3. Re-run the Step 5c consistency checks (term coverage, column names, class coverage) on the corrected content
+4. Show a change summary — one sentence per violation addressed
+5. Ask: `Apply this fix? [yes / no]`
+   - `yes` → overwrite `{name}-mapping.yarrrml.yml`, return to top of Step 5e (re-validate)
+   - `no` → show violations, user chooses: try again / fix manually
+
+After 3 failed auto-fix attempts:
+> "Auto-fix exhausted 3 attempts. Please fix `{name}-mapping.yarrrml.yml` manually, then reply `done`."
+Wait for `done`, then re-validate once.
+
+---
+
+### 5f — Semantic eval (LLM judge)
+
+Judge `{name}-mapping.yarrrml.yml` against the domain model and `CLASS_MAP`.
+
+**Checks:**
+1. Every class has a mapping block using its correct `entityId` and `folderId` from `CLASS_MAP`
+2. Every data property maps to a plausible column name — consistent with the property's camelCase name and XSD type (e.g. a `xsd:decimal` property should not bind to a boolean-looking column)
+3. Every object property join connects the correct pair of classes with the right FK direction (as stated in `rdfs:comment` FK provenance)
+4. USAGE POLICY routing rules reference only functions and classes that exist in the ontology
+
+**Verdict format:**
+```
+Semantic eval — {name}-mapping.yarrrml.yml
+  ✓ Class coverage — all {N} classes have a mapping block
+  ✓ entityId/folderId — all match CLASS_MAP
+  ✗ Suspicious column binding — ont:Order.totalAmount (xsd:decimal) maps to $(IsActive) — likely wrong column
+  ✗ Wrong FK direction — prescribedBy join has Doctor FK pointing to Prescription, should be reversed
+```
+
+On any `✗`: offer agent fix. Fix loop: generate corrected content → re-run local gates (5c) → re-run G5 → re-run 5f. Max 3 attempts.
+
+All checks `✓` → proceed to Step 6.
+
+---
+
+## Step 6 — Generate {name}-functions.ttl (skip if SDD has no query operations)
 
 Query operations are natural-language questions the SDD says the system (or an AI agent) should answer from the ontology data: "how many X are in state Y", "show me all X with their Y", "which X has the most Y", "list X grouped by Z". If the SDD describes dashboards, summaries, counts, or searches, those are query operations. If the SDD is purely about data structure with no query requirements, skip this step.
 
@@ -472,7 +704,7 @@ If no query operations → skip this step and proceed to Step 7. Otherwise follo
 
 Identify all natural-language questions from the SDD that an AI agent should answer from the ontology. Build the full file content in memory before writing.
 
-**Separation of concerns inside functions.ttl:**
+**Separation of concerns inside {name}-functions.ttl:**
 - **Fact** (what this function returns, when to use it) → `rdfs:comment` on each function
 - **Rule** (which function to call for which question, LIMIT/DISTINCT discipline) → USAGE POLICY header block
 - **Binding** (which `ont:` terms the SPARQL traverses) → `ont:statement`
@@ -495,7 +727,7 @@ For each function:
 ### 6b — Show draft summary
 
 ```
-Functions draft: {ontology-name} functions.ttl
+Functions draft: {ontology-name} {name}-functions.ttl
 
 Functions ({N}):
   ont:countPrescriptionsByStatus
@@ -515,11 +747,11 @@ Functions ({N}):
 
 ### 6c — Functions consistency check (on draft)
 
-**Check 1 — Property paths:** every `ont:{ClassName}.{propName}` used in any SPARQL WHERE clause must be declared in `schema.ofn`.
+**Check 1 — Property paths:** every `ont:{ClassName}.{propName}` used in any SPARQL WHERE clause must be declared in `{name}.ofn`.
 
-**Check 2 — Class references:** every `a ont:{ClassName}` in SPARQL must be a declared class in `schema.ofn`.
+**Check 2 — Class references:** every `a ont:{ClassName}` in SPARQL must be a declared class in `{name}.ofn`.
 
-**Check 3 — Object properties:** every `ont:{verbPhrase}` used as a property in SPARQL must be declared in `schema.ofn`.
+**Check 3 — Object properties:** every `ont:{verbPhrase}` used as a property in SPARQL must be declared in `{name}.ofn`.
 
 **Check 4 — Parameter binding:** every `?paramName` that appears as an unbound input variable in the WHERE clause (whether in a triple pattern or a `FILTER`) must have a matching entry in `fno:expects` and a corresponding `ont:param.*` block.
 
@@ -530,9 +762,9 @@ Functions ({N}):
 Report:
 ```
 Functions checks:
-  ✓ Property paths — all ont: DataProperty terms declared in schema.ofn
-  ✓ Class references — all ont: class terms declared in schema.ofn
-  ✓ Object properties — all ont: ObjectProperty terms declared in schema.ofn
+  ✓ Property paths — all ont: DataProperty terms declared in {name}.ofn
+  ✓ Class references — all ont: class terms declared in {name}.ofn
+  ✓ Object properties — all ont: ObjectProperty terms declared in {name}.ofn
   ✓ Parameter binding — all unbound variables (triple and FILTER) have matching fno:expects entries
   ✓ Return contract (forward) — all projected SELECT variables have matching fno:returns / fno:Output nodes
   ✓ Return contract (reverse) — all ont:returnName values match a projected SELECT variable
@@ -544,11 +776,80 @@ Fix any issues in the draft before proceeding.
 
 ### 6d — Confirm and write
 
-> **Confirm functions.ttl?** ({N} functions — consistency checks passed)
+> **Confirm {name}-functions.ttl?** ({N} functions — consistency checks passed)
 > Reply `yes` to write the file, or describe any changes needed.
 
-On confirmation, write `{workdir}/functions.ttl`.
+On confirmation, write `{workdir}/{name}-functions.ttl`.
 On revision request, update the draft and return to step 6b.
+
+---
+
+### 6e — Backend validate + agent-fix loop
+
+```bash
+uip ont artifacts validate {name} {name}-functions.ttl \
+  --type functions \
+  --media-type text/turtle \
+  --file {workdir}/{name}-functions.ttl
+```
+
+Always HTTP 200 — check `Data.valid`:
+
+- **`true`** → Upsert immediately:
+  ```bash
+  uip ont artifacts upsert {name} {name}-functions.ttl \
+    --type functions \
+    --media-type text/turtle \
+    --file {workdir}/{name}-functions.ttl
+  ```
+  Check `"Code": "ArtifactUpserted"` → `✓ {name}-functions.ttl — uploaded.` Proceed to Step 7.
+- **`false`** → Show violations verbatim and offer auto-fix:
+
+```
+Backend validation failed — {name}-functions.ttl
+Violations:
+{Data.violations}
+
+Attempt auto-fix? [yes / no]
+(If no: fix the file manually then reply `done`. On `done`, re-validate once.)
+```
+
+**Auto-fix loop (max 3 attempts):**
+1. Read `{workdir}/{name}-functions.ttl` + the violations
+2. Generate corrected content in memory
+3. Re-run the Step 6c consistency checks (property paths, class references, object properties, parameter binding, return contract) on the corrected content
+4. Show a change summary — one sentence per violation addressed
+5. Ask: `Apply this fix? [yes / no]`
+   - `yes` → overwrite `{name}-functions.ttl`, return to top of Step 6e (re-validate)
+   - `no` → show violations, user chooses: try again / fix manually
+
+After 3 failed auto-fix attempts:
+> "Auto-fix exhausted 3 attempts. Please fix `{name}-functions.ttl` manually, then reply `done`."
+Wait for `done`, then re-validate once.
+
+---
+
+### 6f — Semantic eval (LLM judge)
+
+Judge `{name}-functions.ttl` against the query operations described in the domain.
+
+**Checks:**
+1. Every described query operation has a corresponding function
+2. Each function's `rdfs:comment` accurately describes what the SPARQL SELECT actually computes
+3. SPARQL WHERE clause traverses the right `ont:` terms to answer the question stated in the comment
+4. `fno:returns` declarations match the variables actually projected in SELECT
+
+**Verdict format:**
+```
+Semantic eval — {name}-functions.ttl
+  ✓ Coverage — all {N} described query operations have a function
+  ✗ Comment mismatch — ont:listActiveOrders claims to return orders "with their customer name" but SPARQL does not join ont:Customer
+  ✗ Missing function — "count prescriptions by status" described in domain, no function found
+```
+
+On any `✗`: offer agent fix. Fix loop: generate corrected content → re-run local gates (6c) → re-run G5 → re-run 6f. Max 3 attempts.
+
+All checks `✓` → proceed to Step 7.
 
 ---
 
@@ -563,12 +864,12 @@ If the SDD does not describe write/update operations, skip this step. One file p
 For each write operation from the SDD:
 
 - **Name** — `ont:{camelCaseActionName}` (verb phrase: `updatePrescriptionStatus`, `createPatientRecord`)
-- **File name** — `{actionName}.ttl` (camelCase without the `ont:` prefix, e.g. `updatePrescriptionStatus.ttl`)
+- **File name** — `{name}-{actionName}.ttl` (e.g. for ontology `clinic` and action `updatePrescriptionStatus` → `clinic-updatePrescriptionStatus.ttl`)
 - **Label** — short human phrase
 - **Comment** — what it changes, what params it takes, whether it modifies one row or many
 - **SQL** — on `ont:statements ( "..." )` (plural, always a list even for a single statement)
   - `{{EntityName}}` — entity (table) reference, resolved by runtime from mapping
-  - `{{EntityName.fieldName}}` — column reference, must match `{ClassName}.{propName}` naming from schema.ofn
+  - `{{EntityName.fieldName}}` — column reference, must match `{ClassName}.{propName}` naming from {name}.ofn
   - `:paramName` — bound parameter, must match `ont:paramName` in the parameter block
 - **Parameters** — `fno:expects` + `ont:param.*` block per parameter
 
@@ -594,15 +895,15 @@ Action draft: updatePrescriptionStatus.ttl
 
 **Check 1 — Entity references:** every `{{EntityName}}` in the SQL must correspond to a class in the confirmed domain model.
 
-**Check 2 — Field references:** every `{{EntityName.fieldName}}` must match a `{ClassName}.{propName}` declared in `schema.ofn` (e.g. `{{Prescription.status}}` → `ont:Prescription.status`).
+**Check 2 — Field references:** every `{{EntityName.fieldName}}` must match a `{ClassName}.{propName}` declared in `{name}.ofn` (e.g. `{{Prescription.status}}` → `ont:Prescription.status`).
 
 **Check 3 — Parameter alignment:** every `:paramName` in the SQL must have a matching `ont:param.{actionName}.{paramName}` block.
 
 Report:
 ```
 Action checks (updatePrescriptionStatus.ttl):
-  ✓ Entity references — Prescription declared in schema.ofn
-  ✓ Field references — Prescription.status, Prescription.id declared in schema.ofn
+  ✓ Entity references — Prescription declared in {name}.ofn
+  ✓ Field references — Prescription.status, Prescription.id declared in {name}.ofn
   ✓ Parameter alignment — id and newStatus have matching param blocks
 ```
 
@@ -610,11 +911,79 @@ Action checks (updatePrescriptionStatus.ttl):
 
 ### 7d — Confirm and write
 
-> **Confirm {actionName}.ttl?** (SQL action, {N} params — consistency checks passed)
+> **Confirm {name}-{actionName}.ttl?** (SQL action, {N} params — consistency checks passed)
 > Reply `yes` to write the file, or describe any changes needed.
 
-On confirmation, write `{workdir}/{actionName}.ttl`.
-Repeat steps 7a–7d for each remaining action in the SDD.
+On confirmation, write `{workdir}/{name}-{actionName}.ttl`.
+
+---
+
+### 7e — Backend validate + agent-fix loop
+
+```bash
+uip ont artifacts validate {name} {name}-{actionName}.ttl \
+  --type actions \
+  --media-type text/turtle \
+  --file {workdir}/{name}-{actionName}.ttl
+```
+
+Always HTTP 200 — check `Data.valid`:
+
+- **`true`** → Upsert immediately:
+  ```bash
+  uip ont artifacts upsert {name} {name}-{actionName}.ttl \
+    --type actions \
+    --media-type text/turtle \
+    --file {workdir}/{name}-{actionName}.ttl
+  ```
+  Check `"Code": "ArtifactUpserted"` → `✓ {name}-{actionName}.ttl — uploaded.`
+- **`false`** → Show violations verbatim and offer auto-fix:
+
+```
+Backend validation failed — {name}-{actionName}.ttl
+Violations:
+{Data.violations}
+
+Attempt auto-fix? [yes / no]
+(If no: fix the file manually then reply `done`. On `done`, re-validate once.)
+```
+
+**Auto-fix loop (max 3 attempts):**
+1. Read `{workdir}/{name}-{actionName}.ttl` + the violations
+2. Generate corrected content in memory
+3. Re-run the Step 7c consistency checks (entity references, field references, parameter alignment) on the corrected content
+4. Show a change summary — one sentence per violation addressed
+5. Ask: `Apply this fix? [yes / no]`
+   - `yes` → overwrite `{name}-{actionName}.ttl`, return to top of Step 7e (re-validate)
+   - `no` → show violations, user chooses: try again / fix manually
+
+After 3 failed auto-fix attempts:
+> "Auto-fix exhausted 3 attempts. Please fix `{name}-{actionName}.ttl` manually, then reply `done`."
+Wait for `done`, then re-validate once.
+
+---
+
+### 7f — Semantic eval (LLM judge)
+
+Judge `{name}-{actionName}.ttl` against the write operation description.
+
+**Checks:**
+1. SQL statement targets the correct entity table and columns for the described operation
+2. Parameters match what the description says the action takes as input — no missing or extra params
+3. `rdfs:comment` accurately describes what the SQL does and what each parameter controls
+
+**Verdict format:**
+```
+Semantic eval — {name}-updatePrescriptionStatus.ttl
+  ✓ SQL target — correct entity and columns
+  ✗ Missing parameter — description says action accepts a reason string, no :reason param declared
+```
+
+On any `✗`: offer agent fix. Fix loop: generate corrected content → re-run local gates (7c) → re-run G5 → re-run 7f. Max 3 attempts.
+
+All checks `✓` → continue.
+
+Repeat steps 7a–7f for each remaining action in the SDD.
 
 ---
 
@@ -622,42 +991,68 @@ Repeat steps 7a–7d for each remaining action in the SDD.
 
 Run every gate in order. Do not upload until all pass. Fix and regenerate on any failure.
 
-> **Relationship to per-artifact checks:** Steps 3c, 4c, 5c, 6c, and 7c each scanned *draft* content before writing. Step 8 runs checks on the *written files* — confirming disk content matches what was confirmed. Gates 1–2 and 4 are a final sanity pass; Gate 3 is the definitive cross-file check since all files now exist. Gate 5 runs here only in standalone mode (see Gate 5 note below).
+> **Relationship to per-artifact checks:** Steps 3c–7c scanned *draft* content before writing. Steps 3f–7f ran per-artifact semantic eval after each write. Step 8 runs on *written files*: Gates 1–4 are a final text-scan sanity pass; Gate 6 is the definitive cross-artifact semantic consistency check (needs all files to exist). Gate 5 already ran inline — it does not run again here.
+>
+> **Run order:** G1 → G2 → G3 → G4 → G6. Stop at first failure; fix and re-run from that gate.
 
 ### Gate 1 — QL blacklist scan (text scan, no API needed)
 
-Grep `schema.ofn` for forbidden OWL 2 QL constructs before touching the API:
+Grep `{name}.ofn` for forbidden OWL 2 QL constructs before touching the API:
 
 ```bash
-grep -E "ExactCardinality|MinCardinality|MaxCardinality|AllValuesFrom|HasValue|ObjectOneOf|DataOneOf|ObjectUnionOf|DataUnionOf|ObjectHasSelf|FunctionalObjectProperty|FunctionalDataProperty|InverseFunctional|TransitiveObjectProperty|HasKey" {workdir}/schema.ofn
+grep -E "ExactCardinality|MinCardinality|MaxCardinality|AllValuesFrom|HasValue|ObjectOneOf|DataOneOf|ObjectUnionOf|DataUnionOf|ObjectHasSelf|FunctionalObjectProperty|FunctionalDataProperty|InverseFunctional|TransitiveObjectProperty|HasKey" {workdir}/{name}.ofn
 ```
 
-Zero hits required. Any match → fix in schema.ofn (move constraint to `rdfs:comment` text), re-run.
+Zero hits required. Any match → fix in {name}.ofn (move constraint to `rdfs:comment` text), re-run.
 
 ### Gate 2 — Naming convention scan (text scan)
 
 ```bash
-grep -E "DataProperty\(:has[A-Z]" {workdir}/schema.ofn
+grep -E "DataProperty\(:has[A-Z]" {workdir}/{name}.ofn
 ```
 
 Zero hits required. Any `has{Prop}` DataProperty name → rename to `{ClassName}.{propName}`, update all three files.
 
 ### Gate 3 — Cross-file consistency (text scan)
 
-Every `ont:` term referenced in `mapping.yarrrml.yml` and every `sh:path` in `rules.ttl` must be declared in `schema.ofn`.
+Every `ont:` term referenced in `{name}-mapping.yarrrml.yml` and every `sh:path` in `{name}-constraints.ttl` must be declared in `{name}.ofn`.
 
 ```bash
 # Extract ont: terms from mapping (data/object properties used)
-grep -oE "ont:[A-Za-z0-9._]+" {workdir}/mapping.yarrrml.yml | sort -u
+grep -oE "ont:[A-Za-z0-9._]+" {workdir}/{name}-mapping.yarrrml.yml | sort -u
 
 # Extract sh:path values from rules
-grep -oE "ont:[A-Za-z0-9._]+" {workdir}/rules.ttl | sort -u
+grep -oE "ont:[A-Za-z0-9._]+" {workdir}/{name}-constraints.ttl | sort -u
 
-# Check each against schema.ofn declarations
-grep "Declaration(" {workdir}/schema.ofn
+# Check each against {name}.ofn declarations
+grep "Declaration(" {workdir}/{name}.ofn
 ```
 
 Every term found in mapping or rules must appear in a `Declaration(DataProperty(:...))` or `Declaration(ObjectProperty(:...))` in the schema. Any mismatch → fix before proceeding (a mismatch causes `BROKEN` state after deploy).
+
+### Gate 6 — Cross-artifact semantic consistency (LLM judge)
+
+Runs after Gates 1–4 pass. All files exist — judge semantic alignment across them against the confirmed domain model.
+
+**Checks:**
+1. **Schema-mapping alignment:** for each data property in `{name}.ofn`, its `rdfs:comment` fact type is consistent with the column it binds to in `{name}-mapping.yarrrml.yml` (e.g. a `"Values: 'Active' | 'Cancelled'"` comment should not map to a numeric column)
+2. **Business rule completeness:** every business rule mentioned in the original domain description has a shape in `{name}-constraints.ttl` — none slipped through
+3. **Function coverage:** every query operation from the domain description has a function in `{name}-functions.ttl` (skip if no functions generated)
+4. **No missing domain concept:** every class, property, and relationship from the domain description is represented across all artifacts
+5. **USAGE POLICY coherence:** routing rules in the mapping and functions USAGE POLICY blocks reference only terms and functions that actually exist in the artifact files
+
+**Verdict format:**
+```
+Gate 6 — Cross-artifact semantic consistency
+  ✓ Schema-mapping alignment — all data property types consistent with bound columns
+  ✓ Business rule completeness — all {N} rules enforced
+  ✗ Missing concept — "Prescription.refillCount" described in domain, not present in schema or mapping
+  ✗ USAGE POLICY orphan — routing rule references ont:listExpiredPrescriptions but no such function exists
+```
+
+On any `✗`: offer agent fix per affected artifact. Fix loop per artifact: generate corrected content → re-run local gates → re-run G5 (validate → upsert) → re-run 6 checks until all pass. After all fixes applied, re-run Gate 6 in full.
+
+All checks `✓` → proceed to Step 9.
 
 ### Gate 4 — Annotation completeness (text scan)
 
@@ -665,81 +1060,37 @@ Every declared class, data property, and object property must have both `rdfs:la
 
 ```bash
 # What is declared
-grep "Declaration(Class(:" {workdir}/schema.ofn
-grep "Declaration(DataProperty(:" {workdir}/schema.ofn
-grep "Declaration(ObjectProperty(:" {workdir}/schema.ofn
+grep "Declaration(Class(:" {workdir}/{name}.ofn
+grep "Declaration(DataProperty(:" {workdir}/{name}.ofn
+grep "Declaration(ObjectProperty(:" {workdir}/{name}.ofn
 
 # What has rdfs:label and rdfs:comment
-grep "AnnotationAssertion(rdfs:label :" {workdir}/schema.ofn
-grep "AnnotationAssertion(rdfs:comment :" {workdir}/schema.ofn
+grep "AnnotationAssertion(rdfs:label :" {workdir}/{name}.ofn
+grep "AnnotationAssertion(rdfs:comment :" {workdir}/{name}.ofn
 ```
 
 Cross-check: every name that appears in a `Declaration(...)` line must also appear in both an `AnnotationAssertion(rdfs:label ...)` line and an `AnnotationAssertion(rdfs:comment ...)` line. Missing `rdfs:label` or `rdfs:comment` on any class, data property, or object property → add before proceeding.
 
-### Gate 5 — Backend syntactic validate (API call)
-
-> **Called by `uipath-ontology-authoring`?** Stop after Gate 4 — Gate 5 requires the ontology to exist on the backend. Return the confirmed file paths to the authoring skill; it runs Gate 5 in Step 3b after `uip ont create`.
-
-Runs after the text scans pass (standalone mode only at this point). Always returns HTTP 200 — check `Data.valid`, not exit code.
-
-```bash
-uip ont artifacts validate {ontology-name} schema.ofn \
-  --type schema \
-  --media-type text/owl-functional \
-  --file {workdir}/schema.ofn
-
-uip ont artifacts validate {ontology-name} rules.ttl \
-  --type constraints \
-  --media-type text/turtle \
-  --file {workdir}/rules.ttl
-
-uip ont artifacts validate {ontology-name} mapping.yarrrml.yml \
-  --type mapping \
-  --media-type application/yaml \
-  --file {workdir}/mapping.yarrrml.yml
-```
-
-If `Data.valid` is `false`, read `Data.violations`, fix the file, re-run gates 1–5.
-
 ---
 
-## Step 9 — Upload
+## Step 9 — Deploy (mapping upload)
 
-Upload in strict order. Mapping last — it triggers deployment. Functions and actions are freely reorderable relative to each other but must come after constraints and before mapping.
+All artifacts except the mapping were upserted inline during Steps 3e–7e. The mapping is uploaded last because uploading it triggers `DRAFT → DEPLOYED`.
 
 ```bash
-# 1 — Schema
-uip ont artifacts upsert {ontology-name} schema.ofn \
-  --type schema \
-  --media-type text/owl-functional \
-  --file {workdir}/schema.ofn
-
-# 2 — Constraints
-uip ont artifacts upsert {ontology-name} rules.ttl \
-  --type constraints \
-  --media-type text/turtle \
-  --file {workdir}/rules.ttl
-
-# 3 — Functions (if generated)
-uip ont artifacts upsert {ontology-name} functions.ttl \
-  --type functions \
-  --media-type text/turtle \
-  --file {workdir}/functions.ttl
-
-# 4 — Actions (one upload per file, if generated)
-uip ont artifacts upsert {ontology-name} {actionName}.ttl \
-  --type actions \
-  --media-type text/turtle \
-  --file {workdir}/{actionName}.ttl
-
-# 5 — Mapping (deploy trigger — upload last)
-uip ont artifacts upsert {ontology-name} mapping.yarrrml.yml \
+uip ont artifacts upsert {ontology-name} {name}-mapping.yarrrml.yml \
   --type mapping \
   --media-type application/yaml \
-  --file {workdir}/mapping.yarrrml.yml
+  --file {workdir}/{name}-mapping.yarrrml.yml
 ```
 
-Check each response for `"Code": "ArtifactUpserted"`. Then run `uip ont get {ontology-name}` — expected `state`: `DEPLOYED`.
+Check response: `"Code": "ArtifactUpserted"`. Then verify:
+
+```bash
+uip ont get {ontology-name}
+```
+
+Expected `state`: `DEPLOYED`. If `BROKEN` → a mapping term is not declared in schema; check every `ont:` term in `{name}-mapping.yarrrml.yml` against `{name}.ofn` and re-upload mapping. If `DRAFT` → schema or constraints were not uploaded yet; check Steps 3e and 4e completed successfully.
 
 ---
 
@@ -749,7 +1100,7 @@ Check each response for `"Code": "ArtifactUpserted"`. Then run `uip ont get {ont
 - Never use `xsd:string` for numeric fields — use `xsd:decimal` or `xsd:integer`
 - Don't add `SubClassOf` for optional relationships — only for "must have" / cardinality constraints
 - Don't forget `ObjectPropertyDomain` and `ObjectPropertyRange` for every ObjectProperty
-- `schema.ofn` and `rules.ttl` must stay in sync: every OWL restriction needs a matching SHACL constraint
+- `{name}.ofn` and `{name}-constraints.ttl` must stay in sync: every OWL restriction needs a matching SHACL constraint
 - `skos:altLabel` goes on the Class, not the property
 - IRI must be identical across all three artifact files — derive once from the name slug, use verbatim
-- Mapping must reference only properties declared in `schema.ofn`; a mismatch causes `BROKEN` state
+- Mapping must reference only properties declared in `{name}.ofn`; a mismatch causes `BROKEN` state
