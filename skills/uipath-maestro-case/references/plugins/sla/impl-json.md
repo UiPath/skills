@@ -16,9 +16,9 @@ Compose the `slaRules[]` array for each target (root or stage) in one write. Gro
 
 | T-entry kind | Required fields | Notes |
 |---|---|---|
-| Default SLA | `target`, `count`, `unit` | One per target. Emitted as the `=js:true` entry, always last. |
-| Conditional rule | `target: "root"`, `condition` (natural-language), `count`, `unit` | Root-only. Translated to `=js:<expr>` at execution; see Expression Translation below. |
-| Escalation | `target`, `attach-to: T<m>` \| `default`, `trigger-type`, `at-risk-percentage?`, `recipients[]`, `display-name?` | `attach-to` points to the T-number of the parent rule (or the default). |
+| Default SLA | `target`, `count`, `unit`, `display-name` | One per target. Emitted as the `=js:true` entry, always last. |
+| Conditional rule | `target: "root"`, `condition` (natural-language), `count`, `unit`, `display-name` | Root-only. Translated to `=js:<expr>` at execution; see Expression Translation below. |
+| Escalation | `target`, `attach-to: T<m>` \| `default`, `trigger-type`, `at-risk-percentage?`, `recipients[]`, `display-name` | `attach-to` points to the T-number of the parent rule (or the default). |
 
 ## ID generation
 
@@ -43,12 +43,14 @@ After grouping T-entries by target, compose the `slaRules` array and write it in
 ```json
 [
   {
+    "displayName": "SLA Rule 1",
     "expression": "=js:<translated-condition-1>",
     "count": <n>, "unit": "<min|h|d|w|m>",
     "escalationRule": [ <escalations with attach-to == conditional-1-T-number> ]
   },
   { "...additional conditional rules in sdd order..." },
   {
+    "displayName": "SLA Rule 2",
     "expression": "=js:true",
     "count": <default.count>, "unit": "<default.unit>",
     "escalationRule": [ <escalations with attach-to == default> ]
@@ -82,7 +84,7 @@ Emission rules:
 
 1. **Conditional rules first, in T-entry order.** Priority = sdd order (top-most wins).
 2. **Default rule (`=js:true`) last.** Always emitted when any SLA T-entry targets this node — even escalation-only cases.
-3. **Bare default rule is legal.** If a target has escalations but no default SLA T-entry, emit `{expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`.
+3. **Escalation-only default rule is legal, but it still needs a title.** If a target has escalations but no default SLA T-entry, emit `{displayName:"SLA Rule 1", expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`.
 4. **Always emit `escalationRule` on every rule.** Use `"escalationRule": []` when a rule has no attached escalations. Never omit the key.
 5. **Omit `slaRules` key entirely** on targets with no SLA T-entries.
 
@@ -91,7 +93,7 @@ Emission rules:
 ```json
 {
   "id": "esc_xxxxxx",
-  "displayName": "<from T-entry, optional>",
+  "displayName": "<from T-entry or deterministic fallback>",
   "action": {
     "type": "notification",
     "recipients": [
@@ -105,7 +107,9 @@ Emission rules:
 }
 ```
 
-- `displayName` omitted entirely when T-entry doesn't supply one (don't emit `undefined`). When supplied, it is the SLA title shown in the UI and MUST NOT contain `:`; reject the T-entry before writing JSON if it does.
+- `displayName` is required for every SLA rule and escalation in the current Case App contract. Use the authored value or deterministic fallback; never emit blank/undefined. It must be unique within the target and MUST NOT contain `:`; reject the T-entry before writing JSON if it does.
+- Reject a non-positive `count`; for `unit: "min"`, reject values below 15 or above 1000.
+- Reject a non-default rule with an empty expression, an escalation with no recipients, or an `at-risk` escalation without `atRiskPercentage`.
 - `atRiskPercentage` included only when `triggerInfo.type === "at-risk"`.
 - `recipients` is an array — **one entry per sdd-declared recipient**.
 

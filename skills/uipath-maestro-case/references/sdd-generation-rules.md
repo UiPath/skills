@@ -193,7 +193,19 @@ Defines what `sdd.md` Section 1 (Case Definition) must contain.
 | Case App | optional | `Enabled` / `Disabled` — whether the in-product Case App UI is on (`metadata.caseAppEnabled`). | Default `Disabled`; record in source ledger. |
 | Task-output passing | optional | `Direct` / `Shared` — `metadata.caseDirectlyPassTaskOutputs`. `Direct` passes a task's outputs straight to downstream tasks (default). | Default `Direct`. |
 
-**Naming constraint.** Stage names and SLA titles/display names MUST NOT contain `:`. The colon is reserved by the SDD stage-heading and task-entry syntax. If the user supplies one, ask for a replacement that preserves the meaning (for example, use ` - ` or parentheses); never silently truncate or reinterpret the name.
+**PO.Frontend validation parity.** Before Approve, apply the same name and SLA checks that the Case App applies:
+
+| Surface | Required checks |
+|---|---|
+| Stage label | Non-empty; unique across stages; no `:`. A non-Case-Manager stage also cannot reuse the reserved default Case Manager stage label when a Case Manager stage exists. |
+| Task display name | No `:` for materialized tasks. |
+| SLA rule title (`displayName`) | Non-empty; unique within the root or stage target; no `:`. |
+| Escalation title (`displayName`) | Non-empty; unique across escalations on the target; no `:`. |
+| SLA duration | `count > 0`; when `unit: min`, `15 ≤ count ≤ 1000`. Supported units are `min`, `h`, `d`, `w`, and `m`. |
+| Conditional SLA | Every non-default SLA rule has a non-empty expression/condition. |
+| Escalation payload | Every escalation has at least one recipient; an `at-risk` escalation has an `atRiskPercentage` value. |
+
+These are blocking authoring errors, not optional style warnings. Preserve the user's wording when repairing a name, but ask for a replacement when uniqueness or a reserved delimiter is violated; never silently suffix or truncate it.
 
 ### 1.2 Case-level SLA escalation
 

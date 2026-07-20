@@ -41,6 +41,7 @@ Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage >
 | `count` | sdd.md duration number | Positive integer |
 | `unit` | sdd.md duration unit | `min` \| `h` \| `d` \| `w` \| `m` |
 | `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
+| `display-name` | sdd.md or generated fallback | Required non-empty SLA title, unique within the target, and MUST NOT contain `:`. If the SDD has no title, ask for one or use the deterministic fallback `SLA Rule {N}` and record it. |
 
 ### Conditional SLA rule
 
@@ -48,6 +49,7 @@ Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage >
 |-------|--------|-------|
 | `expression` | sdd.md condition | Natural-language in planning; the execution phase translates. **Do not fabricate syntax during planning.** |
 | `count`, `unit` | sdd.md duration for this condition | Same units as default |
+| `display-name` | sdd.md or generated fallback | Required non-empty unique title, no `:`; use `SLA Rule {N}` only when the author supplied no title. |
 
 Rules are evaluated in insertion order — first truthy expression wins. The default SLA acts as the fallback.
 
@@ -56,11 +58,11 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 | Field | Source | Notes |
 |-------|--------|-------|
 | `trigger-type` | sdd.md | `at-risk` \| `sla-breached` |
-| `at-risk-percentage` | sdd.md | Required when `trigger-type: at-risk` (1–99) |
+| `at-risk-percentage` | sdd.md | Required when `trigger-type: at-risk`; preserve the supplied value because FE validates presence (it does not enforce a numeric range here). |
 | `recipient-scope` | sdd.md | `User` \| `UserGroup` |
 | `recipient-target` | sdd.md → resolver | Recipient UUID. When sdd gives an email or group name, run [§ Identity Resolution](#identity-resolution) — resolved UUID written inline. On resolver failure or user decline, mark `<UNRESOLVED: user-uuid for <email>>` / `<UNRESOLVED: group-uuid for <name>>`. |
 | `recipient-value` | sdd.md | Display value (typically the email for User, group name for UserGroup). |
-| `display-name` | sdd.md (optional) | SLA title shown in the UI. MUST NOT contain `:`. |
+| `display-name` | sdd.md or generated fallback | Required non-empty escalation title, unique across the target, and MUST NOT contain `:`. If omitted, use `Escalation Rule {N}` and record the fallback. |
 | `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
 | `attach-to` | sdd.md | `default` (attach to the `=js:true` rule) or `T<m>` pointing to the conditional-rule T-entry the escalation fires under. |
 
@@ -142,6 +144,7 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 ```markdown
 ## T<n>: Set default SLA for "<target>" to <duration>
 - target: "<root>" | "<stage-name>"
+- display-name: "SLA Rule 1"              # required; use authored title or SLA Rule {N}
 - count: 5
 - unit: d
 - order: after T<m>
@@ -152,6 +155,7 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 
 ```markdown
 ## T<n>: Add conditional SLA rule for root case — <condition summary>
+- display-name: "Urgent SLA"              # required; target-unique, no ':'
 - condition: "<natural-language condition from sdd.md>"
 - count: 30
 - unit: min
@@ -178,6 +182,16 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 **Recipient format:** `<target> / <value>` where `<target>` is the resolved UUID (per [§ Identity Resolution](#identity-resolution)) — or `<UNRESOLVED: …>` sentinel when the resolver failed or the user declined — and `<value>` is the display string. Unresolved recipients survive into execution; the user patches the UUID externally after the build and the completion report lists every unresolved recipient.
 
 **`attach-to: default`** is the default. Use `T<m>` when sdd.md attaches an escalation to a specific conditional SLA rule.
+
+## Frontend validation parity
+
+Before emitting SLA T-entries, reject or repair the same cases the Case App rejects:
+
+- every SLA rule has a non-empty, target-unique `display-name`;
+- every escalation has a non-empty, target-unique `display-name`;
+- every SLA `count` is positive, and minute-based values are between 15 and 1000 inclusive;
+- every non-default rule has a condition/expression;
+- every escalation has at least one recipient, and every `at-risk` escalation carries `at-risk-percentage`.
 
 ## Anti-Patterns
 
