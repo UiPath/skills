@@ -1,63 +1,14 @@
 # Records Query Reference
 
-## Basic List (All Records)
-
-```bash
-# First page
-uip df records list <entity-id> --limit 50 --output json
-
-# Next page — pass NextCursor value from previous response
-uip df records list <entity-id> --limit 50 --cursor <NextCursor> --output json
-```
-
-Response wrapper: `{ Result, Code: "RecordList" | "RecordQuery", Data: { Items, TotalCount, HasNextPage, NextCursor, CurrentPage, TotalPages, SupportsPageJump } }`.
-
-- **Records live in `Data.Items`** (array). Not `Data.Records` — the older docs used that name; the actual key the CLI emits is `Items`.
-- **`Data.NextCursor` is an object `{ "Value": "<base64-string>" }`, not a flat string.** Pass `Data.NextCursor.Value` to `--cursor` on the next call (unwrap one level). Passing the whole `NextCursor` object errors out.
-- Use `Data.HasNextPage` to check if more records exist. Stop when it's `false`.
+CLI syntax, response wrappers, pagination flags, and the `Data.Items` / `NextCursor.Value` unwrap footgun all live in [Data Fabric CLI docs → `records`](https://github.com/UiPath/cli/blob/main/docs/tools/data-fabric.md#records--response-shapes-and-footguns). This file only covers the agent-side patterns.
 
 ## MULTILINE_MAX Fields — Marker vs Full Content
 
-`records list` and `records query` do NOT return `MULTILINE_MAX` content. Each such field comes back as a size marker string starting `HasValue=true Length=N` — live form: `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`. Only single-record read returns the full content:
-
-```bash
-uip df records get <entity-id> <record-id> --output json
-```
+`records list` and `records query` do NOT return `MULTILINE_MAX` content. Each such field comes back as a size marker string starting `HasValue=true Length=N` — live form: `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`. Only single-record read returns the full content via `records get`.
 
 1. **Never treat the marker as the value.** Don't display, compare, or persist `"HasValue=true Length=N"` as field content — fetch via `records get` first.
 2. **Never write the marker back.** A `records update` body built by echoing a record from `list` / `query` overwrites the real content with the literal marker string — verified: the server accepts it as a normal value, `Result: Success`, content silently destroyed. Omit `MULTILINE_MAX` keys from update bodies unless intentionally replacing the content.
-3. **No filter, no sort.** `queryFilters` / `sortOptions` naming a `MULTILINE_MAX` field → 400: *"Field '<name>' is of type MULTILINE_MAX and cannot be used in filters."* / *"Sort field '<name>' is of type MULTILINE_MAX and cannot be used for sorting."* Surface verbatim (data-fabric.md Rule 18); don't retry with other operators. Full type contract: [entity-schema.md → MULTILINE_MAX fields](entity-schema.md#multiline_max-fields).
-
-## Pagination
-
-Offset-based under the hood. Available on both `records list` and `records query`:
-
-- `-l, --limit <number>` — page size, default `50`, min `1`. Keep constant across a sweep (changing it re-slices the offset and can skip/duplicate records).
-- `--cursor <NextCursor.Value>` — the inner `Value` string from the previous response's `Data.NextCursor` object. Pass verbatim; never hand-craft. Do **not** pass the wrapper object.
-- `-o, --offset <number>` — non-negative record index. Rounded down to the nearest page boundary (`jumpToPage = floor(offset / limit) + 1`). **Mutually exclusive with `--cursor`** — passing both errors with *"--offset and --cursor are mutually exclusive"*.
-- Stop when `HasNextPage: false`. `CurrentPage` / `TotalPages` / `SupportsPageJump` are informational.
-
-## Folder scope (`--folder-key`)
-
-`records list`, `records get`, `records insert`, `records update`, `records delete`, `records query`, and `records import` all accept `--folder-key <GUID>` (CLI ≥ `1.197.0`). Required when the parent entity is folder-scoped; recommended on every destructive op. Look up the parent's folder key from `entities list --include-folders --output json` (`FolderId` per row).
-
-```bash
-uip df records list  <entity-id> --folder-key <folder-guid> --output json
-uip df records query <entity-id> --folder-key <folder-guid> \
-  --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Status","operator":"=","value":"active"}]}}' \
-  --output json
-```
-
-`--folder-key` is forwarded as `X-UIPATH-FolderKey` and threaded through to the SDK — for tenant-scoped entities it's harmless (server resolves by UUID), so passing it defensively never breaks reads.
-
-```bash
-# Sequential sweep
-uip df records list <entity-id> --limit 100 --output json
-uip df records list <entity-id> --limit 100 --cursor "<NextCursor>" --output json
-
-# Jump directly to the page containing record #250 (with --limit 100 → page 3)
-uip df records list <entity-id> --limit 100 --offset 250 --output json
-```
+3. **No filter, no sort.** `queryFilters` / `sortOptions` naming a `MULTILINE_MAX` field → 400. Surface verbatim (data-fabric.md Rule 18); don't retry with other operators.
 
 ## Always Query the Server for Answers
 
@@ -207,26 +158,9 @@ Values are the **uppercase strings** above — `"COUNT"` not `"Count"`.
 
 > Needs `@uipath/data-fabric-tool` `1.0.1+`; older versions silently drop `aggregates`/`groupBy` and return a plain record list — `uip tools install @uipath/data-fabric-tool@latest`.
 
-## Insert Records
+## Writing Record Values
 
-The CLI routes by body shape: a JSON object (or 1-element array) calls the single-record endpoint; a JSON array with 2+ elements calls the batch endpoint.
-
-```bash
-# Single record — JSON object
-uip df records insert <entity-id> --body '{"Name":"Alice","Score":95}' --output json
-
-# Batch insert — JSON array with 2+ records
-uip df records insert <entity-id> \
-  --body '[{"Name":"Alice","Score":95},{"Name":"Bob","Score":82}]' \
-  --output json
-
-# From JSON file
-uip df records insert <entity-id> --file records.json --output json
-```
-
-Single insert response: `{ Code: "RecordInserted", Data: { ...record with Id } }`
-
-Batch insert response: `{ Code: "RecordsBatchInserted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`
+Insert / update command syntax and response shapes: [CLI docs → `records`](https://github.com/UiPath/cli/blob/main/docs/tools/data-fabric.md#records--response-shapes-and-footguns). Everything below is agent-critical value-form knowledge the CLI can't teach without the schema.
 
 ### Writing Choice-Set and Relationship Values
 
@@ -246,49 +180,15 @@ Display labels, choice-value UUIDs, and non-UUID relationship values are rejecte
 
 ### FILE fields — never write through insert/update
 
-**Anti-pattern.** Never include a FILE-typed key in `records insert` or `records update` payload (data-fabric.md Rule 6). Expected behavior: the platform silently strips FILE values — paths, base64 blobs, filenames, UUIDs, and `null` — and returns `Result: Success` with the FILE column unchanged. Do not interpret Success as "the file changed." `records update receipt:null` does **not** clear. `records update receipt:"<uuid>"` does **not** swap. To attach, replace, or clear a file, use the `files` verbs documented in [`file-attachments.md`](file-attachments.md). Required write path:
+CLI rejects FILE keys in `records insert` / `update` bodies from `@uipath/data-fabric-tool` `1.199.0+` (Rule 6). Write path: `records insert` without the FILE column, capture `Data.Id`, then `uip df files upload <entity-id> <record-id> <field-name> --file <path>`. `files upload` both attaches and replaces; `files delete` clears; `files download` retrieves. CSV `records import` still drops FILE columns silently — see Rule 20.
 
-```bash
-# 1. Insert the row WITHOUT the FILE column
-uip df records insert <entity-id> --body '{"title":"Q1 report"}' --output json
-#    → Data.Id is the new record's UUID
+**FILE-field read shape depends on `expansionLevel`** — `records get` and `records list` are always level `0`; `records query` accepts `expansionLevel` inside `--body` (default `0`):
 
-# 2. Attach the file to the FILE field on that record
-uip df files upload <entity-id> <record-id> <file-field-name> \
-  --file /local/path/report.pdf --output json
-```
+- Level `0` — FILE field is a bare UUID string, or omitted / `null` when unattached: `{ "Document": "16633BC7-F76A-F111-AC99-000D3A98AF8F" }`
+- Level `1+` — object with `Id`, `Name`, `Size`, `Type`, `Path`, `UpdateTime`, etc. To read filename via CLI: query with `expansionLevel: 1` and read `Data.Items[].<field-name>.Name`.
 
-`files upload` is both attach and replace — call it directly against the record/field whether the field is currently empty or already has a file (no need to `files delete` first). `files delete` clears the field, `files download` retrieves the binary. CSV `records import` drops `FILE` columns too — see Rule 20. Full file-attachment surface in [`file-attachments.md`](file-attachments.md).
+The per-record-per-field UUID handle is preserved across `files upload` — the bytes change, the UUID does not. Don't use the handle to detect content change; compare bytes or watch `UpdateTime`.
 
-## Update Records
+## Update / Delete Records
 
-The CLI routes by body shape: a JSON object (or 1-element array) calls the single-record endpoint; a JSON array with 2+ elements calls the batch endpoint. Both require `Id` in the body.
-
-```bash
-# Single record — JSON object with Id
-uip df records update <entity-id> --body '{"Id":"<record-id>","Score":100}' --output json
-
-# Batch update — JSON array, each element must include Id
-uip df records update <entity-id> \
-  --body '[{"Id":"<id1>","Score":100},{"Id":"<id2>","Score":90}]' \
-  --output json
-```
-
-Choice / relationship fields use the same value form as insert — see [Writing Choice-Set and Relationship Values](#writing-choice-set-and-relationship-values).
-
-Single update response: `{ Code: "RecordUpdated", Data: { ...updated record } }`
-
-Batch update response: `{ Code: "RecordsBatchUpdated", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`
-
-## Delete Records
-
-Irreversible — `--yes` and `--reason` are required (server-gated, same as `entities delete` / `choice-sets delete`). Pass each record ID as a **separate positional argument**; do not space-join them inside one quoted string (the CLI then tries to parse the whole string as a single GUID and errors with *"Error converting value '… …' to type 'System.Guid'"*).
-
-```bash
-uip df records delete <entity-id> <id1> <id2> <id3> \
-  [--folder-key <…>] \
-  --yes --reason "<why>" \
-  --output json
-```
-
-Response: `{ Code: "RecordsDeleted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords, Reason } }` — `Reason` echoes the `--reason` value for audit logging.
+Command syntax, response shapes, `Id` requirement, and the positional-varargs footgun on `records delete`: [CLI docs → `records`](https://github.com/UiPath/cli/blob/main/docs/tools/data-fabric.md#records--response-shapes-and-footguns). Choice / relationship values use the same forms as insert (above). Gating (`--yes` + `--reason` on `delete`) is enforced by the CLI; the agent-side ask lives in data-fabric.md Rule 0.

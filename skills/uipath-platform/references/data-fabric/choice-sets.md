@@ -4,34 +4,14 @@ Reusable picklists that back `CHOICE_SET_SINGLE` and `CHOICE_SET_MULTIPLE` entit
 
 > **Preview-then-confirm gate (data-fabric.md Rule 14).** Before invoking `choice-sets create` or `choice-set-values create`, show the full proposed set — name, displayName, description, and every value (`Name` + `DisplayName`) in creation order — and wait for explicit user approval. Value order matters: `NumberId` is assigned 0-based by creation order and is immutable.
 
-## Commands
+## Commands + folder scope
 
-Every command below accepts `--folder-key <GUID>` for folder-scoped choice sets — required on writes against a folder-scoped set, recommended on reads. `list` additionally accepts `--include-folders` (mutually exclusive with `--folder-key`). See [Folder scope](#folder-scope) below for the picker rules. CLI floor: `@uipath/data-fabric-tool@1.197.0+`.
+Command syntax, flags, response shapes: [Data Fabric CLI docs → Common Commands](https://github.com/UiPath/cli/blob/main/docs/tools/data-fabric.md#common-commands). Folder-scope rules mirror entities — see data-fabric.md → Folder Scope.
 
-| Command | Use |
-|---------|-----|
-| `uip df choice-sets list [--folder-key <…> \| --include-folders] --output json` | Find an existing choice set's `Id`. No flags → tenant only; `--folder-key` → that folder only; `--include-folders` → tenant + every visible folder. Each row carries `FolderId`. |
-| `uip df choice-sets list-values <choice-set-id> [--folder-key <…>] --output json` | Page through values; pagination `{ Items, TotalCount, HasNextPage, … }` (use `--limit` / `--cursor` / `--offset`) |
-| `uip df choice-sets create <name> [--folder-key <…>] [--display-name <…>] [--description <…>] --output json` | Create a choice set; response `Code: ChoiceSetCreated`, `Data.Id`. **Scope-bound**: pass `--folder-key` to place inside a folder; omit for tenant level. |
-| `uip df choice-sets update <choice-set-id> [--folder-key <…>] --display-name <…> --description <…> --output json` | Rename / re-describe the set. **Both `--display-name` and `--description` are required on every call** — sending only `--description` returns *"DisplayName is required."*; sending only `--display-name` returns `Internal Server Error`. To change one, re-send the other's current value (run `choice-sets list` first to read it). |
-| `uip df choice-sets delete <choice-set-id> [--folder-key <…>] --yes --reason "<why>" --output json` | Irreversible — `--yes` and `--reason` are required (`--confirm` accepted as deprecated alias) |
-| `uip df choice-set-values create <choice-set-id> <name> [--folder-key <…>] [--display-name <…>] --output json` | Add a value; server assigns `NumberId` (0-based, monotonic by creation order) |
-| `uip df choice-set-values update <choice-set-id> <value-id> "<new display name>" [--folder-key <…>] --output json` | Display-name only — `Name` and `NumberId` are immutable |
-| `uip df choice-set-values delete <choice-set-id> --ids <value-id>[,<value-id>…] [--folder-key <…>] --yes --reason "<why>" --output json` | Irreversible — same gating as `choice-sets delete` |
+Behavioral quirks the CLI can't self-document:
 
-## Folder scope
-
-Choice sets live at the tenant level or inside a folder. The flag matrix mirrors entities:
-
-| Goal | Flags |
-|---|---|
-| List only tenant-level choice sets | (none) — default |
-| List a single folder's choice sets | `--folder-key <folder-guid>` |
-| List tenant + every folder you can see | `--include-folders` |
-| Create/update/delete a folder-scoped set or value | `--folder-key <folder-guid>` (required) |
-| Read or operate on a tenant-scoped set | `--folder-key` is harmless when passed; the server resolves by UUID |
-
-Bind a folder-scoped choice set to an entity in a different folder by passing only `choiceSetId` — the server resolves the choice-set's folder from that UUID. Do NOT pass `referenceFolderKey` on `CHOICE_SET_*` fields. The tenant ↔ folder boundary still applies (folder parent cannot bind a tenant-level choice set, and vice versa). See [`entity-schema.md` → Cross-folder references](entity-schema.md#cross-folder-references).
+- **`choice-set-values update` is display-name only** — `Name` and `NumberId` are immutable once created.
+- **Binding a `CHOICE_SET_*` field**: pass only `choiceSetId`; `referenceFolderKey` on `CHOICE_SET_*` is CLI-rejected. The tenant ↔ folder boundary still applies. See [`entity-schema.md` → Cross-folder references](entity-schema.md#cross-folder-references).
 
 ## Use the IDs
 
@@ -41,14 +21,7 @@ Bind a folder-scoped choice set to an entity in a different folder by passing on
 
 ## Value `Name` validation
 
-A choice-set value's `Name` must be alphanumeric and start with a letter. The server rejects C# / VB reserved keywords with *"Choiceset member name must … not be C# keyword"* — but this is a **separate code path from the entity/field-name validator (data-fabric.md Rule 4)**, and the two behave differently:
-
-| Aspect | Entity / field name (Rule 4) | Choice-set value `Name` (here) |
-|---|---|---|
-| Case match | **case-insensitive** (`Class`, `class`, `CLASS` all rejected) | **case-sensitive** (`class` rejected, `Class` may pass — empirically verified: `New` accepted while `new` would be rejected) |
-| Keyword list | full C#/VB reserved list — incl. `Select`, `Return`, `New`, `Internal`, … | partial list — some keywords missing (empirically `select` is NOT rejected as a choice-set value, but `Select` IS rejected as a field name) |
-
-Do not assume a name is legal in one place because it's legal in the other. The safe, portable convention for choice-set value `Name`s: **all-lowercase, snake_case, namespaced to dodge the C# keyword list outright** — `internal_audit`, `new_lead`, `class_a`. Move the human label to `DisplayName`: `Name: "internal_audit"` with `DisplayName: "Internal"`. The dropdown shows "Internal"; the validator sees `internal_audit`. Lowercase tokens that the choice-value validator does reject: `internal`, `public`, `private`, `class`, `case`, `new`, `default`, `static`, `void`, `event`, `lock`, `object`, `string`, `int`.
+CLI-enforced from `@uipath/data-fabric-tool` `1.199.0+`. The choice-set-value validator is a separate code path from the entity/field-name one — **case-sensitive** and narrower — so a name legal in one slot may not be legal in the other. Full rule list and the recommended snake_case + `--display-name` pattern: [Data Fabric CLI docs → Client-side validation](https://github.com/UiPath/cli/blob/main/docs/tools/data-fabric.md#client-side-validation).
 
 ## Sourcing `NumberId` after batch value creates
 
@@ -63,42 +36,14 @@ Two rules for any script that batch-creates values:
 
 ### Step 1 — Get or create the choice set
 
-**Contract:**
-
-```
-uip df choice-sets create <name> [--display-name "<label>"] [--description "<…>"] --output json
-```
-
-| Arg | Required | Notes |
-|---|---|---|
-| `<name>` | yes | System name. Alphanumeric, starts with a letter, not a C#/VB/SQL reserved keyword. |
-| `--display-name "<label>"` | no | User-facing label in dropdowns. Defaults to `<name>` when omitted. |
-| `--description "<…>"` | no | Free text. |
-
-**Example:**
-
 ```bash
-uip df choice-sets list --output json                                                          # check for an existing match first
-uip df choice-sets create ExpenseTypes --display-name "Expense Types" --output json            # create when none matches
+uip df choice-sets list --output json                                                 # look for an existing match first (Rule 13 pick-or-create)
+uip df choice-sets create ExpenseTypes --display-name "Expense Types" --output json   # create when none matches
 ```
 
 ### Step 2 — Add each value to the set
 
-**Contract:**
-
-```
-uip df choice-set-values create <choice-set-id> <name> [--display-name "<label>"] --output json
-```
-
-| Arg | Required | Notes |
-|---|---|---|
-| `<choice-set-id>` | yes | UUID from `choice-sets list` / `create`. |
-| `<name>` | yes | System name. Same alphanumeric + no-reserved-keyword rule as `<name>` above (see [Value `Name` validation](#value-name-validation)). |
-| `--display-name "<label>"` | no | User-facing label. Defaults to `<name>` when omitted. |
-
-`NumberId` is assigned 0-based by creation order — order matters. See [Sourcing `NumberId` after batch value creates](#sourcing-numberid-after-batch-value-creates) for the per-value error handling rule.
-
-**Example — `travel` and `meals` on the ExpenseTypes set:**
+`NumberId` is assigned 0-based by creation order — order matters ([Sourcing `NumberId` after batch value creates](#sourcing-numberid-after-batch-value-creates)).
 
 ```bash
 uip df choice-set-values create <choice-set-id> travel --display-name "Travel" --output json
@@ -152,8 +97,4 @@ Never fall back to `STRING`. Never auto-create without confirming the values.
 
 ## Deleting a choice set
 
-```bash
-uip df choice-sets delete <choice-set-id> [--folder-key <…>] --yes --reason "<why>" --output json
-```
-
-Irreversible. Before invoking, run `entities list --output json` and find every entity whose `Fields[].ChoiceSetId == <choice-set-id>`. Surface those entities to the user and ask: *"This choice set is used by `<entity>.<field>` — delete it anyway (those fields will break), pick a replacement choice set, or stop?"* Apply only what the user confirms.
+Irreversible. Before invoking `choice-sets delete`, run `entities list --output json` and find every entity whose `Fields[].ChoiceSetId == <choice-set-id>`. Surface those entities and ask: *"This choice set is used by `<entity>.<field>` — delete it anyway (those fields will break), pick a replacement, or stop?"* Apply only what the user confirms.
