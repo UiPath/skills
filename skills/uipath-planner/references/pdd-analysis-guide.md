@@ -1,15 +1,32 @@
 # PDD Analysis Guide
 
-How to extract structured information from Process Design Documents in any format.
+How to extract structured information from a PDD — or any other process-knowledge source — in any format.
+
+## Accepted process-knowledge sources
+
+The input need not be a formal PDD. **Any artifact that describes a business process** is a valid basis for an SDD — extract the *same structured model* from it (steps, applications, exceptions, business rules, data, as-is/to-be, and the need profile):
+
+| Source | How to ingest | Notes |
+|---|---|---|
+| **PDD** (`.pdf` / `.docx` / `.md` / `.txt`) | per Supported Input Formats below | richest, most structured source |
+| **Confluence / wiki / SharePoint page** | user exports (→ md/pdf) or pastes it; or `WebFetch` a reachable page; a session-connected Atlassian / Glean / Microsoft-365 connector also works (best-effort) | often an SOP or process write-up |
+| **BPMN model** (`.bpmn` XML, Signavio/Camunda export, or a diagram image) | `Read` the XML/text directly, or Read the diagram image | already a process map — mine its tasks, gateways, events, lanes; it often encodes the *to-be* |
+| **Meeting / Zoom transcript** | `Read` the text file or pasted content; or a session-connected transcript connector (best-effort) | least structured — expect heavy gaps |
+| **SOP / work instructions / requirements doc / email thread** | per its file format (`Read` / `docx-extract`) | scope varies |
+
+**Less-structured sources need more elicitation.** A formal PDD is near-complete; a transcript or a thin wiki page is not — run heavier Phase 1 gap-detection and `AskUserQuestion` to fill missing steps, applications, exceptions, rules, and the to-be. Never invent business rules; flag gaps `[SME REVIEW]`.
 
 ## Supported Input Formats
 
-| Format | How to Read | Notes |
-|---|---|---|
-| PDF | Use the Read tool with `pages` parameter. Read in chunks of up to 20 pages. | Screenshots are visible as images — see "Handling Screenshots" below. |
-| Word (.docx) | Do NOT Read directly — convert first with `scripts/docx-extract.sh` (see sdd-generation-guide.md Step 1), then read the markdown + extracted media. | Complex tables may extract as raw HTML `<table>` blocks — parse them; verify structure. |
-| Markdown | Read the file directly. | Easiest format — structure is already parseable. |
-| Pasted text | Process from the conversation context. | Ask the user to paste section by section if the PDD is large. |
+| Format | Tool | How to Read | Notes |
+|---|---|---|---|
+| Markdown (`.md`) | `Read` | Read the file directly. | Easiest — structure already parseable. |
+| Plain text (`.txt`) | `Read` | Read the file directly (same as Markdown). | No conversion. For a very large file, use `Read` offset/limit or the size strategy in [sdd-generation-guide.md Step 1](sdd-generation-guide.md#step-1-read-the-pdd). |
+| PDF (`.pdf`) | `Read` | Use the `pages` parameter, in chunks of up to 20 pages. | Text is extracted; screenshots and scanned/image-only pages render as images — Read them visually (see "Handling Screenshots"). |
+| Word (`.docx`) | `Bash` → `scripts/docx-extract.sh` (pandoc) | Do NOT Read directly — convert first (see [sdd-generation-guide.md Step 1](sdd-generation-guide.md#step-1-read-the-pdd)), then Read the markdown + extracted media. | Complex tables may extract as raw HTML `<table>` — parse them. **Legacy `.doc`** (binary) is not supported by pandoc — ask the user to save as `.docx`/PDF or paste the content. |
+| Pasted text | (conversation) | Process from the conversation context. | Ask the user to paste section by section if the PDD is large. |
+
+File-based ingestion needs only **`Read`** (Markdown, `.txt`, PDF, images/media) and **`Bash`** (runs `docx-extract.sh` → pandoc for `.docx`); remote pages use **`WebFetch`** — all three are in the skill's `allowed-tools`. Session-connected MCP connectors (Atlassian / Glean / Microsoft 365 / transcript) are best-effort extras — when absent, ask the user to export or paste the content.
 
 ## Handling Screenshots
 
@@ -123,6 +140,15 @@ Watch for:
 - **In scope vs. out of scope** — these define the SDD boundary. Anything out of scope must not appear in the workflow inventory.
 - Vague volume descriptions like "7-15 items" — capture the range, use the upper bound for capacity planning.
 
+### As-Is and To-Be Process
+
+A PDD (and most process-knowledge sources) carries two views — extract **both**, kept separate:
+
+- **AS-IS** — the current process as performed today (steps, systems, manual handoffs, pain points). Essential for understanding the process holistically; skipping it pushes cost to UAT scope-creep.
+- **TO-BE (high-level)** — the target the author/BA proposed (what changes, what gets automated). A high-level *intent*, not the technical design.
+
+The SDD authors the **detailed TO-BE** — the technical solution design. **Do not copy the as-is verbatim into the to-be:** re-engineer the process for automation against the [need profile](sdd-generation-guide.md#step-35-synthesize-the-need)'s target KPI (cycle time, manual effort, quality, cost, throughput, compliance). Reconcile with the PDD's high-level to-be; where they differ, or the to-be is absent, flag `[SME REVIEW]` and confirm with the user. When a source carries only one view (a transcript describing today's process = as-is only; a BPMN model of the target = to-be only), capture what's present and elicit the missing side.
+
 ### Detailed Process Map
 
 Extract:
@@ -130,6 +156,7 @@ Extract:
 - **High-level flow** — the sequence of major steps
 - **Loop boundaries** — where the per-item processing starts and ends
 - **Decision points** — any branching logic in the flow
+- **Control-flow structure** — the orchestration shape, for the Maestro Flow / Case / BPMN choice: parallel branches that fork and rejoin, event-based waits (wait for a message, signal, or timer), per-activity timeouts / deadlines, steps that cancel or compensate on error, reusable sub-process groupings, and steps that invoke a separate long-running process. None present → linear/branching pipeline (Flow). Present without case stages/SLA → BPMN structure (see [Product Selection Guide → Maestro disambiguation](product-selection-guide.md#level-1--primary-scope-selection)). Note each concretely; never infer structure the PDD does not describe.
 
 Watch for:
 - The process map may be a flowchart image. Read the image to understand the flow, then verify against the detailed process steps section.
