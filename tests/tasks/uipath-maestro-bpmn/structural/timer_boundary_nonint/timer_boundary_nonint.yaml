@@ -1,0 +1,77 @@
+task_id: skill-bpmn-timer-boundary-noninterrupting
+description: >
+  Structural advanced-event eval: agent uses the uipath-maestro-bpmn skill to
+  attach a NON-INTERRUPTING timer boundary event (cancelActivity="false") to a
+  userTask — a reminder/escalation timer that fires without cancelling the task.
+  Exercises the boundary attachedToRef/cancelActivity contract and timer
+  duration validity. Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 70
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a single Maestro BPMN file `ApprovalReminder.bpmn` in the working
+  directory:
+    - a manual start,
+    - a userTask where a human reviews and approves a request,
+    - a NON-INTERRUPTING timer boundary event (cancelActivity="false") attached
+      to that userTask with a valid ISO-8601 duration (e.g. PT1H; week
+      designators PnW are unsupported),
+    - when the userTask completes it flows to a normal end event; when the timer
+      fires it routes to a reminder task and its own end event WITHOUT cancelling
+      the userTask.
+
+  Requirements:
+  - Discover any UiPath extension node's type via the registry and author it from
+    the registry template — do not hand-author uipath:* XML from prose. Structural
+    BPMN (boundary event attachedToRef/cancelActivity, timerEventDefinition,
+    sequence flows) comes from the skill's structural reference.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node (including the
+    boundary event) and a BPMNEdge for every sequence flow.
+  - Validate the file locally before finishing (the bundled validator, or a
+    well-formed-XML parse plus the structural checklist).
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback, and do NOT pause between planning and
+  implementation. Build the complete file end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "ApprovalReminder.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run any cloud-side Maestro BPMN lifecycle command"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(upload|publish|deploy|debug|run|pack)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN has a diagram, a timer boundary, and a non-interrupting cancelActivity"
+    path: "ApprovalReminder.bpmn"
+    includes:
+      - "bpmndi:BPMNDiagram"
+      - "timerEventDefinition"
+      - 'cancelActivity="false"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Non-interrupting timer boundary on a userTask does not cancel it, fully shaped"
+    command: "python3 $TASK_DIR/check_timer_boundary_noninterrupting.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

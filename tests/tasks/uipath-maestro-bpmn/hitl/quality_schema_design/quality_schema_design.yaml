@@ -1,0 +1,62 @@
+task_id: skill-bpmn-hitl-schema-design
+description: >
+  Quality test (ported from flow hitl/quality_01): agent designs the HITL task
+  data mapping well — context inputs presenting read-only data to the reviewer
+  and typed output mappings capturing the reviewer's returned fields, each bound
+  to a declared process variable (no dangling bindings).
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl", "feature:approval-gate"]
+
+run_limits:
+  expected_turns: 22
+  max_turns: 95
+
+initial_prompt: |
+  Create a local BPMN project named "VendorPOReviewBpmn" for purchase-order
+  review:
+
+  - Manual start.
+  - A script task fetches PO context (mock it — set process variables for PO
+    number, vendor name, and total amount).
+  - A HITL user task lets a procurement officer review the PO:
+      - They SEE (read-only context): PO number, vendor name, total amount.
+      - They FILL IN: a decision (Approve/Reject) and optional notes.
+  - A decision gateway routes on the officer's decision (Approve to a step that
+    records the approval, Reject to an end event).
+
+  Requirements:
+  - This is a UiPath Maestro BPMN project authored with the uipath-maestro-bpmn
+    skill: `.bpmn` XML, main file `VendorPOReviewBpmn/VendorPOReviewBpmn.bpmn`.
+    Do NOT build a `.flow`.
+  - Model the review as a `bpmn:userTask` using the documented `Actions.HITL`
+    `uipath:activity` shell from the registry template.
+  - Present the PO context to the reviewer via the HITL activity's input
+    mapping, and capture the reviewer's returned fields (decision, notes) as
+    typed HITL output mappings, each bound to a declared process variable.
+  - Declare the process variables with the registry BPMN.Variables template.
+  - Use synthetic placeholder resource names only.
+  - Include BPMN DI for every visible node and sequence flow.
+  - Do not upload, publish, deploy, debug, or run the process. Do not pause for
+    approval, confirmation, or feedback.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "VendorPOReviewBpmn/VendorPOReviewBpmn.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL modeled with the documented Actions.HITL activity type"
+    path: "VendorPOReviewBpmn/VendorPOReviewBpmn.bpmn"
+    includes:
+      - "Actions.HITL"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "HITL has context inputs and typed, declared output mappings"
+    command: "python3 $TASK_DIR/check_quality_schema_design.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

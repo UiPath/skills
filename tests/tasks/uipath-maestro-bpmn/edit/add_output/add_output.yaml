@@ -1,0 +1,60 @@
+task_id: skill-bpmn-edit-add-output
+description: >
+  Brownfield edit: add a new output mapping to an existing script task in a valid
+  Maestro BPMN and declare the backing variable in BPMN.Variables, without
+  disturbing the existing output, variables, or preserve-only payloads.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 70
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  A valid Maestro BPMN file `Invoicing.bpmn` is in the working directory. The
+  "Calculate Total" (Task_Calc) script task returns a total and maps it to the
+  Total variable.
+
+  Add a SECOND output named "tax" to "Calculate Total": have the script also
+  return a tax value, map that output to a NEW process variable you declare in
+  the BPMN.Variables block, and have the script populate it.
+
+  Make a SURGICAL edit: the existing "total" output, the existing variables, all
+  element ids, the uipath:* extension payloads, and uipath:migrationVersion must
+  round-trip untouched.
+
+  Validate the edited file locally before finishing. Do not upload, publish,
+  deploy, debug, run, or pack anything, and do not pause for approval — make the
+  edit end to end in one pass.
+
+success_criteria:
+  - type: file_exists
+    description: "The edited BPMN file is still present"
+    path: "Invoicing.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Preserve-only payload round-tripped untouched"
+    path: "Invoicing.bpmn"
+    includes:
+      - "preserve-only-do-not-touch"
+      - 'uipath:migrationVersion'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "New output + backing variable added, existing output/variables preserved, file still structurally sound"
+    command: "python3 $TASK_DIR/check_add_output.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

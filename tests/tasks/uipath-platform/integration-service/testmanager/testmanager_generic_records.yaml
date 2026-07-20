@@ -9,7 +9,7 @@ description: >
   operations through the uipath-uipath-testmanager connector ('uip is resources
   run'), creating a uniquely-seeded record and verifying the create->read
   round-trip — plus invoking every operation in the group for coverage.
-tags: [uipath-platform, integration, integration-service, test-manager, resources, execute, path-to-ga]
+tags: [uipath-platform, integration, integration-service, test-manager, resources, execute]
 
 sandbox:
   driver: tempdir

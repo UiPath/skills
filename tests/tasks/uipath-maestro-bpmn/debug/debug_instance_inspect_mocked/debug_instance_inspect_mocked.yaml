@@ -1,0 +1,87 @@
+task_id: skill-bpmn-debug-instance-inspect
+description: >
+  Skill-guided diagnosis of a FAULTED Maestro BPMN debug instance against a
+  mocked `uip` CLI. Given a debug-session instance id, the agent must use the
+  `debug-instance` inspection ladder (incidents, then variables/variables-all)
+  rather than the production `instance` verbs, and must not operate (retry /
+  cancel) a debug instance. It identifies the faulting element id and the
+  offending variable value in a written summary; both are only obtainable from
+  the mocked CLI JSON.
+tags: [uipath-maestro-bpmn, integration, "mode:diagnose", "lifecycle:discover"]
+
+run_limits:
+  expected_turns: 14
+  max_turns: 22
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+initial_prompt: |
+  A Maestro BPMN debug session faulted. You have only the debug-session
+  identifier:
+  - debug instance id: debug-fault-777
+
+  Diagnose why it faulted. This is a DEBUG-session instance, so inspect it with
+  the debug-session inspection commands, not the deployed-instance verbs. Follow
+  the diagnostic ladder: read the incidents first, then the runtime variables.
+
+  Write a concise `diagnosis.md` that names:
+  - the faulting BPMN element id,
+  - the offending runtime variable and its value,
+  - the likely root cause,
+  - the safe next action.
+
+  The `uip` CLI is already available and is backed by a local test harness. Use
+  `uip maestro bpmn ... --output json` for every read. Do NOT inspect `mocks/`,
+  `fixtures/`, or any response JSON files directly. This is a diagnosis only —
+  do NOT retry, cancel, continue, migrate, or otherwise operate the instance,
+  and do NOT ask for approval, confirmation, or feedback.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent read the debug session's incidents"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug-instance\s+incidents\s+debug-fault-777'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected the debug session's runtime variables"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug-instance\s+variables(-all)?\s+debug-fault-777'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not operate the debug instance (retry/cancel/continue) or a deployed instance"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(instance|debug-instance)\s+(retry|cancel|continue)'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Diagnosis names the faulting element and the offending variable value from the debug session"
+    path: "diagnosis.md"
+    includes:
+      - "ScriptTask_ComputeDiscount"
+      - "discountRate"
+      - "1.75"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not read the mocked fixture JSON directly instead of the CLI"
+    tool_name: "Bash"
+    command_pattern: '(cat|less|head|tail|grep)\s+[\s\S]*mocks/responses'
+    weight: 1.0
+    pass_threshold: 1.0

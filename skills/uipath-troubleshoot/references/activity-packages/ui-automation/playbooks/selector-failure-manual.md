@@ -43,4 +43,6 @@ What to look for:
 - Update the selector to use more stable attributes (aaname, automationid, role) instead of volatile ones (idx, tableCol, tableRow)
 - Add wildcard matching for dynamic portions: `name='Invoice*'` instead of `name='Invoice_20250319'`
 - Consider adding a Check App State activity before the failing activity to wait for the element
-- If the activity completed `Successful` but never acted (no exception), configure **Verify Execution** on it with a real expected-outcome target so the silent no-op faults and becomes diagnosable — see [scope-container-wrong-page.md](./scope-container-wrong-page.md). Configure/enable Verify; never remove it. Interactive — confirm before editing the workflow.
+- If the activity completed `Successful` but never acted (no exception), configure **Verify Execution** on it with a real expected-outcome target so the silent no-op faults and becomes diagnosable — see [scope-container-wrong-page.md](./scope-container-wrong-page.md). Configure/enable Verify; never remove it.
+
+All of the above change the workflow `.xaml` — interactive: the troubleshooter never edits the workflow itself; on the user's approval it delegates the apply, otherwise it recommends only.

@@ -1,0 +1,66 @@
+task_id: skill-bpmn-loop-multiply
+description: >
+  Skill-guided evaluation (ported from the Flow loop_multiply eval): agent uses
+  the uipath-maestro-bpmn skill to author a BPMN process that multiplies a
+  collection of numbers using a sequential multi-instance marker over a script
+  task. Exercises the multi-instance / loop-characteristics registry gap
+  (sequential accumulation). Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:loop"]
+
+run_limits:
+  expected_turns: 22
+  max_turns: 75
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project named "LoopMultiplyBpmn" with the main file
+  at `LoopMultiplyBpmn/LoopMultiplyBpmn.bpmn` for this process:
+  - Manual start with a `numbers` variable holding [13, 15, 17] and a `product`
+    accumulator variable.
+  - A single script task that iterates the collection using a SEQUENTIAL
+    multi-instance marker, multiplying the running product by each item.
+  - A single end event that yields the final product.
+
+  Requirements:
+  - Apply `bpmn:multiInstanceLoopCharacteristics` with `isSequential="true"` to
+    the script task, and bind the collection through the
+    `uipath:loopCharacteristics` extension (`inputCollection` and `inputElement`)
+    per the skill's structural reference — the registry serves no template for
+    this, author it from the canvas contract.
+  - Declare variables and author the script-task payload per the skill's
+    structural reference; do not hand-author uipath:* XML from prose.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback. Do NOT pause between planning and
+  implementation. Build the complete local project end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "LoopMultiplyBpmn/LoopMultiplyBpmn.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN uses a multi-instance loop marker"
+    path: "LoopMultiplyBpmn/LoopMultiplyBpmn.bpmn"
+    includes:
+      - "multiInstanceLoopCharacteristics"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN has a sequential multi-instance marker with a bound collection and valid DI"
+    command: "python3 $TASK_DIR/check_loop_multiply.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
