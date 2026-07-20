@@ -132,6 +132,8 @@ These two mechanisms both provide access to third-party systems, but they are **
 |---|---|---|
 | `UiPath.IntegrationService.Activities` | pin at build | Runtime host for Integration Service connector activities |
 
+> `pin at build` is the template's literal sentinel — version unknowable at design time; the build skill resolves and writes the exact version back. See [rpa-sdd-template.md §14 Packages](../assets/templates/rpa-sdd-template.md).
+
 ### Example — Salesforce via NuGet native package
 
 §9 Application Inventory row:

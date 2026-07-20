@@ -108,7 +108,7 @@ Append this exact line to every `Skill prompt` block, with the SDD path filled i
 Use values, mappings, and structure exactly as documented in the SDD at <sdd-path>. Do not infer or guess.
 ```
 
-For non-PDD lane, the prompt references the plan file **by path** — `TaskCreate` copies prompts verbatim, so a bare "this plan" leaves a resumed or separately-executed task unable to locate its values:
+For non-PDD lane, reference the plan file **by path** — never "this plan" (prompts are copied verbatim into `TaskCreate`):
 
 ```
 Use values, mappings, and structure exactly as documented in the plan at <PLAN_FILE_PATH>. Do not infer or guess.
