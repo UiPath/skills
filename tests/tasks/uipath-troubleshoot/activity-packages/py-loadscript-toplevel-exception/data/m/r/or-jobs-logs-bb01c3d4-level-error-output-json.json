@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-11T08:41:07.360Z",
+      "Message": "[Load Python Script] One or more errors occurred. ---> Python.Runtime.PythonException: Error loading the python script: ZeroDivisionError: division by zero (order_import.py, line 21)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-11T08:41:07.420Z",
+      "Message": "One or more errors occurred. ---> Python.Runtime.PythonException: ZeroDivisionError: division by zero\r\n  File \"order_import.py\", line 21, in <module>\r\n    DEFAULT_DISCOUNT = 100 / 0\r\nin Main.xaml\r\n    at PythonScope \"Python Scope\"\r\n    at LoadScript \"Load Python Script\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

@@ -13,8 +13,13 @@ agent:
   type: claude-code
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
 
+# driver: docker (NOT tempdir): the seed's `uip or folders` needs
+# @uipath/orchestrator-tool, pre-baked into skills-image:latest. In tempdir the
+# CLI must auto-install it at runtime, which fails on a prerelease CLI (resolves
+# on `stable`, no stable build on its line — UiPath/cli#3083), so the seed dies
+# before the task starts. role-lifecycle-e2e runs the same seed under docker.
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
 
 pre_run:

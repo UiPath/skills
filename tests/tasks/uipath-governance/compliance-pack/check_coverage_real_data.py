@@ -8,7 +8,7 @@ Checks:
   2. Has the expected PascalCase top-level structure (Data.Summary, Data.DeploymentPolicies)
   3. Data.Summary has NewCount and DeploymentPolicyCount fields
   4. Data.DeploymentPolicies is a non-empty list
-  5. Each policy entry has Status field (new or in-place)
+  5. Each policy entry has Status field (new / in-place / needs-manual-config)
 
 Exits 1 on any structural violation.
 """
@@ -82,11 +82,15 @@ else:
     elif len(policies) == 0:
         failures.append("Data.DeploymentPolicies is empty — no products in coverage response")
     else:
+        # Product-grain DeploymentStatus (server enum): 'new' | 'in-place' | 'needs-manual-config'.
+        # 'needs-manual-config' was added server-side (governance-server #117, disjoint summary
+        # counts) — an applied-but-partial product whose controls still need manual setup.
+        valid_status = ("new", "in-place", "needs-manual-config")
         for i, p in enumerate(policies[:3]):  # spot-check first 3
             status = p.get("Status") or p.get("status")
-            if status not in ("new", "in-place"):
+            if status not in valid_status:
                 failures.append(
-                    f"DeploymentPolicies[{i}].Status is '{status}' — expected 'new' or 'in-place'"
+                    f"DeploymentPolicies[{i}].Status is '{status}' — expected one of {valid_status}"
                 )
 
 if failures:
