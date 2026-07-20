@@ -2,7 +2,7 @@
 
 This file is a **thinking guide** for the agent: principles for how to listen, infer, ask, and resolve when no `sdd.md` is provided. Phase 0 produces an `sdd.md` that Phase 1 reads exactly as if a user wrote it.
 
-> **Authoritative for the interview path only.** Trigger detection, mode behavior, threshold handling, hard stop, resumption, output contract. **Content rules** (authority hierarchy, task-type override priority, render-required fields, variable lineage, review items, source ledger) live in [sdd-generation-rules.md](sdd-generation-rules.md). Phase 1 logic lives in [planning.md](planning.md). Phases 2–6 live in [phased-execution.md](phased-execution.md).
+> **Authoritative for the interview path only.** Trigger detection, mode behavior, hard stop, resumption, output contract. **Content rules** (authority hierarchy, task-type override priority, render-required fields, variable lineage, review items, source ledger) live in [sdd-generation-rules.md](sdd-generation-rules.md). Phase 1 logic lives in [planning.md](planning.md). Phases 2–6 live in [phased-execution.md](phased-execution.md).
 
 ## Goal
 
@@ -239,15 +239,6 @@ Classification of each reply:
 | "Do you support webhook callbacks to our LOS when origination closes?" | `off-topic` | Capability question; the closing event is mentioned as context, not proposed as the answer. |
 | "Historically we had files stay open for weeks. The 2023 audit was rough." | `off-topic` | History, no value proposed. |
 
-#### Threshold check
-
-After Sketch + Ask close out, count from `sdd.draft.md`:
-
-- Stages, Tasks total, Distinct integrations, Distinct personas, `case-management` tasks (child cases).
-- Secondary stages — counted but never triggers redirect.
-
-Breach any quantitative cap → §Soft redirect.
-
 ### Resolve
 
 Before registry lookup, establish the concrete intended resource name for every `process`, `agent`, `rpa`, `api-workflow`, `action`, and `case-management` task. Write it to the task type's portable-name field: `Resolved Resource` for process/agent/rpa/api-workflow, the `Action App: <deploymentTitle>` value in `HITL Implementation` for action, and `Child Case` for case-management. Preserve a name the user supplied; if it is absent, ask rather than silently substituting the task's display name. These portable-name fields are NEVER `<UNRESOLVED>`.
@@ -361,7 +352,6 @@ Tasks:   N
 Integrations: N
 Personas:     N
 Child cases:  N
-Threshold status: WITHIN | EXCEEDED (<which>)
 Review items:    high=N  medium=N  low=N
 Auto-confirmed:  N registry matches (single-match high-confidence)
 
@@ -415,8 +405,6 @@ Structural checks before re-approve:
 
 Validation fail → list specific issues, AskUserQuestion `Re-edit` / `Restart` / `Abort`.
 
-Threshold breach on edit → §Soft redirect (user can override or switch).
-
 ## HTML preview
 
 Optional. Offered at Approve. The viewer is a self-contained HTML file the user opens locally — no server, no internet.
@@ -453,42 +441,6 @@ Re-show the Approve prompt. The viewer is a review aid, not a checkpoint — it 
 
 If the user edits `sdd.md` after a preview is generated, the existing `sdd-viewer.html` is stale. Either regenerate it (re-pick `Generate HTML preview` at Approve) or leave it — Phase 1 ignores the file either way.
 
-## Thresholds
-
-Hard quantitative caps. Breach triggers §Soft redirect (not hard refuse).
-
-| Threshold | Cap |
-|---|---|
-| Stages | > 7 |
-| Tasks total | > 14 |
-| Distinct integrations | > 3 |
-| Distinct personas | > 3 |
-| Child cases (`case-management` tasks) | ≥ 1 |
-
-**Secondary stages are NOT a threshold.** They may appear freely.
-
-## Soft redirect
-
-AskUserQuestion (2 options):
-
-| Option | Effect |
-|---|---|
-| `Continue with warning header` | Proceed. Set warning header in generated `sdd.md` (§Warning header). |
-| `Abort` | Exit. No file changes beyond what already exists. Preserve `sdd.draft.md` so the user can resume after manually trimming scope. |
-
-### Warning header
-
-When user overrode, prepend immediately under the H1 in `sdd.md`:
-
-```markdown
-> **⚠️ Generated lightweight; complexity exceeded thresholds.**
-> Counts at generation time: <stages> stages, <tasks> tasks, <integrations> integrations,
-> <personas> personas, <child-cases> child cases.
-> Review carefully before approving. Consider splitting into smaller cases or trimming scope.
-```
-
-Phase 1 ignores it (blockquote, not a structural field). The HTML viewer surfaces it as a banner.
-
 ## Resumption
 
 When `sdd.draft.md` is present at trigger time, AskUserQuestion (4 options):
@@ -523,7 +475,6 @@ If the user asks how something works, explain in their language (cases, stages, 
 | User says "skip" on required field | Write `<UNRESOLVED: <agent's question>>` in the draft. Phase 1 + post-build loop will revisit. |
 | 3 stuck replies in single Ask (per-field counter, reset on `answered` — see §Ask Stuck detector for classification) | Trigger §Soft redirect. |
 | Registry pull fails (CLI error, no auth) | Skip live resolution. For process/agent/rpa/api-workflow, keep a concrete intended `Resolved Resource`; for action, keep the Action App title; for case-management, keep `Child Case`. Mark only the type-specific identity/folder fields `<UNRESOLVED>` and pair the unresolved identity with a `high` review item. Phase 1 retries discovery and emits placeholders only for identities that remain unresolved. Inform user. |
-| User edits `sdd.md` to add stages exceeding threshold | Edit validation fires §Soft redirect. |
 | `sdd.md` already exists at path when interview begins | Should not happen — trigger detection exits Phase 0 first. If race, abort with error. Never overwrite. |
 | HTML preview generation fails (template missing, write error) | Inform user, fall back to text summary only. Approve gate is unaffected. |
 
@@ -531,7 +482,7 @@ If the user asks how something works, explain in their language (cases, stages, 
 
 After Approve:
 
-- `sdd.md` — always present. May include warning header, `<UNRESOLVED>` markers, or `—` placeholders, but every process/agent/rpa/api-workflow task has a concrete `Resolved Resource`, every action has a concrete Action App title, and every case-management task has a concrete `Child Case` name.
+- `sdd.md` — always present. May include `<UNRESOLVED>` markers or `—` placeholders, but every process/agent/rpa/api-workflow task has a concrete `Resolved Resource`, every action has a concrete Action App title, and every case-management task has a concrete `Child Case` name.
 - `tasks/registry-resolved.json` — **present only if Resolve ran successfully.** Absent when Resolve was skipped (registry pull failed, no auth, or the cache was unreachable — see Failure modes). Phase 1 ([planning.md § Step 2](planning.md#step-2--locate-and-parse-the-design-document)) validates every carry-over entry against the current SDD before reuse; stale or mismatched entries are re-resolved from the type-specific portable name and replaced. If the file is absent, Phase 1 runs full discovery and writes a fresh file. Either way, format matches Rule 9 when written.
 - `sdd-viewer.html` — present only if user generated the preview. Phase 1 ignores it.
 - `sdd.draft.md` — deleted (atomic rename at Approve).
@@ -541,13 +492,11 @@ Phase 1 ([planning.md](planning.md) Step 2) reads `sdd.md` exactly as a user-pro
 ## Anti-patterns
 
 - **Do NOT overwrite an existing `sdd.md`.** Strict binary trigger; presence = trust-as-written.
-- **Do NOT suggest or invoke any other skill on threshold breach or stuck detection.** Phase 0 stays self-contained — surface the warning header, give the user `Continue` / `Abort`, never push a redirect.
+- **Do NOT suggest or invoke any other skill automatically during the interview.** Keep the interview self-contained; the user may explicitly invoke another skill when needed.
 - **Do NOT persist Listen output as a transcript.** Inferences live in the draft (the sketch), not in a separate file.
 - **Do NOT use `sed`/`awk`/`python`/`node` to mutate `sdd.draft.md`, `sdd.md`, `tasks/registry-resolved.json`, or `sdd-viewer.html`.** Read + Write/Edit only (Rule 13).
 - **Do NOT bundle questions in Ask.** One per message. Bundles re-introduce the form-feel Phase 0 is reframed to avoid.
 - **Do NOT silently auto-pick a registry match in Resolve.** AskUserQuestion every task; never infer (Rule 2 spirit).
-- **Do NOT proceed past the threshold check when counts already exceed thresholds.** Force soft-redirect prompt before continuing.
-- **Do NOT skip the warning header when user overrode threshold.** Future agents reading the file must see the override flag.
 - **Do NOT treat the HTML preview as a checkpoint.** It's a review aid. Approve is the only gate.
 - **Do NOT narrate filenames or schema mechanics in user-visible output.** See §Forbidden vocabulary.
 - **Do NOT ask for permission to read user-provided docs.** If the user named them, read them.
