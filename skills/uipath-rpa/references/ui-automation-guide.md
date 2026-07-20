@@ -227,7 +227,7 @@ Patterns there cover web-specific controls (date inputs) plus cross-technology o
 
 ## Configuring Targets (Object Repository)
 
-[uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first — it covers the configure-target workflow, rules, indication fallback, and multi-step UI flows.
+[uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first — it covers the execution model (team vs inline capture), configure-target workflow, rules, indication fallback, and multi-step UI flows.
 
 ### Multi-Step UI Flows (Advancing Application State)
 

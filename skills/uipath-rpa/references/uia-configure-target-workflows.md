@@ -6,13 +6,58 @@
 
 ## Execution Model
 
-**Execute `uia-configure-target` steps inline in the main conversation.** Do NOT delegate the entire skill to a subagent. The skill's internal steps already spawn their own subagents.
+Two invariants, regardless of mode:
 
-Why this matters:
-- **OR references** must be visible in the main conversation so they can be attached to workflow activities as the workflow is created. See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
-- **Context continuity** — as the main conversation proceeds, it already knows which screens and elements are registered: the references were returned in earlier turns, and the OR itself is queryable via the OR CLI. This is what "knowing what's registered" means here — the in-conversation state plus live OR queries — so duplicate captures are avoided and the workflow build stays coherent.
+- **OR references reach the authoring context per screen** — they are attached to workflow activities as the workflow is created. See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
+- **One context owns capture state end to end** — which screens and elements are registered (earlier-turn references + live OR queries), so duplicate captures are avoided and the build stays coherent.
 
-Read the SKILL.md, then execute each step of the internal procedure yourself. Only spawn `Agent` where the skill explicitly says to.
+Two modes satisfy them. Choose once, at first capture need:
+
+- **Team mode — MANDATORY when available.** Availability check, run it now: `SendMessage` appears in your tool list (deferred listings count) and `Agent` supports named background agents. Available → delegate the whole capture plan to a dedicated capture agent that runs it autonomously and reports at the end, while the main agent scaffolds in parallel: [§ Team Capture Protocol](#team-capture-protocol).
+- **Inline mode — only when the check fails.** Execute `uia-configure-target` steps inline in the main conversation, one agent in both roles, sequentially: complete capture before authoring (fast-path order); when building incrementally across screens (§ Multi-Screen Workflows below), confine authoring to screen boundaries — never emit authoring calls between capture calls within a screen. The parallel-scaffolding pattern in the protocol is team-mode only; with one agent it interleaves capture and authoring and degrades both.
+
+Never fire-and-forget the whole capture to a one-shot subagent — a single end-of-run dump violates both invariants.
+
+Whichever agent executes capture: read the SKILL.md, then execute each step of the internal procedure yourself. Only spawn `Agent` where the skill explicitly says to.
+
+## Team Capture Protocol
+
+Roles:
+
+- **Main agent** — owns workflow structure, activity choice, semantic element names, all user interaction, target attachment, validation. Never touches the live app while capture runs, and reads no UIA package CLI docs except the target-attachment guide — every `uip rpa uia` operation belongs to the capture agent.
+- **Capture agent** — persistent background agent. Owns the live app: launch verification, every capture judgment (selector quality, anchors), every state advance. Executes this doc's capture sections plus the package capture docs (§ Invocation) under the same rules as inline mode — including Complete-then-advance (§ Multi-Step UI Flows).
+
+### Sequence
+
+1. **Main:** verify UIA prerequisites (SKILL.md Rule 7a). Ensure the project exists with the UIA package installed — the capture agent's CLI runs from the project directory and its docs ship with the package. For a new project, run `uip rpa init` and known `packages install` before kickoff; do not write `project.json` while capture runs.
+2. **Main:** build the screen plan — target inventory grouped by screen state, one intended action and one semantic name per element (SKILL.md § Capture-First Fast Path, step 2).
+3. **Main:** spawn the capture agent (named, background) with the kickoff payload. Then work in parallel: spawn project-context discovery as a background agent (SKILL.md § Precondition — integrate the returned document on arrival), read remaining authoring references, scaffold the workflow in screen order as real activities with placeholder targets (SKILL.md § Placeholder-Selector Stub Pattern).
+4. **Capture agent, first:** verify the app is running and launch it if absent, per the kickoff's app identity — its procedure's window scan doubles as the baseline. A missing app or launch failure is an escalation, not a fallback.
+5. **Capture agent:** execute the whole screen plan autonomously — Complete-then-advance per capture screen (§ Multi-Step UI Flows), full skill flow through OR registration for every planned element. Resolve minor mismatches (element renamed/moved, different control than planned, benign extra dialog) with capture-side judgment and record each divergence for the final report. No progress messages, no acks — mid-run messages to the main agent are ONLY the blocking escalations below. If the main agent sends a plan update mid-run, apply it from the next capture screen onward; reply only if it asks a question.
+6. **Capture agent, when the plan is exhausted:** send the final report (below) and WAIT. The main agent may request follow-up captures (missed elements); handle them and re-report. Terminate on the main agent's release message.
+7. **Main, on the final report:** re-align the workflow to the divergence log (structure/activity changes), link every screen's refs (§ Attaching Targets; batched per screen), per-file validate. Release the capture agent once linking is complete and validated. Project-level `build` runs only after capture ends.
+
+### Kickoff payload (main → capture)
+
+- Project directory; app identity and how to launch it, plus current launch state if known — verifying/launching is the capture agent's first step.
+- The screen plan. Names apply verbatim at registration — the capture agent never renames. Unplanned-but-required elements: capture, flag in the report.
+- Reading list: this document; the package capture skill SKILL.md + USAGE.md (§ Invocation).
+- The final-report contract, the autonomy rule (resolve-and-record minor mismatches; escalate only blockers), and the escalation list below.
+
+### Final report (capture → main)
+
+- App reference + every screen reference + element references, names as given, grouped by OR screen (note which capture screens consolidated into one OR screen).
+- Per element: selector quality (strict/fuzzy) and live-observed control facts (e.g. list control with items vs click-to-open, disabled-during-async).
+- **Divergence log** — every point where configured reality differs from the plan: element absent/renamed/different control, judgment substitutions, extra states or dialogs encountered. The main agent re-aligns the workflow from this log.
+- Structural discoveries: separate-process helper window (different `app=` → main nests a card, § Cross-Process Helper Dialogs).
+- The app's current window state, so the main agent can run the workflow without its own UIA scan.
+- Activity suggestions are advisory — activity choice stays with the main agent.
+
+### Escalations (capture → main; main mediates the user)
+
+- A blocking plan discrepancy — the planned flow cannot proceed on the actual UI (navigation path missing, unplanned gate such as a login). Minor mismatches are resolve-and-record, never escalations.
+- Indication fallback required (user must physically click): pause, report, wait for the main agent.
+- Upgrade consent, persistent scan failures, locked session: report to the main agent — never silently fall back, never bypass the main agent to reach the user.
 
 ## Invocation
 
@@ -53,6 +98,8 @@ Re-inspect (or re-capture via the UIA snapshot CLI) only when the UI has actuall
 2. **Advance the UI** to the next state via the `uip rpa uia interact` CLI.
 3. **Capture the new state:** Run `uia-configure-target` again for elements now visible on the new screen (full skill flow).
 4. **Repeat** until all workflow targets are registered in the OR.
+
+**One Object Repository screen per window selector — not per capture screen.** After an advance, compare the new state's window selector against the OR screens already registered this session: same selector (single-page app, same window showing new content) → register the new elements under the EXISTING OR screen; different selector (new window, dialog, separate process) → new OR screen. Senses table: [ui-automation-guide.md § Terminology](ui-automation-guide.md#terminology--what-screen-means).
 
 **Do NOT use `uip rpa run` with partial workflows to advance UI state** — the workflow lifecycle may close the target application when execution ends. The `uip rpa uia interact` CLI is stateless: it performs one action and leaves the app in the resulting state.
 
@@ -173,9 +220,11 @@ Once targets are registered in the OR (via `uia-configure-target` or indication 
 
 Take the link path first. On a link failure for a reference, drop straight to the embed fallback for that one reference — do not iterate through activity-id / display-name variations (see § CLI Pitfalls). The package attachment guide is source-of-truth when it diverges from this skill (per SKILL.md).
 
+Link calls rewrite the workflow file on disk — re-read it before any subsequent `Edit`; pre-link file state is stale.
+
 ### Multi-Screen Workflows
 
-For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its OR references become available. Each batch aligns with the Complete-then-advance rule in § Multi-Step UI Flows — everything configured before the next `uip rpa uia interact` advance belongs to one batch. Validate with `validate` after each batch. Attach each target per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
+For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its OR references become available. Each batch aligns with the Complete-then-advance rule in § Multi-Step UI Flows — everything configured before the next `uip rpa uia interact` advance belongs to one batch. Validate with `validate` after each batch. In team mode all batches arrive with the final report — link them in the same per-screen batched shape, validating per batch. Attach each target per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
 
 ## CLI Pitfalls
 

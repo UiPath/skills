@@ -39,7 +39,7 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
 **If the file does NOT exist** → run the discovery flow below.
 
 **Discovery flow** (used for both missing and stale context):
-1. Spawn the project discovery agent and wait for it to complete. Its definition lives inside this skill at [`agents/uipath-project-discovery-agent.md`](agents/uipath-project-discovery-agent.md). Use whichever spawn mechanism your host supports:
+1. Spawn the project discovery agent and wait for it to complete. During team-mode capture (§ Team Capture Protocol in [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md)), spawn it in the background instead and integrate the document when it arrives. Its definition lives inside this skill at [`agents/uipath-project-discovery-agent.md`](agents/uipath-project-discovery-agent.md). Use whichever spawn mechanism your host supports:
    - **Host registers plugin agents by name** (e.g., Claude Code) → trigger the registered `uipath-project-discovery-agent` agent.
    - **Host only spawns its own predefined subagents** (e.g., UiPath Autopilot) → spawn a read-only subagent and pass it that file (relative to this skill) as its instructions / custom skill.
 2. The agent returns the generated context document as its response
@@ -115,12 +115,13 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 
 When the request is "automate this dialog/form" or "build a UI test from these manual steps" — i.e. the bulk of the work is target capture, not coding — **defer authoring-phase prerequisites until target capture is complete**. The capture surface is interactive, app-state-sensitive, and time-bound; project-context discovery adds nothing during capture and steals time from it.
 
-**Fast-path order for capture-first tasks.** Read [ui-automation-guide.md](references/ui-automation-guide.md) and [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) in full first (Rule 7; the second is used in step 3). Then:
+**Fast-path order for capture-first tasks.** Read [ui-automation-guide.md](references/ui-automation-guide.md) and [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) in full first (Rule 7; the second defines the mode gate in step 1 and capture in step 4). Then:
 
-1. **Pre-flight Window Baseline** — list top-level windows once; decide whether to launch the app ([§ Pre-flight: Window Baseline](references/ui-automation-guide.md)).
+1. **Execution-mode gate — decide first.** `SendMessage` in your tool list (deferred listings count) → **team mode, mandatory**: do step 2, then spawn the capture agent per [§ Team Capture Protocol](references/uia-configure-target-workflows.md) and run step 5 in parallel while it captures autonomously; when its final report arrives, re-align the workflow to the divergence log and link all refs. Steps 3–4 belong to the capture agent (app launch, window baseline, capture) — do not read the UIA package CLI reference on their behalf. No `SendMessage` → **inline mode**: run steps 2–5 yourself, in order.
 2. **Inventory targets from manual steps** (Test Manager test case, PDD, or written script). Each "Click X" / "Enter Y" / "Select Z" / "Verify W" step maps to one OR element. Group by screen state ([§ Capturing from Manual Test Steps](references/ui-automation-guide.md)).
-3. **Capture all targets** screen by screen via `uia-configure-target` and screen advancement ([§ Multi-Step UI Flows](references/uia-configure-target-workflows.md)).
-4. **Then enter authoring phase:** project-context discovery (the precondition above), write code, validate.
+3. **Pre-flight Window Baseline** (inline) — list top-level windows once; decide whether to launch the app ([§ Pre-flight: Window Baseline](references/ui-automation-guide.md)).
+4. **Capture all targets** (inline) — screen by screen via `uia-configure-target` and screen advancement ([§ Multi-Step UI Flows](references/uia-configure-target-workflows.md)). Complete this step before starting step 5 — never emit authoring calls between capture calls.
+5. **Authoring phase:** project-context discovery (the precondition above), write code, validate.
 
 Skip this path when the task has no UI surface (data transforms, IS connector calls, headless file/email automation). Also skip it when the task HAS a UI surface but **no live app to capture against** (app not installed, no GUI, capture deferred to a developer) — there is nothing to capture, so use the § Placeholder-Selector Stub Pattern above instead. The Window Baseline does not tell you if the app is installed and has a GUI — validate that separately (e.g. look for the executable on disk) or ask the user.
 
@@ -408,7 +409,7 @@ The XAML file anatomy template (namespace declarations, root Activity element, b
 
 ### Multi-Screen UI Automation Workflows
 
-For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets get registered in the OR — validating with `validate` after each batch. [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) MUST be read IN FULL first (see § Multi-Step UI Flows for the capture loop and the Complete-then-advance rule).
+For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets get registered in the OR — validating with `validate` after each batch. [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) MUST be read IN FULL first (see § Multi-Step UI Flows for the capture loop and the Complete-then-advance rule). In team mode, the capture agent's final report delivers all batches at once — re-align to its divergence log, then link and validate screen by screen (§ Team Capture Protocol in the same doc). Inline, link each batch at its screen boundary only — never between capture calls within a screen.
 
 ## Resolving Packages & Activity Docs
 
@@ -446,7 +447,7 @@ UIA references live in two locations. Always cite by location so the reader know
 
 - [ui-automation-guide.md](references/ui-automation-guide.md) — **the entry point for all UIA work** (Rule 7; read in full first). Mode-specific UIA patterns (coded vs XAML), prohibited-tool list, exploration-tool boundaries, Running & debugging procedure.
 - [uia-prerequisites.md](references/uia-prerequisites.md) — Package version requirements, upgrade-consent rules
-- [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target-capture orchestration, multi-step UI flows, indication-fallback routing
+- [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target-capture orchestration (team + inline execution model), multi-step UI flows, indication-fallback routing
 
 ### In the UIA activity pack (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`)
 
