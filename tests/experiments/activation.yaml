@@ -19,7 +19,7 @@ defaults:
   agent:
     type: claude-code
     permission_mode: acceptEdits
-    model: claude-sonnet-4-6
+    model: claude-sonnet-5
     # Skill must be allowed so the agent can invoke a skill when it decides
     # to. Read/Write/Bash included so the agent isn't starved of basic tools
     # when it decides NOT to use Skill — removing them would bias the
