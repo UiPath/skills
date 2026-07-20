@@ -1,0 +1,69 @@
+task_id: skill-bpmn-expr-error-mapping
+description: >
+  Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author
+  a uipath:errorMapping block whose condition branches on the runtime error
+  object via `=vars.error.code == "..."` after a failed activity. Grades the
+  error-mapping expression shape from references/expression-authoring.md.
+  Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 75
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project named "ErrorMappingBpmn" with the main
+  file at `ErrorMappingBpmn/ErrorMappingBpmn.bpmn` for this process:
+  - Manual start -> a serviceTask that invokes a downstream service -> end.
+  - The serviceTask must declare error-handling metadata so that when the
+    activity fails with a service-unavailable error, the process branches on the
+    runtime error object. Model the error code on a `bpmn:error errorCode` and
+    reference it from a `uipath:errorMapping` whose condition reads the runtime
+    error via `vars.error.code` (for example
+    `=vars.error.code == "SERVICE_UNAVAILABLE"`).
+
+  Requirements:
+  - Discover any `uipath:*` activity payload via the registry
+    (`uip maestro bpmn registry`) and author it from the served template. Do not
+    hand-author registry-owned `uipath:*` XML from prose.
+  - The errorMapping condition must be a read-only expression that reads
+    `vars.error.code` — not a baked literal and no assignment operators.
+  - Use synthetic placeholder resource names only. Do not include tenant URLs,
+    folder keys, connection IDs, release keys, real process names, or real user
+    names.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+  - Validate locally by parsing the BPMN for well-formedness and walking the
+    skill's structural checklist. Do NOT upload, publish, deploy, debug, run, or
+    pack anything, and do NOT pause for approval, confirmation, or feedback —
+    build the complete local project end to end in one pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "ErrorMappingBpmn/ErrorMappingBpmn.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN carries a uipath:errorMapping block"
+    path: "ErrorMappingBpmn/ErrorMappingBpmn.bpmn"
+    includes:
+      - "uipath:errorMapping"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "errorMapping condition branches on vars.error.code and the graph is sound"
+    command: "python3 $TASK_DIR/check_error_mapping.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

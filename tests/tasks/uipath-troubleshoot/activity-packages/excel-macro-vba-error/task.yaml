@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-excel-macro-vba-error
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose an Execute Macro failure
   where the macro ran but threw a VBA runtime error inside the
@@ -10,10 +11,9 @@ description: >
   HRESULT + inner-message evidence, and recommend opening the
   workbook in the VBA editor to fix the macro's logic.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, execute-macro, vba-error]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

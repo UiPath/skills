@@ -1,5 +1,5 @@
 {
-  "name": "AssetPerRobotNoValue",
+  "name": "PerRobotConfigReader",
   "projectId": "b5e3a8c2-7d4f-4a9e-9c1b-3f6d8a2e4c5b",
   "description": "Blank Process",
   "main": "Main.xaml",

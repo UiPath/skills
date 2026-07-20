@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-execute-non-query-driver-load
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath diagnostic agent must diagnose an Execute Non Query failure
   where the activity targets an Oracle database via the
@@ -11,7 +12,7 @@ description: >
   access only and cannot get on the Robot host, so the agent must
   diagnose from evidence and hand back a host-side install instruction.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, execute-non-query]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

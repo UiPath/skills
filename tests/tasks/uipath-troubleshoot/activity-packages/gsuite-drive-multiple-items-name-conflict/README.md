@@ -9,7 +9,7 @@ Drive **duplicate-name ambiguity**.
 The user asked only *"why did my last job from folder Shared fail?"*. The agent:
 
 1. Listed folders → resolved **Shared** to key `1965a46b-db4e-469e-aaaa-7e0b379cb34d`.
-2. Listed Faulted jobs in Shared → newest is **GSuite_DriveNameConflict**,
+2. Listed Faulted jobs in Shared → newest is **DriveFileCreator**,
    job `6c8b1949-2603-437d-86a6-6b82b989fd6a`.
 3. Read the job's `Info` → a `UiPath.GSuite.Exceptions.GSuiteException`:
    `Multiple items with the name dupe-folder found in the specified folder.`

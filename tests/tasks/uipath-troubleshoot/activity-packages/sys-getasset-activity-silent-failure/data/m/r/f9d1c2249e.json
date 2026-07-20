@@ -13,7 +13,7 @@
     "BatchExecutionKey": "2b4d6f8a-3c1e-4f5b-9d7c-8a1b2c3d4e5f",
     "Info": "Log Message: Object reference not set to an instance of an object.\r\n\r\nin Main.xaml\r\n    at LogMessage \"Log Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.NullReferenceException: Object reference not set to an instance of an object.\r\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)",
     "CreationTime": "2026-05-13T18:02:10.815Z",
-    "ReleaseName": "AssetSilentFailure",
+    "ReleaseName": "SettingsAssetFetcher",
     "Type": "Unattended",
     "EnvironmentVariables": "",
     "OutputArguments": "{}",

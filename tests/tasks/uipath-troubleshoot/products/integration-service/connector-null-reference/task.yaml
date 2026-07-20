@@ -5,7 +5,7 @@ description: >
   System.NullReferenceException. The agent runs the uipath-troubleshoot skill
   against a uip CLI mock; it must read the stack frame to identify the
   null connector-output enumeration. Success = same root cause as RESOLUTION.md.
-tags: [uipath-troubleshoot, integration-service, rpa, e2e, faithful-replay, mode:diagnose]
+tags: [uipath-troubleshoot, integration-service, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

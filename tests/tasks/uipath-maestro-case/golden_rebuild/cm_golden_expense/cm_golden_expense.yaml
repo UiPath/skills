@@ -1,0 +1,123 @@
+task_id: skill-case-golden-rebuild-cm-expense
+description: >
+  GOLDEN REBUILD (live tenant) - rebuild the CM-Golden expense-reporting
+  reference case from a reverse-engineered sdd.md whose resource references
+  are REAL: the staged fixture pins the deployed solution folder, resource
+  IDs, connection IDs, and connector activity type IDs of the CM-Golden
+  golden solution on the coder-eval tenant. Unlike the phase_0_build_* tasks
+  (offline, skeleton bindings allowed), this exercises live resolution and
+  grades the resulting resource/connector bindings rather than the exact CLI
+  command sequence. Every task must be RESOLVED (no skeletons or unresolved
+  connector rules), with structural fidelity to the golden design
+  (8 stages incl. a secondary rework lane with return-to-origin, 15 tasks
+  across all 9 task types, wait-for-user / user-selected-stage handoff,
+  ad-hoc + run-once timers, SLA escalation). Stops at validate - NOT debug.
+
+  TENANT PRECONDITION: the CM-Golden golden solution must be deployed on the
+  eval tenant at the folder/IDs pinned in fixtures/sdd.md. A golden solution
+  reinstall re-mints every ID and renames the folder - re-sweep
+  fixtures/sdd.md (the ONE source both the agent and the bindings grader
+  read; the grader parses its expectations from that file at grade time).
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, resource, feature:approval-gate, feature:escalation]
+
+# Sized from measured runs: a healthy full build finishes in ~60 min, but a
+# mid-stream API-limit death (32k output-token cap, context overflow) makes
+# the harness retry with a FRESH session (no resume) - task_timeout must
+# absorb one full cold restart. Launch with CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000
+# so a caseplan-sized extended-thinking response is not fatal (both failure
+# modes observed 2026-07-10).
+run_limits:
+  task_timeout: 14400
+  max_turns: 600
+  turn_timeout: 9000
+
+# The case skill delegates heavy legs (reference reading, sibling-resource
+# builds) to sub-agents; without Agent the whole build runs inline in one
+# context and dies to "Prompt is too long" (observed 2026-07-10). Extends the
+# experiment's allowed_tools - keep the base list in sync with
+# experiments/default.yaml.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I have an approved SDD for our CM-Golden expense-reporting case-management
+  solution - it's staged as `sdd.md` in this folder. Build a UiPath Case
+  Management solution named "CMGoldenExpense" containing a project also named
+  "CMGoldenExpense" from this SDD.
+
+  Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0,
+  do not re-interview me, and do not redesign the process. The tenant is LIVE
+  and already hosts every referenced resource: the solution folder, resource
+  IDs, connection IDs, and connector activity type IDs in the SDD are real.
+  Resolve every task and connector rule against them - skeleton or
+  placeholder bindings are NOT acceptable.
+
+  Important:
+  - The `uip` CLI is available and already authenticated against the target
+    tenant. Resolve against a FRESH registry cache - a stale local cache is
+    not acceptable.
+  - Treat all hard stops after the SDD as pre-approved, including Phase 1
+    planning approval, Phase 2 publish-for-review, and Phase 5 publish. Choose
+    the continue / skip-publish path and keep going.
+  - Do NOT call AskUserQuestion - it is not available in this harness.
+  - Do NOT publish the solution and do NOT run `uip maestro case debug`
+    (the case suspends on timers, HITL actions, and a webhook event).
+  - Finish with `uip maestro case validate CMGoldenExpense/CMGoldenExpense/caseplan.json --output json`
+    passing on the resulting caseplan.json.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated CMGoldenExpense caseplan.json"
+    command: "uip maestro case validate CMGoldenExpense/CMGoldenExpense/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "caseplan preserves the golden topology: 8 stages, secondary rework lane, condition-derived transitions, case exits, 15 tasks across all 9 types, run-once timer, runtime flags, SLA escalation"
+    command: "python3 $TASK_DIR/check_cm_golden_case.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "every resource task and the Stage 5 connector entry rule are resolved: expected name/folder binding keys, connection/activity IDs, connector service types, and no skeleton tasks"
+    command: "python3 $TASK_DIR/check_cm_golden_bindings.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "caseplan semantically implements the SDD's dataflow and gate logic (producer ownership, globally unique output IDs, gate polarity, condition equivalence)"
+    command: "python3 $TASK_DIR/check_cm_golden_semantics.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Task 1.1 preserves the SDD's exact expenseRequest seed object (native object or JSON-encoded object)"
+    command: "python3 $TASK_DIR/check_cm_golden_seed.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run case debug or publish (case suspends; publish is out of scope)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(debug|publish)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

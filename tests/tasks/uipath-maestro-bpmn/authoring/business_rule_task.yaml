@@ -3,7 +3,7 @@ description: >
   Author a Maestro BPMN process that uses a dedicated business rule task,
   proving the Orchestrator.BusinessRules row is covered by an eval and not
   only by static fixtures.
-tags: [uipath-maestro-bpmn, e2e, lifecycle:generate, "node:business-rule", "feature:orchestrator"]
+tags: [uipath-maestro-bpmn, e2e, "mode:build", lifecycle:generate, "node:business-rule", "feature:orchestrator"]
 
 run_limits:
   expected_turns: 28

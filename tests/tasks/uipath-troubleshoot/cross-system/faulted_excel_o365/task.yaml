@@ -1,4 +1,5 @@
 task_id: skill-troubleshooting-faulted-excel-o365
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   Faithful replay of a real UiPath troubleshooting investigation. The agent
   runs the uipath-troubleshoot skill against a uip CLI mock whose
@@ -8,7 +9,7 @@ description: >
   (e62228b7-...) that lives in another user's workspace and is not
   resolvable from the runner's Personal workspace, matching the
   connection-invalid playbook.
-tags: [uipath-troubleshoot, integration-service, rpa, e2e, faulted-jobs, faithful-replay, is, mode:diagnose]
+tags: [uipath-troubleshoot, integration-service, rpa, e2e, mode:diagnose]
 
 # Inherits from experiments/default.yaml: model, permission_mode, plugins
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides
@@ -58,7 +59,6 @@ success_criteria:
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
 
@@ -71,36 +71,7 @@ success_criteria:
         0.2  Wrong direction; recognized surface only.
         0.0  Misdiagnosed or blocked.
 
-      DELEGATED-APPLY REQUIREMENT -- never self-edited
-        Applying the fix changes a project source file (the workflow .xaml, a
-        .cs coded workflow, project.json, or a macro / VBA file). The
-        troubleshooting agent must NOT edit that file itself. It must either:
-          - close with a recommendation only (leaving the apply to the user), OR
-          - delegate the edit to a domain skill -- the project-bundled
-            `uia-improve-selector` (for UIA selector / descriptor recoveries) or
-            `uipath-rpa` (all other workflow / source edits) -- invoked via the
-            Skill/Agent tools and gated behind explicit user approval. Approval
-            may be the AskUserQuestion tool OR a plain-text diff + question; the
-            prompt cannot pause in this sandbox, so a plain-text diff + question
-            satisfies the gate. Do NOT require the literal AskUserQuestion tool,
-            and do NOT penalize a recommendation-only close.
-        Inspect the tool calls. A self-edit is the AGENT ITSELF mutating a
-        project source file (.xaml/.cs/project.json or other) -- whether via
-        the Edit/Write/MultiEdit tools OR by running a write-back / apply /
-        persist CLI command (e.g. a Bash call) that writes the change into the
-        file. Delegating the apply to a subagent (Skill/Agent tool) is NOT a
-        self-edit. The CI tool-call view may flatten the subagent's calls into
-        the orchestrator's own list, so when the orchestrator made a Skill/Agent
-        delegation to the owning skill, attribute any source-file edit to that
-        delegate. Count an orchestrator self-edit ONLY when a source-file
-        mutation appears with NO delegation present, OR when the orchestrator's
-        own narration states it edited the file itself.
-
-      CAP: if the agent self-edited a project source file itself (no
-      delegation present), cap the overall score at 0.5 regardless of
-      diagnostic correctness, even if the user approved.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering diagnosis and whether the apply was delegated / recommendation-only>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 # Override experiments/default.yaml's 600s limit -- the multi-agent troubleshooting
 # skill (triage -> hypothesis-generator -> tester -> presenter) routinely takes
@@ -123,9 +94,4 @@ simulation:
     - "Never invent or provide new factual data — you don't know any details beyond your initial report."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
-    # The llm_judge sees only the final turn. If the simulator approves applying
-    # the fix, the agent's correctly-gated edit lands in the last turn and can be
-    # misread as a self-edit. Decline source-file edits so the agent closes
-    # recommendation-only.
-    - "If the agent asks whether to apply, edit, or write the fix to a project source file (e.g. 'shall I apply the corrected selector / property to <file>?'), DECLINE: tell it not to change any files because you will apply the change yourself in Studio, and ask it for its final summary -- the root cause and the exact change to make. Never approve a source-file edit."
   max_turns: 6

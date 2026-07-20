@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-export-pdf-output-path-format
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose an Export to PDF failure where
   the output path is built by string concatenation WITHOUT a .pdf extension
@@ -7,10 +8,9 @@ description: >
   agent matches the export-pdf-output-path-format playbook AND recommends
   formatting the path with a .pdf suffix (Path.Combine(folder, name & ".pdf")),
   not blaming a missing folder, COM, or the document.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, export-pdf, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

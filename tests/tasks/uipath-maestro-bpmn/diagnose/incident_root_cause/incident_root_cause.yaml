@@ -1,0 +1,79 @@
+task_id: skill-bpmn-diagnose-incident-root-cause
+description: >
+  Diagnose coverage for the uipath-maestro-bpmn skill: given multiple incidents
+  on one failed BPMN instance, the agent distinguishes the FIRST root fault from
+  downstream cancellation noise using `incident get` and `incident summary`, and
+  names the true faulting element. Read-only mocked CLI; no lifecycle mutations.
+tags: [uipath-maestro-bpmn, integration, "mode:diagnose", "lifecycle:discover"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+initial_prompt: |
+  A UiPath Maestro BPMN instance failed with more than one incident. Diagnose it
+  using the mocked `uip` CLI already on PATH. Public-safe identifiers:
+  - instance id: inst-triage-001
+  - folder key: folder-public
+
+  Two incidents were raised. Exactly one is the ROOT fault; the other is
+  downstream noise caused by it. Read the incidents, use `incident get` on the
+  candidate root and `incident summary` to confirm ordering, then decide which
+  element is the true root cause.
+
+  Write your conclusion to diagnosis.md. Include these EXACT labeled lines:
+    ROOT_CAUSE_ELEMENT: <the element id of the true first/root fault>
+    ROOT_CAUSE_CATEGORY: <the incident category of that root fault>
+  Then add a short prose explanation of why the other incident is downstream
+  noise, not the root cause.
+
+  Use `uip maestro bpmn ...` reads with folder context; do not read `mocks/`,
+  `fixtures/`, or any response JSON files directly. Do NOT retry, cancel,
+  migrate, move a cursor, debug, run, upload, publish, or deploy anything.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed the instance incidents with folder context"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+incidents\s+inst-triage-001\b.*folder-public'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the root incident detail"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+incident\s+get\s+inc-root-001'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the incident summary to confirm ordering"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+incident\s+summary'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Diagnosis names the true root fault and does not mislabel the downstream element as root cause"
+    path: "diagnosis.md"
+    includes:
+      - "ROOT_CAUSE_ELEMENT: ServiceTask_FetchInvoice"
+      - "ROOT_CAUSE_CATEGORY: BindingResolution"
+    excludes:
+      - "ROOT_CAUSE_ELEMENT: ServiceTask_PostToLedger"
+    weight: 3.0
+    pass_threshold: 1.0

@@ -1,5 +1,5 @@
 {
-  "name": "AssetPermissionDenied",
+  "name": "CredentialAssetLoader",
   "projectId": "8a3d5f7c-9e2b-4a1d-b8c6-d5e7f9a1b3c4",
   "description": "Blank Process",
   "main": "Main.xaml",

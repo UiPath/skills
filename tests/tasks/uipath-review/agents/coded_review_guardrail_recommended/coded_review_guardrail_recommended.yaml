@@ -6,7 +6,7 @@ description: >
   reviewer must fetch the live catalog (coded-guardrails-review.md Recommend Mode)
   and emit `CODED_GUARDRAIL_RECOMMENDED`. Non-gating (integration tag): single-shot
   catalog-driven judgment. Needs the authed CLI.
-tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover, guardrail]
 
 run_limits:
   turn_timeout: 1200

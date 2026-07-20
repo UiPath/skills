@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Code": "AgentValidate",
+  "Data": {
+    "Status": "Valid",
+    "ProjectDir": "process/IntakeSolution/IntakeAgent"
+  }
+}

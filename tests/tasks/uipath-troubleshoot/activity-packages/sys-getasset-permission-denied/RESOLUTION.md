@@ -2,7 +2,7 @@
 
 ---
 
-**Root Cause:** The robot account running the `AssetPermissionDenied`
+**Root Cause:** The robot account running the `CredentialAssetLoader`
 process lacks the `Assets.View` permission on the `Remote Debugging`
 folder. The workflow's `Get Credential` activity targets a real folder
 and a real asset that exist in Orchestrator, but the robot's assigned
@@ -10,7 +10,7 @@ role does not include View permission on Assets — so Orchestrator
 returns HTTP 403 / error code 0 ("You are not authorized!") and the
 job faults.
 
-**What went wrong:** The `AssetPermissionDenied` job (started
+**What went wrong:** The `CredentialAssetLoader` job (started
 2026-05-12T15:42:18Z) faulted ~2 seconds after launch because the
 `Get Credential` activity (`GetRobotCredential`) in `Main.xaml` was
 not authorized to read assets in the target folder.
@@ -32,7 +32,7 @@ folder. Error code: 0"`.
 **Evidence:**
 
 ### Orchestrator (Propagation)
-- Job: AssetPermissionDenied — Faulted at 2026-05-12T15:42:20.314Z (ran for ~2.1 seconds)
+- Job: CredentialAssetLoader — Faulted at 2026-05-12T15:42:20.314Z (ran for ~2.1 seconds)
 - Job type: Unattended, triggered manually by user "user1" on machine MOCK-HOST
 - Folder: Remote Debugging (key `7e9d4f2a-3b5c-4d8e-9f1a-2b3c4d5e6f7a`) — folder exists and is in the folders list
 - Robot account assigned to the folder: `RobotUser1` (with role `Robot` — no `Assets.View` permission)

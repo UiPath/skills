@@ -5,7 +5,7 @@
     {
       "Key": "6c9e3a4b-1f5d-4e8c-9b6a-2d3e4f5a6b7c",
       "State": "Faulted",
-      "ProcessName": "AssetVaultFailure",
+      "ProcessName": "VaultCredentialReader",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",

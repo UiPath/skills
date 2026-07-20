@@ -13,7 +13,7 @@ run_limits:
   max_turns: 50
 
 initial_prompt: |
-  We already have a Tasks list. Each task has a title, a priority
+  We already have a Tasks UiPath Data Fabric entity. Each task has a title, a priority
   number, and a done flag.
 
   Could you help me with this:

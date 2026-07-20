@@ -72,6 +72,22 @@ RUN set -euo pipefail && \
     # Solution command group (`uip solution …`) — required by uipath-solution
     # tasks (e.g. skill-solution-deploy-list)
     uip tools install @uipath/solution-tool && \
+    # Action Center command group (`uip tasks …`) — required by uipath-tasks
+    # tasks. Without it every `uip tasks …` call fails with "unknown command
+    # 'tasks'": smoke tasks still grade on command shape, but agents that
+    # probe the CLI improvise off-skill flags (e.g. `--folder-id` instead of
+    # the positional form) and the e2e task cannot run at all.
+    uip tools install @uipath/tasks-tool && \
+    # Insights command group (`uip insights …`) — required by uipath-insights
+    # tasks. Whether it was present used to depend on which VM's docker layer
+    # cache built the image; pin it here so `uip insights jobs …` works on
+    # every build.
+    uip tools install @uipath/insights-tool && \
+    # Functions command group (`uip functions …`) — required by
+    # uipath-functions tasks. Without it agents fall back to `uip codedagent`
+    # or manual scaffolds and fail the command-shape criteria
+    # (skill-functions-in-flow-register fails on every agent).
+    uip tools install @uipath/functions-tool && \
     uip tools list
 
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.
@@ -90,3 +106,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV DOTNET_ROOT=/usr/share/dotnet \
     DOTNET_NOLOGO=1 \
     DOTNET_CLI_TELEMETRY_OPTOUT=1
+
+# Pre-install Python packages needed by coded-agent sandbox fixtures so agents
+# don't trigger a live uv-sync download (which takes 1-2 min and causes retry
+# loops in the turn timeline). uipath-langchain is declared in the
+# SimpleCodedAgent fixture's pyproject.toml but has no pre-built venv.
+RUN pip install --no-cache-dir "uipath-langchain>=0.9.26"

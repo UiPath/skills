@@ -1,6 +1,6 @@
 {
   "Name": "CustomerQuery",
   "ProjectType": "Process",
-  "Description": "Reproduces an Execute Query NullReferenceException caused by a DatabaseConnection variable declared inside a nested Sequence and therefore out of scope (null) where Execute Query runs.",
+  "Description": "Queries customers by running a SELECT of CustomerId and Name from the Customers table via Execute Query into a DataTable.",
   "MainFile": "Main.xaml"
 }

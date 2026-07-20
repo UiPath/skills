@@ -1,7 +1,7 @@
 {
   "name": "ExcelMultiReportProcess",
   "projectId": "a2c2d3e4-5f60-4178-92a3-aa2222ccd8d9",
-  "description": "Repro: Two Modern Use Excel File cards with COM-forcing properties in sequence with no Excel Process Scope wrapper. First card closes EXCEL.EXE; second card tries to attach to the dead process and throws RPC_E_DISCONNECTED. Exercises the COM/RPC-across-scopes branch of excel-application-card-failures playbook.",
+  "description": "Reads the 'Sales' sheet from the Q1 and Q2 sales workbooks via Read Range across two Use Excel File scopes to build a multi-quarter report.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.24.7]",

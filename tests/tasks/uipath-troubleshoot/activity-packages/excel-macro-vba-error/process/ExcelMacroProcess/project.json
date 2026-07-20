@@ -1,7 +1,7 @@
 {
   "name": "ExcelMacroProcess",
   "projectId": "e1c2d3e4-5f60-4178-92a3-bb2222ccd8d9",
-  "description": "Repro: Execute Macro; macro throws Run-time error 91 inside its VBA code. Exercises VBA-error branch of execute-macro-failures playbook.",
+  "description": "Runs the Module1.ProcessData macro in the macro-enabled workbook at C:\\Robot\\Data\\sales-macro.xlsm via Execute Macro inside a Use Excel File scope.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.24.7]",

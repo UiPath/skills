@@ -11,9 +11,9 @@ Only one foreground process can run at a time.
 
 ## What this scenario uncovers
 
-**Root Cause:** A second `ForegroundHolder` job (key `c0a1b2c3-...`)
+**Root Cause:** A second `AttendedReportJob` job (key `c0a1b2c3-...`)
 was triggered at `2026-05-12T10:15:00Z` while an earlier
-`ForegroundHolder` job (key `b0a1b2c3-...`, started
+`AttendedReportJob` job (key `b0a1b2c3-...`, started
 `2026-05-12T10:14:50Z`) was still in `Running` state on the same
 machine. Both have `RequiresUserInteraction: true` (foreground). The
 Robot enforces a single-foreground-job-per-session constraint and
@@ -28,7 +28,7 @@ This maps to:
 | Layer | Source |
 |---|---|
 | `mocks/uip` + `mocks/uip.cmd` | shared from `../_shared/mock_template/` (manifest-driven Python dispatcher) |
-| `process/` | snapshot of `skills/uipath-troubleshoot/fixtures/foreground-already-running/ForegroundHolder/` — the foreground project that's failing |
+| `process/` | snapshot of `skills/uipath-troubleshoot/fixtures/foreground-already-running/AttendedReportJob/` — the foreground project that's failing |
 | `fixtures/mocks/responses/*.json` | **synthetic** canned `uip` responses authored from the documented playbook signature |
 | `fixtures/mocks/responses/manifest.json` | dispatch table mapping each command pattern to its fixture |
 

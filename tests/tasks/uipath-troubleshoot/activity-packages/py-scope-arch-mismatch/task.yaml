@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-python-scope-arch-mismatch
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Python Scope engine-init failure
   where the scope faults at open with `One or more errors occurred. (Error
@@ -14,10 +15,9 @@ description: >
   playbook, identify the bitness mismatch, and recommend setting Target to
   x64.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, python-activities, python-scope, architecture-mismatch]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

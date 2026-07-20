@@ -7,7 +7,7 @@ agent reached a verified resolution. The fixtures are the verbatim
 ## What the original session uncovered
 
 The user asked why their last job in folder `Shared` failed. The most recent
-job, `ERN_O365_LegacyMailNRE` (key `50bcdb33-f7a8-42d4-a52d-ebbeeb135e99`),
+job, `MailForwarder` (key `50bcdb33-f7a8-42d4-a52d-ebbeeb135e99`),
 faulted with a raw `System.NullReferenceException: Object reference not set
 to an instance of an object.` thrown by the legacy O365 `ForwardMail`
 activity (`ForwardMail.ExecuteAsync` top frame). Job trace spans proved the

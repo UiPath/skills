@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-excel-macro-trust-center
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose an Execute Macro failure
   with the same 'Cannot run the macro...' COMException as the
@@ -10,10 +11,9 @@ description: >
   Trust Center settings; agent must hand the user host-side
   inspection commands. Remote-user framing.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, execute-macro, trust-center, needs-host]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

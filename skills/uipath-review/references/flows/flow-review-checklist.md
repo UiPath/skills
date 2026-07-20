@@ -2,7 +2,7 @@
 
 Comprehensive quality checklist for UiPath Flow projects (`.flow` files) — orchestration of RPA processes, agents, apps, and human tasks.
 
-> **Unit of Work:** Before running the technical checks below, complete Step 3a (Unit of Work Discovery) from SKILL.md. For flows, the declared unit is in the `.flow` file under `variables.globals` with `direction: "in"` or `"inout"`. The actual unit is what the flow body produces — count downstream resource-node invocations and side effects per flow execution. If one flow invocation fans out to N downstream calls over a sub-collection of the input, that is a Granularity Mismatch (see [rpa-common-issues.md](../rpa/rpa-common-issues.md)).
+> **Unit of Work:** Before running the technical checks below, complete Step 3a (Unit of Work Discovery) from SKILL.md. For flows, the declared unit is in the `.flow` file under `variables.globals` with `direction: "in"` or `"inout"`. The actual unit is what the flow body produces — count downstream resource-node invocations and side effects per flow execution. If one flow invocation fans out to N downstream calls over a sub-collection of the input, the shape is one-to-many — assess per Step 3a (see [rpa-common-issues.md](../rpa/rpa-common-issues.md)).
 
 ## 1. Structural Validation
 
@@ -21,7 +21,7 @@ Comprehensive quality checklist for UiPath Flow projects (`.flow` files) — orc
 Run the CLI validator first:
 
 ```bash
-uip maestro flow validate <ProjectName>.flow --output json
+uip maestro flow validate "<PROJECT_NAME>.flow" --output json
 ```
 
 | Check | Severity | How to Verify |
@@ -191,75 +191,18 @@ If the flow uses queues for work distribution:
 | No orphan definitions (types not used by any node) | Info | Cross-reference definitions and nodes |
 | Definition versions match node `typeVersion` | Warning | Compare versions |
 
-## 8. BPMN / Maestro Compliance (If Using Maestro)
+## 8. Maestro BPMN Projects
 
-For flows that target UiPath Maestro execution:
+Maestro BPMN (`.bpmn` + `project.uiproj` with `"ProjectType": "ProcessOrchestration"`) is a separate project type — review it with [bpmn-review-checklist.md](../bpmn/bpmn-review-checklist.md), not this checklist.
 
-### BPMN Element Support (Execution-Ready)
-
-| Element Category | Supported for Execution | Modeling Only |
-|---|---|---|
-| **Start Events** | None, Message, Timer | Error, Signal, Conditional, Compensation, Escalation |
-| **Intermediate Catch** | Message, Timer | Signal, Conditional, Link |
-| **Boundary (Interrupting)** | Message, Timer, Error | Signal, Conditional, Escalation, Compensation |
-| **Boundary (Non-Interrupting)** | Message, Timer | Signal, Conditional, Escalation |
-| **End Events** | None, Message, Error, Terminate | Signal, Escalation, Compensation |
-| **Tasks** | User, Service, Send, Receive, Business Rule, Script, Manual | — |
-| **Gateways** | Exclusive, Parallel, Inclusive, Event-Based | Complex |
-| **Markers** | Multi-instance (parallel/sequential) | Loop, Compensation |
-| **Subprocesses** | Sub-process, Call Activity, Event Sub-process | Transaction |
-
-### Structural Checks
+### Flow vs Maestro BPMN Fitness
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| All BPMN elements used are execution-ready (not modeling-only) | Critical | Compare against support table above |
-| One clear start event and explicit end events | Critical | Check node structure |
-| Parallel gateways have matching parallel join gateways | Critical | Verify parallel synchronization |
-| Inclusive gateways have matching inclusive merge | Critical | Verify inclusive synchronization |
-| Default path defined on exclusive gateways (prevents runtime faults) | Warning | Check gateway configuration |
-| Task sizes are uniform in diagrams | Info | Visual review |
-| Flow direction is left-to-right or top-to-bottom | Info | Check node positions |
-| Separate process flow from business rules (use DMN Business Rule Tasks) | Info | Check for complex conditionals |
-
-### Timer Configuration
-
-| Check | Severity | How to Verify |
-|---|---|---|
-| Timer events use valid ISO 8601 durations (e.g., `PT1H`, `P1D`, `R/PT5M`) | Critical | Check timer values |
-| Timer boundary events configured for long-running tasks (SLA enforcement) | Info | Check boundary events |
-| Non-interrupting timers used when parallel execution is needed | Info | Check timer interrupt mode |
-| Cycle timers use correct repeat format (`R/P[duration]`) | Warning | Check cycle syntax |
-
-### Multi-Instance Configuration
-
-| Check | Severity | How to Verify |
-|---|---|---|
-| Parallel multi-instance batch size appropriate (runs in batches of 50) | Info | Check batch config |
-| Sequential multi-instance used when item ordering matters | Warning | Verify ordering requirement |
-| Multi-instance loops configured to **continue on individual item failure** (one item's error does not halt the entire batch) | Warning | Check multi-instance configuration for continueOnException/continue-on-failure flag. Batches of 50 where item #15 fails should still process items 16..50 |
-| Entry-points UUIDs are unique (no duplicates across entries in `entry-points.json`) | Critical | Parse `entry-points.json`, check for duplicate `uniqueId` values. Duplicates block publishing |
-| Nested loops use subprocess pattern (outer sequential, inner parallel) | Info | Check nesting pattern |
-
-### Error Handling in BPMN
-
-| Check | Severity | How to Verify |
-|---|---|---|
-| Error boundary events attached to tasks with failure risk | Warning | Check boundary events |
-| Error end events used for unrecoverable failures | Info | Check error paths |
-| Event subprocesses configured for centralized error handling | Info | Check event subprocesses |
-| Error mappings configured at element level (first match wins) | Warning | Check error mapping order |
-
-### Maestro vs Flow Decision
-
-If the project uses the simple Flow format (not full Maestro BPMN):
-
-| Check | Severity | How to Verify |
-|---|---|---|
-| Flow complexity appropriate (simple flows don't need Maestro) | Info | Assess process complexity |
-| Long-running processes use Maestro (not simple flows) | Warning | Check process duration |
-| Human-in-the-loop steps use Maestro User Tasks | Warning | Check for HITL requirements |
-| Process mining integration needed → use Maestro (auto-creates Process Optimization apps) | Info | Check monitoring needs |
+| Flow complexity appropriate (simple flows don't need Maestro BPMN) | Info | Assess process complexity |
+| Long-running, multi-actor processes use Maestro BPMN (not simple flows) | Warning | Check process duration and actor mix |
+| Human-in-the-loop steps needing case tracking/SLA use Maestro User Tasks | Warning | Check for HITL requirements |
+| Process mining integration needed → Maestro BPMN (auto-creates Process Optimization apps) | Info | Check monitoring needs |
 
 ## 9. Performance and Optimization
 
@@ -280,7 +223,9 @@ If the project uses the simple Flow format (not full Maestro BPMN):
 | No mock placeholder nodes remain | Critical | Grep for `core.logic.mock` |
 | Entry points correctly defined | Warning | Check entry-points.json |
 | Environment-specific values externalized | Warning | Check for hardcoded URLs/paths |
-| Debug flow succeeds end-to-end | Warning | `uip maestro flow debug <project-dir>` |
+| Entry-point `uniqueId` values unique (duplicates block publishing) | Critical | Parse `entry-points.json` for duplicate `uniqueId` values |
+
+> Do NOT execute the flow (`uip maestro flow debug` / `run`) during review — review is read-only. Runtime verification routes to `uipath-maestro-flow`.
 
 ## 11. Action Center / Human-in-the-Loop
 

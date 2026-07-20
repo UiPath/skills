@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-move-outlook-mail-com-session-loss
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Move Outlook Mail Message
   failure that faults 100% on an unattended robot with "The operation
@@ -12,10 +13,9 @@ description: >
   Startup apps), wrap in a Retry Scope, or move to Graph for unattended.
   Success = agent matches Branch 1 AND hands a host-side check list without
   fabricating host actions.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

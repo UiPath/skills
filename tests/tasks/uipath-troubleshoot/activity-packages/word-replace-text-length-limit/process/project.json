@@ -1,7 +1,7 @@
 {
   "name": "TermsLetterGen",
   "projectId": "d0e1f2a3-b4c5-4193-d7e8-f90124354607",
-  "description": "Reproduces a classic Replace Text 256-character input limit failure (ArgumentException) when the replacement clause exceeds the classic activity cap.",
+  "description": "Generates a terms letter by opening the terms template and inserting the standard termination clause into the placeholder.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.7.0]",

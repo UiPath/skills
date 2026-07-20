@@ -23,7 +23,7 @@ Investigation complete. Here is the finding, presented as the presenter agent as
 - Source: `authentication-token-invalid.md` (§ Context — "Interactive login timed out or was cancelled"); evidence `H1-trace-analysis.json`, `H2-auth-mode-analysis.json`; raw `triage-job-traces.json`, `triage-job-get.json`.
 
 ### orchestrator (Propagation)
-- Job: process **ERN**, in folder **Shared**, State=**Faulted**, started 2026-06-09 10:49:38 UTC, ended 2026-06-09 10:50:41 UTC (job key b7974725-4438-4315-a9cc-9ec41f8acd62, job ID 4015051). Entry point `O365_Auth401.xaml`.
+- Job: process **ERN**, in folder **Shared**, State=**Faulted**, started 2026-06-09 10:49:38 UTC, ended 2026-06-09 10:50:41 UTC (job key b7974725-4438-4315-a9cc-9ec41f8acd62, job ID 4015051). Entry point `Main.xaml`.
 - Execution context: Source=Agent, SourceType=Agent, Type=Attended, RuntimeType=StudioPro, RequiresUserInteraction=true, RemoteControlAccess=None, machine **MOCK-HOST**, ErrorCode=Robot. One error logged, from **Get Email List**.
 - Recurring pattern across **ERN** Agent/Attended runs (2026-05-12 to 2026-06-09): at least four faults in the 30-second-plus timeout band (this job ~63s; plus job keys d5fed611 ~71s, bad89b79 ~34s, 43e192cf ~41s). One Agent/Attended run succeeded (af31127b, 2026-05-14, ~3.4s), bounding the claim — the mode is fragile, not impossible. (Four sub-2-second Agent/Attended faults exist but are a different/earlier mode whose traces were not fetched; they are not claimed as instances of this 30-second timeout.)
 - Source: evidence `H2-auth-mode-analysis.json`; raw `triage-job-get.json`, `triage-jobs-list.json`, `triage-job-history.json`.
@@ -33,7 +33,7 @@ Investigation complete. Here is the finding, presented as the presenter agent as
 ### o365-activities (Root Cause)
 1. Switch the Microsoft 365 Scope from Interactive Token to app-only authentication — set the scope's authentication to **Application ID + Client Secret** or **Application ID + Certificate** (OAuth 2.0 client-credentials, with application permissions), which requires no runtime user interaction.
    - **Why:** The fault is a 30-second interactive sign-in timeout (`System.TimeoutException ... Authentication type: InteractiveToken`) in an Agent/StudioPro run with no human to complete the browser prompt and no bound account to reuse a token silently. App-only auth removes the runtime sign-in entirely.
-   - **Where:** In Studio, on the **Microsoft 365 Scope** activity in `O365_Auth401.xaml`, change the `AuthenticationType` property to `ApplicationIdAndSecret` or `ApplicationIdAndCertificate` and supply the App ID + secret/certificate from your Entra ID (Azure AD) app registration.
+   - **Where:** In Studio, on the **Microsoft 365 Scope** activity in `Main.xaml`, change the `AuthenticationType` property to `ApplicationIdAndSecret` or `ApplicationIdAndCertificate` and supply the App ID + secret/certificate from your Entra ID (Azure AD) app registration.
    - **Who:** RPA developer (with an admin to provision/grant application permissions on the app registration).
    - **Source:** `authentication-token-invalid.md` (§ Resolution — "For unattended runs, switch to app-only authentication (App ID + Secret or Certificate) instead of Interactive Token."); corroborated by docsai `https://docs-staging.uipath.com/activities/other/latest/productivity/application-id-and-secret` and `…/application-id-and-certificate`
 
@@ -50,7 +50,7 @@ Investigation complete. Here is the finding, presented as the presenter agent as
 
 1. **o365-activities** — Standardize the Microsoft 365 Scope on a non-interactive auth flow for any Agent/StudioPro or unattended-style execution: app-only auth (App ID + Secret/Certificate), or route through an Integration Service connection (which keeps an Interactive-Token-based connection alive by refreshing the token). Reserve bare Interactive Token for genuinely attended desktop runs where a human completes the sign-in.
    - **Why:** The cited auth matrix shows Interactive Token is attended-only and is not supported directly in the scope for unattended/headless robots; using it here is the structural cause of the recurring 30-second timeouts.
-   - **Where:** The **Microsoft 365 Scope** authentication configuration in `O365_Auth401.xaml`, and/or an Integration Service Microsoft 365 connection.
+   - **Where:** The **Microsoft 365 Scope** authentication configuration in `Main.xaml`, and/or an Integration Service Microsoft 365 connection.
    - **Who:** RPA developer / platform team.
    - **Source:** docsai `…/connect-with-microsoft-365-scope`, `…/interactive-token`, `…/how-to-connect-microsoft-365-activities`
 2. **orchestrator** — Monitor for recurring authentication-timeout faults by querying faulted jobs filtered on the error text. Use the Orchestrator Jobs API with an `indexof(Info, '<error text>') ne -1` filter (e.g. matching "did not complete the authentication after 30 seconds") to retrieve faulted jobs carrying the interactive-auth timeout and analyze the pattern.
@@ -75,5 +75,5 @@ A couple of caveats worth your judgment: the doc links the search returned are `
 
 Want me to:
 - **Test H3 explicitly** to close it out (cheap — reuses existing trace data), or
-- **Help apply the fix** — I'd need the `O365_Auth401.xaml` project path (the working directory is empty, so I couldn't auto-locate it), or
+- **Help apply the fix** — I'd need the `Main.xaml` project path (the working directory is empty, so I couldn't auto-locate it), or
 - **Clean up** the `.local/investigations/` working files?

@@ -54,7 +54,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs and task-specific scalar fields (e.g. `action`'s `taskTitle`/`priority`/`recipient`/`labels`) populated per plugin — these are final at Step 2; only input `value`s defer to Phase 3. |
 | Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data.typeId` + `data.connectionId` set. `data.inputs` omitted or empty. **No `case spec` call in Phase 2** — schema discovery is deferred to Phase 3. |
 | Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Placeholder task per Rule 8 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
-| `agent` built inline | Built + bound in Phase 1 at the Rule 17 gate | **Not a placeholder** — fully resolved task (name+folder binding, `resourceKey="solution_folder.<name>"`, **`folderPath` binding `default` = `""`** — co-located runtime folder; `solution_folder` stays only in `resourceKey`). Phase 2 treats it like any resolved resource. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery). |
+| `agent` / `api-workflow` built inline | Built + bound in Phase 1 at the Rule 17 gate | **Not a placeholder** — fully resolved task (name+folder binding, `resourceKey="solution_folder.<name>"`, **`folderPath` binding `default` = `""`** — co-located runtime folder; `solution_folder` stays only in `resourceKey`). Phase 2 treats it like any resolved resource. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery). |
 
 ### What does NOT get written in Phase 2
 
@@ -199,13 +199,14 @@ After debug completes, return to Phase 5 prompt so user can re-run or move on. P
 1. File path of `caseplan.json`.
 2. What was built — summary of stages, tasks, conditions, SLA.
 3. Validation status — `validate` pass / remaining warnings.
-4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. Also list **agents built inline** (built as in-solution siblings, already bound) and any **built but unreferenced** (reject case) separately — they need no user action. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
+4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. Also list **agents / API workflows built inline** (built as in-solution siblings, already bound) and any **built but unreferenced** (reject case) separately — they need no user action. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
 5. Missing connections — connector tasks needing IS connections that don't exist yet.
 
 ### Debug notes
 
 - `uip solution resources refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
 - Debug verifies the build actually runs end-to-end before the user commits to a publish. If debug surfaces a fixable issue, see [Step 13a — Troubleshoot failed case](implementation.md#step-13a--troubleshoot-failed-case) and re-run.
+- **Inline-built api-workflow siblings are NOT provisioned by `case debug`** — that task faults with incident `170007` ("job's associated process could not be found") by design; agent siblings do resolve in debug. Verifying that task's runtime needs a full solution deploy (`uip solution pack` → `uip solution publish` → `uip solution deploy run`) — an Orchestrator install, so **offer it via AskUserQuestion, never run it unprompted** (options — `Run full solution deploy` / `Skip (mark debug-unverifiable)`; the Phase 6 no-deploy default applies); if declined, report the task as debug-unverifiable and continue. See [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline).
 
 ## Phase 6 — Publish
 
@@ -226,7 +227,7 @@ For further authoring changes (add task, tweak condition, etc.), user updates `s
 
 Placeholder tasks (empty `data: {}` for unresolved resources) behave the same in all phases. Phase 2 creates them; Phase 3 does **not** upgrade them to typed tasks — upgrading requires user to register missing resource externally. See [placeholder-tasks.md](placeholder-tasks.md).
 
-> **Agents built inline are not placeholders.** When the user picks **Create** at the Rule 17 gate, Phase 1 builds the agent (a side effect — spawns a sub-agent invoking `uipath-agents`, registers the sibling, binds it) so it enters Phase 2 as a fully resolved task. Phase 3 never upgrades it (nothing to upgrade). Only resources the user declined/skipped or whose build failed become placeholders. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery).
+> **Agents / API workflows built inline are not placeholders.** When the user picks **Create** at the Rule 17 gate, Phase 1 builds the resource (a side effect — spawns a sub-agent invoking `uipath-agents` / `uipath-api-workflow`, registers the sibling, binds it) so it enters Phase 2 as a fully resolved task. Phase 3 never upgrades it (nothing to upgrade). Only resources the user declined/skipped or whose build failed become placeholders. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery).
 
 Phase 3 still wires placeholder TaskIds into:
 - Task-entry conditions that reference the placeholder.

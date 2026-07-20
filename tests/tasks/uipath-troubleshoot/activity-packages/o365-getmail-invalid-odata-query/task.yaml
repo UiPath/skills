@@ -8,7 +8,7 @@ description: >
   configured OData Query uses natural-language operators ('subject equals
   'invoice' and unread is true') that Microsoft Graph cannot parse. Success =
   the agent reaches the same root cause as RESOLUTION.md.
-tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, mode:diagnose, o365-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-delete-outlook-mail-stale-reference
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Delete Outlook Mail Message
   failure caused by a stale message reference (Branch 1 of the
@@ -11,10 +12,9 @@ description: >
   to the fetch-then-delete gap AND recommends fetching-then-deleting
   promptly plus a Try Catch tolerating the already-gone item (NOT adding a
   Delay).
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

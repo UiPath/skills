@@ -1,7 +1,7 @@
 {
   "name": "NightlyReportPdf",
   "projectId": "c3d4e5f6-a7b8-491a-9c3d-4e5f60718293",
-  "description": "Reproduces a Save Document as PDF COM wrong-thread fault (0x8001010E RPC_E_WRONG_THREAD) on an unattended Session-0 / background runtime where Word interop has no interactive STA to own the document.",
+  "description": "Opens the nightly report Word document and saves it as a PDF in the output folder.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

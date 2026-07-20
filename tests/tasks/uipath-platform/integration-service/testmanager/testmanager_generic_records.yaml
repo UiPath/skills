@@ -18,6 +18,7 @@ sandbox:
 
 run_limits:
   expected_turns: 28
+  max_turns: 45
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/testmanager/_tm_shared/seed.py"

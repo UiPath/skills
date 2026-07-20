@@ -94,6 +94,14 @@
       },
       "last_synced": null
     },
+    "uipath-insights": {
+      "status": "preview",
+      "confluence": {
+        "page_id": "90824180832",
+        "url": "https://uipath.atlassian.net/wiki/spaces/CA/pages/90824180832"
+      },
+      "last_synced": null
+    },
     "uipath-ixp": {
       "status": "in-development",
       "confluence": {

@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-replace-text-file-locked
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Replace Text file-lock failure:
   a Use Word File scope with Auto Save enabled edits the same shared file on
@@ -7,10 +8,9 @@ description: >
   process"). Success = agent matches the replace-text-file-locked playbook AND
   recommends unchecking Auto Save and/or writing to a distinct output path per
   iteration (or clearing the lock), not blaming Word or the document content.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, replace-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

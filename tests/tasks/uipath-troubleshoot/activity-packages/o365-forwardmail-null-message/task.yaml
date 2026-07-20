@@ -7,7 +7,7 @@ description: >
   Forward Mail activity because its Message input was bound to a variable
   (originalEmail) that no upstream activity ever assigned. Success = the
   agent reaches the same root cause as RESOLUTION.md.
-tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, mode:diagnose, o365-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

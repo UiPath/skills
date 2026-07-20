@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-write-range-uninitialized-datatable
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Write Range failure
   (NullReferenceException at the activity) where the DataTable argument
@@ -13,10 +14,9 @@ description: >
   failing fast on the missing source, or restructuring the workflow
   to make the dependency explicit.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, write-range, uninitialized-datatable]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

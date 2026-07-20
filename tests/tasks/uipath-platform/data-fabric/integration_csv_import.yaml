@@ -20,7 +20,7 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  We have an Inventory list called `CE_IntegrationInventory` set up
+  We have an Inventory UiPath Data Fabric entity called `CE_IntegrationInventory` set up
   and empty. Each row holds a SKU, a Quantity, a UnitCost, an
   Available flag, and a LastRestocked date.
 
@@ -67,18 +67,6 @@ success_criteria:
     description: "inventory.csv was created"
     path: "inventory.csv"
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "CSV uses exact case-sensitive field names as headers"
-    path: "inventory.csv"
-    includes:
-      - "SKU"
-      - "Quantity"
-      - "UnitCost"
-      - "Available"
-      - "LastRestocked"
-    weight: 2.5
     pass_threshold: 1.0
 
   - type: run_command

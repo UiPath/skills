@@ -1,6 +1,6 @@
 ﻿**Root Cause:** The file the workflow tried to upload exceeds the OneDrive/SharePoint per-file upload maximum — Microsoft Graph rejected the upload outright at session creation.
 
-**What went wrong:** The last job in folder Shared — process **ERN_O365_UploadQuotaSize** (job 7fd5e890-f162-4591-a895-e649b09aea02, run 2026-06-11 08:15 UTC, machine MOCK-HOST) — faulted after ~7 seconds in the **Upload File** activity (legacy `UploadFile`) in `O365_UploadQuotaSize.xaml`.
+**What went wrong:** The last job in folder Shared — process **DocumentUploader** (job 7fd5e890-f162-4591-a895-e649b09aea02, run 2026-06-11 08:15 UTC, machine MOCK-HOST) — faulted after ~7 seconds in the **Upload File** activity (legacy `UploadFile`) in `Main.xaml`.
 
 **Why:** The activity initiated a Microsoft Graph chunked upload (`LargeFileUploadTask`/`UploadSliceRequest`). Graph rejected it with `Code: invalidRequest — "The payload of the request was too large"`, inner error `Code: maxFileSizeExceeded` — the documented over-size rejection: the file's declared size exceeds the per-file limit, refused before any bytes transferred. Raw `ServiceException` (no Office365Exception wrapper) confirms the legacy code path. NOT a storage-quota problem (no `quotaLimitReached`), NOT a transient upload-session break, NOT throttling — wording for all three verified absent; deterministic on every run with the same file.
 

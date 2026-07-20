@@ -11,7 +11,7 @@ the activity (`Text`), and the folder is accessible — but the asset's
 Orchestrator therefore reports "The asset 'MyPerRobotConfig' does not
 have a value associated with this robot."
 
-**What went wrong:** The `AssetPerRobotNoValue` job (started
+**What went wrong:** The `PerRobotConfigReader` job (started
 2026-05-13T11:08:24Z) faulted ~1 second after launch because the
 `Get Asset` activity could not resolve a per-robot value for the
 asset.
@@ -32,7 +32,7 @@ piece is the per-robot value mapping.
 **Evidence:**
 
 ### Orchestrator (Propagation)
-- Job: AssetPerRobotNoValue — Faulted at 2026-05-13T11:08:25.241Z (ran for ~1.0 seconds)
+- Job: PerRobotConfigReader — Faulted at 2026-05-13T11:08:25.241Z (ran for ~1.0 seconds)
 - Job type: Unattended, triggered manually under robot account `RobotUser1` on machine MOCK-HOST
 - Folder: Remote Debugging (key `2c5e8f4a-9b3d-4f6c-8e1d-7a2b3c4d5e6f`) — folder exists
 - Asset list: `MyPerRobotConfig` is present with `ValueType: "Text"` (compatible with Get Asset) and `ValueScope: "PerRobot"` — values vary per robot

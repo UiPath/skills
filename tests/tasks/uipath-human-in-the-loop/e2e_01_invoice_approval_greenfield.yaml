@@ -8,8 +8,7 @@ description: >
   designing schema, adding HITL node, wiring all handles, and validating the
   authored .flow file. Real business use case. Full Discover -> Plan -> Build -> Verify loop.
   Does not deploy or run the flow.
-tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back]
-
+tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back, path-to-ga]
 
 run_limits:
   expected_turns: 19
@@ -70,7 +69,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran flow validate during the session"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

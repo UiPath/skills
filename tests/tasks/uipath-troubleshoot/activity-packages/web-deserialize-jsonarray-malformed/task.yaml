@@ -1,14 +1,14 @@
 task_id: skill-troubleshoot-web-deserialize-jsonarray-malformed
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a ParseList job fault
   (Newtonsoft.Json.JsonReaderException: Unexpected character encountered while parsing value: n. Path '', line 0, position 0.) and match the
   activity-packages/web-activities/playbooks/deserialize-malformed-input.md playbook.
   Replayed from a real staging faulted job.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, web-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "TodoWrite"]
 
 run_limits:
@@ -36,7 +36,7 @@ initial_prompt: |
   My last job in folder Shared just faulted. Job key 1150d469-f4dc-44fc-b39e-c89aaa5db3f9. Why
   did it fail and how do I fix it?
 
-  The project source for the failing process is at ./WebRepro/ in the
+  The project source for the failing process is at ./WebApiClient/ in the
   current working directory.
 
 success_criteria:

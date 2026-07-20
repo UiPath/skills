@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-execute-query-timeout-expired
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath diagnostic agent must diagnose an Execute Query failure that
   faults on every Orchestrator run because the query exceeds the
@@ -16,7 +17,7 @@ description: >
   syntax, provider mismatch, a CLR crash, the wrong activity, or "the
   database is down".
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, execute-query]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

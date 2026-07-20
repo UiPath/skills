@@ -1,14 +1,10 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for foreground-already-running scenario. Folder/job/release keys are stable and human-readable; the agent should derive them by chaining: folders list-current-user → jobs list --state Faulted → jobs get → jobs logs. The overlapping prior job (b0a1b2c3-...) is the key evidence — surfaced via the broader jobs list call without the state filter.",
+  "_doc": "Synthetic fixture set for the rpa-foreground-already-running scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",
       "file": "f5d1ebe209.json"
-    },
-    {
-      "match": "or folders list --output json",
-      "file": "869f58b55e.json"
     },
     {
       "match": "or jobs list --folder-key \"a1b2c3d4-e5f6-7890-1234-56789abcdef0\" --state Faulted --output json",

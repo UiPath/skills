@@ -2,13 +2,16 @@ task_id: skill-flow-coded-agent
 description: >
   Create a UiPath Flow that uses an ApproverCount coded agent to count, from a
   free-text sentence describing each reviewer's stance, how many people approved
-  a proposal and return that integer. The prompt explicitly asks for a coded
-  agent on a natural-language task, so the resulting flow node must be
+  a proposal and return that integer. The sentence is deliberately withheld from
+  the prompt and injected by the check script at debug time via --inputs, so the
+  agent cannot hardcode the answer or fit a regex to known text — a deterministic
+  Function is not a viable design. The prompt explicitly asks for a coded agent
+  on a natural-language task, so the resulting flow node must be
   uipath.core.agent (an Agent project), not uipath.core.function — verifying the
   skill honors an explicit agent request instead of substituting a deterministic
   Function. Exercises agent resource node discovery and wiring for coded (vs
   low-code) agents.
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, resource]
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, resource, path-to-ga]
 
 run_limits:
   expected_turns: 35
@@ -16,10 +19,11 @@ run_limits:
 
 initial_prompt: |
   Create a UiPath Flow project named "ApproverCountAgent" that uses a coded
-  agent named "ApproverCount" to read the sentence "The proposal went to Dana,
-  Marco, Priya, Lena and Sam for review. Dana, Priya and Sam each signed off,
-  Marco asked for changes, and Lena recused herself." and return how many of
-  them approved the proposal as an integer.
+  agent named "ApproverCount" to analyze a sentence describing the outcome of
+  a proposal review round. The flow takes the sentence as a string input
+  variable. The agent must identify each person mentioned, determine whether
+  they approved, requested changes, or recused themselves, and return the
+  number of people who approved as an integer flow output.
 
   Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
@@ -38,7 +42,7 @@ success_criteria:
   - type: run_command
     description: "Flow has an agent node and debug returns the approver count"
     command: "python3 $TASK_DIR/check_coded_agent_flow.py"
-    timeout: 300
+    timeout: 360
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

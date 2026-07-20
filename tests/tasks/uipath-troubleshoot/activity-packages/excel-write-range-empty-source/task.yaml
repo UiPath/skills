@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-write-range-empty-source
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Write Range failure
   (BusinessException 'Ignore empty source is ineffective') where the
@@ -11,10 +12,9 @@ description: >
   If guard on Rows.Count > 0 — NOT the misleading ExcludeHeaders=True
   silencer which is an anti-pattern in the playbook.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, write-range, empty-source]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-python-scope-path-is-file
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Python Scope failure where the
   scope faults at open with `The specified Python path is not valid:
@@ -12,10 +13,9 @@ description: >
   identify the file-vs-folder mistake, and recommend stripping \python.exe
   to the containing folder.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, python-activities, python-scope, path-not-valid]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

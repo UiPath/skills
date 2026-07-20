@@ -1,7 +1,7 @@
 {
   "name": "PythonInvoiceParser",
   "projectId": "f1a11111-7777-4bbb-8ccc-aa1111119999",
-  "description": "Repro: Python Scope -> Load Python Script -> Invoke Python Method where the script imports pandas (installed in the dev IDE, not in the robot interpreter). Exercises the pipe-is-broken / missing-module branch of the python-activities playbook.",
+  "description": "Parses an invoice by loading a Python script in a Python Scope and invoking it to extract the total amount.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Python.Activities": "[1.9.1]",

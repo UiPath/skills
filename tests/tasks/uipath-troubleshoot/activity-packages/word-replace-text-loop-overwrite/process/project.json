@@ -1,7 +1,7 @@
 {
   "name": "BulkOfferLetters",
   "projectId": "f0a1b2c3-d4e5-4193-8607-1a2b3c4d5e6f",
-  "description": "Reproduces a Replace Text loop failure: the workflow edits the template in place each iteration, so the placeholder is consumed after the first row and later rows come out unchanged.",
+  "description": "Generates a personalized offer letter for each recipient by filling the name placeholder in the offer letter template.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

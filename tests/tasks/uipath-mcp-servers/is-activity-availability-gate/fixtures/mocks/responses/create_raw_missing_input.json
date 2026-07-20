@@ -1,0 +1,6 @@
+{
+  "Result": "Failure",
+  "Code": "AgentHubMcpToolsCreate",
+  "Message": "Use exactly one of --file, --body, or scalar options.",
+  "Reason": "ConflictingInput"
+}

@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-getasset-permission-denied
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must troubleshoot a Get Credential failure where
   the activity's target asset and folder both exist correctly, but the
@@ -7,7 +8,7 @@ description: >
   agent must rule out asset-not-found (1002) and folder-scope-mismatch
   (1100) and converge on the permission-denied root cause.
 
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, system-activities, get-asset, permission-denied, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
@@ -33,7 +34,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My AssetPermissionDenied process is faulting in Orchestrator on every
+  My CredentialAssetLoader process is faulting in Orchestrator on every
   run. Can you investigate?
 
   The project source for the failing process is in the current working

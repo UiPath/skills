@@ -13,7 +13,7 @@
     "BatchExecutionKey": "9f2b3e4c-5a1d-4e6f-9b8c-7d2a3e4f5b6c",
     "Info": "Get Credential: Status code: 500 (Internal Server Error). Orchestrator response: Failed to read from Credential Store type 'CyberArk'. Error code: 2304\r\n\r\nin Main.xaml\r\n    at GetRobotCredential \"Get Credential\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nUiPath.Core.Activities.OrchestratorCommunicationException: Failed to read from Credential Store type 'CyberArk'. Error code: 2304",
     "CreationTime": "2026-05-13T15:42:07.812Z",
-    "ReleaseName": "AssetVaultFailure",
+    "ReleaseName": "VaultCredentialReader",
     "Type": "Unattended",
     "EnvironmentVariables": "",
     "OutputArguments": "{}",

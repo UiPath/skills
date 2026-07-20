@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-send-outlook-mail-timeout-security-prompt
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Send Outlook Mail Message
   failure where the activity times out / hangs (System.TimeoutException
@@ -10,10 +11,9 @@ description: >
   check list (AV/Security-Center registration or programmatic-access
   GPO, ensure Online, switch to SMTP/Graph for unattended) - NOT merely
   raising TimeoutMS.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

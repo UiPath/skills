@@ -9,6 +9,8 @@ Step 2.5 of the review workflow. Runs **after** Step 2 (`uip agent validate` and
 
 ### 2.5a — Run the review CLI first
 
+Mandatory even when the skill loads after another review pass already produced findings (SKILL.md Critical Rule 9).
+
 Run the review command for the agent type, once, capturing JSON:
 
 | Agent type | Command |

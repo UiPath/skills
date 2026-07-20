@@ -1,0 +1,78 @@
+task_id: skill-review-rpa-coded-structural
+description: >
+  Judgment test for uipath-review on a coded RPA (.cs) workflow with
+  structural defects: the entry class does NOT inherit CodedWorkflow, the
+  Execute method carries no [Workflow] attribute, it declares an `out string
+  result` parameter (out/ref params are unsupported on coded-workflow entry
+  methods — CS1620), and it hardcodes an input path (C:\temp\in.csv). The
+  reviewer must read the .cs and flag these structural issues.
+
+  Platform note: `uip rpa validate/build` require Windows and may not run on
+  Linux CI — those CLI checks are advisory. The defects are caught by reading
+  the .cs file, which is platform-independent.
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  driver: tempdir
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  A UiPath coded RPA project exists at `CodedProc` in the current directory.
+  Review the coded workflow for quality and best-practice issues, and produce
+  a structured review report with Critical / Warning / Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `CodedProc/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `CodedProc/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside CodedProc/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*CodedProc'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside CodedProc/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*CodedProc'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Advisory: uip rpa validate/build ran (Critical Rule 2) — recorded, not gating"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+(validate|build)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Report identifies >=2 coded-workflow structural defects"
+    command: "python3 $TASK_DIR/check_coded_structural.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

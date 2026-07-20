@@ -5,7 +5,7 @@
     {
       "Key": "f41ed418-163b-487b-8077-e51f8af4a1af",
       "State": "Faulted",
-      "ProcessName": "GSuite_DriveFileNotFound",
+      "ProcessName": "DriveDocSync",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",
@@ -19,7 +19,7 @@
     {
       "Key": "5242daf1-a4e9-41d2-b828-3b70e9d59cc1",
       "State": "Faulted",
-      "ProcessName": "ERN_O365_NoEmailMatch",
+      "ProcessName": "InboxSearchBot",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",
@@ -33,7 +33,7 @@
     {
       "Key": "7fd5e890-f162-4591-a895-e649b09aea02",
       "State": "Faulted",
-      "ProcessName": "ERN_O365_UploadQuotaSize",
+      "ProcessName": "DocumentUploader",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",
@@ -47,7 +47,7 @@
     {
       "Key": "e893a4d4-e061-4cba-a799-6ed4de6ee4e2",
       "State": "Faulted",
-      "ProcessName": "ERN_O365_MailFolderNotFound",
+      "ProcessName": "TeamMailRetriever",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",
@@ -61,7 +61,7 @@
     {
       "Key": "cbbaaaf6-b416-4025-9a98-c8ee50990f76",
       "State": "Faulted",
-      "ProcessName": "ERN_O365_MailMessageNotFound",
+      "ProcessName": "SupportMailLookup",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",
@@ -75,7 +75,7 @@
     {
       "Key": "1db8bac1-ecc2-4670-843e-ff5f9a26c532",
       "State": "Faulted",
-      "ProcessName": "ERN_O365_TriggerConnFailure",
+      "ProcessName": "MailEventListener",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",
@@ -89,7 +89,7 @@
     {
       "Key": "64580780-4aa1-4ec2-b5f2-abd5439ea200",
       "State": "Faulted",
-      "ProcessName": "ERN_O365_DownloadConversion",
+      "ProcessName": "ReportDownloader",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",
@@ -103,7 +103,7 @@
     {
       "Key": "a04406a9-4c64-40d0-a7f3-042c3224c13b",
       "State": "Faulted",
-      "ProcessName": "ERN_O365_CreateFolderInvalidPath",
+      "ProcessName": "DriveFolderProvisioner",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",
@@ -117,7 +117,7 @@
     {
       "Key": "4b4a58f8-6a7c-4af2-8700-1b6479b51028",
       "State": "Faulted",
-      "ProcessName": "ERN_O365_InvalidODataQuery",
+      "ProcessName": "InboxQueryRunner",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",
@@ -131,7 +131,7 @@
     {
       "Key": "74db8e32-8535-40b2-9b40-62540456adab",
       "State": "Faulted",
-      "ProcessName": "ERN_O365_SendMailRejected",
+      "ProcessName": "NotificationMailer",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",
@@ -145,7 +145,7 @@
     {
       "Key": "50bcdb33-f7a8-42d4-a52d-ebbeeb135e99",
       "State": "Faulted",
-      "ProcessName": "ERN_O365_LegacyMailNRE",
+      "ProcessName": "MailForwarder",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",
@@ -159,7 +159,7 @@
     {
       "Key": "909ed39c-08a1-48fb-921a-06d332f8f5fb",
       "State": "Faulted",
-      "ProcessName": "ERN_O365_CopyItemArgNull",
+      "ProcessName": "DriveItemCopier",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",

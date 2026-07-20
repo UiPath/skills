@@ -1,6 +1,6 @@
 {
   "Name": "PythonInvoiceParser",
   "ProjectType": "Process",
-  "Description": "Repro: Python Scope invoking a pandas-dependent script; the robot interpreter lacks pandas so the Python host dies and the pipe breaks. Exercises the pipe-is-broken / missing-module branch of the python-activities playbook.",
+  "Description": "Parses an invoice by loading a Python script in a Python Scope and invoking it to extract the total amount.",
   "MainFile": "Main.xaml"
 }

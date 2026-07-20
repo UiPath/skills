@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-word-addpicture-missing-scope
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Word "Add Picture"
   (WordAddImage) failure where the activity is placed OUTSIDE the
@@ -12,10 +13,9 @@ description: >
   playbook (missing-scope branch / C1), identify from the workflow source
   that Add Picture is not nested in the scope body, and recommend moving
   it inside the Use Word File scope, then re-validating.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, word-activities, add-picture, missing-scope]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

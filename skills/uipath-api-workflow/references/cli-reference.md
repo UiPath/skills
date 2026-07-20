@@ -353,7 +353,7 @@ Requires `uip login`. The SDK resolves folder keys via Resource Catalog Service;
 
 **Idempotency.** Import-only by design. First run for a binding triggers `addOrUpdateResourceToSolutionAsync` (status `Added`); subsequent runs skip the binding because its key is already in the solution. Re-running is safe and a no-op when nothing changed.
 
-Lives in `solution-tool`, not `api-workflow-tool`. Full details in the [solution skill](../uipath-platform).
+Lives in `solution-tool`, not `api-workflow-tool`. Full details in the uipath-solution skill.
 
 ## `uip is resources describe`
 

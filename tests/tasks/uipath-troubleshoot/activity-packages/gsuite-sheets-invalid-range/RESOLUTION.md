@@ -1,7 +1,7 @@
-# Resolution — GSuite_SheetsInvalidRange (Shared)
+# Resolution — SheetRangeWriter (Shared)
 
 ## Fault
-The last job in folder **Shared** (`GSuite_SheetsInvalidRange`, job `d5e0e6b0-55b8-4256-8494-c601cb986dab`, Unattended on `MOCK-HOST`) ended **Faulted** ~4.5s after start. It ran a single GSuite **Write Range** (`UiPath.GSuite.Activities.WriteRangeConnections`) activity.
+The last job in folder **Shared** (`SheetRangeWriter`, job `d5e0e6b0-55b8-4256-8494-c601cb986dab`, Unattended on `MOCK-HOST`) ended **Faulted** ~4.5s after start. It ran a single GSuite **Write Range** (`UiPath.GSuite.Activities.WriteRangeConnections`) activity.
 
 ## Cause
 The Write Range activity sent a **malformed A1 range** to the Google Sheets API, which rejected it with HTTP 400:

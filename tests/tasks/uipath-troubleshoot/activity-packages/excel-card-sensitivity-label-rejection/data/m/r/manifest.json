@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the sensitivity-label-rejection (branch 5) of the excel-activities/excel-application-card-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (BusinessException referencing Microsoft Purview sensitivity label 'Confidential - Client Data') → jobs logs (workbook label detection + card config inspection showing SensitivityLabel and SensitivityOperation properties NOT configured + package v2.24.7 supports these properties) → workflow source. The protected workbook with no label-handling on the card is the smoking gun.",
+  "_doc": "Synthetic fixture set for the Use Excel File client-report scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {"match": "or folders list --output json", "file": "b99242ce80.json"},
     {"match": "or folders list --output json", "file": "b99242ce80.json"},

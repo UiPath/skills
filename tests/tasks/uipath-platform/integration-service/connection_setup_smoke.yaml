@@ -5,7 +5,7 @@ description: >
   verify it with `connections ping`. Covers the lifecycle:setup path
   on the IS axis, complementing the read-only connection_lifecycle
   task that exercises list/ping/recovery paths only.
-tags: [uipath-platform, smoke, mode:build, lifecycle:setup, integration-service, connector, feature:connections]
+tags: [uipath-platform, smoke, mode:build, lifecycle:setup, integration-service, connector, feature:connections, ipe]
 
 run_limits:
   expected_turns: 8

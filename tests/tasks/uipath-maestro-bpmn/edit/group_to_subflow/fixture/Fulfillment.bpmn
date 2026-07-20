@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_Fulfillment" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_Fulfillment" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:caseManagement version="v1"><![CDATA[{"owner":"warehouse","opaque":"preserve-only-do-not-touch"}]]></uipath:caseManagement>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_OrderId" name="OrderId" type="string" />
+        <uipath:inputOutput id="Var_Label" name="Label" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_1" name="Start"><bpmn:outgoing>Flow_SP</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:scriptTask id="Task_Pick" name="Pick Items" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_SP</bpmn:incoming><bpmn:outgoing>Flow_PP</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "picked" };]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Task_Pack" name="Pack Box" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_PP</bpmn:incoming><bpmn:outgoing>Flow_PS</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "packed" };]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Task_Ship" name="Ship Parcel" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
+          <uipath:output name="label" type="string" var="Var_Label" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_PS</bpmn:incoming><bpmn:outgoing>Flow_SE</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "label-123" };]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_1" name="Done"><bpmn:incoming>Flow_SE</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_SP" sourceRef="Start_1" targetRef="Task_Pick" />
+    <bpmn:sequenceFlow id="Flow_PP" sourceRef="Task_Pick" targetRef="Task_Pack" />
+    <bpmn:sequenceFlow id="Flow_PS" sourceRef="Task_Pack" targetRef="Task_Ship" />
+    <bpmn:sequenceFlow id="Flow_SE" sourceRef="Task_Ship" targetRef="End_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_Fulfillment">
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Pick" bpmnElement="Task_Pick"><dc:Bounds x="250" y="78" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Pack" bpmnElement="Task_Pack"><dc:Bounds x="410" y="78" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Ship" bpmnElement="Task_Ship"><dc:Bounds x="570" y="78" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1"><dc:Bounds x="730" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_SP" bpmnElement="Flow_SP"><di:waypoint x="196" y="118" /><di:waypoint x="250" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_PP" bpmnElement="Flow_PP"><di:waypoint x="350" y="118" /><di:waypoint x="410" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_PS" bpmnElement="Flow_PS"><di:waypoint x="510" y="118" /><di:waypoint x="570" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_SE" bpmnElement="Flow_SE"><di:waypoint x="670" y="118" /><di:waypoint x="730" y="118" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

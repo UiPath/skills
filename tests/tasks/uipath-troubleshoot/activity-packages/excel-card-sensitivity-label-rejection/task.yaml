@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-excel-card-sensitivity-label-rejection
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Modern Use Excel File
   failure (BusinessException) where the target workbook has a
@@ -12,10 +13,9 @@ description: >
   recommend configuring SensitivityLabel + SensitivityOperation
   (typically Keep) — NOT the package-downgrade anti-pattern.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, excel-application-card, sensitivity-label]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

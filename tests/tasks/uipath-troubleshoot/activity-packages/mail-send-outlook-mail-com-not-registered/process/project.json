@@ -1,7 +1,7 @@
 {
   "name": "InvoiceMailer",
   "projectId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
-  "description": "Reproduces a Send Outlook Mail Message failure caused by a COM cast / library-not-registered error (0x8002801D TYPE_E_LIBNOTREGISTERED) when a 64-bit Robot process binds a 32-bit / corrupted Outlook install on the Robot host.",
+  "description": "Sends invoice emails to recipients with Send Outlook Mail Message from the Robot host.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Mail.Activities": "[1.18.3]",

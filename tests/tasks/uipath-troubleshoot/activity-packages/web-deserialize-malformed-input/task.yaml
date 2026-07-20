@@ -12,10 +12,9 @@ description: >
   guarding the parse on a success response. Replayed from a real
   staging faulted job.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, web-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "TodoWrite"]
 
 run_limits:
@@ -44,7 +43,7 @@ initial_prompt: |
   febd892d-787b-4008-a573-4af66cf710cf. Why did it fail and how do I
   fix it?
 
-  The project source for the failing process is at ./WebRepro/ in the
+  The project source for the failing process is at ./WebApiClient/ in the
   current working directory.
 
 success_criteria:

@@ -1,5 +1,5 @@
 {
-  "name": "AssetVaultFailure",
+  "name": "VaultCredentialReader",
   "projectId": "e8b4d2c5-9a3f-4c7e-b1d5-6f8a1b2c3d4e",
   "description": "Blank Process",
   "main": "Main.xaml",

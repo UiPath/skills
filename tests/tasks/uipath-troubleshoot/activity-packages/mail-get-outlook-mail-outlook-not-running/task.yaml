@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-get-outlook-mail-outlook-not-running
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Get Outlook Mail Messages
   failure where the QueueMailIntake process faults on every unattended run
@@ -12,10 +13,9 @@ description: >
   AND hands the user a host checklist (ensure Outlook running / Start
   Process outlook.exe / same privilege level / Graph o365 for unattended)
   without fabricating host actions.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures for append-text-zero-byte-file. Append Text faults with 'Archive file cannot be size zero' opening a 0-byte .docx.",
+  "_doc": "Synthetic fixture set for the Word append-text zero-byte-file scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

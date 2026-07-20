@@ -9,7 +9,7 @@
 returns error code 1100 ("Folder does not exist or the user does not
 have access to the folder") and the job faults.
 
-**What went wrong:** The `AssetFolderMismatch` job (started
+**What went wrong:** The `ConfigAssetReader` job (started
 2026-05-12T09:18:42Z) faulted ~2 seconds after launch because the
 `Get Credential` activity (`GetRobotCredential`) in `Main.xaml`
 targeted a folder that Orchestrator could not resolve.
@@ -30,7 +30,7 @@ resolution before it ever checks the asset name.
 **Evidence:**
 
 ### Orchestrator (Propagation)
-- Job: AssetFolderMismatch — Faulted at 2026-05-12T09:18:44.380Z (ran for ~2.0 seconds)
+- Job: ConfigAssetReader — Faulted at 2026-05-12T09:18:44.380Z (ran for ~2.0 seconds)
 - Job type: Unattended, triggered manually by user "user1" on machine MOCK-HOST
 - Job runtime folder: Remote Debugging (key `6d8c5e3f-2a1b-4c9d-8e7f-0a1b2c3d4e5f`)
 - Tenant folder list does NOT contain `OldDevFolder`

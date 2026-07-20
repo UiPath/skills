@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-append-range-variant-mismatch
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose an Append Range failure
   (BusinessException 'must be placed inside a Use Excel File container')
@@ -11,10 +12,9 @@ description: >
   switch to Append Range Workbook standalone) with awareness of the
   host's Excel-installed context.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, append-range, variant-mismatch]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

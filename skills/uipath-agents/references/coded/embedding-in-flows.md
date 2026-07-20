@@ -92,7 +92,7 @@ uip maestro flow registry list --local --output json
 uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output json
 ```
 
-The second command's `Data.Node` object is what the flow skill pastes into the flow's `definitions[]`. For the node instance shape and top-level `bindings[]` entries, see [agent/impl.md § In-solution variant](../../../uipath-maestro-flow/references/plugins/agent/impl.md#node-instance-inside-nodes--in-solution-variant).
+The second command's `Data.Node` object is what the flow skill pastes into the flow's `definitions[]`. For the node instance shape and top-level `bindings[]` entries, see the uipath-maestro-flow skill agent-plugin reference (In-solution variant).
 
 Without `--local`, `registry list`/`get` query the tenant registry (Orchestrator-published resources only) and will not surface the sibling project.
 
