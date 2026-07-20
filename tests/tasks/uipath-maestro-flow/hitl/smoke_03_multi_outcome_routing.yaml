@@ -22,7 +22,7 @@ initial_prompt: |
   4. true branch  → Script node that logs "Leave approved" → End
   5. false branch → Script node that logs "Leave rejected" → End
 
-  Use the inline quickform HITL node (uipath.human-in-the-loop).
+  Use the inline quickform HITL node (uipath.human-in-the-loop.quick-form).
   Wire: Trigger → HITL →|completed| Decision → both branches → Script → End
 
   The Decision node condition must reference the HITL output using the
@@ -43,7 +43,7 @@ success_criteria:
     description: "Flow contains inline HITL node"
     path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
     includes:
-      - '"uipath.human-in-the-loop"'
+      - '"uipath.human-in-the-loop.quick-form"'
     weight: 2.0
     pass_threshold: 1.0
 

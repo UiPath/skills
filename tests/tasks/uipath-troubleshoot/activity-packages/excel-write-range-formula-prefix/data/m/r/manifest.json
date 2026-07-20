@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Write Range employee-directory scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "7927c35c86.json"},
+    {"match": "or folders list --output json", "file": "7927c35c86.json"},
+    {"match": "or jobs list --folder-key \"f0077777-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "20779427df.json"},
+    {"match": "or jobs list --folder-key f0077777-3333-4444-5555-666677778888 --state Faulted --output json", "file": "20779427df.json"},
+    {"match": "or jobs get \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "ef9a2bc1c5.json"},
+    {"match": "or jobs get ee333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "ef9a2bc1c5.json"},
+    {"match": "or jobs history \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "450e93cc79.json"},
+    {"match": "or jobs history ee333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "450e93cc79.json"},
+    {"match": "or jobs logs \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "9a5a316d79.json"},
+    {"match": "or jobs logs ee333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "9a5a316d79.json"}
+  ]
+}

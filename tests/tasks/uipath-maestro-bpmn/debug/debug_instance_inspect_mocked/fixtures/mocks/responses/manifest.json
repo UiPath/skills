@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "_doc": "Mocked public-safe FAULTED BPMN debug session. Only the debug-instance inspection verbs return data; the production instance verbs fall through to the benign default, which naturally steers the agent to the debug-instance ladder (a debug instance has no deployed folder context).",
+  "rules": [
+    {
+      "match": "maestro bpmn debug-instance incidents debug-fault-777",
+      "file": "debug-incidents.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn debug-instance variables-all debug-fault-777",
+      "file": "debug-variables-all.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn debug-instance variables debug-fault-777",
+      "file": "debug-variables.json",
+      "exit_code": 0
+    }
+  ],
+  "unmocked_default": {
+    "response": "{}\n",
+    "exit_code": 0
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Delete Range quarterly-report trim scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "4b25ecc978.json"},
+    {"match": "or folders list --output json", "file": "4b25ecc978.json"},
+    {"match": "or jobs list --folder-key \"f0033333-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "096bfec52c.json"},
+    {"match": "or jobs list --folder-key f0033333-3333-4444-5555-666677778888 --state Faulted --output json", "file": "096bfec52c.json"},
+    {"match": "or jobs get \"dd222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "d899dedfcb.json"},
+    {"match": "or jobs get dd222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "d899dedfcb.json"},
+    {"match": "or jobs history \"dd222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "51f311c01d.json"},
+    {"match": "or jobs history dd222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "51f311c01d.json"},
+    {"match": "or jobs logs \"dd222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "bde18e0f9c.json"},
+    {"match": "or jobs logs dd222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "bde18e0f9c.json"}
+  ]
+}

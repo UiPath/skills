@@ -33,9 +33,11 @@ success_criteria:
       create automation.
 
       Score 1.0 if the agent provides concrete task reassignment or administration guidance
-      without directing the user to build a flow or HITL checkpoint.
-      Score 0.5 if the agent gives some admin guidance but also mixes in unnecessary flow
-      authoring advice.
+      without directing the user to build or modify a flow or HITL checkpoint. Brief
+      operational notes (e.g. "consider setting a task timeout to avoid this in future")
+      do not reduce the score — only active redirection toward flow authoring does.
+      Score 0.5 if the agent gives admin guidance but also explicitly directs the user
+      to add, configure, or rebuild a HITL node or flow to resolve the immediate question.
       Score 0.0 if the agent primarily describes building a new flow or HITL node.
     weight: 3.0
     pass_threshold: 0.8

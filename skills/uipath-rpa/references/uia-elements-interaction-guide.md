@@ -50,22 +50,39 @@ Why try without emptying first: native date inputs and framework date-time picke
 formScreen.TypeInto(Descriptors.MyApp.Form.InvoiceDate, formattedDate);
 ```
 
-### Dropdowns — native `<select>` vs custom widgets
-
-Branch on what the control actually is:
-
-| Control | How to drive |
-|---------|--------------|
-| **Native `<select>`** (real HTML `<select>` / `<option>`) | `SelectItem`, passing the option text. Deterministic. |
-| **Custom dropdown** (div/`<ul>`/`<li>`/ARIA hierarchy that only *looks* like a dropdown — no `<select>` tag) | `SelectItem` fails. Click to open, then `Click` the option element (capture both as OR targets). Use `TypeInto` for type-ahead / filter combos. |
-
-Tell them apart from the captured selector: a native control's element carries `tag='SELECT'`; a custom widget resolves to `DIV`/`UL`/`LI`/`SPAN`, typically with `role='combobox'` / `'listbox'` / `'option'`.
-
 ---
 
 ## All UI Technologies
 
 Patterns that apply to any captured control regardless of UI stack (web, desktop, Java, etc.).
+
+### Dropdowns, lists, and comboboxes
+
+Whether `SelectItem` (`NSelectItem`) can drive a control does **not** depend on its UI technology,
+tag, or role — a native HTML `<select>`, a WinForms/WPF combo box, a Java list, a SAP dropdown, and
+a div/ARIA combobox are all candidates. **Don't classify it from the captured selector — query the
+control's `items` attribute for its selectable options** (the read verb is in
+`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`):
+
+- **`items` lists options** → the control is selectable; `SelectItem` will drive it — pass one of the
+  listed values. No need to capture the individual option elements or open the list first.
+- **`items` empty/absent** → not a real option-list control. Fall back to click-to-open + click the
+  option (capture both as OR targets), or `TypeInto` for type-ahead / filter combos.
+
+Read the `items` attribute to learn the valid values, and the `selecteditem` / `selecteditems`
+attribute to confirm the result after selecting (the cli-reference above shows how to read them).
+
+The rule is general: verified against a control with no native `<select>` (a Lightning picklist
+rendered as a `role="combobox"` button) and applies identically to desktop, Java, and SAP option
+lists — so an option-list control needs **no option-element capture at all**.
+
+### Debugging a failed interaction with an element
+
+When an interaction fails or faults and the selector still looks correct, suspect the interaction itself changed the element. It can make the app **remount** the target as a new DOM node (e.g. a search box that re-mounts on focus, or a click that expands a dropdown/popup). The activity resolved the *old* node; the next action then hits the now-detached one and faults with `InvalidNodeException: "The UI element is invalid..."` — distinct from "not found" / "click failed". A compound action inside one activity is the classic case: `TypeInto`'s built-in click-before-typing, whose pre-click detaches the field it's about to type into.
+
+**Diagnostic tell:** the selector still resolves, and input mode / delay changes do nothing — it is a re-resolution problem, not timing.
+
+**Fix:** split the interactions into **separate** activities (e.g. `Click` then `TypeInto`) so the second **re-resolves** its target against the new node.
 
 ### Buttons disabled during async operations
 

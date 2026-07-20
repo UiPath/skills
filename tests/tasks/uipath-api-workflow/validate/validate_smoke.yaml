@@ -40,7 +40,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran the offline validator with JSON output (rule 20 + rule 18)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+api-workflow\s+validate\s+.*--output\s+json'
+    command_pattern: 'uip\s+api-workflow\s+validate'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

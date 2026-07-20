@@ -1,0 +1,33 @@
+{
+  "DisplayName": "Add To Queue",
+  "Tooltip": null,
+  "HelpLink": null,
+  "Color": null,
+  "OriginalIconFileName": null,
+  "Arguments": [
+    {
+      "Name": "queueName",
+      "DisplayName": "Queue Name",
+      "Category": null,
+      "Tooltip": "Name of the Orchestrator queue to add items to.",
+      "Placeholder": null,
+      "Widget": null,
+      "IsRequired": true,
+      "IsPrincipal": true,
+      "ArgumentType": 0,
+      "DataSourceItems": null
+    },
+    {
+      "Name": "excelData",
+      "DisplayName": "Excel Data",
+      "Category": null,
+      "Tooltip": "DataTable containing the rows to add as queue items.",
+      "Placeholder": null,
+      "Widget": null,
+      "IsRequired": true,
+      "IsPrincipal": true,
+      "ArgumentType": 0,
+      "DataSourceItems": null
+    }
+  ]
+}

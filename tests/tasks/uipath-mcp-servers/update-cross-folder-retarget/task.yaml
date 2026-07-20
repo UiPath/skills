@@ -1,0 +1,62 @@
+task_id: skill-mcp-servers-update-cross-folder-retarget
+description: |
+  Retarget an existing resource tool on the `test-mcp-skill` AgentHub server to a new
+  Orchestrator process in a DIFFERENT folder (Ops) than the server (Shared). Exercises
+  `mcp-tools update` with `--target-identifier` + explicit `--target-folder-key`/`--target-folder-path`
+  — without the flag the tool's targetFolderKey silently pins to the server folder.
+  Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-mcp-servers, smoke, 'mode:build']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write]
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+initial_prompt: |
+  Use the `uip` CLI (mocked in this sandbox; canned responses).
+
+  The "Run Mock Invoice Process" tool on my `test-mcp-skill` MCP server (Shared
+  folder) points at the wrong automation. Point it at MockOpsProcess instead —
+  that process lives in the Ops folder. Update the existing tool, don't create a
+  new one, and use --dry-run on the update.
+
+  When done, save to the sandbox cwd: update-command.sh (the exact update
+  invocation), trajectory.md (every uip call, one line each), summary.txt.
+success_criteria:
+- {type: file_exists, path: update-command.sh, description: '`update-command.sh` was produced'}
+- type: command_executed
+  description: Agent fetched existing tool state via mcp-tools get or list
+  tool_name: Bash
+  command_pattern: (uip|\$UIP"?)\s+agenthub\s+mcp-tools\s+(get|list)
+  min_count: 1
+- type: command_executed
+  description: Agent discovered the new target via candidates --category automation
+  tool_name: Bash
+  command_pattern: (uip|\$UIP"?)\s+agenthub\s+mcp-tools\s+candidates\s+--category\s+"?automation
+  min_count: 1
+- type: file_contains
+  description: update-command retargets to the Ops process on the existing tool
+  path: update-command.sh
+  includes: [mcp-tools update, process-mock-ops-01]
+- type: file_contains
+  description: update-command carries the new target's folder via an explicit target-folder flag
+  path: update-command.sh
+  includes: [--target-folder]
+  weight: 2.0
+# Graded via the mock call log: inline schemas can push --target-folder-* past
+# the 2000-char command_executed truncation window.
+- type: run_command
+  description: The executed mcp-tools update call carried an explicit --target-folder-key/--target-folder-path (mock call log)
+  command: grep -E 'mcp-tools update.*--target-folder-(path|key)' mocks/.calls.jsonl
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- type: command_not_executed
+  description: Agent did NOT create a new tool instead of updating the existing one
+  tool_name: Bash
+  command_pattern: (uip|\$UIP"?)\s+agenthub\s+mcp-tools\s+create-
+run_limits: {max_turns: 40}

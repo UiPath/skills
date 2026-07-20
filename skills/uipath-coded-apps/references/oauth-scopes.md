@@ -3,12 +3,12 @@
 Required OAuth scopes for each `@uipath/uipath-typescript` SDK service and method.
 
 Use this reference to:
-1. Determine which scopes to include in `VITE_UIPATH_SCOPE` (`.env`)
+1. Determine which scopes to include in the `scope` field of `uipath.json`
 2. Determine which scopes to add to the UiPath External Application
 
 **Note:** Broader scopes cover granular ones (e.g., `OR.Assets` covers `OR.Assets.Read`). Use the most specific scope that satisfies the operations the app performs.
 
-> **Update scopes WHEN you add the feature.** Any new service call — a write op (`insertRecordById`, `updateRecordById`, `deleteRecordById`), an action-causing method (`Jobs.stop`/`resume`/`restart`, `Tasks.complete`/`assign`, `ProcessInstances.cancel`, `Exchanges.createFeedback`, etc.), or a call to a service the app hasn't used before — may need a scope broader than what the current `VITE_UIPATH_SCOPE` in `.env` carries. Check the tables below before shipping the feature. The External Application registration must also allow the scope; if not, the token request is rejected entirely (see [oauth-client-setup.md](oauth-client-setup.md)).
+> **Update scopes WHEN you add the feature.** Any new service call — a write op (`insertRecordById`, `updateRecordById`, `deleteRecordById`), an action-causing method (`Jobs.stop`/`resume`/`restart`, `Tasks.complete`/`assign`, `ProcessInstances.cancel`, `Exchanges.createFeedback`, etc.), or a call to a service the app hasn't used before — may need a scope broader than what the current `scope` field in `uipath.json` carries. Check the tables below before shipping the feature. The External Application registration must also allow the scope; if not, the token request is rejected entirely (see [oauth-client-setup.md](oauth-client-setup.md)).
 
 ---
 
@@ -250,6 +250,46 @@ See [widgets/validation-station.md](widgets/validation-station.md) for the full 
 
 ---
 
+## Agents — Insights RTM (SDK ≥ 1.4.1)
+
+| Method | Required Scope |
+|--------|----------------|
+| `Agents.getAll()` / `getErrors()` | `Insights` and `Insights.RealTimeData` |
+| `Agents.getErrorsTimeline()` / `getConsumptionTimeline()` / `getLatencyTimeline()` | `Insights` and `Insights.RealTimeData` |
+
+## Agent Traces (SDK ≥ 1.4.1)
+
+| Method | Required Scope |
+|--------|----------------|
+| `AgentTraces.getErrorsTimeline()` / `getLatencyTimeline()` / `getUnitConsumption()` | `Insights` and `Insights.RealTimeData` |
+| `AgentTraces.getSpansByTraceId()` / `getSpansByReference()` | `Insights` and `Insights.RealTimeData` |
+| `Traces.getById()` / `getSpansByIds()` (generic spans — governance traces) | `Traces.Api` (+ `Insights` and `Insights.RealTimeData`) |
+
+## Agent Memory (SDK ≥ 1.4.1)
+
+| Method | Required Scope |
+|--------|----------------|
+| `AgentMemory.getTimeline()` / `getCallsTimeline()` / `getTopSpaces()` | `Insights` and `Insights.RealTimeData` |
+
+## Governance (SDK ≥ 1.4.1)
+
+| Method | Required Scope |
+|--------|----------------|
+| `Governance.getPolicyTraces()` / `getOperationSummary()` | `Insights` and `Insights.RealTimeData` — caller needs elevated (org-admin) access; `fullOrganization: true` returns 403 without org-admin |
+
+## Maestro Insights — RTM (SDK ≥ 1.4.x)
+
+These use the Insights RTM host (`INSIGHTS_RTM_BASE`). The SLA methods also touch PIMS-backed case data and require `PIMS` on top of the Insights scopes.
+
+| Method | Required Scope |
+|--------|----------------|
+| `Cases` / `MaestroProcesses` `.getTopRunCount()` / `getTopFaultedCount()` / `getTopExecutionDuration()` / `getTopElementFailedCount()` / `getInstanceStatusTimeline()` / `getElementStats()` | `Insights` · `Insights.RealTimeData` · `OR.Folders.Read` |
+| `CaseInstances.getSlaSummary()` / `getStagesSlaSummary()` | `Insights` · `Insights.RealTimeData` · `OR.Folders.Read` · **`PIMS`** |
+
+> All Insights RTM methods (Agents, Agent Traces, Agent Memory, Governance, Maestro Insights above) also require `OR.Folders.Read` — covered by the granted `OR.Folders`. `Cases.getAll` / `CaseInstances.getAll` (PIMS host, not Insights) require `PIMS` — see the Maestro sections above.
+
+---
+
 ## Common Scope Bundles
 
 | App uses... | Minimum scopes needed |
@@ -262,3 +302,5 @@ See [widgets/validation-station.md](widgets/validation-station.md) for the full 
 | Maestro full access | `PIMS OR.Execution.Read` |
 | Maestro analytics / insights dashboards (top run/fault/duration counts, status timelines, SLA) | add `Insights.RealTimeData Insights OR.Folders.Read` (SLA summaries also need `PIMS`) |
 | Conversational Agent | `OR.Execution OR.Folders OR.Jobs ConversationalAgents Traces.Api` (add `OR.Users` for user-settings read/write) |
+| Insights RTM (Agents, Agent Traces, Agent Memory, Governance, Maestro Insights) | `Insights Insights.RealTimeData OR.Folders.Read` |
+| Maestro SLA (CaseInstances SLA summary) | `Insights Insights.RealTimeData OR.Folders.Read PIMS` |

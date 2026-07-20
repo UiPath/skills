@@ -1,0 +1,105 @@
+task_id: skill-case-aged-invoice-structural
+description: >
+  STRUCTURAL BUILD — the Aged Invoice Payment Case Management PoV, reduced to the
+  PDD's minimum-viable case plan and made connector-free so it builds cleanly on
+  the coder-eval tenant with existing generic resources only. A staged sdd.md
+  (3 primary stages + 2 interrupting secondary lanes with return-to-origin;
+  every external system modelled as api-workflow/rpa; tasks bound to
+  NameToAgeFixed2, CountLetters, ProjectEuler, purchaseorderapp, CaseTest) is the
+  sole source of truth. The skill builds the case-management solution and
+  validates the caseplan; a structural check then asserts the primary chain, the
+  two interrupting/return-to-origin exception lanes, the connector-free
+  task-type mix, the Payment Tracking child case, and the aged_invoice_cases
+  event trigger. No debug — the case is HITL- and interrupt-driven, which cannot
+  run headless; this is the structural counterpart to the runnable expense e2e.
+tags:
+  - uipath-maestro-case
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+  - feature:stages
+  - feature:conditions
+  - feature:case-exit
+  - feature:trigger
+  - feature:registry
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWrite"]
+  sdk_options:
+    max_thinking_tokens: 10000
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 300
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I have an approved SDD for our AgedInvoiceResolution case-management solution —
+  it's saved as `sdd.md` in this folder. Build a UiPath Case Management solution
+  named "AgedInvoiceResolution" containing a project also named
+  "AgedInvoiceResolution" from this SDD.
+
+  Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0, do
+  not re-interview me, and do not redesign the process. The SDD already carries
+  resolved resource identities and folders — bind them as written; do not change
+  task types or swap resources. This case is deliberately connector-free (every
+  external system is an api-workflow or rpa task); keep it that way.
+
+  Important:
+  - The `uip` CLI is already available and authenticated in the environment.
+  - Treat all hard stops after the SDD as pre-approved, including Phase 1
+    planning approval and Phase 2 publish-for-review. Choose the continue /
+    skip-publish path and keep going.
+  - Do NOT call AskUserQuestion — it is not available in this harness.
+  - Skip Phase 5 and Phase 6. Do NOT run `uip maestro case debug` and do NOT
+    publish to Studio Web.
+  - The task is NOT complete until
+    `uip maestro case validate AgedInvoiceResolution/AgedInvoiceResolution/caseplan.json --output json`
+    passes.
+
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip maestro case validate on the built aged-invoice case"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+validate[^\n]*AgedInvoiceResolution/AgedInvoiceResolution/caseplan\.json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the generated AgedInvoiceResolution caseplan.json"
+    command: "uip maestro case validate AgedInvoiceResolution/AgedInvoiceResolution/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "staged sdd.md is mechanically sound (variable mappings + lineage, per-gate rule legality, task types, interrupting semantics)"
+    command: "cd $(dirname $(find . -name sdd.md -not -path '*/.venv/*' | head -1)) && python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/sdd_check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "caseplan preserves the 3-stage primary chain, the two interrupting/return-to-origin exception lanes, the connector-free task-type mix, the Payment Tracking child case, and the aged_invoice_cases event trigger"
+    command: "python3 $TASK_DIR/check_aged_invoice_structure.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

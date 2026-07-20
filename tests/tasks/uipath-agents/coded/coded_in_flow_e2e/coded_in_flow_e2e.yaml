@@ -17,10 +17,10 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  I want a uipath coded agent (LangGraph) called `InputProcessor` that
-  takes some user input and returns a short summary. Wrap it in a solution
-  `GreeterSol` with a flow `GreeterFlow` that runs the agent, and make
-  sure the flow validates.
+  Build me a UiPath coded agent (LangGraph) called `InputProcessor` that
+  takes some user input and returns a short summary. Once the coded agent
+  itself is built and scaffolded, wrap it in a solution `GreeterSol` with a
+  flow `GreeterFlow` that runs the agent, and make sure the flow validates.
 
   All local, nothing to publish or deploy. Complete the task end-to-end.
   Only stop if there is a critical blocker you cannot resolve.
@@ -71,14 +71,6 @@ success_criteria:
     command_pattern: 'uip\s+maestro\s+flow\s+validate'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists

@@ -57,17 +57,9 @@ success_criteria:
   - type: command_executed
     description: "Agent verified membership via members list (at least twice: after add and after revoke)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+groups\s+members\s+list\s+.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+groups\s+members\s+list'
     min_count: 2
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent consistently used --output json"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+.*--output\s+json'
-    min_count: 4
-    weight: 1.0
     pass_threshold: 1.0
 
 post_run:

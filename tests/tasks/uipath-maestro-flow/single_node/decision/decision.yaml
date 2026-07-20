@@ -32,7 +32,7 @@ success_criteria:
   - type: run_command
     description: "Flow contains a Decision node and debug returns correct classification"
     command: "python3 $TASK_DIR/check_decision_flow.py"
-    timeout: 120
+    timeout: 540  # two sequential run_debug calls (240s subprocess timeout each)
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

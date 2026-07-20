@@ -1,0 +1,113 @@
+task_id: uipath-coded-apps-dashboard-gov-admin-deploy
+description: >
+  Governance-mode deploy path (deploy impl.md Steps 2/5): state.json
+  widgets are governance/runtime-compliance metrics (policy-denials,
+  rule-compliance), so the agent must infer the GOVERNANCE deploy mode
+  and provision the AdminDashboards folder via the skill's
+  setup-admin-folder.mjs script — NOT ask the user to pick a folder and
+  NOT hand-create the folder with `uip or folders create` (the script
+  owns lookup, creation, role-union assignment, and state.json
+  persistence). Then run the pack -> publish -> deploy sequence.
+  Credential-free: commands fail with auth errors in CI — this checks
+  the command sequence and the governance-branch decision, not a live
+  deploy. Closes the last Workflow-Step gap (governance deploy) and the
+  governance-mode deploy component.
+tags: [uipath-coded-apps, integration, dashboard, mode:operate, lifecycle:setup]
+
+# 516s single-turn locally (agent reads deploy impl.md + runs the provisioning
+# script + full pipeline); CI runners are 1.5-2x slower, so the experiment
+# default turn_timeout (900s) is too tight — same trap that hit the e2e tests.
+run_limits:
+  expected_turns: 12
+  turn_timeout: 1200
+  task_timeout: 1500
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+pre_run:
+  - command: |
+      mkdir -p .dashboard dist
+      echo "<html></html>" > dist/index.html
+      cat > .dashboard/state.json << 'EOF'
+      {
+        "app": { "name": "Runtime Compliance Dashboard", "routingName": "runtime-compliance-k4p9", "semver": "1.0.0" },
+        "env": "alpha", "org": "testorg", "tenant": "testTenant",
+        "cloudUrl": "https://alpha.uipath.com",
+        "widgets": ["policy-denials", "rule-compliance"],
+        "deployment": { "systemName": null, "folderKey": null, "folderName": null, "appUrl": null, "pinnedToGovernance": false, "lastDeployedAt": null }
+      }
+      EOF
+    timeout: 15
+    fail_on_error: true
+
+initial_prompt: |
+  Deploy my Runtime Compliance dashboard to Automation Cloud.
+
+  Follow the skill's dashboard deploy procedure from its FIRST step —
+  the deployment target matters for this dashboard, so determine it from
+  the dashboard's state (per the deploy reference) before any folder or
+  pipeline work, and run the target-specific preparation the procedure
+  prescribes. Do NOT skip preparation steps just because commands will
+  error — run them so the transcript shows the full procedure.
+
+  Important: The uip CLI is available but NOT connected to a live tenant.
+  Commands (including any preparation scripts) will fail with auth
+  errors — expected and acceptable. Run each command exactly once. Do
+  NOT retry. Do NOT login. Do NOT ask for confirmation or approval —
+  proceed with the deployment target the dashboard's state implies.
+
+success_criteria:
+  # THE GOVERNANCE BRANCH — widgets are governance metrics (policy-denials,
+  # rule-compliance per the Step 2 inference list), so the agent must
+  # provision AdminDashboards via the skill's script. Script fails on auth
+  # in CI; we grade that it was invoked with the AdminDashboards argument.
+  - type: command_executed
+    description: "Agent ran setup-admin-folder.mjs with the AdminDashboards target (deploy impl.md Step 5 — governance provisioning goes through the script)"
+    tool_name: "Bash"
+    command_pattern: 'setup-admin-folder\.mjs.*AdminDashboards'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The script owns folder creation + role-union assignment. Hand-creating
+  # the folder bypasses the role-assignment safety (roles assign REPLACES
+  # all roles — the script builds the union to avoid stripping access).
+  - type: command_executed
+    description: "Agent did NOT hand-create the AdminDashboards folder with `uip or folders create` (the provisioning script owns creation + role union)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+create'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Full pipeline still runs after provisioning.
+  - type: command_executed
+    description: "Agent ran the pack → publish → deploy sequence"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+(pack|publish|deploy)'
+    min_count: 3
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Dashboards are Web apps — never -t Action.
+  - type: command_executed
+    description: "Agent did NOT pass -t Action (dashboards are Web, not Action apps)"
+    tool_name: "Bash"
+    command_pattern: 'codedapp\s+publish.*-t\s+Action|-t\s+Action.*codedapp'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Fresh deploy (systemName null) at semver 1.0.0 — no bump on first publish
+  # (Step 1: fresh deploy uses app.semver as-is; bump is upgrade-only).
+  - type: command_executed
+    description: "Pack used the state.json semver as-is (1.0.0 — fresh deploy, no bump)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+pack.*1\.0\.0'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
