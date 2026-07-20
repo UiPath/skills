@@ -122,19 +122,20 @@ For multi-trigger cases, add the additional triggers via the appropriate trigger
 
 ## Step 9 — Add tasks (Phase 2 shape, gather-then-write)
 
-**Phase A — gather.** For each non-connector task in `tasks.md §4.6`, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` and collect the input schema in reasoning. Connector tasks (`connector-activity`, `connector-trigger`) skip the gather — `case spec` defers to Phase 3 Step 9.7. Unresolved tasks skip too — they become placeholders per Step 9.1. **Inline-built siblings (agent / api-workflow, Rule 17 Create) also skip the gather** — they were resolved + bound in Phase 1 with I/O read from the sibling's on-disk `entry-points.json`; their `taskTypeId` is a local audit-only key with no tenant resource, so tenant `tasks describe` does not apply. See the per-type Built-inline notes: [`plugins/tasks/agent/impl-json.md`](plugins/tasks/agent/impl-json.md), [`plugins/tasks/api-workflow/impl-json.md`](plugins/tasks/api-workflow/impl-json.md).
+**Phase A — gather.** For each non-connector, non-action task in `tasks.md §4.6`, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` and collect the input schema in reasoning. Every non-placeholder `action` skips the Case Phase-2 gather and is delegated to `uipath-human-in-the-loop` per [action/impl-json.md](plugins/tasks/action/impl-json.md). For an App-based action, pass the registry object and I/O contract already persisted during planning; the delegate may reverify them if its own contract requires it. Connector tasks (`connector-activity`, `connector-trigger`) skip the gather — `case spec` defers to Phase 3 Step 9.7. Unresolved tasks skip too — they become placeholders per Step 9.1. **Inline-built siblings (agent / api-workflow, Rule 17 Create) also skip the gather** — they were resolved + bound in Phase 1 with I/O read from the sibling's on-disk `entry-points.json`; their `taskTypeId` is a local audit-only key with no tenant resource, so tenant `tasks describe` does not apply. See the per-type Built-inline notes: [`plugins/tasks/agent/impl-json.md`](plugins/tasks/agent/impl-json.md), [`plugins/tasks/api-workflow/impl-json.md`](plugins/tasks/api-workflow/impl-json.md).
 
-**Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per task in §4.6 order, appending the task node to its stage's `data.tasks` lane per the matching plugin's `impl-json.md`. **Capture each `TaskId`** — cross-task references and conditions in Phase 3 need it. Skip the re-Read between sibling Edits. One validate at section end.
+**Phase B — batched write with action handoff.** One Read of `caseplan.json`. Append non-action tasks in §4.6 order per the matching plugin. At each non-placeholder action entry, flush preceding Edits, invoke the HITL delegate sequentially, then re-read `caseplan.json` before continuing; this is the sanctioned exception to the no-re-Read batching rule because another agent edited the shared artifact. A planned placeholder action is written locally with `data: {}`. **Capture every `TaskId`** — cross-task references and conditions in Phase 3 need it. Validate once at section end.
 
 Per-class shape inside each Edit:
 
 | Task class | Phase 2 `data` content |
 |---|---|
-| Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | Full `data.inputs[]` schema from the Phase A gather. Each input's `value` is `""`. Outputs populated per plugin. |
+| Non-connector (`process`, `agent`, `rpa`, `api-workflow`, `case-management`, `wait-for-timer`) | Full `data.inputs[]` schema from the Phase A gather. Each input's `value` is `""`. Outputs populated per plugin. |
+| `action` — QuickForm or App-based | Delegated to `uipath-human-in-the-loop`. Case supplies the approved intent and target placement, then verifies one non-placeholder action was written. Case does not construct or repair its `data`. |
 | Connector (`connector-activity`, `connector-trigger`) | `data.typeId` + `data.connectionId` set. `data.inputs` omitted. **Do NOT call `case spec` in Phase 2** — schema discovery happens in Phase 3. |
-| Unresolved (any class) | Placeholder task per Step 9.1 — empty `data: {}` plus action-only extras. |
+| Unresolved or failed action delegation | Placeholder task per Step 9.1 — empty `data: {}`. |
 
-**Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md).
+**Do NOT bind input `value` fields in Step 9 for Case-authored tasks.** Their literals, expressions, and cross-task references are written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). A delegated action is excluded from Case's shared binding pass; its own build details belong to the HITL delegate. Downstream tasks that consume its outputs still bind normally in Phase 3.
 
 On context-compaction mid-gather: re-Read `caseplan.json`, scan for §4.6 tasks not yet appended, re-run Phase A for those only.
 
@@ -142,7 +143,7 @@ On context-compaction mid-gather: re-Read `caseplan.json`, scan for §4.6 tasks 
 
 ### Step 9.1 — Placeholder tasks for unresolved resources
 
-When a task entry's `taskTypeId` (or `typeId` / `connectionId` for connector tasks) is `<UNRESOLVED: …>`, create a **placeholder task** instead of halting. See [placeholder-tasks.md](placeholder-tasks.md) for the canonical reference.
+When a non-action task entry's `taskTypeId` (or `typeId` / `connectionId` for connector tasks) is `<UNRESOLVED: …>`, create a **placeholder task** instead of halting. For an `action`, use the same placeholder when planning selected it or the HITL delegation fails verification. See [placeholder-tasks.md](placeholder-tasks.md) and [action/impl-json.md § Failure](plugins/tasks/action/impl-json.md#failure--placeholder-never-local-hitl-authoring).
 
 For every task class (process / agent / rpa / action / api-workflow / case-management / connector-activity / connector-trigger): follow the Unresolved Fallback section of the matching `plugins/tasks/<type>/planning.md` and write a task with `type` + `displayName` + `id` + `elementId` + `isRequired`, `data: {}`, and no `taskTypeId` / `connectionId` keys directly to `caseplan.json` per `plugins/tasks/<type>/impl-json.md`.
 
