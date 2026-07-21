@@ -6,7 +6,7 @@ description: >
   no workbook context object, the Lookup Range dereferences null and faults
   with System.NullReferenceException at startup. The fault stack and Main.xaml
   both show no enclosing Excel scope. Success = agent matches the
-  lookup-range-null-reference playbook AND identifies the missing Excel scope
+  null-reference-from-activity playbook AND identifies the missing Excel scope
   (found in Main.xaml) as the cause.
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 

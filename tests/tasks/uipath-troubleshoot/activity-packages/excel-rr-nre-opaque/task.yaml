@@ -7,7 +7,7 @@ description: >
   clean) but the agent cannot pinpoint which of the remaining
   branches (structural corruption, unsupported OpenXML feature,
   heavy formatting / parser limit) applies without manual workbook
-  inspection. Agent must match the activity-packages/excel-activities/playbooks/read-range-null-reference.md
+  inspection. Agent must match the activity-packages/excel-activities/playbooks/null-reference-from-activity.md
   playbook, recognize the CLI evidence is exhausted, and hand the
   user a workbook-inspection checklist (open in Excel, check for
   Repaired dialog, run Compatibility Checker, check Name Manager
