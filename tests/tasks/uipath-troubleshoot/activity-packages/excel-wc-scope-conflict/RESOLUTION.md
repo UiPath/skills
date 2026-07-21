@@ -108,10 +108,10 @@ handle.
   against it." Explicitly rules out branches 1 (user editing),
   2 (orphan EXCEL.EXE), 3 (network-share lock), 4 (concurrent
   Robot jobs), 5 (AV/EDR), and 6 (other user session) of the
-  `read-range-file-locked.md` playbook.
+  `workbook-file-locked.md` playbook.
 
 ### Cross-check -- what this is NOT
-- Not `read-range-file-locked.md` external-locker variant: the
+- Not `workbook-file-locked.md` external-locker variant: the
   user has explicitly ruled out external lockers, and the
   workflow source shows the dual-scope pattern.
 - Not branch 2 (formula syntax) or branch 3 (loop thrash): the
@@ -160,7 +160,7 @@ the Classic activity outside the Modern scope's `Body`:
   UiPath's own scope, not an external Excel process. A blanket
   `Kill Process` masks the underlying scope-management bug and
   terminates other legitimate Excel work on the host.
-- **Do NOT pivot to the `read-range-file-locked.md`
+- **Do NOT pivot to the `workbook-file-locked.md`
   investigation chain** (orphan check, network share, AV
   scanner). The user has explicitly excluded those and the
   workflow source identifies the cause unambiguously.
