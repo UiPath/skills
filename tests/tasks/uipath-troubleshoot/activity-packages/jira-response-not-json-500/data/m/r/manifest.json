@@ -4,39 +4,39 @@
   "rules": [
     {
       "match": "or folders list --output json",
-      "file": "or-folders-list-output-json.json"
+      "file": "46ac4679cc.json"
     },
     {
       "match": "or jobs list --folder-key \"5a02a2b3-d4e5-4f60-8a02-000000000002\" --state Faulted --output json",
-      "file": "or-jobs-list-folder-key-5a02a2b3-state-faulted-output-json.json"
+      "file": "5a4a4f1dd8.json"
     },
     {
       "match": "or jobs list --folder-key 5a02a2b3-d4e5-4f60-8a02-000000000002 --state Faulted --output json",
-      "file": "or-jobs-list-folder-key-5a02a2b3-state-faulted-output-json.json"
+      "file": "5a4a4f1dd8.json"
     },
     {
       "match": "or jobs get \"5b02c3d4-e5f6-4071-9b02-000000000002\" --output json",
-      "file": "or-jobs-get-5b02c3d4-output-json.json"
+      "file": "282666ec20.json"
     },
     {
       "match": "or jobs get 5b02c3d4-e5f6-4071-9b02-000000000002 --output json",
-      "file": "or-jobs-get-5b02c3d4-output-json.json"
+      "file": "282666ec20.json"
     },
     {
       "match": "or jobs logs \"5b02c3d4-e5f6-4071-9b02-000000000002\" --level Error --output json",
-      "file": "or-jobs-logs-5b02c3d4-level-error-output-json.json"
+      "file": "68cecd381e.json"
     },
     {
       "match": "or jobs logs 5b02c3d4-e5f6-4071-9b02-000000000002 --level Error --output json",
-      "file": "or-jobs-logs-5b02c3d4-level-error-output-json.json"
+      "file": "68cecd381e.json"
     },
     {
       "match": "or jobs logs \"5b02c3d4-e5f6-4071-9b02-000000000002\" --output json",
-      "file": "or-jobs-logs-5b02c3d4-output-json.json"
+      "file": "1aeff360bf.json"
     },
     {
       "match": "or jobs logs 5b02c3d4-e5f6-4071-9b02-000000000002 --output json",
-      "file": "or-jobs-logs-5b02c3d4-output-json.json"
+      "file": "1aeff360bf.json"
     },
     {
       "match": "docsai ask",

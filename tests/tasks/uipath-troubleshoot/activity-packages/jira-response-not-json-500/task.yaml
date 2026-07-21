@@ -1,17 +1,18 @@
-task_id: skill-troubleshoot-jira-auth-username
+task_id: skill-troubleshoot-jira-not-json-500
 description: >
-  UiPath troubleshooting agent must diagnose a Jira Scope that faults at scope
-  open with "Authentication information is invalid. Please check your
-  credentials...". The scope is configured with Authentication Type = Api Token,
-  the Api Token is bound from a SecureString, and no Client Id / Client Secret
-  are set - so the only inconsistent property is the Username, which is an
-  alphanumeric Jira accountId ("557058:9d8c...") instead of the account email.
-  Jira Cloud requires the full account email as the Username. Success = agent
-  matches the jira-scope-authentication-failures playbook, identifies the
-  Username-format sub-case (A2) - NOT a bad token (A1), leftover OAuth params
-  (A3), or an MFA/password blocker (A4) - AND recommends setting Username to the
-  account email, without fabricating host actions.
-tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, jira-activities, rpa]
+  UiPath troubleshooting agent must diagnose a Jira child activity (Search
+  Issues) that faults with "Response was not recognized as JSON". The Jira Scope
+  authenticated successfully (logs show the session opened), so this is NOT a
+  credential problem. The Server URL is set to
+  "https://acme.atlassian.net/secure/Dashboard.jspa" - a dashboard page path
+  appended past the instance root - so the REST call hits an HTML page and the
+  pack cannot parse the response. Success = agent matches the
+  jira-scope-response-not-json-or-500 playbook (sub-case R1), identifies the
+  Server URL truncation (path appended past the root instance) - NOT an auth
+  failure or an on-prem/Data-Center issue (R2) - AND recommends setting Server
+  URL to the bare root "https://acme.atlassian.net", without fabricating host
+  actions.
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code
@@ -25,29 +26,28 @@ run_limits:
 sandbox:
   template_sources:
   - type: template_dir
-    path: ../_shared/mock_template
+    path: ../../_shared/mock_template
   - type: template_dir
     path: process
   - type: template_dir
-    path: fixtures
+    path: data
   mock_path_dirs:
-  - mocks
+  - m
 
 reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My JiraIssueSync process faults in Orchestrator on every run. The folder is
-  "Issue Sync". It dies right at the Jira Scope with "Authentication
-  information is invalid. Please check your credentials and try again." I've
-  regenerated the API token and it's valid, and the same account works fine
-  when I log into Jira in the browser.
+  My JiraWeeklyReport process faults in Orchestrator on every run. The folder
+  is "Reporting". The Jira Scope seems to connect, but then it dies on the
+  Search Issues step with "Response was not recognized as JSON." The same JQL
+  works when I paste it into the Jira issue search in my browser.
 
   I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
   only Orchestrator. Diagnose what you can from Orchestrator and the project
-  source. If the answer needs something only I can check (Atlassian account
-  settings, org policy), give me the exact things to verify and I'll come
-  back with the result. Do not stall waiting on me - hand me the list and stop.
+  source. If the answer needs something only I can check, give me the exact
+  things to verify and I'll come back with the result. Do not stall waiting
+  on me - hand me the list and stop.
 
   The project source for the failing process is in the current working
   directory.
@@ -82,10 +82,11 @@ success_criteria:
 simulation:
   enabled: true
   persona: |
-    You are the UiPath user who reported the failing JiraIssueSync process. You
-    configured the Jira Scope. You are away from the robot host and only have
+    You are the UiPath user who reported the failing JiraWeeklyReport process.
+    You configured the Jira Scope, including the Server URL, which you pasted
+    from your browser. You are away from the robot host and only have
     Orchestrator access. You trust the agent and want a diagnosis or a check
-    list of things to verify on the Atlassian side.
+    list.
   goal: |
     Let the agent complete its troubleshooting flow without imposing
     constraints. Approve every scope expansion or clarification the agent
@@ -93,8 +94,8 @@ simulation:
   constraints:
     - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, jira-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the check list at the end."
-    - "If asked what value the Username is set to, say it is whatever is in the project - you copied it from your Jira profile page."
-    - "If asked whether your org enforces MFA or SSO, say you are not sure and cannot check right now."
+    - "If asked what the Server URL is set to, say it is whatever is in the project - you copied it from your browser address bar."
+    - "If asked whether the instance is Jira Cloud or on-premises, say it is the company's standard Jira at acme.atlassian.net."
     - "Never invent or provide new factual data beyond your initial report."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
