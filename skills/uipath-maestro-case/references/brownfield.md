@@ -8,6 +8,16 @@ Targeted changes to an existing `caseplan.json`. Skips the Phase 0–6 build pip
 
 `caseplan.json` already exists AND the user wants a targeted edit ("add a stage", "remove task X", "change this condition", "swap the trigger"). No `sdd.md`, no `tasks.md`, no planning approval, no prototyping hard stop. Routing lives in [SKILL.md](../SKILL.md#routing--greenfield-vs-brownfield).
 
+## Kickoff — set dev expectations first
+
+Before the first edit, present the flow once so the dev knows the steps and where they'll be asked to decide. Emit verbatim in tone (adjust wording to fit; keep the checkpoint markers). Present ONCE at entry; do not repeat. Allow-listed standalone text block (see [case-editing-operations.md § Hard token cap](case-editing-operations.md)).
+
+> This is a targeted edit to an existing case (no full rebuild). Here's the flow:
+> - I confirm where the case lives and **pull the latest** if it's in Studio Web (so a re-publish can't clobber server changes).
+> - I make the edit, then **validate** and fix errors.
+> - **Debug** (optional) — **you choose** whether to run the case for real (live emails / API calls).
+> - **Publish** (optional) — **you choose** whether to upload to Studio Web.
+
 ## Pull latest first (before editing)
 
 Most "edit an existing case" requests mean a case **deployed in Studio Web**, not just a local file. Editing the local `caseplan.json` and re-publishing (Phase 6 `uip solution upload`) **overwrites server state** — if the case changed in Studio Web after the local copy was made, the upload silently clobbers those changes, with no diff and no conflict check. Reconcile **before** the first edit.

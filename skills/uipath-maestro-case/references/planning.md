@@ -20,6 +20,8 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 
 ---
 
+> **Kickoff overview first (if not already shown).** When Phase 0 did not run (user-provided `sdd.md`), this is the run's start — present the greenfield flow overview once before Step 0 so the dev knows the phases and the decision points. See [SKILL.md § Kickoff — set dev expectations](../SKILL.md#kickoff--set-dev-expectations-first). If Phase 0 already showed it, skip.
+
 ## Step 0 — Resolve the `uip` binary
 
 `uip` is installed via npm. Resolve the binary (it may not be on PATH in nvm environments), capture its version, and upgrade only when the installed version is **older** than the latest published `@uipath/cli` — dev builds may be newer than the npm release, leave those alone:

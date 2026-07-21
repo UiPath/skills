@@ -104,7 +104,7 @@ Use **AskUserQuestion** with three options:
 3. **MUST emit DesignerUrl as plain-text output to user BEFORE invoking AskUserQuestion**, on its own line:
    `Skeleton published. Review at: <DesignerUrl>`
    Never bundle URL only into question body — some renderers display question before surrounding prose, leaving user without URL until after they answer.
-4. Only after URL line emitted, invoke **AskUserQuestion** (second prompt): `Continue to phase 3` / `Abort`.
+4. Only after URL line emitted, invoke **AskUserQuestion** (second prompt): `Continue to implementation` / `Abort`.
 
 If `DesignerUrl` missing from response, dump full upload response to `tasks/upload-response.json`, print path, continue to prompt — user can recover URL from file.
 
@@ -126,7 +126,7 @@ Do **not** delete artifacts. User may want to inspect them, or re-run skill late
 
 ### Re-entry protocol
 
-Phase 3 begins after user selects `Continue to phase 3` (or `Skip publish and continue`). Before executing any Phase 3 step:
+Phase 3 begins after user selects `Continue to implementation` (or `Skip publish and continue`). Before executing any Phase 3 step:
 
 1. **Re-read `tasks.md`** — per Rule 7. Declarative plan is the handoff.
 2. **Re-read `caseplan.json`** — authoritative source of all IDs generated in Phase 2:
@@ -240,7 +240,7 @@ It does **not** write `data.inputs` / `data.outputs` for placeholders. Input bin
 Abort can occur at any hard stop:
 
 - Phase 2 first prompt (`Publish for review` / `Skip` / `Abort`).
-- Phase 2 second prompt (`Continue to phase 3` / `Abort`) after publishing.
+- Phase 2 second prompt (`Continue to implementation` / `Abort`) after publishing.
 - Phase 4 retry-cap prompt (`Retry with fix` / `Pause for manual edit` / `Abort`).
 
 All follow same cleanup:

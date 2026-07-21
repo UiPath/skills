@@ -58,6 +58,24 @@ Brownfield bypasses planning, prototyping, and their hard stops; it still honors
 
 Up to seven hard stops (Phase 0 + Phase 2 second prompt + Phase 4 conditional): **Phase 0** (interview → sdd.md, only when sdd.md absent) → approve → **Phase 1 Planning** (sdd.md → tasks.md) → approve → **Phase 2 Prototyping** (placeholder) → publish-for-review stop → continue-after-publish stop (publish branch only) → **Phase 3 Implementation** (detail) → **Phase 4 Validate** (retry-cap stop on 3rd failure) → **Phase 5 Debug** (Run vs Skip-to-Publish stop) → **Phase 6 Publish** (Publish vs Done stop).
 
+### Kickoff — set dev expectations first
+
+Before any planning or build work, present the flow once so the dev knows the steps and where they'll be asked to decide. Emit the matching block below verbatim in tone (adjust wording to fit context; keep the checkpoint markers). Present ONCE per run — at Phase 0 start if the interview runs, else at Phase 1 start. Allow-listed standalone text block (Anti-patterns token cap); do not repeat it at later phases.
+
+**Greenfield** (building a new case):
+
+> Here's how I'll build this case, and where I'll stop for your call:
+> - **Planning** — I draft a task plan from the spec. **You approve it** before I build anything.
+> - **Prototyping** — I build the case skeleton (stages, tasks, triggers — no wiring yet). **You choose:** publish it to Studio Web for a visual review, or continue.
+> - **Implementation** — I wire task inputs/outputs, conditions, and SLAs.
+> - **Validate** — I run validation and fix errors.
+> - **Debug** (optional) — **you choose** whether to run the case for real (live emails / API calls).
+> - **Publish** (optional) — **you choose** whether to upload to Studio Web.
+
+When Phase 0 runs, prefix one line: "First I'll interview you to produce the spec (`sdd.md`), which you approve before planning."
+
+**Brownfield** (editing an existing case): present the short version at entry — see [references/brownfield.md](references/brownfield.md).
+
 ### Phase 0 — Interview (conditional)
 
 Triggered when `sdd.md` absent at resolved path. Read [references/phase-0-interview.md](references/phase-0-interview.md) for the interview modes (listen → sketch → progressive ask-walk → resolve → approve), resumption, and HTML preview offer. Produces:
@@ -94,7 +112,7 @@ Read [references/implementation.md](references/implementation.md) + [references/
 5. Stages (Step 7)
 6. Tasks — shape only (Step 9): non-connector with full `data.inputs[]` schema + empty values; connector with `typeId` + `connectionId` only (no `case spec`); unresolved as placeholders per Rule 8
 7. Informational validate (Step 9.5.1) — do NOT halt on errors/warnings
-8. **HARD STOP** (Step 9.5.2–9.5.5): `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`: `uip solution resources refresh --solution-folder <SolutionDir> --output json` then `uip solution upload`, print DesignerUrl, AskUserQuestion: `Continue to phase 3` / `Abort`. On `Abort`: dump `build-issues.md`, exit (no cleanup).
+8. **HARD STOP** (Step 9.5.2–9.5.5): `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`: `uip solution resources refresh --solution-folder <SolutionDir> --output json` then `uip solution upload`, print DesignerUrl, AskUserQuestion: `Continue to implementation` / `Abort`. On `Abort`: dump `build-issues.md`, exit (no cleanup).
 
 ### Phase 3 — Implementation
 
@@ -197,9 +215,9 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session`
 - **`tasks.md` (Phase 1) uses per-section batched Edit-append — NOT per-T-entry, NOT one mega-Write.** One Read + N Edit-appends per section (§4.2.1 vars, §4.3 triggers, §4.4 stages, §4.6 tasks, §4.7 conditions, §4.8 SLA). No re-Read between sibling Edits. **HARD CAP:** after §4.0a Step 1 Seed Write (<1KB header), single Write of whole `tasks.md` is FORBIDDEN regardless of size. Single Edit-append payload >30KB also FORBIDDEN — split per section even if cumulative payload exceeds 30KB. A 96KB tasks.md Write costs ~360s in one turn (20% of session); section-batched Edit-appends spread across ~7 turns of ~50s. TaskUpdate per T-entry preserves audit trail. Recovery on interruption: re-Read `tasks.md`, resume from next un-applied T-entry. See [planning.md § 4.0a](references/planning.md).
 - **`caseplan.json` (Phase 2 + 3) uses per-section batched writes — NOT per-T-entry.** One Read at section entry + one validate at section end. Tool primitive scales with section size: **<10 T-entries** → N Edits (one per T-entry, no re-Read between siblings); **≥10 T-entries** → may use single whole-section Write covering the section's nodes array at once, AFTER composing complete section state in reasoning. Untouched siblings (other sections, root fields) MUST be preserved verbatim from the Read — drop nothing. TaskUpdate per T-entry preserves audit trail regardless of write granularity. CLI-gated sections (Phase 2 §4.6 non-connector `tasks describe`, Phase 3 §9.7 connector `case spec`) use gather-then-write. Recovery on interruption: re-Read both files, resume from next un-applied T-entry. Full contract in [case-editing-operations.md § Per-section batch write contract](references/case-editing-operations.md#per-section-batch-write-contract--canonical) and [implementation.md § Per-plugin execution](references/implementation.md).
 - **Do NOT emit standalone text-only assistant turns between tool calls.** Status/progress text MUST share its turn with the next `tool_use` (text block + tool_use block in the same assistant content array). Standalone narration turns each pay full inference latency + prompt cache replay (~5s + ~250K cache-read tokens per turn) for no incremental progress. Cap inline status to ≤1 sentence / ~20 tokens. Per-T-entry audit lives in TaskUpdate, NOT in narration.
-  - **HARD TOKEN CAP on any single text block: 200 tokens, no exceptions outside the allow-list below.** Allow-listed text blocks (hard-stop AskUserQuestion preambles, Phase 5/6 completion reports, `Publish for review` DesignerUrl print, post-validate result summaries) get a higher ceiling of **500 tokens** — never higher. A text block >200 tokens outside the allow-list, or >500 tokens inside it, is a planning monologue, regardless of content or framing.
+  - **HARD TOKEN CAP on any single text block: 200 tokens, no exceptions outside the allow-list below.** Allow-listed text blocks (the once-per-run kickoff flow overview, hard-stop AskUserQuestion preambles, Phase 5/6 completion reports, `Publish for review` DesignerUrl print, post-validate result summaries) get a higher ceiling of **500 tokens** — never higher. A text block >200 tokens outside the allow-list, or >500 tokens inside it, is a planning monologue, regardless of content or framing.
   - **Forbidden announcement verbs.** Text blocks (bundled or standalone) starting with `Building`, `Composing`, `Writing`, `Drafting`, `Generating`, `Now I'll`, `Next:`, `Next step:`, `Approach:`, `Strategy:`, `Plan:`, `Caveman push:`, `Big single Write:`, `Let me`, or any other narration of the imminent tool call are FORBIDDEN regardless of length. The tool_use input shows what is being built — restating it in prose is pure cost. If the agent feels the urge to write `Composing Phase 2 caseplan.json — trigger + 64 variables + 10 stages`, it must instead invoke the Write directly with that content as the file body.
-  - **Allow-listed exceptions** (may stand alone, capped at 500 tokens): hard-stop AskUserQuestion preambles, final completion reports (Phase 5/6 exit), Phase 2 `Publish for review` DesignerUrl print (Rule 11), and post-validate result summaries (`N errors, M warnings — fixing X` is fine; `Composing fix for ...` is not). Everything else bundles or omits.
+  - **Allow-listed exceptions** (may stand alone, capped at 500 tokens): the once-per-run kickoff flow overview, hard-stop AskUserQuestion preambles, final completion reports (Phase 5/6 exit), Phase 2 `Publish for review` DesignerUrl print (Rule 11), and post-validate result summaries (`N errors, M warnings — fixing X` is fine; `Composing fix for ...` is not). Everything else bundles or omits.
 - **One task per lane — except parallel members of a `runs-sequentially` group.** Default: each task own `lane` index in `stageNode.data.tasks[laneIndex][]`, lane is FE layout only. Exception: tasks sharing a `runs-sequentially` task-entry condition that are meant to run in parallel share the same lane (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get their own lane.
 - **Do NOT edit `content/*.bpmn`.** Auto-generated, will be overwritten. Edit `content/*.json` only.
 - **Do NOT fabricate expression syntax for conditional SLA rules.** Describe condition in natural language; execution phase determines exact form.

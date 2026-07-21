@@ -175,7 +175,7 @@ End of Phase 2. Full contract (summary content, prompt options, publish branch, 
 
 3. Execute hard-stop prompt + branches per [phased-execution.md § Prompt](phased-execution.md#prompt) and following sections. Unconditional — SKILL.md Rule 11.
 
-On continue (either `Skip publish and continue` or `Continue to phase 3` after publish): proceed to Step 9.6.
+On continue (either `Skip publish and continue` or `Continue to implementation` after publish): proceed to Step 9.6.
 
 ---
 
