@@ -1,18 +1,19 @@
-task_id: skill-governance-compliance-query-clause
+task_id: skill-governance-compliance-query-clause-general
 description: >
-  Skill-guided: "what does ISO 42001 compliance standard clause A.6.2.8 recommend?" must use
-  catalog get only - zero state commands, zero mutations. Tests that information-only queries
-  stay in the query plugin and never trigger apply flows.
+  Skill-guided: a general (non-tenant-scoped) clause question "what does ISO 42001
+  clause A.6.2.8 recommend?" must stay on the query path - catalog get only, zero
+  state commands, zero mutations. Companion to query_clause_smoke.yaml (which scopes
+  the same question to "my tenant"); this keeps clause-query behavior stable when no
+  tenant is named so the answer still comes from the catalog, not from memory.
 
   Platform note: uip commands fail with auth errors - expected.
 tags: [uipath-governance, smoke, lifecycle:discover, feature:compliance]
-
 
 sandbox:
   python: {}
 
 initial_prompt: |
-  What does ISO 42001 clause A.6.2.8 recommend for my UiPath tenant?
+  What does ISO 42001 clause A.6.2.8 recommend?
 
   Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
@@ -22,7 +23,7 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent called catalog get to retrieve clause recommendations"
+    description: "Agent called catalog get to retrieve clause recommendations (not answered from memory)"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+(?:iso-42001|\$\S+).*--output\s+json'
     min_count: 1
     weight: 3.0

@@ -10,7 +10,9 @@ Pure information — no state commands, no mutations. Uses `catalog get` data on
 - "Show me all High-impact controls"
 - "What does the AI Trust Layer traceability section require?"
 
-## Command (if not already fetched)
+## Command — always answer from catalog data (required)
+
+Clause and recommendation answers MUST come from `catalog get` output — never from memory, general knowledge, or a paraphrase. Recommended settings are versioned inside the pack; only the CLI returns the authoritative values. Do not answer the question until you have catalog data in hand. Run `catalog get` now if `$SESSION_TEMP/catalog.json` does not already exist this session (reuse it if it does).
 
 ```bash
 # Read the session dir written by catalog get; run catalog get if not yet fetched this session.
