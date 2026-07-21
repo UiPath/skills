@@ -30,9 +30,6 @@ pre_run:
     timeout: 30
 
 initial_prompt: |
-  Start by invoking the `uipath-review` skill. No PDD is available; proceed
-  with a technical review and note that limitation in the report.
-
   A low-code UiPath agent project exists at `ReviewSol/SampleAgent` inside the
   solution `ReviewSol`. Review it for issues, including its guardrail
   configuration. Save the report to

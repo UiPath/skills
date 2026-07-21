@@ -34,7 +34,7 @@
 - [x] Permit `Write` only for an explicit report path outside reviewed roots.
 - [x] Keep all files inside reviewed projects immutable.
 - [x] Make unattended no-PDD behavior non-blocking and require the report artifact when requested.
-- [x] Make every guardrail review prompt invoke `uipath-review` first and state that no PDD is available.
+- [x] Keep guardrail review prompts user-realistic and rely on skill activation plus explicit report paths for unattended no-PDD behavior.
 
 ### Task 3: Agent Guardrail Authoring and Evaluation Alignment
 
@@ -49,7 +49,7 @@
 - [x] Add a mandatory post-edit middleware-spread check and LLM-as-judge model discovery step.
 - [x] Require validate-mode fixes to preserve and relocate validators.
 - [x] Require semantic re-reading after low-code refresh/validate.
-- [x] Disallow WebSearch in tasks that require direct SDK WebFetch and force skill-first execution for the conversational scaffold.
+- [x] Disallow WebSearch in tasks that require direct SDK WebFetch while keeping the conversational scaffold prompt user-realistic.
 
 ### Task 4: Maestro Artifact-Safety Boundary
 

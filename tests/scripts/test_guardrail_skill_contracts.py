@@ -29,7 +29,7 @@ class ReviewContractTests(unittest.TestCase):
         self.assertIn("explicitly requested report path", skill)
         self.assertIn("outside every reviewed project root", skill)
 
-    def test_every_review_guardrail_prompt_is_skill_first_and_nonblocking(self) -> None:
+    def test_every_review_guardrail_prompt_is_realistic(self) -> None:
         task_paths = sorted(
             (ROOT / "tests/tasks/uipath-review/agents").glob("*guardrail*/*.yaml")
         )
@@ -37,8 +37,9 @@ class ReviewContractTests(unittest.TestCase):
         for path in task_paths:
             prompt = load_yaml(path)["initial_prompt"]
             with self.subTest(path=path):
-                self.assertIn("Start by invoking the `uipath-review` skill.", prompt)
-                self.assertIn("No PDD is available", prompt)
+                self.assertNotIn("uipath-review", prompt)
+                self.assertIn("_review_report.md", prompt)
+                self.assertIn("read-only review", prompt.lower())
 
 
 class AgentGuardrailContractTests(unittest.TestCase):
@@ -54,16 +55,14 @@ class AgentGuardrailContractTests(unittest.TestCase):
                 self.assertIn("WebFetch", agent["allowed_tools"])
                 self.assertIn("WebSearch", agent["disallowed_tools"])
 
-    def test_conversational_guardrail_task_is_skill_first_without_websearch(self) -> None:
+    def test_conversational_guardrail_task_is_realistic_without_websearch(self) -> None:
         path = ROOT / (
             "tests/tasks/uipath-agents/lowcode/conversational/guardrails/"
             "guardrail_custom_tool/guardrail_custom_tool.yaml"
         )
         task = load_yaml(path)
         self.assertIn("WebSearch", task["agent"]["disallowed_tools"])
-        self.assertIn(
-            "Start by invoking the `uipath-agents` skill.", task["initial_prompt"]
-        )
+        self.assertNotIn("uipath-agents", task["initial_prompt"])
 
     def test_coded_guidance_requires_callable_rules_and_structural_verification(self) -> None:
         guide = (
