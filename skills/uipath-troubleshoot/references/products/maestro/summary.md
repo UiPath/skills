@@ -42,7 +42,7 @@
 | Deployment Error — DateTime Input | High | "Package entry points definition is invalid" due to DateTime BPMN input parameters | [deployment-datetime-input.md](./playbooks/deployment-datetime-input.md) |
 | JS Runtime Discrepancy | High | JS expression passes in editor but fails at runtime — Jint lacks browser APIs | [js-runtime-discrepancy.md](./playbooks/js-runtime-discrepancy.md) |
 | Agent Traces Disappearing | High | Traces missing due to AI Trust Layer Trace TTL policy | [agent-traces-disappearing.md](./playbooks/agent-traces-disappearing.md) |
-| Autopilot 429 Too Many Requests | High | HTTP 429 rate limiting on Autopilot features | [autopilot-429.md](./playbooks/autopilot-429.md) |
+| Autopilot 429 Too Many Requests | High | HTTP 429 "Failed to apply" in the Autopilot designer; runtime connector 429 (DAP-RT-1101) → Integration Service request-failed | [autopilot-429.md](./playbooks/autopilot-429.md) |
 | Multi-Instance Marker InvalidCastException | High | JS array cannot be cast to ExpressionList — switch to C# expressions | [marker-invalid-cast.md](./playbooks/marker-invalid-cast.md) |
 | Attachment Not Found After Retention | High | Files disappear when job retention deletes the owning job | [attachment-not-found.md](./playbooks/attachment-not-found.md) |
 | Argument Mismatch (400) — Generic | Medium | Generic 400 argument mismatch; route to #5 or #6 for specifics | [argument-mismatch-400.md](./playbooks/argument-mismatch-400.md) |
