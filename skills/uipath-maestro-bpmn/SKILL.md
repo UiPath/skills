@@ -59,15 +59,17 @@ Two halves make a valid Maestro `.bpmn`:
 
 ## Workflow
 
-Work the four steps quickly, but keep the path matched to the user's ask. For
-discovery-only asks (for example, "show what the registry exposes" or "capture
-the template for X"), run `registry pull`, then `list` / `search`, then
-`registry get <type> --output json` for the requested types; save or report the
-raw evidence and do not scaffold a project. For authoring asks, author early:
-do not pre-read every reference before writing. Read a reference only when you
-reach the structure it covers, get the needed templates, then write the first
-complete draft before further spelunking.
-If [references/structural-bpmn.md](references/structural-bpmn.md) or
+Work the four steps quickly, but keep the path matched to the user's ask. Treat
+requests to discover before authoring, save raw registry JSON/evidence, or "do
+not author yet" as discovery-only even if they describe an eventual BPMN. In
+that mode, immediately create `registry-evidence/`, run and save `registry pull
+--output json`, `registry list --output json` or `registry search ... --output
+json`, and `registry get <type> --output json` for each requested type; do not
+read deep authoring references or scaffold a project. For authoring asks, author
+early: do not pre-read every reference before writing. Read a reference only
+when you reach the structure it covers, get the needed templates, then write the
+first complete draft before further spelunking. If
+[references/structural-bpmn.md](references/structural-bpmn.md) or
 [references/expression-authoring.md](references/expression-authoring.md)
 directly covers the requested construct, write a first complete draft before
 further spelunking.
@@ -98,6 +100,11 @@ further spelunking.
    `<ProjectName>/project.uiproj`; do not create `*Solution/`, package files, or
    `.uipx` artifacts unless the user explicitly asks to package or operate the
    project.
+   When routing on an Actions.HITL user task's outcome, the sequence-flow
+   conditions from the exclusive gateway must reference the exact variable bound
+   by the HITL template's `<uipath:output ... var="...">` (for example
+   `=vars.Var_HitlResult == "approve"`), not only a copied or derived script
+   variable.
 4. **Validate.** There is **no** `uip maestro bpmn validate` CLI command. Run the
    bundled validator — it reconstructs the canvas model and runs every
    PO.Frontend rule:
