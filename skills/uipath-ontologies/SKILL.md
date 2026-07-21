@@ -66,6 +66,8 @@ These apply at all times, not just during the SDD workflow:
 
 When a user provides a source document (SDD, data model, spec) and asks to create an ontology from it, follow these steps in order. **STOP at each gate — do not advance until the gate condition is met.**
 
+When you read the SDD, tell the user you are **analysing the SDD** — do not mention step numbers or internal workflow stages to the user. Step labels (Step 0, Step 1, …) are for your own navigation only.
+
 ### Step 0 — Gather intent before starting
 
 **GATE: Confirm name, display name, description, and functions files before running any commands.**
