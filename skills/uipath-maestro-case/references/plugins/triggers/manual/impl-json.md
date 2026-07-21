@@ -34,7 +34,7 @@ Position is not a user input. It is computed statefully (see below).
 
 ## ID generation
 
-- **Trigger node ID** — `trigger_` + 6 random chars from `[A-Za-z0-9]`. Algorithm per [`case-editing-operations.md § ID Generation`](../../../case-editing-operations.md#id-generation).
+- **Trigger node ID** — the case's **first** trigger is the fixed literal **`trigger_1`** (per [`case-editing-operations.md § ID Generation`](../../../case-editing-operations.md#id-generation) — normally pre-seeded by the case scaffold; if this plugin writes it, use the literal). Every **additional** trigger mints `trigger_` + 6 random chars from `[A-Za-z0-9]`, same algorithm reference.
 - **Entry-point `uniqueId`** — `crypto.randomUUID()`. Generate inline:
 
   ```bash

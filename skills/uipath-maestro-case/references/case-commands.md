@@ -240,8 +240,8 @@ uip maestro case registry get <uiPathActivityTypeId> --type typecache-activities
 
 # --local: in-solution (offline) discovery of sibling projects (.uipx in cwd/parent/grandparent), no tenant/login
 uip maestro case registry list --local --output json
-uip maestro case registry search "<Name>" --type <agent|api> --local --output json    # matches by name (keyword); `agent` = agent sibling, `api` = api-workflow sibling
-uip maestro case registry get "<entityKey-or-projectId>" --type <agent|api> --local --output json   # matches by key, NOT name
+uip maestro case registry search "<Name>" --type <agent|process|api> --local --output json    # matches by name (keyword); `agent` = agent sibling, `process` = RPA sibling (no local `rpa` type), `api` = api-workflow sibling
+uip maestro case registry get "<entityKey-or-projectId>" --type <agent|process|api> --local --output json   # matches by key, NOT name
 ```
 
 Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `typecache-activities`, `typecache-triggers`, `action-apps`, `solution`.
