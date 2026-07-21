@@ -20,7 +20,7 @@ This maps to:
 (the **no surrounding scope** cause).
 
 It is **not** a missing Excel install (no `REGDB_E_CLASSNOTREG` -> that
-routes to `lookup-range-excel-not-installed.md`) and **not** a file-in-use
+routes to `excel-not-installed.md`) and **not** a file-in-use
 fault (no IOException -> `workbook-file-locked.md`). The fault stack
 goes `ExcelLookUpRange` -> `Sequence "Main Sequence"` -> `Main` with **no scope
 in between**, which is the tell that the activity has no workbook context.

@@ -65,7 +65,7 @@ user both paths and one host check.
   suite) on MOCK-HOST under a license the robot's Windows user can
   activate, then re-run. Interop requires a registered desktop Excel;
   online/web Excel does not satisfy it.
-- **Source:** `excel-activities/playbooks/lookup-range-excel-not-installed.md`
+- **Source:** `excel-activities/playbooks/excel-not-installed.md` (Classic Lookup Range discriminator)
 
 ### Fix path B -- migrate off Interop (if Excel cannot be installed)
 - If MOCK-HOST is a Linux robot, container, or locked-down VM where
@@ -79,10 +79,10 @@ user both paths and one host check.
      OpenXML-friendly equivalent of `Lookup Range`.
 - **Source:** same playbook, "If Excel cannot be installed" branch.
 
-> Note: migrating from classic `Excel Application Scope` to the modern
-> `Use Excel File` surface does NOT remove the Excel dependency - the
-> modern surface still launches Excel for most operations. Only the
-> Workbook (OpenXML) activities are truly Excel-free.
+> Note: replacing Classic `Excel Application Scope` with Modern `Use Excel
+> File` removes the dependency only when the workbook is OpenXML-capable
+> (normally `.xlsx`) and no COM-forcing properties are enabled. Workbook
+> activities remain the unambiguous Excel-free path.
 
 ---
 

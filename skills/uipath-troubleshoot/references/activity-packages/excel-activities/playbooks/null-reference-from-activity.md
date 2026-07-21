@@ -10,7 +10,7 @@ An Excel activity faults with a generic .NET runtime exception thrown from insid
 
 NOT this playbook:
 - File-in-use message → [workbook-file-locked.md](./workbook-file-locked.md)
-- `Excel is not installed` / Interop initialization failure → [lookup-range-excel-not-installed.md](./lookup-range-excel-not-installed.md)
+- `Excel is not installed` / Interop initialization failure → [excel-not-installed.md](./excel-not-installed.md)
 - `UiPath.Excel.BusinessException` naming a missing sheet → [read-range-sheet-not-found.md](./read-range-sheet-not-found.md)
 - Null fault originating in user workflow code (Assign, custom expressions) → the generic runtime-exception playbook `runtime-exceptions/playbooks/null-reference-exception.md`. This playbook is for the null fault originating *inside* the Excel activity's resolution or parsing code.
 
