@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "_doc": "Mocked public-safe BPMN operate reads for instance list + get discovery.",
+  "rules": [
+    {
+      "match": "login status",
+      "file": "auth-status.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance list",
+      "file": "instance-list.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance get inst-triage-001 -f folder-public",
+      "file": "instance-get.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance get inst-triage-001 --folder-key folder-public",
+      "file": "instance-get.json",
+      "exit_code": 0
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"error\":\"unmocked public-safe BPMN command\"}\n",
+    "exit_code": 1
+  }
+}

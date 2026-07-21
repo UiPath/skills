@@ -1,0 +1,8 @@
+{
+  "processKey": "process-invoice-triage",
+  "folderKey": "folder-public",
+  "jobKey": "job-run-006",
+  "instanceId": "inst-run-006",
+  "status": "Running",
+  "succeeded": true
+}

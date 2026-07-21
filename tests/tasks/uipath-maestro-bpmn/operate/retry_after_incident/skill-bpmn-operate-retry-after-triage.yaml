@@ -1,0 +1,76 @@
+task_id: skill-bpmn-operate-retry-after-triage
+description: >
+  Enforces the uipath-maestro-bpmn rule "never retry before diagnosis". The agent
+  must read the instance incidents FIRST to identify the failing element, then
+  retry the faulted instance, citing the incident in its summary.
+tags: [uipath-maestro-bpmn, integration, "mode:operate", "lifecycle:setup"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 24
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+initial_prompt: |
+  A UiPath Maestro BPMN instance inst-triage-001 in folder folder-public has
+  faulted. The user has already approved retrying it — but only after you
+  diagnose the cause first.
+
+  Read the instance incidents to identify the failing element and root cause,
+  THEN retry the instance. Do not retry before you have inspected the incident.
+
+  Write a short summary to retry-summary.md that first cites the incident (its id
+  and failing element) and then states that you retried the instance and its new
+  status.
+
+  Use the mocked `uip maestro bpmn ...` CLI on PATH with `--output json`. Do NOT
+  read files under mocks/, fixtures/, or any response JSON directly — obtain all
+  data by running the CLI.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent read instance incidents with folder context"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+incidents\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retried the faulted instance with folder context"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+retry\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Summary cites the incident id and failing element before retrying"
+    path: "retry-summary.md"
+    includes:
+      - "inc-triage-001"
+      - "Task_InvokeLegacyRpa"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent diagnosed the incident before issuing the retry"
+    weight: 1.0
+    pass_threshold: 0.7
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: >
+      Pass if the agent read the instance incidents before running the retry
+      command, and the summary references the incident (element Task_InvokeLegacyRpa
+      or incident inc-triage-001) as the reason it was safe to retry. Fail if the
+      retry command ran before any incident inspection, or the summary does not
+      connect the diagnosis to the retry decision.

@@ -1,0 +1,14 @@
+[
+  {
+    "processKey": "process-invoice-triage",
+    "name": "Invoice Triage",
+    "folderKey": "folder-public",
+    "latestVersion": "1.0.0"
+  },
+  {
+    "processKey": "process-order-intake",
+    "name": "Order Intake",
+    "folderKey": "folder-public",
+    "latestVersion": "2.1.0"
+  }
+]

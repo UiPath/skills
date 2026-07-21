@@ -1,0 +1,65 @@
+task_id: skill-bpmn-operate-process-run
+description: >
+  Consent-gated operate run for the uipath-maestro-bpmn skill. The agent lists
+  deployed processes to resolve a key, authors an inputs.json, and runs the
+  process by key with folder context and --inputs via a mocked CLI.
+tags: [uipath-maestro-bpmn, integration, "mode:operate", "lifecycle:setup"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 24
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+initial_prompt: |
+  The user has already approved running a deployed UiPath Maestro BPMN process in
+  folder folder-public. Run the process named "Invoice Triage".
+
+  First list the deployed processes to resolve its process key, then run it in
+  folder folder-public. Supply runtime inputs from a JSON file named inputs.json
+  that you author, setting invoiceId to "INV-6001". Write a short summary to
+  run-summary.md naming the returned job key.
+
+  Use the mocked `uip maestro bpmn ...` CLI on PATH with `--output json`. Do NOT
+  read files under mocks/, fixtures/, or any response JSON directly — obtain all
+  data by running the CLI.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed deployed processes to resolve the key"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+process\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the process by key with folder context and inputs file"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+process\s+run\s+process-invoice-triage\s+folder-public\s+.*--inputs\s+@?inputs\.json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent authored the inputs.json file"
+    path: "inputs.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Summary names the returned job key"
+    path: "run-summary.md"
+    includes:
+      - "job-run-006"
+    weight: 2.0
+    pass_threshold: 1.0
