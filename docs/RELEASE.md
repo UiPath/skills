@@ -20,8 +20,8 @@ All channels carry `package.json`'s version; the pre-release channels (`dev`, `p
 | Channel | Registry | Version | Cadence |
 |---------|----------|---------|---------|
 | npm `latest` | npmjs | `M.N.<release>` | per stable release — what the CLI pins |
-| npm `preview` | npmjs | `M.N.<release>-preview.<run>` | per preview dispatch (stamp never committed) |
-| npm `dev` | GitHub Packages | `M.N.<release>-dev.<run>` | per merge to `main` or `release/v*` (stamp never committed) |
+| npm `preview` | npmjs | `M.N.<release>-preview.<run>` | per merge to `release/v*`, or preview dispatch (stamp never committed) |
+| npm `dev` | GitHub Packages | `M.N.<release>-dev.<run>` | per merge to `main` (stamp never committed) |
 | plugin manifests (`.claude-plugin/plugin.json`, `marketplace.json`, `.codex-plugin/plugin.json`) | — | `M.N.<release>` (base version, no pre-release suffix) | per `package.json` bump — drives Claude Code / Codex plugin auto-update |
 
 `sync-version.mjs` enforces the line: the plugin version always equals `package.json`'s base `M.N.P` — there is **no independent plugin patch counter**. It **refuses to downgrade** (plugin auto-update never goes backwards, so a reverted `package.json` would freeze users), and it strips pre-release suffixes so the `dev`/`preview` stamps from `publish.yml` never land in the plugin manifests. The marketplace and Codex versions must always equal the plugin version exactly. `--check` fails on any violation, so a hand-bumped plugin manifest cannot drift the line. To bump the plugin version, bump `package.json` and run the sync — that is the only lever.
@@ -45,7 +45,8 @@ Registry follows channel — you pick a channel, not a registry.
 
 | Trigger | Channel | Registry | dist-tag | Version | Provenance |
 |---------|---------|----------|----------|---------|------------|
-| push to `main` or `release/v*` (every merge) | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
+| push to `main` (every merge) | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
+| push to `release/v*` (every merge) | `preview` | npmjs | `preview` | `<base>-preview.<run_number>` | yes |
 | `workflow_dispatch` (channel: `dev`) | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
 | `workflow_dispatch` (channel: `preview`) | `preview` | npmjs | `preview` | `<base>-preview.<run_number>` | yes |
 | GitHub Release published | `latest` | npmjs | `latest` | `package.json` version | yes |
@@ -53,23 +54,21 @@ Registry follows channel — you pick a channel, not a registry.
 
 ¹ GitHub Packages does not support npm provenance attestations; only the npmjs channels are signed.
 
-**`dev` is the only automatic channel** — every merge to `main` or a `release/v*` branch publishes a `dev` build to GitHub Packages. `preview` and `latest` are dispatched on demand, and stable also runs when a GitHub Release is published. `npm install @uipath/skills` (no tag, from npmjs) always resolves the last stable release — `preview` (npmjs) and `dev` (GitHub Packages) are pre-release versions under their own dist-tags, so no un-tagged install ever picks them.
+**Two channels publish automatically** (mirroring `UiPath/cli`): every merge to `main` publishes a `dev` build to GitHub Packages, and every merge to a `release/v*` branch publishes a `preview` build to npmjs. `latest` is dispatched on demand or runs when a GitHub Release is published. `npm install @uipath/skills` (no tag, from npmjs) always resolves the last stable release — `preview` (npmjs) and `dev` (GitHub Packages) are pre-release versions under their own dist-tags, so no un-tagged install ever picks them. The `preview`/`dev` version suffix (`<base>-preview.<run_number>` / `<base>-dev.<run_number>`) matches the CLI's stamping scheme exactly.
 
 ### Cutting a preview
 
-Dispatch `publish.yml` on the release branch (or tag) you want to preview, with channel `preview`:
+**Every merge to a `release/v*` branch auto-publishes a preview** to npmjs (see the tracks table) — this is the normal path, mirroring `UiPath/cli`. To cut one ad hoc from any ref, dispatch with channel `preview`:
 
 ```bash
 gh workflow run publish.yml --ref release/v<minor> -f channel=preview
 ```
 
-The job stamps `<base>-preview.<run_number>` (never committed), runs `sync-version.mjs`, and publishes to the `preview` dist-tag with `--provenance` via the same OIDC job as `latest`. Consume it with `npm install @uipath/skills@preview`. Re-dispatch to advance the `preview` tag; each run gets a unique version from `run_number`.
+Either way the job stamps `<base>-preview.<run_number>` (never committed), runs `sync-version.mjs`, and publishes to the `preview` dist-tag with `--provenance` via the same OIDC job as `latest`. Consume it with `npm install @uipath/skills@preview`. Each run gets a unique version from `run_number`; the `preview` tag advances to the newest one.
 
 ### The `dev` channel (GitHub Packages)
 
-Every merge to `main` **or a `release/v*` branch** publishes `@uipath/skills@<base>-dev.<run_number>` to **GitHub Packages** under the `dev` dist-tag — the internal rolling channel, replacing the retired manual `alpha` track. It uses the built-in `GITHUB_TOKEN` (`packages: write`) and carries no provenance (GitHub Packages does not support it). Consume it from the GitHub Packages registry with `npm install @uipath/skills@dev`. Publishes are serialized by a `concurrency` group so back-to-back merges don't race on the `dev` tag. Re-run a merge's publish manually with `gh workflow run publish.yml --ref <branch> -f channel=dev`.
-
-> **Cross-line `dev` tag.** The single `dev` dist-tag points to the **last push from any of these branches** — dist-tags ignore semver, so a `1.198.x-dev` build published from `release/v1.198` *after* a `1.199.x-dev` build from `main` leaves `dev` pointing at the older minor. Each version is still uniquely addressable (`@uipath/skills@1.199.0-dev.<run>`); only the floating `dev` tag is shared. If per-line isolation is ever needed, switch to line-scoped tags (`dev-1.198`).
+Every merge to `main` publishes `@uipath/skills@<base>-dev.<run_number>` to **GitHub Packages** under the `dev` dist-tag — the internal rolling channel, replacing the retired manual `alpha` track. It uses the built-in `GITHUB_TOKEN` (`packages: write`) and carries no provenance (GitHub Packages does not support it). Consume it from the GitHub Packages registry with `npm install @uipath/skills@dev`. Publishes are serialized by a `concurrency` group so back-to-back merges don't race on the `dev` tag. Re-run a merge's publish manually with `gh workflow run publish.yml --ref main -f channel=dev`. (Release lines publish `preview` to npmjs instead — see [Cutting a preview](#cutting-a-preview).)
 
 ### Registry routing
 

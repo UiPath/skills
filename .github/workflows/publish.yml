@@ -1,17 +1,18 @@
 name: Publish skills package
 
 # Publishing channels (registry follows channel — see docs/RELEASE.md):
-#   - push to `main` or `release/v*`       -> `dev`     : GitHub Packages
+#   - push to `main`                       -> `dev`     : GitHub Packages
 #         Auto on every merge. Version `<base>-dev.<run_number>` (never
 #         committed). No provenance — GitHub Packages does not support it.
-#         The `dev` tag points to the last push from ANY of these branches.
+#   - push to `release/v*`                 -> `preview` : npmjs (pre-release)
+#         Auto on every merge to a release line, mirroring UiPath/cli. Version
+#         `<base>-preview.<run_number>` (never committed), signed with
+#         `--provenance` via OIDC trusted publishing.
 #   - GitHub Release published             -> `latest`  : npmjs (stable)
 #   - workflow_dispatch (channel: latest)  -> `latest`  : npmjs (stable)
 #         Committed `package.json` version. Used by sprint-release-cut.yml.
 #   - workflow_dispatch (channel: preview) -> `preview` : npmjs (pre-release)
-#         Version `<base>-preview.<run_number>`.
 #   - workflow_dispatch (channel: dev)     -> `dev`     : GitHub Packages
-#         Manual re-run of the merge publish.
 #
 # npmjs publishes (`latest`, `preview`) use OIDC trusted publishing +
 # `--provenance`. GitHub Packages publishes (`dev`) use the built-in
@@ -23,9 +24,8 @@ name: Publish skills package
 
 on:
   push:
-    # Every merge to main OR a release line publishes a `dev` build to GitHub
-    # Packages. The `dev` dist-tag points to the LAST push from ANY of these
-    # branches (dist-tags ignore semver), so it can move between minor lines.
+    # main       -> `dev` build on GitHub Packages
+    # release/v* -> `preview` build on npmjs (mirrors UiPath/cli)
     branches: [main, 'release/v*']
   release:
     types: [published]
@@ -41,9 +41,9 @@ on:
           - dev
           - latest
 
-# Serialize publishes so rapid merges don't race on the `dev` dist-tag: each
-# run stamps a unique version, the group just orders the tag moves so `dev`
-# ends on the newest run. Never cancel an in-flight publish.
+# Serialize publishes so rapid merges don't race on a shared dist-tag: each
+# run stamps a unique version, the group just orders the tag moves. Never
+# cancel an in-flight publish.
 concurrency:
   group: publish-${{ github.event_name }}
   cancel-in-progress: false
@@ -67,10 +67,11 @@ jobs:
     name: Publish dev to GitHub Packages
     needs: [guard]
     # Auto on every merge to main; also re-runnable via dispatch (channel=dev).
+    # release/v* pushes route to preview on npmjs (publish-npmjs), not here.
     # The repo guard stops forks from attempting to publish on their own main.
     if: >-
       github.repository == 'UiPath/skills'
-      && (github.event_name == 'push'
+      && ((github.event_name == 'push' && github.ref == 'refs/heads/main')
           || (github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'dev'))
     runs-on: ubuntu-latest
     permissions:
@@ -89,9 +90,11 @@ jobs:
       # published tarball carries it. sync-version.mjs rewrites the derived
       # manifests and strips the suffix from the plugin manifests.
       - name: Stamp dev version
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
           BASE=$(node -p "require('./package.json').version")
-          DEV="${BASE}-dev.${{ github.run_number }}"
+          DEV="${BASE}-dev.${RUN_NUMBER}"
           npm version "$DEV" --no-git-tag-version --allow-same-version
           node scripts/sync-version.mjs
           echo "Publishing $DEV to dist-tag dev"
@@ -108,9 +111,12 @@ jobs:
   publish-npmjs:
     name: Publish to npmjs (latest / preview)
     needs: [guard]
+    # release event / dispatch latest      -> `latest`  (committed version).
+    # release/v* push / dispatch preview   -> `preview` (stamped pre-release).
     if: >-
       github.repository == 'UiPath/skills'
       && (github.event_name == 'release'
+          || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
           || (github.event_name == 'workflow_dispatch'
               && (github.event.inputs.channel == 'latest' || github.event.inputs.channel == 'preview')))
     runs-on: ubuntu-latest
@@ -118,7 +124,8 @@ jobs:
       contents: read
       # OIDC trusted publishing — no NPM_TOKEN. The npmjs trusted publisher
       # for @uipath/skills must name this repo (UiPath/skills) and workflow
-      # (publish.yml). npm exchanges this OIDC token for publish credentials.
+      # (publish.yml); it is not restricted to a single ref, so release/v*
+      # pushes publish through the same OIDC exchange as tags on main.
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -132,17 +139,23 @@ jobs:
           npm install -g npm@latest
           echo "npm $(npm --version) / node $(node --version)"
 
-      # A `release` event or channel=latest publishes the committed version to
-      # `latest`. channel=preview stamps a `<base>-preview.<run_number>`
-      # pre-release (never committed) and targets the `preview` dist-tag. An
-      # explicit `--tag preview` on a pre-release version never moves `latest`,
-      # so `npm install @uipath/skills` still resolves the last stable release.
+      # `preview` when: dispatch channel=preview, OR an auto push to a
+      # release/v* branch (mirrors UiPath/cli). Stamps `<base>-preview.<run>`
+      # (never committed). Otherwise `latest` (a GitHub Release event or
+      # channel=latest) publishes the committed version. An explicit
+      # `--tag preview` on a pre-release version never moves `latest`, so
+      # `npm install @uipath/skills` still resolves the last stable release.
       - name: Resolve dist-tag and stamp version
         id: dist
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUBLISH_REF: ${{ github.ref }}
+          CHANNEL: ${{ github.event.inputs.channel }}
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
-          if [ "${{ github.event.inputs.channel }}" = "preview" ]; then
+          if [ "$CHANNEL" = "preview" ] || { [ "$EVENT_NAME" = "push" ] && [[ "$PUBLISH_REF" == refs/heads/release/* ]]; }; then
             BASE=$(node -p "require('./package.json').version")
-            PREVIEW="${BASE}-preview.${{ github.run_number }}"
+            PREVIEW="${BASE}-preview.${RUN_NUMBER}"
             npm version "$PREVIEW" --no-git-tag-version --allow-same-version
             node scripts/sync-version.mjs
             echo "tag=preview" >> "$GITHUB_OUTPUT"
