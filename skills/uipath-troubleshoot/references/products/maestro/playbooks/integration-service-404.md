@@ -8,6 +8,7 @@ confidence: medium
 
 What this looks like:
 - HTTP 404 from an Integration Service call
+- Maestro incident code `102001`
 - Error message: `Request to Integration Services failed with status code '404'`
 - Sometimes seen with a related text like `Invalid Element Instance Id provided.` or `Missing instance` (Data Fabric writes)
 

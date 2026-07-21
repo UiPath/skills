@@ -8,7 +8,7 @@ confidence: high
 
 What this looks like:
 - JavaScript expression passes in JS Editor but fails at runtime
-- `btoa is not defined`, `atob is not defined`, `TextEncoder is not defined`, or another `<api> is not defined` runtime JS error naming a browser API
+- `ReferenceError: btoa is not defined`, `ReferenceError: atob is not defined`, `TextEncoder is not defined`, or another `<api> is not defined` runtime JS error naming a browser API
 - Browser-specific APIs (TextEncoder, atob, btoa) fail at runtime
 
 What can cause it:

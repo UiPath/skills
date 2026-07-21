@@ -8,6 +8,7 @@ confidence: medium
 
 What this looks like:
 - "Failed to evaluate the input collection variable for the marker element" (code `400008`) without an `InvalidCastException` inner exception
+- An item fails with `AttributeError: 'NoneType' object has no attribute 'lower'` because `file.mime_type` is null
 - Parallel steps failing
 - Questions about how to loop over items
 
