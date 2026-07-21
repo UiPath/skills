@@ -16,7 +16,7 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 > - Conditions → `plugins/conditions/<scope>/planning.md`
 > - SLA → `plugins/sla/planning.md`
 > - Global variables & arguments → `plugins/variables/global-vars/planning.md`
-> - Task I/O binding → `plugins/variables/io-binding/planning.md`
+> - Task I/O binding → `plugins/variables/io-binding/planning.md` (**always read alongside the matching task plugin**)
 
 ---
 
@@ -279,7 +279,7 @@ The skill does not author edges. Emit no edge T-entries. Stage transitions deriv
 
 Title format: `Add <type> task "<name>" to "<stage>"`
 
-One task per task from the sdd.md — do NOT group multiple tasks under a single T-number. The plugin for the task's type (`plugins/tasks/<type>/planning.md`) lists exactly which fields to record.
+One task per task from the sdd.md — do NOT group multiple tasks under a single T-number. Read both the task-type plugin (`plugins/tasks/<type>/planning.md`) and the shared I/O-binding plugin (`plugins/variables/io-binding/planning.md`) before writing the entry. The task plugin owns resource-specific fields; the I/O-binding plugin is the single source of truth for the common output-row grammar.
 
 Every task entry includes at least:
 
@@ -288,10 +288,12 @@ Every task entry includes at least:
 - **runOnlyOnce** — from sdd.md (default `true` if not specified)
 - **isRequired** — from sdd.md (default `true` if not specified)
 - **order** — dependency on previous tasks (`after T05`, etc.)
-- **lane** — integer, default increments per task within the stage starting at 0 (FE layout). **Exception:** parallel members of a `runs-sequentially` group share the same `lane` (semantic — same lane = parallel siblings inside the sequential group). Solo runs-sequentially tasks still get their own lane.
+- **lane** — integer, default increments per task within the stage starting at 0 for structural/layout compatibility. Lane does not express sequencing; preserve task order in `data.tasks` and use task entry conditions for execution semantics.
 - **verify** — what the execution phase should check after running
 
 Additional fields are plugin-specific; read the plugin's `planning.md` before filling the entry.
+
+> **Outputs are a lossless handoff, not a discovered-name summary.** Project each SDD Outputs table row through the common grammar in [`plugins/variables/io-binding/planning.md` § SDD table → `tasks.md` projection](plugins/variables/io-binding/planning.md#sdd-table-to-tasksmd-projection-mandatory), then preserve the resulting list item exactly. Schema discovery may add truly undeclared fields as bare items, but it must not rewrite an SDD row. An explicit equal-name extract such as `greeting -> greeting` stays exactly that; collapsing it to bare `greeting` changes the binding from "write the existing case variable" to "auto-mint a task output." Before the Step 5 approval gate, compare every SDD Outputs row to its task T-entry and fix any missing or changed operator/operand or leaked table placeholder.
 
 > **Registry handoff:** For a resolved `action` or `case-management` T-entry, translate the selected audit object into the canonical `tasks.md` labels and values:
 >
@@ -304,7 +306,7 @@ Additional fields are plugin-specific; read the plugin's `planning.md` before fi
 
 > **No shell commands in task entries.** Each task is a declarative specification. Never write `uip` invocations or any other shell commands inside a task body — the execution phase translates specs into JSON mutations.
 
-> **Record `lane: <n>` per task.** Default: increment within each stage starting at 0 — lane is FE layout only, task ordering comes from task-entry conditions. **Exception:** within a `runs-sequentially` group, tasks meant to run in parallel share the same `lane` (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get own lane.
+> **Record `lane: <n>` per task only when required by the artifact contract.** It is structural/layout state, not a sequencing control. For sequential tasks, preserve their order in `data.tasks` and add the `runs-sequentially` entry condition to each task.
 
 > **Placeholder shape for unresolved resources.** If `taskTypeId` / `typeId` / `connectionId` is `<UNRESOLVED: …>`, omit `inputs:` and `outputs:` entirely and capture wiring intent in a trailing comment block. Execution creates a bare task node — structural only. See [placeholder-tasks.md](placeholder-tasks.md) for the full pattern and upgrade path.
 

@@ -1,0 +1,64 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Information",
+      "Message": "ClaimsSubmit execution started",
+      "TimeStamp": "2026-07-15T08:12:03.220Z",
+      "RobotName": "svc_rpa",
+      "HostMachineName": "MOCK-HOST",
+      "ProcessName": "ClaimsSubmit"
+    },
+    {
+      "Level": "Trace",
+      "Message": "Claims - Java execution started",
+      "TimeStamp": "2026-07-15T08:12:05.010Z",
+      "RobotName": "svc_rpa",
+      "ProcessName": "ClaimsSubmit"
+    },
+    {
+      "Level": "Trace",
+      "Message": "Click 'Submit Claim' execution started",
+      "TimeStamp": "2026-07-15T08:12:06.480Z",
+      "RobotName": "svc_rpa",
+      "ProcessName": "ClaimsSubmit"
+    },
+    {
+      "Level": "Trace",
+      "Message": "Click 'Submit Claim' execution ended",
+      "TimeStamp": "2026-07-15T08:12:06.900Z",
+      "RobotName": "svc_rpa",
+      "ProcessName": "ClaimsSubmit"
+    },
+    {
+      "Level": "Trace",
+      "Message": "Get Text 'Claim Status' execution ended",
+      "TimeStamp": "2026-07-15T08:12:07.640Z",
+      "RobotName": "svc_rpa",
+      "ProcessName": "ClaimsSubmit"
+    },
+    {
+      "Level": "Information",
+      "Message": "Claim status after submit: Draft",
+      "TimeStamp": "2026-07-15T08:12:07.700Z",
+      "RobotName": "svc_rpa",
+      "HostMachineName": "MOCK-HOST",
+      "ProcessName": "ClaimsSubmit"
+    },
+    {
+      "Level": "Information",
+      "Message": "ClaimsSubmit execution ended",
+      "TimeStamp": "2026-07-15T08:12:41.400Z",
+      "RobotName": "svc_rpa",
+      "HostMachineName": "MOCK-HOST",
+      "ProcessName": "ClaimsSubmit"
+    }
+  ],
+  "Pagination": {
+    "Returned": 7,
+    "Limit": 100,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

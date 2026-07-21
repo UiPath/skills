@@ -1,0 +1,6 @@
+{
+  "Name": "ReportDownloader",
+  "ProjectType": "Process",
+  "Description": "Downloads the daily export CSV and reads it into a DataTable.",
+  "MainFile": "Main.xaml"
+}

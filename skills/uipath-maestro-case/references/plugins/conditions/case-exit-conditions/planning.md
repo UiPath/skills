@@ -47,6 +47,8 @@ Allowed `ruleType` values depend on `marks-case-complete`:
 
 For most cases, define a single completion condition with `required-stages-completed` + `marks-case-complete: true`. The `isRequired` flag on each stage (from [`plugins/stages/`](../../stages/planning.md)) controls which stages count toward completion.
 
+This is the case-close contract: at least one root `caseExitRules[]` entry must have `marksCaseComplete: true`, otherwise the case can never close. Stage completion is separate — a stage exit with `marksStageComplete: true` advances the case but does not mark the case complete. Add `marks-case-complete: false` rules only for explicit non-completing exits such as rejection, withdrawal, or cancellation; they do not replace the positive completion rule.
+
 Add non-completing exit conditions only when the sdd.md explicitly describes an exit path that does NOT close the case (rare).
 
 ## Ordering

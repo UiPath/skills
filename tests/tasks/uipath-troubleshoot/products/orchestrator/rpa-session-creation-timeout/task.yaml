@@ -1,0 +1,96 @@
+task_id: skill-troubleshoot-session-creation-timeout
+description: >
+  UiPath diagnostic agent must diagnose a faulted unattended job whose
+  robot-service log shows "Could not start executor. Creating user session
+  timed out." The job enters Running and then faults ~120s later — a
+  session-creation TIMEOUT, not a logon rejection. The executing Robot on
+  RECON-BOT-01 is version 23.4.7 (< 23.10), which carries a known
+  session-creation-timeout defect fixed in Robot 23.10. The agent must match
+  the orchestrator/job-faulted-session-timeout playbook (cause 1 — known
+  Robot defect < 23.10) and NOT job-faulted-logon-failure (no logon-failure
+  code; LSA returned no rejection) and NOT a no-host / stuck-Pending case
+  (jobs history shows Pending -> Running -> Faulted, runtime connected). The
+  fix is to upgrade the Robot to >= 23.10, with a re-run as interim
+  mitigation.
+
+tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 300
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: data
+  mock_path_dirs: ["m"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My NightlyReconciler process in the UnattendedOps folder has been
+  faulting in Orchestrator on every scheduled run since midnight — each
+  job starts, runs for about two minutes, then dies. The project source is
+  in the current working directory. Can you investigate why and tell me how
+  to fix it?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing NightlyReconciler
+    process. You know your own setup when asked: it runs unattended on the
+    machine RECON-BOT-01 on an hourly-ish schedule, as service account
+    UIPATH\SVC_RECON. You do NOT know the Robot version installed on that
+    host, you are not a deep platform expert, and you trust the agent's
+    investigation.
+  goal: |
+    Let the agent complete its investigation and tell you the root cause and
+    the fix. Approve any scope expansion or clarification it requests.
+  constraints:
+    - "If the agent asks whether to expand investigation scope, always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks for the job key, say you don't have it handy but it is the failing scheduled NightlyReconciler in the UnattendedOps folder — ask it to look the job up. Do NOT invent a key."
+    - "If the agent asks what Robot version is on RECON-BOT-01, say you don't know and ask it to check in Orchestrator — do NOT guess a version."
+    - "If the agent asks whether the robot account credentials are valid, say as far as you know yes — nothing changed with the account."
+    - "If the agent asks how to proceed when some data is missing, tell it to proceed with best-effort findings from the evidence it already gathered."
+    - "Never invent or provide new factual data beyond your initial report and the answers above. Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 8

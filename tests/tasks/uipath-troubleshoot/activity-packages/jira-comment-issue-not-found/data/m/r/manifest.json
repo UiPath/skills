@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the documented error signature.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "46ac4679cc.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"5a07a2b3-d4e5-4f60-8a07-000000000007\" --state Faulted --output json",
+      "file": "336ee9b34c.json"
+    },
+    {
+      "match": "or jobs list --folder-key 5a07a2b3-d4e5-4f60-8a07-000000000007 --state Faulted --output json",
+      "file": "336ee9b34c.json"
+    },
+    {
+      "match": "or jobs get \"5b07c3d4-e5f6-4071-9b07-000000000007\" --output json",
+      "file": "30d61c0ac1.json"
+    },
+    {
+      "match": "or jobs get 5b07c3d4-e5f6-4071-9b07-000000000007 --output json",
+      "file": "30d61c0ac1.json"
+    },
+    {
+      "match": "or jobs logs \"5b07c3d4-e5f6-4071-9b07-000000000007\" --level Error --output json",
+      "file": "f4da4b6aa6.json"
+    },
+    {
+      "match": "or jobs logs 5b07c3d4-e5f6-4071-9b07-000000000007 --level Error --output json",
+      "file": "f4da4b6aa6.json"
+    },
+    {
+      "match": "or jobs logs \"5b07c3d4-e5f6-4071-9b07-000000000007\" --output json",
+      "file": "24355d481a.json"
+    },
+    {
+      "match": "or jobs logs 5b07c3d4-e5f6-4071-9b07-000000000007 --output json",
+      "file": "24355d481a.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

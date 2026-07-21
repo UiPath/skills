@@ -21,6 +21,7 @@ What can cause it:
 - Queue item field missing or null (`TransactionItem.SpecificContent("fieldName")` with wrong field name)
 - External system returned null or empty response (HTTP Request, database query, SOAP call)
 - Collection used before initialization (array, List, DataTable)
+- An `If` / `While` / `Retry Scope` **Condition** expression dereferences a null (e.g., `If customer.IsActive` when `customer` is null, or `If data.ToString() == "x"`) — the fault occurs while resolving the condition, before either branch runs
 
 What to look for:
 - Full stack trace — confirms the fault is in workflow code, not a package

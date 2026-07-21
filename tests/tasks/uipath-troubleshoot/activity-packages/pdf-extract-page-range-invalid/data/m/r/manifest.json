@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay: a UiPath.PDF.Activities Extract PDF Page Range activity faults with UiPath.DocumentProcessing.Contracts.Extensions.InvalidPageRangeException 'The input string '''abc''' was not in a correct format.' because the configured Range is malformed. The agent must read the invalid page-range signature as the cause (the Range argument), not blame the PDF content, a missing file, or a workflow-logic bug. Signature captured verbatim from a local UiPath.PDF.Activities 4.3.0 run; workflow name scrubbed. First-match-wins.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "0c745290f5.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e --state Faulted",
+      "file": "e13b29f71c.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+      "file": "e13b29f71c.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "e13b29f71c.json"
+    },
+    {
+      "match": "or jobs get 3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b",
+      "file": "60c2e8c8db.json"
+    },
+    {
+      "match": "or jobs logs 3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b --level Error",
+      "file": "515c254914.json"
+    },
+    {
+      "match": "or jobs logs 3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b",
+      "file": "515c254914.json"
+    },
+    {
+      "match": "or jobs traces 3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b",
+      "file": "2d930e2440.json"
+    },
+    {
+      "match": "traces spans get --job-key 3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b",
+      "file": "56a91ad33d.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get 3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the InvalidPageRangeException signature from the Info / Error log."
+    }
+  ]
+}

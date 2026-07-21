@@ -1,0 +1,6 @@
+{
+  "Name": "CsvExporter",
+  "ProjectType": "Process",
+  "Description": "CsvExporter automation project.",
+  "MainFile": "Main.xaml"
+}

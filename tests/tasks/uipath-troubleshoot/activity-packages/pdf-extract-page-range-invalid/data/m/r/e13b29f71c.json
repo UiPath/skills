@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b",
+      "State": "Faulted",
+      "StartTime": "2026-06-20T10:02:11.402Z",
+      "EndTime": "2026-06-20T10:02:14.880Z",
+      "ReleaseName": "MonthlyReporting",
+      "Source": "Manual",
+      "HostMachineName": "MOCK-HOST",
+      "ErrorCode": "Robot",
+      "Id": 50614107
+    }
+  ]
+}

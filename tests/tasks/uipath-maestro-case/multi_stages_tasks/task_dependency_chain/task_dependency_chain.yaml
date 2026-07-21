@@ -3,8 +3,7 @@ description: >
   Build a Case Management definition that exercises task-driven stage
   completion, the under-covered task-entry rule-types, and a non-timer
   task type embedded in a multi-stage flow. Process stage contains two
-  timers forming a runs-sequentially group whose parallel members share
-  one lane (semantic, not FE layout) and exits via
+  timers in one ordered runs-sequentially task set and exits via
   required-tasks-completed (marks-stage-complete: true). Finalize
   contains a current-stage-entered task, a sibling-gated
   task (task-entry selected-tasks-completed), and an adhoc PROCESS task
@@ -84,7 +83,7 @@ initial_prompt: |
 
   ### Stage 1: Process (`process`)
   **Type:** Stage
-  **Description:** Two timer tasks form a single `runs-sequentially` group and run in parallel with each other; as parallel members of that group they MUST share one lane (lane 0 — shared lane carries execution semantics, not just FE layout). Exits via required-tasks-completed.
+  **Description:** Two timer tasks form a single ordered `runs-sequentially` task set. The task set is the frontend's structural grouping; the task entry rule and declaration order provide the execution semantics. Exits via required-tasks-completed.
   **Required for Case Completion:** Yes
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
@@ -104,7 +103,7 @@ initial_prompt: |
   | 1 | `process.firstStep` | First Step | wait-for-timer | Yes | No | system | — |
   | 2 | `process.secondStep` | Second Step | wait-for-timer | Yes | No | system | — |
 
-  > Both tasks share lane 0: they are parallel members of the same `runs-sequentially` group, so the shared lane is semantic (parallel siblings inside the sequential group), not the default one-task-per-lane layout.
+  > Both tasks are in the same ordered task set. Do not infer sequential execution from lane placement alone; each task's only entry rule is `runs-sequentially`.
 
   ##### Task 1.1: First Step (`process.firstStep`)
 
@@ -117,7 +116,7 @@ initial_prompt: |
   |---|---|
   | runs-sequentially ("Sequential 1") | - |
 
-  **Lane:** 0 (shared with Second Step — parallel members of the runs-sequentially group).
+  **Task set:** 0 (shared ordered set with Second Step).
 
   | Field | Value |
   |---|---|
@@ -136,7 +135,7 @@ initial_prompt: |
   |---|---|
   | runs-sequentially ("Sequential 2") | - |
 
-  **Lane:** 0 (shared with First Step — parallel members of the runs-sequentially group).
+  **Task set:** 0 (shared ordered set with First Step).
 
   | Field | Value |
   |---|---|
@@ -274,7 +273,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Process exit=required-tasks-completed; Finalize exit=selected-tasks-completed; Finalize entry=selected-stage-completed; Done entry=selected-stage-completed on Finalize; tasks carry runs-sequentially/current-stage-entered/selected-tasks-completed/adhoc task-entry rules; First Step and Second Step are parallel members of the runs-sequentially group and share one lane (same laneIndex in Process data.tasks); First Step timer is non-repeating timeDuration (PT2S, no repeat); Second Step timer is non-repeating timeDuration (PT5S, no repeat); Region Check fires on current-stage-entered; root has string variable 'region' AND number variable 'priorityScore'; 'Optional Audit' is a process-typed skeleton task in Finalize"
+    description: "Process exit=required-tasks-completed; Finalize exit=selected-tasks-completed; Finalize entry=selected-stage-completed; Done entry=selected-stage-completed on Finalize; tasks carry runs-sequentially/current-stage-entered/selected-tasks-completed/adhoc task-entry rules; First Step and Second Step are in one ordered runs-sequentially task set in Process data.tasks; First Step timer is non-repeating timeDuration (PT2S, no repeat); Second Step timer is non-repeating timeDuration (PT5S, no repeat); Region Check fires on current-stage-entered; root has string variable 'region' AND number variable 'priorityScore'; 'Optional Audit' is an adhoc-only process-typed skeleton task in Finalize"
     command: "python3 $TASK_DIR/check_task_dependency_chain.py"
     timeout: 720
     expected_exit_code: 0

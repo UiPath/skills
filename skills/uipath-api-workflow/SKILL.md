@@ -1,6 +1,6 @@
 ---
 name: uipath-api-workflow
-description: "UiPath API Workflow assistant — author, run, package, publish JSON workflows executed by `uip api-workflow run`. Covers logical/hierarchical structure (Sequence, Assign, JavaScript, If with #Wrapper/#Then/#Else, ForEach, DoWhile, Break, TryCatch, Wait, Response — including nested patterns) AND HTTP / Integration Service connector activities (Gmail, Outlook, GitHub, Slack, etc.) authored via `uip api-workflow registry resolve` + `stub`. Triggers on prompts about UiPath API workflows, project type \"Api\", JSON workflow files containing `document.dsl`/`do[]`, any of those activity types, or fetching data from a public/vendor API. Uses `uip api-workflow run` for local execution and `uip solution pack`/`publish` for deployment. For .flow Maestro→uipath-maestro-flow. For .xaml/coded RPA→uipath-rpa. For coded agents→uipath-agents. For Coded Apps→uipath-coded-apps."
+description: "UiPath API Workflow assistant — author, run, validate, package, publish, deploy, and troubleshoot JSON workflows for `uip api-workflow`. Covers logical/hierarchical structure (Sequence, Assign, JavaScript, If with #Wrapper/#Then/#Else, ForEach, DoWhile, Break, TryCatch, Wait, Response — nested patterns) AND HTTP / Integration Service connector activities (Gmail, Outlook, GitHub, Slack) authored via `uip api-workflow registry resolve`/`stub`. Operate: run locally, manage IS connections (`uip is connections`), pack/publish/deploy via `uip solution`, invoke published workflows via HTTP/schedule/event triggers. Diagnose: validate → run --no-auth loop, root-cause run/expression/connection faults, inspect job logs & traces. Triggers on UiPath API workflows, project type \"Api\", JSON files with `document.dsl`/`do[]`, those activity types, or fetching from a public/vendor API. For .flow Maestro→uipath-maestro-flow. For .xaml/coded RPA→uipath-rpa. For coded agents→uipath-agents. For Coded Apps→uipath-coded-apps."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -19,7 +19,8 @@ Build, run, and publish UiPath API Workflows — JSON files conforming to the CN
 - User asks for an **Integration Service connector activity** (Gmail Send Email, Outlook Get Newest Email, GitHub Search Issues, Slack Send Message, etc.) — follow the discovery flow in [references/connector-activity-discovery.md](references/connector-activity-discovery.md)
 - User asks for a **generic HTTP Request** that needs to render in StudioWeb's designer — same discovery flow
 - User asks about **JavaScript expressions, `$context`, `$input`, `$workflow`, `WorkflowStart`, or the `export.as` pattern**
-- User asks how to **debug** a failing API workflow run
+- User asks how to **debug** a failing API workflow run — the local `validate` → `run --no-auth` loop, or a **post-publish cloud run** (job logs/traces). See [references/operating-published-workflows.md](references/operating-published-workflows.md)
+- User wants to **operate** a published workflow — invoke it (HTTP/schedule/Integration Service event trigger), start/list/stop its Orchestrator jobs, or **manage the Integration Service connections** it uses (`uip is connections list`/`ping`/`edit`). See [references/operating-published-workflows.md](references/operating-published-workflows.md)
 
 Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / coded RPA (→ `uipath-rpa`), coded agents (→ `uipath-agents`), Coded Web Apps (→ `uipath-coded-apps`).
 
@@ -182,7 +183,7 @@ State the consequence in the question (e.g. "running with auth WILL send a real 
 
 Fix run failures in category order — **Structure > Expression > Activity Config > Logic** (higher categories often resolve lower ones). Full pitfall catalog: [references/troubleshooting.md](references/troubleshooting.md).
 
-### Phase 4: Package and Publish
+### Phase 4: Package, Publish, and Operate
 
 Once the workflow runs locally, deploy via the solution packager. If the project must open in Studio Web, confirm it uses the `init`-produced shape first (rule 19a) — runtime/pack success does not prove it.
 
@@ -204,6 +205,8 @@ uip solution publish <outputDir>/<package>.zip \
 ```
 
 Requires `uip login`.
+
+**Operate + diagnose the published workflow.** Once deployed, the workflow is an Orchestrator API process — the local `uip api-workflow` verbs no longer apply to it. Invoke it (HTTP/schedule/Integration Service event trigger), start/list/stop its jobs, manage the Integration Service connections it uses, and read cloud-run logs/traces via `uip or` / `uip is` / `uip traces`. Full command map: [references/operating-published-workflows.md](references/operating-published-workflows.md). These are sibling-skill surfaces (`uipath-platform`, `uipath-troubleshoot`) — delegate there for depth.
 
 ## Quick Start (CREATE from scratch)
 
@@ -245,6 +248,7 @@ uip solution publish ./build/MyApiSolution.zip --tenant MyTenant --output json
 | [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — three-step flow, sample stub output, field-shape rules, multipart subsection, worked examples |
 | [references/expressions-and-context.md](references/expressions-and-context.md) | Writing JS expressions, propagating outputs via `export.as`, accessing `$context` / `$input` / `$workflow`, JS_Invoke argument passing, strict-mode gotchas, key patterns |
 | [references/cli-reference.md](references/cli-reference.md) | All `uip` commands — `api-workflow init`, `run`, `build`, `pack`, `validate`, `solution init`, `solution pack`, `solution publish`, `login` |
+| [references/operating-published-workflows.md](references/operating-published-workflows.md) | **Operating + diagnosing a published workflow** — invoke via HTTP/schedule/event triggers, manage Integration Service connections (`uip is connections`), start/list/stop Orchestrator jobs (`uip or jobs`), read cloud-run logs/traces (`uip or jobs logs`, `uip traces spans get`). Delegates depth to `uipath-platform` / `uipath-troubleshoot` |
 | [references/troubleshooting.md](references/troubleshooting.md) | Failed runs, structure/expression/loop/nesting/response/validation pitfalls, packaging errors, publish errors, debugging strategy |
 
 ## Templates

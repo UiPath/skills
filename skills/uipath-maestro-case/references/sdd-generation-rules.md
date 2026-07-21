@@ -43,7 +43,9 @@ How to reason with these:
 
 - **`required-*` vs `selected-*`.** `required-tasks-completed` / `required-stages-completed` = "all items flagged required are done" (the `isRequired` flow). `selected-tasks-completed` / `selected-stage-completed` / `selected-stage-exited` = "these *specific named* items." Pairing rule (Key Rule 4): `Marks Complete: Yes` pairs only with `required-*`; `selected-*` is for `No` (routing / early exit / alternate disposition). A `Yes` + `selected-*` pair is a schema error.
 - **Secondary stage** uses **stage-entry + stage-exit rules only, never edges** (true of every stage now — edges are retired). Its entry rule is typically *interrupting* (`isInterrupting: true`); its exit uses `return-to-origin` to rejoin the flow it left. **For a decision/signal-routed lane, the routing lives on the *origin* stage:** a gated diverting exit (`Marks Stage Complete: No`, `IF` on the decision/signal, `exitToStageId` → the lane), with the origin's completion exit gated by the inverse `IF` so the two paths are mutually exclusive — see [§ Logical integrity step 5](#logical-integrity--stage-graph).
-- **First task in a stage** must carry `current-stage-entered` (emit it explicitly). `wait-for-connector` makes a gate pause for an inbound connector callback — its `conditionExpression` gates on **case state** only (no `event` payload; in-rule extract-then-gate is unsupported at runtime — gate a downstream condition instead); `adhoc` lets a *task* fire manually from the case app (task-entry only — never a stage-entry rule); `runs-sequentially` chains tasks in a lane.
+- **First event-driven task in a stage** must carry `current-stage-entered` (emit it explicitly). A sequential chain is the exception: the first sequential task carries only `runs-sequentially`, which the frontend interprets as current-stage-entered; later sequential tasks carry only `runs-sequentially`, which the frontend interprets as the preceding task completing. `wait-for-connector` makes a gate pause for an inbound connector callback — its `conditionExpression` gates on **case state** only (no `event` payload; in-rule extract-then-gate is unsupported at runtime — gate a downstream condition instead); `adhoc` lets a *task* fire manually from the case app (task-entry only — never a stage-entry rule).
+
+**Frontend task-mode mapping.** The UI's `sequential`, `event-triggered`, and `manually-triggered` choices are not interchangeable: sequential means the task-only `runs-sequentially` rule; event-triggered means an explicit event/condition rule (use `wait-for-connector` for an external connector callback); manually-triggered means an `adhoc`-only task with `isRequired: false`. Do not infer one mode from `data.tasks` lanes, and do not add a second entry rule that changes the selected mode.
 - **`user-selected-stage`** (stage entry) starts a stage on demand by a user rather than by flow. The CLI validator requires it to pair with a `wait-for-user` stage exit elsewhere: a `wait-for-user` exit with no `user-selected-stage` entry — or a `user-selected-stage` entry with no `wait-for-user` exit — fails `validate`.
 
 Exact cell formats live in [§ Stage content rules](#stage-content-rules) and [§ Task content rules](#task-content-rules) — this table is the conceptual map of *which rule belongs where*.
@@ -192,6 +194,20 @@ Defines what `sdd.md` Section 1 (Case Definition) must contain.
 | SLA Type | conditional | `time-based` (single unconditional duration) / `condition-based` (one or more conditionExpression-keyed overrides + a default time-based row) | Default `time-based` when Case SLA set with no per-condition overrides. The FE persists `condition-based` whenever ≥ 1 `slaRules[]` entry carries a non-empty `conditionExpression` (see PO.Frontend `CaseManagementSlaProperties.tsx:27-30`). `condition-based` requires populating the §Variable SLA Rules table; `time-based` omits it. |
 | Case App | optional | `Enabled` / `Disabled` — whether the in-product Case App UI is on (`metadata.caseAppEnabled`). | Default `Disabled`; record in source ledger. |
 | Task-output passing | optional | `Direct` / `Shared` — `metadata.caseDirectlyPassTaskOutputs`. `Direct` passes a task's outputs straight to downstream tasks (default). | Default `Direct`. |
+
+**PO.Frontend validation parity.** Before Approve, apply the same name and SLA checks that the Case App applies:
+
+| Surface | Required checks |
+|---|---|
+| Stage label | Non-empty; unique across stages; no `:`. A non-Case-Manager stage also cannot reuse the reserved default Case Manager stage label when a Case Manager stage exists. |
+| Task display name | No `:` for materialized tasks. |
+| SLA rule title (`displayName`) | Non-empty; unique within the root or stage target; no `:`. |
+| Escalation title (`displayName`) | Non-empty; unique across escalations on the target; no `:`. |
+| SLA duration | `count > 0`; when `unit: min`, `15 ≤ count ≤ 1000`. Supported units are `min`, `h`, `d`, `w`, and `m`. |
+| Conditional SLA | Every non-default SLA rule has a non-empty expression/condition. |
+| Escalation payload | Every escalation has at least one recipient; an `at-risk` escalation has an `atRiskPercentage` value. |
+
+These are blocking authoring errors, not optional style warnings. Preserve the user's wording when repairing a name, but ask for a replacement when uniqueness or a reserved delimiter is violated; never silently suffix or truncate it.
 
 ### 1.2 Case-level SLA escalation
 
@@ -442,11 +458,11 @@ Defines per-task detail blocks. Every task opens with an **Entry Condition** blo
 
 | Rule | When to use |
 |---|---|
-| `current-stage-entered` | First task in stage, or any ungated task (including connector tasks) that should start when its stage is entered (REQUIRED for the first task; emit explicitly, never imply). When a task has multiple entry rows, render this one first. |
+| `current-stage-entered` | First event-driven task in stage, or any ungated task (including connector tasks) that should start when its stage is entered. A first task in a sequential chain uses `runs-sequentially` instead. When a task has multiple entry rows, render this one first. |
 | `selected-tasks-completed("<Task>")` | Sibling-gated task (e.g., after upstream task in same stage). Multiple tasks comma-separated inside the parens. |
 | `wait-for-connector` | Async connector callback. Pair with `conditionExpression` to gate on **case state** (`vars.X`); the event payload is not accessible (no `event` namespace). **In-rule extract-then-gate (extract + same-rule `=js:vars.caseVar` gate) does NOT work at runtime** — case-backend evaluates the gate before the extract populates the case var. To condition on payload content: extract `response.field -> caseVar` on the connector rule and place the case-state gate on a DOWNSTREAM stage-entry / task-entry condition. |
 | `adhoc` | Manual fire from the case app. Optional gating expression. |
-| `runs-sequentially` | Tasks in a lane that should run top-to-bottom in declaration order. |
+| `runs-sequentially` | Tasks that should run top-to-bottom in their stage declaration order. The frontend toggle writes this as the task's only entry rule; it is not represented by a lane. |
 
 Multiple entry conditions render as multiple rows (DNF outer-OR). When `current-stage-entered` is among them, render it first.
 

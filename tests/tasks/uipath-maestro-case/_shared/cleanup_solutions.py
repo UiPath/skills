@@ -69,7 +69,8 @@ def main() -> int:
 
         if policy == "never":
             logger.info(
-                "CASE_E2E_CLEANUP=never; preserving %s (delete later with: uip solution delete %s)",
+                "CASE_E2E_CLEANUP=never; preserving %s "
+                "(delete later with: uip solution delete %s --yes --output json)",
                 sid,
                 sid,
             )
@@ -77,7 +78,7 @@ def main() -> int:
             continue
 
         r = subprocess.run(
-            ["uip", "solution", "delete", sid, "--output", "json"],
+            ["uip", "solution", "delete", sid, "--yes", "--output", "json"],
             capture_output=True,
             text=True,
             timeout=60,
@@ -86,11 +87,12 @@ def main() -> int:
             logger.info("deleted %s (from %s)", sid, path)
             deleted.append(sid)
         else:
+            detail = r.stderr.strip() or r.stdout.strip()
             logger.warning(
                 "failed to delete %s (exit %d): %s",
                 sid,
                 r.returncode,
-                r.stderr.strip()[:300],
+                detail[:300],
             )
             failed.append(sid)
 

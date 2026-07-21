@@ -32,11 +32,25 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | `selected-tasks-completed` | Fires when specific sibling tasks in the same stage complete | `selectedTasksIds` |
 | `wait-for-connector` | Waits for a connector event (binds an IS connector trigger under `uipath`) | connector fields; `conditionExpression` optional |
 | `adhoc` | Ad hoc tasks run only when a user triggers them from the case app. | `conditionExpression` (optional) |
-| `runs-sequentially` | Sequential tasks run in the order they appear in the stage from top to bottom. Parallel members of the group share a `lane`; solo members get own lane. | `conditionExpression` (optional) |
+| `runs-sequentially` | Sequential tasks run in the order they appear in the stage from top to bottom. The frontend toggle writes this rule as the task's entry condition. | `conditionExpression` (optional) |
+
+### Frontend task-mode mapping
+
+The Case App selector has three distinct modes:
+
+| UI mode | JSON/task-entry meaning | Required behavior |
+|---|---|---|
+| Sequential | `runs-sequentially` only | Preserve the frontend's ordered `data.tasks` structure. Parallel task sets remain allowed; the first sequential task starts when the stage is entered, and later sequential tasks use the upstream-task completion trigger represented by the preserved task-set/order structure. |
+| Event-triggered | An authored event/condition, normally `wait-for-connector` for an external event | Do not add `runs-sequentially`. A stage-entered task is not automatically an event-triggered task; retain the explicit event rule and its connector configuration. |
+| Manually-triggered (adhoc) | `adhoc` only | Set `isRequired: false`; the user launches it from the Case App. Do not add another entry event or treat it as sequential. |
+
+`adhoc` is task-entry-only. It is never a stage entry rule and never a substitute for `wait-for-connector`.
 
 ## Ordering
 
 Task entry conditions are created **after** all tasks in the stage have been added (so `selected-tasks-ids` can resolve).
+
+For sequential tasks, preserve the frontend's ordered `data.tasks` structure, including any parallel task sets; do not flatten the stage into one global chain. Add one `runs-sequentially` entry condition to each sequential task. The first task uses the rule as its stage-entry trigger; later tasks use it as the upstream-task-completed trigger. Do not add a separate `current-stage-entered` condition to the first sequential task. Lane or task-set placement is structural; the entry rule carries the sequential intent.
 
 ## tasks.md Entry Format
 

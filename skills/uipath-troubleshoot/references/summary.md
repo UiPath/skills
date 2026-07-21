@@ -22,7 +22,7 @@ CLI: `uip login status`, `uip admin tenants get`, `uip admin tenants services en
 
 ## Runtime Exceptions
 
-General .NET runtime exceptions originating from the user's own workflow code — not from activity packages or platform internals. Covers null references, null arguments, and similar errors in workflow logic, variable handling, and data processing.
+General .NET runtime exceptions originating from the user's own workflow code — not from activity packages or platform internals. Covers null references, null/invalid/out-of-range arguments, invalid operations (LINQ, nullable, enumeration), missing files/directories, out-of-bounds indexing, and missing dictionary keys in workflow logic, variable handling, and data processing.
 
 - [runtime-exceptions/overview.md](./runtime-exceptions/overview.md) — Scope boundary, investigation sources (local logs and Orchestrator jobs)
 - [runtime-exceptions/summary.md](./runtime-exceptions/summary.md) — All playbooks for runtime exception issues
@@ -84,6 +84,13 @@ CLI: `uip codedapp --help`, `uip admin external-apps get <client-id>`
 - [products/coded-apps/overview.md](./products/coded-apps/overview.md) — Runtime/auth model (PKCE public client), CLI surface, and evidence sources
 - [products/coded-apps/summary.md](./products/coded-apps/summary.md) — All playbooks for Coded Apps issues
 
+## Assistant (Desktop)
+
+The UiPath Assistant Windows desktop app (Electron host + native .NET Robot service) that end users run to sign in, connect to Orchestrator, and start processes. Diagnosis is from an exported **diagnostic archive** (`ExportDiagnoseArchive` folder), reading two log files: `combined.log` (Electron/main-process — IPC routes, UI state) and `Robot.log` (native Robot service — the actual sign-in/connect/package work, machine-local time with an offset). Issues here involve sign-in failures, Orchestrator connection failures, processes missing or not starting, and crashes. There is **no `uip` CLI job/trace/log surface** — evidence is the on-disk log files plus the reported symptom (like Coded Apps). Cross-references: Orchestrator (`401`/`403`, assignment, license), Identity/cloud (OAuth on `/identity_`/`/discovery_`), NuGet feeds (`NU1101`). Exception namespaces: `UiPath.Service.*`, `UiPath.RobotJS.*`.
+
+- [products/assistant/overview.md](./products/assistant/overview.md) — Two-log architecture, evidence model, dependencies, and flow attribution
+- [products/assistant/summary.md](./products/assistant/summary.md) — All playbooks for UiPath Assistant desktop issues
+
 ## UI Automation
 
 Activities for interacting with desktop and web application UIs. Robots use selectors (XML descriptors) to find and interact with UI elements. Issues here involve selector failures, element not found exceptions, timeout issues, Healing Agent problems, and data validation errors during UI interactions.
@@ -102,11 +109,20 @@ Namespaces: `UiPath.CV.Activities` (exceptions: `UiPath.CV`)
 - [activity-packages/cv-activities/overview.md](./activity-packages/cv-activities/overview.md) — Package overview, CV targeting mechanics, exception types, and common failure patterns
 - [activity-packages/cv-activities/summary.md](./activity-packages/cv-activities/summary.md) — All playbooks for Computer Vision Activities issues
 
+## OCR Activities
+
+Low-level OCR engine activities from `UiPath.OCR.Activities` — UiPath Screen OCR and UiPath Document OCR (cloud or local server), plus CJK / Extended Languages OCR via Document Understanding. These are the foundational text-recognition engines consumed by Document Understanding `Digitize` and Computer Vision screen scopes. Issues here involve missing local-server / CoreIPC packages, incompatible companion-package versions, invalid API key / endpoint / CJK configuration, service timeouts and invalid responses, invalid or missing image input, unsupported rotation, wrong scrape usage, and empty/silent results. For the DU document pipeline (`Digitize` / classify / extract) see Document Understanding; for CV screen-targeting see Computer Vision.
+
+Namespaces: `UiPath.OCR.Activities` (exceptions: `OCRException` with `OCRResultCode`)
+
+- [activity-packages/ocr-activities/overview.md](./activity-packages/ocr-activities/overview.md) — Package overview, engines, local-server modes, and failure families
+- [activity-packages/ocr-activities/summary.md](./activity-packages/ocr-activities/summary.md) — All playbooks for OCR Activities issues
+
 ## System Activities
 
-Core workflow activities from `UiPath.System.Activities` that interact with Orchestrator resources at runtime — asset retrieval, credential lookup, queue operations, and storage buckets. Issues here involve asset-not-found errors, permission denied, folder scope mismatches, external vault failures, and package version bugs.
+Core workflow activities from `UiPath.System.Activities`. Two families: Orchestrator-resource activities (asset retrieval, credential lookup, queue operations, storage buckets — asset-not-found, permission denied, folder scope mismatches, external vault failures, package version bugs); and local runtime activities (compression `Compress/Extract Files` → `CompressionException`; modern StudioX file/folder `Copy/Move/Rename/Delete` → `FileSystemException`; `Download File from URL` / `Wait for Download`). For the classic `Rename/Move File`, `Kill Process`, `Invoke Code/Workflow File`, and `Add Queue Item` activities, see **Classic Activities**.
 
-Namespaces: `UiPath.Core.Activities`
+Namespaces: `UiPath.Core.Activities`, `UiPath.System.Activities`
 
 - [activity-packages/system-activities/overview.md](./activity-packages/system-activities/overview.md) — Package overview, activity types, and common failure patterns
 - [activity-packages/system-activities/summary.md](./activity-packages/system-activities/summary.md) — All playbooks for System Activities issues
@@ -209,6 +225,78 @@ Namespaces: `UiPath.WorkflowEvents.Activities`
 
 - [activity-packages/workflowevents-activities/overview.md](./activity-packages/workflowevents-activities/overview.md) — Package overview, connection modes, activity types, and common failure patterns
 - [activity-packages/workflowevents-activities/summary.md](./activity-packages/workflowevents-activities/summary.md) — All playbooks for App Events (Workflow Events) Activities issues
+
+## CSV Activities
+
+The CSV file activities — `Read CSV`, `Write CSV`, `Append To CSV` (namespace `UiPath.Core.Activities`, shipped in `UiPath.System.Activities`) — read/write delimited files to and from a `DataTable` against a local path, using the bundled `CsvHelper` library. Issues here involve `CsvHelper` version conflicts (`Method not found: 'CsvHelper...'` from a `UiPath.System.Activities` ↔ `UiPath.Excel.Activities` version split — both bundle `CsvHelper`), file-access failures (`The process cannot access the file because it is being used by another process` when the CSV is open in Excel; `The filename, directory name, or volume label syntax is incorrect` from an invalid or raw `https://` cloud path — these activities are local-file only), and `DataTable` shape problems (uninitialized table, or a column count/header mismatch vs the existing file).
+
+Namespaces: `UiPath.Core.Activities`
+
+- [activity-packages/csv-activities/overview.md](./activity-packages/csv-activities/overview.md) — Package overview, execution model, and common failure patterns
+- [activity-packages/csv-activities/summary.md](./activity-packages/csv-activities/summary.md) — All playbooks for CSV Activities issues
+
+## File Operations Activities
+
+Modern **System > File** activities under the `UiPath.Activities.System.FileOperations` namespace (shipped in `UiPath.System.Activities`). Currently covers **Download File from URL** (`DownloadFileFromUrl`) — a native HTTP(S) download to the robot's local file system (it carries no browser session/cookies). Issues here involve `This instance has already started one or more requests` (the internal HTTP client reused across a `For Each` loop), HTTP `401`/`403` (authenticated/portal-gated URLs the native download can't reach, or a blocked `User-Agent`), the downloaded file left stuck as a `.tmp` (download/finalize race), and `Don't know about such a host` (DNS / firewall / SSL-inspection blocking the automated outbound connection).
+
+Namespaces: `UiPath.Activities.System.FileOperations`
+
+- [activity-packages/file-operations/overview.md](./activity-packages/file-operations/overview.md) — Package overview, Download File from URL execution model, and common failure patterns
+- [activity-packages/file-operations/summary.md](./activity-packages/file-operations/summary.md) — All playbooks for File Operations issues
+
+## Slack Activities (Integration Service)
+
+Activities for automating Slack through an Integration Service connection — Send Message, Get User by Email, and related BAF connector activities. Each activity resolves the Slack connection (OAuth token) and then calls the Slack Web API. Issues here split by phase: connection-resolution failures (`System.AggregateException` wrapping a `ConnectionException` — connection deleted / no longer valid / transient 503) and Slack API rejections (`UiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException` carrying a Slack `error` code such as `invalid_arguments`/missing `channel`, `channel_not_found`, `not_in_channel`, `invalid_auth`). For the legacy `UiPath.Slack.Activities` (`SlackScope`) package, this is a different code path.
+
+Namespaces: `UiPath.Slack.IntegrationService.Activities`
+
+- [activity-packages/slack-activities/overview.md](./activity-packages/slack-activities/overview.md) — Package overview, connection-vs-API phase model, and common failure patterns
+- [activity-packages/slack-activities/summary.md](./activity-packages/slack-activities/summary.md) — All playbooks for Slack Integration Service Activities issues
+
+## Terminal Activities
+
+Activities for automating terminal/mainframe emulators (IBM 3270/5250 via EHLLAPI, VT, and other providers). Work runs inside a `Terminal Session` (`TerminalSession`) scope that opens a connection (new connection string or reused existing connection), runs child screen-interaction activities, then closes it. Issues here are overwhelmingly connection-time: unreachable host / wrong port / provider, provider runtime not installed on the robot, connect/wait timeout, or a stale reused connection — surfacing as a `TerminalConnectionException` (`System.Exception`) with `... | ResultCode=<code> | ConnectionStatus=<status>`, its async-wrapped `System.AggregateException` form, or a `System.NullReferenceException` that masks a failed open.
+
+Namespaces: `UiPath.Terminal.Activities`
+
+- [activity-packages/terminal-activities/overview.md](./activity-packages/terminal-activities/overview.md) — Package overview, session connection model, and common failure patterns
+- [activity-packages/terminal-activities/summary.md](./activity-packages/terminal-activities/summary.md) — All playbooks for Terminal Activities issues
+
+## PDF Activities
+
+Activities for reading and manipulating PDF files on the robot's local filesystem — `Read PDF Text`, `Read PDF With OCR`, `Extract PDF Page Range`, `Extract Images/Attachments From PDF`, `Export PDF Page As Image`, `Merge PDF Files` / `Join PDFs`, `Create PDF From Images`, `Manage PDF Password`. These are local file operations (no Orchestrator/network call except `Read PDF With OCR`, which calls an OCR engine). Issues here are almost always the input file (missing, not a PDF, encrypted, corrupt) or the arguments (page range, password fields, image list): activity-level validation throws `System.ArgumentException`/`ArgumentNullException` with a fixed resource string; reader-level failures surface as `UiPath.PDF.PdfException` (wrong/missing password, `Invalid input stream`) or `UiPath.PDF.ImageToPdfException` (image input).
+
+Namespaces: `UiPath.PDF.Activities` (exceptions: `UiPath.PDF`)
+
+- [activity-packages/pdf-activities/overview.md](./activity-packages/pdf-activities/overview.md) — Package overview, validation-vs-reader exception shapes, and common failure patterns
+- [activity-packages/pdf-activities/summary.md](./activity-packages/pdf-activities/summary.md) — All playbooks for PDF Activities issues
+
+## SAP BAPI Activities
+
+Activities for calling SAP BAPIs / RFC function modules directly over the SAP .NET Connector (RFC protocol, no SAP GUI) — `SAP Application Scope`, `Invoke BAPI`, `Open`/`Close SAP Connection`. Work opens an RFC connection from connection parameters, looks up the BAPI's interface, then invokes it. Issues here are connection/logon failures (`Connection could not be created.`, `Cannot create sap connection, connection info params are not set`, `Missing mandatory field: <field> for connection`, `Advanced Parameters has invalid parameter <param>...`, `System.TimeoutException`), BAPI lookup/naming (`Function: <name> could not be created`, `BAPI name is null or empty`), and the activity's capability limit (`Unsupported BAPI. Contains nested complex types.`). Cannot be reproduced without a live SAP system.
+
+Namespaces: `UiPath.SAP.BAPI.Activities` (exceptions: `UiPath.SAP.BAPI.Utilities.SapActivityException`, `UiPath.SAP.BAPI.SapBapiExceptions.UnSupportedBapiException`)
+
+- [activity-packages/sap-bapi-activities/overview.md](./activity-packages/sap-bapi-activities/overview.md) — Package overview, connection-vs-invoke phases, exception types, and common failure patterns
+- [activity-packages/sap-bapi-activities/summary.md](./activity-packages/sap-bapi-activities/summary.md) — All playbooks for SAP BAPI Activities issues
+
+## Intelligent OCR / Document Understanding (Classic) Activities
+
+The classic Document Understanding framework from `UiPath.IntelligentOCR.Activities` — `Digitize Document`, `Classify Document Scope`, `Data Extraction Scope`, `Present Validation Station`, `Export Extraction Results`, and the Train scopes. The digitize → classify → extract → validate → export pipeline combines local taxonomy/extractor config with calls to a DU server/endpoint (authenticated with an API key/license) and Orchestrator storage. Issues here are license/endpoint rejections (`DUApiException` with HTTP status — license, page units, request size, wrong endpoint), tenant not enabled (`Failed to fetch Document Understanding projects list...`, `Couldn't retrieve a tenant key.`), missing storage bucket/taxonomy/folder, and human document rejection at Validation Station (`DocumentRejectedByUserException`). For modern DU / IXP, see the IXP surface. Generally not reproducible without a licensed DU endpoint + OCR + trained models.
+
+Namespaces: `UiPath.IntelligentOCR.Activities` (exceptions: `UiPath.SmartData.Utils.DocumentUnderstandingClient.DUApiException`, `UiPath.IntelligentOCR.Exceptions.DocumentRejectedByUserException`)
+
+- [activity-packages/intelligent-ocr-activities/overview.md](./activity-packages/intelligent-ocr-activities/overview.md) — Package overview, pipeline phases, exception types, and common failure patterns
+- [activity-packages/intelligent-ocr-activities/summary.md](./activity-packages/intelligent-ocr-activities/summary.md) — All playbooks for Intelligent OCR / Document Understanding Activities issues
+
+## IPC Activities
+
+Activities for **inter-process communication** between UiPath processes running at the same time on one host. `Broadcast Message` / `Send Message` publish a payload on a named **channel**; a **Message Receiver Trigger** in a parallel process listens on the same channel. The transport is a local **named pipe** — confined to the **same robot, same Windows user, same session, same machine**. Issues here involve `System.TimeoutException` (`Timeout of <N> ms has passed and no channel was found to send the message to.` — no live receiver on the channel before the timeout, a channel-name mismatch, or a too-low `Timeout`) and `System.UnauthorizedAccessException` (`Access to the path is denied.` — the pipe ACL rejects a peer in a different session / user / elevation level). The faulted activity + exception class is the discriminator (the `System.*` exception prefix alone does NOT route here). Not to be confused with the internal `UiPath.Ipc` / `UiPath.CoreIpc` transport behind Integration Service connectors (`RemoteException`, `DAP-*`) — that is under Integration Service.
+
+Namespaces: `UiPath.IPC.Activities`
+
+- [activity-packages/ipc-activities/overview.md](./activity-packages/ipc-activities/overview.md) — Package overview, channel / named-pipe execution model, and common failure patterns
+- [activity-packages/ipc-activities/summary.md](./activity-packages/ipc-activities/summary.md) — All playbooks for IPC Activities issues
 
 
 ## Playbooks
