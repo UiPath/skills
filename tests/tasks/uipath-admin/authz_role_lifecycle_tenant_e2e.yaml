@@ -66,9 +66,9 @@ success_criteria:
     pass_threshold: 0
 
   - type: command_executed
-    description: "Agent created the role with --scope Tenant and --name"
+    description: "Agent created the role with --scope Tenant, --tenant-id, and --name"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create(?=[\s\S]*--scope\s+Tenant\b)(?=[\s\S]*--name\s)[\s\S]*'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create(?=[\s\S]*--scope\s+Tenant\b)(?=[\s\S]*--tenant-id\s)(?=[\s\S]*--name\s)[\s\S]*'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -76,7 +76,7 @@ success_criteria:
   - type: command_executed
     description: "Agent updated the role via `roles update`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+update\b'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+update\s+\S+'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -92,7 +92,7 @@ success_criteria:
   - type: command_executed
     description: "Agent cleaned up by calling `roles delete`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+delete\b'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+delete\s+\S+'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
