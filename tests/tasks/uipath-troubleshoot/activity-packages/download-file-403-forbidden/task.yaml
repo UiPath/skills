@@ -1,14 +1,14 @@
-task_id: skill-troubleshoot-download-file-host-not-found
+task_id: skill-troubleshoot-download-file-403-forbidden
 description: >
-  UiPath troubleshooting agent must diagnose a Download File from URL name-
-  resolution failure: the activity faults with "Don't know about such a host"
-  because DNS cannot resolve the URL's host from the robot, or an enterprise
-  firewall / SSL-inspection proxy blocks the automated outbound connection.
-  Success = agent matches the download-file-host-not-found playbook and recommends
-  the same fix as RESOLUTION.md (an environment/network fix: have the network team
-  whitelist the endpoint for the robot and verify the host resolves/reaches from
-  the robot machine), without fabricating host actions.
-tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, file-operations, rpa]
+  UiPath troubleshooting agent must diagnose a Download File from URL HTTP 403
+  (Forbidden) failure: the native download issues a plain HTTP request that
+  carries no authentication / cookies / browser session, so a portal-gated URL
+  returns 403. Success = agent matches the download-file-403-401-auth playbook and
+  recommends the same fix as RESOLUTION.md (the native download can't carry the
+  sign-in: authenticate / set UserAgentHeader, or download via an authenticated UI
+  browser session with Click + Wait for Download), without fabricating host
+  actions.
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code
@@ -22,22 +22,22 @@ run_limits:
 sandbox:
   template_sources:
   - type: template_dir
-    path: ../_shared/mock_template
+    path: ../../_shared/mock_template
   - type: template_dir
     path: process
   - type: template_dir
-    path: fixtures
+    path: data
   mock_path_dirs:
-  - mocks
+  - m
 
 reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My FeedDownloader process faults in Orchestrator on every run. The folder is
-  "External Feeds". It uses Download File from URL to pull a partner feed, but it
-  dies with "Don't know about such a host". The URL opens fine from my own
-  laptop's browser.
+  My PortalFetch process faults in Orchestrator on every run. The folder is
+  "Portal Sync". It uses Download File from URL to grab a report from our portal,
+  but it dies with "The remote server returned an error: (403) Forbidden". The
+  same link downloads fine in my browser where I'm logged in.
 
   I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
   only Orchestrator. Diagnose what you can from Orchestrator and the project
@@ -75,9 +75,9 @@ success_criteria:
 simulation:
   enabled: true
   persona: |
-    You are the UiPath user who reported the failing FeedDownloader process. The
-    partner feed URL opens from your own laptop browser but the robot can't fetch
-    it. You are away from the robot host and only have Orchestrator access.
+    You are the UiPath user who reported the failing PortalFetch process. The
+    report URL is behind your portal login; it works in your logged-in browser.
+    You are away from the robot host and only have Orchestrator access.
   goal: |
     Let the agent complete its troubleshooting flow without imposing
     constraints. Approve every scope expansion or clarification the agent
@@ -85,7 +85,7 @@ simulation:
   constraints:
     - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, file-operations, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the host check list at the end."
-    - "If asked whether the host resolves from the robot or whether there's a proxy/firewall, say you are not sure and cannot check from the robot right now - that is what you need the agent to tell you to verify."
+    - "If asked whether the URL needs a login, say yes - it only works in the browser after you sign in to the portal."
     - "Never invent or provide new factual data beyond your initial report."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."

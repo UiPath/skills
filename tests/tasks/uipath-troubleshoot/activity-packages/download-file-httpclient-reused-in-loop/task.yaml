@@ -1,14 +1,15 @@
-task_id: skill-troubleshoot-download-file-stuck-tmp
+task_id: skill-troubleshoot-download-file-httpclient-reused-in-loop
 description: >
-  UiPath troubleshooting agent must diagnose a Download File from URL finalize
-  race: the download "completes" but the next step (Read CSV on data\daily.csv)
-  faults with "Could not find file" because the file is still the temporary
-  daily.csv.tmp - the workflow consumed it before the stream finalized to the
-  real name. Success = agent matches the download-file-stuck-tmp playbook and
-  recommends the same fix as RESOLUTION.md (wrap in a Retry Scope / gate the
-  downstream step on a File Exists check for the final target extension, not the
-  .tmp), without fabricating host actions.
-tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, file-operations, rpa]
+  UiPath troubleshooting agent must diagnose a Download File from URL failure
+  inside a For Each loop: the activity's internal HTTP client is reused across
+  iterations, so the first file downloads but a later iteration faults with
+  "This instance has already started one or more requests. Properties can only
+  be modified before sending the first request" (HttpClient InvalidOperationException).
+  Success = agent matches the download-file-httpclient-reused-in-loop playbook and
+  recommends the same fix as RESOLUTION.md (instantiate a fresh
+  System.Net.Http.HttpClient per iteration, or force release with GC.Collect /
+  GC.WaitForPendingFinalizers after the download), without fabricating host actions.
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code
@@ -22,22 +23,22 @@ run_limits:
 sandbox:
   template_sources:
   - type: template_dir
-    path: ../_shared/mock_template
+    path: ../../_shared/mock_template
   - type: template_dir
     path: process
   - type: template_dir
-    path: fixtures
+    path: data
   mock_path_dirs:
-  - mocks
+  - m
 
 reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My ReportDownloader process faults in Orchestrator on most runs. The folder is
-  "Report Intake". It uses Download File from URL to fetch daily.csv and then
-  reads it with Read CSV, but the read dies with "Could not find file ...
-  daily.csv" even though the download said it completed. Sometimes it works.
+  My BulkDownloader process faults in Orchestrator. The folder is "Batch
+  Downloads". It loops over a list of URLs and uses Download File from URL to
+  save each one. The first file downloads fine, then it dies with "This
+  instance has already started one or more requests".
 
   I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
   only Orchestrator. Diagnose what you can from Orchestrator and the project
@@ -75,10 +76,9 @@ success_criteria:
 simulation:
   enabled: true
   persona: |
-    You are the UiPath user who reported the failing ReportDownloader process.
-    It downloads daily.csv then reads it; the read sometimes can't find the file
-    right after the download. You are away from the robot host and only have
-    Orchestrator access.
+    You are the UiPath user who reported the failing BulkDownloader process. It
+    loops over URLs and downloads each with Download File from URL. You are away
+    from the robot host and only have Orchestrator access.
   goal: |
     Let the agent complete its troubleshooting flow without imposing
     constraints. Approve every scope expansion or clarification the agent
@@ -86,7 +86,7 @@ simulation:
   constraints:
     - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, file-operations, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the host check list at the end."
-    - "If asked whether a .tmp file appears or whether it is intermittent, say you sometimes see a daily.csv.tmp and it fails on most runs but occasionally works."
+    - "If asked whether the download is inside a loop and which iteration fails, say it is in a For Each over URLs and the first one works but the next fails."
     - "Never invent or provide new factual data beyond your initial report."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
