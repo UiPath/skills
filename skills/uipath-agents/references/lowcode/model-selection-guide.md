@@ -4,7 +4,7 @@ How to pick the LLM for a low-code agent's `settings.model`. The tenant is the s
 
 > `uip agent init` for an autonomous agent scaffolds `settings.model: "gpt-5.4"` with a 128000 output cap. **Always override it** with a discovered current model before validating.
 
-> `uip agent init --conversational` for a conversational agent scaffolds `settings.model: "anthropic.claude-sonnet-4-5-20250929-v1:0"` with a 64000 output cap. It serves as a solid default but can be overwritten with a discovered current model before validating. 
+> `uip agent init --conversational` for a conversational agent scaffolds `settings.model: "anthropic.claude-sonnet-4-5-20250929-v1:0"` with a 64000 output cap. **Always override it** with a discovered current model before validating — do not use the scaffold ID as-is. It is a versioned vendor string specific to one tenant snapshot; it may not exist on other tenants and will fail governance policy if shortened or abbreviated (`anthropic.claude-sonnet-4-5` is not a valid ID).
 
 ## 1. Discover (primary path)
 
