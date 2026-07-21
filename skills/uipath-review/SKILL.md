@@ -1,6 +1,6 @@
 ---
 name: uipath-review
-description: "TRIGGER: Use when reviewing, auditing, or checking the quality, safety, or deployment readiness of UiPath projects and solutions. DO NOT TRIGGER: building, editing, fixing, publishing, or deploying UiPath artifacts; use the owning domain skill instead."
+description: "UiPath reviewer for RPA (.xaml/.cs), agents (.py/agent.json), flows (.flow), BPMN (.bpmn), coded apps, and solutions (.uipx). TRIGGER: reviews, audits, quality, guardrail safety, or deployment readiness. DO NOT TRIGGER: building, editing, fixing, publishing, or deploying→owning domain skill."
 allowed-tools: Bash, Read, Write, Glob, Grep, WebFetch, AskUserQuestion
 user-invocable: true
 ---
