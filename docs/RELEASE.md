@@ -79,24 +79,32 @@ Every merge to `main` publishes `@uipath/skills@<base>-dev.<run_number>` to **Gi
 | `publish-dev` | GitHub Packages (`npm.pkg.github.com`) | built-in `GITHUB_TOKEN` |
 | `publish-npmjs` | npmjs (`registry.npmjs.org`) | **OIDC trusted publishing** (no token) + signed `--provenance` |
 
-## Cutting a stable release
+## Promoting a line to stable (manual)
 
-1. Bump `package.json` to the target version (match the CLI minor line), run `npm run version:sync`, merge.
-2. Create a GitHub Release tagged `v<version>` → `publish.yml` publishes to npmjs.
+Stable (`latest`) is **not** published automatically — the sprint cut only publishes a preview (below). When a release line has been validated via its `preview` builds, promote it to stable manually:
+
+1. Dispatch the stable publish on the release branch (or its tag):
+   ```bash
+   gh workflow run publish.yml --ref release/v<minor> -f channel=latest
+   ```
+   This publishes the committed `M.N.0` to npm `latest` via OIDC + `--provenance`.
+2. (Optional) Create a GitHub Release tagged `v<version>` as the durable record — a `release: published` event also publishes `latest`.
+
+> **Lockstep note.** The CLI resolves `@uipath/skills` from npm `latest` for its own minor line. Because stable is now manual, **promote the matching skills line to stable before the CLI cuts that minor**, or the CLI will resolve the previous skills minor.
 
 ### Automated sprint cut (`sprint-release-cut.yml`)
 
-Steps 1–2 are automated per sprint by `sprint-release-cut.yml`. It runs **Sunday 06:00 UTC**, gated to the **14-day cadence** anchored at `2026-06-14` — the same cadence as `UiPath/cli`, but **6 hours earlier** so the skills package lands before the CLI release. It is **self-driven**: the target line is the current skills minor **+ 1**; it never reads the CLI version (skills lead, never follow), so no cross-repo secret is required. On a release Sunday it:
+`main` carries the line **currently in development** (`M.N.0`). The cut runs **Sunday 06:00 UTC**, gated to the **14-day cadence** anchored at `2026-06-14` — the same cadence as `UiPath/cli`, 6 hours earlier. It never reads the CLI version (skills lead, never follow), so no cross-repo secret is required. On a release Sunday it:
 
-1. cuts `release/v<minor>` from `main` at `M.N.0` (`sync-version.mjs` resets plugin/marketplace/Codex to `M.N.0` too);
-2. publishes `@uipath/skills@M.N.0` to npm `latest` — creates the GitHub Release `v<minor>.0` as the durable record, then **dispatches `publish.yml` on the tag** (`gh workflow run publish.yml --ref v<minor>.0 -f channel=latest`). A release created with the default `GITHUB_TOKEN` does not trigger other workflows, so `release: published` would never start `publish.yml`; the explicit `workflow_dispatch` (which `GITHUB_TOKEN` *can* trigger) is what publishes. Guarded on `npm view` so a re-run doesn't re-dispatch an already-published version;
-3. opens the matching version-bump PR against `main`.
+1. cuts `release/v<M.N>` from `main` at the version **already in `main`** (`M.N.0`) — the release branch matches main; it is **not** bumped (no off-by-one);
+2. publishes a **preview** — dispatches `publish.yml --ref release/v<M.N> -f channel=preview`, which stamps `M.N.0-preview.<run>` and publishes to npm `preview` with `--provenance`. The dispatch is explicit because the bot's own branch push can't trigger `publish.yml` (`GITHUB_TOKEN` recursion guard). **Stable is not published here** — promote it manually (above);
+3. opens a PR bumping `main` to the **next** line (`M.(N+1).0`) so development continues there while `release/v<M.N>` stabilizes.
 
-Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`) to skip the gate and the auto-increment, or `dry_run` to print the plan without pushing.
+Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`) to cut exactly that line, or `dry_run` to print the plan without pushing, publishing, or opening a PR.
 
-> **Drift realignment.** The skills and CLI lines stay paired only because both cut on the same 14-day anchor; nothing reads the other side. If either repo skips a cut or cuts off-cadence, the minors drift permanently. The cut emits a **non-blocking warning** when its target isn't exactly one minor ahead of the CLI's latest npm release (`npm view @uipath/cli`) — the signal that the lines have drifted. **`minor_override` is the realignment lever:** dispatch the cut with `minor_override=<correct M.N>` to skip the gate and the auto-increment and cut exactly that line back into alignment.
+> **Drift realignment.** The skills and CLI lines stay paired only because both cut on the same 14-day anchor; nothing reads the other side. The cut emits a **non-blocking warning** when the line it cuts isn't exactly one minor ahead of the CLI's latest npm release (`npm view @uipath/cli`) — the signal that the lines have drifted. **`minor_override` is the realignment lever:** dispatch the cut with `minor_override=<correct M.N>` to cut exactly that line back into alignment.
 
-> **Operational dependency — merge the bump PR before the next cut.** The target line is `current + 1` read from `main`'s `package.json`. If the bump PR from step 3 is not merged before the next release Sunday, `main` is still on the old line, so the cut re-targets the line it already created: it finds `release/v<minor>` already at `M.N.0` and **resumes idempotently** (skips the publish since npm already has the version, leaves the existing PR open) — no new line is cut. Safe, but a forgotten bump PR silently **stalls the cadence**. Merge sprint-cut bump PRs promptly. (If the branch exists at a *different* version, the cut stops loudly with `already exists at version <X> (expected <Y>)` for manual resolution.)
+> **Operational dependency — merge the bump PR before the next cut.** The line to cut is read from `main`'s `package.json`. If the bump PR from step 3 is not merged before the next release Sunday, `main` is still on the old line, so the cut re-targets it: it finds `release/v<M.N>` already at `M.N.0` and **resumes idempotently** (re-dispatches the preview, leaves the existing bump PR open) — no new line is cut. Safe, but a forgotten bump PR silently **stalls the cadence**. Merge sprint-cut bump PRs promptly. (If the branch exists at a *different* version, the cut stops loudly with `already exists at version <X> (expected <Y>)` for manual resolution.)
 
 > **Repo setup:** branch protection must allow the Actions identity to push `release/v*` branches.
 
