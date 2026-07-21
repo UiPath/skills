@@ -7,7 +7,7 @@ For generic node/edge add, remove, and wiring procedures, see [editing-operation
 ## How Connector Nodes Differ from OOTB
 
 1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow's top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
-2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing. For connectors that ship 4.0.0 activities, add `--activity-version 4.0.0` so the metadata comes from the v4 Integration Service endpoints (the default `1.0.0` reads v3); only `1.0.0` and `4.0.0` are accepted.
 3. **`inputs.detail` object** — connector nodes store operation-specific configuration in `inputs.detail`, populated by `uip maestro flow node configure`:
    - `connectionId` — the bound IS connection UUID
    - `connectionFolderKey` — the Orchestrator folder key in the authored `.flow` file. `node configure --detail` accepts `folderKey` as input and writes it back as `connectionFolderKey`.

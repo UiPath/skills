@@ -66,6 +66,14 @@ Returns the full field breakdown for the specified operation:
 
 Results are cached locally. Use `--refresh` to bypass cache after re-auth or schema changes.
 
+### Activity version (v3 vs v4 activities)
+
+`describe` reads the v3 elements metadata endpoints by default (`--activity-version 1.0.0`). For connectors that ship 4.0.0 activities, pass `--activity-version 4.0.0` to fetch metadata from the v4 elements endpoints instead. Only `1.0.0` and `4.0.0` are accepted — anything else fails with `Invalid --activity-version value`. v4 responses are cached under a separate key (`<object>.v4.schema.json`), so switching versions never serves metadata from the other version.
+
+```bash
+uip is resources describe <connector-key> <object-name> --activity-version 4.0.0 --output json
+```
+
 ---
 
 ## Describe Failures
