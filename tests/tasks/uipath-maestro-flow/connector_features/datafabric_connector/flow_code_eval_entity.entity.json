@@ -1,0 +1,15 @@
+{
+  "displayName": "FlowCodeEvalEntity",
+  "description": "Coder-eval fixture — DF Flow connector CRUD/query/file surface for uipath-maestro-flow smokes and integration",
+  "fields": [
+    {"fieldName": "title",        "type": "STRING",         "lengthLimit": 200},
+    {"fieldName": "description",  "type": "MULTILINE_TEXT", "lengthLimit": 2000},
+    {"fieldName": "score",        "type": "DECIMAL"},
+    {"fieldName": "viewCount",    "type": "INTEGER"},
+    {"fieldName": "active",       "type": "BOOLEAN"},
+    {"fieldName": "releaseDate",  "type": "DATE"},
+    {"fieldName": "lastUpdated",  "type": "DATETIME"},
+    {"fieldName": "externalId",   "type": "UUID"},
+    {"fieldName": "file1",        "type": "FILE"}
+  ]
+}

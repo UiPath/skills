@@ -1,0 +1,17 @@
+task_id: skill-flow-datafabric-smoke-activation-negative
+description: >
+  Negative activation smoke: an RPA-Studio prompt mentioning Data Fabric must
+  NOT route to uipath-maestro-flow — it should reach uipath-rpa instead.
+tags: [uipath-maestro-flow, smoke, mode:build, feature:activation, negative, connector, uipath-uipath-dataservice]
+
+initial_prompt: |
+  In my RPA Studio (.xaml) workflow, add a Data Fabric activity to read
+  customer records from the CustomerDirectory entity.
+
+success_criteria:
+  - type: skill_triggered
+    description: "uipath-rpa handles the RPA-Studio Data Fabric prompt (not uipath-maestro-flow)"
+    skill_name: uipath-maestro-flow
+    expected_skill: uipath-rpa
+    weight: 3.0
+    pass_threshold: 1.0
