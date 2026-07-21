@@ -20,7 +20,7 @@ What this looks like — Use Excel File / Excel Application Card faults surface 
 
 What can cause the four card/scope-local failures (cause-branches — pick the right one from evidence):
 
-Branch IDs remain 2-5 so existing investigation records and cross-references stay stable after extracting the missing-Excel branch.
+(No branch 1 - missing-Excel failures route to [excel-not-installed.md](./excel-not-installed.md).)
 
 2. **Empty / invalid / illegal WorkbookPath** — the `WorkbookPath` property is bound to a variable / expression that evaluates to null, empty string, whitespace-only, OR contains characters illegal in Windows file paths (control chars, NUL, asterisks in mid-path, mixed `/` and `\` separators in some package versions). Common causes: variable declared in an inner scope so the card sees it as `Nothing`; preceding `Read Cell` returned empty; `String.Format` against a `Nothing` produced an empty literal; a config file lookup failed silently.
 3. **COM / RPC failures across scopes (race condition or torn-down process)** — common scenarios: two `Use Excel File` cards in sequence against the same path with no `Excel Process Scope` wrapping them (the first card closes EXCEL.EXE; the second tries to attach to a process that no longer exists); parallel branches both opening the same path; a child `Execute Macro` activity called `Application.Quit` from VBA (see also `execute-macro-failures.md` branch 3 for the macro-tears-down-Excel chain). The Modern `Use Excel File` is generally OpenXML by default and avoids this; the failure mode is concentrated on Classic `Excel Application Scope` and Modern cards with COM-forcing properties.

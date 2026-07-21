@@ -53,10 +53,10 @@ The root cause is confirmed only when runtime evidence identifies COM acquisitio
 
 - **If COM features are required:** install Microsoft Excel (or the full Microsoft 365 / Office desktop suite) on the execution machine under a license the Robot's Windows user can activate, then re-run. Web/online Excel does not satisfy Interop.
 - **If the workflow only reads or writes tabular `.xlsx` data:** remove the COM dependency using the activity-specific discriminator:
-  - Classic `Lookup Range` -> Workbook `Read Range` into a `DataTable`, then `Lookup Data Table`.
-  - Other Classic read/write activities -> their Workbook equivalents where supported.
-  - Classic scope around data-only Modern-compatible children -> Modern `Use Excel File` with no COM-forcing properties, or standalone Workbook activities.
-  - Modern card -> remove unnecessary COM-forcing properties and convert `.xls` / `.xlsb` to `.xlsx` when acceptable.
+  - Classic `Lookup Range` → Workbook `Read Range` into a `DataTable`, then `Lookup Data Table`.
+  - Other Classic read/write activities → their Workbook equivalents where supported.
+  - Classic scope around data-only Modern-compatible children → Modern `Use Excel File` with no COM-forcing properties, or standalone Workbook activities.
+  - Modern card → remove unnecessary COM-forcing properties and convert `.xls` / `.xlsb` to `.xlsx` when acceptable.
 - **If Excel is already installed:** do not reinstall blindly. Use [excel-application-scope-failures.md](./excel-application-scope-failures.md) to distinguish broken registration, DCOM/identity issues, add-in interference, bitness mismatch, and first-launch state.
 
 ## Prevention
