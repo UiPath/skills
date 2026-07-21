@@ -1,8 +1,3 @@
-# PENDING PUBLISH — lands together with the subcomponents doc + the npm release
-# that exports them. Until the `Compose-your-own layout` section of
-# references/widgets/validation-station.md is merged (and the package publishes
-# the subcomponents), the agent has no way to know these exports exist and this
-# eval will fail by design. Do not add to a running experiment suite before then.
 task_id: skill-coded-apps-ui-validation-station-subcomponents-smoke
 description: >
   Smoke test (mode:build): agent composes a custom Document Understanding

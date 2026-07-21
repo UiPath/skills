@@ -318,7 +318,7 @@ Exports (from the same `@uipath/ui-widgets-validation-station` package):
 
 Must-knows (all easy to get wrong):
 
-0. **Requires a package version that exports the subcomponents** (`@uipath/ui-widgets-validation-station >= <FIRST_VERSION_WITH_SUBCOMPONENTS>`). Earlier versions export only `ValidationStation`; if the import fails at build, the installed version predates them — bump it.
+0. **Requires a package version that exports the subcomponents** (`@uipath/ui-widgets-validation-station >= 1.0.1`). Earlier versions export only `ValidationStation`.
 1. **Fetch artifacts once, share them.** Call `useBucketArtifacts` in the parent and pass the same `artifacts` object to all subcomponents. Calling it per-subcomponent re-downloads the same unchanged document once per panel.
 2. **Only `CompactFieldsForm` gets `sdk`/`data`/`folderId`.** It owns persistence. The other four can take the pre-fetched `artifacts` only.
 3. **Set `persistent: false` for static layouts.** These panels sit in a fixed grid and are never re-parented. Leaving `persistent` on makes React StrictMode's throwaway unmount call `forceDestroy()`, tearing down the underlying element so it renders **blank**. Only set `persistent: true` if you actually move a subcomponent between DOM parents.
