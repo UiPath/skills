@@ -273,7 +273,8 @@ def main() -> None:
     instance_id = None
     for path in saved:
         try:
-            parsed = _parse_json_tolerant(open(path, encoding="utf-8", errors="ignore").read())
+            with open(path, encoding="utf-8", errors="ignore") as fh:
+                parsed = _parse_json_tolerant(fh.read())
         except OSError:
             continue
         if parsed is None:
