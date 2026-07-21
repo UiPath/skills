@@ -46,7 +46,7 @@
 | Multi-Instance Marker InvalidCastException | High | JS array cannot be cast to ExpressionList — switch to C# expressions | [marker-invalid-cast.md](./playbooks/marker-invalid-cast.md) |
 | Attachment Not Found After Retention | High | Files disappear when job retention deletes the owning job | [attachment-not-found.md](./playbooks/attachment-not-found.md) |
 | Argument Mismatch (400) — Generic | Medium | Generic 400 argument mismatch; route to #5 or #6 for specifics | [argument-mismatch-400.md](./playbooks/argument-mismatch-400.md) |
-| Service Task Child Job Faulted (170002) | High | Error 170002, child job faulted — chase child error as root cause, add boundary error event | [service-task-child-job-faulted.md](./playbooks/service-task-child-job-faulted.md) |
+| Service Task Child Job Faulted (170002) | High | Error 170002, child job faulted - pull the child job key, hand the child's diagnosis to the Orchestrator playbooks, add boundary error event | [service-task-child-job-faulted.md](./playbooks/service-task-child-job-faulted.md) |
 | Debug vs Deploy Mismatch | Medium | Process works in debug but fails after deploy — identity, permissions, or bindings | [debug-vs-deploy.md](./playbooks/debug-vs-deploy.md) |
 | Deployment Failure | Medium | Solution deployment fails — duplicate entry points, trigger conflicts, or stale references | [deployment-failure.md](./playbooks/deployment-failure.md) |
 | Variable and Expression Errors | Medium | Missing output variables, assignment errors, case sensitivity in gateway conditions | [variable-expression-errors.md](./playbooks/variable-expression-errors.md) |
