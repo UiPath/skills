@@ -19,6 +19,20 @@ sandbox:
     - type: template_dir
       path: fixture
 
+# Guard: the whole diagnose scenario is only meaningful if the CLI's validate
+# actually detects the two seeded structural defects. If the installed CLI
+# predates the structural rules (cli#3135), it reports the pristine broken
+# fixture as Valid and the task would pass vacuously. Assert the OPPOSITE here,
+# before the agent runs: the untouched fixture must FAIL validation. This
+# command exits 0 only when validate returns non-zero; if validate passes, it
+# exits 1 and fail_on_error (default) aborts the run with a clear message.
+pre_run:
+  - command: >
+      if uip maestro bpmn validate ExpenseApproval.bpmn --output json >/dev/null 2>&1;
+      then echo "CLI reported the seeded-broken fixture as VALID — the installed uip likely predates the BPMN structural rules (needs cli#3135). Update the CLI."; exit 1;
+      else exit 0; fi
+    timeout: 60
+
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
@@ -66,7 +80,7 @@ success_criteria:
   - type: run_command
     description: "uip maestro bpmn validate now reports the BPMN file valid (exit 0)"
     command: "uip maestro bpmn validate ExpenseApproval.bpmn --output json"
-    timeout: 180
+    timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

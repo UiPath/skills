@@ -66,14 +66,14 @@ XML comments must not contain `--` (double-hyphen): it is invalid XML and the
 file will fail to parse. Never paste CLI commands or flags
 (`--output`, `--connection-id`) into `<!-- … -->`. Keep comments minimal.
 
-## A complete minimal file (author from this, not from fixtures)
+## A complete minimal file (author from this, not from examples)
 
 This is the whole shape — variables, an entry point, one node, a branch, and
 the diagram — in one valid file. Author from this skeleton plus the registry
-templates for your nodes. **Do not read the validator's `test/fixtures/` to
-infer the pattern**; those are validator test data, and reading them is the
-main reason authoring runs out of time. Swap the `scriptTask` payload for the
-registry `xmlTemplate` of whatever node you need.
+templates for your nodes. **Do not reverse-engineer the pattern from full
+example BPMN files** — it is the main reason authoring runs out of time. Swap
+the `scriptTask` payload for the registry `xmlTemplate` of whatever node you
+need.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -525,7 +525,7 @@ error end/boundary event, timer-duration/required-field, single-blank-start,
 single-conditional-outgoing-flow, variable-reference, method-parentheses,
 input-type, event-object, and IS-connector checks). Warnings are reported but do
 not block. If `validate` is unknown or runs only deploy-readiness checks, update
-the CLI — see [cli-conventions.md](cli-conventions.md#login-boundary).
+the CLI — see [cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).
 
 If the CLI is unavailable, fall back to a well-formed-XML parse plus the
 structural checklist below — it mirrors the same blocking rules:
