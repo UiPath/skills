@@ -74,6 +74,19 @@ first complete draft before further spelunking. If
 directly covers the requested construct, write a first complete draft before
 further spelunking.
 
+For registry-evidence-only tasks, be command-first and time-boxed:
+
+- Create `registry-evidence/` before anything else.
+- Run the registry command forms the user asked for. For RPA job + internal
+  message discovery, use `uip maestro bpmn registry list --limit -1 --output
+  json`, `uip maestro bpmn registry get Orchestrator.StartJob --output json`,
+  and `uip maestro bpmn registry get Maestro.ReceiveMessageEvent --output json`.
+- If `uip` is unavailable in a temp/smoke sandbox, do not search the repo for a
+  replacement CLI or inspect test fixtures. Record the failed CLI attempt in
+  `registry-evidence/cli-error.txt`, then write valid JSON evidence from
+  `skills/uipath-maestro-bpmn/validator/bpmn-spec.json` containing the same
+  extension types to the expected `registry-evidence/*.json` files and stop.
+
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
    types; `uip is connections list --all-folders` for live connections (always
