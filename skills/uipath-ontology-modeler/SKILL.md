@@ -24,9 +24,9 @@ Artifacts generated:
 - `{name}-functions.ttl` — SPARQL read functions (optional — only if the domain includes query operations)
 - `{name}-{actionName}.ttl` — SQL write actions (optional — one file per action)
 
-Every file follows a build → preview → check → confirm → write flow. Nothing is written to disk before you confirm it.
+Steps 3–7: build → preview → check → confirm → write for each artifact. Nothing is written to disk before you confirm it. Step 8 validates all artifacts simultaneously and upserts in tiers. Step 9 runs the LLM semantic judge across all artifacts in parallel. Step 10 runs final cross-artifact gate checks. Step 11 deploys.
 
-> **Called by `uipath-ontology-authoring`?** Skip the ontology creation sub-step at the end of Step 1 (authoring creates the ontology before invoking you) and skip Steps 1 and 2 domain-gathering — the caller already collected the ontology name, IRI, confirmed domain model (Phases 3–4), confirmed annotations (Phases 5–6), and `CLASS_MAP`. Start at Step 3 directly with those inputs. The backend validate + upsert loop (Step Xe) runs normally — validate, then upsert immediately on valid, for all artifacts **except mapping**. Skip Step 9 — return the confirmed file paths to the authoring skill, which uploads the mapping as the final deploy trigger.
+> **Called by `uipath-ontology-authoring`?** Skip the ontology creation sub-step at the end of Step 1 (authoring creates the ontology before invoking you) and skip Steps 1 and 2 domain-gathering — the caller already collected the ontology name, IRI, confirmed domain model (Phases 3–4), confirmed annotations (Phases 5–6), and `CLASS_MAP`. Start at Step 3 directly with those inputs. Steps 8 (parallel validate + tiered upsert) and 9 (Gf semantic eval) run normally — mapping is validated but not upserted. Skip Step 11 — return the confirmed file paths to the authoring skill, which uploads the mapping as the final deploy trigger.
 
 ---
 
@@ -315,77 +315,6 @@ On revision request, update the draft and return to step 3b.
 
 ---
 
-### 3e — Backend validate + agent-fix loop
-
-```bash
-uip ont artifacts validate {name} {name}.ofn \
-  --type schema \
-  --media-type text/owl-functional \
-  --file {workdir}/{name}.ofn
-```
-
-Always HTTP 200 — check `Data.valid`:
-
-- **`true`** → Upsert immediately:
-  ```bash
-  uip ont artifacts upsert {name} {name}.ofn \
-    --type schema \
-    --media-type text/owl-functional \
-    --file {workdir}/{name}.ofn
-  ```
-  Check `"Code": "ArtifactUpserted"` → `✓ {name}.ofn — uploaded.` Proceed to Step 4.
-- **`false`** → Show violations verbatim and offer auto-fix:
-
-```
-Backend validation failed — {name}.ofn
-Violations:
-{Data.violations}
-
-Attempt auto-fix? [yes / no]
-(If no: fix the file manually then reply `done`. On `done`, re-validate once.)
-```
-
-**Auto-fix loop (max 3 attempts):**
-1. Read `{workdir}/{name}.ofn` + the violations
-2. Generate corrected content in memory
-3. Re-run the Step 3c local gates (QL blacklist + naming check) on the corrected content
-4. Show a change summary — one sentence per violation addressed
-5. Ask: `Apply this fix? [yes / no]`
-   - `yes` → overwrite `{name}.ofn`, return to top of Step 3e (re-validate)
-   - `no` → show violations, user chooses: try again / fix manually
-
-After 3 failed auto-fix attempts:
-> "Auto-fix exhausted 3 attempts. Please fix `{name}.ofn` manually, then reply `done`."
-Wait for `done`, then re-validate once.
-
----
-
-### 3f — Semantic eval (LLM judge)
-
-Judge `{name}.ofn` against the confirmed domain model from Step 2. No API call — reasoning only.
-
-**Checks:**
-1. Every class in the domain model is declared — none missing, none invented
-2. Every data property (name + XSD type) matches the domain model exactly
-3. Every object property and relationship is declared with correct domain and range
-4. Every `rdfs:comment` on a class opens with a grain statement; every data property `rdfs:comment` uses the correct fact type form from `owl-patterns.md`
-5. No phantom terms — no class or property declared beyond what the domain model describes
-
-**Verdict format:**
-```
-Semantic eval — {name}.ofn
-  ✓ Class coverage — all {N} classes present
-  ✓ Property coverage — all {N} data properties, {N} object properties present
-  ✗ Type mismatch — ont:Order.totalAmount declared xsd:string, domain model says decimal
-  ✗ Missing property — ont:Customer.email described as required, not declared
-```
-
-On any `✗`: offer agent fix. Fix loop: generate corrected content → re-run local gates (3c) → re-run G5 (validate → upsert) → re-run 3f. Max 3 attempts.
-
-All checks `✓` → proceed to Step 4.
-
----
-
 ## Step 4 — Generate {name}-constraints.ttl
 
 Follow [shacl-patterns.md](shacl-patterns.md) exactly. Same build → preview → check → confirm → write flow as Step 3.
@@ -478,75 +407,6 @@ On revision request, update the draft and return to step 4b.
 
 ---
 
-### 4e — Backend validate + agent-fix loop
-
-```bash
-uip ont artifacts validate {name} {name}-constraints.ttl \
-  --type constraints \
-  --media-type text/turtle \
-  --file {workdir}/{name}-constraints.ttl
-```
-
-Always HTTP 200 — check `Data.valid`:
-
-- **`true`** → Upsert immediately:
-  ```bash
-  uip ont artifacts upsert {name} {name}-constraints.ttl \
-    --type constraints \
-    --media-type text/turtle \
-    --file {workdir}/{name}-constraints.ttl
-  ```
-  Check `"Code": "ArtifactUpserted"` → `✓ {name}-constraints.ttl — uploaded.` Proceed to Step 5.
-- **`false`** → Show violations verbatim and offer auto-fix:
-
-```
-Backend validation failed — {name}-constraints.ttl
-Violations:
-{Data.violations}
-
-Attempt auto-fix? [yes / no]
-(If no: fix the file manually then reply `done`. On `done`, re-validate once.)
-```
-
-**Auto-fix loop (max 3 attempts):**
-1. Read `{workdir}/{name}-constraints.ttl` + the violations
-2. Generate corrected content in memory
-3. Re-run the Step 4c consistency checks (property path alignment, target class alignment, coverage) on the corrected content
-4. Show a change summary — one sentence per violation addressed
-5. Ask: `Apply this fix? [yes / no]`
-   - `yes` → overwrite `{name}-constraints.ttl`, return to top of Step 4e (re-validate)
-   - `no` → show violations, user chooses: try again / fix manually
-
-After 3 failed auto-fix attempts:
-> "Auto-fix exhausted 3 attempts. Please fix `{name}-constraints.ttl` manually, then reply `done`."
-Wait for `done`, then re-validate once.
-
----
-
-### 4f — Semantic eval (LLM judge)
-
-Judge `{name}-constraints.ttl` against the confirmed domain model's business rules.
-
-**Checks:**
-1. Every "must have" / "required" business rule has a shape with `sh:minCount 1`
-2. Every "exactly one" cardinality rule has `sh:minCount 1 ; sh:maxCount 1`
-3. No business rule from the domain model is missing a shape
-4. No shape enforces a constraint not present in the domain model (invented constraint)
-
-**Verdict format:**
-```
-Semantic eval — {name}-constraints.ttl
-  ✓ Coverage — all {N} business rules have a shape
-  ✗ Missing shape — "Prescription must have a status" has no corresponding NodeShape
-  ✗ Invented constraint — shape:OrderMustHaveReview not in domain model
-```
-
-On any `✗`: offer agent fix. Fix loop: generate corrected content → re-run local gates (4c) → re-run G5 → re-run 4f. Max 3 attempts.
-
-All checks `✓` → proceed to Step 5.
-
----
-
 ## Step 5 — Generate {name}-mapping.yarrrml.yml
 
 Follow [mapping-yarrrml.md](mapping-yarrrml.md). Same build → preview → check → confirm → write flow.
@@ -626,69 +486,6 @@ Fix any issues in the draft before proceeding.
 
 Wait for explicit confirmation. On confirmation, write `{workdir}/{name}-mapping.yarrrml.yml`.
 On revision request, update the draft and return to step 5b.
-
----
-
-### 5e — Backend validate + agent-fix loop
-
-```bash
-uip ont artifacts validate {name} {name}-mapping.yarrrml.yml \
-  --type mapping \
-  --media-type application/yaml \
-  --file {workdir}/{name}-mapping.yarrrml.yml
-```
-
-Always HTTP 200 — check `Data.valid`:
-
-- **`true`** → `✓ {name}-mapping.yarrrml.yml — backend validation passed.` **Do not upsert yet** — mapping is the deploy trigger and must be uploaded last, after all other artifacts. Proceed to Step 6.
-- **`false`** → Show violations verbatim and offer auto-fix:
-
-```
-Backend validation failed — {name}-mapping.yarrrml.yml
-Violations:
-{Data.violations}
-
-Attempt auto-fix? [yes / no]
-(If no: fix the file manually then reply `done`. On `done`, re-validate once.)
-```
-
-**Auto-fix loop (max 3 attempts):**
-1. Read `{workdir}/{name}-mapping.yarrrml.yml` + the violations
-2. Generate corrected content in memory
-3. Re-run the Step 5c consistency checks (term coverage, column names, class coverage) on the corrected content
-4. Show a change summary — one sentence per violation addressed
-5. Ask: `Apply this fix? [yes / no]`
-   - `yes` → overwrite `{name}-mapping.yarrrml.yml`, return to top of Step 5e (re-validate)
-   - `no` → show violations, user chooses: try again / fix manually
-
-After 3 failed auto-fix attempts:
-> "Auto-fix exhausted 3 attempts. Please fix `{name}-mapping.yarrrml.yml` manually, then reply `done`."
-Wait for `done`, then re-validate once.
-
----
-
-### 5f — Semantic eval (LLM judge)
-
-Judge `{name}-mapping.yarrrml.yml` against the domain model and `CLASS_MAP`.
-
-**Checks:**
-1. Every class has a mapping block using its correct `entityId` and `folderId` from `CLASS_MAP`
-2. Every data property maps to a plausible column name — consistent with the property's camelCase name and XSD type (e.g. a `xsd:decimal` property should not bind to a boolean-looking column)
-3. Every object property join connects the correct pair of classes with the right FK direction (as stated in `rdfs:comment` FK provenance)
-4. USAGE POLICY routing rules reference only functions and classes that exist in the ontology
-
-**Verdict format:**
-```
-Semantic eval — {name}-mapping.yarrrml.yml
-  ✓ Class coverage — all {N} classes have a mapping block
-  ✓ entityId/folderId — all match CLASS_MAP
-  ✗ Suspicious column binding — ont:Order.totalAmount (xsd:decimal) maps to $(IsActive) — likely wrong column
-  ✗ Wrong FK direction — prescribedBy join has Doctor FK pointing to Prescription, should be reversed
-```
-
-On any `✗`: offer agent fix. Fix loop: generate corrected content → re-run local gates (5c) → re-run G5 → re-run 5f. Max 3 attempts.
-
-All checks `✓` → proceed to Step 6.
 
 ---
 
@@ -784,75 +581,6 @@ On revision request, update the draft and return to step 6b.
 
 ---
 
-### 6e — Backend validate + agent-fix loop
-
-```bash
-uip ont artifacts validate {name} {name}-functions.ttl \
-  --type functions \
-  --media-type text/turtle \
-  --file {workdir}/{name}-functions.ttl
-```
-
-Always HTTP 200 — check `Data.valid`:
-
-- **`true`** → Upsert immediately:
-  ```bash
-  uip ont artifacts upsert {name} {name}-functions.ttl \
-    --type functions \
-    --media-type text/turtle \
-    --file {workdir}/{name}-functions.ttl
-  ```
-  Check `"Code": "ArtifactUpserted"` → `✓ {name}-functions.ttl — uploaded.` Proceed to Step 7.
-- **`false`** → Show violations verbatim and offer auto-fix:
-
-```
-Backend validation failed — {name}-functions.ttl
-Violations:
-{Data.violations}
-
-Attempt auto-fix? [yes / no]
-(If no: fix the file manually then reply `done`. On `done`, re-validate once.)
-```
-
-**Auto-fix loop (max 3 attempts):**
-1. Read `{workdir}/{name}-functions.ttl` + the violations
-2. Generate corrected content in memory
-3. Re-run the Step 6c consistency checks (property paths, class references, object properties, parameter binding, return contract) on the corrected content
-4. Show a change summary — one sentence per violation addressed
-5. Ask: `Apply this fix? [yes / no]`
-   - `yes` → overwrite `{name}-functions.ttl`, return to top of Step 6e (re-validate)
-   - `no` → show violations, user chooses: try again / fix manually
-
-After 3 failed auto-fix attempts:
-> "Auto-fix exhausted 3 attempts. Please fix `{name}-functions.ttl` manually, then reply `done`."
-Wait for `done`, then re-validate once.
-
----
-
-### 6f — Semantic eval (LLM judge)
-
-Judge `{name}-functions.ttl` against the query operations described in the domain.
-
-**Checks:**
-1. Every described query operation has a corresponding function
-2. Each function's `rdfs:comment` accurately describes what the SPARQL SELECT actually computes
-3. SPARQL WHERE clause traverses the right `ont:` terms to answer the question stated in the comment
-4. `fno:returns` declarations match the variables actually projected in SELECT
-
-**Verdict format:**
-```
-Semantic eval — {name}-functions.ttl
-  ✓ Coverage — all {N} described query operations have a function
-  ✗ Comment mismatch — ont:listActiveOrders claims to return orders "with their customer name" but SPARQL does not join ont:Customer
-  ✗ Missing function — "count prescriptions by status" described in domain, no function found
-```
-
-On any `✗`: offer agent fix. Fix loop: generate corrected content → re-run local gates (6c) → re-run G5 → re-run 6f. Max 3 attempts.
-
-All checks `✓` → proceed to Step 7.
-
----
-
 ## Step 7 — Generate action files (skip if SDD has no write operations)
 
 If the SDD does not describe write/update operations, skip this step. One file per action — the file name IS the action's identity. Generate one action at a time through the full build → preview → check → confirm → write cycle.
@@ -916,82 +644,167 @@ Action checks (updatePrescriptionStatus.ttl):
 
 On confirmation, write `{workdir}/{name}-{actionName}.ttl`.
 
+Repeat steps 7a–7d for each remaining action in the SDD.
+
 ---
 
-### 7e — Backend validate + agent-fix loop
+## Step 8 — Parallel G5 validate + tiered upsert
+
+All artifact files are confirmed and on disk. Fire all backend validation calls simultaneously — `validate` checks file content syntactically and has no cross-artifact dependency. Issue all calls in parallel, collect all results, then handle any failures one at a time.
+
+**Issue all validate calls simultaneously:**
 
 ```bash
+uip ont artifacts validate {name} {name}.ofn \
+  --type schema --media-type text/owl-functional \
+  --file {workdir}/{name}.ofn
+
+uip ont artifacts validate {name} {name}-constraints.ttl \
+  --type constraints --media-type text/turtle \
+  --file {workdir}/{name}-constraints.ttl
+
+uip ont artifacts validate {name} {name}-mapping.yarrrml.yml \
+  --type mapping --media-type application/yaml \
+  --file {workdir}/{name}-mapping.yarrrml.yml
+
+# If functions were generated:
+uip ont artifacts validate {name} {name}-functions.ttl \
+  --type functions --media-type text/turtle \
+  --file {workdir}/{name}-functions.ttl
+
+# If actions were generated (one call per action file):
 uip ont artifacts validate {name} {name}-{actionName}.ttl \
-  --type actions \
-  --media-type text/turtle \
+  --type actions --media-type text/turtle \
   --file {workdir}/{name}-{actionName}.ttl
 ```
 
-Always HTTP 200 — check `Data.valid`:
+Always HTTP 200 — check `Data.valid` on each response.
 
-- **`true`** → Upsert immediately:
-  ```bash
-  uip ont artifacts upsert {name} {name}-{actionName}.ttl \
-    --type actions \
-    --media-type text/turtle \
-    --file {workdir}/{name}-{actionName}.ttl
-  ```
-  Check `"Code": "ArtifactUpserted"` → `✓ {name}-{actionName}.ttl — uploaded.`
-- **`false`** → Show violations verbatim and offer auto-fix:
+**Show batch results:**
 
 ```
-Backend validation failed — {name}-{actionName}.ttl
+G5 validation results:
+  ✓ {name}.ofn
+  ✓ {name}-constraints.ttl
+  ✗ {name}-mapping.yarrrml.yml
+    Violations: {Data.violations}
+  ✓ {name}-functions.ttl
+  ✓ {name}-{actionName}.ttl
+```
+
+**Fix failures one at a time:**
+
+For each `✗` file:
+
+```
+Backend validation failed — {filename}
 Violations:
 {Data.violations}
 
 Attempt auto-fix? [yes / no]
-(If no: fix the file manually then reply `done`. On `done`, re-validate once.)
+(If no: fix manually then reply `done`. On `done`, re-validate.)
 ```
 
-**Auto-fix loop (max 3 attempts):**
-1. Read `{workdir}/{name}-{actionName}.ttl` + the violations
+Auto-fix loop (max 3 attempts):
+1. Read `{workdir}/{filename}` + violations
 2. Generate corrected content in memory
-3. Re-run the Step 7c consistency checks (entity references, field references, parameter alignment) on the corrected content
-4. Show a change summary — one sentence per violation addressed
+3. Re-run local gates for this artifact type (3c for schema / 4c for constraints / 5c for mapping / 6c for functions / 7c for actions)
+4. Show change summary — one sentence per violation addressed
 5. Ask: `Apply this fix? [yes / no]`
-   - `yes` → overwrite `{name}-{actionName}.ttl`, return to top of Step 7e (re-validate)
+   - `yes` → overwrite file, re-validate only that file
    - `no` → show violations, user chooses: try again / fix manually
 
-After 3 failed auto-fix attempts:
-> "Auto-fix exhausted 3 attempts. Please fix `{name}-{actionName}.ttl` manually, then reply `done`."
-Wait for `done`, then re-validate once.
+After 3 failed attempts: "Auto-fix exhausted 3 attempts. Please fix `{filename}` manually, then reply `done`." Wait for `done`, re-validate once.
+
+**Tiered upsert after all files pass:**
+
+Schema must be upserted before other artifacts — the backend uses the live schema as context when processing constraints and functions.
+
+```bash
+# Tier 1 — schema first (wait for ArtifactUpserted before proceeding)
+uip ont artifacts upsert {name} {name}.ofn \
+  --type schema --media-type text/owl-functional \
+  --file {workdir}/{name}.ofn
+```
+
+`"Code": "ArtifactUpserted"` → schema live on backend. Then upsert remaining non-mapping artifacts simultaneously:
+
+```bash
+# Tier 2 — parallel (fire simultaneously, wait for all)
+uip ont artifacts upsert {name} {name}-constraints.ttl \
+  --type constraints --media-type text/turtle \
+  --file {workdir}/{name}-constraints.ttl
+
+# If functions were generated:
+uip ont artifacts upsert {name} {name}-functions.ttl \
+  --type functions --media-type text/turtle \
+  --file {workdir}/{name}-functions.ttl
+
+# If actions were generated:
+uip ont artifacts upsert {name} {name}-{actionName}.ttl \
+  --type actions --media-type text/turtle \
+  --file {workdir}/{name}-{actionName}.ttl
+```
+
+Mapping is **not upserted here** — held as the deploy trigger until after Step 10. Show summary:
+
+```
+G5 upsert complete:
+  ✓ {name}.ofn — uploaded
+  ✓ {name}-constraints.ttl — uploaded
+  ✓ {name}-functions.ttl — uploaded  (if generated)
+  ✓ {name}-{actionName}.ttl — uploaded  (if generated)
+  ⏸ {name}-mapping.yarrrml.yml — validated, held
+```
 
 ---
 
-### 7f — Semantic eval (LLM judge)
+## Step 9 — Parallel Gf semantic eval
 
-Judge `{name}-{actionName}.ttl` against the write operation description.
+All non-mapping artifacts are upserted. Run the LLM semantic judge on all artifacts simultaneously — no API calls, reasoning only against the confirmed domain model from Step 2.
 
-**Checks:**
-1. SQL statement targets the correct entity table and columns for the described operation
-2. Parameters match what the description says the action takes as input — no missing or extra params
-3. `rdfs:comment` accurately describes what the SQL does and what each parameter controls
+**Run all Gf checks in parallel:**
 
-**Verdict format:**
+| Artifact | Checks |
+|---|---|
+| `{name}.ofn` | Class + property completeness, XSD types match domain model, every `rdfs:comment` opens with grain statement or correct fact type form, no phantom terms |
+| `{name}-constraints.ttl` | Every "must have" / "required" business rule has a shape; no invented constraints |
+| `{name}-mapping.yarrrml.yml` | Every class has mapping block with correct `entityId`/`folderId`; column bindings plausible vs XSD type; FK join direction matches `rdfs:comment` FK provenance; USAGE POLICY references only existing terms |
+| `{name}-functions.ttl` | Every described query op has a function; SPARQL traverses correct `ont:` terms; `fno:returns` match projected SELECT variables |
+| `{name}-{actionName}.ttl` | SQL targets correct entity and columns; parameters match description; `rdfs:comment` accurate |
+
+**Show batch results:**
+
 ```
-Semantic eval — {name}-updatePrescriptionStatus.ttl
-  ✓ SQL target — correct entity and columns
-  ✗ Missing parameter — description says action accepts a reason string, no :reason param declared
+Gf semantic eval results:
+  {name}.ofn
+    ✓ Class coverage — all {N} classes present
+    ✓ Property coverage — all data and object properties correctly typed
+    ✗ rdfs:comment — ont:Prescription.refillCount missing grain context
+  {name}-constraints.ttl
+    ✓ Coverage — all {N} business rules have a shape
+  {name}-mapping.yarrrml.yml
+    ✓ Class coverage — all {N} classes have mapping blocks
+    ✓ entityId/folderId — all match CLASS_MAP
+  {name}-functions.ttl
+    ✓ Coverage — all {N} described query operations have a function
+  {name}-{actionName}.ttl
+    ✓ SQL target — correct entity and columns
 ```
 
-On any `✗`: offer agent fix. Fix loop: generate corrected content → re-run local gates (7c) → re-run G5 → re-run 7f. Max 3 attempts.
+**Fix failures one at a time:**
 
-All checks `✓` → continue.
+For each `✗` artifact: offer agent fix. Fix loop: generate corrected content → re-run local gates for that artifact type → re-run G5 validate + upsert for that artifact only → re-run Gf for that artifact only. Max 3 attempts per artifact.
 
-Repeat steps 7a–7f for each remaining action in the SDD.
+All checks `✓` across all artifacts → proceed to Step 10.
 
 ---
 
-## Step 8 — Gate-check all files (mandatory, all gates must pass)
+## Step 10 — Gate-check all files (mandatory, all gates must pass)
 
-Run every gate in order. Do not upload until all pass. Fix and regenerate on any failure.
+Run every gate in order. Do not upload mapping until all pass. Fix and re-run on any failure.
 
-> **Relationship to per-artifact checks:** Steps 3c–7c scanned *draft* content before writing. Steps 3f–7f ran per-artifact semantic eval after each write. Step 8 runs on *written files*: Gates 1–4 are a final text-scan sanity pass; Gate 6 is the definitive cross-artifact semantic consistency check (needs all files to exist). Gate 5 already ran inline — it does not run again here.
+> **Relationship to prior checks:** Steps 3c–7c scanned *draft* content before writing. Step 8 ran backend syntactic validation and upserted all artifacts. Step 9 ran per-artifact semantic eval. Step 10 runs on *written files*: Gates 1–4 are a final text-scan sanity pass; Gate 6 is the definitive cross-artifact semantic consistency check (needs all files to exist simultaneously).
 >
 > **Run order:** G1 → G2 → G3 → G4 → G6. Stop at first failure; fix and re-run from that gate.
 
@@ -1030,6 +843,23 @@ grep "Declaration(" {workdir}/{name}.ofn
 
 Every term found in mapping or rules must appear in a `Declaration(DataProperty(:...))` or `Declaration(ObjectProperty(:...))` in the schema. Any mismatch → fix before proceeding (a mismatch causes `BROKEN` state after deploy).
 
+### Gate 4 — Annotation completeness (text scan)
+
+Every declared class, data property, and object property must have both `rdfs:label` and `rdfs:comment`:
+
+```bash
+# What is declared
+grep "Declaration(Class(:" {workdir}/{name}.ofn
+grep "Declaration(DataProperty(:" {workdir}/{name}.ofn
+grep "Declaration(ObjectProperty(:" {workdir}/{name}.ofn
+
+# What has rdfs:label and rdfs:comment
+grep "AnnotationAssertion(rdfs:label :" {workdir}/{name}.ofn
+grep "AnnotationAssertion(rdfs:comment :" {workdir}/{name}.ofn
+```
+
+Cross-check: every name that appears in a `Declaration(...)` line must also appear in both an `AnnotationAssertion(rdfs:label ...)` line and an `AnnotationAssertion(rdfs:comment ...)` line. Missing `rdfs:label` or `rdfs:comment` on any class, data property, or object property → add before proceeding.
+
 ### Gate 6 — Cross-artifact semantic consistency (LLM judge)
 
 Runs after Gates 1–4 pass. All files exist — judge semantic alignment across them against the confirmed domain model.
@@ -1050,32 +880,15 @@ Gate 6 — Cross-artifact semantic consistency
   ✗ USAGE POLICY orphan — routing rule references ont:listExpiredPrescriptions but no such function exists
 ```
 
-On any `✗`: offer agent fix per affected artifact. Fix loop per artifact: generate corrected content → re-run local gates → re-run G5 (validate → upsert) → re-run 6 checks until all pass. After all fixes applied, re-run Gate 6 in full.
+On any `✗`: offer agent fix per affected artifact. Fix loop per artifact: generate corrected content → re-run local gates → re-run G5 (validate → upsert) → re-run Gf for that artifact → re-run Gate 6 in full after all fixes applied.
 
-All checks `✓` → proceed to Step 9.
-
-### Gate 4 — Annotation completeness (text scan)
-
-Every declared class, data property, and object property must have both `rdfs:label` and `rdfs:comment`:
-
-```bash
-# What is declared
-grep "Declaration(Class(:" {workdir}/{name}.ofn
-grep "Declaration(DataProperty(:" {workdir}/{name}.ofn
-grep "Declaration(ObjectProperty(:" {workdir}/{name}.ofn
-
-# What has rdfs:label and rdfs:comment
-grep "AnnotationAssertion(rdfs:label :" {workdir}/{name}.ofn
-grep "AnnotationAssertion(rdfs:comment :" {workdir}/{name}.ofn
-```
-
-Cross-check: every name that appears in a `Declaration(...)` line must also appear in both an `AnnotationAssertion(rdfs:label ...)` line and an `AnnotationAssertion(rdfs:comment ...)` line. Missing `rdfs:label` or `rdfs:comment` on any class, data property, or object property → add before proceeding.
+All checks `✓` → proceed to Step 11.
 
 ---
 
-## Step 9 — Deploy (mapping upload)
+## Step 11 — Deploy (mapping upload)
 
-All artifacts except the mapping were upserted inline during Steps 3e–7e. The mapping is uploaded last because uploading it triggers `DRAFT → DEPLOYED`.
+All artifacts except the mapping were upserted in Step 8 (tiered upsert). The mapping is uploaded last because uploading it triggers `DRAFT → DEPLOYED`.
 
 ```bash
 uip ont artifacts upsert {ontology-name} {name}-mapping.yarrrml.yml \

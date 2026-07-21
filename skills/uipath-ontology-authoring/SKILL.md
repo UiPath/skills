@@ -321,8 +321,8 @@ All five gates summary:
 | 2 — Naming | Modeler step 3c | No `has{Prop}` DataProperty names | Zero hits |
 | 3 — Cross-file | Modeler step 5c | Every `ont:` term in mapping/rules declared in schema | All found |
 | 4 — Annotation | Modeler step 3c | Every declared class and property has `rdfs:label` and `rdfs:comment` | All covered |
-| 5 — Backend validate + upsert | Modeler (inline, Steps 3e–7e) | Backend syntactic parse → immediate upsert on valid (except mapping) | `Data.valid: true` + `ArtifactUpserted` each |
-| 6 — Semantic consistency | Modeler (inline Steps 3f–7f per artifact; Step 8 cross-artifact) | LLM judge: domain completeness, constraint coverage, column alignment, USAGE POLICY coherence | All checks `✓` |
+| 5 — Backend validate + upsert | Modeler Step 8 — all artifacts validated in parallel; upserted in tiers (schema first, others simultaneous, mapping held) | Backend syntactic parse → tiered upsert on valid (mapping held) | `Data.valid: true` + `ArtifactUpserted` each |
+| 6 — Semantic consistency | Modeler Step 9 (per-artifact, parallel); Step 10 (cross-artifact) | LLM judge: domain completeness, constraint coverage, column alignment, USAGE POLICY coherence | All checks `✓` |
 
 **Do not proceed to Step 3 until the modeler confirms all artifacts validated and uploaded (except mapping):**
 ```
