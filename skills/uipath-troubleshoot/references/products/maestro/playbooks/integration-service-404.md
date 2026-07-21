@@ -16,7 +16,7 @@ What can cause it:
 - Integration Service connection expired or was removed
 - Tenant doesn't have Integration Service enabled (**Admin > Tenant > Services**)
 - Webhook config references a non-existent object on the external side
-- Solution cross-imported between environments (staging → alpha) where the folder key embedded in the solution doesn't exist in the destination — surfaces as 404/403
+- Stale folder key baked into a cross-imported solution - discriminator: failure started right after a solution import AND the incident's `folderKey` does not exist in the destination tenant. Same root cause as [folder-not-accessible](folder-not-accessible.md) (`#1100`); that playbook owns the diagnosis and fix - continue there
 - For Data Fabric writes: missing instance, folder, or tenant permission on the target
 
 What to look for:
@@ -41,7 +41,7 @@ What to look for:
 - **If connector deleted/renamed:** re-create the activity against the current connector and re-publish
 - **If IS not enabled on the tenant:** enable via **Admin > Tenant > Services**
 - **If webhook config stale:** regenerate the webhook URL and update the external system
-- **If solution cross-imported with stale keys:** update bindings to the destination folder keys and re-deploy
+- **If stale folder key from cross-import:** fix per [folder-not-accessible](folder-not-accessible.md) - it owns the bindings update and re-deploy steps
 - **If Data Fabric target missing:** create the entity/instance in the destination folder, or fix the binding
 
 ## Notes
