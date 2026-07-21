@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "5b09c3d4-e5f6-4071-9b09-000000000009",
+      "State": "Faulted",
+      "ProcessName": "JiraNoteBot",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT",
+      "MachineKey": "",
+      "StartTime": "2026-06-17T16:25:02.270Z",
+      "EndTime": "2026-06-17T16:25:04.020Z",
+      "CreationTime": "2026-06-17T16:25:01.820Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "Name": "JiraCommentSync",
+  "ProjectType": "Process",
+  "Description": "JiraCommentSync automation project.",
+  "MainFile": "Main.xaml"
+}
