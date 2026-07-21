@@ -284,7 +284,7 @@ Remove a task from a stage. Tasks live in `stageNode.data.tasks[laneIndex][]` �
 
 1. Read `caseplan.json`. Locate the task in its owning `stageNode.data.tasks[laneIndex]` and note its `id` (the `TaskId`) and `elementId`.
 2. **Remove the task** from `data.tasks[laneIndex]`.
-3. **Re-pack lanes.** Removing the only task in a lane leaves an empty inner array. Drop the empty lane and re-index the surviving lanes so `laneIndex` stays contiguous from 0 (Pre-flight Item 8). A lane shared by `runs-sequentially` parallel siblings keeps its other members — only drop the lane when it becomes empty.
+3. **Re-pack task sets.** Removing the only task in an inner `data.tasks` array leaves an empty task set. Drop the empty task set and preserve the remaining task-set order; never infer execution semantics from lane placement.
 4. **Prune conditions that reference the dead `TaskId`:**
    - Any task's `entryConditions[].rules[][]` `selected-tasks-completed` rule whose `selectedTasksIds` names the deleted task — remove the id from the array; if it empties, remove the rule (and the parent condition object when it empties), per § Delete a condition rule's DNF removal mechanic.
    - Any `conditionExpression` (`=js:...`) referencing the deleted task's outputs — repoint or remove.
@@ -384,7 +384,7 @@ Relocate a task within the case. **Keep the task `id`** so conditions and cross-
    - the task itself: `elementId = ${destStageId}-${taskId}`
    - any `wait-for-connector` entry-condition rule on the task, and each entry in that rule's `uipath.outputs[]`: `elementId = ${destStageId}-${ruleId}`
    - (root `inputOutputs[]` companions are `elementId: "root"` — NOT stage-scoped, leave them.)
-3. Remove the task from the source `data.tasks[oldLane]`; expand the destination `stageNode.data.tasks` to cover `newLane`, then push the task onto `data.tasks[newLane]`. One task per lane (default); within a `runs-sequentially` group, parallel siblings share a lane (Pre-flight Item 8).
+3. Remove the task from the source `data.tasks[oldTaskSet]` and insert it into the destination task set in the preserved `data.tasks` order. Parallel task sets remain allowed; lane/task-set placement is structural, while `runs-sequentially` entry conditions carry sequencing.
 4. **Repoint cross-task bindings that consume this task's outputs.** Any other task input with `sourceTask == <taskId>` keeps `sourceTask`, but its `sourceStage` must change to `<destStageId>`. Confirm ordering still holds — a consumer can only read a task that runs before it; moving the task later in the flow can invalidate the binding.
 5. **Re-check the moved task's `entryConditions[]`:**
    - `current-stage-entered` — no change; it follows the task to the destination stage.

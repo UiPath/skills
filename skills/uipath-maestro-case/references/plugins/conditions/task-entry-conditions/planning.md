@@ -40,7 +40,7 @@ The Case App selector has three distinct modes:
 
 | UI mode | JSON/task-entry meaning | Required behavior |
 |---|---|---|
-| Sequential | `runs-sequentially` only | Preserve task order. The first task starts when the stage is entered; each later task starts after its predecessor completes. |
+| Sequential | `runs-sequentially` only | Preserve the frontend's ordered `data.tasks` structure. Parallel task sets remain allowed; the first sequential task starts when the stage is entered, and later sequential tasks use the upstream-task completion trigger represented by the preserved task-set/order structure. |
 | Event-triggered | An authored event/condition, normally `wait-for-connector` for an external event | Do not add `runs-sequentially`. A stage-entered task is not automatically an event-triggered task; retain the explicit event rule and its connector configuration. |
 | Manually-triggered (adhoc) | `adhoc` only | Set `isRequired: false`; the user launches it from the Case App. Do not add another entry event or treat it as sequential. |
 
@@ -50,7 +50,7 @@ The Case App selector has three distinct modes:
 
 Task entry conditions are created **after** all tasks in the stage have been added (so `selected-tasks-ids` can resolve).
 
-For a sequential chain, preserve the task order in the stage's `data.tasks` structure and add one `runs-sequentially` entry condition to every task in the chain. The first task uses the rule as its stage-entry trigger; later tasks use it as the preceding-task-completed trigger. Do not add a separate `current-stage-entered` condition to the first sequential task.
+For sequential tasks, preserve the frontend's ordered `data.tasks` structure, including any parallel task sets; do not flatten the stage into one global chain. Add one `runs-sequentially` entry condition to each sequential task. The first task uses the rule as its stage-entry trigger; later tasks use it as the upstream-task-completed trigger. Do not add a separate `current-stage-entered` condition to the first sequential task. Lane or task-set placement is structural; the entry rule carries the sequential intent.
 
 ## tasks.md Entry Format
 
