@@ -6,7 +6,7 @@ Targeted changes to an existing `caseplan.json`. Skips the Phase 0–6 build pip
 
 ## When this journey applies
 
-`caseplan.json` already exists AND the user wants a targeted edit ("add a stage", "remove task X", "change this condition", "swap the trigger"). No `sdd.md`, no `tasks.md`, no planning approval, no prototyping hard stop. Routing lives in [SKILL.md](../SKILL.md#routing--greenfield-vs-brownfield).
+`caseplan.json` already exists AND the user wants a targeted edit ("add a stage", "remove task X", "change this condition", "swap the trigger"). No `sdd.md`, no `tasks.md`, no planning phase, no prototyping hard stop. Routing lives in [SKILL.md](../SKILL.md#routing--greenfield-vs-brownfield).
 
 ## Pull latest first (before editing)
 

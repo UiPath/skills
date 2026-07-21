@@ -1,6 +1,6 @@
 # Phased Execution: Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6
 
-Authoritative reference for the post-planning execution flow. Read before executing any T-entry from an approved `tasks.md`.
+Authoritative reference for the post-planning execution flow. Read before executing any T-entry from `tasks.md`.
 
 > **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip these phases — see [brownfield.md](brownfield.md).
 
@@ -21,7 +21,7 @@ Skill stays emit-honest: JSON-shape correctness is the skill's job, downstream C
 
 ## Why phased
 
-After `tasks.md` is approved, skill does **not** build full case in one pass. It builds **placeholder** first (Phase 2 Prototyping) — enough structure for user to review case graph visually in Studio Web — then hard-stops for approval before wiring detail (Phase 3 Implementation). Validate (Phase 4), Debug (Phase 5), and Publish (Phase 6) each follow as separate gated phases. Debug runs before Publish so the user only publishes a build they've verified end-to-end.
+Once `tasks.md` is generated, skill does **not** build full case in one pass. It builds **placeholder** first (Phase 2 Prototyping) — enough structure for user to review case graph visually in Studio Web — then hard-stops for approval before wiring detail (Phase 3 Implementation). Validate (Phase 4), Debug (Phase 5), and Publish (Phase 6) each follow as separate gated phases. Debug runs before Publish so the user only publishes a build they've verified end-to-end.
 
 Each hard stop gives user review checkpoint before agent commits to costly downstream work.
 
