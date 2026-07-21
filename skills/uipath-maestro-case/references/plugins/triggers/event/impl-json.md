@@ -125,6 +125,8 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 
 When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `connector-key`, skip Steps 2-10 and write a placeholder node instead. Mirrors the connector-task placeholder pattern in [placeholder-tasks.md](../../../placeholder-tasks.md) — structure preserved, runtime config deferred.
 
+When the T-entry or SDD carries a tenant object, data object, event source, or source table name, **preserve the authored source object** in the placeholder description as `source object: <object-name>`. Keep that text outside `data.uipath`; the placeholder still has no connector identity.
+
 ```json
 {
   "id": "<trigger_xxxxxx>",
@@ -132,7 +134,7 @@ When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `conne
   "data": {
     "parentElement": { "id": "root", "type": "case-management:root" },
     "label": "<display-name>",
-    "description": "<description from sdd.md>",
+    "description": "<description from sdd.md>; source object: <object-name>",
     "uipath": { "serviceType": "Intsvc.EventTrigger" }
   }
 }

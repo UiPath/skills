@@ -293,14 +293,18 @@ Additional fields are plugin-specific; read the plugin's `planning.md` before fi
 
 > **Outputs are a lossless handoff, not a discovered-name summary.** Project each SDD Outputs table row through the common grammar in [`plugins/variables/io-binding/planning.md` § SDD table → `tasks.md` projection](plugins/variables/io-binding/planning.md#sdd-table-to-tasksmd-projection-mandatory), then preserve the resulting list item exactly. Schema discovery may add truly undeclared fields as bare items, but it must not rewrite an SDD row. An explicit equal-name extract such as `greeting -> greeting` stays exactly that; collapsing it to bare `greeting` changes the binding from "write the existing case variable" to "auto-mint a task output." Before the Step 5 approval gate, compare every SDD Outputs row to its task T-entry and fix any missing or changed operator/operand or leaked table placeholder.
 
-> **Registry handoff:** For a resolved `action` or `case-management` T-entry, translate the selected audit object into the canonical `tasks.md` labels and values:
+> **Registry handoff:** SDD aliases are search keys only. For every resolved non-connector resource T-entry, translate the selected audit object into the canonical `tasks.md` labels and values. Do not copy an SDD alias into `name`, `folder-path`, or `taskTypeId` once `registry-resolved.json.selected` exists:
 >
 > | Task type | `name` from | `folder-path` from | `taskTypeId` from |
 > |---|---|---|---|
+> | `process` | `selected.name` | `selected.folders[0].fullyQualifiedName` | `selected.entityKey` |
+> | `agent` | `selected.name` | `selected.folders[0].fullyQualifiedName` | `selected.entityKey` |
+> | `rpa` | `selected.name` | `selected.folders[0].fullyQualifiedName` | `selected.entityKey` |
+> | `api-workflow` | `selected.name` | `selected.folders[0].fullyQualifiedName` | `selected.entityKey` |
 > | `action` | `selected.deploymentTitle` | `selected.deploymentFolder.fullyQualifiedName` | `selected.id` |
 > | `case-management` | `selected.name` | `selected.folders[0].fullyQualifiedName` | `selected.entityKey` |
 >
-> Before Step 5, confirm these labels and values match the `selected` object in `registry-resolved.json`.
+> Before Step 5, confirm these labels and values match the `selected` object in `registry-resolved.json`. The same selected `name` value becomes the non-connector binding display name in `caseplan.json` and `bindings_v2.json`; for example, an SDD alias `NameToAgeFixed2` may resolve to selected name `API Workflow`, and the generated binding must use `API Workflow`.
 
 > **No shell commands in task entries.** Each task is a declarative specification. Never write `uip` invocations or any other shell commands inside a task body — the execution phase translates specs into JSON mutations.
 

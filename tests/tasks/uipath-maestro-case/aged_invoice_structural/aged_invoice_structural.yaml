@@ -64,6 +64,9 @@ initial_prompt: |
   - The task is NOT complete until
     `uip maestro case validate AgedInvoiceResolution/AgedInvoiceResolution/caseplan.json --output json`
     passes.
+  - After the validate command passes, stop immediately with a concise
+    completion response; do not continue into Phase 5 or Phase 6, do not repeat
+    summaries, and do not run optional review, debug, or publish work.
 
   Before starting, load the uipath-maestro-case skill and follow its workflow.
 

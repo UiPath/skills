@@ -62,14 +62,18 @@ initial_prompt: |
     `CountLetters` → `CountLetters`, `ProcurementProcess` →
     `ProcurementProcess`, `ProjectEuler` → `RPA Workflow`, and `CaseTest` →
     `Maestro Case`. Do not substitute an SDD alias for a deployed name.
-  - Treat all hard stops after the SDD as pre-approved, including Phase 1
-    planning approval, Phase 2 publish-for-review, and Phase 5 debug. Choose the
-    continue / skip-publish path and keep going.
+  - Treat all hard stops after the SDD as pre-approved through Phase 4,
+    including Phase 1 planning approval and Phase 2 publish-for-review. Choose
+    the continue / skip-publish path and keep going until validation passes.
   - Do NOT call AskUserQuestion — it is not available in this harness.
   - Do NOT run `uip maestro case debug` yourself — the harness runs it.
   - The task is NOT complete until
     `uip maestro case validate ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan.json --output json`
     passes.
+  - After the validate command passes, stop immediately with a concise
+    completion response; do not continue into Phase 5 or Phase 6, do not repeat
+    summaries, and do not run optional review, debug, or publish work. The
+    harness runs the debug check.
 
   Before starting, load the uipath-maestro-case skill and follow its workflow.
 
