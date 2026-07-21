@@ -1,8 +1,9 @@
 task_id: skill-bpmn-e2e-live-debug
 description: >
   First Maestro BPMN eval that EXECUTES a process. The agent authors a tiny,
-  deterministic BPMN project (manual start, one Jint script task that computes
-  the product of the constants 6 and 7 into a `product` variable, an end
+  deterministic BPMN project (manual start, one Jint script task that returns
+  the product of the constants 6 and 7, maps `result.response` into a root
+  inputOutput variable whose id and name are both exactly `product`, an end
   event), runs a live `uip maestro bpmn debug` session against Studio Web, and
   inspects the runtime result via the `debug-instance` variables commands. The
   agent saves the raw debug and variables CLI output to `debug-evidence/`, and
@@ -36,15 +37,20 @@ initial_prompt: |
   Author a minimal Maestro BPMN project named "ProductCalc" with its main file
   at `ProductCalc/ProductCalc.bpmn` for this process:
     - a manual start event (no input variables),
+    - one root mutable variable whose id and name are both exactly `product`,
     - a single Jint script task that multiplies the constants 6 and 7 inside
-      the script body and writes the result to a process variable named
-      exactly `product`,
+      the script body, returns the scalar result using the BPMN.ScriptTask
+      v3 contract (`return { response: ... }`), and maps the output with
+      `source="=result.response"` and `var="product"`,
     - an end event.
 
   Then run a debug session for the project against Studio Web and confirm from
   the runtime that the `product` variable is 42. You have explicit consent to
   upload and debug this project in the connected tenant. Do not pass `--inputs`
   — the computation is self-contained.
+  Do not try to assign `Globals.product`, `vars.product`, or any other process
+  variable directly inside the script body; script results become process
+  variables only through the BPMN.ScriptTask output mapping.
 
   Save the raw CLI output so the result can be verified independently:
     - save the full JSON output of the debug command to
