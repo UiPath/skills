@@ -112,6 +112,21 @@ Ready to start? (yes / no)
 
 **Send this plan to the user and stop. Do not run any commands, do not proceed to Step 1, and do not narrate what comes next. Wait for the user's explicit reply (yes / no) in a separate message. The user's earlier "let's go" or similar reply to your Step 0 proposals does NOT count — they must see and approve the full plan block first.**
 
+When the user confirms the plan, respond with a steps overview before running anything:
+
+```
+Here's what we'll do:
+  Step 1/5 — Discover existing Data Fabric entities
+  Step 2/5 — Create any missing entities
+  Step 3/5 — Create the ontology
+  Step 4/5 — Generate and upload all artifacts (validated before each upload)
+  Step 5/5 — Final summary
+
+Starting now...
+```
+
+Then immediately proceed to Step 1 in the same message.
+
 ### Step 1 — Discover existing entities in the folder
 
 > **Step 1/5 — Discovering existing Data Fabric entities...**
