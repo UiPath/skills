@@ -23,6 +23,18 @@ Resulting structure: a **thin flow** that is mostly trigger + waits + branches, 
 
 > **Before each node you add or modify, classify it as user-owned or CLI-owned (see [CAPABILITY.md — Node ownership](../CAPABILITY.md#node-ownership--who-authors-the-node)). Connector activities, connector triggers, and `core.action.http.v2` are CLI-only — use `uip maestro flow node add` + `uip maestro flow node configure`, never Edit. Hand-writing these will fail `flow validate`.** The same risk applies when *adding* a connector node to an existing flow as when building a new one.
 
+## Template-first discovery
+
+Before editing the target `.flow`, scan the current workspace or solution for existing `.flow` files and inspect likely exemplars. This is the fastest way to avoid rediscovering connector blobs, loop wiring, selected-tool metadata, resource bindings, and port names one command at a time.
+
+Start with:
+
+```bash
+rg --files -g '*.flow'
+```
+
+Then inspect matches that contain the node types, connector keys, or topology you need. Use exemplars to copy shape and wiring patterns, not runtime-specific values: do not reuse stale node IDs, connection IDs, folder keys, labels, prompts, or user data. After the exemplar scan, still run the registry/plugin validation required by [CAPABILITY.md](../CAPABILITY.md#critical-rules) for current definitions and any missing details.
+
 **[editing-operations.md](editing-operations.md)** — `Edit` is the default tool for in-place changes to user-owned nodes; `Write` only when ≥70% of nodes change. For CLI-owned nodes use the relevant plugin's `impl.md` configuration workflow (`node add` + `node configure`). Read the strategy selection matrix before any modification.
 
 > **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user (per the dropdown question rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
@@ -55,6 +67,7 @@ The table intentionally routes OOTB structural CRUD to Edit/Write only. There is
 
 1. **Validate** — `uip maestro flow validate <ProjectName>.flow --output json`. Fix any errors and re-validate.
 2. **Format** — `uip maestro flow format <ProjectName>.flow --output json`. Required before publish or debug (see "Always run `flow format` after edits" in [the Author capability index](../CAPABILITY.md)) — without format, hand-edited or stale `layout` data renders as misshapen rectangles in Studio Web.
+3. **Back up** — after the first passing `validate` + `format`, copy `<ProjectName>.flow` to `<ProjectName>.flow.bak`. If Studio Web or the IDE strips fields during a later save, restore from the backup instead of repeating discovery.
 
 ## "Refusing to serialize a vX workflow" — migrate first
 
@@ -73,7 +86,7 @@ When you finish editing the flow, report to the user:
 1. **File path** of the `.flow` file edited
 2. **What changed** — summary of nodes/edges added, removed, or modified
 3. **Validation status** — whether `flow validate` passes (or remaining errors if unresolvable)
-4. **Format status** — confirm `flow format` was run
+4. **Format and backup status** — confirm `flow format` was run and whether `<ProjectName>.flow.bak` was written
 5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced
 6. **Missing connections** — any connector nodes that need connections the user must create
 7. **What's next** — ask the user, presenting the dropdown below (see the dropdown question rule in [SKILL.md](../../../SKILL.md))
