@@ -10,11 +10,12 @@ name: Sprint Release Cut
 #
 #   1. cuts release/v<M.N> from main at the version ALREADY in main (M.N.0) —
 #      the release branch matches main's current version, it is NOT bumped
-#   2. publishes a PREVIEW (@uipath/skills@M.N.0-preview.<run>) to npm by
-#      dispatching publish.yml (channel=preview) on the release branch. The
-#      bot's own branch push can't trigger publish.yml (GITHUB_TOKEN recursion
-#      guard), so the dispatch is explicit. Stable (`latest`) is NOT published
-#      here — promote a line to stable MANUALLY (see docs/RELEASE.md)
+#   2. publishes a DEV build (GitHub Packages) AND a PREVIEW (npmjs) by
+#      dispatching publish.yml twice on the release branch (channel=dev,
+#      channel=preview). The bot's own branch push can't trigger publish.yml
+#      (GITHUB_TOKEN recursion guard), so the dispatches are explicit. Stable
+#      (`latest`) is NOT published here — promote a line to stable MANUALLY
+#      (see docs/RELEASE.md)
 #   3. opens a PR bumping main to the NEXT line (M.(N+1).0) so development
 #      continues there while release/v<M.N> stabilizes
 #
@@ -136,7 +137,7 @@ jobs:
             echo ""
             echo "- current line (main): \`${{ steps.target.outputs.current_line }}\`"
             echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` — branch \`release/v${{ steps.target.outputs.cut_line }}\` @ \`$(git rev-parse --short HEAD)\` at version \`${{ steps.target.outputs.cut_line }}.0\`"
-            echo "- would publish: PREVIEW \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0-preview.<run>\` to npm (dispatch publish.yml channel=preview from the release branch) — stable stays MANUAL"
+            echo "- would publish: DEV \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0-dev.<run>\` to GitHub Packages AND PREVIEW \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0-preview.<run>\` to npmjs (dispatch publish.yml channel=dev + channel=preview) — stable stays MANUAL"
             echo "- would open PR: bump \`main\` to \`${{ steps.target.outputs.next_line }}.0\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -182,7 +183,7 @@ jobs:
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
-      - name: Publish preview from the release branch
+      - name: Publish dev + preview from the release branch
         id: publish
         if: steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
         env:
@@ -192,16 +193,18 @@ jobs:
           BRANCH="release/v$LINE"
 
           # The bot pushed $BRANCH with GITHUB_TOKEN, which GitHub's recursion
-          # guard stops from triggering publish.yml's `push: release/v*` preview
-          # job. Dispatch it explicitly (workflow_dispatch IS triggerable by
-          # GITHUB_TOKEN) so the cut emits the line's first preview. publish.yml
-          # checks out $BRANCH (package.json = $LINE.0), stamps
-          # $LINE.0-preview.<run>, and publishes via OIDC + provenance.
-          #
-          # Stable (`latest`) is intentionally NOT published here — promote a
-          # line to stable manually when it is ready (see docs/RELEASE.md).
+          # guard stops from triggering publish.yml automatically. Dispatch it
+          # explicitly (workflow_dispatch IS triggerable by GITHUB_TOKEN) for
+          # BOTH channels so the cut emits the line's first internal dev build
+          # AND its first public preview:
+          #   - channel=dev     -> $LINE.0-dev.<run>     on GitHub Packages
+          #   - channel=preview -> $LINE.0-preview.<run> on npmjs (--provenance)
+          # publish.yml checks out $BRANCH (package.json = $LINE.0) for each.
+          # Stable (`latest`) is intentionally NOT published — promote a line
+          # to stable manually when it is ready (see docs/RELEASE.md).
+          gh workflow run publish.yml --ref "$BRANCH" -f channel=dev
           gh workflow run publish.yml --ref "$BRANCH" -f channel=preview
-          echo "Dispatched publish.yml (channel=preview) from $BRANCH."
+          echo "Dispatched publish.yml (channel=dev and channel=preview) from $BRANCH."
 
       - name: Open version-bump PR against main
         id: mainpr
@@ -251,6 +254,6 @@ jobs:
             echo ""
             echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` (main was on this line)"
             echo "- \`release/v${{ steps.target.outputs.cut_line }}\` @ \`${{ steps.cutbranch.outputs.short_sha }}\`"
-            echo "- published: PREVIEW of \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0\` to npm (stable stays manual)"
+            echo "- published: DEV (GitHub Packages) + PREVIEW (npmjs) of \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0\` (stable stays manual)"
             echo "- main bump PR (-> \`${{ steps.target.outputs.next_line }}.0\`): ${{ steps.mainpr.outputs.url }}"
           } >> "$GITHUB_STEP_SUMMARY"

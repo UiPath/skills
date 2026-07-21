@@ -49,12 +49,11 @@ Registry follows channel — you pick a channel, not a registry.
 | push to `release/v*` (every merge) | `preview` | npmjs | `preview` | `<base>-preview.<run_number>` | yes |
 | `workflow_dispatch` (channel: `dev`) | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
 | `workflow_dispatch` (channel: `preview`) | `preview` | npmjs | `preview` | `<base>-preview.<run_number>` | yes |
-| GitHub Release published | `latest` | npmjs | `latest` | `package.json` version | yes |
 | `workflow_dispatch` (channel: `latest`) | `latest` | npmjs | `latest` | `package.json` version | yes |
 
 ¹ GitHub Packages does not support npm provenance attestations; only the npmjs channels are signed.
 
-**Two channels publish automatically** (mirroring `UiPath/cli`): every merge to `main` publishes a `dev` build to GitHub Packages, and every merge to a `release/v*` branch publishes a `preview` build to npmjs. `latest` is dispatched on demand or runs when a GitHub Release is published. `npm install @uipath/skills` (no tag, from npmjs) always resolves the last stable release — `preview` (npmjs) and `dev` (GitHub Packages) are pre-release versions under their own dist-tags, so no un-tagged install ever picks them. The `preview`/`dev` version suffix (`<base>-preview.<run_number>` / `<base>-dev.<run_number>`) matches the CLI's stamping scheme exactly.
+**Two channels publish automatically** (mirroring `UiPath/cli`): every merge to `main` publishes a `dev` build to GitHub Packages, and every merge to a `release/v*` branch publishes a `preview` build to npmjs. `latest` (stable) is published **only** by an explicit `channel=latest` dispatch — there is no `release:` trigger, so creating a GitHub Release does not publish anything. `npm install @uipath/skills` (no tag, from npmjs) always resolves the last stable release — `preview` (npmjs) and `dev` (GitHub Packages) are pre-release versions under their own dist-tags, so no un-tagged install ever picks them. The `preview`/`dev` version suffix (`<base>-preview.<run_number>` / `<base>-dev.<run_number>`) matches the CLI's stamping scheme exactly.
 
 ### Cutting a preview
 
@@ -88,7 +87,7 @@ Stable (`latest`) is **not** published automatically — the sprint cut only pub
    gh workflow run publish.yml --ref release/v<minor> -f channel=latest
    ```
    This publishes the committed `M.N.0` to npm `latest` via OIDC + `--provenance`.
-2. (Optional) Create a GitHub Release tagged `v<version>` as the durable record — a `release: published` event also publishes `latest`.
+2. (Optional) Create a GitHub Release tagged `v<version>` as a durable changelog record. This is **just a record** — there is no `release:` trigger, so it does **not** publish anything to npm; the dispatch in step 1 is what publishes.
 
 > **Lockstep note.** The CLI resolves `@uipath/skills` from npm `latest` for its own minor line. Because stable is now manual, **promote the matching skills line to stable before the CLI cuts that minor**, or the CLI will resolve the previous skills minor.
 
@@ -97,14 +96,14 @@ Stable (`latest`) is **not** published automatically — the sprint cut only pub
 `main` carries the line **currently in development** (`M.N.0`). The cut runs **Sunday 06:00 UTC**, gated to the **14-day cadence** anchored at `2026-06-14` — the same cadence as `UiPath/cli`, 6 hours earlier. It never reads the CLI version (skills lead, never follow), so no cross-repo secret is required. On a release Sunday it:
 
 1. cuts `release/v<M.N>` from `main` at the version **already in `main`** (`M.N.0`) — the release branch matches main; it is **not** bumped (no off-by-one);
-2. publishes a **preview** — dispatches `publish.yml --ref release/v<M.N> -f channel=preview`, which stamps `M.N.0-preview.<run>` and publishes to npm `preview` with `--provenance`. The dispatch is explicit because the bot's own branch push can't trigger `publish.yml` (`GITHUB_TOKEN` recursion guard). **Stable is not published here** — promote it manually (above);
+2. publishes a **dev build and a preview** — dispatches `publish.yml` twice on the release branch: `channel=dev` (→ `M.N.0-dev.<run>` on GitHub Packages) and `channel=preview` (→ `M.N.0-preview.<run>` on npmjs, `--provenance`). Both dispatches are explicit because the bot's own branch push can't trigger `publish.yml` (`GITHUB_TOKEN` recursion guard). **Stable is not published here** — promote it manually (above);
 3. opens a PR bumping `main` to the **next** line (`M.(N+1).0`) so development continues there while `release/v<M.N>` stabilizes.
 
 Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`) to cut exactly that line, or `dry_run` to print the plan without pushing, publishing, or opening a PR.
 
 > **Drift realignment.** The skills and CLI lines stay paired only because both cut on the same 14-day anchor; nothing reads the other side. The cut emits a **non-blocking warning** when the line it cuts isn't exactly one minor ahead of the CLI's latest npm release (`npm view @uipath/cli`) — the signal that the lines have drifted. **`minor_override` is the realignment lever:** dispatch the cut with `minor_override=<correct M.N>` to cut exactly that line back into alignment.
 
-> **Operational dependency — merge the bump PR before the next cut.** The line to cut is read from `main`'s `package.json`. If the bump PR from step 3 is not merged before the next release Sunday, `main` is still on the old line, so the cut re-targets it: it finds `release/v<M.N>` already at `M.N.0` and **resumes idempotently** (re-dispatches the preview, leaves the existing bump PR open) — no new line is cut. Safe, but a forgotten bump PR silently **stalls the cadence**. Merge sprint-cut bump PRs promptly. (If the branch exists at a *different* version, the cut stops loudly with `already exists at version <X> (expected <Y>)` for manual resolution.)
+> **Operational dependency — merge the bump PR before the next cut.** The line to cut is read from `main`'s `package.json`. If the bump PR from step 3 is not merged before the next release Sunday, `main` is still on the old line, so the cut re-targets it: it finds `release/v<M.N>` already at `M.N.0` and **resumes idempotently** (re-dispatches the dev + preview builds, leaves the existing bump PR open) — no new line is cut. Safe, but a forgotten bump PR silently **stalls the cadence**. Merge sprint-cut bump PRs promptly. (If the branch exists at a *different* version, the cut stops loudly with `already exists at version <X> (expected <Y>)` for manual resolution.)
 
 > **Repo setup:** branch protection must allow the Actions identity to push `release/v*` branches.
 
