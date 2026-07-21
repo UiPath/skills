@@ -1,0 +1,81 @@
+task_id: skill-connector-builder-oauth2-activity-e2e
+description: >
+  Full offline authoring loop: init, configure OAuth2 auth, add a CRUD activity
+  with a typed field schema, and validate. Guards the recurring "shipped a
+  fieldless activity" gap by asserting the standard-resource carries real fields,
+  and that OAuth2 landed in element.json — not just that validate ran.
+tags: [uipath-connector-builder, e2e, 'mode:build']
+
+run_limits: {max_turns: 80}
+
+initial_prompt: |
+  Author a NEW UiPath Integration Service connector end to end, on disk. This is
+  an OFFLINE build — do not log in; pass the organization explicitly.
+
+  Before starting, load the uipath-connector-builder skill and follow its
+  workflow. Do NOT ask for approval, confirmation, or feedback. Do NOT pause
+  between steps.
+
+  Connector spec:
+    - Display name: Acme Widgets
+    - Organization slug: acme
+    - Base URL: https://api.acme.example.com
+
+  Authentication — OAuth2 authorization code:
+    - Authorize URL: https://api.acme.example.com/oauth/authorize
+    - Token URL: https://api.acme.example.com/oauth/token
+    - Scopes: read write
+
+  Activity — a "contacts" CRUD activity supporting GET and POST. Give it a real
+  request/response field schema of id (string), email (string), and name
+  (string). It must NOT be a fieldless raw-JSON passthrough.
+
+  Finish by running validate and making sure it passes with 0 errors and 0
+  warnings.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran builder init"
+    tool_name: Bash
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent configured auth via auth set"
+    tool_name: Bash
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+auth\s+set'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the activity via activity create"
+    tool_name: Bash
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+activity\s+create'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran builder validate"
+    tool_name: Bash
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+validate'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "OAuth2 auth + derived key landed in element.json"
+    path: periodic-design-acme-acmewidgets/app/element/element.json
+    includes: ["oauth2", "design-acme-acmewidgets"]
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "contacts standard-resource carries the typed field schema (not fieldless)"
+    path: periodic-design-acme-acmewidgets/app/element/standard-resources/contacts.json
+    includes: ["fields", "email", "name"]
+    weight: 2.0
+    pass_threshold: 1.0
