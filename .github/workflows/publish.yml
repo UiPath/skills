@@ -1,13 +1,18 @@
 name: Publish skills package
 
-# Two-track publishing:
+# Publishing tracks:
 #   - workflow_dispatch (target: github-alpha) -> alpha prerelease to GitHub
 #     Packages (dist-tag `alpha`). Manual — no auto-publish on push to main.
-#   - GitHub Release published -> stable release to npmjs (dist-tag `latest`).
+#   - workflow_dispatch (target: npmjs-preview) -> pre-release to npmjs
+#     (dist-tag `preview`, version `<base>-preview.<run_number>`). Manual.
+#     Runs through the same OIDC job as `latest`, so it carries `--provenance`.
+#   - workflow_dispatch (target: npmjs) / GitHub Release published -> stable
+#     release to npmjs (dist-tag `latest`).
 #
 # `npm install @uipath/skills` (no tag) always resolves to the last stable
-# release, never an alpha. The version line tracks the CLI minor line so the
-# CLI can pin a compatible skills package (see docs/RELEASE.md).
+# release — never an alpha or a preview (both are pre-release versions under
+# their own dist-tags). The version line tracks the CLI minor line so the CLI
+# can pin a compatible skills package (see docs/RELEASE.md).
 
 on:
   release:
@@ -21,6 +26,7 @@ on:
         type: choice
         options:
           - npmjs
+          - npmjs-preview
           - github-alpha
 
 permissions:
@@ -76,9 +82,9 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-release:
-    name: Publish stable to npmjs
+    name: Publish to npmjs (latest / preview)
     needs: [guard]
-    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'npmjs')
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.target == 'npmjs' || github.event.inputs.target == 'npmjs-preview'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -98,6 +104,30 @@ jobs:
           npm install -g npm@latest
           echo "npm $(npm --version) / node $(node --version)"
 
+      # A `release` event or target=npmjs publishes the committed version to
+      # `latest`. target=npmjs-preview stamps a `<base>-preview.<run_number>`
+      # pre-release (never committed) and targets the `preview` dist-tag. The
+      # run_number keeps each dispatch unique and semver-ordered, matching how
+      # the alpha track stamps its version. `sync-version.mjs` rewrites the
+      # derived manifests and strips the pre-release suffix from the plugin
+      # manifests (same as alpha), so only the npm tarball carries the suffix.
+      # An explicit `--tag preview` on a pre-release version never moves
+      # `latest`, so `npm install @uipath/skills` still resolves the last stable.
+      - name: Resolve dist-tag and stamp version
+        id: dist
+        run: |
+          if [ "${{ github.event.inputs.target }}" = "npmjs-preview" ]; then
+            BASE=$(node -p "require('./package.json').version")
+            PREVIEW="${BASE}-preview.${{ github.run_number }}"
+            npm version "$PREVIEW" --no-git-tag-version --allow-same-version
+            node scripts/sync-version.mjs
+            echo "tag=preview" >> "$GITHUB_OUTPUT"
+            echo "Publishing $PREVIEW to dist-tag preview"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+            echo "Publishing $(node -p "require('./package.json').version") to dist-tag latest"
+          fi
+
       # No auth token and no setup-node registry-url — a token would make npm
       # use token auth and bypass OIDC. We only pin the scoped package to
       # npmjs; credentials come from the OIDC exchange. `--provenance` attaches
@@ -106,4 +136,4 @@ jobs:
       - name: Publish to npmjs (OIDC trusted publishing)
         run: |
           npm config set @uipath:registry https://registry.npmjs.org/
-          npm publish --access public --provenance --tag latest
+          npm publish --access public --provenance --tag ${{ steps.dist.outputs.tag }}

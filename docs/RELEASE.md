@@ -43,10 +43,21 @@ The version line mirrors the CLI's `MAJOR.MINOR` (e.g. CLI `1.197.x` → skills 
 | Trigger | Registry | dist-tag | Version |
 |---------|----------|----------|---------|
 | `workflow_dispatch` (target: `github-alpha`) | GitHub Packages | `alpha` | `<base>-alpha.<YYYYMMDD>.<run_number>` |
+| `workflow_dispatch` (target: `npmjs-preview`) | npmjs | `preview` | `<base>-preview.<run_number>` |
 | GitHub Release published | npmjs | `latest` | `package.json` version |
 | `workflow_dispatch` (target: `npmjs`) | npmjs | `latest` | `package.json` version |
 
-Both tracks are **manually triggered** — there is no auto-publish on push to `main`. Alpha is dispatched on demand; stable runs when a GitHub Release is published. `npm install @uipath/skills` (no tag) always resolves to the last stable npmjs release — alphas live only under the `alpha` tag on GitHub Packages.
+All tracks are **manually triggered** — there is no auto-publish on push to `main`. Alpha and preview are dispatched on demand; stable runs when a GitHub Release is published. `npm install @uipath/skills` (no tag) always resolves to the last stable npmjs release — alphas live only under the `alpha` tag on GitHub Packages, and previews only under the `preview` tag on npmjs (both are pre-release versions, so no un-tagged install ever picks them).
+
+### Cutting a preview
+
+Dispatch `publish.yml` on the release branch (or tag) you want to preview, with target `npmjs-preview`:
+
+```bash
+gh workflow run publish.yml --ref release/v<minor> -f target=npmjs-preview
+```
+
+The job stamps `<base>-preview.<run_number>` (never committed), runs `sync-version.mjs`, and publishes to the `preview` dist-tag with `--provenance` via the same OIDC job as `latest`. Consume it with `npm install @uipath/skills@preview`. Re-dispatch to advance the `preview` tag; each run gets a unique version from `run_number`.
 
 ### Registry routing
 
