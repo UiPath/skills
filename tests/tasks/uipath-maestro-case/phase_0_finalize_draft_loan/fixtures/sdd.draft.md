@@ -1,10 +1,5 @@
 # SDD — LoanOrigination
 
-> **⚠️ Generated lightweight; complexity exceeded thresholds.**
-> Counts at generation time: 6 primary stages, 45 primary-stage tasks, 5 integrations,
-> 5 personas, 0 child cases.
-> Review carefully before approving. Consider splitting into smaller cases or trimming scope.
-
 A case definition blueprint for the commercial term-loan origination lifecycle at
 Accrual Capital. Each case represents one loan application from receipt through funding
 (or adverse disposition), spanning Intake → Loan Setup → Underwriting → QA/QC →

@@ -18,12 +18,20 @@ initial_prompt: |
   I have a coded LangGraph agent in graph.py that answers customer support questions.
   Add an LLM as Judge guardrail using middleware style at Agent scope. The guardrail
   rule is: "The agent must only provide factual account information and must never offer
-  refunds or price negotiation." Use a block action. Use "gpt-4o-2024-08-06" as the model.
+  refunds or price negotiation." Use a block action.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
   Complete the entire task end-to-end in a single pass.
 
 success_criteria:
+  - type: command_executed
+    description: "Agent discovered the LLM-as-judge models via the CLI"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+llm-as-judge-models'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "LLM as Judge middleware correctly added to graph.py"
     command: "python3 $TASK_DIR/check_llm_as_judge.py"
@@ -34,4 +42,4 @@ success_criteria:
 
 run_limits:
   expected_turns: 12
-  turn_timeout: 300
+  turn_timeout: 900

@@ -166,6 +166,8 @@ The generated SDD must start with:
 | Task-output passing | {Direct \| Shared} — `caseDirectlyPassTaskOutputs` (Direct = a task's outputs flow straight to downstream tasks; default Direct) |
 | Case Identifier source | {`=metadata.ExternalId` (platform-generated — the default) \| custom} — what every `caseId` task input binds to |
 
+> **Case App validation contract:** Stage names must be non-empty, unique, and contain no `:`. Task names must contain no `:`. Every SLA rule and escalation needs a non-empty, target-unique title/display name with no `:`. SLA durations must be positive; minute-based SLAs must be 15–1000 minutes. Non-default SLA rows need an expression; escalations need a recipient, and at-risk escalations need a percentage.
+
 ### Case-Level SLA Escalation Rules
 
 | SLA Status | Threshold | Action |
@@ -348,7 +350,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| {count} | {h \| d \| w \| m} | {percentage}% | {Notify: recipient or specific action} | {Notify: recipient or specific action} |
+| {count} | {min \| h \| d \| w \| m} | {percentage}% | {Notify: recipient or specific action} | {Notify: recipient or specific action} |
 
 #### Tasks
 

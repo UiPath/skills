@@ -128,7 +128,7 @@ The `type` says **how the work gets done**, not what it's about. Read the verb +
 | `execute-connector-activity` | one **operation on an Integration Service connector** (e.g. Salesforce create record, send email) | Is this a single connector operation against a SaaS system? |
 | `wait-for-connector` | the case **pauses until an external system calls back** (webhook, inbound message, event) | Is the case waiting for an external system to respond? |
 | `wait-for-timer` | the case **pauses for a duration or until a datetime** | Is the case just waiting on time? |
-| `case-management` | the step **launches / coordinates a child case** | Does this spin up a sub-case? (any child case trips the Phase 0 threshold → soft-redirect) |
+| `case-management` | the step **launches / coordinates a child case** | Does this spin up a sub-case? |
 
 **Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. "Approve / review / decide" verbs are ambiguous between `action` (human) and `agent` (AI) — these are Always-Ask ([phase-0-interview.md § When to Ask vs Default](phase-0-interview.md#when-to-ask-vs-default)); never guess. A compliance trigger phrase forces `action` regardless of the pick above (see below).
 
@@ -194,6 +194,20 @@ Defines what `sdd.md` Section 1 (Case Definition) must contain.
 | SLA Type | conditional | `time-based` (single unconditional duration) / `condition-based` (one or more conditionExpression-keyed overrides + a default time-based row) | Default `time-based` when Case SLA set with no per-condition overrides. The FE persists `condition-based` whenever ≥ 1 `slaRules[]` entry carries a non-empty `conditionExpression` (see PO.Frontend `CaseManagementSlaProperties.tsx:27-30`). `condition-based` requires populating the §Variable SLA Rules table; `time-based` omits it. |
 | Case App | optional | `Enabled` / `Disabled` — whether the in-product Case App UI is on (`metadata.caseAppEnabled`). | Default `Disabled`; record in source ledger. |
 | Task-output passing | optional | `Direct` / `Shared` — `metadata.caseDirectlyPassTaskOutputs`. `Direct` passes a task's outputs straight to downstream tasks (default). | Default `Direct`. |
+
+**PO.Frontend validation parity.** Before Approve, apply the same name and SLA checks that the Case App applies:
+
+| Surface | Required checks |
+|---|---|
+| Stage label | Non-empty; unique across stages; no `:`. A non-Case-Manager stage also cannot reuse the reserved default Case Manager stage label when a Case Manager stage exists. |
+| Task display name | No `:` for materialized tasks. |
+| SLA rule title (`displayName`) | Non-empty; unique within the root or stage target; no `:`. |
+| Escalation title (`displayName`) | Non-empty; unique across escalations on the target; no `:`. |
+| SLA duration | `count > 0`; when `unit: min`, `15 ≤ count ≤ 1000`. Supported units are `min`, `h`, `d`, `w`, and `m`. |
+| Conditional SLA | Every non-default SLA rule has a non-empty expression/condition. |
+| Escalation payload | Every escalation has at least one recipient; an `at-risk` escalation has an `atRiskPercentage` value. |
+
+These are blocking authoring errors, not optional style warnings. Preserve the user's wording when repairing a name, but ask for a replacement when uniqueness or a reserved delimiter is violated; never silently suffix or truncate it.
 
 ### 1.2 Case-level SLA escalation
 
@@ -537,7 +551,7 @@ No `<UNRESOLVED>` on Duration / Until — timer cannot fire without it. Block Ap
 | Wait for Completion | `Yes` / `No` |
 | Data Returned (child → parent) | Table: `Child Variable | Parent Variable` — render only when `Wait for Completion: Yes` |
 
-`Child Case` is the portable Phase 0 → Phase 1 lookup name. Establish it before registry lookup and preserve it when unresolved; never substitute the parent task's display name. A missing live child case yields unresolved identity/folder fields + a `high` review item and remains placeholder-only. Every `case-management` task also triggers the §Soft redirect during Phase 0 threshold check (child cases ≥ 1 is a threshold breach per [phase-0-interview.md § Thresholds](phase-0-interview.md#thresholds)).
+`Child Case` is the portable Phase 0 → Phase 1 lookup name. Establish it before registry lookup and preserve it when unresolved; never substitute the parent task's display name. A missing live child case yields unresolved identity/folder fields + a `high` review item and remains placeholder-only.
 
 ### `process` / `agent` / `rpa` / `api-workflow` task — required cells
 

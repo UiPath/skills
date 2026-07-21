@@ -76,6 +76,8 @@ success_criteria:
   # a node targets the Slack connector AND flow debug retrieves the channel
   # description into the OUTPUT (the Bellevue office address). Supersedes a static
   # connector-key grep, which a flow that never executes would still pass.
+  # THIS is the authoritative proof the correct channel was targeted — a wrong or
+  # unresolved channel fails here regardless of what the static check below reports.
   - type: run_command
     description: "Flow debug runs; Slack connector executed and output has the channel description"
     command: "python3 $TASK_DIR/check_channel_description.py"
@@ -84,19 +86,31 @@ success_criteria:
     weight: 5.0
     pass_threshold: 1.0
 
-  # The channel #office-bellevue is a withheld requirement the persona reveals
-  # only when asked which channel. The debug check above already proves the right
+  # The channel #office-bellevue is a withheld requirement the persona reveals only
+  # when asked which channel. The runtime debug check above already PROVES the right
   # channel was read (its description IS the Bellevue office address); this static
-  # check separately grades the elicitation. Scored on its own (partial credit) —
-  # a flow that legitimately encodes the channel as an ID rather than its name
-  # should not hard-fail the whole task.
+  # check separately reports whether a specific channel was elicited and wired in.
+  #
+  # The Slack "Get Channel Info" activity (/ConversationsInfo/{conversationsInfoId})
+  # is keyed by channel ID, so a correct flow resolves "#office-bellevue" -> its
+  # channel ID (e.g. C0B50H7DE2F) and stores the ID — the human-readable name
+  # legitimately never survives into the .flow. A bare `office-bellevue` substring
+  # grep therefore FALSE-FAILS every correct implementation. So we pass on EITHER:
+  #   (a) the flow still names #office-bellevue (e.g. kept on a node label), OR
+  #   (b) the connector node has a resolved Slack channel ID hardwired into the
+  #       conversationsInfoId path parameter (a specific channel, not a run-time
+  #       input the persona explicitly forbade). Case (b) is not coupled to any one
+  #       workspace's ID — it matches the Slack channel-ID shape, and the runtime
+  #       check above confirms it's the *correct* channel.
+  # Non-gating (pass_threshold 0): a legitimate ID-based encoding must never
+  # hard-fail the whole task — see the block comment; scored for signal only.
   - type: run_command
     description: "Flow targets the #office-bellevue channel (elicited from the user)"
-    command: "python3 -c \"import glob,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(0 if 'office-bellevue' in open(flows[0]).read().lower() else 'flow does not reference the #office-bellevue channel')\""
+    command: "python3 -c \"import glob,re,sys; flows=glob.glob('**/*.flow',recursive=True); t=(open(flows[0]).read() if flows else ''); sys.exit('no .flow file found') if not flows else sys.exit(0 if ('office-bellevue' in t.lower() or re.search(r'conversationsInfoId[^A-Za-z0-9]+C[A-Z0-9]{6,}', t)) else 'flow neither names #office-bellevue nor hardwires a resolved Slack channel ID')\""
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   # The project name is a WITHHELD, COSMETIC requirement (persona reveals it only
   # if asked what to name it) — the flow behaves identically whatever it's called.
