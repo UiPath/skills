@@ -23,5 +23,5 @@ Not this playbook:
 
 ## Resolution
 
-- Retry after a short wait
-- No permanent fix available yet
+- For a transient Autopilot throttle, wait for the retry window and retry the apply operation
+- For sustained throttling at normal request volume, capture the request correlation identifier and escalate to the Maestro/LLM Gateway owner; do not prescribe connector-level batching without connector evidence
