@@ -511,23 +511,24 @@ Re-check after any edit:
 
 ## Validation
 
-There is **no** `uip maestro bpmn validate` CLI command. The skill ships its own
-offline validator that reconstructs the PO.Frontend Node/Edge/CanvasState model
-from the parsed BPMN and runs **every** canvas validation rule — run it as the
-primary check:
+Validate with the CLI — it runs the full PO.Frontend canvas rule set offline
+(the same Node/Edge/CanvasState reconstruction and every canvas rule), plus the
+deploy-readiness checks:
 
 ```bash
-cd skills/uipath-maestro-bpmn/validator && npm install --silent
-node validate-bpmn.mjs <file.bpmn>   # prints VALID and exits 0, or prints errors and exits 1
+uip maestro bpmn validate <file.bpmn> --output json
 ```
 
-`VALID` / exit 0 means the document passes all rules. Any other output lists the
-blocking errors (gateway/condition, fake-join, superfluous-gateway, error
-end/boundary event, timer-duration, single-blank-start, variable-reference, and
-IS-connector checks). See [validator/README.md](../validator/README.md).
+Exit 0 means the document passes all rules. Exit 1 lists the blocking errors,
+each with its rule code (gateway/condition, fake-join, superfluous-gateway,
+error end/boundary event, timer-duration/required-field, single-blank-start,
+single-conditional-outgoing-flow, variable-reference, method-parentheses,
+input-type, event-object, and IS-connector checks). Warnings are reported but do
+not block. If `validate` is unknown or runs only deploy-readiness checks, update
+the CLI — see [cli-conventions.md](cli-conventions.md#login-boundary).
 
-If Node is unavailable, fall back to a well-formed-XML parse plus the structural
-checklist below — it mirrors the same blocking rules:
+If the CLI is unavailable, fall back to a well-formed-XML parse plus the
+structural checklist below — it mirrors the same blocking rules:
 
 ```bash
 python3 -c "import xml.etree.ElementTree as ET; ET.parse('<file.bpmn>')"
