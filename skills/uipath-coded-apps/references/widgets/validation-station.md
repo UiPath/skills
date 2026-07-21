@@ -357,7 +357,7 @@ function ReviewWorkspace({ task }: { task: TaskGetResponse }) {
     artifacts,
     documentId: data.DocumentId,
     instanceId,
-    theme: 'light' as const,
+    theme: 'light' as const, // also set body class to match — see Critical Rule #4
     language: ValidationStationLanguage.English,
     persistent: false, // static grid — see must-know #3
   };

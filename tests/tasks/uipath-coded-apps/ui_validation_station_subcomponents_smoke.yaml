@@ -87,7 +87,7 @@ success_criteria:
 
   - type: run_command
     description: "Must-know #2 — only one subcomponent receives the `sdk` prop (only CompactFieldsForm persists). Exactly one `sdk=` JSX prop."
-    command: "test \"$(grep -oE 'sdk=' src/components/ReviewWorkspace.tsx | wc -l | tr -d ' ')\" = \"1\""
+    command: "test \"$(grep -oE 'sdk[[:space:]]*=' src/components/ReviewWorkspace.tsx | wc -l | tr -d ' ')\" = \"1\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.5
