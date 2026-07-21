@@ -125,7 +125,7 @@ Then immediately proceed to Step 1 in the same message.
 
 ### Step 1 — Discover existing entities in the folder
 
-> **Step 1/5 — Discovering existing Data Fabric entities...**
+**▶  🔍 Discover — Checking existing Data Fabric entities...**
 
 **GATE: This step must run before any other step. No exceptions.**
 
@@ -154,7 +154,7 @@ uip df entities create <name> --body '{"fields":[...]}' --output json
 
 After creating each entity, confirm it with `uip df entities list` and show the result.
 
-> **Step 2/5 — `<N>` entities already exist, `<M>` missing. [Creating missing entities... / All present.]**
+**▶  ➕ Fill gaps — `<N>` entities already exist, `<M>` missing. [Creating missing entities... / All present.]**
 
 **Do not advance to Step 3 until the user explicitly confirms one of:**
 - All missing entities have been created, OR
@@ -164,7 +164,7 @@ If the user tries to skip Steps 1–2, explain: *"Steps 1 and 2 are required —
 
 ### Step 3 — Verify ontology does not already exist, then create
 
-> **Step 3/5 — Checking for existing ontology, then creating...**
+**▶  🏗️ Create — Checking for existing ontology, then creating...**
 
 Before running any commands, show a pre-flight summary using the confirmed values from Step 0:
 
@@ -244,7 +244,7 @@ For each artifact (`i` of `total`), follow this exact output format:
 
 1. Print the progress line on its own line **before** running any commands:
    ```
-   Artifact <i> of <total>: <type> — <fileName>
+   ▶  📤 Upload — Artifact <i> of <total>: <type> — <fileName>
    ```
 2. Validate:
    ```bash
@@ -272,7 +272,7 @@ For each artifact (`i` of `total`), follow this exact output format:
 
 ### Step 5 — Final summary
 
-> **Step 5/5 — Done. Here is what was created:**
+**▶  ✅ Done — Here is what was created:**
 
 Run `uip ont get <name>` and `uip ont artifact list <name>`, then format as a table:
 
