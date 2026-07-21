@@ -49,3 +49,17 @@ success_criteria:
     path: "output.txt"
     weight: 1.0
     pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No apply before values: does NOT create a policy while org-specific values are unresolved (SKIP)"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create'
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Partial apply must NOT use state enable (full-standard path)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

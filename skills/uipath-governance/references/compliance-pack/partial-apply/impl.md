@@ -9,6 +9,16 @@ Synthesizes and deploys AOPS policies for the NLP-matched clause/product subset 
 - `targetClauseIds` — comma-separated ISO clauseIds matched from catalog
 - `targetProducts` — list of productIdentifiers matched from catalog
 
+## Step 0: Get the pack catalog first (required)
+
+`synthesize-formdata.mjs` reads `catalog.json`, so `catalog get` MUST run before Step 1. If `$SESSION_TEMP/catalog.json` does not exist yet, run it now (see `catalog/impl.md`):
+
+```bash
+uip gov compliance-packs catalog get <packId> --output json > "$SESSION_TEMP/catalog.json"
+```
+
+Do not synthesize, hand-roll formData, or default any value without this file — the catalog is the only source of which controls exist and which are org-specific.
+
 ## Step 1: Synthesize formData overrides per product
 
 `synthesize-formdata.mjs` is the ONLY sanctioned way to build formData overrides. It also surfaces the `notEmpty` prompts in Step 1b. Do NOT hand-roll a substitute or default the values — running it is mandatory even when every org-specific value will be answered SKIP.
@@ -37,9 +47,15 @@ Exit 3 = no contributions for this product in these clauses → skip it, continu
 
 ## Step 1b: Collect user-specific values (if any)
 
-After running `synthesize-formdata.mjs`, check **stderr** for `⚠` warning lines indicating settings that need org-specific values. (The script uses `console.warn` which writes to stderr, not stdout.)
+After running `synthesize-formdata.mjs`, check **stderr** for `⚠` warning lines. (The script uses `console.warn`, which writes to stderr.) Each line names the control key and its required-operator class — branch on the class, do NOT treat every `⚠` line as a value prompt:
 
-For each warned key, ask the user before proceeding:
+- **`notEmpty`** — an org-specific value the user must supply. Prompt for it (below).
+- **`exists`** — an access-policy check, not a formData value; there is nothing to type. Surface it as a manual-configuration note in the Step 4 review gate; do NOT prompt.
+- **unknown operator** — surface as a manual-configuration note; do NOT prompt.
+
+Detection is by operator class (matched from the script's structured warning), not a fixed message string — new controls with the same class are handled automatically.
+
+For each `notEmpty` key, ask the user before proceeding:
 
 ```
 Some recommended settings require values specific to your organization.
@@ -53,6 +69,8 @@ Some recommended settings require values specific to your organization.
 Accept responses:
 - Non-empty list → write the parsed array into `$SESSION_TEMP/overrides/<product>.json` at the warned key path before moving to Step 2
 - `SKIP` → leave the key absent from overrides; surface it in the AOps review gate (Step 4) as a setting that needs manual configuration, with the setting's `configLocation` from catalog
+
+**Do not proceed to Step 2 until every `notEmpty` prompt is resolved** — each answered with a value or an explicit SKIP. Never continue the apply with placeholder or default values while a required value is still outstanding. Run `synthesize-formdata.mjs` once per product: the warnings from that single run are the complete list — do not re-run it to re-check.
 
 **Writing collected values into overrides (example for URL list):**
 
