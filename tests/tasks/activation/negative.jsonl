@@ -55,3 +55,10 @@
 {"id": "negative-055", "prompt": "Build a FastMCP server in Python that exposes a calculator tool", "expected_skill": ""}
 {"id": "negative-056", "prompt": "Summarize what my team talked about in Slack this week", "expected_skill": ""}
 {"id": "negative-057", "prompt": "Run Tesseract OCR on a folder of scanned receipts", "expected_skill": ""}
+{"id": "negative-058", "prompt": "Build a custom connector in MuleSoft Anypoint for the Stripe API", "expected_skill": ""}
+{"id": "negative-059", "prompt": "Create a Workato custom connector for our internal REST API", "expected_skill": ""}
+{"id": "negative-060", "prompt": "Build a Zapier integration that connects Slack to Google Sheets", "expected_skill": ""}
+{"id": "negative-061", "prompt": "Write an OpenAPI 3.0 spec for my REST API", "expected_skill": ""}
+{"id": "negative-062", "prompt": "Generate a Postman collection for the vendor's REST endpoints", "expected_skill": ""}
+{"id": "negative-063", "prompt": "Write a Python client wrapper around the Stripe REST API", "expected_skill": ""}
+{"id": "negative-064", "prompt": "Build a Boomi connector for our billing system", "expected_skill": ""}
