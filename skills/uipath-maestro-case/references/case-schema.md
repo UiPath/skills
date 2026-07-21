@@ -292,6 +292,8 @@ See `metadata.caseExitRules` in §1.
 ## 4. edges (two types, discriminated on `type`)
 
 > **The skill does not author edges — `edges` stays `[]`.** Stage transitions derive entirely from `entryConditions` / `exitConditions` (§3); the case start derives from the first stage's `case-entered` entry condition, not a `TriggerEdge`. The structures below are **reference-only** — the empty `edges[]` array remains in the schema for frontend compatibility, and the FE auto-derives canvas connectors from the conditions. The two edge shapes are documented here only so a canvas-round-tripped file (where the FE may have materialized edges) is still readable.
+>
+> **Do not copy these into a build.** The `TriggerEdge`/`Edge` JSON below is for READING round-tripped files, not authoring. Never write an edge object into `caseplan.json` — model flow with conditions (§3) instead.
 
 ### a) TriggerEdge — `"case-management:TriggerEdge"`
 

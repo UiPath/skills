@@ -51,6 +51,8 @@ Append (or prepend) this object to `nodes` — both orderings are valid for the 
 
 **Do not initialize `entryConditions` or `exitConditions` on a primary Stage at creation time.** Primary stages acquire those keys later when the condition plugins (stage-entry-conditions / stage-exit-conditions) write them — do not create the keys here.
 
+> **Do NOT author edges — `edges` stays `[]` (edges retired).** Adding a stage node NEVER adds an edge. Do not connect this stage to a trigger, a predecessor stage, or a successor stage with a `TriggerEdge` / `Edge`. Stage-to-stage flow and case-start are condition-driven only: model an SDD "A → B" arrow as B's `entryConditions` (plus A's `exitConditions` when A diverges), never as an edge. The frontend auto-derives canvas connectors from conditions. See [stages/planning.md § Wiring constraints](planning.md) and [case-schema.md § 4](../../case-schema.md).
+
 ## Recipe — Secondary Stage
 
 Same as a primary Stage, with `data.stageType: "secondary"` and two additional `data` fields initialized empty:
@@ -89,6 +91,7 @@ After writing, confirm:
 - NO `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18). Only `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` remain
 - For a secondary stage: `data.stageType == "secondary"`, and `data.entryConditions: []` and `data.exitConditions: []` are present (initialized as empty arrays at creation time)
 - For a primary Stage at creation time: `data.entryConditions` / `data.exitConditions` are absent — the conditions plugins will create and populate them later if the sdd.md calls for it
+- **`schema.edges` is still `[]`** — adding a stage must not have introduced any edge (edges retired). If the array is non-empty, an edge was authored in error: remove it (Read → filter `schema.edges` → Edit the narrow slice, per [case-editing-operations.md § stray edge](../../case-editing-operations.md)) before proceeding.
 
 Run `uip maestro case validate <file> --output json` after all stages for this plugin's batch are added.
 

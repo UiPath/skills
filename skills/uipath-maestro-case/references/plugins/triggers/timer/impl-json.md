@@ -110,6 +110,7 @@ After writing, confirm:
 - `node.data.uipath.timeCycle` is byte-identical to the input string
 - Node has NO `position`, `style`, `measured`, `width`, `height`, `zIndex` (Rule 18 layout-strip)
 - Case A: no `data.parentElement`. Case B: `data.parentElement == {id: "root", type: "case-management:root"}`
+- **`schema.edges` is still `[]`** — the trigger must NOT be connected to the first stage (or anything) with a `TriggerEdge`/`Edge`. Edges are retired; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
 - `entry-points.json.entryPoints` has a new entry with `filePath` containing the new `triggerId` and `displayName` matching `node.data.label`
 
 Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added.
