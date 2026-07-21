@@ -244,16 +244,22 @@ mappings:
 
 **Validate-then-upsert for each artifact:**
 
-For each artifact (`i` of `total`):
+For each artifact (`i` of `total`), follow this exact output format:
 
-> **Step 4/5 — Upserting artifacts (`<i>` of `<total>`: `<type>` — `<fileName>`)...**
-
-1. Validate first:
+1. Print the progress line on its own line **before** running any commands:
+   ```
+   Artifact <i> of <total>: <type> — <fileName>
+   ```
+2. Validate:
    ```bash
    uip ont artifact validate <name> <file> --type <type> --media-type <mime> --file <path>
    ```
-2. **The server always returns HTTP 200 for validate — check `Data.valid`, not the exit code.**
-3. If `Data.valid === true` → upsert, then emit: `` `<fileName>` — validated OK, upserted ✓ ``
+3. **The server always returns HTTP 200 for validate — check `Data.valid`, not the exit code.**
+4. If `Data.valid === true` → upsert, then print the result on its own new line:
+   ```
+   `<fileName>` — validated OK, upserted ✓
+   ```
+   Then print a blank line before the next artifact's progress line so each artifact is visually separated.
    ```bash
    uip ont artifact upsert <name> <file> --type <type> --media-type <mime> --file <path>
    ```
