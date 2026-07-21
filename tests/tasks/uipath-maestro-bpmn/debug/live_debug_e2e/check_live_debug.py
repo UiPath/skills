@@ -20,7 +20,9 @@ Completed`` but no variables file, so ``product`` was nowhere in the evidence).
 
 Grading strategy
 ----------------
-  1. Structural guard: a scriptTask exists in the authored ``.bpmn``.
+  1. Structural guard: a scriptTask exists in the authored ``.bpmn`` and does
+     NOT mutate ``Globals.*``/``vars.*`` directly (unsupported in Jint — the
+     supported path is ``return`` + a ``uipath:output`` mapping).
   2. Primary (deterministic): the agent's saved evidence shows a completed run
      AND a ``product``-named variable == 42 (read structurally by name, not by
      leaf-grep, so GUIDs/timestamps can't false-match).
@@ -38,6 +40,7 @@ from __future__ import annotations
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -205,6 +208,18 @@ def _read_variables_all(instance_id: str):
     )
 
 
+def _script_bodies(root):
+    """Yield each scriptTask's JS body with JS comments stripped."""
+    for task in root.findall(f".//{{{BPMN_NS}}}scriptTask"):
+        node = task.find(f"{{{BPMN_NS}}}script")
+        if node is None:
+            continue
+        body = "".join(node.itertext())
+        body = re.sub(r"/\*.*?\*/", "", body, flags=re.DOTALL)
+        body = re.sub(r"//.*", "", body)
+        yield body
+
+
 def _bpmn_project_candidates():
     """Directories of every project.uiproj that has a sibling ``.bpmn``,
     shallowest first (a standalone ``ProductCalc/`` before a solution-nested
@@ -243,8 +258,16 @@ def _fresh_debug_then_variables():
 
 
 def main() -> None:
-    # 1. Structural guard: the product must be computed by a script task.
-    bpmn_files = glob.glob("**/*.bpmn", recursive=True)
+    # 1. Structural guard: product is computed by a script task that RETURNS its
+    #    value. Jint does not apply direct `Globals.*`/`vars.*` mutation to the
+    #    runtime — the supported path is `return` + a `uipath:output` mapping, so
+    #    a mutating script silently leaves the variable empty. Scope to the
+    #    agent's project files (skip the skill's own validator/sample .bpmn).
+    bpmn_files = [
+        p
+        for p in glob.glob("**/*.bpmn", recursive=True)
+        if not ({"validator", "samples"} & set(p.split(os.sep)))
+    ]
     if not bpmn_files:
         _fail("no .bpmn file authored")
     found_script = False
@@ -253,15 +276,19 @@ def main() -> None:
             root = ET.parse(path).getroot()
         except ET.ParseError as exc:
             _fail(f"{path} is not well-formed XML: {exc}")
-        if root.findall(f".//{{{BPMN_NS}}}scriptTask"):
+        for body in _script_bodies(root):
             found_script = True
-            break
+            if re.search(r"\bGlobals\.", body) or re.search(r"\bvars\.", body):
+                _fail(
+                    f"{path}: script task reads/mutates Globals.*/vars.* directly — "
+                    "unsupported in Jint. Return a value and map it via uipath:output."
+                )
     if not found_script:
         _fail(
             "no scriptTask in any authored .bpmn — the product must be computed by "
             "a script task, not hardcoded"
         )
-    print("OK: product is computed by a script task")
+    print("OK: product is computed by a script task (return + output mapping)")
 
     # 2. Read the agent's saved CLI evidence. The `variables-all` output is the
     #    only source of the runtime `product` value — the `debug` command output
