@@ -1,9 +1,10 @@
 name: Publish skills package
 
 # Publishing channels (registry follows channel — see docs/RELEASE.md):
-#   - push to `main`                       -> `dev`     : GitHub Packages
+#   - push to `main` or `release/v*`       -> `dev`     : GitHub Packages
 #         Auto on every merge. Version `<base>-dev.<run_number>` (never
 #         committed). No provenance — GitHub Packages does not support it.
+#         The `dev` tag points to the last push from ANY of these branches.
 #   - GitHub Release published             -> `latest`  : npmjs (stable)
 #   - workflow_dispatch (channel: latest)  -> `latest`  : npmjs (stable)
 #         Committed `package.json` version. Used by sprint-release-cut.yml.
@@ -22,7 +23,10 @@ name: Publish skills package
 
 on:
   push:
-    branches: [main]
+    # Every merge to main OR a release line publishes a `dev` build to GitHub
+    # Packages. The `dev` dist-tag points to the LAST push from ANY of these
+    # branches (dist-tags ignore semver), so it can move between minor lines.
+    branches: [main, 'release/v*']
   release:
     types: [published]
   workflow_dispatch:
