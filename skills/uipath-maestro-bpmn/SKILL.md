@@ -63,9 +63,14 @@ Work the four steps quickly, but keep the path matched to the user's ask. For
 discovery-only asks (for example, "show what the registry exposes" or "capture
 the template for X"), run `registry pull`, then `list` / `search`, then
 `registry get <type> --output json` for the requested types; save or report the
-raw evidence and do not scaffold a project. For authoring asks, read a reference
-only when you reach the structure it covers, get the needed templates, then
-write the first complete draft before further spelunking.
+raw evidence and do not scaffold a project. For authoring asks, author early:
+do not pre-read every reference before writing. Read a reference only when you
+reach the structure it covers, get the needed templates, then write the first
+complete draft before further spelunking.
+If [references/structural-bpmn.md](references/structural-bpmn.md) or
+[references/expression-authoring.md](references/expression-authoring.md)
+directly covers the requested construct, write a first complete draft before
+further spelunking.
 
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
