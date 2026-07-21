@@ -37,7 +37,7 @@ Activate on **any** governance / policy / rule intent — even when the user did
 
 ## Critical Rules
 
-1. **Classify before authoring.** First action on any governance request is to classify intent into Branch A (AOps) or Branch B (Access). Use the priors in [`references/disambiguation-guide.md`](./references/disambiguation-guide.md). Never start `create` / `update` / `delete` until classification is settled — by user wording or by the [disambiguation question](#disambiguation-question).
+1. **Classify before authoring.** First action on any governance request is to classify intent into Branch A (AOps) or Branch B (Access). Use the priors in [`references/disambiguation-guide.md`](./references/disambiguation-guide.md). Never start `create` / `update` / `delete` until classification is settled — by user wording or by the [disambiguation question](#disambiguation-question). When you ask that question, it is the whole turn: render the numbered list, then end the turn and wait — issue no `uip` call and do no branch investigation until the user answers.
 2. **Classification lives at the top.** Mechanic libraries assume the branch is chosen. Do not let those flows ask "did you mean the other branch?" — that question belongs here.
 3. **One branch per mutation.** A single user request produces a policy on one branch only. If the user wants both, run two sequential flows with two confirmation gates.
 4. **Each mechanic owns its own Critical Rules.** Once routed, follow the branch's rules — do not relax them from this top level.
@@ -63,7 +63,7 @@ Activate on **any** governance / policy / rule intent — even when the user did
 
 ## Disambiguation Question
 
-When the user's intent fits both branches, render exactly this numbered list (no `AskUserQuestion`, no table) and wait for a digit reply:
+When the user's intent fits both branches, render exactly this numbered list (no `AskUserQuestion`, no table), then end the turn and wait for a digit reply:
 
 ```markdown
 ### Which layer should this rule govern?
@@ -73,6 +73,13 @@ When the user's intent fits both branches, render exactly this numbered list (no
 
 Reply with the number.
 ```
+
+**Asking this question is the entire turn — STOP after it.** The gate exists to pause, not to get a head start:
+
+- Render the numbered list, then end the turn (`end_turn`) and wait for the user's digit. Do not loop into further work.
+- Make no `uip` call and do not read further references, investigate, stage, prepare, or "pre-flight" either branch in this turn. The only tool call allowed is writing the question itself to an output file if the user asked for one.
+- Do not claim you have already created, configured, or deployed anything — you have not.
+- If the reply is not `1` or `2`, re-render the same list and stop again. Never guess a branch.
 
 The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Studio."* See [`references/disambiguation-guide.md`](./references/disambiguation-guide.md#worked-example--the-canonical-ambiguous-prompt) for the worked-out reasoning of why both interpretations produce a working but different artifact.
 
