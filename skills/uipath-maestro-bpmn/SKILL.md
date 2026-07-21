@@ -59,8 +59,13 @@ Two halves make a valid Maestro `.bpmn`:
 
 ## Workflow
 
-Work the four steps quickly and author early — do not pre-read every reference
-before writing. Read a reference only when you reach the structure it covers.
+Work the four steps quickly, but keep the path matched to the user's ask. For
+discovery-only asks (for example, "show what the registry exposes" or "capture
+the template for X"), run `registry pull`, then `list` / `search`, then
+`registry get <type> --output json` for the requested types; save or report the
+raw evidence and do not scaffold a project. For authoring asks, read a reference
+only when you reach the structure it covers, get the needed templates, then
+write the first complete draft before further spelunking.
 
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
@@ -69,16 +74,25 @@ before writing. Read a reference only when you reach the structure it covers.
    every selection with the user (use AskUserQuestion). Never fabricate an identifier.
    See [references/registry-workflow.md](references/registry-workflow.md).
 2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
-   each chosen node. Enrich `Intsvc.*` connector nodes with
-   `--connection-id`/`--object-name`.
+   each chosen registry-owned node only. Enrich `Intsvc.*` connector nodes with
+   `--connection-id`/`--object-name`. Do not call `registry get` for structural
+   gaps the registry never owns: sequence flows, gateways, events, boundary
+   events, multi-instance/loop markers, `errorMapping`/retry structure, or
+   diagrams.
 3. **Assemble.** Author directly from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-fixtures)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton already
    shows variables, the entry point, a branch, and the diagram. **Do not read the
-   validator's `test/fixtures/` to infer the pattern** — it is the top reason
-   authoring runs out of time. Add only the structural pieces your process needs
-   (extra gateways, events, boundary events, containers, multi-instance markers),
-   then generate one `BPMNShape`/`BPMNEdge` per node and flow.
+   validator's `test/fixtures/`, task fixtures, or generated package files to
+   infer authoring patterns** — fixture spelunking is the top reason authoring
+   runs out of time. Add only the structural pieces your process needs (extra
+   gateways, events, boundary events, containers, multi-instance markers,
+   expression/error mappings, retry attributes), then generate one
+   `BPMNShape`/`BPMNEdge` per node and flow. For local authoring prompts, use the
+   plain project layout `<ProjectName>/<ProjectName>.bpmn` with
+   `<ProjectName>/project.uiproj`; do not create `*Solution/`, package files, or
+   `.uipx` artifacts unless the user explicitly asks to package or operate the
+   project.
 4. **Validate.** There is **no** `uip maestro bpmn validate` CLI command. Run the
    bundled validator — it reconstructs the canvas model and runs every
    PO.Frontend rule:
