@@ -1,0 +1,55 @@
+task_id: skill-flow-template-first-discovery
+description: >
+  Add a second weather flow beside an existing working .flow file. Grades that
+  the agent discovers local flow templates before building and reuses the local
+  shape instead of starting from registry-only discovery.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:edit, shape:multi-node, node:decision, feature:http]
+
+run_limits:
+  expected_turns: 10
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../templates/initial_flow
+
+initial_prompt: |
+  This directory already contains a working Bellevue weather flow. Add a second flow file at BellevueWeather/BellevueWeather/PortlandWeather.flow for Portland, OR.
+
+  The new flow should follow the existing weather flow's structure, use Open-Meteo for Portland coordinates (latitude 45.5152, longitude -122.6784), return the same kind of branch outputs, and mention Portland in the summary. Do not change BellevueWeather.flow.
+
+  Validate the new flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+
+success_criteria:
+  # Discovery behavior
+  - type: command_executed
+    description: "Agent searched the workspace for local .flow files before building"
+    tool_name: "Bash"
+    command_pattern: 'rg\s+--files[^\n]*(?:-g\s+["'']?\*\.flow["'']?|\.flow)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Flow file validity
+  - type: run_command
+    description: "uip maestro flow validate passes on the new flow file"
+    command: "uip maestro flow validate BellevueWeather/BellevueWeather/PortlandWeather.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Template reuse checks
+  - type: run_command
+    description: "New Portland flow reuses the existing weather-flow shape without mutating BellevueWeather.flow"
+    command: "python3 $TASK_DIR/check_template_first_discovery.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120
