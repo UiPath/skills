@@ -63,23 +63,27 @@ Activate on **any** governance / policy / rule intent — even when the user did
 
 ## Disambiguation Question
 
-When the user's intent fits both branches, render exactly this numbered list (no `AskUserQuestion`, no table), then end the turn and wait for a digit reply:
+When the user's intent fits both branches, your entire reply is the question below — **nothing before it, nothing after it**. Emit it verbatim as your visible response AND write the identical text to any output file the user asked for (e.g. `./output.txt`). No preamble ("this is ambiguous…"), no `AskUserQuestion`, no heading, no bold, no table, no trailing narration ("I wrote this to the file…"). Surrounding prose hides the numbered list from downstream readers and is the failure mode this format prevents.
 
-```markdown
-### Which layer should this rule govern?
+Emit exactly this plain text:
 
-1. **Govern the product** — control what Studio / StudioX / Assistant / Robot / AI Trust Layer / Agent Builder *can do* (e.g. block ChatGPT inside Studio, enforce Workflow Analyzer, disable a Marketplace widget). Backed by `uip gov aops-policy`.
-2. **Govern resource/tool use** — control which Actor Processes / identities can *invoke* which child Resource as a tool (e.g. block agents tagged `Sandbox` from being called, only let the finance group trigger this Flow). Backed by `uip gov access-policy`.
+```text
+Which layer should this rule govern?
 
-Reply with the number.
+1. Govern the product — control what Studio / StudioX / Assistant / Robot / AI Trust Layer / Agent Builder can do.
+2. Govern resource/tool use — control which identities can invoke which child resources as tools.
+
+Reply with 1 or 2.
 ```
 
-**Asking this question is the entire turn — STOP after it.** The gate exists to pause, not to get a head start:
+**This question is the entire turn — STOP after it.** The gate exists to pause, not to get a head start:
 
-- Render the numbered list, then end the turn (`end_turn`) and wait for the user's digit. Do not loop into further work.
-- Make no `uip` call and do not read further references, investigate, stage, prepare, or "pre-flight" either branch in this turn. The only tool call allowed is writing the question itself to an output file if the user asked for one.
+- After emitting the question (and writing the identical text to the requested output file), end the turn (`end_turn`) and wait for the user's digit.
+- Make no `uip` call; do not read further references, investigate, stage, or "pre-flight" either branch. The only tool call allowed is writing this question to the output file.
 - Do not claim you have already created, configured, or deployed anything — you have not.
-- If the reply is not `1` or `2`, re-render the same list and stop again. Never guess a branch.
+- If the reply is not `1` or `2`, re-emit the same question verbatim and stop again. Never guess a branch.
+
+Mapping (for your own routing after the reply — do NOT include in the emitted question): option 1 → `uip gov aops-policy`, option 2 → `uip gov access-policy`.
 
 The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Studio."* See [`references/disambiguation-guide.md`](./references/disambiguation-guide.md#worked-example--the-canonical-ambiguous-prompt) for the worked-out reasoning of why both interpretations produce a working but different artifact.
 
