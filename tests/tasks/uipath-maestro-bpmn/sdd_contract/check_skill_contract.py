@@ -13,6 +13,14 @@ TEMPLATE = ROOT / "skills/uipath-maestro-bpmn/assets/templates/sdd-template.md"
 RULES = ROOT / "skills/uipath-maestro-bpmn/references/sdd-generation-rules.md"
 INTERVIEW = ROOT / "skills/uipath-maestro-bpmn/references/phase-0-interview.md"
 INTAKE = ROOT / "skills/uipath-maestro-bpmn/references/sdd-input.md"
+DELEGATE_E2E = (
+    ROOT
+    / "tests/tasks/uipath-maestro-bpmn/sdd_delegate_loan_origination/delegate_loan_origination_sdd.yaml"
+)
+DELEGATE_FIXTURE = (
+    ROOT
+    / "tests/tasks/uipath-maestro-bpmn/sdd_delegate_loan_origination/fixtures/sdd.md"
+)
 
 
 def fail(message: str) -> None:
@@ -52,6 +60,8 @@ def main() -> int:
     rules = read_required(RULES)
     interview = read_required(INTERVIEW)
     intake = read_required(INTAKE)
+    delegate_e2e = read_required(DELEGATE_E2E)
+    delegate_fixture = read_required(DELEGATE_FIXTURE)
 
     require_text(
         "SKILL.md input routing",
@@ -64,6 +74,8 @@ def main() -> int:
         "Phase 0",
         "explicit direct-authoring",
         "direct prose-to-BPMN",
+        "explicit SDD path first",
+        "`./sdd.md`",
     )
     require_order(
         "SKILL.md input routing",
@@ -118,10 +130,12 @@ def main() -> int:
         interview,
         "sdd.draft.md",
         "explicit approval",
-        "AskUserQuestion",
+        "resumable checkpoint",
         "sdd.md",
         "before registry",
     )
+    if "AskUserQuestion" in interview:
+        fail("Phase 0 reference must use platform-neutral approval wording")
     require_order(
         "Phase 0 interview",
         interview,
@@ -141,6 +155,7 @@ def main() -> int:
         "flows",
         "conditions",
         "variables",
+        "scope",
         "events",
         "subprocess",
         "loop",
@@ -170,6 +185,29 @@ def main() -> int:
         "unresolved",
         "does not include registry XML",
         "does not include BPMNDI",
+    )
+    require_text(
+        "Skills-owned SDD variable contract",
+        template,
+        "Variable ID",
+        "Type",
+        "Scope",
+        "Source",
+        "Consumers",
+    )
+    require_text(
+        "Delegate compatibility E2E",
+        delegate_e2e,
+        "Delegate-generated",
+        "skip Phase 0",
+        "check_loan_origination_sdd.py",
+    )
+    require_text(
+        "Delegate compatibility fixture",
+        delegate_fixture,
+        "N_VALIDATION_RESULT",
+        "Scope",
+        "<UNRESOLVED: active-tenant human task must be selected downstream>",
     )
 
     for forbidden in ("uipath:", "<bpmn:", "bpmndi"):

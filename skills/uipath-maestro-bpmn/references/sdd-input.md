@@ -13,8 +13,8 @@ Read the SDD and extract:
 - participants and start trigger;
 - logical nodes and their BPMN kind, inputs, outputs, and resource intent;
 - logical flows, gateway conditions, and default paths;
-- variables with types, producers, and consumers (including a flow ID when its
-  condition reads the variable);
+- variables with types, process or subprocess scopes, producers, and consumers
+  (including a flow ID when its condition reads the variable);
 - events, exception behavior, subprocess declarations, and loop rules; and
 - every resource intent, including required status and unresolved markers.
 
@@ -37,7 +37,8 @@ Check graph completeness before registry discovery:
 - every non-terminal node has its intended incoming and outgoing behavior;
 - every gateway path has an explicit condition or default path, and no default
   path also carries a condition;
-- every variable consumer has a compatible producer; and
+- every variable consumer has a compatible producer in a valid declared scope;
+  and
 - every event, subprocess, and loop has the declared parent, trigger, and exit
   behavior.
 

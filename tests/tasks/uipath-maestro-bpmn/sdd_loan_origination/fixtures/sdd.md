@@ -47,12 +47,12 @@ The process starts manually with an application ID and requested amount.
 
 ## 4. Data and variables
 
-| Variable ID | Type | Source | Consumers | Purpose |
-| --- | --- | --- | --- | --- |
-| `application-id` | string | `start-application` | `validate-application`, `underwriter-review` | Identifies the application. |
-| `requested-amount` | number | `start-application` | `validate-application`, `underwriter-review` | Records the requested loan amount. |
-| `application-valid` | boolean | `validate-application` | `assess-eligibility`, `application-rejected` | States whether required application data is valid. |
-| `review-decision` | string | `underwriter-review` | `route-review-decision`, `application-approved`, `application-rejected` | States the underwriter's outcome. |
+| Variable ID | Type | Scope | Source | Consumers | Purpose |
+| --- | --- | --- | --- | --- | --- |
+| `application-id` | string | process | `start-application` | `validate-application`, `underwriter-review` | Identifies the application. |
+| `requested-amount` | number | process | `start-application` | `validate-application`, `underwriter-review` | Records the requested loan amount. |
+| `application-valid` | boolean | process | `validate-application` | `assess-eligibility`, `application-rejected` | States whether required application data is valid. |
+| `review-decision` | string | process | `underwriter-review` | `route-review-decision`, `application-approved`, `application-rejected` | States the underwriter's outcome. |
 
 ## 5. Events, subprocesses, and loops
 

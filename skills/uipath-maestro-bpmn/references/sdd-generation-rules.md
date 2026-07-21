@@ -32,7 +32,8 @@ default behavior is ambiguous.
 
 ## 3. Preserve data lineage
 
-- Declare trigger inputs and process variables with compatible types.
+- Declare trigger inputs and process variables with compatible types and explicit
+  process or subprocess scope.
 - For each consumed variable, record the trigger or node that produces it.
 - For each output, record every downstream node, event, flow condition, or end
   outcome that consumes it. A flow ID is the consumer when its condition reads

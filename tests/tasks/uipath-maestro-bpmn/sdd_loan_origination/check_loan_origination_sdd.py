@@ -129,6 +129,7 @@ def semantic_model(text: str):
         tables,
         ("Variable ID", "Variable"),
         ("Type",),
+        ("Scope",),
         ("Source", "Producer"),
         ("Consumers",),
     )
@@ -150,7 +151,10 @@ def semantic_model(text: str):
         for row in flow_rows
     }
     variables = {
-        cell(row, "Variable ID", "Variable"): cell(row, "Type").split()[0].lower()
+        cell(row, "Variable ID", "Variable"): {
+            "type": cell(row, "Type").split()[0].lower(),
+            "scope": cell(row, "Scope"),
+        }
         for row in variable_rows
     }
     if not nodes or not flows or not variables:
@@ -177,9 +181,10 @@ def find_logical_flow(root, logical_id: str):
     fail(f"missing sequence flow for SDD logical flow {logical_id!r}")
 
 
-def require_variables(root, expected: dict[str, str]) -> None:
+def require_variables(root, expected: dict[str, dict[str, str]]) -> None:
     variables = root.findall(f".//{{{UIPATH_NS}}}variables/*")
-    for logical_id, expected_type in expected.items():
+    parents = {child: parent for parent in root.iter() for child in parent}
+    for logical_id, declaration in expected.items():
         token = compact(logical_id)
         matched = next(
             (
@@ -192,11 +197,34 @@ def require_variables(root, expected: dict[str, str]) -> None:
         )
         if matched is None:
             fail(f"missing declared SDD variable {logical_id!r}")
+        expected_type = declaration["type"]
         actual_type = matched.attrib.get("type", "").lower()
         if compact(actual_type) != compact(expected_type):
             fail(
                 f"SDD variable {logical_id!r} must have type {expected_type!r}, "
                 f"got {actual_type or '<missing>'!r}"
+            )
+
+        owner = parents.get(matched)
+        while owner is not None and owner.tag not in {
+            f"{{{BPMN_NS}}}process",
+            f"{{{BPMN_NS}}}subProcess",
+        }:
+            owner = parents.get(owner)
+        if owner is None:
+            fail(f"SDD variable {logical_id!r} has no BPMN process or subprocess scope")
+
+        expected_scope = compact(declaration["scope"])
+        if expected_scope == "process":
+            if owner.tag != f"{{{BPMN_NS}}}process":
+                fail(f"SDD variable {logical_id!r} must be process scoped")
+        elif owner.tag != f"{{{BPMN_NS}}}subProcess" or not any(
+            expected_scope in compact(owner.attrib.get(attribute, ""))
+            for attribute in ("id", "name")
+        ):
+            fail(
+                f"SDD variable {logical_id!r} must be scoped to subprocess "
+                f"{declaration['scope']!r}"
             )
 
 
@@ -212,7 +240,7 @@ def require_flow_semantics(
     declared_flows: dict[str, dict[str, object]],
     generated_flows: dict[str, object],
     generated_nodes: dict[str, object],
-    declared_variables: dict[str, str],
+    declared_variables: dict[str, dict[str, str]],
 ) -> None:
     variable_tokens = {compact(variable): variable for variable in declared_variables}
     for logical_id, declaration in declared_flows.items():

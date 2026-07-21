@@ -24,8 +24,8 @@ before registry authoring begins after SDD approval.
    and check graph completeness and variable lineage. Leave unknown required
    resource details as `UNRESOLVED`; never fabricate a key, ID, or connection.
 5. **Approve.** Present the complete `sdd.draft.md` for explicit approval.
-   Request that approval with `AskUserQuestion` when it is available so the
-   approval is a resumable checkpoint, not the end of the agent turn.
+   Use the host's supported user-input mechanism when available so approval is a
+   resumable checkpoint, not the end of the agent turn.
    Do not rename, replace, or create `sdd.md` until the user explicitly
    approves the SDD. After approval, promote the exact reviewed content to
    `sdd.md`; only then may registry authoring start.

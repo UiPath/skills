@@ -41,9 +41,9 @@ A default flow is unconditional (`Always`); it never also carries a condition.
 
 ## 4. Data and variables
 
-| Variable ID | Type | Source | Consumers | Purpose |
-| --- | --- | --- | --- | --- |
-| `<variable-id>` | <string, number, boolean, object, array> | <trigger or node ID> | <node, event, or condition-flow IDs> | <meaning> |
+| Variable ID | Type | Scope | Source | Consumers | Purpose |
+| --- | --- | --- | --- | --- | --- |
+| `<variable-id>` | <string, number, boolean, object, array> | <process or subprocess ID> | <trigger or node ID> | <node, event, or condition-flow IDs> | <meaning> |
 
 Record event payloads, error data, and any variable whose producer or consumer
 is outside the main sequence flow.

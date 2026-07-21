@@ -45,8 +45,11 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 
 Choose one authoring route before registry discovery. These routes preserve the
 existing direct-prose and existing-file behavior while adding an SDD handoff.
+Resolve the SDD location before choosing the route: search the caller's explicit
+SDD path first, then `./sdd.md`. Treat the SDD as absent only when neither path
+exists.
 
-| Input at the requested path | Route |
+| Resolved input | Route |
 | --- | --- |
 | Existing `.bpmn` | Use the surgical edit flow above. Preserve unknown payloads and stable IDs; do not run Phase 0. |
 | Supplied `sdd.md` | Read [SDD semantic intake](references/sdd-input.md), skip Phase 0, refresh connection inventory exactly once with `uip is connections list --all-folders`, then take its complete semantic model through the existing registry, structural BPMN, BPMNDI, and validator workflow. |
