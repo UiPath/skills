@@ -8,6 +8,7 @@ tags: [uipath-agents, smoke, coded, mode:build, guardrail]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  disallowed_tools: ["WebSearch"]
 
 sandbox:
   template_sources:

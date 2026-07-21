@@ -1,7 +1,7 @@
 ---
 name: uipath-review
-description: "UiPath read-only reviewer — audit structure, quality, best practices for RPA (.xaml/.cs), agents (.py/agent.json), flows (.flow), BPMN (.bpmn), coded apps, solutions (.uipx). Does NOT edit files. For building/editing→domain skills."
-allowed-tools: Bash, Read, Glob, Grep, WebFetch, AskUserQuestion
+description: "TRIGGER: Use when reviewing, auditing, or checking the quality, safety, or deployment readiness of UiPath projects and solutions. DO NOT TRIGGER: building, editing, fixing, publishing, or deploying UiPath artifacts; use the owning domain skill instead."
+allowed-tools: Bash, Read, Write, Glob, Grep, WebFetch, AskUserQuestion
 user-invocable: true
 ---
 
@@ -20,7 +20,7 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 
 ## Critical Rules
 
-1. **NEVER modify any files.** This skill is read-only. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-maestro-bpmn, uipath-api-workflow, uipath-coded-apps, uipath-platform, uipath-solution).
+1. **NEVER modify files inside a reviewed project or solution.** This skill is read-only with respect to every reviewed project root. The only write exception is an **explicitly requested report path outside every reviewed project root**; write the final report there after the review is complete. If the requested report path is inside a reviewed root, do not write it there — output the report in chat and ask for an external path. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-maestro-bpmn, uipath-api-workflow, uipath-coded-apps, uipath-platform, uipath-solution).
 2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa validate` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `validate` catches structural / analyzer issues, `build` catches compile-time issues `validate` misses (unknown member names, invalid enum values, JIT failures). Run `uip agent validate` on agents, `uip maestro flow validate` on flows, `uip maestro bpmn validate` on BPMN processes, `uip api-workflow validate` on API workflows. Report every Error, Warning, and Info result from every command. A review without both `validate` AND `build` (for RPA) is incomplete and may ship broken member references.
 3. **ALWAYS discover and classify before reviewing.** For solutions: classify every project before reviewing any individual one. For single projects: identify the project type and find the enclosing project directory before reviewing individual files.
 4. **Report severity for every finding.** Use: **Critical** (blocks deployment), **Warning** (should fix), **Info** (improvement opportunity).
@@ -68,7 +68,9 @@ The PDD is the **source of truth** for the review. It defines what the automatio
 
 **If PDD is NOT found:**
 
-Use the `AskUserQuestion` tool to ask interactively:
+If the user requested an unattended/end-to-end review, supplied an explicit report path, or scoped the request to technical/guardrail quality, proceed without a PDD and note that business-logic alignment could not be verified. Do not block an artifact-producing review only to ask for a PDD.
+
+Otherwise, use the `AskUserQuestion` tool to ask interactively:
 
 ```
 Question: "I could not find a Process Design Document (PDD) in this project. Do you have one I can use as the source of truth for this review?"
@@ -483,7 +485,7 @@ Full rubric, agent-principle scoring, edge cases (no-PDD / CLI-unavailable / no-
 
 ### Step 5 — Produce the Review Report
 
-Output a structured report in chat (do NOT create a file):
+Output a structured report in chat. If the user supplied an explicitly requested report path outside every reviewed project root, also write the identical final report to that path before responding. Do not create any other file.
 
 **Report rules — do not violate:**
 
@@ -652,7 +654,7 @@ This maps the letter to the verdict word only. The agent grade is `min(G_det, G_
 
 ## Anti-Patterns — What NOT to Do
 
-1. **Do not modify files.** This is a review skill, not a builder. Identify issues, recommend fixes, and tell the user which skill to use.
+1. **Do not modify reviewed project files.** This is a review skill, not a builder. The sole exception is writing the completed report to an explicitly requested path outside every reviewed project root. Identify issues, recommend fixes, and tell the user which skill to use.
 2. **Do not review without running automated validation first.** Manual review alone misses structural issues that CLI tools catch instantly.
 3. **Do not skip solution-level discovery.** Reviewing a single project without understanding the solution context leads to wrong optimization recommendations (e.g., suggesting queues when the solution already has a dispatcher/performer pattern).
 4. **Do not report validation errors as manual findings.** Reference the validation output — do not re-describe what the CLI already reported.

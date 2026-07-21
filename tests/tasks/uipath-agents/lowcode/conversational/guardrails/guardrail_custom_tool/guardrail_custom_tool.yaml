@@ -15,6 +15,7 @@ agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  disallowed_tools: ["WebSearch"]
 run_limits:
   max_turns: 50
   turn_timeout: 1200
@@ -24,6 +25,8 @@ sandbox:
   python: {}
 
 initial_prompt: |
+  Start by invoking the `uipath-agents` skill.
+
   Create a UiPath low-code conversational agent "DocGuardBot" that lets
   users upload documents and ask questions about their content. For
   compliance, the document tool must never surface material marked

@@ -208,7 +208,7 @@ Report per guardrail:
 - **Actionability issue** — describe the problem (e.g., "'Agent' is in selector.scopes but AllowedScopes for this validator is ['Llm', 'Tool'] — 'Agent' is not allowed; change scope to 'Llm' or 'Tool'") and the fix
 - **Relevance issue** — describe why the guardrail may not be appropriate and what to consider instead
 
-If the user asks to fix identified issues: apply corrections to `agent.json`, run `uip agent refresh` to regenerate `entry-points.json` and `bindings_v2.json`, then `uip agent validate` to confirm the fix passes checks.
+If the user asks to fix identified issues: apply corrections to `agent.json`, run `uip agent refresh` to regenerate `entry-points.json` and `bindings_v2.json`, then `uip agent validate` to confirm the fix passes checks. **Re-read `agent.json` after `refresh` and `validate`** and repeat the semantic parameter checks against the live guardrails-list metadata; CLI success does not prove `map-enum` keys match their `KeySource` list. Do not report completion until every `map-enum` key set exactly equals its referenced `enum-list` value set.
 
 ---
 
