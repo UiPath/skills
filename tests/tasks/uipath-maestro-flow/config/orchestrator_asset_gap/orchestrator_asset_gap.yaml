@@ -1,0 +1,60 @@
+task_id: skill-flow-orchestrator-asset-gap
+description: >
+  Plan-only regression for Orchestrator Asset configuration in Flow. The skill
+  should confirm registry discovery once, avoid inventing a native asset-read
+  node, and recommend a supported pattern for admin-editable configuration.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 24
+
+initial_prompt: |
+  I need a Maestro Flow to use an admin-editable exclusion list stored in an Orchestrator Text Asset named ExcludedResourceNames.
+
+  Before building anything, check whether Flow exposes a native Orchestrator Asset read node. Then write asset-config-plan.md with the recommended design. Do not build a flow.
+
+  The plan must say whether a native Flow asset-read node exists, what pattern to use instead if it does not, and why the value should not be hard-coded in a Script node.
+  Include these exact phrases somewhere in the plan: "no native Flow asset-read node", "Flow input", "Data Fabric", and "RPA or API workflow".
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked the Flow registry for asset-related nodes"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+registry\s+search\s+asset\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Plan states the native Orchestrator Asset read node is not available"
+    path: "asset-config-plan.md"
+    includes:
+      - "Orchestrator Asset"
+      - "no native Flow asset-read node"
+      - "Flow"
+    excludes:
+      - "uipath.core.asset"
+      - "core.action.asset"
+      - "native asset node exists"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Plan recommends a supported admin-editable configuration pattern"
+    path: "asset-config-plan.md"
+    includes:
+      - "Flow input"
+      - "Data Fabric"
+      - "RPA or API workflow"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Plan warns against hard-coding the exclusion list"
+    path: "asset-config-plan.md"
+    includes:
+      - "hard-code"
+      - "redeploy"
+    weight: 1.5
+    pass_threshold: 1.0
