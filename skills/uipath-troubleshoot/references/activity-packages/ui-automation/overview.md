@@ -49,6 +49,8 @@ UIAutomationNext (`N*`) activities also raise these more specific exceptions:
 - **TargetNotFoundBrowserBlockedException** — element could not be reached because a dialog is blocking the browser
 - **UiNodeHasNoItemsException** — Select Item's target container had no items
 - **UiAutomationException (activity configuration)** — an activity rejected an invalid property value (e.g. Mouse Scroll `Movement units` < 1, Keyboard Shortcuts empty/invalid sequence, Take Screenshot missing `File name`/`Saved image`, Go To URL / Inject Js Script missing required input)
+- **`Method not found: 'Void UiPath.UIAutomationNext.Activities...'`** — not an exception in the UI tree but a binding failure: the `UiPath.UIAutomation.Activities` package version restored where the project runs differs from the version it was built against (assembly version skew). Surfaces at Studio validation, build, or the first `NTypeInto`/`N*` activity on a robot after a dependency change or environment move. See [type-into-input-failed.md](./playbooks/type-into-input-failed.md) § (B).
+- **Type Into text corruption (no exception)** — `NTypeInto` reports `Successful` but the value captured by the field is wrong (missing / scrambled / duplicated / out-of-order characters), usually from `HardwareEvents` outrunning a laggy target (`DelayBetweenKeys` too low), lost focus, an unsupported input method for Java/SAP, or an uncleared field. No-signature; route via the domain table. See [type-into-input-failed.md](./playbooks/type-into-input-failed.md) § (A).
 
 ## Features
 

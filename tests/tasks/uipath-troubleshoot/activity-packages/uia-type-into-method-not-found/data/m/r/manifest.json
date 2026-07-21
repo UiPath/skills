@@ -1,0 +1,43 @@
+{
+  "version": 2,
+  "_doc": "Mock dispatch table. docsai proxied to the real CLI; job/folder lookups return a canned Faulted-job fixture whose Error log carries a `Method not found: 'Void UiPath.UIAutomationNext.Activities...'` message; any other uip call returns an empty array. Matching is plain substring (first match wins); the `--level Error` rule precedes the generic logs rule so the error-only view is served for that invocation.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    },
+    {
+      "match": "or folders list",
+      "file": "folders.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "jobs-list.json"
+    },
+    {
+      "match": "or jobs logs --level Error",
+      "file": "job-logs-error.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "job-logs.json"
+    },
+    {
+      "match": "or jobs history",
+      "file": "job-history.json"
+    },
+    {
+      "match": "or jobs traces",
+      "file": "job-traces.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "job-get.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore without aborting."
+  }
+}
