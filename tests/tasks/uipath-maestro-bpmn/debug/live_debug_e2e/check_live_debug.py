@@ -85,6 +85,7 @@ def _is_expected(val) -> bool:
 
 def _find_ci_key(obj, wanted: str):
     """Yield every value whose dict key equals ``wanted`` (case-insensitive)."""
+    wanted = wanted.lower()
     if isinstance(obj, dict):
         for k, v in obj.items():
             if isinstance(k, str) and k.lower() == wanted:
