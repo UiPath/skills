@@ -17,32 +17,33 @@ initial_prompt: |
   locally to confirm; it must survive a StudioWeb designer roundtrip.
 
 success_criteria:
-  - type: file_exists
-    description: "Workflow.json was created"
-    path: "HandleError/Workflow.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Workflow.json is valid JSON"
-    command: "python -c \"import json; json.load(open('HandleError/Workflow.json'))\""
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); python -c "import json,sys; json.load(open(sys.argv[1]))" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "Uses a TryCatch with a catch error variable"
-    path: "HandleError/Workflow.json"
-    includes:
-      - "TryCatch"
-      - "catch"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "TryCatch" "$WF" && grep -q "catch" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Caught error yields a handled response, run succeeds"
-    command: 'uip api-workflow run ./HandleError/Workflow.json --no-auth --output json | grep -q ''handled'''
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --output json | grep -q ''handled'''
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

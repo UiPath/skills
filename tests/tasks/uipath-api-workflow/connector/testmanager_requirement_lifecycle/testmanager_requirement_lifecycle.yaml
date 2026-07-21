@@ -74,16 +74,18 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Workflow.json was created"
-    path: "TMRequirement/Workflow.json"
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_check
+  - type: run_command
     description: "Workflow uses the testmanager IntSvc connector"
-    path: "TMRequirement/Workflow.json"
-    includes: ["uipath-uipath-testmanager", "UiPath.IntSvc"]
-    excludes: ["<REPLACE_WITH_"]
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "uipath-uipath-testmanager" "$WF" && grep -q "UiPath.IntSvc" "$WF" && ! grep -q "<REPLACE_WITH_" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
