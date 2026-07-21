@@ -109,6 +109,8 @@ This is a hard gate — do NOT proceed to writing tasks.md until every required 
 
 SDD input names rarely match connector field names exactly. Match each SDD input to a `bodyFields`/`pathParameters`/`queryParameters` entry by comparing the SDD field name against the `displayName` (or `name`) from Step 3.
 
+An SDD input that matches `spec.inputs.*` remains a normal Step 6 input even when its name is literally `filter`: include it in `input-values`; Step 7 applies only when the SDD separately requests a structured filter tree and `spec.filter` supports one.
+
 For each required field in spec.inputs.*, there must be a matching SDD input. If a required field has no match, **AskUserQuestion** — never leave required fields unmapped.
 
 Values can be:
