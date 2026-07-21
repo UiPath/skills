@@ -106,7 +106,7 @@ Confirm:
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `outputs` fields. Author CAPABILITY rule #15 (no top-level `model` block on the instance) and rule #14 (`outputs` populated for nodes that produce data) both apply.
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `outputs` fields. Author CAPABILITY rule #17 (no top-level `model` block on the instance) and rule #16 (`outputs` populated for nodes that produce data) both apply.
 
 ## JSON Structure
 

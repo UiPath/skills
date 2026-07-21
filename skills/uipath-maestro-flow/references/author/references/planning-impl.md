@@ -10,6 +10,20 @@ Resolve all implementation details for the approved architectural plan. This pha
 
 ## Implementation Resolution Process
 
+### Step 0 — Scan local `.flow` exemplars first
+
+Before fetching registry definitions, inspect existing `.flow` files in the current workspace or solution for matching node types and topology. This is required because local exemplars often include working configuration and wiring that the registry does not expose clearly: connector `inputs.detail.configuration`, `bindings[]`, loop child edge ports, selected MCP tool metadata, resource node binding shape, and prompt/resource sidecar patterns.
+
+Start with one consolidated file list:
+
+```bash
+rg --files -g '*.flow'
+```
+
+Then inspect likely matches for the node types in the approved architecture. Prefer one consolidated inspection pass over many separate `grep`/`registry get` calls. Record any exemplar source in the implementation plan's Notes column, including what was reused: configuration shape, port names, binding pattern, or topology. Do not reuse runtime-specific values such as node IDs, connection IDs, folder keys, labels, prompts, or user data without re-resolving them for the target flow.
+
+If no exemplar exists for a node type, continue with plugin docs and registry validation.
+
 ### Step 1 — Identify Nodes and Validate with Registry
 
 Scan the approved `.uipath.flow.arch.plan.md` node table and connector summary. Validate each node type against the registry to confirm ports, inputs, and outputs are current:
@@ -21,7 +35,7 @@ Scan the approved `.uipath.flow.arch.plan.md` node table and connector summary. 
 | Mock placeholders | Node type is `core.logic.mock`                                       | Run Step 4 (check if published, replace if available)                                                                                                                                                                                                                      |
 | OOTB nodes        | Everything else (Script, HTTP, Decision, Loop, etc.)                 | Run Step 1a below (validate with registry using the relevant plugin's `impl.md`)                                                                                                                                                                                           |
 
-**All nodes, including OOTB, must be validated via registry in Step 1a before proceeding.**
+**All nodes, including OOTB, must be validated via registry in Step 1a before proceeding.** Step 0 reduces guesswork and turn count; Step 1a still confirms the current manifest and provides definitions.
 
 #### Step 1a — Validate All Node Types with Registry
 
@@ -165,6 +179,8 @@ graph LR
 
 | #   | Node ID | Name | Node Type | Inputs | Outputs | Connection ID | Notes |
 | --- | ------- | ---- | --------- | ------ | ------- | ------------- | ----- |
+
+In Notes, include any exemplar `.flow` file used for this node and what was copied from it, such as "copied loop child port pattern from `demo.flow`; re-resolved connection ID."
 
 ## Resolved Edge Table
 

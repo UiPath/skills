@@ -31,17 +31,17 @@ For complex flows, produce a plan before building. Reference [planning-arch.md](
 
 ## Three-turn execution map
 
-Steps 0–6 are **logical phases**, not separate turns. A typical greenfield build collapses to **three assistant turns** (universal SKILL.md rule #10). Each step heading below carries a `[T1]` / `[T2]` / `[T3]` tag — emit every tool call inside the same Turn as one assistant message.
+Steps 0–6 are **logical phases**, not separate turns. A typical greenfield build collapses to **three assistant turns** (universal SKILL.md rule #11). Each step heading below carries a `[T1]` / `[T2]` / `[T3]` tag — emit every tool call inside the same Turn as one assistant message.
 
 | Turn | Steps | What you emit in ONE assistant message |
 |---|---|---|
-| **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (scaffold + register + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s) **+** optional `uip login status`. **If existing `.uipx` solutions are present, the Step 2 gate fires first in its own turn** — resolve it before this chain. |
+| **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (scaffold + register + local `.flow` exemplar scan + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s) **+** optional `uip login status`. **If existing `.uipx` solutions are present, the Step 2 gate fires first in its own turn** — resolve it before this chain. |
 | **T2 — Read + author** | 4 | One `Read` of the `.flow` **+** a batch of `Edit` calls (or one `Write` if ≥70% of nodes change). Claude Code serializes Edits on the same file, so they don't race |
-| **T3 — Finalize** | 5, 6 | One chained `Bash` (`node configure && validate && format`). On validate failure: one Edit turn, then re-chain `validate && format` |
+| **T3 — Finalize** | 5, 6 | One chained `Bash` (`node configure && validate && format && backup`). On validate failure: one Edit turn, then re-chain `validate && format && backup` |
 
 ### Batching anti-patterns
 
-- **One CLI per turn.** Never issue `solution init`, then `cd`, then `flow init` as three separate Bash calls — chain with `&&`. Same for `node configure && validate && format`.
+- **One CLI per turn.** Never issue `solution init`, then `cd`, then `flow init` as three separate Bash calls — chain with `&&`. Same for `node configure && validate && format && backup`.
 - **Sequential `registry get`s.** Emit every `registry get` as a parallel `Bash` in one message alongside the T1 scaffold chain.
 - **Validating after every Edit.** Validate once at the end of T3 (or after a recovery Edit). Intermediate states are expected to be invalid.
 - **Re-reading the `.flow` every turn.** `Read` once at the start of T2; subsequent `Edit`s in the same conversation don't need re-reading unless an external command (e.g., `node configure`, `format`) rewrites the file between Edits.
@@ -89,6 +89,7 @@ uip solution init "<SolutionName>" --output json \
   && cd "<SolutionName>" \
   && uip maestro flow init "<ProjectName>" --output json \
   && cd "<ProjectName>" \
+  && (rg --files -g '*.flow' ../.. || true) \
   && uip maestro flow registry pull \
   && uip maestro flow node add "<ProjectName>.flow" core.action.http.v2 --label "<NodeLabel>" --output json
 ```
@@ -97,7 +98,7 @@ Tail-append one `node add` per CLI-owned node (`uipath.connector.*`, `uipath.con
 
 In the SAME assistant message (parallel to this chain): emit one `Bash` per OOTB `registry get <NODE_TYPE>` you'll need in T2 (always `core.control.end` — see Step 4), and parallel `Read` calls for any plugin `impl.md`s you'll consult.
 
-> **Older `solution-tool` (< 1.0.0)** used `solution new` (see [.claude/rules/cli-renames.md](../../../../../.claude/rules/cli-renames.md)). If `solution init` returns `unknown command`, substitute `solution new`.
+> **Older `solution-tool` (< 1.0.0)** used `solution new`. If `solution init` returns `unknown command`, substitute `solution new`.
 
 The sub-steps below describe what each command in the chain does and how to verify the result.
 
@@ -187,7 +188,25 @@ If the file does not exist at the absolute double-nested path, Step 2 is wrong. 
 
 See [shared/file-format.md](../../shared/file-format.md) for the full project structure.
 
-## Step 3 — Refresh the registry **[T1 — chained tail of Step 2]**
+## Step 3 — Find local `.flow` exemplars, then refresh the registry **[T1 — chained tail of Step 2]**
+
+Before registry-only discovery, scan the current workspace/solution for existing `.flow` files that already contain the node types or topology you are about to build. This is required even for greenfield flows because sibling demos, prior versions, or test projects often contain working connector configuration blobs, loop child wiring, selected-tool metadata, resource bindings, and real port names.
+
+Use a single consolidated scan where possible:
+
+```bash
+rg --files -g '*.flow'
+```
+
+If matches exist, inspect them before running many separate `registry get` calls. Prefer exemplars for:
+
+- Connector and MCP tool `inputs.detail.configuration` shapes
+- `bindings[]` entries and `bindings_v2.json` relationships
+- Loop parent/child edge ports (`start`, `continue`, `loopBack`, `success`)
+- Existing trigger → loop → agent → script topologies
+- Studio Web-selected metadata that the registry omits or describes unclearly
+
+Do not copy IDs, connection IDs, folder keys, labels, prompts, or user data blindly. Copy the shape and wiring pattern, then adapt values to the new flow. If no local exemplar covers a node type, fall back to plugin docs and registry.
 
 This is already the last segment of the [canonical T1 chain](#canonical-t1-chain--issue-this-as-one-bash-call) above. Standalone:
 
@@ -291,7 +310,8 @@ For each node type, follow the relevant plugin's `impl.md` for node-specific inp
 ```bash
 uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<DETAIL_JSON>' --output json \
   && uip maestro flow validate "<ProjectName>.flow" --output json \
-  && uip maestro flow format "<ProjectName>.flow" --output json
+  && uip maestro flow format "<ProjectName>.flow" --output json \
+  && cp "<ProjectName>.flow" "<ProjectName>.flow.bak"
 ```
 
 `<DETAIL_JSON>` is node-type-specific — the schema is owned by each CLI-owned node's plugin, not duplicated here: HTTP → [http/impl.md](plugins/http/impl.md#critical-use-node-configure), connectors → [connector/impl.md](plugins/connector/impl.md), connector triggers → [connector-trigger/impl.md](plugins/connector-trigger/impl.md). Tail-append one `node configure` per CLI-owned node added in T1, using the node IDs captured from T1's chained output. Drop the entire `node configure` segment if no CLI-owned nodes exist.
@@ -324,6 +344,14 @@ Standalone (only if not chained from Step 5):
 uip maestro flow format <ProjectName>.flow --output json
 ```
 
+After the first passing `validate` + `format`, keep a defensive backup:
+
+```bash
+cp <ProjectName>.flow <ProjectName>.flow.bak
+```
+
+If Studio Web or the IDE later strips fields while round-tripping the project, restore from the backup instead of rediscovering configuration.
+
 ## Completion Output
 
 When you finish building the flow, report to the user:
@@ -331,7 +359,7 @@ When you finish building the flow, report to the user:
 1. **File path** of the `.flow` file created
 2. **What was built** — summary of nodes added, edges wired, and logic implemented
 3. **Validation status** — whether `flow validate` passes (or remaining errors if unresolvable)
-4. **Format status** — confirm `flow format` was run
+4. **Format and backup status** — confirm `flow format` was run and whether `<ProjectName>.flow.bak` was written
 5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
 6. **Missing connections** — any connector nodes that need connections the user must create
 7. **What's next** — ask the user, presenting the dropdown below (see the dropdown question rule in [SKILL.md](../../../SKILL.md))
