@@ -57,14 +57,14 @@ initial_prompt: |
   upload and debug this project in the connected tenant. Do not pass `--inputs`
   — the computation is self-contained.
 
-  IMPORTANT: the `debug` command output reports element-execution *statuses*
-  only — it does NOT contain variable *values*. All elements showing Completed
-  does not prove `product` is 42. To read the runtime value you MUST take the
-  debug instance id the debug command returns and run
-  `uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json`.
+  IMPORTANT: the debug command output reports element-execution statuses only —
+  it does NOT contain variable values. All elements showing Completed does not
+  prove `product` is 42. Read the runtime variable values separately using the
+  skill's debug-instance inspection commands (the skill teaches which command
+  and how).
 
   Save the raw CLI output so the result can be verified independently:
-    - save the full JSON output of the `debug-instance variables-all` command to
+    - save the full JSON output of the runtime variables inspection to
       `debug-evidence/variables.json` — this is the only output that carries the
       `product` value, so it is the required deliverable,
     - also save the full JSON output of the debug command to
@@ -73,8 +73,8 @@ initial_prompt: |
   Preserve the raw CLI JSON exactly — do not summarize or hand-edit it.
 
   The task is complete only when the debug run reaches finalStatus Completed
-  and the saved `variables-all` output shows the runtime `product` variable is
-  42. Saving only the debug command output is NOT sufficient. If the first debug
+  and the saved runtime-variables output shows the `product` variable is 42.
+  Saving only the debug command output is NOT sufficient. If the first debug
   run does not produce product=42, fix the variable/output mapping and debug
   again — but run at most 3 debug sessions in total. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and implementation.
