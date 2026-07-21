@@ -55,6 +55,11 @@ initial_prompt: |
   get the draft down and stop there — we'll finalize and build it later, so don't
   polish or validate it yet, just capture the design.
 
+  This is a draft-only Phase 0 run. Write `sdd.draft.md` directly from the
+  complete opening brief, then stop. Do not read implementation docs, do not
+  read downstream Phase 1-6 references, and do not create `sdd.md`, `tasks.md`,
+  a solution, or `caseplan.json`.
+
 success_criteria:
   # The interview grades the captured DESIGN, in whichever file Phase 0 leaves it:
   # sdd.draft.md if it stopped at the draft, or sdd.md if it finalized. All

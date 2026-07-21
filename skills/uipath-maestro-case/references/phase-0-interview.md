@@ -37,6 +37,12 @@ When Phase 0 runs from scratch, AskUserQuestion (3 options):
 | `I'll provide an sdd.md path` | Re-prompt for path. Re-check trigger. |
 | `Abort` | Exit skill. No file changes. |
 
+### Draft-only fast path
+
+When the user explicitly asks for a **draft-only** design to review, and the opening brief already names the case, trigger, stage flow, core tasks, personas/systems, and exit or exception rules, write `sdd.draft.md` directly and stop. This path exists for sketch-review workflows and eval harnesses that grade the draft document itself.
+
+For this path, keep the read budget narrow: read this Phase 0 guide and the SDD template, but do not read implementation docs, plugin docs, or Phase 1-6 references before writing the draft. Do not create `sdd.md`, `tasks.md`, `caseplan.json`, or validation artifacts. If a required field is genuinely missing from the opening brief, ask the smallest possible Phase 0 question; once the draft is written, stop before finalization.
+
 ## Modes
 
 Phase 0 moves through five modes of attention. Listen opens broad (one prompt + read everything shared); **Ask then runs a progressive walk through every SDD dimension** (§Ask → Progressive coverage walk) so coverage never depends on what Listen happened to catch. Listen / Sketch / Ask loop freely as new context lands. Resolve and Approve are gates.

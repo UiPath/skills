@@ -45,6 +45,8 @@ After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`.
 
 > **Inline-built sibling exception (agent / api-workflow) — the one case where the shape's `<folderPath binding default>` placeholder does NOT take the caseplan default.** `value.folderPath.defaultValue` is **`"solution_folder"`** (resource identity), NOT the caseplan `folderPath` binding `default` (which is `""` for an inline sibling). `bindings_v2.json` keeps the `solution_folder` sentinel while the caseplan runtime `folderPath` stays `""` — they are intentionally decoupled. `value.name.defaultValue` and `metadata.subType` (`"Agent"` / `"Api"` per kind) follow the caseplan binding as usual. Full rationale: the inline-built-sibling decoupling blockquote later in this file.
 
+> **Deployed-name source.** For tenant-resolved non-connector tasks, `value.name.defaultValue` comes from `registry-resolved.json.selected` through the planning handoff table, not from the SDD alias used to search. Example: if the SDD calls the API workflow `NameToAgeFixed2` but the selected deployed resource is named `API Workflow`, `bindings_v2.json` must use `"name": { "defaultValue": "API Workflow" }`.
+
 ### Connector resource entry
 
 ```json
