@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Send SMTP Mail Message port/transport-security mismatch sub-case (Branch 3 of send-smtp-mail-failures); mock dispatcher only. The activity targets port 465 with SecureConnection=StartTls; 465 is implicit SSL, so the STARTTLS negotiation fails and the connection is dropped (SmtpException wrapping a socket/handshake error). docsai proxied; --level Error rule precedes the generic logs rule. Token-aware matching, first match wins.",
+  "rules": [
+    { "match": "docsai ask", "passthrough": true },
+    { "match": "or folders list", "file": "folders.json" },
+    { "match": "or jobs list", "file": "jobs-list.json" },
+    { "match": "or jobs logs --level Error", "file": "job-logs-error.json" },
+    { "match": "or jobs logs", "file": "job-logs.json" },
+    { "match": "or jobs get", "file": "job-get.json" }
+  ],
+  "unmocked_default": { "response": "[]\n", "exit_code": 0, "_doc": "Permissive fallback for unmatched commands." }
+}

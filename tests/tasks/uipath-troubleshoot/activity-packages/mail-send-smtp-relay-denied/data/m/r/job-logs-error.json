@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    { "Level": "Error", "TimeStamp": "2026-06-07T04:30:03.980Z", "Message": "[Send SMTP Mail Message] Server rejected the message: 550 5.7.60 SMTP; Client does not have permissions to send as this sender (authenticated as svc-billing@contoso-test.com, From noreply@marketing-partner.com)" },
+    { "Level": "Error", "TimeStamp": "2026-06-07T04:30:04.060Z", "Message": "Send SMTP Mail Message: Mailbox unavailable. The server response was: 550 5.7.60 SMTP; Client does not have permissions to send as this sender.\r\nin Main.xaml\r\n    at SmtpSendMail \"Send SMTP Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.Net.Mail.SmtpException: Mailbox unavailable. The server response was: 550 5.7.60 SMTP; Client does not have permissions to send as this sender." }
+  ]
+}
