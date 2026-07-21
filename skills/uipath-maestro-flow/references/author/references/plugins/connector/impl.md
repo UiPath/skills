@@ -7,13 +7,13 @@ For generic node/edge add, remove, and wiring procedures, see [editing-operation
 ## How Connector Nodes Differ from OOTB
 
 1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow's top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
-2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing. `registry get` takes no version flag — it reads the node's own `configuration.version` and routes `4.0.0` activities to the v4 Integration Service endpoints on its own. Do not pass `--activity-version` here; the command accepts only `--connection-id` and `--local`, and anything else fails with `error: unknown option`. For v4 nodes `--connection-id` adds nothing either, because v4 metadata is not connection-scoped (see rule 4 below).
 3. **`inputs.detail` object** — connector nodes store operation-specific configuration in `inputs.detail`, populated by `uip maestro flow node configure`:
    - `connectionId` — the bound IS connection UUID
    - `connectionFolderKey` — the Orchestrator folder key in the authored `.flow` file. `node configure --detail` accepts `folderKey` as input and writes it back as `connectionFolderKey`.
    - `method` — HTTP method from `registry get` → `connectorMethodInfo.method` (e.g., `POST`)
    - `endpoint` — API path. Read `connectorMethodInfo.path` (from `registry get`) or `availableOperations[].path` (from `is resources describe`).
-   - `objectName` — required for generic activities (see below). The API object name (e.g. `"Opportunity"`); ignored for concrete nodes.
+   - `objectName` — required for generic activities (see below). The API object name (e.g. `"Opportunity"`); ignored for concrete nodes. Not used for 4.0.0 activities — they are addressed by `activityName` (see 4.0.0 Activities below).
    - `bodyParameters` — field-value pairs for the request body. Read field names from `inputDefinition.fields[].name` (`registry get`) or `requestFields[].name` (`is resources describe`).
    - `queryParameters` — field-value pairs for query string parameters. Read from `connectorMethodInfo.parameters[]` where `type: query` (`registry get`) or `parameters[]` (`is resources describe`).
    - `pathParameters` — field-value pairs for path placeholders in `endpoint` (e.g. `{conversationsInfoId}`). Read from `connectorMethodInfo.parameters[]` where `type: path` (`registry get`) or `parameters[]` (`is resources describe`).
@@ -32,6 +32,15 @@ Connector nodes come in two flavors:
 - **Generic** — the node type encodes only the operation (e.g. `uipath.connector.uipath-salesforce-sfdc.list-records`, `…insert-record`, `…update-record`). `inputDefinition` is `{}`; the node needs an extra `objectName` in `--detail`, and `method` / `endpoint` come from `is resources describe`.
 
 To classify a node, read `Node.form.sections[0].fields[0].componentProps.connectorDetail.configuration` from the `registry get` response, parse it as JSON, and check `activityType`. `"Generic"` → run Step 2a to discover `objectName` (and capture `operation` from the same marker for the `--operation` flag in Step 3). Anything else → skip Step 2a.
+
+## 4.0.0 (v4) Activities
+
+Nodes whose configuration JSON reports `"version":"4.0.0"` carry `activityName` instead of `objectName` (`model.context.objectName` is declared but empty). `--detail` keeps the v1 format for field entries — `bodyParameters` / `queryParameters` / `pathParameters` and their value shapes (`=js:` expressions, `$vars.` cross-node bindings) are authored exactly as for v1 activities. Only these rules differ:
+
+1. **No `objectName` in `--detail`** — `node configure` resolves the activity from the configuration's `activityName` automatically.
+2. **`method` / `endpoint`** — read from `connectorMethodInfo` after a plain `registry get` (it routes to the v4 endpoints by itself — see rule 2 above), or from `is resources describe <connector-key> <activity-name> --activity-version 4.0.0`. `--activity-version` is valid only on `is resources describe`, where the second argument is the **activity name**, not an object name.
+3. **Operation label is decoupled from HTTP verb** — v4 pairs a semantic operation (e.g. `Update`) with whatever verb the connector declares (e.g. `POST /usergroups.users.update`). `validate` accepts this; do not "fix" the method to match the operation table.
+4. **Metadata is not connection-scoped** — `--connection-id` on `registry get` does not add v4 custom fields; base fields are all there is.
 
 
 ## Critical: Connector Definition Must Include `form`
