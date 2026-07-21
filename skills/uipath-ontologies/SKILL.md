@@ -110,7 +110,7 @@ Plan confirmed:
 Ready to start? (yes / no)
 ```
 
-Do not continue to Step 1 until the user confirms.
+**Send this plan to the user and stop. Do not run any commands, do not proceed to Step 1, and do not narrate what comes next. Wait for the user's explicit reply (yes / no) in a separate message. The user's earlier "let's go" or similar reply to your Step 0 proposals does NOT count — they must see and approve the full plan block first.**
 
 ### Step 1 — Discover existing entities in the folder
 
