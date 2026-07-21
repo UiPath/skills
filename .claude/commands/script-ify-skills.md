@@ -19,7 +19,7 @@ The skills path is `$1`. The path is either a parent path that contains multiple
 
 ## Step 1: Find codifiable procedures
 
-For each skill, read its SKILL.md and optional files to find out any deterministic, repeatable thing the SKILL.md makes the agent do. Write your findings to a findings.md file next to the SKILL.md. Your findings should include what the procedure is, where the procedure is derived in the SKILL.md, and how it can be turned into scripts. If no such procedure exists, the skill is not script-ify-able. You should leave the skill as-is.
+For each skill, read its SKILL.md and optional files to find out any deterministic, repeatable thing the SKILL.md makes the agent do. Write your findings to a `findings.md` file next to the SKILL.md. Your findings should include what the procedure is, where the procedure is derived in the SKILL.md, and how it can be turned into scripts. If no such procedure exists, the skill is not script-ify-able. You should leave the skill as-is.
 
 Some examples (not limited to these) of codifiable procedures are as follows:
 
@@ -56,7 +56,7 @@ For each script, verify its correctness by grounding it against the original ski
 
 ## Step 3: Update SKILL.md
 
-You should update the SKILL.md and optional files based on what you have done.  
+You should update the SKILL.md and optional files based on what you have done. Don't mention `findings.md` and `script-tests/`.
 - **Adapt** — change only what's needed to accommodate the scripts; keep all original understanding content verbatim (framing, domain rules, definitions, thresholds, reference sections). Never silently drop or lossily reword it.
 - **Keep a conceptual overview** — before any command, explain what the skill is, what it does, and when and how to use it, so a mismatch with the task is visible.
 - **Teach how to use the scripts, don't just list them** — for each: what it does (input→output), a concrete example command, and its key args/flags — enough to run it without opening the source. Add this to where a script is derived.
