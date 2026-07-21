@@ -39,3 +39,4 @@ The workflow ran as an Orchestrator job. Troubleshooting data comes from:
 | `System.IndexOutOfRangeException` | An array or string was indexed outside its bounds |
 | `System.Collections.Generic.KeyNotFoundException` | A dictionary was indexed with a key it does not contain |
 | `System.ArgumentOutOfRangeException` | An argument was outside the range of valid values (`Substring`, `List<T>` index, date/time component) |
+| `Expression Activity type 'VisualBasicValue`1' requires compilation` | An expression activity was not AOT-compiled and runtime JIT is disabled (modern `Windows`/`Portable` .NET projects) — caused by invalid/smart quotes, expression-language mismatch, or post-`Legacy` migration |

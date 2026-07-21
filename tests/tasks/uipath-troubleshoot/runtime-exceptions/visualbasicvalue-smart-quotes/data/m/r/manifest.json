@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the 'Expression Activity type VisualBasicValue`1 requires compilation in order to run' branch of the runtime-exceptions playbook. The InvoiceNotifier job faults at the Assign 'Build Greeting' because its value expression was pasted from rich text and contains curly/smart double quotes (U+201C/U+201D) instead of straight ASCII quotes, so the expression was not AOT-compiled; the modern Windows (.NET) runtime has JIT disabled and throws at run. Decisive evidence: the smart quotes in process/Main.xaml's Assign 'Build Greeting' value. Expected chain: folders list -> jobs get <key> -> jobs logs <key> --level Error -> read process/Main.xaml.",
+  "rules": [
+    { "match": "or folders list", "file": "46ac4679cc.json" },
+    { "match": "or jobs get a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "file": "368f2e84cf.json" },
+    { "match": "or jobs logs a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "file": "4667db66cb.json" }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched above returns an empty array so the agent can explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    { "pattern": "or folders list", "min": 1, "description": "Agent enumerates folders to locate the Shared folder where the faulted job lives." },
+    { "pattern": "or jobs get a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "min": 1, "description": "Agent fetches the faulted job to read the 'requires compilation' error and the stack frame pointing at the Assign 'Build Greeting'." },
+    { "pattern": "or jobs logs a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "min": 0, "description": "OPTIONAL - error-level logs corroborate the error; the job-get Info already carries it." }
+  ]
+}
