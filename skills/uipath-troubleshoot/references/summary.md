@@ -22,7 +22,7 @@ CLI: `uip login status`, `uip admin tenants get`, `uip admin tenants services en
 
 ## Runtime Exceptions
 
-General .NET runtime exceptions originating from the user's own workflow code — not from activity packages or platform internals. Covers null references, null arguments, and similar errors in workflow logic, variable handling, and data processing.
+General .NET runtime exceptions originating from the user's own workflow code — not from activity packages or platform internals. Covers null references, null arguments, `If` condition compiler/type errors (design-time Studio validation, e.g. `Compiler error(s) encountered processing expression` / `Option Strict On disallows implicit conversions`), silent wrong-branch `If` faults, and similar errors in workflow logic, variable handling, and data processing.
 
 - [runtime-exceptions/overview.md](./runtime-exceptions/overview.md) — Scope boundary, investigation sources (local logs and Orchestrator jobs)
 - [runtime-exceptions/summary.md](./runtime-exceptions/summary.md) — All playbooks for runtime exception issues

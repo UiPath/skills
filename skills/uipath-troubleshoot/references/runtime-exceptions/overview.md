@@ -1,6 +1,6 @@
 # Runtime Exceptions
 
-General .NET runtime exceptions originating from the user's own workflow code — variable handling, data processing, argument passing, and control flow logic.
+General .NET runtime exceptions originating from the user's own workflow code — variable handling, data processing, argument passing, and control flow logic. Also covers **design-time Studio validation errors** raised on the user's own expressions (e.g. `If` / `Assign` compiler and type errors surfaced in the Studio Error List at open/validate/build) and **silent control-flow faults** where a workflow runs Successful but takes the wrong branch — these are fixed in the same `.xaml`/`.cs` the user owns, so they live here rather than under any activity package.
 
 ## Scope Boundary
 
@@ -33,3 +33,5 @@ The workflow ran as an Orchestrator job. Troubleshooting data comes from:
 |-----------|-------------|
 | `System.NullReferenceException` | Code attempted to use an object reference that is null |
 | `System.ArgumentNullException` | A method received a null argument where non-null was required |
+| `Compiler error(s) encountered processing expression` / `Option Strict On disallows implicit conversions` (design-time) | Studio Error List error on an `If` (or `Assign`) whose expression is not the required type or compares mismatched types |
+| Wrong branch taken (no exception) | An `If` runs Successful but takes the wrong branch — case/whitespace/type mismatch in the Condition (silent logic fault) |
