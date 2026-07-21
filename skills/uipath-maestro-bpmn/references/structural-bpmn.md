@@ -93,7 +93,7 @@ registry `xmlTemplate` of whatever node you need.
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
           <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
           <uipath:output name="tier" type="string" var="Var_Tier" source="=result.response" />
         </uipath:mapping>
       </bpmn:extensionElements>
@@ -150,9 +150,14 @@ template, but the runtime contract is fixed:
   / 30 s.
 - Set `uipath:scriptVersion value="v3"` for new scripts; preserve an imported
   `value="v2"`. For v2+ the script returns JSON under `response`.
+- The `args` input **must** be `<uipath:input name="args" type="json"
+  target="bodyField">`. The parser drops any `uipath:input` missing `type` or
+  `target`, so a bare `name="args"` input is silently discarded and the script
+  task fails at runtime with "Arguments is required".
 - Mapped `args` fields are read as **top-level identifiers** in the script body
-  (`amount`, not `args.amount`); the input mapping itself stays `name="args"`
-  and maps each field by variable id (`=vars.Var_Amount`).
+  (`amount`, not `args.amount`) — the runtime spreads the `args` object's keys
+  into the script scope. The input stays named `args` and maps each field by
+  variable id (`=vars.Var_Amount`).
 - Map the return back through `source="=result.response"` (scalar) or
   `source="=result.response.<field>"` (object field); `var` points at a declared
   variable id (do not put the target id in `name`).
@@ -163,7 +168,7 @@ template, but the runtime contract is fixed:
     <uipath:scriptVersion value="v3" />
     <uipath:mapping version="v1">
       <uipath:type value="BPMN.ScriptTask" version="v1" />
-      <uipath:input name="args"><![CDATA[{"amount":"=vars.Var_Amount","daysOverdue":"=vars.Var_DaysOverdue"}]]></uipath:input>
+      <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount","daysOverdue":"=vars.Var_DaysOverdue"}]]></uipath:input>
       <uipath:output name="riskScore" type="number" var="Var_RiskScore" source="=result.response" />
     </uipath:mapping>
   </bpmn:extensionElements>
