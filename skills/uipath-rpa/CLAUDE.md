@@ -4,7 +4,7 @@ This skill must work against every future version of `UiPath.UIAutomation.Activi
 
 ## Boundary
 
-**Stays in `skills/uipath-rpa/`:** policy this skill owns — UIA prerequisites/version gating and upgrade consent (`uia-prerequisites.md`), the run/debug orchestration for UIA workflows (`uia-running-guide.md`), the placeholder-stub deliverable policy (`uia-placeholder-stub-guide.md`), UI Library publishing (`ui-library-guide.md`), critical rules, and pointers into the package docs.
+**Stays in `skills/uipath-rpa/`:** policy this skill owns — UIA prerequisites/version gating and upgrade consent (SKILL.md § UIA Prerequisites), the skill-side UIA policies in `references/uia-starter-guide.md` (run/debug orchestration, placeholder-stub deliverable pattern, UI Library publishing), critical rules, and pointers into the package docs.
 
 **Lives in the UIA package docs** (ships to `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`): the UIA authoring guide (`ui-automation-guide.md` — window baseline, capture orchestration, pitfalls, control-specific interaction, coded/XAML patterns), target-capture orchestration (`references/uia-configure-target-workflows.md`), single-purpose task recipes, CLI subcommand syntax, skill invocation arguments, internal procedure step numbers, artifact filenames, bash blocks invoking `uip rpa uia ...`, flag tables, troubleshooting entries.
 
