@@ -52,5 +52,5 @@
 | Variable and Expression Errors | Medium | Missing output variables, assignment errors, case sensitivity in gateway conditions | [variable-expression-errors.md](./playbooks/variable-expression-errors.md) |
 | Boundary Event / Duplicate Task | Medium | Task running twice, boundary events firing unexpectedly, missing incident logging | [boundary-event-duplicate-task.md](./playbooks/boundary-event-duplicate-task.md) |
 | File Handling Issues | Medium | Files not passed correctly, attachment not found, file type incompatibility | [file-handling.md](./playbooks/file-handling.md) |
-| Multi-Instance Parallel Marker | Medium | Parallel marker failures, collection size limits, NoneType errors | [multi-instance-parallel.md](./playbooks/multi-instance-parallel.md) |
+| Multi-Instance Parallel Marker | Medium | Marker failures (400008 without InvalidCastException) - collection size limits, NoneType errors, non-array input | [multi-instance-parallel.md](./playbooks/multi-instance-parallel.md) |
 | BPMN Job Stuck | Low | Instance stuck with no progress or error — disconnected connection, child job not created, or backend delay | [bpmn-job-stuck.md](./playbooks/bpmn-job-stuck.md) |
