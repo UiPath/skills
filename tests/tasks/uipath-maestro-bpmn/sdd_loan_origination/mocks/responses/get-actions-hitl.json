@@ -1,0 +1,19 @@
+{
+  "Status": true,
+  "Data": {
+    "ExtensionType": {
+      "extensionType": "Actions.HITL",
+      "bpmnElement": "bpmn:UserTask",
+      "extensionTag": "uipath:activity",
+      "requiresDiscovery": true,
+      "resolvedResource": {
+        "name": "Loan Underwriting Review",
+        "appId": "loan-underwriting-review",
+        "appVersion": "1",
+        "actions": "ReviewApplication",
+        "key": "loan-operations"
+      },
+      "xmlTemplate": "<bpmn:UserTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Actions.HITL\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"appId\" value=\"{appId}\" />\n        <uipath:input name=\"appVersion\" value=\"{appVersion}\" />\n        <uipath:input name=\"actions\" value=\"{actions}\" />\n        <uipath:input name=\"key\" value=\"{key}\" />\n        <uipath:input name=\"taskTitle\" value=\"{taskTitle}\" />\n      </uipath:context>\n      <uipath:input name=\"HitlTaskArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Actions.HITL\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:UserTask>"
+    }
+  }
+}

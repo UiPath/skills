@@ -1,0 +1,11 @@
+{
+  "Status": true,
+  "Data": {
+    "ExtensionType": {
+      "extensionType": "BPMN.Variables",
+      "bpmnElement": "bpmn:Task",
+      "extensionTag": "uipath:mapping",
+      "xmlTemplate": "<bpmn:Task id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:mapping version=\"v1\">\n      <uipath:type value=\"BPMN.Variables\" version=\"v1\" />\n    </uipath:mapping>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:Task>"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "Status": true,
+  "Data": {
+    "ExtensionType": {
+      "extensionType": "BPMN.ScriptTask",
+      "bpmnElement": "bpmn:ScriptTask",
+      "extensionTag": "uipath:mapping",
+      "inputPattern": "scriptArgs",
+      "inputName": "args",
+      "inputTarget": "bodyField",
+      "xmlTemplate": "<bpmn:ScriptTask id=\"{id}\" name=\"{name}\" scriptFormat=\"JavaScript\">\n  <bpmn:extensionElements>\n    <uipath:scriptVersion value=\"v3\" />\n    <uipath:mapping version=\"v1\">\n      <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n      <uipath:input name=\"args\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n    </uipath:mapping>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ScriptTask>"
+    }
+  }
+}

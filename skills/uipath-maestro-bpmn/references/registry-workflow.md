@@ -169,7 +169,7 @@ auth, schema, or enrichment decision is missing).
 ## OOTB extension types (29, login-free)
 
 These are the built-in types `registry pull` returns without login. Discover the
-exact template for any of them with `registry get <type>`.
+exact template for any of them with `registry get <extensionType>`.
 
 | Extension type | Host element | Tag |
 | --- | --- | --- |

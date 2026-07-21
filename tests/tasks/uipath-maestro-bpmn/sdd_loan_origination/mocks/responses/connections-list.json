@@ -1,0 +1,11 @@
+{
+  "Status": true,
+  "Data": [
+    {
+      "Id": "connection-loan-operations",
+      "Name": "Loan Operations Connection",
+      "Folder": "Shared/Loan Operations",
+      "Connector": "Actions"
+    }
+  ]
+}

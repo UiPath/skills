@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, and diagnose .bpmn projects. For .flow use uipath-maestro-flow; for case plans use uipath-maestro-case."
+description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, and diagnose .bpmn projects; consume BPMN SDD sdd.md input or run Phase 0 when a new BPMN request has no SDD. For .flow use uipath-maestro-flow; for case plans use uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -41,6 +41,41 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 `uipath-rpa`; for Python agents use `uipath-agents`; for Case plans use
 `uipath-maestro-case`.
 
+### SDD input routing
+
+Choose one authoring route before registry discovery. These routes preserve the
+existing direct-prose and existing-file behavior while adding an SDD handoff.
+
+| Input at the requested path | Route |
+| --- | --- |
+| Existing `.bpmn` | Use the surgical edit flow above. Preserve unknown payloads and stable IDs; do not run Phase 0. |
+| Supplied `sdd.md` | Read [SDD semantic intake](references/sdd-input.md), skip Phase 0, refresh connection inventory exactly once with `uip is connections list --all-folders`, then take its complete semantic model through the existing registry, structural BPMN, BPMNDI, and validator workflow. |
+| Prose with an explicit direct-authoring request | Keep the direct prose-to-BPMN route: clarify the process shape, then use the existing registry-driven workflow below without creating an SDD. |
+| No `sdd.md` and no existing `.bpmn` | Run [BPMN Phase 0](references/phase-0-interview.md) to create `sdd.draft.md`; wait for explicit approval before creating `sdd.md` or beginning registry authoring. |
+
+The BPMN SDD is a portable semantic handoff, not a serialized BPMN artifact.
+Use this skill's own [SDD template](assets/templates/sdd-template.md) and
+[SDD generation rules](references/sdd-generation-rules.md). It contains no
+registry XML or BPMNDI. A required unresolved resource blocks executable BPMN,
+but does not block SDD review: retain its intent and unresolved marker until a
+later registry discovery can resolve it. SDD approval confirms business shape;
+it does not silently confirm a different discovered technical resource.
+
+When an approved SDD advances to executable authoring, create a complete local
+project as defined in [project layout](references/shared/project-layout.md):
+the BPMN source and
+`project.uiproj`, plus the required package metadata files `bindings_v2.json`,
+`entry-points.json`, `operate.json`, and `package-descriptor.json`. Keep the
+metadata references aligned with the BPMN file and its actual start event.
+
+Every supplied-SDD executable path refreshes the connection inventory exactly
+once with `uip is connections list --all-folders`, before choosing registry
+resources. Do this even when the SDD says the resource is resolved or appears
+not to use a connection: a stale inventory must never silently validate a
+technical binding. Discovery does not authorize usage: add a connection binding
+only when the selected registry template contract requires that connection and
+the discovered candidate matches the SDD intent.
+
 ## The model
 
 Two halves make a valid Maestro `.bpmn`:
@@ -48,7 +83,7 @@ Two halves make a valid Maestro `.bpmn`:
 1. **`uipath:*` payloads — registry-owned.** Each node's extension XML
    (`uipath:activity` / `uipath:event` / `uipath:mapping`, its `context`,
    `input`, `output`, and `bindingInfo`) comes from
-   `uip maestro bpmn registry get <type>`'s `xmlTemplate`. **Never hand-author a
+   `uip maestro bpmn registry get <extensionType>`'s `xmlTemplate`. **Never hand-author a
    `uipath:*` element from prose.**
 2. **Structural BPMN — spec/canvas-owned.** The registry emits no
    `<bpmn:definitions>`/`<bpmn:process>`, no sequence flows, no gateway
@@ -59,27 +94,36 @@ Two halves make a valid Maestro `.bpmn`:
 
 ## Workflow
 
-Work the four steps quickly and author early — do not pre-read every reference
+Work the five steps quickly and author early — do not pre-read every reference
 before writing. Read a reference only when you reach the structure it covers.
 
-1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
+1. **Route.** Use [SDD input routing](#sdd-input-routing). A supplied approved
+   `sdd.md` is parsed by [SDD semantic intake](references/sdd-input.md) before
+   discovery; no-SDD Phase 0 stops at the approved `sdd.md`. The direct prose
+   route starts at discovery.
+2. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
-   types; `uip is connections list --all-folders` for live connections (always
-   `--all-folders` — a folder-scoped list silently misses connections). Confirm
-   every selection with the user (use AskUserQuestion). Never fabricate an identifier.
-   See [references/registry-workflow.md](references/registry-workflow.md).
-2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
+   types. On every supplied-SDD executable path, refresh live connections
+   **exactly once** with `uip is connections list --all-folders`, even when the
+   resource looks resolved; a folder-scoped list silently misses connections.
+   Do not bind an inventory result unless the selected registry template
+   requires it and the connection matches the declared resource intent.
+   Confirm every selection with the user (use AskUserQuestion). Never fabricate
+   an identifier. See [references/registry-workflow.md](references/registry-workflow.md).
+3. **Get templates.** `uip maestro bpmn registry get <extensionType> --output json` for
    each chosen node. Enrich `Intsvc.*` connector nodes with
    `--connection-id`/`--object-name`.
-3. **Assemble.** Author directly from the complete minimal file in
+4. **Assemble.** Author directly from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-fixtures)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton already
    shows variables, the entry point, a branch, and the diagram. **Do not read the
    validator's `test/fixtures/` to infer the pattern** — it is the top reason
    authoring runs out of time. Add only the structural pieces your process needs
    (extra gateways, events, boundary events, containers, multi-instance markers),
-   then generate one `BPMNShape`/`BPMNEdge` per node and flow.
-4. **Validate.** There is **no** `uip maestro bpmn validate` CLI command. Run the
+   then generate one `BPMNShape`/`BPMNEdge` per node and flow. For a new project,
+   also produce the five local package files named in the greenfield SDD contract
+   above.
+5. **Validate.** There is **no** `uip maestro bpmn validate` CLI command. Run the
    bundled validator — it reconstructs the canvas model and runs every
    PO.Frontend rule:
 
@@ -166,6 +210,10 @@ and honestly surfaced to the user as gaps when asked.
 | Discover → template → bind → assemble loop | [references/registry-workflow.md](references/registry-workflow.md) |
 | Structural BPMN, event matrix, boundary events, containers, multi-instance, diagram, validation | [references/structural-bpmn.md](references/structural-bpmn.md) |
 | Runtime expressions, `vars.`/`bindings.`/`iterator.`, `=js:` (Jint) syntax | [references/expression-authoring.md](references/expression-authoring.md) |
+| Generate an SDD when none was supplied | [references/phase-0-interview.md](references/phase-0-interview.md) |
+| Consume a supplied SDD as BPMN semantics | [references/sdd-input.md](references/sdd-input.md) |
+| BPMN SDD semantic constraints | [references/sdd-generation-rules.md](references/sdd-generation-rules.md) |
+| BPMN SDD document shape | [assets/templates/sdd-template.md](assets/templates/sdd-template.md) |
 | CLI conventions and the side-effect boundary | [references/cli-conventions.md](references/cli-conventions.md) |
 | Keeping content public-safe | [references/public-safety.md](references/public-safety.md) |
 | Bundled offline validator (every PO.Frontend rule) | [validator/README.md](validator/README.md) |
