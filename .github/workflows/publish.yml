@@ -1,33 +1,48 @@
 name: Publish skills package
 
-# Publishing tracks:
-#   - workflow_dispatch (target: github-alpha) -> alpha prerelease to GitHub
-#     Packages (dist-tag `alpha`). Manual — no auto-publish on push to main.
-#   - workflow_dispatch (target: npmjs-preview) -> pre-release to npmjs
-#     (dist-tag `preview`, version `<base>-preview.<run_number>`). Manual.
-#     Runs through the same OIDC job as `latest`, so it carries `--provenance`.
-#   - workflow_dispatch (target: npmjs) / GitHub Release published -> stable
-#     release to npmjs (dist-tag `latest`).
+# Publishing channels (registry follows channel — see docs/RELEASE.md):
+#   - push to `main`                       -> `dev`     : GitHub Packages
+#         Auto on every merge. Version `<base>-dev.<run_number>` (never
+#         committed). No provenance — GitHub Packages does not support it.
+#   - GitHub Release published             -> `latest`  : npmjs (stable)
+#   - workflow_dispatch (channel: latest)  -> `latest`  : npmjs (stable)
+#         Committed `package.json` version. Used by sprint-release-cut.yml.
+#   - workflow_dispatch (channel: preview) -> `preview` : npmjs (pre-release)
+#         Version `<base>-preview.<run_number>`.
+#   - workflow_dispatch (channel: dev)     -> `dev`     : GitHub Packages
+#         Manual re-run of the merge publish.
 #
-# `npm install @uipath/skills` (no tag) always resolves to the last stable
-# release — never an alpha or a preview (both are pre-release versions under
-# their own dist-tags). The version line tracks the CLI minor line so the CLI
-# can pin a compatible skills package (see docs/RELEASE.md).
+# npmjs publishes (`latest`, `preview`) use OIDC trusted publishing +
+# `--provenance`. GitHub Packages publishes (`dev`) use the built-in
+# GITHUB_TOKEN and carry no provenance. `npm install @uipath/skills` (no tag,
+# from npmjs) always resolves the last stable release — `preview` and `dev`
+# are pre-release versions under their own dist-tags, so no un-tagged install
+# ever picks them. The version line tracks the CLI minor line so the CLI can
+# pin a compatible skills package.
 
 on:
+  push:
+    branches: [main]
   release:
     types: [published]
   workflow_dispatch:
     inputs:
-      target:
-        description: "Publish target"
+      channel:
+        description: "Manual publish channel"
         required: true
-        default: npmjs
+        default: preview
         type: choice
         options:
-          - npmjs
-          - npmjs-preview
-          - github-alpha
+          - preview
+          - dev
+          - latest
+
+# Serialize publishes so rapid merges don't race on the `dev` dist-tag: each
+# run stamps a unique version, the group just orders the tag moves so `dev`
+# ends on the newest run. Never cancel an in-flight publish.
+concurrency:
+  group: publish-${{ github.event_name }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -44,10 +59,15 @@ jobs:
       # Fails if version-manifest.json has drifted from package.json.
       - run: node scripts/sync-version.mjs --check
 
-  publish-alpha:
-    name: Publish alpha to GitHub Packages
+  publish-dev:
+    name: Publish dev to GitHub Packages
     needs: [guard]
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'github-alpha'
+    # Auto on every merge to main; also re-runnable via dispatch (channel=dev).
+    # The repo guard stops forks from attempting to publish on their own main.
+    if: >-
+      github.repository == 'UiPath/skills'
+      && (github.event_name == 'push'
+          || (github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'dev'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -60,31 +80,35 @@ jobs:
           registry-url: "https://npm.pkg.github.com"
           scope: "@uipath"
 
-      # Stamp a prerelease suffix: <base>-alpha.<YYYYMMDD>.<run_number>.
-      # Dot-separated so semver orders the run number numerically. Never
-      # committed — only the published tarball carries it.
-      - name: Stamp alpha version
+      # Stamp a prerelease suffix: <base>-dev.<run_number>. Dot-separated so
+      # semver orders the run number numerically. Never committed — only the
+      # published tarball carries it. sync-version.mjs rewrites the derived
+      # manifests and strips the suffix from the plugin manifests.
+      - name: Stamp dev version
         run: |
           BASE=$(node -p "require('./package.json').version")
-          DAY=$(date -u +%Y%m%d)
-          ALPHA="${BASE}-alpha.${DAY}.${{ github.run_number }}"
-          npm version "$ALPHA" --no-git-tag-version --allow-same-version
+          DEV="${BASE}-dev.${{ github.run_number }}"
+          npm version "$DEV" --no-git-tag-version --allow-same-version
           node scripts/sync-version.mjs
-          echo "Publishing $ALPHA"
+          echo "Publishing $DEV to dist-tag dev"
 
       # setup-node wrote `@uipath:registry=https://npm.pkg.github.com/` + auth;
-      # the scoped registry routes this scoped package to GitHub Packages.
-      # The built-in GITHUB_TOKEN suffices given the job's `packages: write`
-      # permission above — no dedicated secret needed.
+      # the scoped registry routes this scoped package to GitHub Packages. The
+      # built-in GITHUB_TOKEN suffices given the job's `packages: write`
+      # permission above. No --provenance: GitHub Packages does not support it.
       - name: Publish
-        run: npm publish --tag alpha
+        run: npm publish --tag dev
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  publish-release:
+  publish-npmjs:
     name: Publish to npmjs (latest / preview)
     needs: [guard]
-    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.target == 'npmjs' || github.event.inputs.target == 'npmjs-preview'))
+    if: >-
+      github.repository == 'UiPath/skills'
+      && (github.event_name == 'release'
+          || (github.event_name == 'workflow_dispatch'
+              && (github.event.inputs.channel == 'latest' || github.event.inputs.channel == 'preview')))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -104,19 +128,15 @@ jobs:
           npm install -g npm@latest
           echo "npm $(npm --version) / node $(node --version)"
 
-      # A `release` event or target=npmjs publishes the committed version to
-      # `latest`. target=npmjs-preview stamps a `<base>-preview.<run_number>`
-      # pre-release (never committed) and targets the `preview` dist-tag. The
-      # run_number keeps each dispatch unique and semver-ordered, matching how
-      # the alpha track stamps its version. `sync-version.mjs` rewrites the
-      # derived manifests and strips the pre-release suffix from the plugin
-      # manifests (same as alpha), so only the npm tarball carries the suffix.
-      # An explicit `--tag preview` on a pre-release version never moves
-      # `latest`, so `npm install @uipath/skills` still resolves the last stable.
+      # A `release` event or channel=latest publishes the committed version to
+      # `latest`. channel=preview stamps a `<base>-preview.<run_number>`
+      # pre-release (never committed) and targets the `preview` dist-tag. An
+      # explicit `--tag preview` on a pre-release version never moves `latest`,
+      # so `npm install @uipath/skills` still resolves the last stable release.
       - name: Resolve dist-tag and stamp version
         id: dist
         run: |
-          if [ "${{ github.event.inputs.target }}" = "npmjs-preview" ]; then
+          if [ "${{ github.event.inputs.channel }}" = "preview" ]; then
             BASE=$(node -p "require('./package.json').version")
             PREVIEW="${BASE}-preview.${{ github.run_number }}"
             npm version "$PREVIEW" --no-git-tag-version --allow-same-version

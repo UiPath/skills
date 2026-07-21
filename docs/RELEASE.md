@@ -15,15 +15,16 @@ The whole skills repo is published as an npm package, **`@uipath/skills`**, vers
 
 ### One version line
 
-All channels carry `package.json`'s version; only the alpha track adds a pre-release stamp:
+All channels carry `package.json`'s version; the pre-release channels (`dev`, `preview`) add a stamp that is never committed:
 
-| Channel | Version | Cadence |
-|---------|---------|---------|
-| npm `latest` | `M.N.<release>` | per stable release — what the CLI pins |
-| npm `alpha` | `M.N.<release>-alpha.<date>.<run>` | per alpha dispatch (stamp never committed) |
-| plugin manifests (`.claude-plugin/plugin.json`, `marketplace.json`, `.codex-plugin/plugin.json`) | `M.N.<release>` (base version, no pre-release suffix) | per `package.json` bump — drives Claude Code / Codex plugin auto-update |
+| Channel | Registry | Version | Cadence |
+|---------|----------|---------|---------|
+| npm `latest` | npmjs | `M.N.<release>` | per stable release — what the CLI pins |
+| npm `preview` | npmjs | `M.N.<release>-preview.<run>` | per preview dispatch (stamp never committed) |
+| npm `dev` | GitHub Packages | `M.N.<release>-dev.<run>` | per merge to `main` (stamp never committed) |
+| plugin manifests (`.claude-plugin/plugin.json`, `marketplace.json`, `.codex-plugin/plugin.json`) | — | `M.N.<release>` (base version, no pre-release suffix) | per `package.json` bump — drives Claude Code / Codex plugin auto-update |
 
-`sync-version.mjs` enforces the line: the plugin version always equals `package.json`'s base `M.N.P` — there is **no independent plugin patch counter**. It **refuses to downgrade** (plugin auto-update never goes backwards, so a reverted `package.json` would freeze users), and it strips pre-release suffixes so the alpha stamp from `publish.yml` never lands in the plugin manifests. The marketplace and Codex versions must always equal the plugin version exactly. `--check` fails on any violation, so a hand-bumped plugin manifest cannot drift the line. To bump the plugin version, bump `package.json` and run the sync — that is the only lever.
+`sync-version.mjs` enforces the line: the plugin version always equals `package.json`'s base `M.N.P` — there is **no independent plugin patch counter**. It **refuses to downgrade** (plugin auto-update never goes backwards, so a reverted `package.json` would freeze users), and it strips pre-release suffixes so the `dev`/`preview` stamps from `publish.yml` never land in the plugin manifests. The marketplace and Codex versions must always equal the plugin version exactly. `--check` fails on any violation, so a hand-bumped plugin manifest cannot drift the line. To bump the plugin version, bump `package.json` and run the sync — that is the only lever.
 
 Run after any version change:
 
@@ -40,24 +41,33 @@ The version line mirrors the CLI's `MAJOR.MINOR` (e.g. CLI `1.197.x` → skills 
 
 ## Publishing tracks (`.github/workflows/publish.yml`)
 
-| Trigger | Registry | dist-tag | Version |
-|---------|----------|----------|---------|
-| `workflow_dispatch` (target: `github-alpha`) | GitHub Packages | `alpha` | `<base>-alpha.<YYYYMMDD>.<run_number>` |
-| `workflow_dispatch` (target: `npmjs-preview`) | npmjs | `preview` | `<base>-preview.<run_number>` |
-| GitHub Release published | npmjs | `latest` | `package.json` version |
-| `workflow_dispatch` (target: `npmjs`) | npmjs | `latest` | `package.json` version |
+Registry follows channel — you pick a channel, not a registry.
 
-All tracks are **manually triggered** — there is no auto-publish on push to `main`. Alpha and preview are dispatched on demand; stable runs when a GitHub Release is published. `npm install @uipath/skills` (no tag) always resolves to the last stable npmjs release — alphas live only under the `alpha` tag on GitHub Packages, and previews only under the `preview` tag on npmjs (both are pre-release versions, so no un-tagged install ever picks them).
+| Trigger | Channel | Registry | dist-tag | Version | Provenance |
+|---------|---------|----------|----------|---------|------------|
+| push to `main` (every merge) | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
+| `workflow_dispatch` (channel: `dev`) | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
+| `workflow_dispatch` (channel: `preview`) | `preview` | npmjs | `preview` | `<base>-preview.<run_number>` | yes |
+| GitHub Release published | `latest` | npmjs | `latest` | `package.json` version | yes |
+| `workflow_dispatch` (channel: `latest`) | `latest` | npmjs | `latest` | `package.json` version | yes |
+
+¹ GitHub Packages does not support npm provenance attestations; only the npmjs channels are signed.
+
+**`dev` is the only automatic channel** — every merge to `main` publishes a `dev` build to GitHub Packages. `preview` and `latest` are dispatched on demand, and stable also runs when a GitHub Release is published. `npm install @uipath/skills` (no tag, from npmjs) always resolves the last stable release — `preview` (npmjs) and `dev` (GitHub Packages) are pre-release versions under their own dist-tags, so no un-tagged install ever picks them.
 
 ### Cutting a preview
 
-Dispatch `publish.yml` on the release branch (or tag) you want to preview, with target `npmjs-preview`:
+Dispatch `publish.yml` on the release branch (or tag) you want to preview, with channel `preview`:
 
 ```bash
-gh workflow run publish.yml --ref release/v<minor> -f target=npmjs-preview
+gh workflow run publish.yml --ref release/v<minor> -f channel=preview
 ```
 
 The job stamps `<base>-preview.<run_number>` (never committed), runs `sync-version.mjs`, and publishes to the `preview` dist-tag with `--provenance` via the same OIDC job as `latest`. Consume it with `npm install @uipath/skills@preview`. Re-dispatch to advance the `preview` tag; each run gets a unique version from `run_number`.
+
+### The `dev` channel (GitHub Packages)
+
+Every merge to `main` publishes `@uipath/skills@<base>-dev.<run_number>` to **GitHub Packages** under the `dev` dist-tag — the internal rolling channel, replacing the retired manual `alpha` track. It uses the built-in `GITHUB_TOKEN` (`packages: write`) and carries no provenance (GitHub Packages does not support it). Consume it from the GitHub Packages registry with `npm install @uipath/skills@dev`. Publishes are serialized by a `concurrency` group so back-to-back merges don't race on the `dev` tag. Re-run a merge's publish manually with `gh workflow run publish.yml --ref main -f channel=dev`.
 
 ### Registry routing
 
@@ -65,8 +75,8 @@ The job stamps `<base>-preview.<run_number>` (never committed), runs `sync-versi
 
 | Job | registry | Auth |
 |-----|----------|------|
-| `publish-alpha` | GitHub Packages (`npm.pkg.github.com`) | built-in `GITHUB_TOKEN` |
-| `publish-release` | npmjs (`registry.npmjs.org`) | **OIDC trusted publishing** (no token) + signed `--provenance` |
+| `publish-dev` | GitHub Packages (`npm.pkg.github.com`) | built-in `GITHUB_TOKEN` |
+| `publish-npmjs` | npmjs (`registry.npmjs.org`) | **OIDC trusted publishing** (no token) + signed `--provenance` |
 
 ## Cutting a stable release
 
@@ -78,7 +88,7 @@ The job stamps `<base>-preview.<run_number>` (never committed), runs `sync-versi
 Steps 1–2 are automated per sprint by `sprint-release-cut.yml`. It runs **Sunday 06:00 UTC**, gated to the **14-day cadence** anchored at `2026-06-14` — the same cadence as `UiPath/cli`, but **6 hours earlier** so the skills package lands before the CLI release. It is **self-driven**: the target line is the current skills minor **+ 1**; it never reads the CLI version (skills lead, never follow), so no cross-repo secret is required. On a release Sunday it:
 
 1. cuts `release/v<minor>` from `main` at `M.N.0` (`sync-version.mjs` resets plugin/marketplace/Codex to `M.N.0` too);
-2. publishes `@uipath/skills@M.N.0` to npm `latest` — creates the GitHub Release `v<minor>.0` as the durable record, then **dispatches `publish.yml` on the tag** (`gh workflow run publish.yml --ref v<minor>.0 -f target=npmjs`). A release created with the default `GITHUB_TOKEN` does not trigger other workflows, so `release: published` would never start `publish.yml`; the explicit `workflow_dispatch` (which `GITHUB_TOKEN` *can* trigger) is what publishes. Guarded on `npm view` so a re-run doesn't re-dispatch an already-published version;
+2. publishes `@uipath/skills@M.N.0` to npm `latest` — creates the GitHub Release `v<minor>.0` as the durable record, then **dispatches `publish.yml` on the tag** (`gh workflow run publish.yml --ref v<minor>.0 -f channel=latest`). A release created with the default `GITHUB_TOKEN` does not trigger other workflows, so `release: published` would never start `publish.yml`; the explicit `workflow_dispatch` (which `GITHUB_TOKEN` *can* trigger) is what publishes. Guarded on `npm view` so a re-run doesn't re-dispatch an already-published version;
 3. opens the matching version-bump PR against `main`.
 
 Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`) to skip the gate and the auto-increment, or `dry_run` to print the plan without pushing.
@@ -91,8 +101,8 @@ Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`
 
 ## Required setup
 
-- [x] **npmjs Trusted Publishing** — configure a GitHub Actions trusted publisher on the `@uipath/skills` package (npmjs → package → Settings → Trusted Publisher): repository `UiPath/skills`, workflow `publish.yml`. No `NPM_TOKEN` secret is used — the `publish-release` job authenticates via OIDC (`id-token: write`). Do **not** set `NODE_AUTH_TOKEN`; a token makes npm bypass OIDC and (with 2FA) fail `EOTP`.
+- [x] **npmjs Trusted Publishing** — configure a GitHub Actions trusted publisher on the `@uipath/skills` package (npmjs → package → Settings → Trusted Publisher): repository `UiPath/skills`, workflow `publish.yml`. No `NPM_TOKEN` secret is used — the `publish-npmjs` job authenticates via OIDC (`id-token: write`). Do **not** set `NODE_AUTH_TOKEN`; a token makes npm bypass OIDC and (with 2FA) fail `EOTP`.
 - [x] Package name/scope confirmed: **`@uipath/skills`** (published).
 - [x] Seed version confirmed: **`1.197.0`** (current CLI minor line). The ongoing CLI↔skills lockstep is automated by `sprint-release-cut.yml` (Sunday 06:00 UTC, 6 h before the CLI's own cut, on the same 14-day cadence anchored at `2026-06-14`).
 
-> The alpha track also needs no secret — `publish-alpha` uses the built-in `GITHUB_TOKEN` with `packages: write`.
+> The `dev` channel also needs no secret — `publish-dev` uses the built-in `GITHUB_TOKEN` with `packages: write`.

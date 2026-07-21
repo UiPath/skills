@@ -211,8 +211,8 @@ jobs:
           if npm view "@uipath/skills@$LINE.0" version > /dev/null 2>&1; then
             echo "@uipath/skills@$LINE.0 already on npm — skipping publish dispatch."
           else
-            gh workflow run publish.yml --ref "$TAG" -f target=npmjs
-            echo "Dispatched publish.yml (target=npmjs) at $TAG."
+            gh workflow run publish.yml --ref "$TAG" -f channel=latest
+            echo "Dispatched publish.yml (channel=latest) at $TAG."
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
