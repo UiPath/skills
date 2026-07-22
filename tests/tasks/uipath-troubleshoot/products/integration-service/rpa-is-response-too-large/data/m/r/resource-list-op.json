@@ -1,0 +1,52 @@
+{
+  "Result": "Success",
+  "Code": "ResourceMetadata",
+  "Data": {
+    "name": "incident",
+    "displayName": "List Incidents",
+    "path": "/table/incident",
+    "operation": "List",
+    "metadataFile": "~/.uipath/cache/integrationservice/uipath-servicenow/_static/incident.List.json",
+    "requiredFields": [],
+    "optionalFields": [
+      "sysparm_query",
+      "sysparm_limit",
+      "sysparm_offset",
+      "sysparm_fields",
+      "sysparm_display_value",
+      "sysparm_exclude_reference_link",
+      "maxRecords"
+    ],
+    "paginationFields": [
+      "sysparm_limit",
+      "sysparm_offset",
+      "maxRecords"
+    ],
+    "responseFields": [
+      "sys_id",
+      "number",
+      "short_description",
+      "description",
+      "state",
+      "priority",
+      "urgency",
+      "impact",
+      "category",
+      "subcategory",
+      "assigned_to",
+      "assignment_group",
+      "caller_id",
+      "opened_at",
+      "closed_at",
+      "resolved_at",
+      "sys_created_on",
+      "sys_updated_on",
+      "comments",
+      "work_notes",
+      "close_notes",
+      "attachment"
+    ],
+    "hint": "List returns multiple records. Use 'sysparm_query' to filter and 'sysparm_limit' / 'maxRecords' to bound the number of rows returned.",
+    "Warning": "Results may not include custom fields. Use --connection-id <id> for connection-specific metadata including custom objects and fields."
+  }
+}

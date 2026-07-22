@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "_doc": "Hand-authored faithful-replay scenario. Maps uip Orchestrator and Integration Service queries to canned fixtures for a faulted scheduled job. Rules ordered specific-before-generic; docsai ask is passthrough.",
+  "rules": [
+    {
+      "match": "--version",
+      "file": "version.json"
+    },
+    {
+      "match": "or folders list",
+      "file": "folders.json"
+    },
+    {
+      "match": "or processes list",
+      "file": "processes.json"
+    },
+    {
+      "match": "or jobs list --state Faulted",
+      "file": "jobs-faulted.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "job-get.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "job-logs.json"
+    },
+    {
+      "match": "or jobs history",
+      "file": "job-history.json"
+    },
+    {
+      "match": "is connections ping",
+      "file": "conn-ping.json"
+    },
+    {
+      "match": "is connections list --connection-id",
+      "file": "conn-list-id.json"
+    },
+    {
+      "match": "is connections list uipath-servicenow",
+      "file": "conn-list-folder.json"
+    },
+    {
+      "match": "is resources describe uipath-servicenow incident --operation List",
+      "file": "resource-list-op.json"
+    },
+    {
+      "match": "is resources describe uipath-servicenow incident",
+      "file": "resource-list.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}
