@@ -459,12 +459,14 @@ Defines per-task detail blocks. Every task opens with an **Entry Condition** blo
 | Rule | When to use |
 |---|---|
 | `current-stage-entered` | First event-driven task in stage, or any ungated task (including connector tasks) that should start when its stage is entered. A first task in a sequential chain uses `runs-sequentially` instead. When a task has multiple entry rows, render this one first. |
-| `selected-tasks-completed("<Task>")` | Sibling-gated task (e.g., after upstream task in same stage). Multiple tasks comma-separated inside the parens. |
+| `selected-tasks-completed("<Task>")` | Explicit sibling gate, fan-in, branch convergence, or conditional handoff where this task should start only after named sibling task(s) complete. Multiple tasks comma-separated inside the parens. Do not use it merely to express the next step in a simple top-to-bottom task list; use `runs-sequentially` for that UI mode. |
 | `wait-for-connector` | Async connector callback. Pair with `conditionExpression` to gate on **case state** (`vars.X`); the event payload is not accessible (no `event` namespace). **In-rule extract-then-gate (extract + same-rule `=js:vars.caseVar` gate) does NOT work at runtime** — case-backend evaluates the gate before the extract populates the case var. To condition on payload content: extract `response.field -> caseVar` on the connector rule and place the case-state gate on a DOWNSTREAM stage-entry / task-entry condition. |
 | `adhoc` | Manual fire from the case app. Optional gating expression. |
 | `runs-sequentially` | Tasks that should run top-to-bottom in their stage declaration order. The frontend toggle writes this as the task's only entry rule; it is not represented by a lane. |
 
 Multiple entry conditions render as multiple rows (DNF outer-OR). When `current-stage-entered` is among them, render it first.
+
+**Sequential normalization rule.** When a contiguous set of tasks in one stage is described as a plain ordered workflow with no branch condition, fan-in, alternate trigger, or manually launched task between them, author **each task in that run** with exactly one `runs-sequentially` Entry Condition row. This includes the first task: do not write `current-stage-entered` for the first item and `selected-tasks-completed("<previous>")` for later items. That explicit chain is valid backend logic, but Studio Web classifies it as condition/event-driven rather than Sequential. Break the run at tasks that are `adhoc`, `wait-for-connector` entry-triggered by an external event, condition-gated, or intentionally dependent on non-immediate sibling task(s).
 
 ### `action` task — required cells
 
