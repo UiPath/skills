@@ -103,7 +103,7 @@ uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json
 uip maestro case tasks describe --type connector-activity --id "<typeId>" --connection-id "<uuid>" --output json
 ```
 
-Output names appear in the response under the output schema. Record them in the source task's `outputs:` field in `tasks.md` so downstream references can be validated.
+Output names appear in the response under the output schema. Record them in the source task's `outputs:` field in `tasks.md` so downstream references can be validated. Also persist the response's full I/O schema (inputs + outputs) into the task's `registry-resolved.json` entry under `describe` (Rule 9) — Phase 2 Step 9 Phase A reuses it, avoiding a duplicate `tasks describe` per task (~10-15s each).
 
 ### Validation rule
 
