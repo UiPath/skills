@@ -30,17 +30,24 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: run_command
     description: "Agent confirmed per-document, passing a <document-id> each time"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+["'']?doc-00[123]\b'
-    min_count: 3
+    command: |
+      python3 mocks/check_calls.py --min-count 3 <<'REGEX'
+      uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-00[123]\b
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_not_executed
+  - type: run_command
     description: "Agent did NOT run the all-documents confirm (project only, no document-id)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s*(--|$)'
+    command: |
+      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
+      uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s*(--|$)
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

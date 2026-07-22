@@ -28,10 +28,13 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: run_command
     description: "Agent changed field \"Total\" to type \"Exact Text\" via `fields change-type … -y/--yes`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+fields\s+change-type\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--field\s+["'']?Total)(?=.*--type\s+["'']?Exact Text)(?=.*(--yes\b|-y\b)).*'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+fields\s+change-type\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--field\s+["']?Total)(?=.*--type\s+["']?Exact Text)(?=.*(--yes\b|-y\b)).*
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

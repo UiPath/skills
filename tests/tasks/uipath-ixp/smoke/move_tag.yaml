@@ -29,19 +29,26 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: run_command
     description: "Agent moved live to v16 via `projects publish <Name> --model-version 16 --tag live`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+publish\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*(--model-version|-m)\s+16\b)(?=.*--tag\s+["'']?live\b).*'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+publish\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*(--model-version|-m)\s+16\b)(?=.*--tag\s+["']?live\b).*
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   # The publish above already moves the tag; untagging the old version first
   # is unnecessary and wrong.
-  - type: command_not_executed
+  - type: run_command
     description: "Agent did NOT untag (moving a tag does not require untag first)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+untag\b'
+    command: |
+      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
+      uip\s+ixp\s+projects\s+untag\b
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0

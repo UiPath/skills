@@ -27,10 +27,13 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: run_command
     description: "Agent imported the file via `projects import-taxonomy <Name> ./taxonomy.json`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+import-taxonomy\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*taxonomy\.json).*'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+import-taxonomy\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*taxonomy\.json).*
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

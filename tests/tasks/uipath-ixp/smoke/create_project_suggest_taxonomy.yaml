@@ -28,19 +28,26 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: run_command
     description: "Agent created ap-invoices via `projects create` from ./invoices/"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+create\b(?=.*ap-invoices).*'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+create\b(?=.*ap-invoices).*
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   # Autopilot path: let IXP suggest the taxonomy. --skip-taxonomy or a manual
   # import would defeat the test.
-  - type: command_not_executed
+  - type: run_command
     description: "Agent did NOT skip or hand-import the taxonomy (autopilot suggests it)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+(create\b.*--skip-taxonomy|import-taxonomy)\b'
+    command: |
+      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
+      uip\s+ixp\s+projects\s+(create\b.*--skip-taxonomy|import-taxonomy)\b
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0

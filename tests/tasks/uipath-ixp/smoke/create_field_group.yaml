@@ -20,8 +20,7 @@ sandbox:
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, create a new field group named
   "Subscriber information" with fields: surname, address, bank account, and
-  phone number. Pass all four fields inline in one batched call — do not load
-  the payload from a separate file.
+  phone number in one batched call.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant in
@@ -30,13 +29,15 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # Offline smoke (mock CLI, no tenant) can only grade the command text, so the prompt requires the fields
-  # inline: a `$(cat file)` / variable payload hides the field names from this pattern (a real run failed this
-  # way). Verifying the four field names is the point of the test — keep the per-field lookaheads.
-  - type: command_executed
+  # calls.log records the expanded --fields payload, so verify every field
+  # on the actual groups add invocation regardless of shell construction.
+  - type: run_command
     description: "Agent created the group with multiple fields in one `groups add … --fields` call (batch)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+groups\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*Subscriber information)(?=.*--fields)(?=.*surname)(?=.*address)(?=.*bank account)(?=.*phone number).*'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+groups\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*Subscriber information)(?=.*--fields)(?=.*surname)(?=.*address)(?=.*bank account)(?=.*phone number).*
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

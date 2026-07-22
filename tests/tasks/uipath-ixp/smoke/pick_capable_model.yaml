@@ -30,10 +30,13 @@ initial_prompt: |
 success_criteria:
   # Deterministic: the skill maps 100+ page docs to gemini_2_5_pro, which the
   # 150-page prompt triggers (so gpt_4o would be wrong here).
-  - type: command_executed
+  - type: run_command
     description: "Agent switched to a more capable model via `configure-model --model gemini_2_5_pro`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+configure-model\b(?=.*--model\s+gemini_2_5_pro\b).*'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+configure-model\b(?=.*--model\s+gemini_2_5_pro\b).*
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

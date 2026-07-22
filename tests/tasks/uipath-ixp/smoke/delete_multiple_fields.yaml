@@ -28,18 +28,24 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: run_command
     description: "Agent deleted field1 via `fields delete`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+fields\s+delete\b(?=.*field1).*'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+fields\s+delete\b(?=.*field1).*
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent deleted field2 via `fields delete` (both, not just one)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+fields\s+delete\b(?=.*field2).*'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+fields\s+delete\b(?=.*field2).*
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

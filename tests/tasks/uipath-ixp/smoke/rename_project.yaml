@@ -26,17 +26,24 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: run_command
     description: "Agent renamed the project via `projects update-title … \"amazing IXP project\"`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+update-title\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*amazing IXP project).*'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+update-title\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*amazing IXP project).*
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_not_executed
+  - type: run_command
     description: "Agent did NOT delete the project (rename must not destroy it)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+delete\b'
+    command: |
+      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
+      uip\s+ixp\s+projects\s+delete\b
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0

@@ -17,7 +17,10 @@ sandbox:
   # ixp-tool, not the BYOS host's stale pre-migration plugin.
   driver: docker
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
+    - type: template_dir
+      path: ../_shared/live_calls_template
     - type: template_dir
       path: ../_shared/fixtures
 
@@ -37,42 +40,58 @@ initial_prompt: |
   Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
 success_criteria:
-  - type: command_executed
+  - type: run_command
     description: "Listed documents to resolve the filename → DocumentId, then re-read to save the remaining list"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+documents\s+list'
-    min_count: 2
+    command: |
+      python3 mocks/check_calls.py --min-count 2 <<'REGEX'
+      uip\s+ixp\s+documents\s+list
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Deleted the named document by resolved id (with -y)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+documents\s+delete\b.*(-y|--yes)'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+documents\s+delete\b.*(-y|--yes)
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Listed projects to resolve Title → Name"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+list'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+list
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Renamed the project via update-title"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+update-title'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+update-title
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_not_executed
+  - type: run_command
     description: "Did NOT pass the raw filename through as a document id to delete"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+documents\s+delete\s+\S+\s+york_solutions_invoice\.png'
+    command: |
+      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
+      uip\s+ixp\s+documents\s+delete\s+\S+\s+york_solutions_invoice\.png
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

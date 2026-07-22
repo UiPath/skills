@@ -26,17 +26,24 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: run_command
     description: "Agent renamed field \"Amount\" to \"Total Amount\" via `fields rename` (right group)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+fields\s+rename\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["'']?Invoice Header)(?=.*--field\s+["'']?Amount)(?=.*--new-name\s+["'']?Total Amount).*'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+fields\s+rename\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["']?Invoice Header)(?=.*--field\s+["']?Amount)(?=.*--new-name\s+["']?Total Amount).*
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_not_executed
+  - type: run_command
     description: "Agent did NOT delete the field (rename must not destroy it)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+fields\s+delete\b'
+    command: |
+      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
+      uip\s+ixp\s+fields\s+delete\b
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0

@@ -52,38 +52,51 @@ success_criteria:
   # tailored guidance is the reason to create it rather than reuse the
   # default). Money kind does NOT take --input-value (text/choice only
   # — the CLI rejects it otherwise), so no input-value criterion here.
-  - type: command_executed
+  - type: run_command
     description: "Agent created the Withholding Tax Amount money type via data-types add --kind money with tailored --instructions"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+data-types\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--name\s+["'']?Withholding Tax Amount)(?=.*--kind\s+money)(?=.*--instructions).*'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+data-types\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--name\s+["']?Withholding Tax Amount)(?=.*--kind\s+money)(?=.*--instructions).*
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   # Step 2: groups add must happen, with --instructions AND a --fields
   # JSON array. The JSON must reference the data type by its name.
-  - type: command_executed
+  - type: run_command
     description: "Agent created the Invoice Header group via groups add with --instructions and --fields"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+groups\s+add\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+.*--name\s+["'']?Invoice Header["'']?.*--instructions.*--fields'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+groups\s+add\s+["']?my_invoices-f1afa9ef-ixp["']?\s+.*--name\s+["']?Invoice Header["']?.*--instructions.*--fields
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "groups add --fields JSON referenced the Withholding Tax Amount data type for the Tax Withheld field"
-    tool_name: "Bash"
-    command_pattern: '--fields\s+[^|;&]*Tax Withheld[^|;&]*Withholding Tax Amount'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+groups\s+add\b(?=.*--fields\s+[^|;&]*Tax Withheld[^|;&]*Withholding Tax Amount).*
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   # Anti-pattern: don't reach for `fields add` to put a field in a
   # group that doesn't exist yet. `groups add --fields` is the
   # one-shot path for creating a new group with its fields.
-  - type: command_not_executed
+  - type: run_command
     description: "Agent did NOT use `fields add` to seed a non-existent group"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+fields\s+add\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+.*--group\s+["'']?Invoice Header["'']?'
+    command: |
+      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
+      uip\s+ixp\s+fields\s+add\s+["']?my_invoices-f1afa9ef-ixp["']?\s+.*--group\s+["']?Invoice Header["']?
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0

@@ -17,7 +17,10 @@ sandbox:
   # ixp-tool, not the BYOS host's stale pre-migration plugin.
   driver: docker
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
+    - type: template_dir
+      path: ../_shared/live_calls_template
     - type: template_dir
       path: ../_shared/fixtures
 
@@ -47,43 +50,58 @@ initial_prompt: |
   Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
 success_criteria:
-  - type: command_executed
+  - type: run_command
     description: "Published with a tag (staging/live)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+publish\b.*--tag\s+(live|staging)'
-    min_count: 2
+    command: |
+      python3 mocks/check_calls.py --min-count 2 <<'REGEX'
+      uip\s+ixp\s+projects\s+publish\b.*--tag\s+(live|staging)
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Removed the staging tag by name (untag --tag staging)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+untag\b.*--tag\s+["'']?staging\b'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+untag\b.*--tag\s+["']?staging\b
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 0.75
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Removed the live tag by name (untag --tag live)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+untag\b.*--tag\s+["'']?live\b'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+untag\b.*--tag\s+["']?live\b
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 0.75
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Unpublished a version"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+unpublish\b.*--model-version'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+unpublish\b.*--model-version
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Re-read list-models after each step (one snapshot per transition)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+list-models'
-    min_count: 4
+    command: |
+      python3 mocks/check_calls.py --min-count 4 <<'REGEX'
+      uip\s+ixp\s+projects\s+list-models
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

@@ -19,7 +19,10 @@ sandbox:
   # ixp-tool, not the BYOS host's stale pre-migration plugin.
   driver: docker
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
+    - type: template_dir
+      path: ../_shared/live_calls_template
     - type: template_dir
       path: ../_shared/fixtures
 
@@ -48,66 +51,91 @@ initial_prompt: |
   Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
 success_criteria:
-  - type: command_not_executed
+  - type: run_command
     description: "Did NOT import the fixture taxonomy — used auto-suggest at create time instead"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+import-taxonomy'
+    command: |
+      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
+      uip\s+ixp\s+projects\s+import-taxonomy
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Created the 'Charges' group with the 'Discount' and 'Late Fee' fields"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+add\b(?=.*Charges)(?=.*Discount)(?=.*Late Fee)'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+groups\s+add\b(?=.*Charges)(?=.*Discount)(?=.*Late Fee)
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Renamed group 'Charges' -> 'Adjustments'"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+rename\b(?=.*Charges)(?=.*Adjustments)'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+groups\s+rename\b(?=.*Charges)(?=.*Adjustments)
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Changed 'Discount' to type Number with the confirmation flag"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+change-type\b(?=.*Discount)(?=.*Number)(?=.*(--yes|-y))'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+fields\s+change-type\b(?=.*Discount)(?=.*Number)(?=.*(--yes|-y))
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Bulk-updated field prompts via update-prompts --updates"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+update-prompts\b.*--updates'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*Discount)(?=.*Discount taken off the invoice total)(?=.*Penalty Fee)(?=.*Late penalty added to the invoice total)
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Deleted the 'Surcharge' field with the confirmation flag"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+delete\b(?=.*Surcharge)(?=.*(-y|--yes))'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+fields\s+delete\b(?=.*Surcharge)(?=.*(-y|--yes))
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Deleted the 'Adjustments' group with the confirmation flag"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+delete\b(?=.*Adjustments)(?=.*(--yes|-y))'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+groups\s+delete\b(?=.*Adjustments)(?=.*(--yes|-y))
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Read taxonomy back to verify edits (multiple get-taxonomy calls)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+get-taxonomy'
-    min_count: 3
+    command: |
+      python3 mocks/check_calls.py --min-count 3 <<'REGEX'
+      uip\s+ixp\s+projects\s+get-taxonomy
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

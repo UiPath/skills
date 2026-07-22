@@ -22,7 +22,10 @@ run_limits:
 sandbox:
   driver: docker
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
+    - type: template_dir
+      path: ../_shared/live_calls_template
     - type: template_dir
       path: ../_shared/fixtures
 
@@ -61,59 +64,80 @@ initial_prompt: |
     reading metrics.
 
 success_criteria:
-  - type: command_executed
+  - type: run_command
     description: "Agent created an IXP project"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+create'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+create
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent imported the bundled taxonomy fixture"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+import-taxonomy'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+import-taxonomy
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent configured the model"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+configure-model'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+configure-model
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent fetched predictions"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+get-predictions'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+labellings\s+get-predictions
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent confirmed labellings"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+confirm'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+labellings\s+confirm
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent fetched metrics at least twice (baseline + improved)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+get-metrics'
-    min_count: 2
+    command: |
+      python3 mocks/check_calls.py --min-count 2 <<'REGEX'
+      uip\s+ixp\s+projects\s+get-metrics
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent updated a field prompt"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+update-prompts'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+fields\s+update-prompts
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
@@ -142,18 +166,21 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Improve-workflow artifacts are genuine: metrics well-formed & coherent, ModelVersion not backwards, agent targeted a real field (F1 direction not graded)"
+    description: "Agent published the model"
     command: "python3 $TASK_DIR/check_full_lifecycle.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent published the model"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+publish'
-    min_count: 1
+  - type: run_command
+    description: Agent published the model
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+publish
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 

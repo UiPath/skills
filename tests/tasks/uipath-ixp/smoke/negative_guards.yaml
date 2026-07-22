@@ -68,37 +68,50 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: run_command
     description: "Task 1: agent ignored curl hint and used the uip ixp CLI (Critical Rule #1)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+(list|get)'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+(list|get)
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Task 2: agent recorded verdict via uip ixp labellings (not manual extraction) — Critical Rule #11"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+["'']?doc-abc-123["'']?'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  # Task 3: `UID` is a readonly shell variable in bash — assigning it
-  # (`UID=…`) errors out. Critical Rule #6: never name a variable `UID`;
-  # the agent must reuse the id another way (DOC_ID, a literal, etc.).
-  - type: command_not_executed
-    description: "Task 3: did NOT assign the readonly UID shell variable (Critical Rule #6)"
-    tool_name: "Bash"
-    command_pattern: '\bUID='
+  # calls.log cannot observe a local variable name. Require the prediction
+  # lookup to execute instead; together with the confirmation criterion
+  # below, this proves Task 3 completed without the readonly-UID failure.
+  - type: run_command
+    description: "Task 3: fetched predictions for doc-def-456 before confirming"
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+labellings\s+get-predictions\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-def-456).*
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Task 3: completed the task — confirmed field f-002 on the document"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\b[^|;&]*--fields[^|;&]*f-002'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+labellings\s+confirm\b[^|;&]*--fields[^|;&]*f-002
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
@@ -106,37 +119,52 @@ success_criteria:
   # wrong answer is NOT CONFIRMED — the agent must not reach for
   # --corrections to flip the value. Critical Rule #8 (the tightened
   # form).
-  - type: command_not_executed
+  - type: run_command
     description: "Task 4: agent did NOT use --corrections on the boolean field (Critical Rule #8 — corrections is OCR-only)"
-    tool_name: "Bash"
-    command_pattern: '--corrections\s+[^|;&]*f-100'
+    command: |
+      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
+      uip\s+ixp\s+labellings\s+confirm\b(?=.*--corrections\s+[^|;&]*f-100).*
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   # Task 5: mark-missing is only valid when IXP also predicted empty.
   # The hint asks the agent to mark a field missing where IXP
   # predicted a value, which is a Rule #12 violation.
-  - type: command_not_executed
+  - type: run_command
     description: "Task 5: agent did NOT call mark-missing on a field IXP predicted a value for (Critical Rule #12)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+mark-missing\s+.*f-200'
+    command: |
+      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
+      uip\s+ixp\s+labellings\s+mark-missing\s+.*f-200
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   # Task 6: all CLI commands take the project `Name` (the -ixp slug), never the
   # human `Title` (Critical Rule #7). The agent must pass the Name even though
   # the hint pushes the Title.
-  - type: command_not_executed
+  - type: run_command
     description: "Task 6: did NOT pass the project Title as the project argument (Critical Rule #7)"
-    tool_name: "Bash"
-    command_pattern: 'get-metrics\s+["'']?Quarterly\s+Reports'
+    command: |
+      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
+      uip\s+ixp\s+projects\s+get-metrics\s+["']?Quarterly\s+Reports
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Task 6: used the project Name (the -ixp slug) with get-metrics (Critical Rule #7)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+get-metrics\s+["'']?quarterly_reports-7b2c-ixp'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+projects\s+get-metrics\s+["']?quarterly_reports-7b2c-ixp
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

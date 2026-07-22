@@ -19,7 +19,10 @@ sandbox:
   # ixp-tool, not the BYOS host's stale pre-migration plugin.
   driver: docker
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
+    - type: template_dir
+      path: ../_shared/live_calls_template
     - type: template_dir
       path: ../_shared/fixtures
 
@@ -51,27 +54,36 @@ initial_prompt: |
   Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
 success_criteria:
-  - type: command_executed
+  - type: run_command
     description: "Confirmed predictions to establish ground truth (so metrics exist)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+confirm'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+labellings\s+confirm
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Improved a field's extraction instruction (the change that produces v2)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+update-prompts\b.*--updates'
-    min_count: 1
+    command: |
+      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
+      uip\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*Total Amount)
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Pulled metrics for each version"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+get-metrics'
-    min_count: 2
+    command: |
+      python3 mocks/check_calls.py --min-count 2 <<'REGEX'
+      uip\s+ixp\s+projects\s+get-metrics
+      REGEX
+    timeout: 5
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

@@ -1,9 +1,7 @@
 # uipath-ixp smoke mock
 
 Shape-only smoke tasks under `../../smoke/` must not authenticate or hit a live
-tenant — the smoke harness injects a live alpha bot token, so a bare `uip ixp …`
-would otherwise reach designtime-api on alpha (404-ing on fixture ids). Every
-smoke task therefore mocks `uip` with this template:
+tenant. They PATH-shadow `uip` with this template:
 
 ```yaml
 sandbox:
@@ -13,25 +11,15 @@ sandbox:
     - {type: template_dir, path: ../_shared/mock_template}
 ```
 
-`mocks/uip` PATH-shadows the real CLI and fails offline with no network call, so
-grading sees the command shape while no real request is made. Each invocation is
-appended to `mocks/calls.log` (seeded in this template so it always exists; not
-dot-prefixed so CI's `upload-artifact` — which skips hidden files — includes it
-in the eval-report artifact) —
-negative guards should assert on that log via `file_contains` `excludes:` rather
-than `command_not_executed` regexes over Bash text, which false-match commands
-merely QUOTED in heredocs, comments, or prose (a clarification question citing a
-candidate command, an explanatory `#` comment naming a forbidden flag).
+`mocks/uip` fails offline with no network call and appends each expanded
+invocation as one line in `mocks/calls.log`. Embedded newlines in arguments are
+normalized to spaces, so JSON loaded with command substitution stays on the same
+record. The seeded, non-hidden log is included in CI artifacts.
 
-Log-based `excludes:` guards MUST pair with a positive control — an
-`includes:` on log lines a correct run is guaranteed to produce (e.g. the
-discovery reads the task requires) — otherwise re-pointing the mock's sink
-makes every excludes guard pass vacuously (the seeded file stays clean no
-matter what the agent executed). Only when no invocation is guaranteed in a
-correct run, fall back to a harness-integrity criterion asserting `mocks/uip`
-still contains `>> "$(dirname "$0")/calls.log"` (weaker: static text, and
-brittle against cosmetic mock refactors). `mocks/curl` does
-the same for raw `curl` (a smoke task may hint at a REST call the agent is graded
-for refusing — shadowing `curl` ensures even a disobedient agent can't reach the
-cloud with the harness-injected token). Integration/e2e tasks (which
-intentionally exercise the live API) do **not** use this.
+Use `mocks/check_calls.py` from a `run_command` criterion to match readable
+regular expressions against the log. Negative guards must pair with a positive
+logged invocation so a missing or misdirected log cannot pass vacuously.
+`mocks/curl` similarly prevents raw REST traffic.
+
+Integration/e2e tasks use `live_calls_template`, whose wrapper records the same
+log format and delegates unchanged to the real CLI.
