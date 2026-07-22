@@ -197,9 +197,3 @@ exact template for any of them with `registry get <type>`.
 
 This table is a discovery aid, not a substitute for `registry get` — always pull
 the live template before authoring.
-
-`BPMN.ScriptTask` is currently registry-visible but not a safe default for new
-runtime-verified business outputs: Maestro debug can complete with its mapped
-inputs and outputs empty. Prefer `BPMN.Variables` with literal, `=vars.`, or
-`=js:` output sources for deterministic local logic. Preserve imported script
-tasks rather than rewriting them.

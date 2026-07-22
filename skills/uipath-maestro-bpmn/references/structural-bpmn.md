@@ -66,9 +66,8 @@ This is the whole shape — variables, an entry point, one node, a branch, and
 the diagram — in one valid file. Author from this skeleton plus the registry
 templates for your nodes. **Do not read the validator's `test/fixtures/` to
 infer the pattern**; those are validator test data, and reading them is the
-main reason authoring runs out of time. Swap the example activity for the
-registry `xmlTemplate` of whatever node you need; for deterministic local
-calculation, keep the runtime-safe `BPMN.Variables` task shown here.
+main reason authoring runs out of time. Swap the `scriptTask` payload for the
+registry `xmlTemplate` of whatever node you need.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -84,26 +83,23 @@ calculation, keep the runtime-safe `BPMN.Variables` task shown here.
     <bpmn:extensionElements>
       <uipath:migrationVersion version="11.5" />
       <uipath:variables version="v1">
-        <uipath:inputOutput id="Var_Amount" name="amount" type="number" elementId="Start_1" />
-        <uipath:inputOutput id="Var_Tier" name="tier" type="string" elementId="Task_Tier" />
+        <uipath:inputOutput id="Var_Amount" name="Amount" type="number" />
+        <uipath:inputOutput id="Var_Tier" name="Tier" type="string" />
       </uipath:variables>
     </bpmn:extensionElements>
-    <bpmn:startEvent id="Start_1" name="Start">
+    <bpmn:startEvent id="Start_1" name="Start"><bpmn:outgoing>Flow_1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:scriptTask id="Task_Tier" name="Classify" scriptFormat="JavaScript">
       <bpmn:extensionElements>
-        <uipath:entryPointId value="2d7fe8e9-d5cc-4c46-90e2-6643f1eaac81" />
-      </bpmn:extensionElements>
-      <bpmn:outgoing>Flow_1</bpmn:outgoing>
-    </bpmn:startEvent>
-    <bpmn:task id="Task_Tier" name="Classify">
-      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.Variables" version="v1" />
-          <uipath:output name="tier" type="string" var="Var_Tier" custom="true"
-            source="=js:vars.Var_Amount &gt; 1000 ? &quot;high&quot; : &quot;low&quot;" />
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:output name="tier" type="string" var="Var_Tier" source="=result.response" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1</bpmn:incoming><bpmn:outgoing>Flow_2</bpmn:outgoing>
-    </bpmn:task>
+      <bpmn:script><![CDATA[return { response: amount > 1000 ? "high" : "low" };]]></bpmn:script>
+    </bpmn:scriptTask>
     <bpmn:exclusiveGateway id="Gw_1" name="Tier?" default="Flow_Low">
       <bpmn:incoming>Flow_2</bpmn:incoming>
       <bpmn:outgoing>Flow_High</bpmn:outgoing><bpmn:outgoing>Flow_Low</bpmn:outgoing>
@@ -142,40 +138,41 @@ block directly. Variable bodies are CDATA. Reference variables in expressions as
 `vars.<id>` — see [expression-authoring.md](expression-authoring.md).
 Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
 
-## Deterministic local logic (`BPMN.Variables`)
+## Script tasks (`BPMN.ScriptTask`) — Jint runtime contract
 
-For classification, routing values, counters, keys, and other deterministic
-local computation, use the registry's `BPMN.Variables` task. Its output
-`source` is evaluated by the Maestro runtime and writes directly to the
-declared variable referenced by `var`:
+`bpmn:scriptTask scriptFormat="JavaScript"` runs under **Jint**, not Node.js or
+a browser. The mapping payload comes from the `BPMN.ScriptTask` registry
+template, but the runtime contract is fixed:
+
+- Only these helpers exist: `uipath.aggregate`, `uipath._aggregate`,
+  `uipath._pipe`, and a no-op `console`. No npm packages, filesystem, network,
+  browser globals, or long-running async behavior. Execution envelope is ~64 MB
+  / 30 s.
+- Set `uipath:scriptVersion value="v3"` for new scripts; preserve an imported
+  `value="v2"`. For v2+ the script returns JSON under `response`.
+- Mapped `args` fields are read as **top-level identifiers** in the script body
+  (`amount`, not `args.amount`); the input mapping itself stays `name="args"`
+  and maps each field by variable id (`=vars.Var_Amount`).
+- Map the return back through `source="=result.response"` (scalar) or
+  `source="=result.response.<field>"` (object field); `var` points at a declared
+  variable id (do not put the target id in `name`).
 
 ```xml
-<bpmn:task id="Task_RiskScore" name="Risk Score">
+<bpmn:scriptTask id="Task_RiskScore" name="Risk Score" scriptFormat="JavaScript">
   <bpmn:extensionElements>
+    <uipath:scriptVersion value="v3" />
     <uipath:mapping version="v1">
-      <uipath:type value="BPMN.Variables" version="v1" />
-      <uipath:output name="riskScore" type="number" var="Var_RiskScore"
-        custom="true" source="=js:vars.Var_Amount * 0.01 + vars.Var_DaysOverdue * 2" />
+      <uipath:type value="BPMN.ScriptTask" version="v1" />
+      <uipath:input name="args"><![CDATA[{"amount":"=vars.Var_Amount","daysOverdue":"=vars.Var_DaysOverdue"}]]></uipath:input>
+      <uipath:output name="riskScore" type="number" var="Var_RiskScore" source="=result.response" />
     </uipath:mapping>
   </bpmn:extensionElements>
-</bpmn:task>
+  <bpmn:script><![CDATA[
+var score = amount * 0.01 + daysOverdue * 2;
+return { response: score };
+]]></bpmn:script>
+</bpmn:scriptTask>
 ```
-
-- Use a literal `source="Draft"` for a constant.
-- Use `source="=vars.Var_RequestId"` for a direct copy.
-- Use `source="=js:..."` for computation; XML-escape `&amp;`, `<`, `>`, and
-  quotes when the expression is stored in an attribute.
-- Give entry-point inputs `elementId="<start-event-id>"` and put a stable
-  `uipath:entryPointId` on that start event. Without both, `bpmn debug --inputs`
-  may complete while leaving the variables unset.
-
-### Script-task runtime caution
-
-The live registry advertises `BPMN.ScriptTask`, and the offline validator can
-accept its template. Current Maestro debug runtimes can nevertheless complete
-such a task with empty mapped inputs/outputs. Do not use a new ScriptTask for
-business outputs that must be runtime-verified; use `BPMN.Variables` expressions
-instead. Preserve imported ScriptTasks and their `scriptVersion` unchanged.
 
 ## Sequence flows, conditions, and gateway defaults (REGISTRY GAP)
 
@@ -408,10 +405,8 @@ unsupported for generation until current tooling confirms them.
     preserve-only payload (its own element, not a wrapper for typed shells).
   - `uipath:caseManagement` is a versioned body-string element —
     `<uipath:caseManagement version="v1">…synthetic payload…</uipath:caseManagement>`.
-  - Preserve existing `<uipath:scriptVersion value="v2" />` and `v3` payloads
-    when importing. For newly authored, runtime-verified deterministic logic,
-    prefer `BPMN.Variables`; use a new ScriptTask only after confirming its
-    mappings execute in the target Maestro runtime.
+  - `<uipath:scriptVersion value="v2" />` is legacy: author `v3` for new scripts,
+    preserve `v2` where it already exists.
 
 ## Diagram interchange — `bpmndi` (REGISTRY GAP — always generated)
 
