@@ -83,6 +83,8 @@ uip is connections create "<connector-key>" --output json
 
 ### Step 3 — Discover the operation contract via `case spec`
 
+> **Check the cache first.** Before ANY `case spec` call, check `tasks/spec-cache.<elementId>.json` (and `tasks/trigger-spec-cache.json` for triggers). If a persisted response exists for this elementId with the same call shape (`--type`, `--activity-type-id`, `--connection-id`, and same `--input-details` when used), Read it instead of re-fetching — each spec call costs ~5-15s. Re-run spec only when no cache entry exists or the call inputs changed.
+
 One CLI call replaces the legacy `case tasks describe` + `is resources describe` dance:
 
 ```bash

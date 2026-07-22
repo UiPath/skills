@@ -89,9 +89,9 @@ Before resource resolution, seed TodoWrite with the items below to track Phase 1
 For every task, trigger, and condition in the sdd.md:
 
 1. **Identify the plugin** by matching the sdd.md component description to an entry in the catalogs below (§3.1–§3.3).
-2. **Load the plugin's `planning.md`** — it lists the exact fields to resolve from sdd.md, the cache file(s) to consult, and any discovery steps required.
+2. **Load the plugin's `planning.md`** — it lists the exact fields to resolve from sdd.md, the cache file(s) to consult, and any discovery steps required. Identify ALL plugins the sdd.md needs first (Step 1 across every component), then Read their `planning.md` files as parallel tool calls in one turn — not one Read per turn as each component is reached.
 3. **Apply registry discovery** via [registry-discovery.md](registry-discovery.md) when a taskTypeId is needed. Use the type-specific portable-name field as the query: `Resolved Resource` for process/agent/rpa/api-workflow, Action App title for action, and `Child Case` for case-management. A missing or `<UNRESOLVED>` portable name violates the SDD contract and must be surfaced instead of silently falling back to `Task Name`.
-4. **Persist every resolution** to `registry-resolved.json` using Rule 9's exact keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`). Keep the full exact-name match objects for debugging and stale-cache validation.
+4. **Persist every resolution** to `registry-resolved.json` using Rule 9's exact keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`). Keep the full exact-name match objects for debugging and stale-cache validation. When a plugin's discovery step ran `tasks describe`, also persist the response's full I/O schema (inputs + outputs) under `describe` in the same entry — Phase 2 Step 9 Phase A reuses it instead of re-running describe.
 
 ### 3.1 Task Type catalog
 
