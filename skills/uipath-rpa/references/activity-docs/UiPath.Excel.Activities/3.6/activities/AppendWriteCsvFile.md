@@ -57,3 +57,7 @@ Properties `FilePath` and `PathResource` are mutually exclusive.
 
 - `Write` mode replaces any existing file content. `Append` mode adds data after existing rows.
 - When neither `FilePath` nor `PathResource` is set, the activity will fail at runtime.
+
+## Legacy `AppendCsvFile`
+
+`UiPath.CSV.Activities.AppendCsvFile` is the superseded append-only activity (undocumented; properties `DataTable`, `FilePath`, `Delimitator` only — no `CsvAction`, `AddHeaders`, `ShouldQuote`, `PathResource`, or `Encoding`). On encountering it in an existing project, replace with `AppendWriteCsvFile` + `CsvAction="Append"` to gain header control, quoting, encoding, and resource-file input.
