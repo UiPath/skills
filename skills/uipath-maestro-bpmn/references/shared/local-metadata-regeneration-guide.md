@@ -25,13 +25,6 @@ BPMN project, make the project executable and package-shaped before packing:
 The minimal placeholder-safe JSON shape is shown below; keep it exact apart
 from project, file, and start event names.
 
-This distinction matters in evals and local synthetic authoring. Claude passed
-the API workflow task because it emitted the minimal local metadata contract;
-Codex failed when it copied richer CLI-style metadata where `operate.json.main`
-pointed at `/content/ApiWorkflowDispatch.bpmn#Event_start` and the descriptor
-used a `files` object. Those CLI-style fields can be reasonable generated
-metadata, but they are not the synthetic local package shape expected here.
-
 ## Regeneration Inputs
 
 Local regeneration reads:
