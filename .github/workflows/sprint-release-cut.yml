@@ -187,12 +187,13 @@ jobs:
           # doesn't return the run id, so record the newest workflow_dispatch
           # run for this branch, dispatch, then poll for the new run id and
           # `gh run watch --exit-status` it (non-zero if the run failed). If a
-          # publish fails, this step fails and the next step (main bump, gated
-          # on success()) is skipped — main only advances on a clean publish.
+          # publish fails, this step fails; the bump PR is still opened (with a
+          # warning) and the notification reports the failure — see those steps.
           #   - channel=dev     -> $LINE.0-dev.<run>     on GitHub Packages
           #   - channel=preview -> $LINE.0-preview.<run> on npmjs (--provenance)
           # Stable (`latest`) is intentionally NOT published — promote a line
           # to stable manually when it is ready (see docs/RELEASE.md).
+          RESULT_RUN_ID=""
           dispatch_and_wait() {
             channel="$1"
             before=$(gh run list --workflow publish.yml --branch "$BRANCH" \
@@ -212,13 +213,19 @@ jobs:
               echo "::error::Timed out finding the dispatched publish.yml run for channel=$channel."
               return 1
             fi
+            RESULT_RUN_ID="$run_id"
             echo "Watching publish.yml run $run_id (channel=$channel)..."
             gh run watch "$run_id" --exit-status --interval 15
           }
 
           dispatch_and_wait dev
           dispatch_and_wait preview
-          echo "Both publishes ($LINE.0-dev / $LINE.0-preview) succeeded."
+          # publish.yml stamps the preview as $LINE.0-preview.<run_number>; the
+          # notification links the exact npmjs version, so surface it here.
+          PREVIEW_RUN_NUMBER=$(gh run view "$RESULT_RUN_ID" --json number --jq '.number')
+          PREVIEW_VERSION="$LINE.0-preview.$PREVIEW_RUN_NUMBER"
+          echo "preview_version=$PREVIEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Both publishes ($LINE.0-dev / $PREVIEW_VERSION) succeeded."
 
       - name: Open version-bump PR against main
         id: mainbump
@@ -290,3 +297,26 @@ jobs:
             echo "- published (waited for success): DEV (GitHub Packages) + PREVIEW (npmjs) of \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0\` (stable stays manual)"
             echo "- bump PR opened (-> \`${{ steps.target.outputs.next_line }}.0\`): ${{ steps.mainbump.outputs.url }} — approve + merge to advance main"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Announce the cut on Slack (#team-coding-agents)
+        # Post the announcement regardless of earlier failures (always()), but
+        # only for a real cut (proceed, not dry_run). continue-on-error so a
+        # Slack hiccup never turns a good cut into a failed job. The message
+        # reports the real outcome of each step (branch / preview / bump PR)
+        # with Studio-style emojis; SLACK_BOT_TOKEN must belong to a bot that
+        # is a member of the channel.
+        if: always() && steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          CHANNEL_ID: 'C0A2T23NJ59'   # #team-coding-agents
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          CUT_LINE: ${{ steps.target.outputs.cut_line }}
+          NEXT_LINE: ${{ steps.target.outputs.next_line }}
+          CUT_OUTCOME: ${{ steps.cutbranch.outcome }}
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+          PREVIEW_VERSION: ${{ steps.publish.outputs.preview_version }}
+          BUMP_OUTCOME: ${{ steps.mainbump.outcome }}
+          BUMP_URL: ${{ steps.mainbump.outputs.url }}
+        run: node .github/workflows/scripts/slack-sprint-cut-notify.mjs
