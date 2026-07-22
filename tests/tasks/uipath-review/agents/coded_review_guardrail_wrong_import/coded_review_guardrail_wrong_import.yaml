@@ -26,8 +26,6 @@ initial_prompt: |
   issues and save your review report to `./_review_report.md`.
 
   This is a read-only review — do not modify anything inside `CodedAgent/`.
-  There is no PDD or design document for this project.
-  Do NOT ask for approval, confirmation, or feedback.
 
 success_criteria:
   - type: skill_triggered
