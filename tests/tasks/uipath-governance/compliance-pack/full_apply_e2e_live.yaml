@@ -135,9 +135,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "report.json references ISO 42001 (advisory — codex may use different format)"
+    description: "report.json references ISO 42001"
     path: "report.json"
     includes:
       - "42001"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json has semantic content beyond just the pack name (advisory)"
+    command: 'grep -qiE "applied|enabled|gap|coverage|status|performed" report.json'
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 0
