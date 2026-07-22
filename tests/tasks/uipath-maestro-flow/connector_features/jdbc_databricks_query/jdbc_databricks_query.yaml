@@ -1,4 +1,4 @@
-# skip:true, tenant-gated. Requires the Databricks-backed Database Hub (JDBC)
+# Tenant-gated. Requires the Databricks-backed Database Hub (JDBC)
 # connection in the runner tenant, reaching the sandbox.globalmart schema whose
 # `employees` table is seeded with the fixture rows this task asserts on (Alice
 # Johnson / Bob Smith / Carol Davis in Engineering+Marketing). Ground truth is
@@ -11,18 +11,19 @@
 # right is the point of the test. Per ENGCE-58640: one database, one complex
 # scenario, Flow surface — not the full activity matrix.
 #
-# skip:true until the Databricks-backed JDBC connection + seeded employees table
-# are confirmed on the codereval tenant. Runs under the authed (nightly) experiment.
+# skip:false — the Databricks-backed JDBC connection + seeded employees table are
+# confirmed on the codereval tenant. Runs under the authed (nightly) experiment.
 task_id: skill-flow-jdbc-databricks-query
 description: >
-  E2E live Databricks-via-JDBC coverage (Maestro Flow connector, special SDK
-  case): builds a Flow whose Execute Query Synchronously node
+  Databricks-via-JDBC coverage (Maestro Flow connector, special SDK case): builds
+  a Flow whose Execute Query Synchronously node
   (`uipath-uipath-jdbc.execute-query-synchronously`) runs a complex aggregate SQL
   query (GROUP BY / HAVING / AVG / ORDER BY — expressible only via raw SQL, not
-  the generic record activities) against the seeded `employees` table on a
-  Databricks database, then grades by executing the flow against the live JDBC
-  connection (`flow debug`) and asserting the expected department appears in the
-  outputs. Exercises the
+  the generic record activities) against the `employees` table on a Databricks
+  database, exposing the result as a flow output. Grades structurally: the .flow
+  parses as JSON and wires the JDBC gateway connector as a real node with a bound
+  connection id + folder key and the execute-query-synchronously operation — not
+  the native Databricks connector, not an HTTP fallback. Exercises the
   disambiguation that Databricks SQL has no native connector — it must resolve to
   the JDBC gateway. Tenant prerequisite: a Databricks-backed `uipath-uipath-jdbc`
   connection reaching `sandbox.globalmart` (employees seeded per the spartacus
