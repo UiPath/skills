@@ -43,12 +43,10 @@ jobs:
   demo:
     runs-on: ubuntu-latest
     steps:
-      # Check out main so the demo reads the REAL current version (the line the
-      # next cut would target) rather than a hardcoded guess.
+      # Check out the triggering branch — it carries the demo script AND (being
+      # rebased on main) main's current version, which the demo reads to show
+      # the line the next cut would target.
       - uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
 
       - name: Post demo scenario messages
         env:
