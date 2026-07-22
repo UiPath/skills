@@ -1,0 +1,14 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpGet",
+  "Data": {
+    "Id": "mcp-mock-id-001",
+    "Name": "Test MCP Skill",
+    "Slug": "test-mcp-skill",
+    "Description": "Mock UiPath MCP server for skill evaluation.",
+    "Type": 0,
+    "IsActive": true,
+    "FolderKey": "folder-mock-shared",
+    "ToolCount": 1
+  }
+}

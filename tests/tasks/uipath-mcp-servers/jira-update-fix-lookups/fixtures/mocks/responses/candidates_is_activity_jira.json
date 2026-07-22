@@ -1,0 +1,53 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpToolsCandidates",
+  "Data": {
+    "Items": [
+      {
+        "Id": "curated_create_issue",
+        "Name": "Create Issue",
+        "Description": "Create an issue in Jira.",
+        "ObjectName": "curated_create_issue",
+        "MethodName": "POST",
+        "Operation": "Create",
+        "IsCurated": true,
+        "ConnectorKey": "uipath-atlassian-jira"
+      },
+      {
+        "Id": "curated_add_comment",
+        "Name": "Add Comment to Issue",
+        "Description": "Add a comment to an existing Jira issue.",
+        "ObjectName": "curated_add_comment",
+        "MethodName": "POST",
+        "Operation": "Create",
+        "IsCurated": true,
+        "ConnectorKey": "uipath-atlassian-jira"
+      },
+      {
+        "Id": "curated_get_issue",
+        "Name": "Get Issue",
+        "Description": "Retrieve a Jira issue by key or identifier.",
+        "ObjectName": "curated_get_issue",
+        "MethodName": "GET",
+        "Operation": "Retrieve",
+        "IsCurated": true,
+        "ConnectorKey": "uipath-atlassian-jira"
+      },
+      {
+        "Id": "curated_search_issues",
+        "Name": "Search Issues (JQL)",
+        "Description": "Search Jira issues using JQL.",
+        "ObjectName": "curated_search_issues",
+        "MethodName": "GET",
+        "Operation": "List",
+        "IsCurated": true,
+        "ConnectorKey": "uipath-atlassian-jira"
+      }
+    ],
+    "Total": 4,
+    "Count": 4,
+    "Category": "is-activity",
+    "Connector": "uipath-atlassian-jira",
+    "Instructions": "Pick an activity by its `objectName` and put it in --metadata. Use an enabled Jira connection from `uip is connections list uipath-atlassian-jira --all-folders --output json` as the target identifier."
+  }
+}
