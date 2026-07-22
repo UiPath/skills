@@ -11,11 +11,11 @@ locating the workflow, in passing arguments, in the session/isolation configurat
 invoked child workflow itself.
 
 > For trigger **infrastructure** failures — a `Trigger Scope` / `Run Local Triggers` that fails to
-> compile, register its hooks, or start monitoring (missing `.local\generated\Triggers.Generated.xaml`,
-> duplicate `TriggerId`, multiple `Trigger Scope`s in a `Parallel`, legacy `UiPath.Core.Activities`
-> package conflict, hotkey won't bind) — see
-> [trigger-scope-and-local-triggers-failed.md](./trigger-scope-and-local-triggers-failed.md). This
-> playbook covers only `Start Triggers` acting as a **workflow invoker**.
+> compile, register its triggers, or start/stop monitoring (missing/stale
+> `.local\generated\Triggers.Generated.xaml`, duplicate `TriggerId` / mismatched Form field key, a
+> `Trigger Scope` that blocks the flow, legacy `UiPath.Core.Activities` package conflict, hotkey won't
+> bind) — see [trigger-scope-and-local-triggers-failed.md](./trigger-scope-and-local-triggers-failed.md).
+> This playbook covers only `Start Triggers` acting as a **workflow invoker**.
 
 What this looks like:
 - The invoked workflow file cannot be found or loaded at run time

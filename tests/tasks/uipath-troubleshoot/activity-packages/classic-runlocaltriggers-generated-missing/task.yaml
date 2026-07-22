@@ -1,14 +1,19 @@
-task_id: skill-troubleshoot-classic-triggerscope-split-in-parallel
+task_id: skill-troubleshoot-classic-runlocaltriggers-generated-missing
 description: >
-  Runtime immediate-fault of a trigger-based attended automation: the job
-  Faults ~3s after start, before any business step. Main.xaml places two
-  separate Trigger Scope blocks inside a single Parallel, and the local robot
-  service allows only one active trigger-monitoring session per execution, so
-  the second Trigger Scope throws the instant it registers its hook. The agent
-  must read the error log and the workflow source, identify the split Trigger
-  Scopes under Parallel as the cause, and recommend consolidating all triggers
-  into one shared Trigger Scope. Grades the conclusion (skill_triggered +
-  llm_judge against RESOLUTION.md), not the trajectory.
+  Runtime fault of a trigger-based attended automation: the job Faults ~2s
+  after start because Run Local Triggers cannot load its auto-generated trigger
+  workflow (.local\generated\Triggers.Generated.xaml is missing — the .local
+  design-time cache was not present when the package was built). The Error log
+  is deliberately generic ("the invoked workflow could not be loaded / a
+  referenced workflow file was not found" at RunLocalTriggers.Execute) and does
+  NOT name the file, so the diagnosis cannot be one-shot from the log: the agent
+  must combine the faulting activity, the project source (Run Local Triggers
+  present, no .local generated workflow), and playbook knowledge, and resist the
+  Invoke-Workflow-File red herring. Correct fix: regenerate the workflow by
+  opening/rebuilding the project in Studio and republishing (align
+  Studio/Assistant versions if the fault followed an upgrade) — NOT hand-create
+  the file. Grades the conclusion (skill_triggered + llm_judge against
+  RESOLUTION.md), not the trajectory.
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
@@ -37,11 +42,10 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My OrderEntryAssistant automation in folder Operations faults the moment it
-  starts — within a few seconds, before it does anything useful. It is an
-  attended assistant that is supposed to watch a couple of keyboard shortcuts.
-  Why does it fault on startup? The failing project source is in the current
-  working directory.
+  My OrderEntryAssistant attended automation in folder Operations fails right
+  after it starts — it is supposed to start some local triggers and then wait,
+  but it errors out within a couple of seconds instead. Why does it fault on
+  startup? The failing project source is in the current working directory.
 
 success_criteria:
   - type: skill_triggered

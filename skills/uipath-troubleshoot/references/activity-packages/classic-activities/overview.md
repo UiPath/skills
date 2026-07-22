@@ -41,10 +41,11 @@ Studio under `UiPath.Core.Activities`. They split across two NuGet packages:
   folder, file already exists, path is a directory, access denied, file locked.
 - Workflow invocation (`Invoke Workflow File`, `Start Triggers`) — file not found, argument
   name/type/direction mismatch, isolated/elevated/session validation, persistence not supported.
-- Trigger infrastructure (`Trigger Scope` / Monitor Events, `Run Local Triggers`, hotkey/click triggers)
-  — missing/corrupt `.local\generated\Triggers.Generated.xaml`, duplicate entry point / `TriggerId`,
-  multiple `Trigger Scope`s split across a `Parallel` (only one monitoring session allowed), legacy
-  `UiPath.Core.Activities` package conflict, or a hotkey the OS/another app already owns.
+- Trigger infrastructure (`Trigger Scope`, `Run Local Triggers`, Hotkey/Key Press/Click/Form triggers)
+  — missing/stale `.local\generated\Triggers.Generated.xaml`, duplicate `TriggerId` / mismatched Form
+  field key, a `Trigger Scope` that blocks the flow (stuck in / never stops — a lifecycle issue, not a
+  concurrency limit; parallel scopes are supported), legacy `UiPath.Core.Activities` package conflict,
+  or a hotkey the OS/another app already owns.
 - Code invocation (`Invoke Code`) — compilation failure, unsupported language, or exceptions thrown
   by the user's own code at run time.
 - Queue operations (`Add Queue Item`) — empty queue name, invalid/duplicate item-information keys,
