@@ -12,6 +12,8 @@ What this looks like:
 - Error message contains `"does not work with assets of type Credential"` or `"Invalid asset type"`
 - `Get Orchestrator Asset` used on a Credential asset, or `Get Credential` used on a Text/Integer/Boolean asset
 
+> Activity-type tokens: classic `Get Asset` / `Get Robot Asset` = `GetRobotAsset`; classic `Get Credential` / `Get Robot Credential` = `GetRobotCredential`. A faulting `GetRobotAsset` / `GetRobotCredential` belongs to this `get-asset-*` family — confirm the mismatch by error signal, then pick the branch below or a sibling `get-asset-*` playbook by the error code / exception.
+
 What can cause it:
 - Developer selected the wrong activity when building the workflow
 - Asset type was changed in Orchestrator after the workflow was built
