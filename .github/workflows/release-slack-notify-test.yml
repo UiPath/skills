@@ -56,3 +56,29 @@ jobs:
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: node .github/workflows/scripts/slack-release-demo.mjs
+
+      # Smoke-test the REAL production notify script (slack-sprint-cut-notify.mjs
+      # from the sprint-cut wiring) with mock step outcomes, posting to the TEST
+      # channel — proves the exact production rendering without a real cut.
+      - name: Smoke-test production notify script
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          CHANNEL_ID: ${{ github.event.inputs.channel_id || env.DEFAULT_CHANNEL_ID }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          CUT_LINE: '1.199'
+          NEXT_LINE: '1.200'
+          PR: 'https://github.com/UiPath/skills/pull/1234'
+        run: |
+          set -e
+          echo "1/3 all success"
+          CUT_OUTCOME=success PUBLISH_OUTCOME=success BUMP_OUTCOME=success \
+            BUMP_URL="$PR" PREVIEW_VERSION=1.199.0-preview.777 \
+            node .github/workflows/scripts/slack-sprint-cut-notify.mjs
+          echo "2/3 preview publish failed, bump opened anyway"
+          CUT_OUTCOME=success PUBLISH_OUTCOME=failure BUMP_OUTCOME=success \
+            BUMP_URL="$PR" \
+            node .github/workflows/scripts/slack-sprint-cut-notify.mjs
+          echo "3/3 branch cut failed"
+          CUT_OUTCOME=failure PUBLISH_OUTCOME=skipped BUMP_OUTCOME=skipped \
+            node .github/workflows/scripts/slack-sprint-cut-notify.mjs
