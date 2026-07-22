@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Execute Query branch-8 scenario (job a2f8c3e1, process CustomerOrderReport, folder Reporting). The query executes fine but returns duplicate values in the column the Execute Query DataTable schema infers as the primary/unique key (a one-to-many Customers->Orders JOIN repeats CustomerId), so DataTable.EnableConstraints throws System.Data.ConstraintException 'Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.' The Error/Info surface names the constraint CATEGORY but NOT which column or why - the cause (SELECT * over a 1-to-many JOIN) is only visible in the workflow SQL, so the diagnosis is not one-shot from the log. Mock dispatcher only; not investigation evidence. Matching is token-aware (quotes/--output ignored); first match wins.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache in _cache/."
+    },
+    {
+      "match": "or folders list",
+      "file": "folders.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "jobslist.json"
+    },
+    {
+      "match": "or jobs get a2f8c3e1-9d47-4b6a-8e02-1c5f7a9b3d64",
+      "file": "jobget.json"
+    },
+    {
+      "match": "or jobs logs a2f8c3e1-9d47-4b6a-8e02-1c5f7a9b3d64 --level Error",
+      "file": "errlog.json"
+    },
+    {
+      "match": "or jobs logs a2f8c3e1-9d47-4b6a-8e02-1c5f7a9b3d64",
+      "file": "infolog.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}
