@@ -28,7 +28,7 @@ Do not answer these from this skill. Re-activate `uipath-maestro-flow` and follo
 
 ## Critical Rules
 
-1. **ONLY use `uip ixp` CLI commands as documented in this skill** — before every `uip ixp` invocation, verify the exact subcommand and option names with a targeted read/search of [CLI Reference](references/cli-reference.md). This required reference lookup is not codebase exploration. Never infer synonyms or reuse a similar command's flags: `projects unpublish` and `projects get-metrics` use `--model-version`, while `deployments get-taxonomy` uses `--version`; project title changes use `projects update-title`, not `projects rename`. If the reference does not document the requested operation, treat it as unsupported rather than probing with `--help` or guessing. Do NOT use curl, call REST APIs directly, grep/read source code, or explore the codebase. (Exception: defer flow/Maestro registry questions to `uipath-maestro-flow` — see *When NOT to Use This Skill* above.)
+1. **Verify `uip ixp` syntax before running a command** — use a targeted lookup in [CLI Reference](references/cli-reference.md) and copy the exact subcommand and options; never guess. If the request is not covered, report that the skill has no documented CLI path rather than improvising. Do NOT use curl, call REST APIs directly, or explore source code. (Exception: defer flow/Maestro registry questions to `uipath-maestro-flow` — see *When NOT to Use This Skill* above.)
 2. **Run workflows end-to-end automatically** — do NOT ask the user to do individual steps.
 3. **Always use `--output json`** when parsing CLI output programmatically.
 4. **Use `/tmp/ixp/<project-name>/` as the working directory with this structure:**
