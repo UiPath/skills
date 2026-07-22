@@ -94,6 +94,40 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  - type: run_command
+    description: "Post-hoc: pack is actually enabled on the tenant (outcome validation)"
+    command: |
+      python3 -c "
+      import json, os, subprocess, sys
+      tid = os.environ.get('UIPATH_CLI_TENANT_ID', '')
+      if not tid:
+          for f in ['/.uipath/.auth', os.path.expanduser('~/.uipath/.auth')]:
+              try:
+                  for line in open(f):
+                      if line.startswith('UIPATH_TENANT_ID='):
+                          tid = line.split('=',1)[1].strip()
+                          break
+              except FileNotFoundError:
+                  pass
+              if tid: break
+      if not tid:
+          r = subprocess.run(['uip','login','status','--output','json'], capture_output=True, text=True, timeout=30)
+          if r.returncode == 0:
+              d = json.loads(r.stdout)
+              tid = d.get('Data',{}).get('tenantId','')
+      assert tid, 'Could not resolve tenant ID'
+      r = subprocess.run(['uip','gov','compliance-packs','state','get','tenant',tid,'iso-42001-2023','--output','json'], capture_output=True, text=True, timeout=60)
+      assert r.returncode == 0, f'state get failed: {r.stderr}'
+      d = json.loads(r.stdout)
+      active = d.get('Data',{}).get('Active') or d.get('Data',{}).get('Enabled')
+      assert active, f'Pack not enabled on tenant: {json.dumps(d.get(\"Data\",{}), indent=2)[:500]}'
+      print(f'OK: pack enabled on tenant {tid}')
+      "
+    timeout: 90
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "report.json created"
     path: "report.json"
