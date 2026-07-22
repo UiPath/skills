@@ -1,0 +1,72 @@
+{
+  "Result": "Success",
+  "Code": "ResourceMetadata",
+  "Data": {
+    "Name": "curated_create_issue",
+    "DisplayName": "Curated create issue",
+    "ElementKey": "uipath-atlassian-jira",
+    "Operation": {
+      "Method": "POST",
+      "Name": "Create",
+      "Description": "Create Issue",
+      "Path": "/curated_create_issue",
+      "Curated": "Create Issue"
+    },
+    "Parameters": [],
+    "RequestFields": [
+      {
+        "Name": "fields.project.key",
+        "Type": "string",
+        "DisplayName": "Project",
+        "Description": "Select the project or enter the project name or key",
+        "Reference": {
+          "ObjectName": "project",
+          "LookupNames": [
+            "name",
+            "key"
+          ],
+          "LookupValue": "key",
+          "Path": "/project/search",
+          "FilterPattern": "query={filter}"
+        },
+        "Required": true
+      },
+      {
+        "Name": "fields.issuetype.id",
+        "Type": "string",
+        "DisplayName": "Issue type",
+        "Description": "Select the type of the issue (epic, story, task , bug)",
+        "Reference": {
+          "ObjectName": "project",
+          "LookupNames": [
+            "name",
+            "id"
+          ],
+          "LookupValue": "id",
+          "Path": "/project/{fields.project.key}/issuetypes"
+        },
+        "Required": true
+      }
+    ],
+    "ResponseFields": [
+      {
+        "Name": "fields.issuetype.name",
+        "Type": "string",
+        "DisplayName": "Issue type",
+        "Description": "Select the type of the issue (epic, story, task , bug)"
+      },
+      {
+        "Name": "id",
+        "Type": "string",
+        "DisplayName": "Issue ID",
+        "Description": "The ID of the issue"
+      },
+      {
+        "Name": "key",
+        "Type": "string",
+        "DisplayName": "Issue key",
+        "Description": "The key of the issue"
+      }
+    ]
+  }
+}

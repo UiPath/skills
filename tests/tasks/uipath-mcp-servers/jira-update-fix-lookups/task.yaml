@@ -1,7 +1,7 @@
 task_id: skill-mcp-servers-jira-update-fix-lookups
 description: |
   An existing `Create Issue` tool renders raw "MOCKPROJ" and "10" in the form because designTimeLookups is empty. Agent must fetch, diagnose, rebuild with labels, and update with --dry-run.
-tags: [uipath-mcp-servers, smoke, 'mode:build']
+tags: [uipath-mcp-servers, smoke, 'mode:build', 'lifecycle:generate', connector, 'feature:connections']
 agent:
   type: claude-code
   allowed_tools: [Skill, Bash, Read, Write]
@@ -12,9 +12,8 @@ sandbox:
   - {type: template_dir, path: fixtures}
   mock_path_dirs: [mocks]
 initial_prompt: |
-  For an IS-activity tool, read references/is-activity-workflow.md and use the exact `uip agenthub mcp-tools create-is-activity` flags it specifies (`--mcp`, `--target-identifier`, `--description`, `--metadata`, `--input-schema`, `--output-schema`); for a resource tool, read the resource guidance and run `mcp-tools candidates`/`template` as it directs. Use the exact CLI commands and flags the skill documents — do not invent flag names.
-
-  Use the mocked `uip` CLI.
+  Treat `uip` as the real CLI surface. Do not inspect the mock implementation,
+  manifest, call log, or canned response files.
 
   TASK: The 'Create Issue' tool on my `test-mcp-skill` MCP server renders raw
   'MOCKPROJ' and '10' in the configuration form instead of the project name
@@ -22,11 +21,9 @@ initial_prompt: |
 
   Refs:
     - tool name: "Create Issue"
-    - MCP server: test-mcp-skill (folder-mock-shared)
+    - MCP server: test-mcp-skill (Shared folder)
     - connector: uipath-atlassian-jira
     - connection: conn-mock-jira-01
-
-  Fetch the existing tool first via `uip agenthub mcp-tools get --name "Create Issue" --mcp test-mcp-skill --folder-path Shared --output json`.
 
   Save: current-metadata.json (the broken state), fixed-metadata.json (with
   populated designTimeLookups), update-command.sh (the --dry-run update),
@@ -34,16 +31,57 @@ initial_prompt: |
 success_criteria:
 - {type: file_exists, path: current-metadata.json, description: '`current-metadata.json` was produced'}
 - {type: file_exists, path: fixed-metadata.json, description: '`fixed-metadata.json` was produced'}
-- type: file_contains
-  description: fixed metadata contains both lookups in canonical format
-  path: fixed-metadata.json
-  includes: [fields.project.key, fields.issuetype.id]
+- type: run_command
+  description: Fixed metadata contains the exact labels and otherwise preserves the existing metadata
+  command: >-
+    jq -e --slurpfile current current-metadata.json '
+      .designTimeMetadata.designTimeLookups["fields.project.key"] == "Mock Project - MOCKPROJ" and
+      .designTimeMetadata.designTimeLookups["fields.issuetype.id"] == "Task - 10" and
+      (del(.designTimeMetadata.designTimeLookups) ==
+       ($current[0] | del(.designTimeMetadata.designTimeLookups)))
+    ' fixed-metadata.json
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
 - type: file_contains
   path: update-command.sh
-  includes: [mcp-tools update]
-  description: '`update-command.sh` contains the expected content'
-- {type: command_executed, description: Agent called mcp-tools get to fetch existing state, tool_name: Bash,
-  command_pattern: uip\s+agenthub\s+mcp-tools\s+get, min_count: 1}
-- {type: command_executed, description: Agent ran `run list` for label resolution, tool_name: Bash, command_pattern: uip\s+is\s+resources\s+run\s+list,
-  min_count: 1}
+  includes: [mcp-tools update, tool-mock-jira-create-001, --mcp test-mcp-skill, --dry-run]
+  description: '`update-command.sh` updates the existing tool through a dry-run'
+  weight: 2.0
+- type: run_command
+  description: Agent fetched the existing tool rather than satisfying discovery through help
+  command: >-
+    jq -e 'select(.matched_rule == "agenthub mcp-tools get" and
+                  (.args | contains("--mcp test-mcp-skill")))' mocks/.calls.jsonl
+  timeout: 30
+  expected_exit_code: 0
+- type: run_command
+  description: Agent resolved both project and issue-type labels through reference list operations
+  command: >-
+    jq -s -e '
+      any(.[]; .args | startswith("is resources run list uipath-atlassian-jira project ")) and
+      any(.[]; .args | startswith("is resources run list uipath-atlassian-jira issuetype "))
+    ' mocks/.calls.jsonl
+  timeout: 30
+  expected_exit_code: 0
+  weight: 2.0
+- type: run_command
+  description: Every mocked uip invocation matched a fixture and exited successfully
+  command: >-
+    jq -s -e 'all(.[]; .matched_rule != null and .exit_code == 0)' mocks/.calls.jsonl
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- type: run_command
+  description: Every executed update used dry-run, excluding help inspection
+  command: >-
+    jq -s -e 'all(.[];
+      if ((.args | startswith("agenthub mcp-tools update ")) and
+          ((.args | contains("--help")) | not))
+      then (.args | contains("--dry-run"))
+      else true
+      end)' mocks/.calls.jsonl
+  timeout: 30
+  expected_exit_code: 0
+  weight: 2.0
 run_limits: {max_turns: 60}

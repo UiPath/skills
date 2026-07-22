@@ -1,0 +1,44 @@
+                                       uip agenthub mcp-tools create-is-activity
+                                   Create a is-activity tool on a uipath MCP server.
+                                    Use --help with nested commands for more detail.
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ uip agenthub mcp-tools create-is-activity [options]                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ --name <name>                         Tool name.                                                                     │
+│ --description <text>                  Tool description.                                                              │
+│ --target-name <name>                  Resolve target by display name.                                                │
+│ --target-identifier <guid>            Target identifier.                                                             │
+│ --category <category>                 Tool category/process type.                                                    │
+│ --input-schema <json>                 JSON input schema.                                                             │
+│ --output-schema <json>                JSON output schema.                                                            │
+│ --metadata <json>                     JSON metadata.                                                                 │
+│ --continue-on-error                   Continue after per-tool failures.                                              │
+│ --fail-fast                           Stop after the first per-tool failure.                                         │
+│ --mcp <slug>                          Parent MCP server slug.                                                        │
+│ --file <path>                         Read JSON payload from file.                                                   │
+│ --body <json>                         Read JSON payload from inline JSON.                                            │
+│ --dry-run                             Print the mutation plan without calling the API.                               │
+│ --folder-key <key>                    Orchestrator folder key (GUID). Use --folder-path for the folder name or       │
+│                                       fully-qualified path.                                                          │
+│ --folder-path <path>                  Orchestrator folder display name or fully-qualified path (e.g. 'Shared' or     │
+│                                       'Foo/Shared'). Resolved to the folder key via the Orchestrator SDK.            │
+│ --login-validity <minutes>            Interactive-login token lifetime.                                              │
+│ -h, --help                            display help for command                                                       │
+│ --output <table|json|yaml|plain>      Output format (default: json)                                                  │
+│ --output-filter <expression>          JMESPath expression applied to the Data field of the response envelope         │
+│ --log-level <debug|info|warn|error>   Log level threshold (default: info)                                            │
+│ --log-file <path>                     Write logs to file instead of stderr                                           │
+│ --profile <name>                      Use a named login profile                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Examples ───────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Add an IS-activity tool by explicit identifier (IS catalog discoverable via `uip is`)                                │
+│                                                                                                                      │
+│   $ uip agenthub mcp-tools create-is-activity --mcp invoice-mcp --target-identifier <connection-guid> --folder-key <folder-guid> │
+│                                                                                                                      │
+│   id    tool-1                                                                                                       │
+│   name  is-activity-tool                                                                                             │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘

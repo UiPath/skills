@@ -1,0 +1,9 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionPing",
+  "Data": {
+    "ConnectionId": "conn-mock-jira-01",
+    "Status": "Enabled",
+    "Message": "Connection is active."
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    { "Id": "conn-mock-jira-01", "Name": "shared-jira-primary", "ConnectorKey": "uipath-atlassian-jira", "ConnectorName": "Jira", "State": "Enabled", "Owner": "mock-user-001", "IsDefault": "Yes", "ByoaConnection": "No", "ElementInstanceId": "", "Folder": "Shared", "FolderKey": "folder-mock-shared", "Created": "2026-01-15T10:20:30.000Z", "Updated": "" },
+    { "Id": "conn-mock-jira-shared-02", "Name": "shared-jira-secondary", "ConnectorKey": "uipath-atlassian-jira", "ConnectorName": "Jira", "State": "Enabled", "Owner": "mock-user-002", "IsDefault": "No", "ByoaConnection": "No", "ElementInstanceId": "", "Folder": "Shared", "FolderKey": "folder-mock-shared", "Created": "2026-02-10T09:15:00.000Z", "Updated": "" }
+  ]
+}

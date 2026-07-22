@@ -1,0 +1,46 @@
+                           uip agenthub mcp-tools get
+Get one tool from a parent MCP server, by tool id or --name.
+
+--mcp identifies the parent server; pass <id> (positional)
+or --name to select which tool inside that server.
+                Use --help with nested commands for more detail.
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip agenthub mcp-tools get [options] [id]                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ id   Tool id.                                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --mcp <slug>                   Parent MCP server slug.                       │
+│ --name <name>                  Lookup by name substring.                     │
+│ --allow-multiple               Return all name matches instead of failing.   │
+│ --folder-key <key>             Orchestrator folder key (GUID). Use           │
+│                                --folder-path for the folder name or          │
+│                                fully-qualified path.                         │
+│ --folder-path <path>           Orchestrator folder display name or           │
+│                                fully-qualified path (e.g. 'Shared' or        │
+│                                'Foo/Shared'). Resolved to the folder key via │
+│                                the Orchestrator SDK.                         │
+│ --login-validity <minutes>     Interactive-login token lifetime.             │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ <table|json|yaml|plain>                                                      │
+│ --output-filter <expression>   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: info)           │
+│ <debug|info|warn|error>                                                      │
+│ --log-file <path>              Write logs to file instead of stderr          │
+│ --profile <name>               Use a named login profile                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Examples ───────────────────────────────────────────────────────────────────┐
+│ Get a tool by id                                                             │
+│                                                                              │
+│   $ uip agenthub mcp-tools get --mcp invoice-mcp tool-1                      │
+│                                                                              │
+│   id    tool-1                                                               │
+│   name  CreateInvoice                                                        │
+└──────────────────────────────────────────────────────────────────────────────┘

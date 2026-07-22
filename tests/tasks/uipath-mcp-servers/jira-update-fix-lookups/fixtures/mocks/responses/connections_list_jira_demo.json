@@ -1,0 +1,9 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    { "Id": "conn-mock-jira-demo-11", "Name": "demo-jira-primary", "ConnectorKey": "uipath-atlassian-jira", "ConnectorName": "Jira", "State": "Enabled", "Owner": "mock-user-011", "IsDefault": "No", "ByoaConnection": "No", "ElementInstanceId": "", "Folder": "Demo", "FolderKey": "folder-mock-demo", "Created": "2026-03-01T09:00:00.000Z", "Updated": "" },
+    { "Id": "conn-mock-jira-demo-12", "Name": "demo-jira-expired", "ConnectorKey": "uipath-atlassian-jira", "ConnectorName": "Jira", "State": "Failed", "Owner": "mock-user-012", "IsDefault": "No", "ByoaConnection": "No", "ElementInstanceId": "", "Folder": "Demo", "FolderKey": "folder-mock-demo", "Created": "2026-03-03T10:00:00.000Z", "Updated": "2026-07-03T09:35:00.000Z" }
+  ],
+  "Warning": "Connection(s) not enabled: demo-jira-expired. Only Enabled connections can be used for operations. Run 'uip is connections edit <connection-id>' to re-authenticate."
+}
