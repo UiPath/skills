@@ -581,25 +581,29 @@ On revision request, update the draft and return to step 6b.
 
 ---
 
-## Step 7 — Generate action files (skip if SDD has no write operations)
+## Step 7 — Generate action files (skip if SDD/PDD has no write operations)
 
-If the SDD does not describe write/update operations, skip this step. One file per action — the file name IS the action's identity. Generate one action at a time through the full build → preview → check → confirm → write cycle.
+If the SDD/PDD does not describe write/update operations, skip this step. One file per action — the file name IS the action's identity. Generate one action at a time through the full build → preview → check → confirm → write cycle.
+
+If the PDD has a **Write Operations (Actions)** section with the structured action table format (see [action-table-contract.md](action-table-contract.md)), read each action row directly — no interpretation needed. The 7 fields (Name, Entity, Operation, Description, Target Fields, Identifier, Inputs) map 1:1 to TTL constructs.
 
 ---
 
 ### 7a — Build one action
 
-For each write operation from the SDD:
+For each write operation from the SDD/PDD:
 
-- **Name** — `ont:{camelCaseActionName}` (verb phrase: `updatePrescriptionStatus`, `createPatientRecord`)
+- **Name** — `ont:{camelCaseActionName}` (verb phrase: `updatePrescriptionStatus`, `createPatientRecord`). When PDD has a `Name` field, use it directly; otherwise derive from the operation description.
 - **File name** — `{name}-{actionName}.ttl` (e.g. for ontology `clinic` and action `updatePrescriptionStatus` → `clinic-updatePrescriptionStatus.ttl`)
-- **Label** — short human phrase
-- **Comment** — what it changes, what params it takes, whether it modifies one row or many
+- **Label** — short human phrase (from PDD action title when available)
+- **Comment** — what it changes, what params it takes, whether it modifies one row or many. This is what AI agents read to select the right action — be specific, not generic. Source from PDD `Description` field when available, but ensure it answers all three questions.
 - **SQL** — on `ont:statements ( "..." )` (plural, always a list even for a single statement)
-  - `{{EntityName}}` — entity (table) reference, resolved by runtime from mapping
-  - `{{EntityName.fieldName}}` — column reference, must match `{ClassName}.{propName}` naming from {name}.ofn
-  - `:paramName` — bound parameter, must match `ont:paramName` in the parameter block
-- **Parameters** — `fno:expects` + `ont:param.*` block per parameter
+  - `{{EntityName}}` — the ontology class this action writes to. Must match a `Declaration(Class(:...))` in schema.ofn. Never use real table names.
+  - `{{EntityName.fieldName}}` — the property being read or written in the SQL. Must match a `Declaration(DataProperty(:...))` in schema.ofn. The runtime resolves these to physical columns via the mapping.
+  - `WHERE {{Entity.identifier}} = :id` — how the target row is identified. Typically the entity's primary key field.
+  - `:paramName` — bound parameter from the caller. Must match `ont:paramName` in the parameter block exactly.
+- **Parameters** — `fno:expects` + `ont:param.*` block per parameter (from PDD `Inputs` field)
+- **Output** — `fno:returns` with `rowsAffected` output is **mandatory**. Use `ont:paramName` (not `ont:returnName`) on the output node — the parser uses the same method for inputs and outputs.
 
 ---
 
