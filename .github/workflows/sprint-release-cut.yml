@@ -16,11 +16,11 @@ name: Sprint Release Cut
 #      push can't trigger publish.yml (GITHUB_TOKEN recursion guard), so the
 #      dispatches are explicit. Stable (`latest`) is NOT published here —
 #      promote a line to stable MANUALLY (see docs/RELEASE.md)
-#   3. opens a PR bumping main to the NEXT line (M.(N+1).0), only after step 2
-#      succeeds; a maintainer merges it to advance main so development
-#      continues there while release/v<M.N> stabilizes. main is protected on a
-#      public repo, so the cut does NOT push to main or use a bypass credential
-#      (see docs/RELEASE.md § Automating the bump)
+#   3. opens a PR bumping main to the NEXT line (M.(N+1).0). The PR is opened
+#      even if step 2's publish failed — with a :warning: in the PR body — so
+#      main can still advance; a maintainer reviews the warning before merging.
+#      main is protected on a public repo, so the cut does NOT push to main or
+#      use a bypass credential (see docs/RELEASE.md § Automating the bump)
 #
 # No cross-repo secret is required, gated to the CLI's 14-day cadence (anchor
 # below). The cli-repo side cuts itself, in lockstep, from the same anchor.
@@ -222,11 +222,16 @@ jobs:
 
       - name: Open version-bump PR against main
         id: mainbump
-        # `success()` so this runs ONLY when the publish step above succeeded —
-        # main advances only after a clean dev + preview publish.
-        if: success() && steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
+        # Open the bump PR even if the publish step failed: gate on the branch
+        # cut (always() + cutbranch success), NOT on publish. The bump is about
+        # advancing main to the next line, which is independent of the publish;
+        # a failed publish adds a :warning: to the PR body and a maintainer
+        # decides whether to merge. (Publish failure still fails the job overall,
+        # so the failure stays visible.)
+        if: always() && steps.cutbranch.outcome == 'success' && steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
         run: |
           set -euo pipefail
           CUT_LINE="${{ steps.target.outputs.cut_line }}"
@@ -259,11 +264,18 @@ jobs:
             echo "main already at $NEXT_LINE.0 — no bump PR needed."
             exit 0
           fi
+          BODY="Automated sprint cut: \`release/v$CUT_LINE\` was cut. Merge to advance \`main\` to \`$NEXT_LINE.0\` so development continues on the next line. Stable \`$CUT_LINE.0\` is promoted manually — see docs/RELEASE.md."
+          if [ "${PUBLISH_OUTCOME:-}" = "success" ]; then
+            BODY="$BODY"$'\n\n'":white_check_mark: dev + preview builds published from \`release/v$CUT_LINE\`."
+          else
+            BODY="$BODY"$'\n\n'":warning: The dev/preview publish did **not** succeed (outcome: \`${PUBLISH_OUTCOME:-unknown}\`). This bump PR was opened anyway — verify the publish from the run logs before merging."
+          fi
+
           git commit -m "chore(release): bump main to $NEXT_LINE.0 after cutting $CUT_LINE"
           git push origin "HEAD:$PR_BRANCH"
           URL=$(gh pr create --head "$PR_BRANCH" --base main \
             --title "chore(release): bump main to $NEXT_LINE.0 (sprint cut)" \
-            --body "Automated sprint cut: \`release/v$CUT_LINE\` was cut and its dev + preview builds published. Merge to advance \`main\` to \`$NEXT_LINE.0\` so development continues on the next line. Stable \`$CUT_LINE.0\` is promoted manually — see docs/RELEASE.md.")
+            --body "$BODY")
           echo "url=$URL" >> "$GITHUB_OUTPUT"
           echo "Opened bump PR: $URL — approve + merge to advance main to $NEXT_LINE.0."
 
