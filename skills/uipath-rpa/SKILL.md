@@ -23,6 +23,14 @@ Full assistant for creating, editing, managing, and running UiPath automation pr
 - User wants to **call an Integration Service connector** (Jira, Salesforce, ServiceNow, Slack, etc.)
 - User wants to **use UI automation** to interact with desktop or web applications
 
+## UI Automation Capabilities
+
+One UIA activity set covers every UI target:
+
+- **Multi-platform** — Windows and macOS.
+- **Desktop and web** — native desktop applications and browsers, driven through the same activities.
+- **Combined in a single automation** — desktop and browser apps interoperate in one workflow with no bridge or handoff. Multi-screen, multi-application flows (read from a desktop app, act in a browser, verify across both) are first-class.
+
 ## UIA Prerequisites
 
 **Required package:** `UiPath.UIAutomation.Activities` — minimum version (`<MIN_VERSION>`): **`26.10.0`**, from the official UiPath NuGet feed (stable GA release; no prerelease flag needed). The `uip rpa uia` CLI, the package docs, and the UIA skills require `<MIN_VERSION>` or newer — before any UIA work, check the installed version in `project.json` under `dependencies`. Do not hardcode the version from memory; this section is the only source of truth.
