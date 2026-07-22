@@ -28,7 +28,7 @@ Do not answer these from this skill. Re-activate `uipath-maestro-flow` and follo
 
 ## Critical Rules
 
-1. **ONLY use `uip ixp` CLI commands as documented in this skill** — do NOT use curl, do NOT call REST APIs directly, do NOT grep/read source code, do NOT explore the codebase. (Exception: defer flow/Maestro registry questions to `uipath-maestro-flow` — see *When NOT to Use This Skill* above.)
+1. **Verify `uip ixp` syntax before running a command** — use a targeted lookup in [CLI Reference](references/cli-reference.md) and copy the exact subcommand and options; never guess. If the request is not covered, report that the skill has no documented CLI path rather than improvising. Do NOT use curl, call REST APIs directly, or explore source code. (Exception: defer flow/Maestro registry questions to `uipath-maestro-flow` — see *When NOT to Use This Skill* above.)
 2. **Run workflows end-to-end automatically** — do NOT ask the user to do individual steps.
 3. **Always use `--output json`** when parsing CLI output programmatically.
 4. **Use `/tmp/ixp/<project-name>/` as the working directory with this structure:**
