@@ -94,7 +94,7 @@ naming the label. The agent doesn't need to infer the AIP
 semantics — the runtime logs them explicitly.
 
 ### Cross-check — what this is NOT
-- Not branch 1 (Excel not installed): the workbook opened via
+- Not the `excel-not-installed.md` failure mode: the workbook opened via
   OpenXML — no Excel COM needed for this acquisition path. The
   failure is at sensitivity-label validation, AFTER successful
   workbook open.

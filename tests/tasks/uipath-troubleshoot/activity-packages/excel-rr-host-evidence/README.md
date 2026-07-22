@@ -15,7 +15,7 @@ System.IO.IOException: The process cannot access the file 'C:\Robot\Data\sales-2
 ## What this scenario uncovers
 
 **Expected outcome:** The agent matches the
-`activity-packages/excel-activities/playbooks/read-range-file-locked.md`
+`activity-packages/excel-activities/playbooks/workbook-file-locked.md`
 playbook AND tells the user the lock holder cannot be identified
 through Orchestrator alone — they need to capture host-side evidence
 (`Get-Process EXCEL`, Sysinternals `handle.exe -a <path>`, and
