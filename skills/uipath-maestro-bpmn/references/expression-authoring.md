@@ -12,10 +12,11 @@ them with expressions only after the variables and scopes exist.
   `=vars.Var_RequestId`.
 - Do not use bare variable names such as `=requestId` in generated runtime XML.
 - Context bindings use `=bindings.<bindingId>`.
-- Current element outputs use `result` only in output mappings for that
-  element. Script task return values are exposed under `result.response`; use
-  `source="=result.response"` for scalar returns or
-  `source="=result.response.<field>"` for object fields.
+- Current element outputs use `result` only where the selected registry
+  template defines it. Do not infer a `result.response` contract from the
+  element name. For deterministic local calculation, prefer a
+  `BPMN.Variables` task whose output uses a literal, `=vars.<id>`, or `=js:`
+  source; this path is runtime-verifiable without an activity result envelope.
 - Multi-instance task bodies read the current item from `iterator.item`.
 - Multi-instance subprocess bodies read the current item from
   `iterator[0].item`. Use `iterator[1].item` (and so on) inside nested
@@ -53,6 +54,24 @@ Rules:
   manipulation, or conditional selection.
 - A `=js:` expression that returns an object or array must produce valid JSON
   for fields typed `json`.
+- Translate normalization requirements operand by operand. If a rule says that
+  several string inputs are compared case-insensitively, normalize every one
+  of those inputs at each comparison (for example,
+  `vars.Var_Tier.toLowerCase() == "enterprise"` and
+  `vars.Var_State.toLowerCase() == "unavailable"`). Normalizing only one field
+  silently changes the business truth table. Do not normalize identifiers,
+  correlation values, or outputs that the contract says to copy exactly.
+- Before validation, audit each conditional expression against the supplied
+  truth table: precedence order, both sides of every comparison, fallback
+  outcome, exact literal spelling, and output type. Local validator success
+  proves structural validity, not business-rule correctness.
+- Preserve every eligibility qualifier when a later failure rule depends on
+  one. For example, "if a high-severity case needs Jira and Jira is unavailable"
+  is not equivalent to "if a Jira route exists and Jira is unavailable" unless
+  every Jira route is guaranteed high severity. Do not use a route label as a
+  proxy for severity, tier, or another qualifier without auditing the full
+  cross-product. Include adversarial rows where an otherwise ineligible case
+  has a duplicate/existing identifier and the external system is unavailable.
 
 Prefer JavaScript-safe variable ids such as `Var_RequestId`. If a brownfield
 file contains non-identifier ids, preserve them and let the product editor or
@@ -69,8 +88,12 @@ These fields must be read-only expressions:
 - `uipath:errorMapping` condition values.
 - Mapping values that read variables or element outputs.
 
-Do not use assignment operators in these fields. Comparisons such as `==`,
-`===`, `!=`, `!==`, `>=`, and `<=` are allowed.
+Do not use assignment operators in these fields. A plain Maestro expression
+(`=vars...`) uses the BPMN expression grammar: use `==`, `!=`, `>=`, and `<=`.
+JavaScript-only operators such as `===` and `!==` require an `=js:` prefix;
+without it they can pass the local structural validator but fail at runtime
+with `Expression expected`. Use `=js:` for compound JavaScript conditions as
+well, including `&&`, `||`, and `!`.
 
 ## Scope and availability
 
@@ -79,6 +102,9 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
 - Subprocess variables stay scoped to that subprocess.
 - Output mappings should target `uipath:inputOutput` or `uipath:output`
   variables, not read-only `uipath:input` variables.
+- Root variables supplied through an entry point must carry
+  `elementId="<start-event-id>"`, and that start event must declare a stable
+  `uipath:entryPointId`. A debug run can otherwise complete with unset inputs.
 - Entry point inputs that must later be updated need a separate mutable
   `uipath:inputOutput` variable and an explicit mapping from the entry input.
 - Trigger-bound values are commonly represented as `uipath:inputOutput`
@@ -88,8 +114,11 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
 ## Common mistakes
 
 - `=requestId` instead of `=vars.Var_RequestId`.
+- `=vars.Var_Count === 0` instead of either `=vars.Var_Count == 0` or
+  `=js:vars.Var_Count === 0`.
 - `var="requestId"` instead of `var="Var_RequestId"`.
-- Using `result` outside the output mapping of the element that produced it.
+- Assuming `result.response` exists when the registry template does not define
+  that result shape.
 - Reading `iterator[0].item` outside the multi-instance subprocess body.
 - Moving a variable into a subprocess without updating mappings that read it
   from the root scope.

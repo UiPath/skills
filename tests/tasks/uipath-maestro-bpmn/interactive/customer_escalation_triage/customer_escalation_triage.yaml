@@ -1,0 +1,237 @@
+task_id: skill-bpmn-interactive-customer-escalation-triage
+description: >
+  Path-to-GA interactive BPMN evaluation based on a real customer-escalation
+  scenario. A simulated support-operations lead withholds the data contract,
+  routing precedence, severity policy, failure behavior, and concurrency
+  requirements until the coding agent asks. One generated project must then
+  pass registry-workflow checks, independent validation and packaging,
+  behavior-derived structural checks, and nine exact cloud debug runs.
+tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:generate, shape:multi-node, node:decision, feature:registry, feature:escalation, feature:conversational, path-to-ga]
+
+run_limits:
+  expected_turns: 70
+  max_turns: 140
+  turn_timeout: 1200
+  task_timeout: 3600
+
+agent:
+  # allowed_tools uses replace semantics. Preserve normal authoring tools and
+  # add structured questions for the simulated requirements interview.
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion"]
+  # This project is deliberately large. Bound extended thinking tightly so the
+  # agent moves into registry/file checkpoints instead of trying to solve the
+  # whole graph in one uninterrupted model response.
+  sdk_options:
+    effort: low
+    max_thinking_tokens: 3000
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/interactive/customer_escalation_triage/cleanup_debug_solutions.py"
+    timeout: 300
+
+# Pure simulation mode: the simulator creates the opening request and answers
+# follow-up questions. The complete requirements below are not sent to the
+# coding agent unless it elicits them.
+simulation:
+  enabled: true
+  persona: |
+    You are an experienced support-operations lead designing a portable
+    evaluation of the company's customer-escalation process. You understand
+    the business policy and the desired runtime behavior, but you do not know
+    BPMN XML, JavaScript expression syntax, or UiPath registry schemas. Speak in
+    business language and let the coding agent choose the implementation.
+  goal: |
+    Get one local UiPath Maestro BPMN Process Orchestration project named
+    CustomerEscalationTriage that models an email escalation spanning CRM
+    resolution, agent classification, Jira handling, attachment storage,
+    Slack notification, and customer acknowledgement.
+
+    The portable eval has no stable connector credentials, so the BPMN must not
+    call live connectors. It must instead expose the exact action each external
+    workstream would take. The process inputs and primitive types are:
+    customerTier:string, crmMatchCount:integer, serviceState:string,
+    workaroundAvailable:boolean, duplicateIssueKey:string,
+    attachmentCount:integer, agentOutputValid:boolean, jiraAvailable:boolean,
+    autoSendEnabled:boolean, businessImpact:string, and correlationId:string.
+    Its named output variables are route:string, severity:string,
+    engineeringNeeded:boolean, jiraAction:string, attachmentAction:string,
+    slackAction:string, responseMode:string, caseKey:string, and
+    failureReason:string.
+
+    Apply validation in this precedence order. Zero CRM matches routes to
+    ManualReview with severity Unclassified and failureReason CrmNotFound.
+    More than one CRM match routes to ManualReview/Unclassified with
+    CrmAmbiguous. A single match followed by invalid agent output routes to
+    ManualReview/Unclassified with InvalidAgentOutput. Otherwise classify
+    severity with case-insensitive comparisons for both customerTier and
+    serviceState: Sev1 is an Enterprise customer whose service is Unavailable
+    with no workaround; Sev2 is any other Unavailable or Degraded service;
+    Available is Sev3. Engineering is needed for Sev1/Sev2.
+    If a Sev1/Sev2 needs a new or updated Jira action but Jira is unavailable,
+    route to ManualReview, retain the classified severity and engineering flag,
+    and set failureReason JiraUnavailable.
+
+    With no failure, a non-empty duplicateIssueKey routes to ExistingIssue;
+    otherwise Sev1/Sev2 routes to NewEscalation and Sev3 to Informational.
+    jiraAction is UpdateExisting for ExistingIssue, CreateIssue for a new
+    Sev1/Sev2, otherwise NoAction. attachmentAction is HoldForReview on manual
+    review, SaveToDrive when a non-manual case has attachments, otherwise
+    NoAttachments. slackAction is PostAlert for non-manual Sev1/Sev2 cases and
+    NoAlert otherwise. responseMode is Send only for an Informational case when
+    autoSendEnabled is true; every other acknowledgement is Draft. caseKey must
+    copy correlationId exactly. failureReason is the empty string on successful
+    routes.
+
+    The validation and routing decisions must be visible in the process diagram
+    rather than buried entirely inside one opaque calculation. The Jira-intent,
+    attachment-intent, and communication-intent workstreams are independent and
+    must visibly fan out as exactly three parallel branches and rejoin before
+    the process completes. The single communication branch jointly owns both
+    slackAction and responseMode; they must not be split into separate branches.
+    The result must include complete local project/package metadata, pass the
+    bundled validator, and pack successfully. The agent must not run or debug
+    the BPMN; the grader supplies hidden cases after authoring.
+  constraints:
+    - "Open naturally with the project name and the broad email-to-CRM/agent/Jira/attachments/Slack/acknowledgement problem. Say important operating policies are still missing and ask the agent to clarify them before building. Do not reveal the input/output contract or policy details in the opening."
+    - "Reveal only requirements that answer a relevant question from the agent; do not volunteer missing categories the agent has not investigated."
+    - "Do not reveal the complete typed input/output contract merely because the agent asked about normalization, classification, or routing behavior. Reveal variable names, primitive types, and direction only after the agent explicitly asks for the process inputs and outputs; otherwise say that the data contract still needs to be clarified."
+    - "The agent needs to explicitly clarify the data contract, per-input normalization, validation/failure precedence, severity and routing rules, downstream action values, acknowledgement policy, exact correlation behavior, visible decision routing, exact three-branch parallelism, and the no-live-connector/no-debug execution boundary before implementation. Do not treat questions that merely assume live systems as having clarified the execution boundary."
+    - "Do not volunteer normalization while answering a general severity or routing question. Only when the agent explicitly asks about case-sensitivity, casing, or normalization of compared inputs, state unambiguously that comparisons for both customerTier and serviceState are case-insensitive; do not narrow normalization to serviceState alone."
+    - "When the agent asks for validation/failure outputs or exact allowed literals, spell the failureReason values as the exact case-sensitive contract tokens CrmNotFound, CrmAmbiguous, InvalidAgentOutput, and JiraUnavailable, plus the empty string on success. Do not paraphrase these tokens into display labels with spaces."
+    - "When the agent asks how routing should appear in the process, require the validation and success-routing decisions to be visibly represented in the diagram rather than hidden entirely in one calculation, while leaving the exact BPMN implementation to the agent."
+    - "When the agent asks about ordering, concurrency, or independent workstreams, require exactly three parallel branches: Jira intent, attachment intent, and one communication intent branch that jointly produces both slackAction and responseMode, followed by one synchronization join."
+    - "When the agent explicitly asks whether CRM/Jira/Slack/email are live connectors or simulated intents, or asks whether cloud debug/run is allowed, state that all are intent-only with no live connectors and that the grader alone owns debug/run/cleanup."
+    - "If the agent starts authoring, editing files, or claims completion before asking substantive requirements questions, do not reward the behavior by dumping the policy. State that the design cannot be accepted because key decisions were not elicited, and ask the agent to stop and clarify them."
+    - "If the agent asks how to implement a policy in BPMN, restate the business outcome and tell it to choose a reliable registry-driven design; do not provide XML, expressions, node IDs, or a reference structure."
+    - "If asked a finite-choice question, choose the option consistent with the goal."
+    - "If asked for permission to upload, debug, or run the process, decline and say the grader owns cloud execution and cleanup."
+    - "Before accepting a claimed-complete artifact, explicitly verify that JiraUnavailable is guarded by both jiraAvailable=false and Sev1/Sev2 eligibility; reject a route-only proxy because an ExistingIssue may be Sev3. Ask the agent to prove or repair that edge while keeping cloud execution with the grader."
+    - "Keep replies concise, internally consistent, and in character."
+    - "Emit the stop token only after the agent has addressed every revealed requirement and reports that independent local validation and packaging succeeded."
+  max_turns: 14
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-bpmn skill"
+    skill_name: "uipath-maestro-bpmn"
+    expected_skill: "uipath-maestro-bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: agent_judge
+    description: "Agent elicited the missing process contract before implementation"
+    prompt: |
+      Grade only the observable interaction trajectory, not the quality of the
+      generated files (deterministic graders cover those). Return score 1.0 only
+      if, before beginning implementation, the coding agent asked substantive
+      questions that elicited all of these requirement categories: the typed
+      input/output contract and per-input normalization; validation and failure
+      precedence; severity and routing policy, including the requirement that
+      routing decisions be visible in the process; downstream
+      Jira/attachment/Slack action semantics;
+      acknowledgement and exact correlation behavior; required parallelism;
+      and the no-live-connector/no-debug boundary. It may ask them in one
+      well-structured turn or several turns. Return 0.0 if it guessed, authored
+      first and repaired later, relied on the simulated user to volunteer an
+      unasked category, or left any category materially ambiguous before
+      implementation. Do not award partial credit and do not grade agent
+      narration about whether the artifact works.
+    include_dialog: true
+    include_agent_output: true
+    include_tool_calls: true
+    include_reference: false
+    max_turns: 8
+    agent:
+      type: claude-code
+      allowed_tools: []
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent left BPMN cloud execution to the grader"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(debug|process\s+run)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the BPMN registry"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+maestro\s+bpmn\s+registry\s+pull'
+    min_count: 1
+    require_success: true
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected at least one exact BPMN registry entry"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+maestro\s+bpmn\s+registry\s+get'
+    min_count: 1
+    require_success: true
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent successfully ran the bundled BPMN validator"
+    tool_name: "Bash"
+    command_pattern: 'node\s+[^\n;]*validate-bpmn\.mjs[^\n;]*CustomerEscalationTriage\.bpmn'
+    min_count: 1
+    require_success: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent successfully packed the BPMN project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+maestro\s+bpmn\s+pack(?:\s|$)'
+    min_count: 1
+    require_success: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "CustomerEscalationTriage BPMN source was created"
+    path: "CustomerEscalationTriage/CustomerEscalationTriage.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Project is package-complete, connected, fully shaped, registry-backed, visibly routes success outcomes, and contains the exact three-workstream parallel fan-out/join"
+    command: "python3 $TASK_DIR/check_customer_escalation_structure.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Bundled validator independently accepts the generated BPMN"
+    command: "npm install --silent --prefix validator && node validator/validate-bpmn.mjs CustomerEscalationTriage/CustomerEscalationTriage.bpmn"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Project independently packs into a non-empty process-orchestration package with the expected content"
+    command: "python3 $TASK_DIR/check_customer_escalation_package.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Nine hidden cloud debug cases complete without incidents and exactly satisfy every routing, failure, concurrency-intent, acknowledgement, type, and correlation contract"
+    command: "python3 $TASK_DIR/check_customer_escalation_runtime.py"
+    timeout: 2100
+    expected_exit_code: 0
+    weight: 10.0
+    pass_threshold: 1.0
