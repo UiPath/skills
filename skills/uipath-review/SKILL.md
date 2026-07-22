@@ -251,7 +251,7 @@ Run the review command for the agent type, once, capturing JSON:
 
 | Agent type | Command |
 |---|---|
-| Low-code (`agent.json`) | `uip agent review "<PROJECT_DIR>" --output json` |
+| Low-code (`agent.json`) | `timeout 300 uip agent review "<PROJECT_DIR>" --output json` |
 | Coded (`main.py` + framework config) | `timeout 60 uip codedagent review "<PROJECT_DIR>" --output json` |
 | Agent-builder coded layout (`agent.json` + `main.py`) | run **both** commands |
 
