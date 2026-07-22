@@ -154,6 +154,10 @@ and honestly surfaced to the user as gaps when asked.
 3. **Structural BPMN is authored, not invented.** Follow the spec/canvas
    contract in [references/structural-bpmn.md](references/structural-bpmn.md);
    flag honestly what the registry does not expose.
+   BPMN XML element names are case-sensitive: use exact lower-camel tags such
+   as `<bpmn:startEvent>`, `<bpmn:intermediateCatchEvent>`,
+   `<bpmn:scriptTask>`, and `<bpmn:endEvent>`. Do not write PascalCase tags
+   like `<bpmn:IntermediateCatchEvent>`.
 4. **Confirm before authoring.** Confirm the chosen connector/connection/process
    and the process structure with the user (AskUserQuestion).
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
