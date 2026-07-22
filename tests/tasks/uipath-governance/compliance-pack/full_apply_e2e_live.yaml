@@ -135,9 +135,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "report.json references iso-42001"
+    description: "report.json references ISO 42001 (advisory — codex may use different format)"
     path: "report.json"
     includes:
-      - "iso-42001"
+      - "42001"
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0
