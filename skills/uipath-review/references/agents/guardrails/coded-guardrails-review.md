@@ -80,7 +80,7 @@ source of truth for class/enum/import names — never memory.
 **If `WebFetch` is unavailable or denied**, fall back in order; stop at the first source that yields the
 class/scope/enum names:
 
-1. `curl -fsSL <URL>` via Bash (same two URLs).
+1. `curl --max-time 30 -fsSL <URL>` via Bash (same two URLs).
 2. Read the installed SDK sources. Locate the packages
    (`python3 -c "import uipath; print(uipath.__file__)"`, same for `uipath_langchain`) and read the guardrail
    modules (`uipath/platform/guardrails/`, `uipath_langchain/guardrails/`) for middleware/validator/action classes,
