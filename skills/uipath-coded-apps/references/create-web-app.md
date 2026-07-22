@@ -55,7 +55,7 @@ Please answer these questions to continue:
 
 ### Step 2.5 — Create the External Application (only if user said "create one")
 
-Create it with the `uip admin external-apps` CLI — read [oauth-client-setup.md](oauth-client-setup.md) for prerequisites and full flags. Confirm `uip` is authenticated (`uip auth status --output json`), then:
+Create it with the `uip admin external-apps` CLI — read [oauth-client-setup.md](oauth-client-setup.md) for prerequisites and full flags. Confirm `uip` is authenticated (`uip login status --output json`), then:
 
 ```bash
 uip admin external-apps create "<app name>" \
