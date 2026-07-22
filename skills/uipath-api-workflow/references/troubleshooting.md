@@ -544,12 +544,12 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### `Workflow status is not "Successful"` (executor returns failure)
 - **Cause:** A task threw during execution
 - **Fix:** Read `Message` and `Instructions` in the failure output. Common patterns:
-  - JS_Invoke: missing `return` statement, runtime error in script body, undefined `$context.outputs.<TaskName>` (prior task did not run or did not `export`)
+  - JS_Invoke: missing `return` statement, runtime error in script body, undefined `$context.outputs.<Activity>` (prior activity did not run or did not `export`)
   - Assign expression: invalid `${...}` syntax, referencing an undefined variable in strict mode
   - Loop body: condition variable not updated (DoWhile infinite loop), missing `#Body` suffix, wrong export pattern
 
-### `$context.outputs.<TaskName>` is undefined
-- **Cause:** The prior task did not `export` its output back into context
+### `$context.outputs.<Activity>` is undefined
+- **Cause:** The prior activity did not `export` its output back into context
 - **Fix:** Add the standard export to the prior task — see [expressions-and-context.md](expressions-and-context.md)
 
 ### Strict-mode JS error inside a JS_Invoke
@@ -558,6 +558,19 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   - Replace `var` with `const` / `let`
   - Use optional chaining: `$context?.outputs?.Javascript_1?.items`
   - Ensure object literals have unique keys
+
+### Failed cloud run after publish (job faulted in Orchestrator)
+
+- **Symptom:** The workflow passed `validate` and `run --no-auth` locally, packed, published, and deployed — but a triggered cloud run faults. Local re-runs still pass.
+- **Cause:** Faults that only surface in cloud — real vendor responses, connection auth/token state, trigger payload shape, tenant/folder scoping — none of which the local runtime exercises.
+- **Fix:** Diagnose from the deployed job, not the local file:
+  ```bash
+  uip or jobs get <jobId> --output json                  # status + fault summary
+  uip or jobs logs <jobId> --output json                 # execution logs for the run
+  uip traces spans get --job-key <jobKey> --output json  # span-level execution trace (also accepts a <trace-id> positional)
+  ```
+  (Folder scoping differs: `uip or jobs list` accepts `--folder-path`/`--folder-key`/`--all-folders`; `uip or triggers list` accepts only `--folder-path`/`--folder-key`; `uip or jobs start <process-key>` infers the folder. `uip or jobs traces` is Agent-type-process-only; use `traces spans get` for API-workflow jobs.)
+  Map the surfaced error back to a fix with the category order below (Structure > Expression > Activity Config > Logic). If the fault is a 401 / `ConnectionNotEnabled`, `uip is connections ping <uuid>` the bound connection first. Full operate + diagnose command map: [operating-published-workflows.md](operating-published-workflows.md). For deep, multi-signal root-cause (what changed, cross-run comparison, incident correlation), hand off to **uipath-troubleshoot**.
 
 ---
 

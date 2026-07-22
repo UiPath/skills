@@ -23,7 +23,8 @@ description: "Compare impact of docs and skills on agent SDK coding tasks"
 defaults:
   repeats: 1
   agent:
-    type: claude-code
+    # type omitted on purpose — the runner selects the harness via --type (codex/antigravity);
+    # coder-eval's baseline default experiment supplies claude-code otherwise.
     permission_mode: bypassPermissions
     system_prompt: |
       You are a coding agent. Work only inside your current working directory.

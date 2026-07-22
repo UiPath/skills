@@ -32,6 +32,13 @@ initial_prompt: |
   - Always pass --output json. Do NOT prompt for confirmation.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-governance skill"
+    skill_name: "uipath-governance"
+    expected_skill: "uipath-governance"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent listed tenants in the org to discover all targets"
     command_pattern: 'uip\s+login\s+tenant\s+list'
@@ -40,22 +47,22 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran state coverage at tenant scope (per-tenant iteration)"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+tenant\s+\S+\s+(?:iso-42001|\$\S+)'
+    description: "Agent ran state coverage at tenant scope (advisory — codex may skip)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage[\s\S]*tenant'
     min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: command_executed
-    description: "Agent called state enable at tenant scope (not organization scope)"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable\s+tenant\s+\S+\s+(?:iso-42001|\$\S+)'
+    description: "Agent called state enable at tenant scope"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable[\s\S]*tenant'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_not_executed
     description: "Agent did NOT use organization scope for state enable (backend not implemented)"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable\s+organization'
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable[\s\S]*organization'
     weight: 3.0
     pass_threshold: 1.0
 

@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-20T10:02:14.560Z",
+      "Message": "Extract document pages: The input string 'abc' was not in a correct format.\r\nException Type: UiPath.DocumentProcessing.Contracts.Extensions.InvalidPageRangeException\r\nin Main.xaml\r\n    at ExtractPDFPageRange \"Extract document pages\"\r\n    at Sequence \"Extract document pages\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.DocumentProcessing.Contracts.Extensions.InvalidPageRangeException: The input string 'abc' was not in a correct format.\r\n   at UiPath.DocumentProcessing.Contracts.Extensions.PageRange.ParsePageRangePart(String rangePart, Int32 pagesCount)\r\n   at UiPath.DocumentProcessing.Contracts.Extensions.PageRange.Parse(String pageRange, Int32 pagesCount)\r\n   at UiPath.PDF.Activities.PDF.ValidationHelper.ParseRange(String range, Int32 pagesCount)\r\n   at UiPath.PDF.Activities.PDF.ExtractPDFPageRange.Execute(CodeActivityContext context)"
+    }
+  ]
+}

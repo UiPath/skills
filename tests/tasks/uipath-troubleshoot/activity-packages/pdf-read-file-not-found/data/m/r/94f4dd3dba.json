@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "7a3e9f12-4c8b-4d6e-9a1f-2b3c4d5e6f70",
+      "State": "Faulted",
+      "StartTime": "2026-06-20T09:14:02.118Z",
+      "EndTime": "2026-06-20T09:14:05.642Z",
+      "ReleaseName": "InvoiceProcessing",
+      "Source": "Manual",
+      "HostMachineName": "MOCK-HOST",
+      "ErrorCode": "Robot",
+      "Id": 50613882
+    }
+  ]
+}

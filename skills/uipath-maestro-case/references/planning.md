@@ -6,7 +6,7 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 
 > **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file. When SLA escalations are present, also `tasks/recipients-resolved.json` — see [`plugins/sla/planning.md` § Identity Resolution](plugins/sla/planning.md#identity-resolution).
 >
-> **Exit gate:** User must explicitly approve `tasks.md` before Phase 2 begins.
+> **Exit:** Auto-proceeds to Phase 2 — plan treated as approved, no prompt by default. Stops after `tasks.md` only when the request explicitly asked for a plan-only / review-first run. Re-read `tasks.md` before execution.
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting planning workflow. For how to fill fields for a specific node, consult the relevant plugin:
 > - Root case → `plugins/case/planning.md`
@@ -16,9 +16,11 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 > - Conditions → `plugins/conditions/<scope>/planning.md`
 > - SLA → `plugins/sla/planning.md`
 > - Global variables & arguments → `plugins/variables/global-vars/planning.md`
-> - Task I/O binding → `plugins/variables/io-binding/planning.md`
+> - Task I/O binding → `plugins/variables/io-binding/planning.md` (**always read alongside the matching task plugin**)
 
 ---
+
+> **Kickoff overview first (if not already shown).** When Phase 0 did not run (user-provided `sdd.md`), this is the run's start — present the greenfield flow overview once before Step 0 so the dev knows the phases and the decision points. See [SKILL.md § Kickoff — set dev expectations](../SKILL.md#kickoff--set-dev-expectations-first). If Phase 0 already showed it, skip.
 
 ## Step 0 — Resolve the `uip` binary
 
@@ -82,7 +84,7 @@ Before resource resolution, seed TodoWrite with the items below to track Phase 1
 6. Write task entries (§4.6)
 7. Write condition entries (§4.7)
 8. Write SLA entries (§4.8)
-9. User approves tasks.md (Step 5)
+9. Finalize tasks.md, auto-proceed to Phase 2 (Step 5)
 
 For every task, trigger, and condition in the sdd.md:
 
@@ -163,9 +165,9 @@ Every declaration in `sdd.md` must become a T-task in `tasks.md`. Mapping is 1-t
 - **When in doubt, emit.** It is always correct to create a T-task that mirrors an sdd.md row. It is never correct to silently omit one.
 - **When format is ambiguous or unrecognized, ASK — do not skip.** If a row exists but you cannot determine the right plugin, category, or T-entry shape (e.g., trigger "Initial Variable Mapping" uses an aggregate phrase instead of explicit per-field mappings; a variable's category — In / Out / Variable — is unclear; a task type does not match the closed enum), invoke **AskUserQuestion** with the row content + the specific ambiguity + bounded options. Silent omission is a defect. This obligation applies to every sdd.md declaration class above, including variables and arguments.
 
-Before presenting `tasks.md` at Step 5, run a completeness cross-check: for every declared stage / task / trigger / condition / SLA row **and every Case Variables table row (one T-entry each, per §4.2.1)** in sdd.md, verify a corresponding T-task exists. Gaps are a defect — fix before approval.
+Before finalizing `tasks.md` at Step 5, run a completeness cross-check: for every declared stage / task / trigger / condition / SLA row **and every Case Variables table row (one T-entry each, per §4.2.1)** in sdd.md, verify a corresponding T-task exists. Gaps are a defect — fix before proceeding to Phase 2.
 
-**Cross-check inventory.** Before approval, count and report each class:
+**Cross-check inventory.** Before proceeding to Phase 2, count and report each class:
 
 | Class | Source in sdd.md | T-entry section |
 |---|---|---|
@@ -177,7 +179,7 @@ Before presenting `tasks.md` at Step 5, run a completeness cross-check: for ever
 | Conditions | Stage Entry / Stage Exit / Task Entry / Case Exit tables | §4.7 |
 | SLA | Case-Level SLA + per-stage Stage SLA + per-action Task SLA | §4.8 |
 
-Counts that don't match the sdd.md → fix before Step 5 hard stop.
+Counts that don't match the sdd.md → fix before Step 5 (before proceeding to Phase 2).
 
 ### 4.0a — Section-batched write contract (mandatory)
 
@@ -277,7 +279,7 @@ The skill does not author edges (Rule 19). Emit no edge T-entries. Stage transit
 
 Title format: `Add <type> task "<name>" to "<stage>"`
 
-One task per task from the sdd.md — do NOT group multiple tasks under a single T-number. The plugin for the task's type (`plugins/tasks/<type>/planning.md`) lists exactly which fields to record.
+One task per task from the sdd.md — do NOT group multiple tasks under a single T-number. Read both the task-type plugin (`plugins/tasks/<type>/planning.md`) and the shared I/O-binding plugin (`plugins/variables/io-binding/planning.md`) before writing the entry. The task plugin owns resource-specific fields; the I/O-binding plugin is the single source of truth for the common output-row grammar.
 
 Every task entry includes at least:
 
@@ -286,10 +288,12 @@ Every task entry includes at least:
 - **runOnlyOnce** — from sdd.md (default `true` if not specified)
 - **isRequired** — from sdd.md (default `true` if not specified)
 - **order** — dependency on previous tasks (`after T05`, etc.)
-- **lane** — integer, default increments per task within the stage starting at 0 (FE layout). **Exception:** parallel members of a `runs-sequentially` group share the same `lane` (semantic — same lane = parallel siblings inside the sequential group). Solo runs-sequentially tasks still get their own lane.
+- **lane** — integer, default increments per task within the stage starting at 0 for structural/layout compatibility. Lane does not express sequencing; preserve task order in `data.tasks` and use task entry conditions for execution semantics.
 - **verify** — what the execution phase should check after running
 
 Additional fields are plugin-specific; read the plugin's `planning.md` before filling the entry.
+
+> **Outputs are a lossless handoff, not a discovered-name summary.** Project each SDD Outputs table row through the common grammar in [`plugins/variables/io-binding/planning.md` § SDD table → `tasks.md` projection](plugins/variables/io-binding/planning.md#sdd-table-to-tasksmd-projection-mandatory), then preserve the resulting list item exactly. Schema discovery may add truly undeclared fields as bare items, but it must not rewrite an SDD row. An explicit equal-name extract such as `greeting -> greeting` stays exactly that; collapsing it to bare `greeting` changes the binding from "write the existing case variable" to "auto-mint a task output." Before the Step 5 approval gate, compare every SDD Outputs row to its task T-entry and fix any missing or changed operator/operand or leaked table placeholder.
 
 > **Registry handoff:** For a resolved `action` or `case-management` T-entry, translate the selected audit object into the canonical `tasks.md` labels and values:
 >
@@ -302,7 +306,7 @@ Additional fields are plugin-specific; read the plugin's `planning.md` before fi
 
 > **No shell commands in task entries.** Each task is a declarative specification. Never write `uip` invocations or any other shell commands inside a task body — the execution phase translates specs into JSON mutations.
 
-> **Record `lane: <n>` per task.** Default: increment within each stage starting at 0 — lane is FE layout only, task ordering comes from task-entry conditions. **Exception:** within a `runs-sequentially` group, tasks meant to run in parallel share the same `lane` (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get own lane.
+> **Record `lane: <n>` per task only when required by the artifact contract.** It is structural/layout state, not a sequencing control. For sequential tasks, preserve their order in `data.tasks` and add the `runs-sequentially` entry condition to each task.
 
 > **Placeholder shape for unresolved resources.** If `taskTypeId` / `typeId` / `connectionId` is `<UNRESOLVED: …>`, omit `inputs:` and `outputs:` entirely and capture wiring intent in a trailing comment block. Execution creates a bare task node — structural only. See [placeholder-tasks.md](placeholder-tasks.md) for the full pattern and upgrade path.
 
@@ -328,12 +332,10 @@ Add a brief section at the end of `tasks.md` listing things referenced in sdd.md
 
 ---
 
-## Step 5 — HARD STOP: User reviews and approves tasks.md
+## Step 5 — Finalize tasks.md (auto-proceed to Phase 2)
 
-Present the generated `tasks.md` to the user and ask for explicit approval before proceeding.
+Treat the generated `tasks.md` as approved and proceed directly to Phase 2 by default — no AskUserQuestion approval prompt, no wait for sign-off.
 
-Use **AskUserQuestion** with options: `Approve and proceed`, `Request changes`.
+**Stop-after-plan exception (the virtual gate).** When the request explicitly scoped the work to planning only (e.g. "just build tasks.md", "Phase 1 only", "stop after the plan for review", "don't build the case yet"), stop here: report the finished plan and do NOT create a solution or caseplan. This is the only condition that halts the auto-proceed.
 
-If user requests changes, update `tasks.md` and re-present. Do NOT proceed to Phase 2 until user explicitly approves.
-
-**After approval:** re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](implementation.md)). `tasks.md` is complete handoff artifact — all resolved IDs, inputs, outputs, and references captured there.
+Re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](implementation.md)); context may have compacted during planning. `tasks.md` is complete handoff artifact — all resolved IDs, inputs, outputs, and references captured there.

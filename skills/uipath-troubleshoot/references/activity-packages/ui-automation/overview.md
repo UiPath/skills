@@ -50,6 +50,11 @@ UIAutomationNext (`N*`) activities also raise these more specific exceptions:
 - **UiNodeHasNoItemsException** — Select Item's target container had no items
 - **UiAutomationException (activity configuration)** — an activity rejected an invalid property value (e.g. Mouse Scroll `Movement units` < 1, Keyboard Shortcuts empty/invalid sequence, Take Screenshot missing `File name`/`Saved image`, Go To URL / Inject Js Script missing required input)
 
+Assembly load/bind failures (the activity's type fails to resolve **before** any selector is evaluated) surface as:
+
+- **MissingMethodException — "Method not found: 'Void UiPath.UIAutomationNext.Activities…'"** — the `UiPath.UIAutomationNext.Activities` assembly loaded but a member the caller was compiled against is absent. A **version mismatch inside the project's dependency set** (`project.json`): a UI Automation package bumped out of step with `UiPath.System.Activities` or a sibling/library built against a different UIAutomationNext version. Fix is version alignment in Manage Packages. See [dependency-version-conflict.md](./playbooks/dependency-version-conflict.md).
+- **FileNotFoundException / FileLoadException — "Could not load file or assembly 'UiPath.UIAutomationNext.Activities' … Version=…"** — the exact pinned version could not be loaded at all. Classic tell: **works in Studio, fails in Assistant / on the robot** — the robot's local NuGet cache (`%userprofile%\.nuget\packages`) or the Orchestrator feed cannot supply the version. Fix is cache clean + feed check + republish (Lowest Applicable / Strict). See [dependency-version-conflict.md](./playbooks/dependency-version-conflict.md).
+
 ## Features
 
 - **Healing Agent Data** — recovery data captured when HA is enabled and activities fail → [interpretations/healing-agent-data.md](./interpretations/healing-agent-data.md)

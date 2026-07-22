@@ -156,6 +156,10 @@ template, but the runtime contract is fixed:
 - Map the return back through `source="=result.response"` (scalar) or
   `source="=result.response.<field>"` (object field); `var` points at a declared
   variable id (do not put the target id in `name`).
+- Do not mutate `Globals.*`, `vars.*`, or process variables inside the script
+  body. The supported path is: return a value from the script, then use a
+  `uipath:output` mapping to write it to the declared variable. Direct mutation
+  is not applied to the runtime, so the variable reads empty afterward.
 
 ```xml
 <bpmn:scriptTask id="Task_RiskScore" name="Risk Score" scriptFormat="JavaScript">

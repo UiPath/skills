@@ -177,7 +177,7 @@ Then, in order:
 
 ### Reject case
 
-If a built sibling's task is later dropped (user aborts or removes it on `Request changes`), leave the sibling **on disk** (it is reusable) and **name it in the completion report** ("built but not referenced"). It stays **registered in the `.uipx`** (Step 3 already added it), so it co-deploys with the solution as an unused sibling — harmless; do **not** silently deregister. If the user wants it gone, that is manual cleanup (deregister from the `.uipx` and delete the directory), flagged in the report. Never silently delete it, never silently omit it.
+If a built sibling's task is later dropped (user aborts at a later hard stop, or removes it in a follow-up edit), leave the sibling **on disk** (it is reusable) and **name it in the completion report** ("built but not referenced"). It stays **registered in the `.uipx`** (Step 3 already added it), so it co-deploys with the solution as an unused sibling — harmless; do **not** silently deregister. If the user wants it gone, that is manual cleanup (deregister from the `.uipx` and delete the directory), flagged in the report. Never silently delete it, never silently omit it.
 
 ## Procedure
 
@@ -213,7 +213,7 @@ For each task in the sdd.md, extract its concrete portable name from the type-sp
 | `action` | `Action App: <deploymentTitle>` in `HITL Implementation` | `Deployment Folder` |
 | `case-management` | `Child Case` | `Folder Path` |
 
-The portable name is REQUIRED and never `<UNRESOLVED>`. Do not fall back to the task display name. Then filter the cache file:
+The portable name is REQUIRED and never `<UNRESOLVED>`. Do not fall back to the task display name. Then filter the cache file using `cat ... | python3 -c "..."` or the `Read` tool. **Do NOT use `node -e 'const fs=require("fs")...'` for cache reads — this violates Rule 13 even when the target is a resource cache file, not a skill artifact.**
 
 ```bash
 cat ~/.uip/case-resources/<type>-index.json | python3 -c "

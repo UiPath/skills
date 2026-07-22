@@ -173,11 +173,19 @@ Ask:
 > It needs these scopes: `<deduced-scopes>`
 >
 > - If yes, paste it
-> - If no, say **"create one"** and I'll set it up via browser automation"
+> - If no, say **"create one"** and I'll create it via the `uip admin` CLI"
 
-**If the user says "create one":** Follow [oauth-client-setup.md Step 2 (Setup B)](oauth-client-setup.md#step-2-ensure-playwright-is-available) to install Playwright into `~/.uipath-skills/playwright/`. Do **not** install into the user's app (`npm install -D playwright` adds ~300MB to devDependencies for a tool that runs once or twice).
+**If the user says "create one":** Create it with the `uip admin external-apps` CLI — read [oauth-client-setup.md](oauth-client-setup.md) for prerequisites and full flags. Confirm `uip` is authenticated, then create with the scopes above, passing `<cloud-host>` as the redirect URI:
 
-Then read [oauth-client-setup.md](oauth-client-setup.md) and follow it to create the External Application with the scopes above — pass `<cloud-host>` as `--cloud-host` **and** as `--redirects <cloud-host>`. The portal's create form requires at least one redirect URI, so pass `<cloud-host>` to satisfy it; the value is harmless and unused — an action app runs inside Action Center's iframe with a host-injected session and never performs a browser OAuth redirect (Critical Rule 17). The External App is needed only for its client ID and scopes (written to `uipath.json`).
+```bash
+uip admin external-apps create "<app name>" \
+  --non-confidential \
+  --user-scope "<deduced-scopes>" \
+  --redirect-uri "<cloud-host>" \
+  --output json
+```
+
+`--redirect-uri` is required by the CLI, so pass `<cloud-host>` to satisfy it; the value is inert at runtime — an action app runs inside Action Center's iframe with a host-injected session and never performs a browser OAuth redirect (Critical Rule 17). The External App is needed only for its client ID and scopes (written to `uipath.json`). Parse `id` from the response as the client ID. On `403` / no auth, use the [Manual portal fallback](oauth-client-setup.md#manual-portal-fallback).
 
 Store the resulting client ID as `<client-id>`.
 

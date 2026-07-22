@@ -1,0 +1,90 @@
+task_id: skill-troubleshoot-uia-click-noop-simulate-tech
+description: >
+  Silent no-op of a modern Click (NClick) in a Java desktop automation: the job
+  finished Successful with zero Error logs, but the Submit button was never
+  actuated (downstream status unchanged). Exercises the no-signature routing
+  path for a "succeeded but did nothing" report — the agent must investigate and
+  identify the cause and fix from the evidence and workflow source. Grades the
+  conclusion (skill_triggered + llm_judge against RESOLUTION.md), not the
+  trajectory.
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 300
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: data
+  # Prepend ./m to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["m"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My ClaimsSubmit job in folder Finance finished Successful last night, but it
+  never clicked the Submit button in our Java claims app — the claim stayed in
+  Draft. There was no error at all. Why did it silently do nothing?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+# Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator picks the recommended / affirmative
+# option and never invents data.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the ClaimsSubmit job that finished
+    Successful but never clicked Submit in the Java claims app. You trust the
+    agent's expertise and only have the information in your initial report.
+  goal: |
+    Let the agent complete its investigation and explain WHY the click silently
+    did nothing. You only want to understand the cause right now — do NOT let it
+    edit your workflow.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks where the project / source code is, tell it the ClaimsSubmit project files (Main.xaml, project.json) are in the current working directory."
+    - "If the agent proposes to APPLY a fix by editing your workflow / Main.xaml (changing the Click input method, adding a Verify Execution target), DECLINE — say you just want to understand the cause right now, not change the workflow. Pick the 'do not apply' / 'no' option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data beyond your initial report (the project path and its files are a real fact about your setup and may be shared)."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

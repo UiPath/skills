@@ -4,12 +4,16 @@ description: >
   deterministic BPMN project (manual start, one Jint script task that computes
   the product of the constants 6 and 7 into a `product` variable, an end
   event), runs a live `uip maestro bpmn debug` session against Studio Web, and
-  inspects the runtime result via the `debug-instance` variables commands. The
-  agent saves the raw debug and variables CLI output to `debug-evidence/`, and
-  the check asserts the debug run reached finalStatus Completed and the runtime
-  `product` variable is 42 — an un-fakeable runtime assertion. Mirrors the
-  uipath-maestro-flow live `run_debug` grading pattern. Live: no mocks; auth
-  comes from the experiment environment. Deliberately computes from in-script
+  reads the runtime result via `debug-instance variables-all` (the debug command
+  output carries element statuses only — never variable values). The agent saves
+  the raw variables-all output to `debug-evidence/`, and the check asserts the
+  debug run reached finalStatus Completed and the runtime `product` variable is
+  42 — an un-fakeable runtime assertion. If the agent's evidence lacks the value,
+  the check recovers it by re-running a fresh debug session itself (debug
+  instances are ephemeral, so the agent's instance can't be re-read at grading
+  time). Mirrors the uipath-maestro-flow live `run_debug` grading pattern (the
+  checker owns the runtime read). Live: no mocks; auth comes from the experiment
+  environment. Deliberately computes from in-script
   constants rather than `--inputs`: CI iteration 2 showed `bpmn debug --inputs`
   values are not transmitted to the runtime (Start event Inputs arrive empty),
   so external-input grading would test that CLI gap, not the debug workflow.
@@ -17,13 +21,15 @@ description: >
 tags: [uipath-maestro-bpmn, e2e, "mode:operate", "lifecycle:setup", path-to-ga]
 
 # turn_timeout must cover the whole agent session (observed: a 902s session was
-# killed by the 900s default while iterating on variable bindings after a live
-# debug run); task_timeout adds headroom for grading on top.
+# killed by the 900s default, then a 1500s turn timed out while the agent
+# wandered on solution scaffolding + variable scoping under slow Bedrock latency
+# on the shared runner). task_timeout adds headroom for grading (incl. the
+# check's possible live-recovery debug run) on top.
 run_limits:
   expected_turns: 30
-  task_timeout: 1800
+  task_timeout: 3300
   max_turns: 120
-  turn_timeout: 1500
+  turn_timeout: 2400
 
 sandbox:
   template_sources:
@@ -41,25 +47,37 @@ initial_prompt: |
       exactly `product`,
     - an end event.
 
+  Declare `product` as a ROOT-scoped process variable (its `uipath:inputOutput`
+  must NOT carry an `elementId`) so its runtime value is readable via
+  `variables-all`. Build exactly one project — do not scaffold extra projects,
+  boilerplate copies, or duplicate .bpmn files.
+
   Then run a debug session for the project against Studio Web and confirm from
   the runtime that the `product` variable is 42. You have explicit consent to
   upload and debug this project in the connected tenant. Do not pass `--inputs`
   — the computation is self-contained.
 
+  IMPORTANT: the debug command output reports element-execution statuses only —
+  it does NOT contain variable values. All elements showing Completed does not
+  prove `product` is 42. Read the runtime variable values separately using the
+  skill's debug-instance inspection commands (the skill teaches which command
+  and how).
+
   Save the raw CLI output so the result can be verified independently:
-    - save the full JSON output of the debug command to
-      `debug-evidence/debug.json`,
-    - take the debug instance id the debug command returns and save the full
-      JSON output of the `debug-instance variables-all` command for that
-      instance to `debug-evidence/variables.json`.
+    - save the full JSON output of the runtime variables inspection to
+      `debug-evidence/variables.json` — this is the only output that carries the
+      `product` value, so it is the required deliverable,
+    - also save the full JSON output of the debug command to
+      `debug-evidence/debug.json`.
 
   Preserve the raw CLI JSON exactly — do not summarize or hand-edit it.
 
   The task is complete only when the debug run reaches finalStatus Completed
-  and the runtime `product` variable reads 42. If the first debug run does not
-  produce product=42, fix the variable/output mapping and debug again — but run
-  at most 3 debug sessions in total. Do NOT ask for approval, confirmation, or
-  feedback. Do NOT pause between planning and implementation.
+  and the saved runtime-variables output shows the `product` variable is 42.
+  Saving only the debug command output is NOT sufficient. If the first debug
+  run does not produce product=42, fix the variable/output mapping and debug
+  again — but run at most 3 debug sessions in total. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and implementation.
 
 success_criteria:
   - type: command_executed
@@ -78,10 +96,14 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # timeout covers a possible live-recovery path: when the agent's saved
+  # evidence lacks the product value, the checker re-runs a fresh debug session
+  # itself (debug instances are ephemeral, so the agent's instance can no longer
+  # be read at grading time) to recover the runtime value.
   - type: run_command
-    description: "Live debug reached finalStatus Completed and the runtime product variable is 42 (computed by a script task, not hardcoded)"
+    description: "Live debug reached finalStatus Completed and the runtime product variable is 42 (read from variables-all, computed by a script task, not hardcoded)"
     command: "python3 $TASK_DIR/check_live_debug.py"
-    timeout: 120
+    timeout: 900
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0

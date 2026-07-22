@@ -4,7 +4,7 @@ description: >
   UiPath troubleshoot agent must diagnose a Read Range failure
   (System.IO.IOException: ... used by another process) where the
   available `uip` CLI evidence does NOT determine which cause-branch
-  applies. The agent must match the activity-packages/excel-activities/playbooks/read-range-file-locked.md
+  applies. The agent must match the activity-packages/excel-activities/playbooks/workbook-file-locked.md
   playbook, recognize that the CLI evidence chain is exhausted (no
   concurrent siblings, no prior faulted runs, no overlapping triggers,
   clean workflow source), and surface a host-side investigation

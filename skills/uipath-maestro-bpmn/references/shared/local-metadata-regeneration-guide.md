@@ -8,6 +8,20 @@ Use this guide when BPMN source changed and local package metadata must be refre
 - `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` are derived package metadata unless a CLI contract explicitly marks a field as user-authored.
 - Connector-backed or dynamically schematized `Intsvc.*` activity and event payloads are executable only after registry-backed enrichment supplies connector metadata, connection binding references, dynamic schemas, and generated package resources. Confirmed plain connectionless HTTP follows the documented pass-2 authoring recipe instead.
 
+## Local Synthetic Project Contract
+
+When no CLI generator is available and you must author a local-only synthetic
+BPMN project, make the project executable and package-shaped before packing:
+
+- The root process must be `<bpmn:process ... isExecutable="true">`.
+- `project.uiproj` must use lowercase `"main"` pointing at the BPMN file.
+- `operate.json` must use `"main"` and `"contentType": "ProcessOrchestration"`.
+- `package-descriptor.json` must use a top-level `"content"` array with
+  `content/<file>` entries. Do not use `contentFiles`.
+
+The minimal placeholder-safe JSON shape is shown below; keep it exact apart
+from project, file, and start event names.
+
 ## Regeneration Inputs
 
 Local regeneration reads:

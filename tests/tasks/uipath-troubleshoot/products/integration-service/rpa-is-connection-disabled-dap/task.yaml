@@ -104,3 +104,5 @@ simulation:
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6
+  check_criteria: every_turn
+  stop_on_criteria_pass: true

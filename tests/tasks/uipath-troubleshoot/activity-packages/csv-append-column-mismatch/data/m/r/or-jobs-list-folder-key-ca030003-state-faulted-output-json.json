@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "cb030003-e5f6-4071-9b03-000000000003",
+      "State": "Faulted",
+      "ProcessName": "CsvMerger",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT",
+      "MachineKey": "",
+      "StartTime": "2026-06-13T11:11:08.210Z",
+      "EndTime": "2026-06-13T11:11:10.330Z",
+      "CreationTime": "2026-06-13T11:11:07.800Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

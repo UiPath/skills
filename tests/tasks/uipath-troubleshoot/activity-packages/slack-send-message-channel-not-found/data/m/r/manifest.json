@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay of a faulted UiPath.Slack.IntegrationService.Activities SendMessage job. Canned uip CLI responses captured from a real Orchestrator job; PII scrubbed. First-match-wins.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "0c745290f5.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e --state Faulted",
+      "file": "7820c67204.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+      "file": "7820c67204.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "7820c67204.json"
+    },
+    {
+      "match": "or jobs get f0c8117e-38f1-474a-8c14-81f94c86816c",
+      "file": "a6c44081c4.json"
+    },
+    {
+      "match": "or jobs logs f0c8117e-38f1-474a-8c14-81f94c86816c --level Error",
+      "file": "5274d54bd0.json"
+    },
+    {
+      "match": "or jobs logs f0c8117e-38f1-474a-8c14-81f94c86816c",
+      "file": "5274d54bd0.json"
+    },
+    {
+      "match": "or jobs traces f0c8117e-38f1-474a-8c14-81f94c86816c",
+      "file": "2d930e2440.json"
+    },
+    {
+      "match": "traces spans get --job-key f0c8117e-38f1-474a-8c14-81f94c86816c",
+      "file": "56a91ad33d.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get f0c8117e-38f1-474a-8c14-81f94c86816c",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read its exception detail."
+    }
+  ]
+}

@@ -8,7 +8,8 @@ description: >
 tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:loop, node:decision]
 
 initial_prompt: |
-  Make a UiPath API Workflow JSON file at Workflow.json that:
+  Author a UiPath API Workflow — in a project named `ScorePasses` (its workflow
+  file will be `ScorePasses/Workflow.json`) — that:
   - Takes a `scores` input (an array of integers)
   - Iterates the array with a ForEach; uses an If to count scores >= 50 as passes
   - Wraps the whole loop in a TryCatch so a bad element can't abort the batch
@@ -19,34 +20,33 @@ initial_prompt: |
   planning and implementation. Build the complete workflow in a single pass.
 
 success_criteria:
-  - type: file_exists
-    description: "Workflow.json was created"
-    path: "Workflow.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Workflow.json is valid JSON"
-    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); python -c "import json,sys; json.load(open(sys.argv[1]))" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "Composes ForEach + If wrapper + TryCatch"
-    path: "Workflow.json"
-    includes:
-      - "ForEach"
-      - "#Body"
-      - "#Wrapper"
-      - "TryCatch"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "ForEach" "$WF" && grep -q "#Body" "$WF" && grep -q "#Wrapper" "$WF" && grep -q "TryCatch" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Counts passes in [40,60,90,10] as 2 (field-qualified to avoid spurious '2' matches)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"scores":[40,60,90,10]}'' --output json | grep -qiE ''"passes"[ :]+2'''
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --input-arguments ''{"scores":[40,60,90,10]}'' --output json | grep -qiE ''"passes"[ :]+2'''
     timeout: 90
     expected_exit_code: 0
     weight: 3.0
@@ -54,7 +54,7 @@ success_criteria:
 
   - type: run_command
     description: "Counts passes in [10,30] as 0 (proves real classification, not a constant 2)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"scores":[10,30]}'' --output json | grep -qiE ''"passes"[ :]+0'''
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --input-arguments ''{"scores":[10,30]}'' --output json | grep -qiE ''"passes"[ :]+0'''
     timeout: 90
     expected_exit_code: 0
     weight: 2.0

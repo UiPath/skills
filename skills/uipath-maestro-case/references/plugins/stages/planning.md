@@ -11,6 +11,8 @@ A stage node inside the case. Stages contain tasks and connect via entry/exit co
 
 The only difference is `data.stageType`: omitted for a primary/regular stage (do NOT emit `"primary"`), `"secondary"` for a secondary stage; both use `type: case-management:Stage`. All other fields (label, description, entry/exit conditions, tasks, SLA) behave identically. A secondary stage can carry `slaRules` (expression-driven SLA) the same as a regular Stage; conditional SLA rules themselves are root-only.
 
+The UI's **Secondary stage** toggle means an interrupting exception lane, not a second kind of primary flow stage. It is used for exception, optional, rework, or special handling that may move the case out of the active primary stage. Secondary stages cannot be connected to other stages as ordinary flow links, must not be required for `required-stages-completed`, and a returning secondary stage must use `return-to-origin` with `Interrupting: Yes`.
+
 ## When to Pick `secondary` vs `stage`
 
 Use secondary (also "secondary stage") when the sdd.md describes any of:

@@ -18,7 +18,8 @@ sandbox:
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 
-  Author a single Maestro BPMN file `InvoiceApproval.bpmn` for this process:
+  Author a local Maestro BPMN project with main file
+  `InvoiceApproval/InvoiceApproval.bpmn` for this process:
     - a blank start event,
     - an exclusive gateway "Amount check" with two outgoing branches:
         - a conditioned branch (e.g. amount over a threshold),
@@ -35,7 +36,7 @@ initial_prompt: |
     and a BPMNEdge for every sequence flow.
   - Validate the file with an explicit Bash command before finishing: run a
     well-formed-XML parse, e.g.:
-    `python3 -c "import xml.etree.ElementTree as ET; ET.parse('InvoiceApproval.bpmn')"`.
+    `python3 -c "import xml.etree.ElementTree as ET; ET.parse('InvoiceApproval/InvoiceApproval.bpmn')"`.
   - Do not upload, publish, deploy, debug, run, or pack anything.
 
 success_criteria:
@@ -49,13 +50,13 @@ success_criteria:
 
   - type: file_exists
     description: "BPMN source was authored"
-    path: "InvoiceApproval.bpmn"
+    path: "InvoiceApproval/InvoiceApproval.bpmn"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: file_contains
     description: "BPMN file contains a diagram for Studio Web import"
-    path: "InvoiceApproval.bpmn"
+    path: "InvoiceApproval/InvoiceApproval.bpmn"
     includes:
       - "bpmndi:BPMNDiagram"
       - "bpmndi:BPMNPlane"
