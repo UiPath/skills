@@ -6,8 +6,9 @@ Create and update UiPath External Applications (OAuth clients) with the **`uip a
 
 ## Prerequisites
 
-1. `uip` authenticated against the target org/tenant: `uip login status --output json`. If not logged in: `uip login` (or the org's SSO flow).
-2. The signed-in identity has permission to manage external applications (identity admin). Without it, create/update return `403` — see [When the CLI can't be used](#when-the-cli-cant-be-used).
+1. Install the admin tool (provides the `uip admin external-apps` commands): `uip tools install admin-tool`
+2. `uip` authenticated against the target org/tenant: `uip login status --output json`. If not logged in: `uip login` (or the org's SSO flow).
+3. The signed-in identity has permission to manage external applications (identity admin). Without it, create/update return `403` — see [When the CLI can't be used](#when-the-cli-cant-be-used).
 
 Needed inputs: app name, redirect URI(s), required OAuth scopes (from [oauth-scopes.md](oauth-scopes.md)).
 
