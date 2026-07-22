@@ -1,0 +1,62 @@
+{
+  "version": 2,
+  "_doc": "Deterministic public-safe registry responses for the loan-origination SDD consumer. Specific registry get rules must precede generic discovery rules.",
+  "rules": [
+    {
+      "match": "maestro bpmn registry get Actions.HITL",
+      "file": "get-actions-hitl.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn registry get BPMN.ScriptTask",
+      "file": "get-bpmn-script-task.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn registry get BPMN.Variables",
+      "file": "get-bpmn-variables.json",
+      "exit_code": 0
+    },
+    {
+      "match": "is connections list --all-folders",
+      "file": "connections-list.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn registry pull",
+      "file": "registry-pull.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn registry list",
+      "file": "registry-list.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn registry search",
+      "file": "registry-search.json",
+      "exit_code": 0
+    }
+  ],
+  "expected_calls": [
+    {
+      "pattern": "maestro bpmn registry pull",
+      "min": 1,
+      "description": "Syncs the BPMN registry once."
+    },
+    {
+      "pattern": "maestro bpmn registry get BPMN.ScriptTask",
+      "min": 1,
+      "description": "Retrieves the script-task wrapper."
+    },
+    {
+      "pattern": "maestro bpmn registry get Actions.HITL",
+      "min": 1,
+      "description": "Retrieves the approved human-review wrapper."
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"Status\": true, \"Data\": {}}\n",
+    "exit_code": 0
+  }
+}

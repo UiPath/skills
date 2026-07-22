@@ -1,0 +1,72 @@
+task_id: skill-bpmn-sdd-phase0-loan-origination
+description: >
+  End-to-end Phase 0 evaluation: a prose loan-origination request becomes a
+  reviewable sdd.draft.md, explicit simulated approval promotes the exact design
+  to sdd.md, and the skill stops before registry discovery or BPMN authoring.
+tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, shape:multi-node, node:decision, node:hitl, feature:phase-0, feature:approval-gate]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite"]
+  sdk_options:
+    max_thinking_tokens: 10000
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 80
+  turn_timeout: 900
+
+initial_prompt: |
+  Design a UiPath Maestro BPMN solution for a simple loan-origination process.
+  An applicant manually submits applicationId, applicantName, and requestedAmount.
+  A script validates the application and produces validationStatus plus
+  eligibilityDecision. Invalid applications are rejected. Valid but ineligible
+  applications are rejected. Eligible applications go to an Underwriter human
+  review task, which produces reviewOutcome and ends approved or rejected.
+
+  I want a reviewable BPMN SDD first. Create the Phase 0 draft, show me the
+  complete business shape for approval, and do not discover registry resources
+  or create a .bpmn project yet. The tenant-specific human-review resource is
+  intentionally unresolved at this stage.
+
+success_criteria:
+  - type: run_command
+    description: "Explicit approval promoted the BPMN SDD and Phase 0 stopped cleanly"
+    command: "python3 $TASK_DIR/check_phase0.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Phase 0 did not begin registry discovery"
+    tool_name: Bash
+    command_pattern: 'uip\s+maestro\s+bpmn\s+registry'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Phase 0 did not make a cloud-side lifecycle mutation"
+    tool_name: Bash
+    command_pattern: 'uip\s+maestro\s+bpmn\s+(upload|publish|deploy|debug|run)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+simulation:
+  enabled: true
+  persona: |
+    You are the lending-operations owner for the compact loan-origination process
+    in the opening message. You know its trigger, inputs, validation and
+    eligibility decisions, underwriter review, and approved/rejected outcomes.
+  goal: |
+    Review the Phase 0 BPMN SDD. Answer any shape-changing question consistently,
+    then explicitly approve the complete draft so the designer can promote it
+    to sdd.md. Stay in the conversation until the designer confirms that sdd.md
+    exists, while preventing registry discovery or BPMN authoring.
+  constraints:
+    - "Answer concisely and decisively; do not add systems, actors, or branches beyond the opening process."
+    - "The underwriter human-task resource remains UNRESOLVED until later tenant discovery."
+    - "When the complete draft is presented, explicitly say it is approved and should be promoted to sdd.md."
+    - "After approval, wait for confirmation that sdd.md was written; then say Phase 0 is complete and implementation must stop for now."
+  max_turns: 30

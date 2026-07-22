@@ -1,0 +1,7 @@
+{
+  "Status": true,
+  "Data": {
+    "registryVersion": "loan-origination-mock-v1",
+    "message": "Registry cache synchronized."
+  }
+}

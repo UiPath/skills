@@ -44,6 +44,8 @@ patterns before generic ones. A passthrough rule with `match: "docsai ask"`
 is the typical way to proxy open-ended natural-language commands.
 """
 
+from __future__ import annotations
+
 import hashlib
 import json
 import os

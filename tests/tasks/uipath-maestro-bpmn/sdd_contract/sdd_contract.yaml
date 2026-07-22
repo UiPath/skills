@@ -1,0 +1,22 @@
+task_id: skill-bpmn-sdd-contract
+description: >
+  Static contract coverage for the independently owned BPMN SDD routing,
+  Phase 0 interview, and supplied-SDD intake guidance.
+tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, feature:eval]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Verify the checked-out uipath-maestro-bpmn skill's SDD contract. Do not
+  modify the repository or run any cloud-side operation.
+
+success_criteria:
+  - type: run_command
+    description: "BPMN SDD routing and handoff contract is present"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/sdd_contract/check_skill_contract.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

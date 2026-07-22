@@ -1,0 +1,26 @@
+{
+  "Status": true,
+  "Data": [
+    {
+      "ExtensionType": "BPMN.Variables",
+      "Label": "BPMN Variables",
+      "BpmnElement": "bpmn:Task",
+      "ExtensionTag": "uipath:mapping",
+      "RequiresDiscovery": "No"
+    },
+    {
+      "ExtensionType": "BPMN.ScriptTask",
+      "Label": "Execute script",
+      "BpmnElement": "bpmn:ScriptTask",
+      "ExtensionTag": "uipath:mapping",
+      "RequiresDiscovery": "No"
+    },
+    {
+      "ExtensionType": "Actions.HITL",
+      "Label": "Loan Underwriting Review",
+      "BpmnElement": "bpmn:UserTask",
+      "ExtensionTag": "uipath:activity",
+      "RequiresDiscovery": "Yes"
+    }
+  ]
+}
