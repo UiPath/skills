@@ -478,6 +478,20 @@ cd skills/uipath-maestro-bpmn/validator && npm install --silent
 node validate-bpmn.mjs <file.bpmn>   # prints VALID and exits 0, or prints errors and exits 1
 ```
 
+If the skill directory is read-only (`npm install` fails), copy the validator to
+a scratch location **outside** your project/output directory (e.g. `/tmp`) and
+run it there — pass the absolute path of your `.bpmn`:
+
+```bash
+cp -r skills/uipath-maestro-bpmn/validator /tmp/bpmn-validator
+cd /tmp/bpmn-validator && npm install --silent
+node validate-bpmn.mjs <ABSOLUTE_PATH_TO_FILE.bpmn>
+```
+
+Never copy the validator into your project or output directory: it carries ~60
+fixture `.bpmn` files, and dropping them beside your file pollutes the tree that
+downstream tooling and graders scan for the single BPMN you authored.
+
 `VALID` / exit 0 means the document passes all rules. Any other output lists the
 blocking errors (gateway/condition, fake-join, superfluous-gateway, error
 end/boundary event, timer-duration, single-blank-start, variable-reference, and
