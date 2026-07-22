@@ -45,6 +45,7 @@ success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-coded-apps skill"
     skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
     weight: 1.0
     pass_threshold: 1.0
 
