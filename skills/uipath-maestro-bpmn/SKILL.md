@@ -109,7 +109,7 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    events, multi-instance/loop markers, `errorMapping`/retry structure, or
    diagrams.
 3. **Assemble.** Author directly from the complete minimal file in
-   [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-fixtures)
+   [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton already
    shows variables, the entry point, a branch, and the diagram. **Do not
    reverse-engineer authoring patterns from task fixtures or generated package

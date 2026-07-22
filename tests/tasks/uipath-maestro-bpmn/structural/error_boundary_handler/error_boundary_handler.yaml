@@ -38,9 +38,9 @@ initial_prompt: |
     there must be at most one catch-all (no errorRef) error boundary per task.
   - Include a bpmndi:BPMNDiagram with a BPMNShape for every node (including the
     boundary event) and a BPMNEdge for every sequence flow.
-  - Validate the file locally before finishing with `uip maestro bpmn
-    validate <file>` (or a well-formed-XML parse plus the structural checklist
-    if the CLI is unavailable).
+  - Validate the file locally before finishing by running
+    `uip maestro bpmn validate <file>` (or a well-formed-XML parse plus the
+    structural checklist if the CLI is unavailable).
 
   Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
   approval, confirmation, or feedback, and do NOT pause between planning and

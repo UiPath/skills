@@ -33,8 +33,9 @@ initial_prompt: |
     contract; do not hand-author uipath:* XML from prose.
   - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
     for every sequence flow.
-  - Validate the file locally before finishing with `uip maestro bpmn
-    validate <file>` (or a well-formed-XML parse if the CLI is unavailable).
+  - Validate the file locally before finishing by running
+    `uip maestro bpmn validate <file>` (or a well-formed-XML parse if the CLI
+    is unavailable).
 
   Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
   approval, confirmation, or feedback, and do NOT pause between planning and
