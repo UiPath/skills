@@ -27,9 +27,9 @@ run_limits:
   turn_timeout: 900
 
 initial_prompt: |
-  Get my tenant aligned to ISO 42001. Check current posture with state
-  coverage, then apply any missing settings with state enable. Report
-  what changed.
+  Get my tenant aligned to ISO 42001. Analyze current posture gaps,
+  apply any missing settings, and confirm the changes took effect.
+  Skip the apply if already fully covered.
 
   Save all CLI output to output.txt. Save a summary to report.json with
   the pack name and whether apply was performed.
@@ -79,6 +79,14 @@ success_criteria:
     path: "output.txt"
     weight: 1.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI output contains evidence of live API data (advisory)"
+    command: 'grep -qE "Success|Result|Data|iso-42001" output.txt'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 0
 
   - type: file_exists
     description: "report.json created (advisory — codex may not produce)"
