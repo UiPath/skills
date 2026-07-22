@@ -69,3 +69,20 @@ success_criteria:
     command_pattern: 'uip\s+gov\s+access-policy\s+(create|update|delete|activate)'
     weight: 2.0
     pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent captured its disambiguation response to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "output.txt contains the verbatim numbered disambiguation question (deterministic, judge-independent)"
+    path: "output.txt"
+    includes:
+      - "Which layer should this rule govern?"
+      - "1. Govern the product"
+      - "2. Govern resource/tool use"
+      - "Reply with 1 or 2"
+    weight: 3.0
+    pass_threshold: 1.0

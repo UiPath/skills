@@ -46,14 +46,14 @@ initial_prompt: |
 success_criteria:
   - type: command_executed
     description: "Step 1: Agent called catalog get for ISO 42001"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+(?:iso-42001-2023|\$\S+)'
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+["'']?(?:iso-42001-2023|\$\{?\w+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Step 2: Agent called state coverage for posture analysis"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001-2023|\$\S+)'
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+(?:tenant|organization)\s+\S+\s+["'']?(?:iso-42001-2023|\$\{?\w+)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -68,6 +68,38 @@ success_criteria:
     description: "Full apply does NOT use pack-walker.mjs (removed)"
     command_pattern: 'pack-walker\.mjs'
     weight: 1.5
+    pass_threshold: 1.0
+
+  # Bounded execution — catch the runaway command loop that timed the turn out at 900s.
+  # A correct full-apply run is ~5 commands: catalog get + coverage (once each), one
+  # state enable (+1 permitted retry), one state get verify. These caps give headroom
+  # over the happy path while failing hard on a re-read/re-synthesis loop.
+  - type: command_not_executed
+    description: "Bounded: state coverage runs at most twice (no re-read loop)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage'
+    max_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Bounded: state enable runs at most twice (single apply + at most one retry)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable'
+    max_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Bounded: state get (verify) runs at most twice"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+get'
+    max_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Full apply must NOT run synthesize-formdata (partial-apply only; per-product synthesis loop is the timeout culprit)"
+    command_pattern: 'synthesize-formdata'
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: file_exists
