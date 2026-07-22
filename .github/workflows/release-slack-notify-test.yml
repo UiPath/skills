@@ -1,170 +1,60 @@
 name: Release Slack Notify (TEST)
 
-# End-to-end test harness for the release-branch Slack notification.
+# Preview harness for the sprint-cut Slack notification. Posts DEMO messages
+# (mock data — no real cut, no publish) to a Slack channel so the team can see
+# how the biweekly `sprint-release-cut.yml` notification renders in every
+# outcome: full success, preview-publish failure, dev-publish failure, and
+# branch-cut failure. Each step carries a status emoji (✅ / ❌ / ⏭️).
 #
-# Mirrors the notify path that will hang off `sprint-release-cut.yml` (the real
-# biweekly-Sunday cut), but WITHOUT the npm publish / version-bump machinery:
-# it cuts a throwaway `release/test-<run_id>` branch from `main`, posts a
-# "release branch created" message to Slack, then (by default) deletes the
-# throwaway branch so the test leaves no residue.
+# The notification models the real cut (see sprint-release-cut.yml):
+#   1. cut release/v<M.N> from main at version M.N.0
+#   2. publish DEV (GitHub Packages) + PREVIEW (npmjs) — stable is manual
+#   3. open a bump PR advancing main to the next line
 #
-# Slack mechanism copies the CLI repo (UiPath/cli, coverage-weekly.yml):
-# `SLACK_BOT_TOKEN` + `chat.postMessage` by channel ID. Unlike an Incoming
-# Webhook, a bot token can target any channel by ID, so the same action posts
-# to the test channel now and the real release channel later — just swap the ID.
+# Slack mechanism copies UiPath/cli (coverage-weekly.yml): SLACK_BOT_TOKEN +
+# chat.postMessage by channel ID. The four demo messages are threaded under a
+# banner to keep the channel tidy.
 #
-# How to run the E2E test:
-#   1. Add repo secret SLACK_BOT_TOKEN (a Slack bot `xoxb-...` token) and invite
-#      that bot to the target channel.
-#   2. Push this file on a `test/slack-notify-**` branch (auto-runs), or use the
-#      Actions tab / `gh workflow run` once it is on the default branch.
+# Run it: push this file on a `test/slack-notify-**` branch (auto-runs), or
+# dispatch from the Actions tab once it is on the default branch.
 
 on:
   push:
     branches:
-      - 'test/slack-notify-**'   # auto-run on the PoC branch — no default-branch dependency
+      - 'test/slack-notify-**'
   workflow_dispatch:
     inputs:
       channel_id:
-        description: 'Slack channel ID to post to'
+        description: 'Slack channel ID to post the demo messages to'
         required: false
         default: 'C0BHX329GNR'   # #tmp-skills-slack-bot-tests
-      cut_branch:
-        description: 'Actually cut a throwaway release/test-<run_id> branch'
-        type: boolean
-        required: false
-        default: true
-      keep_branch:
-        description: 'Keep the throwaway branch instead of deleting it'
-        type: boolean
-        required: false
-        default: false
-      dry_run:
-        description: 'Print the message without posting to Slack or cutting a branch'
-        type: boolean
-        required: false
-        default: false
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-slack-notify-test
   cancel-in-progress: false
 
 env:
-  # #tmp-skills-slack-bot-tests. workflow_dispatch overrides via input; push
-  # runs use this default.
-  DEFAULT_CHANNEL_ID: 'C0BHX329GNR'
+  DEFAULT_CHANNEL_ID: 'C0BHX329GNR'   # #tmp-skills-slack-bot-tests
 
 jobs:
-  notify:
+  demo:
     runs-on: ubuntu-latest
     steps:
+      # Check out main so the demo reads the REAL current version (the line the
+      # next cut would target) rather than a hardcoded guess.
       - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
 
-      - name: Resolve settings
-        id: cfg
-        run: |
-          CHANNEL="${{ github.event.inputs.channel_id }}"
-          [ -z "$CHANNEL" ] && CHANNEL="$DEFAULT_CHANNEL_ID"
-          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
-
-          # Default booleans differ by trigger: a push has no inputs, so treat
-          # it as "cut a branch, delete it after, not a dry run".
-          CUT="${{ github.event.inputs.cut_branch }}"
-          [ -z "$CUT" ] && CUT="true"
-          echo "cut=$CUT" >> "$GITHUB_OUTPUT"
-
-          KEEP="${{ github.event.inputs.keep_branch }}"
-          [ -z "$KEEP" ] && KEEP="false"
-          echo "keep=$KEEP" >> "$GITHUB_OUTPUT"
-
-          DRY="${{ github.event.inputs.dry_run }}"
-          [ -z "$DRY" ] && DRY="false"
-          echo "dry=$DRY" >> "$GITHUB_OUTPUT"
-
-          echo "branch=release/test-${{ github.run_id }}" >> "$GITHUB_OUTPUT"
-
-      - name: Cut throwaway release branch
-        id: cut
-        if: steps.cfg.outputs.cut == 'true' && steps.cfg.outputs.dry != 'true'
-        run: |
-          BRANCH="${{ steps.cfg.outputs.branch }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            echo "$BRANCH already exists — reusing."
-          else
-            git push origin "HEAD:refs/heads/$BRANCH"
-            echo "Created $BRANCH."
-          fi
-          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-
-      - name: Post to Slack
-        id: slack
-        if: steps.cfg.outputs.dry != 'true'
+      - name: Post demo scenario messages
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "${SLACK_BOT_TOKEN:-}" ]; then
-            echo "::error::SLACK_BOT_TOKEN is not set. Add it as a repo secret and invite the bot to the channel."
-            exit 1
-          fi
-
-          CHANNEL="${{ steps.cfg.outputs.channel }}"
-          BRANCH="${{ steps.cfg.outputs.branch }}"
-          REPO_URL="${{ github.server_url }}/${{ github.repository }}"
-
-          # Match the Studio "Sprint Release Bot" style (#dev-studio-robot):
-          # ":checkbox_ticked: Created branch `<branch>` for <url|Repo>. Any
-          # further changes targeting the release should be cherry-picked there."
-          if [ "${{ steps.cfg.outputs.cut }}" = "true" ]; then
-            REPO_LINK="<$REPO_URL/tree/$BRANCH|skills>"
-          else
-            REPO_LINK="<$REPO_URL|skills>"
-          fi
-
-          TEXT="[TEST] :checkbox_ticked: Created branch \`$BRANCH\` for $REPO_LINK. Any further changes targeting the release should be cherry-picked there."
-
-          # Build the JSON body with jq so message text is escaped correctly.
-          BODY="$(jq -nc --arg channel "$CHANNEL" --arg text "$TEXT" \
-            '{channel: $channel, text: $text, unfurl_links: false}')"
-
-          RESP="$(curl -sS -X POST https://slack.com/api/chat.postMessage \
-            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
-            -H "Content-Type: application/json; charset=utf-8" \
-            --data "$BODY")"
-
-          echo "Slack API response: $RESP"
-          # Slack returns HTTP 200 even on logical failure — check the ok field.
-          if [ "$(echo "$RESP" | jq -r '.ok')" != "true" ]; then
-            echo "::error::Slack post failed: $(echo "$RESP" | jq -r '.error // "unknown error"')"
-            exit 1
-          fi
-          echo "Posted to $CHANNEL (ts=$(echo "$RESP" | jq -r '.ts'))."
-
-      - name: Delete throwaway release branch
-        if: always() && steps.cfg.outputs.cut == 'true' && steps.cfg.outputs.dry != 'true' && steps.cfg.outputs.keep != 'true'
-        run: |
-          BRANCH="${{ steps.cfg.outputs.branch }}"
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            git push origin --delete "$BRANCH" && echo "Deleted $BRANCH."
-          fi
-
-      - name: Summary
-        if: always()
-        run: |
-          {
-            echo "## Release Slack Notify (TEST)"
-            echo ""
-            echo "- channel: \`${{ steps.cfg.outputs.channel }}\`"
-            echo "- cut branch: \`${{ steps.cfg.outputs.cut }}\` (\`${{ steps.cfg.outputs.branch }}\`)"
-            echo "- kept branch: \`${{ steps.cfg.outputs.keep }}\`"
-            echo "- dry run: \`${{ steps.cfg.outputs.dry }}\`"
-          } >> "$GITHUB_STEP_SUMMARY"
+          CHANNEL_ID: ${{ github.event.inputs.channel_id }}
+          DEFAULT_CHANNEL_ID: ${{ env.DEFAULT_CHANNEL_ID }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: node .github/workflows/scripts/slack-release-demo.mjs
