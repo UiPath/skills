@@ -120,16 +120,17 @@ jobs:
           CHANNEL="${{ steps.cfg.outputs.channel }}"
           BRANCH="${{ steps.cfg.outputs.branch }}"
           REPO_URL="${{ github.server_url }}/${{ github.repository }}"
-          RUN_URL="$REPO_URL/actions/runs/${{ github.run_id }}"
 
+          # Match the Studio "Sprint Release Bot" style (#dev-studio-robot):
+          # ":checkbox_ticked: Created branch `<branch>` for <url|Repo>. Any
+          # further changes targeting the release should be cherry-picked there."
           if [ "${{ steps.cfg.outputs.cut }}" = "true" ]; then
-            BRANCH_LINK="<$REPO_URL/tree/$BRANCH|$BRANCH>"
-            LEAD=":white_check_mark: *Release branch created* — the release branch $BRANCH_LINK has been cut from \`main\`."
+            REPO_LINK="<$REPO_URL/tree/$BRANCH|skills>"
           else
-            LEAD=":white_check_mark: *Release branch created* — the release branch \`$BRANCH\` has been cut from \`main\`. (notify-only test; no branch was created)"
+            REPO_LINK="<$REPO_URL|skills>"
           fi
 
-          TEXT="[TEST] $LEAD"$'\n'"Cherry-pick any further release-targeting changes onto this branch. <$RUN_URL|CI run>"
+          TEXT="[TEST] :checkbox_ticked: Created branch \`$BRANCH\` for $REPO_LINK. Any further changes targeting the release should be cherry-picked there."
 
           # Build the JSON body with jq so message text is escaped correctly.
           BODY="$(jq -nc --arg channel "$CHANNEL" --arg text "$TEXT" \
