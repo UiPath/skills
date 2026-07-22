@@ -30,9 +30,8 @@ pre_run:
 
 initial_prompt: |
   A low-code UiPath agent project exists at `ReviewSol/SampleAgent` inside the
-  solution `ReviewSol`. Use the `uipath-review` skill to review it for issues,
-  including its guardrail configuration. Save the report to
-  `./_review_report.md` at the sandbox root.
+  solution `ReviewSol`. Review it for issues, including its guardrail
+  configuration. Save the report to `./_review_report.md` at the sandbox root.
 
   This is a read-only review — do not modify anything inside `ReviewSol/`.
 

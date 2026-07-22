@@ -18,6 +18,8 @@ Add guardrails to a Python coded agent (LangChain/LangGraph) in two styles: **mi
 2. **`https://uipath.github.io/uipath-python/core/guardrails/`**
    Extract: built-in validator names, entity types per validator, available actions, execution stage constraints.
 
+**If either URL is inaccessible** (network unavailable, HTTP error, or timeout): note that SDK docs are unavailable, skip to the CLI-based tenant check below, and use the catalog CLI output + installed package introspection as fallback. Do not retry more than twice. Proceed — the CLI steps below cover guardrail availability and model discovery.
+
 **Use the fetched content as the sole source of truth.** Never rely on memory for:
 - Which middleware classes exist
 - Which scopes or stages a guardrail supports
@@ -40,7 +42,7 @@ installed/published SDK documentation does not currently support HITL guardrail 
 For built-in AI validators (PII, harmful content, user prompt attacks, IP, LLM as Judge), confirm the validator is enabled on this tenant **before authoring** — run:
 
 ```bash
-uip agent guardrails list --output json
+timeout 30 uip agent guardrails list --output json
 ```
 
 If the requested validator has `Status != "Available"` → tell the user and stop. Actually adding one that is not entitled produces a guardrail that always fails.
@@ -50,7 +52,7 @@ If the requested validator has `Status != "Available"` → tell the user and sto
 > **LLM as Judge also requires LLM Gateway.** If the target is `llm_as_judge`, discover the models available on this tenant — run:
 >
 > ```bash
-> uip agent guardrails llm-as-judge-models --output json
+> timeout 30 uip agent guardrails llm-as-judge-models --output json
 > ```
 >
 > Use a `ModelId` from the returned list for the `model` parameter. Prefer a non-preview model; a small, fast model (Haiku / mini class) is a sound judge default. If the command returns no models or fails (no LLM Gateway access), tell the user and ask them to configure a model in their LLM Gateway or supply a model ID.
@@ -381,6 +383,7 @@ For non-LangChain frameworks, there is no published adapter yet, so the decorato
 
 ## Critical Rules
 
+0. **Fetch SDK docs FIRST (Step 0) — before reading any files or writing any code.** Call `WebFetch` on both URLs: `https://uipath.github.io/uipath-python/langchain/guardrails/` and `https://uipath.github.io/uipath-python/core/guardrails/`. Skipping Step 0 causes silent import errors and wrong API usage.
 1. **Always spread middleware with `*`** into the list — never pass the object itself.
 2. **Decorator order matters**: `@guardrail` must be above `@tool`; the **topmost** `@guardrail` (first in source) runs first when the function is called.
 3. **Tool-scoped middleware requires `tools=[<tool_reference>]`** — pass the Python object, not a string.
@@ -392,6 +395,7 @@ For non-LangChain frameworks, there is no published adapter yet, so the decorato
 9. **Verify wiring at runtime after writing (LangChain only)** — confirm the LangChain adapter is registered (`len(_adapters) >= 1`) and the decorated object is wrapped (`type(llm).__name__ == "_GuardedLLM"`, or `_GuardedTool` for tools). `ast.parse` is not enough; a silently-unwrapped guardrail passes syntax but never fires. For frameworks without an adapter, this wrap-check does not apply — invoke the validator directly to confirm it runs. **For `UiPathDeterministicGuardrailMiddleware` / `CustomValidator`, skip both runtime checks — grep-verify the class name and rule keyword are present in the file instead.** See [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails).
 10. **Entity/threshold values must match the docs exactly** — use enum member names, not raw strings; use only allowed threshold values.
 11. **Deterministic guardrails run locally** — no backend API call, no tenant availability check needed.
+11a. **`CustomValidator` `rule` must be a callable** (lambda or function `str → bool`). Never pass a string or keyword — it is silently ignored at runtime. Example: `CustomValidator(name="no-secrets", rule=lambda text: "secret" not in text.lower())`
 12. **Do not duplicate existing guardrails** — read the agent code first and skip if the same guardrail is already configured.
 13. **Do not delegate the import-source decision (or guardrail authoring) to a subagent.** A dispatched subagent does not carry this skill's context and will report the module where the symbols physically live (`uipath.platform.guardrails`) — the no-op path for LangChain agents (Rule 8). It looks authoritative and silently overrides the correct `uipath_langchain.guardrails` choice. Fetch the docs and write the imports inline, where this skill's import rule still applies.
 14. **`EscalateAction` must come from the fetched SDK docs** — if the docs do not expose the class or constructor parameters, stop and report that HITL guardrail escalation is not available in the current SDK docs/runtime. Never invent the class, import path, or arguments.

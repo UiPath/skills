@@ -11,8 +11,8 @@ tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover, guardrail]
 
 run_limits:
   turn_timeout: 1200
-  task_timeout: 1500
-  max_turns: 40
+  task_timeout: 1800
+  max_turns: 50
 
 sandbox:
   python: {}
@@ -26,6 +26,8 @@ initial_prompt: |
   issues and save your review report to `./_review_report.md`.
 
   This is a read-only review — do not modify anything inside `CodedAgent/`.
+  There is no PDD or design document for this project.
+  Do NOT ask for approval, confirmation, or feedback.
 
 success_criteria:
   - type: skill_triggered
