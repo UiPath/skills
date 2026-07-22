@@ -196,7 +196,7 @@ No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node l
 | `exitConditions` | ExitCondition[]? | See §3. Not initialized on primary Stage creation — added later by the conditions plugins. (A secondary stage initializes these at creation — see §2c.) |
 | `instanceIdPrefix` | string? | Prefix for instance IDs |
 
-> **A primary `Stage` is created without `entryConditions`/`exitConditions`.** Match this by not emitting empty arrays for those fields when writing a primary stage. They are added later by the condition plugins when entry/exit conditions are written. (A secondary stage — `data.stageType: "secondary"` — initializes both to `[]` at creation; see §2c.) See §3 for the condition shapes. Transitions are driven entirely by these conditions (Rule 19, §4).
+> **A primary `Stage` is created without `entryConditions`/`exitConditions`.** Match this by not emitting empty arrays for those fields when writing a primary stage. They are added later by the condition plugins when entry/exit conditions are written. (A secondary stage — `data.stageType: "secondary"` — initializes both to `[]` at creation; see §2c.) See §3 for the condition shapes. Transitions are driven entirely by these conditions (Rule 20, §4).
 
 ### c) Secondary (Exception) Stage — `case-management:Stage` with `data.stageType: "secondary"`
 
@@ -293,7 +293,7 @@ See `metadata.caseExitRules` in §1.
 
 ## 4. edges — retired, always `[]`
 
-**The skill never authors edges (Rule 19).** `schema.edges` stays `[]` — the empty array remains in the schema for frontend compatibility. Stage transitions derive entirely from `entryConditions` / `exitConditions` (§3); the case start derives from the first stage's `case-entered` entry condition, not a `TriggerEdge`. The FE auto-derives canvas connectors from the conditions.
+**The skill never authors edges (Rule 20).** `schema.edges` stays `[]` — the empty array remains in the schema for frontend compatibility. Stage transitions derive entirely from `entryConditions` / `exitConditions` (§3); the case start derives from the first stage's `case-entered` entry condition, not a `TriggerEdge`. The FE auto-derives canvas connectors from the conditions.
 
 A canvas-round-tripped file may contain FE-materialized edge objects. Treat them as read-only — never copy, adapt, or author one; model flow with conditions (§3) instead. Stray-edge removal: [case-editing-operations.md § Delete an edge](case-editing-operations.md#delete-an-edge--defensive-only). Shapes for READING such files: [Appendix — Edge shapes](#appendix--edge-shapes-read-only--never-author).
 
@@ -515,7 +515,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 
 ## Appendix — Edge shapes (read-only — never author)
 
-> **Read-only reference (Rule 19 — edges retired).** Documented ONLY so a canvas-round-tripped file (where the FE may have materialized edges) is still readable. Never copy these into a build or write an edge object into `caseplan.json` — see §4.
+> **Read-only reference (Rule 20 — edges retired).** Documented ONLY so a canvas-round-tripped file (where the FE may have materialized edges) is still readable. Never copy these into a build or write an edge object into `caseplan.json` — see §4.
 
 ### a) TriggerEdge — `"case-management:TriggerEdge"`
 

@@ -69,7 +69,7 @@ Before Step 6, seed TodoWrite with the section-level items below. Mark each `in_
 7. Regenerate bindings_v2.json (Step 9.4)
 8. Skeleton validate + hard stop (Step 9.5)
 
-(No edge step — Rule 19; see Step 8.)
+(No edge step — Rule 20; see Step 8.)
 
 **Per-T-entry sub-items.** Inside each section, also seed one TodoWrite item per T-entry the section will Edit (e.g., `T04 stage "Intake"`, `T05 stage "Review"`). Mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit returns success. These per-T-entry items are the audit trail — section-level Edits collapse the file diff, but the todo log preserves T-by-T progress for reviewers (per [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical)).
 
@@ -116,7 +116,7 @@ For each stage in `tasks.md §4.4`, execute per [`plugins/stages/impl-json.md`](
 
 ## Step 8 — (RETIRED — no edges)
 
-No edge-building step (Rule 19) — stage transitions are entry/exit conditions, written in Phase 3 Step 10. Multi-trigger cases: add extra triggers via the trigger plugin (Step 6.1); any trigger entering the case activates the first stage's `case-entered` condition.
+No edge-building step (Rule 20) — stage transitions are entry/exit conditions, written in Phase 3 Step 10. Multi-trigger cases: add extra triggers via the trigger plugin (Step 6.1); any trigger entering the case activates the first stage's `case-entered` condition.
 
 ## Step 9 — Add tasks (Phase 2 shape, gather-then-write)
 
