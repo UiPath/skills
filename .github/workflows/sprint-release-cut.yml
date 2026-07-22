@@ -16,10 +16,11 @@ name: Sprint Release Cut
 #      push can't trigger publish.yml (GITHUB_TOKEN recursion guard), so the
 #      dispatches are explicit. Stable (`latest`) is NOT published here —
 #      promote a line to stable MANUALLY (see docs/RELEASE.md)
-#   3. pushes a commit bumping main to the NEXT line (M.(N+1).0) DIRECTLY to
-#      main (no PR), only after step 2 succeeds, so development continues there
-#      while release/v<M.N> stabilizes. main is protected — its protection must
-#      allow the Actions identity to push (see docs/RELEASE.md § Repo setup)
+#   3. opens a PR bumping main to the NEXT line (M.(N+1).0), only after step 2
+#      succeeds; a maintainer merges it to advance main so development
+#      continues there while release/v<M.N> stabilizes. main is protected on a
+#      public repo, so the cut does NOT push to main or use a bypass credential
+#      (see docs/RELEASE.md § Automating the bump)
 #
 # No cross-repo secret is required, gated to the CLI's 14-day cadence (anchor
 # below). The cli-repo side cuts itself, in lockstep, from the same anchor.
@@ -125,7 +126,7 @@ jobs:
             echo "- current line (main): \`${{ steps.target.outputs.current_line }}\`"
             echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` — branch \`release/v${{ steps.target.outputs.cut_line }}\` @ \`$(git rev-parse --short HEAD)\` at version \`${{ steps.target.outputs.cut_line }}.0\`"
             echo "- would publish (and WAIT for success): DEV \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0-dev.<run>\` to GitHub Packages AND PREVIEW \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0-preview.<run>\` to npmjs (dispatch publish.yml channel=dev + channel=preview) — stable stays MANUAL"
-            echo "- would then push bump directly to \`main\`: version -> \`${{ steps.target.outputs.next_line }}.0\` (only if both publishes succeeded)"
+            echo "- would open a bump PR: \`main\` -> \`${{ steps.target.outputs.next_line }}.0\` (only if both publishes succeeded; a maintainer merges it)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Cut release branch
@@ -219,40 +220,52 @@ jobs:
           dispatch_and_wait preview
           echo "Both publishes ($LINE.0-dev / $LINE.0-preview) succeeded."
 
-      - name: Bump main to the next line (push straight to main)
+      - name: Open version-bump PR against main
         id: mainbump
         # `success()` so this runs ONLY when the publish step above succeeded —
         # main advances only after a clean dev + preview publish.
         if: success() && steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           CUT_LINE="${{ steps.target.outputs.cut_line }}"
           NEXT_LINE="${{ steps.target.outputs.next_line }}"
+          PR_BRANCH="auto/sprint-bump-$NEXT_LINE"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Push the bump straight to main (no PR). main is protected, so its
-          # protection MUST allow the Actions identity to push (see
-          # docs/RELEASE.md § Repo setup). Branch from the live main tip, bump,
-          # and push; retry once if main advanced under us.
+          # main is protected (ruleset: PR + 1 approval + smoke-test checks) and
+          # this is a public repo, so we do NOT push to main and do NOT add a
+          # bypass credential. Open a PR; a maintainer approves + merges it to
+          # advance main. NOTE: a PR opened by the built-in GITHUB_TOKEN does
+          # not itself trigger the required check workflows, so a maintainer may
+          # need to re-run/reopen them before merge. Fully hands-off would
+          # require an App token (see docs/RELEASE.md § Automating the bump).
+          EXISTING=$(gh pr list --state open --head "$PR_BRANCH" --json url --jq '.[0].url // empty')
+          if [ -n "$EXISTING" ]; then
+            echo "url=$EXISTING" >> "$GITHUB_OUTPUT"
+            echo "Bump PR already open: $EXISTING"
+            exit 0
+          fi
+
           git fetch origin main
-          git checkout -B sprint-bump origin/main
+          git checkout -B "$PR_BRANCH" origin/main
           npm version "$NEXT_LINE.0" --no-git-tag-version --allow-same-version
           node scripts/sync-version.mjs
           git add package.json version-manifest.json .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json
           if git diff --cached --quiet; then
-            echo "main already at $NEXT_LINE.0 — nothing to push."
+            echo "main already at $NEXT_LINE.0 — no bump PR needed."
             exit 0
           fi
           git commit -m "chore(release): bump main to $NEXT_LINE.0 after cutting $CUT_LINE"
-          if ! git push origin HEAD:main; then
-            echo "Push rejected (main advanced) — rebasing onto the new main and retrying once."
-            git fetch origin main
-            git rebase origin/main
-            git push origin HEAD:main
-          fi
-          echo "Pushed: main -> $NEXT_LINE.0"
+          git push origin "HEAD:$PR_BRANCH"
+          URL=$(gh pr create --head "$PR_BRANCH" --base main \
+            --title "chore(release): bump main to $NEXT_LINE.0 (sprint cut)" \
+            --body "Automated sprint cut: \`release/v$CUT_LINE\` was cut and its dev + preview builds published. Merge to advance \`main\` to \`$NEXT_LINE.0\` so development continues on the next line. Stable \`$CUT_LINE.0\` is promoted manually — see docs/RELEASE.md.")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Opened bump PR: $URL — approve + merge to advance main to $NEXT_LINE.0."
 
       - name: Summary
         if: steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
@@ -263,5 +276,5 @@ jobs:
             echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` (main was on this line)"
             echo "- \`release/v${{ steps.target.outputs.cut_line }}\` @ \`${{ steps.cutbranch.outputs.short_sha }}\`"
             echo "- published (waited for success): DEV (GitHub Packages) + PREVIEW (npmjs) of \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0\` (stable stays manual)"
-            echo "- main bumped: \`main\` pushed to \`${{ steps.target.outputs.next_line }}.0\`"
+            echo "- bump PR opened (-> \`${{ steps.target.outputs.next_line }}.0\`): ${{ steps.mainbump.outputs.url }} — approve + merge to advance main"
           } >> "$GITHUB_STEP_SUMMARY"
