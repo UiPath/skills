@@ -96,16 +96,16 @@ Stable (`latest`) is **not** published automatically — the sprint cut only pub
 `main` carries the line **currently in development** (`M.N.0`). The cut runs **Sunday 06:00 UTC**, gated to the **14-day cadence** anchored at `2026-06-14` — the same cadence as `UiPath/cli`, 6 hours earlier. It never reads the CLI version (skills lead, never follow), so no cross-repo secret is required. On a release Sunday it:
 
 1. cuts `release/v<M.N>` from `main` at the version **already in `main`** (`M.N.0`) — the release branch matches main; it is **not** bumped (no off-by-one);
-2. publishes a **dev build and a preview** — dispatches `publish.yml` twice on the release branch: `channel=dev` (→ `M.N.0-dev.<run>` on GitHub Packages) and `channel=preview` (→ `M.N.0-preview.<run>` on npmjs, `--provenance`). Both dispatches are explicit because the bot's own branch push can't trigger `publish.yml` (`GITHUB_TOKEN` recursion guard). **Stable is not published here** — promote it manually (above);
-3. opens a PR bumping `main` to the **next** line (`M.(N+1).0`) so development continues there while `release/v<M.N>` stabilizes.
+2. publishes a **dev build and a preview**, and **waits for both to succeed** — dispatches `publish.yml` twice on the release branch: `channel=dev` (→ `M.N.0-dev.<run>` on GitHub Packages) and `channel=preview` (→ `M.N.0-preview.<run>` on npmjs, `--provenance`), then polls each dispatched run to completion. Both dispatches are explicit because the bot's own branch push can't trigger `publish.yml` (`GITHUB_TOKEN` recursion guard). If either publish fails, the cut fails and step 3 does **not** run. **Stable is not published here** — promote it manually (above);
+3. **pushes** a commit bumping `main` to the **next** line (`M.(N+1).0`) **directly to `main`** (no PR), only after step 2 succeeds, so development continues there while `release/v<M.N>` stabilizes. Retries once (rebase onto the new tip) if `main` advanced under it.
 
-Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`) to cut exactly that line, or `dry_run` to print the plan without pushing, publishing, or opening a PR.
+Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`) to cut exactly that line, or `dry_run` to print the plan without pushing, publishing, or bumping `main`.
 
 > **Line alignment is manual.** The cut does **not** compare itself to the CLI: it publishes a preview, and the preview line legitimately runs 1–2 minors ahead of the CLI's published stable during the RC window (stable is promoted by hand). Alignment between the skills and CLI minor lines is therefore a manual decision made at **stable-promotion** time, not at cut time. If a line ever needs to be cut out of the normal sequence, `minor_override=<M.N>` cuts exactly that line.
 
-> **Operational dependency — merge the bump PR before the next cut.** The line to cut is read from `main`'s `package.json`. If the bump PR from step 3 is not merged before the next release Sunday, `main` is still on the old line, so the cut re-targets it: it finds `release/v<M.N>` already at `M.N.0` and **resumes idempotently** (re-dispatches the dev + preview builds, leaves the existing bump PR open) — no new line is cut. Safe, but a forgotten bump PR silently **stalls the cadence**. Merge sprint-cut bump PRs promptly. (If the branch exists at a *different* version, the cut stops loudly with `already exists at version <X> (expected <Y>)` for manual resolution.)
+> **Idempotent resume.** The line to cut is read from `main`'s `package.json`; the cut advances `main` itself (step 3), so each sprint the current `main` line is a fresh line. If a run fails after cutting the branch but before bumping `main`, the next run finds `release/v<M.N>` already at `M.N.0` and **resumes** (re-publishes, then bumps `main`) — no new line is cut. (If the branch exists at a *different* version, the cut stops loudly with `already exists at version <X> (expected <Y>)` for manual resolution.)
 
-> **Repo setup:** branch protection must allow the Actions identity to push `release/v*` branches.
+> **Repo setup:** branch protection must allow the Actions identity (`github-actions[bot]`) to push **both** `release/v*` branches **and `main`** — the cut pushes the release branch and then pushes the version bump straight to `main`.
 
 ## Required setup
 
