@@ -15,12 +15,22 @@ BPMN project, make the project executable and package-shaped before packing:
 
 - The root process must be `<bpmn:process ... isExecutable="true">`.
 - `project.uiproj` must use lowercase `"main"` pointing at the BPMN file.
-- `operate.json` must use `"main"` and `"contentType": "ProcessOrchestration"`.
+- `operate.json` must use `"main"` with the bare BPMN filename, not a
+  `/content/<file>.bpmn#<start-event-id>` entry-point path, plus
+  `"contentType": "ProcessOrchestration"`.
 - `package-descriptor.json` must use a top-level `"content"` array with
-  `content/<file>` entries. Do not use `contentFiles`.
+  `content/<file>` entries. Do not use `contentFiles` or a CLI scaffold
+  `"files"` mapping for synthetic local metadata.
 
 The minimal placeholder-safe JSON shape is shown below; keep it exact apart
 from project, file, and start event names.
+
+This distinction matters in evals and local synthetic authoring. Claude passed
+the API workflow task because it emitted the minimal local metadata contract;
+Codex failed when it copied richer CLI-style metadata where `operate.json.main`
+pointed at `/content/ApiWorkflowDispatch.bpmn#Event_start` and the descriptor
+used a `files` object. Those CLI-style fields can be reasonable generated
+metadata, but they are not the synthetic local package shape expected here.
 
 ## Regeneration Inputs
 

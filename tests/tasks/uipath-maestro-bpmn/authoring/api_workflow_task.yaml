@@ -1,7 +1,11 @@
 task_id: skill-bpmn-api-workflow-task
 description: >
   Author a Maestro BPMN API workflow invocation, covering the
-  Orchestrator.ExecuteApiWorkflowAsync service-task row with an eval.
+  Orchestrator.ExecuteApiWorkflowAsync service-task row with an eval. This task
+  catches the Claude-vs-Codex metadata drift: Claude passed by using the
+  minimal local synthetic package shape, while Codex failed after copying
+  CLI-style metadata where operate.json main used /content/<bpmn>#<start> and
+  package-descriptor.json used a files object.
 tags: [uipath-maestro-bpmn, e2e, "mode:build", lifecycle:generate, "node:service-task", "feature:api-workflow"]
 
 run_limits:
