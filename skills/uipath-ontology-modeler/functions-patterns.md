@@ -16,9 +16,12 @@ All functions go in a **single file**. Functions are governed SPARQL SELECT quer
 
 The file opens with a USAGE POLICY block. This is where **rules** live — not in `rdfs:comment` (which carries per-function facts). The USAGE POLICY is a cross-function routing guide: it tells an AI agent which function to call for which question type and what output discipline to follow.
 
+**Two prefixes required.** `ont:` = platform namespace (`https://ontology.uipath.com/ont#`) for predicates (`kind`, `language`, `statement`, `returnName`, `returnType`). A separate prefix for the ontology's own IRI (function names, param/return resource IRIs, and the SPARQL `PREFIX` inside `ont:statement`).
+
 ```turtle
 @prefix fno:   <https://w3id.org/function/ontology#> .
-@prefix ont:   <https://ontology.uipath.com/{name}#> .
+@prefix ont:   <https://ontology.uipath.com/ont#> .
+@prefix {ns}:  <https://ontology.uipath.com/{name}#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 
 #############################
@@ -266,42 +269,44 @@ Bad:
 
 ## Actions — SQL write operations
 
+Actions document what write operations are allowed on the ontology data. They give integrations and AI agents a governed, versioned vocabulary of mutations — any system that reads the ontology knows exactly what can be changed and how.
+
 Artifact: `{actionName}.ttl` | CLI type: `actions` | Media type: `text/turtle`
 
-**One file per action.** The file name is the action's identity — `updatePrescriptionStatus.ttl` contains `ont:updatePrescriptionStatus`. Actions are design-time artifacts: stored, validated (W3C FnO), and versioned, but have **no runtime invocation surface**. Freely add/removable without breaking a deployed ontology.
+**One file per action.** The file name is the action's identity — `{name}-updatePrescriptionStatus.ttl` contains `{ns}:updatePrescriptionStatus`. Actions are stored, validated (W3C FnO), and **executable** — semantically discoverable by AI agents as tool schemas (name, description, input parameters with types) and invokable via the Actions API. Freely add/removable without breaking a deployed ontology.
 
-Actions document what write operations are allowed on the ontology data. Even though the runtime does not invoke them directly, they give integrations and AI agents a governed, versioned vocabulary of mutations — so any system that reads the ontology knows exactly what can be changed and how.
-
-**Actions must not target federated entities** — the external system rejects writes at runtime. If the SDD describes writes on a federated class, flag it before generating any action file.
+**Single-entity, single-record scope.** Each action targets one entity (one `{{Entity}}` in the SQL) and one record (`WHERE pk = :id`). Actions work on both native and federated entities. Reject actions that join multiple entities or target multiple records in a single mutation.
 
 ### File header
 
+`ont:` = platform namespace for predicates. Separate prefix for the ontology's own terms.
+
 ```turtle
 @prefix fno:   <https://w3id.org/function/ontology#> .
-@prefix ont:   <https://ontology.uipath.com/{name}#> .
+@prefix ont:   <https://ontology.uipath.com/ont#> .
+@prefix {ns}:  <https://ontology.uipath.com/{name}#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 
 #############################
-#   Action (write) — an 'actions' definition artifact, one action per file
-#   (fileName is the action's identity). Actions are design-time only: they are
-#   stored, validated (W3C) and versioned as artifacts, but have no runtime
-#   invocation surface — the runtime executes SPARQL reads and functions only.
+#   Action (write) — an 'actions' definition artifact, one action per file.
+#   Stored, validated (W3C FnO), and executable: semantically discoverable
+#   by AI agents as tool schemas and invokable via the Actions API.
 #############################
 ```
 
 ### Action template
 
 ```turtle
-ont:{actionName}
+{ns}:{actionName}
         a               fno:Function ;
         rdfs:label      "{Human-readable name}" ;
-        rdfs:comment    "{What it changes, what parameters it takes.}" ;
+        rdfs:comment    "{What it changes, what parameters it takes, whether it modifies one row or many.}" ;
         ont:kind        "ACTION" ;
         ont:language    "SQL" ;
         ont:statements  ( "{SQL statement 1}" "{SQL statement 2}" ) ;
-        fno:expects     ( ont:param.{actionName}.{param1} ont:param.{actionName}.{param2} ) .
+        fno:expects     ( {ns}:param.{actionName}.{param1} {ns}:param.{actionName}.{param2} ) .
 
-ont:param.{actionName}.{param1}
+{ns}:param.{actionName}.{param1}
         a              fno:Parameter ;
         ont:paramName  "{param1}" ;
         ont:paramType  "xsd:{type}" ;
@@ -348,6 +353,7 @@ Multiple statements go in the same list: `ont:statements ( "stmt1" "stmt2" )`.
 ```turtle
 @prefix fno:   <https://w3id.org/function/ontology#> .
 @prefix ont:   <https://ontology.uipath.com/ont#> .
+@prefix cl:    <https://ontology.uipath.com/clinic#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 
 #############################
@@ -367,82 +373,83 @@ Multiple statements go in the same list: `ont:statements ( "stmt1" "stmt2" )`.
 #     Never add LIMIT unless the user explicitly says "top N" or "first N".
 #     Never add DISTINCT unless the target class is a time-series.
 #   PARAMETERS:
-#     Equality lookups: bind as unbound triple variable — ?p ; ont:Prop ?param
+#     Equality lookups: bind as unbound triple variable — ?p ; cl:Prop ?param
 #     Comparisons (< > !=): bind via FILTER — FILTER (?field < ?param)
 #############################
 
-ont:countPrescriptionsByStatus
+cl:countPrescriptionsByStatus
         a              fno:Function ;
         rdfs:label     "Count prescriptions in a given status" ;
         rdfs:comment   "Returns the number of prescriptions that currently have the given status (for example 'active', 'dispensed', or 'cancelled'). Use this to answer 'how many prescriptions are <status>'. Requires a status parameter and returns a single count row." ;
         ont:kind       "FUNCTION" ;
         ont:language   "SPARQL" ;
-        ont:statement  "PREFIX ont: <https://ontology.uipath.com/ont#> SELECT (COUNT(*) AS ?n) WHERE { ?p a ont:Prescription ; ont:Prescription.status ?status }" ;
-        fno:expects    ( ont:param.countPrescriptionsByStatus.status ) ;
-        fno:returns    ( ont:ret.countPrescriptionsByStatus.n ) .
+        ont:statement  "PREFIX cl: <https://ontology.uipath.com/clinic#> SELECT (COUNT(*) AS ?n) WHERE { ?p a cl:Prescription ; cl:Prescription.status ?status }" ;
+        fno:expects    ( cl:param.countPrescriptionsByStatus.status ) ;
+        fno:returns    ( cl:ret.countPrescriptionsByStatus.n ) .
 
-ont:param.countPrescriptionsByStatus.status
+cl:param.countPrescriptionsByStatus.status
         a              fno:Parameter ;
         ont:paramName  "status" ;
         ont:paramType  "xsd:string" ;
         ont:required   true .
 
-ont:ret.countPrescriptionsByStatus.n  a fno:Output ; ont:returnName "n" ; ont:returnType "xsd:integer" .
+cl:ret.countPrescriptionsByStatus.n  a fno:Output ; ont:returnName "n" ; ont:returnType "xsd:integer" .
 
-ont:countPrescriptionsPerDoctor
+cl:countPrescriptionsPerDoctor
         a              fno:Function ;
         rdfs:label     "Count prescriptions per doctor" ;
         rdfs:comment   "Returns one row per doctor with that doctor's name and the total number of prescriptions they have prescribed. Use this to answer 'how many prescriptions did each doctor write' or to find the most prescribing doctors. Takes no parameters." ;
         ont:kind       "FUNCTION" ;
         ont:language   "SPARQL" ;
-        ont:statement  "PREFIX ont: <https://ontology.uipath.com/ont#> SELECT ?doctor (COUNT(?p) AS ?n) WHERE { ?p a ont:Prescription ; ont:prescribedBy ?d . ?d a ont:Doctor ; ont:Doctor.name ?doctor } GROUP BY ?doctor" ;
-        fno:returns    ( ont:ret.countPrescriptionsPerDoctor.doctor
-                         ont:ret.countPrescriptionsPerDoctor.n ) .
+        ont:statement  "PREFIX cl: <https://ontology.uipath.com/clinic#> SELECT ?doctor (COUNT(?p) AS ?n) WHERE { ?p a cl:Prescription ; cl:prescribedBy ?d . ?d a cl:Doctor ; cl:Doctor.name ?doctor } GROUP BY ?doctor" ;
+        fno:returns    ( cl:ret.countPrescriptionsPerDoctor.doctor
+                         cl:ret.countPrescriptionsPerDoctor.n ) .
 
-ont:ret.countPrescriptionsPerDoctor.doctor  a fno:Output ; ont:returnName "doctor" ; ont:returnType "xsd:string" .
-ont:ret.countPrescriptionsPerDoctor.n       a fno:Output ; ont:returnName "n"      ; ont:returnType "xsd:integer" .
+cl:ret.countPrescriptionsPerDoctor.doctor  a fno:Output ; ont:returnName "doctor" ; ont:returnType "xsd:string" .
+cl:ret.countPrescriptionsPerDoctor.n       a fno:Output ; ont:returnName "n"      ; ont:returnType "xsd:integer" .
 
-ont:listPrescriptionsWithDoctorAndPatient
+cl:listPrescriptionsWithDoctorAndPatient
         a              fno:Function ;
         rdfs:label     "List prescriptions with their doctor and patient" ;
         rdfs:comment   "Returns one row per prescription joined to the doctor who prescribed it and the patient it was prescribed for. Each row has the medication name, the prescription status, the prescribing doctor's name, and the patient's name. Use this to answer questions like 'which doctor prescribed what medication to which patient'. Returns raw rows, not counts. Takes no parameters." ;
         ont:kind       "FUNCTION" ;
         ont:language   "SPARQL" ;
-        ont:statement  "PREFIX ont: <https://ontology.uipath.com/ont#> SELECT ?medication ?status ?doctorName ?patientName WHERE { ?p a ont:Prescription ; ont:Prescription.medication ?medication ; ont:Prescription.status ?status ; ont:prescribedBy ?d ; ont:prescriptionFor ?pat . ?d a ont:Doctor ; ont:Doctor.name ?doctorName . ?pat a ont:Patient ; ont:Patient.name ?patientName }" ;
-        fno:returns    ( ont:ret.listPrescriptions.medication
-                         ont:ret.listPrescriptions.status
-                         ont:ret.listPrescriptions.doctorName
-                         ont:ret.listPrescriptions.patientName ) .
+        ont:statement  "PREFIX cl: <https://ontology.uipath.com/clinic#> SELECT ?medication ?status ?doctorName ?patientName WHERE { ?p a cl:Prescription ; cl:Prescription.medication ?medication ; cl:Prescription.status ?status ; cl:prescribedBy ?d ; cl:prescriptionFor ?pat . ?d a cl:Doctor ; cl:Doctor.name ?doctorName . ?pat a cl:Patient ; cl:Patient.name ?patientName }" ;
+        fno:returns    ( cl:ret.listPrescriptions.medication
+                         cl:ret.listPrescriptions.status
+                         cl:ret.listPrescriptions.doctorName
+                         cl:ret.listPrescriptions.patientName ) .
 
-ont:ret.listPrescriptions.medication   a fno:Output ; ont:returnName "medication"   ; ont:returnType "xsd:string" .
-ont:ret.listPrescriptions.status       a fno:Output ; ont:returnName "status"       ; ont:returnType "xsd:string" .
-ont:ret.listPrescriptions.doctorName   a fno:Output ; ont:returnName "doctorName"   ; ont:returnType "xsd:string" .
-ont:ret.listPrescriptions.patientName  a fno:Output ; ont:returnName "patientName"  ; ont:returnType "xsd:string" .
+cl:ret.listPrescriptions.medication   a fno:Output ; ont:returnName "medication"   ; ont:returnType "xsd:string" .
+cl:ret.listPrescriptions.status       a fno:Output ; ont:returnName "status"       ; ont:returnType "xsd:string" .
+cl:ret.listPrescriptions.doctorName   a fno:Output ; ont:returnName "doctorName"   ; ont:returnType "xsd:string" .
+cl:ret.listPrescriptions.patientName  a fno:Output ; ont:returnName "patientName"  ; ont:returnType "xsd:string" .
 ```
 
-### updatePrescriptionStatus.ttl (Clinic)
+### clinic-updatePrescriptionStatus.ttl (Clinic)
 
 ```turtle
 @prefix fno:   <https://w3id.org/function/ontology#> .
 @prefix ont:   <https://ontology.uipath.com/ont#> .
+@prefix cl:    <https://ontology.uipath.com/clinic#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 
-ont:updatePrescriptionStatus
+cl:updatePrescriptionStatus
         a               fno:Function ;
         rdfs:label      "Update the status of a prescription" ;
-        rdfs:comment    "Changes the status of a single prescription, identified by its id, to a new status value (for example 'dispensed' or 'cancelled'). Requires the prescription id and the new status; this modifies data." ;
+        rdfs:comment    "Changes the status of a single prescription, identified by its id, to a new status value (for example 'dispensed' or 'cancelled'). Modifies one row. Requires the prescription id and the new status." ;
         ont:kind        "ACTION" ;
         ont:language    "SQL" ;
         ont:statements  ( "UPDATE {{Prescription}} SET {{Prescription.status}} = :newStatus WHERE {{Prescription.id}} = :id" ) ;
-        fno:expects     ( ont:param.updatePrescriptionStatus.id ont:param.updatePrescriptionStatus.newStatus ) .
+        fno:expects     ( cl:param.updatePrescriptionStatus.id cl:param.updatePrescriptionStatus.newStatus ) .
 
-ont:param.updatePrescriptionStatus.id
+cl:param.updatePrescriptionStatus.id
         a              fno:Parameter ;
         ont:paramName  "id" ;
         ont:paramType  "xsd:integer" ;
         ont:required   true .
 
-ont:param.updatePrescriptionStatus.newStatus
+cl:param.updatePrescriptionStatus.newStatus
         a              fno:Parameter ;
         ont:paramName  "newStatus" ;
         ont:paramType  "xsd:string" ;
@@ -462,6 +469,6 @@ ont:param.updatePrescriptionStatus.newStatus
 | `:param` or `$param` in SQL | Use `:paramName` (colon, no braces) |
 | `{Entity}` in SQL (single braces) | Use `{{Entity}}` (double braces) |
 | Real column names in SQL | Use `{{Entity.fieldName}}` — runtime resolves via mapping |
-| Multiple actions in one file | One action per file; file name = action identity |
+| Multiple actions in one file | One action per file; file name = `{name}-{actionName}.ttl` |
 | Functions mixed with actions in functions.ttl | Actions go in their own `{actionName}.ttl` files |
 | Omitting `ont:required false` + `ont:default` | Optional params must declare both; the runtime substitutes the default on absent `/invoke` calls |
