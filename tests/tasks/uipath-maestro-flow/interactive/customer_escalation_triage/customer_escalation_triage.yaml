@@ -20,9 +20,15 @@ agent:
   # questions from coding agents that do not expose AskUserQuestion.
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion"]
 
-sandbox:
-  driver: tempdir
-  python: {}
+# No sandbox block: inherit the experiment driver like every sibling e2e Flow
+# task (jira_*, testmanager). This task must run under the docker driver, whose
+# image bakes @uipath/maestro-tool@<train> — the tool `uip maestro flow
+# validate`/`debug` load at grade time. Hard-pinning `driver: tempdir` here
+# forced the toolless host path, where a `-dev` CLI's on-demand `uip tools
+# install` resolves the `stable` channel and fails with "No compatible version
+# of '@uipath/maestro-tool' for the 1.199.x line", zeroing both the validate
+# and business-outcome criteria regardless of the flow's correctness. python3
+# (used by seed/check scripts) is present in the docker image.
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/customer_escalation_triage/seed.py"
