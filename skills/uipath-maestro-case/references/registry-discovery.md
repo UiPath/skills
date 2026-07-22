@@ -213,7 +213,7 @@ For each task in the sdd.md, extract its concrete portable name from the type-sp
 | `action` | `Action App: <deploymentTitle>` in `HITL Implementation` | `Deployment Folder` |
 | `case-management` | `Child Case` | `Folder Path` |
 
-The portable name is REQUIRED and never `<UNRESOLVED>`. Do not fall back to the task display name. Then filter the cache file:
+The portable name is REQUIRED and never `<UNRESOLVED>`. Do not fall back to the task display name. Then filter the cache file using `cat ... | python3 -c "..."` or the `Read` tool. **Do NOT use `node -e 'const fs=require("fs")...'` for cache reads — this violates Rule 13 even when the target is a resource cache file, not a skill artifact.**
 
 ```bash
 cat ~/.uip/case-resources/<type>-index.json | python3 -c "

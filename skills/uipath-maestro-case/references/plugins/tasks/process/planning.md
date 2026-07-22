@@ -17,7 +17,7 @@ For RPA robot tasks specifically, prefer [rpa](../rpa/planning.md). For Coded wo
 | Field | Source | Notes |
 |-------|--------|-------|
 | `display-name` | Task `Task Name` | Shown in the UI |
-| `name` | Task `Resolved Resource` | Concrete intended resource name and registry query |
+| `name` | Registry `selected.name` (NOT the sdd.md name) | Orchestrator release name — may differ from the project/package name. Becomes the `name` binding default and the right-hand segment of `resourceKey = <folder-path>.<name>`. |
 | `folder-path` | Resolved registry `folders[0].fullyQualifiedName` (NOT the sdd.md "Folder") | This is the binding's `folderPath` default — Orchestrator starts the job here at runtime. The sdd.md "Folder" only seeds the registry lookup; it may be a parent/truncated path. See [§ Registry Resolution](#registry-resolution). |
 | `task-type-id` | Registry resolution (see below) | Enables auto-enrichment via `tasks describe`. |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
@@ -32,6 +32,7 @@ For RPA robot tasks specifically, prefer [rpa](../rpa/planning.md). For Coded wo
 3. **Cross-type fallback.** If the primary cache file has no match, search both files — the sdd.md label is not authoritative. A process registered as `process` may be mislabeled `AGENTIC_PROCESS` in sdd.md and vice versa.
 4. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > no match.
 5. **`folder-path` = the SELECTED entry's `folders[0].fullyQualifiedName`** (not the sdd.md "Folder" — see the field table above). Fall back to the sdd.md folder only when there is no registry match (Unresolved path).
+5a. **`name` = the SELECTED entry's `name`** (not the sdd.md name — the Orchestrator release name is what Orchestrator uses at runtime; it may differ from the package/project name). Record this as the `name` binding default; `resourceKey = <folder-path>.<name>`. Fall back to the sdd.md name only when there is no registry match.
 6. **Discover inputs/outputs:** after resolving the `entityKey`, fetch the input/output schema via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md). Record input names/types and validate outputs using the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). Unrecognized inputs in sdd.md → ask the user (**AskUserQuestion** with matching field names + "Something else").
 
 ## Unresolved Fallback

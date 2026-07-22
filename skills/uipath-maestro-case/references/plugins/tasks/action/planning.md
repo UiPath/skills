@@ -52,7 +52,7 @@ Mark `<UNRESOLVED: action-app "<resource-name>" in folder "<folder>" not found i
 
 > Resolved action tasks only — placeholders skip this entire section (see § Unresolved Fallback).
 
-- If sdd.md **names a specific user email**, record it in `tasks.md`. Sets `assignmentCriteria: "user"` at execution time.
+- If sdd.md **names a specific user email**, record the bare email exactly as authored in `tasks.md`; never replace it with a UUID resolved for an SLA recipient or write the SLA-only `<uuid> / <email>` pair. Sets `assignmentCriteria: "user"` at execution time.
 - If sdd.md **names a group or role**, do **not** record a recipient — group assignment is configured separately via Actions app rules. Record a note in `tasks.md` so the user remembers to configure group assignment externally.
 - If sdd.md is **silent on assignee**, **prompt the user** using **AskUserQuestion** with a direct open-ended prompt:
   > "The action task '<display-name>' has no assignee specified in sdd.md. Who should receive it? Enter an email, a group/role name, or 'Skip' to leave it unassigned for now."
