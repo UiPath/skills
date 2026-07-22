@@ -14,14 +14,15 @@ If the user just wants a generic form (no DU document), use the standard Action 
 
 ## Critical Rules
 
-1. **Peer versions are hard requirements.** Widget requires `react >= 19.2.0`, `react-dom >= 19.2.0`, `@uipath/uipath-typescript >= 1.4.1`. The Vite scaffold pins React 19.2+, but verify in `package.json` before installing.
-2. **Copy `du-assets/` into build output.** The underlying web component loads PDF.js worker, cmaps, wasm, and i18n from a sibling `du-assets/` directory resolved via `import.meta.url`. Without this, **PDF rendering and translations silently 404 in production** — no build error. See "Static assets" below.
-3. **Set `optimizeDeps.exclude: ['@uipath/du-validation-station-wc']` in `vite.config.ts`.** Vite's pre-bundler rewrites `import.meta.url` and breaks runtime asset resolution.
-4. **Body needs `light` or `dark` class** for theming. Match it to the `theme` prop. Action apps already manage this via `onInitTheme` from `CodedActionAppService.getTask()`.
-5. **`sdk` must already be initialized.** Pass the same `UiPath` instance produced by `useAuth()` (web app) or constructed in `src/uipath.ts` (action app). Do not construct a second SDK just for the widget — auth state will diverge.
-6. **Required SDK scopes:** `OR.Buckets` (the widget fetches the document and extraction artifacts from a storage bucket). Add `OR.Tasks` as well when the widget is rendered inside an Action Center task (action app, or web app that completes a task on save). Add to the `scope` field in `uipath.json` before first run; mismatch fails silently with 401/403. See [../oauth-scopes.md](../oauth-scopes.md).
-7. **Widget does NOT surface failures.** `onSubmitComplete` / `onSaveAsDraftComplete` fire with `{ success: false, error }` on failure but render no toast — the host owns all UI feedback (toast, retry, log). Wire these callbacks or failures are silent.
-8. **Report-as-exception makes no API call.** `onReportExceptionComplete(documentId, reason)` only hands the host the data — it does NOT persist. The host must call `OrchestratorDuModule.submitExceptionReport(taskId, documentId, reason, { folderId })` itself, or the user's "Report as exception" click is a no-op. Needs `OR.Tasks`.
+1. **Peer versions are hard requirements.** Widget requires `react >= 19.2.0`, `react-dom >= 19.2.0`, `@uipath/uipath-typescript >= 1.4.2`. The Vite scaffold pins React 19.2+, but verify in `package.json` before installing.
+2. **Copy all runtime files into build output — not just `du-assets/`.** The web component `fetch`es four things at runtime via `import.meta.url`: `du-assets/` (PDF.js worker, cmaps, wasm, i18n), `styles.css` (adopted into its **shadow root** — this styles the icons), `fonts.css`, and `media/` (font files). Missing files 404 silently — no build error. Symptoms: PDFs don't render; **icons render as empty boxes or raw text** (shadow root never got `styles.css`). See "Static assets" below. Do NOT add `styles.css`/`fonts.css` ES-module imports yourself — the wrapper already does that for the light DOM; the copy step is only about the runtime `fetch`.
+3. **Dev server must serve raw CSS for the WC's `fetch`.** Vite rewrites `.css` requests into JS modules, so the WC's `fetch("styles.css")` gets JavaScript, `CSSStyleSheet.replaceSync()` parses nothing, and shadow-root styles never load (**broken icons in dev**). Add the dev middleware from "Static assets" below. webpack-dev-server serves copied files verbatim — not affected.
+4. **Set `optimizeDeps.exclude: ['@uipath/du-validation-station-wc']` in `vite.config.ts`.** Vite's pre-bundler rewrites `import.meta.url` and breaks runtime asset resolution.
+5. **Body needs `light` or `dark` class** for theming. Match it to the `theme` prop. Action apps already manage this via `onInitTheme` from `CodedActionAppService.getTask()`.
+6. **`sdk` must already be initialized.** Pass the same `UiPath` instance produced by `useAuth()` (web app) or constructed in `src/uipath.ts` (action app). Do not construct a second SDK just for the widget — auth state will diverge.
+7. **Required SDK scopes:** `OR.Buckets` (the widget fetches the document and extraction artifacts from a storage bucket). Add `OR.Tasks` as well when the widget is rendered inside an Action Center task (action app, or web app that completes a task on save). Add to `VITE_UIPATH_SCOPE` before first run; mismatch fails silently with 401/403. See [../oauth-scopes.md](../oauth-scopes.md).
+8. **Widget does NOT surface failures.** `onSubmitComplete` / `onSaveAsDraftComplete` fire with `{ success: false, error }` on failure but render no toast — the host owns all UI feedback (toast, retry, log). Wire these callbacks or failures are silent.
+9. **Report-as-exception makes no API call.** `onReportExceptionComplete(documentId, reason)` only hands the host the data — it does NOT persist. The host must call `OrchestratorDuModule.submitExceptionReport(taskId, documentId, reason, { folderId })` itself, or the user's "Report as exception" click is a no-op. Needs `OR.Tasks`.
 
 ## Install
 
@@ -33,43 +34,72 @@ npm install @uipath/ui-widgets-validation-station --@uipath:registry=https://reg
 
 Registry flag forces the public npm registry (skill default — users may have `@uipath` scoped to GitHub Packages).
 
-## Static Assets — Vite Plugin
+## Static Assets — Vite Plugins
 
-Replace `vite.config.ts` with the full file below. The plugin runs after `build` and copies the WC's `du-assets/` next to the emitted JS chunks:
+The WC resolves four things **at runtime** relative to its served bundle (`import.meta.url`): `du-assets/` (PDF.js worker, cmaps, wasm, i18n), `styles.css` (fetched as raw CSS, adopted into the **shadow root** — styles the `<mat-icon>` glyphs), `fonts.css`, and `media/` (font files). The React wrapper already imports `styles.css`/`fonts.css` as ES modules for the **light DOM** (`@font-face`, CDK overlays) — you do NOT add those imports. You DO have to make the same files reachable by the WC's runtime `fetch`, which needs two plugins:
+
+- `copyDuValidationStationAssets` (**build**) — copy the four runtime files next to the emitted JS chunks.
+- `serveDuValidationStationRawCss` (**dev**) — return raw CSS for the WC's `fetch("styles.css")`, which Vite would otherwise serve as a JS module (→ broken icons in dev). Distinguish the raw fetch (`Sec-Fetch-Dest: empty`) from genuine ES-module imports (`Sec-Fetch-Dest: script`).
+
+Replace `vite.config.ts` with the full file below:
 
 ```typescript
 import react from '@vitejs/plugin-react';
-import { cp } from 'node:fs/promises';
+import { cp, readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 
 const require = createRequire(import.meta.url);
 
+const WC_ROOT = dirname(
+  require.resolve('@uipath/du-validation-station-wc/package.json'),
+);
+
+// Stylesheets the WC fetches (as raw CSS) at runtime to adopt into its shadow root.
+const WC_RUNTIME_CSS = ['styles.css', 'fonts.css'];
+
 function copyDuValidationStationAssets(): Plugin {
-  let destDir = '';
+  let assetsDir = '';
   return {
     name: 'copy-du-validation-station-assets',
     apply: 'build',
     configResolved(config) {
-      destDir = resolve(
-        config.root,
-        config.build.outDir,
-        config.build.assetsDir,
-        'du-assets',
-      );
+      assetsDir = resolve(config.root, config.build.outDir, config.build.assetsDir);
     },
     async closeBundle() {
-      const wcRoot = dirname(
-        require.resolve('@uipath/du-validation-station-wc/package.json'),
-      );
-      await cp(resolve(wcRoot, 'du-assets'), destDir, { recursive: true });
+      await Promise.all([
+        cp(resolve(WC_ROOT, 'du-assets'), resolve(assetsDir, 'du-assets'), { recursive: true }),
+        cp(resolve(WC_ROOT, 'media'), resolve(assetsDir, 'media'), { recursive: true }),
+        ...WC_RUNTIME_CSS.map((css) => cp(resolve(WC_ROOT, css), resolve(assetsDir, css))),
+      ]);
+    },
+  };
+}
+
+function serveDuValidationStationRawCss(): Plugin {
+  const pattern = new RegExp(
+    `/@uipath/du-validation-station-wc/(${WC_RUNTIME_CSS.join('|')})$`,
+  );
+  return {
+    name: 'serve-du-validation-station-raw-css',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.headers['sec-fetch-dest'] !== 'empty') return next();
+        const match = pattern.exec((req.url ?? '').split('?')[0]);
+        if (!match) return next();
+        readFile(resolve(WC_ROOT, match[1]), 'utf8').then((css) => {
+          res.setHeader('Content-Type', 'text/css');
+          res.end(css);
+        }, next);
+      });
     },
   };
 }
 
 export default defineConfig({
-  plugins: [react(), copyDuValidationStationAssets()],
+  plugins: [react(), copyDuValidationStationAssets(), serveDuValidationStationRawCss()],
   base: './',
   optimizeDeps: {
     exclude: ['@uipath/du-validation-station-wc'],
@@ -77,7 +107,7 @@ export default defineConfig({
 });
 ```
 
-Verify after `npm run build`: `ls dist/assets/du-assets/` must list `pdfjs/`, `cmaps/`, `wasm/`, `i18n/`. Empty or missing → plugin did not run.
+Verify after `npm run build`: `ls dist/assets/` must contain `du-assets/` (with `pdfjs/`, `cmaps/`, `wasm/`, `i18n/`), `media/`, `styles.css`, and `fonts.css`. Missing any → plugin did not run. In dev, confirm icons render as glyphs (not empty boxes) — broken icons mean the raw-CSS middleware isn't firing.
 
 ## Key Props
 
@@ -299,7 +329,7 @@ useEffect(() => {
 
 ## Anti-patterns
 
-- **Do not skip the `du-assets/` copy step.** PDF rendering and translations 404 silently in prod; "works on my machine" because dev serves from `node_modules`.
+- **Do not copy only `du-assets/` and forget the stylesheets.** The WC also fetches `styles.css`, `fonts.css`, and `media/` at runtime. Miss them and PDFs 404 and **icons render as empty boxes** — no build error. Copy all four (build) and serve raw CSS (dev).
 - **Do not construct a second `UiPath` SDK** for the widget. Reuse the app's authenticated instance.
 - **Do not call `setTaskData` and try to drive a custom form alongside the widget.** The widget owns the data contract end-to-end; mixing produces stale state and double saves.
 - **Do not pass a `tasks.getAll()` row straight into the widget.** `getAll()` rows omit `data` — the viewer renders empty. Hydrate with `tasks.getById(id, { taskType: TaskType.DocumentValidation }, folderId)` first.
