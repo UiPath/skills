@@ -31,7 +31,9 @@ initial_prompt: |
   Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
-  If you're asked for the URL or application lists, just answer SKIP for now.
+  When the synthesize step surfaces settings needing URL or application lists,
+  answer SKIP for those. SKIP is your answer to that detected prompt — you still
+  must run the synthesize/detection step, not bypass it.
   Important:
   - uip CLI not connected — auth errors expected. Run each command once and continue.
   - Always pass --output json. Do NOT prompt for confirmation.
@@ -48,7 +50,7 @@ success_criteria:
 
   - type: command_executed
     description: "Agent invoked synthesize-formdata.mjs for Robot UIAutomation partial apply"
-    command_pattern: 'synthesize-formdata\.mjs'
+    command_pattern: 'node\s+.*synthesize-formdata\.mjs'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -57,4 +59,18 @@ success_criteria:
     description: "Command output captured to output.txt"
     path: "output.txt"
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No apply before values: does NOT create a policy while org-specific values are unresolved (SKIP)"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create'
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Partial apply must NOT use state enable (full-standard path)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable'
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0

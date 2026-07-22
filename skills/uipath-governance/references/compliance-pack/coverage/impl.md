@@ -213,9 +213,14 @@ Clauses fully covered: 9 / 15  (was 7)  ·  Suppliers 2/5 → 3/5
 Remaining gaps: ask 'What does [clause] require?'
 ```
 
-## Never cache
+## Coverage freshness — one snapshot per tenant state
 
-Always run fresh before presenting a posture plan. Coverage reflects live tenant state.
+Coverage reflects **live tenant state at the moment it runs**. Run it fresh whenever that state may have changed:
+
+- a new posture request, or
+- after any mutation (`state enable` / `state disable`) — never present a posture plan or "after" count from a snapshot taken before the mutation.
+
+Within a **single, unchanged tenant state**, take ONE snapshot and reuse it for every file and view — do NOT re-run coverage to rebuild a file or "double-check" data you already have from that same snapshot. Re-reading unchanged state is the redundant-loop anti-pattern; re-reading *changed* state is mandatory freshness. (In full apply, the post-apply "after" figures come from a single `state get`, not a second coverage run.)
 
 ## Anti-patterns
 

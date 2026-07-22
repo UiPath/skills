@@ -46,7 +46,7 @@ Activate on **any** governance / policy / rule intent — even when the user did
 
 ## Critical Rules
 
-1. **Classify before authoring.** First action on any governance request is to classify intent into Branch A (AOps) or Branch B (Access). Use the priors in [`references/disambiguation-guide.md`](./references/disambiguation-guide.md). Never start `create` / `update` / `delete` until classification is settled — by user wording or by the [disambiguation question](#disambiguation-question).
+1. **Classify before authoring.** First action on any governance request is to classify intent into Branch A (AOps) or Branch B (Access). Use the priors in [`references/disambiguation-guide.md`](./references/disambiguation-guide.md). Never start `create` / `update` / `delete` until classification is settled — by user wording or by the [disambiguation question](#disambiguation-question). When you ask that question, it is the whole turn: render the numbered list, then end the turn and wait — issue no `uip` call and do no branch investigation until the user answers. **Exempt: read-only information queries.** A clause / recommendation lookup ("what does ISO 42001 clause X recommend?", "what does clause X say?", "recommend for clause X") is not authoring — route it straight to [`references/compliance-pack/query/impl.md`](./references/compliance-pack/query/impl.md), which answers from `catalog get`. Do NOT classify A/B, ask the disambiguation question, or run any `state` / posture / apply command for these.
 2. **Classification lives at the top.** Mechanic libraries assume the branch is chosen. Do not let those flows ask "did you mean the other branch?" — that question belongs here.
 3. **One branch per mutation.** A single user request produces a policy on one branch only. If the user wants both, run two sequential flows with two confirmation gates.
 4. **Each mechanic owns its own Critical Rules.** Once routed, follow the branch's rules — do not relax them from this top level.
@@ -58,7 +58,7 @@ Activate on **any** governance / policy / rule intent — even when the user did
 
 ## Workflow
 
-1. **Classify the intent silently — never announce routing to the user.** Internal flow labels (AOps / Access / Compliance standard) are implementation details; the user sees only the outcome. Read [`references/disambiguation-guide.md`](./references/disambiguation-guide.md) — it lists the strong signals for each flow, the phrase patterns that need disambiguation, and the canonical worked example. If a strong signal matches, route silently. If the phrasing is ambiguous (matches AOps or Access), ask the [disambiguation question](#disambiguation-question) and wait for a digit reply. If the user replies with anything other than `1` or `2`, treat it as a re-statement of intent and re-classify. **Do not run any CLI command before classification is settled** — the disambiguation question itself does not need `uip`, and an unrelated request (platform ops, agent authoring) must redirect to a sibling skill before any setup happens here. If the request contains a standard name (`ISO 42001`), `apply standard`, `compliance posture`, `drift check`, `am I compliant`, `is my tenant compliant`, `what packs are available`, `what packs are configured`, `which standards are enabled`, `organization-wide`, or `disable standard` → route silently to the appropriate compliance standard plugin. Read `partial-apply/planning.md` for scoped requests; `coverage/impl.md` for posture checks; `catalog/impl.md` for discovery; `query/impl.md` for information queries; `full-apply/impl.md` after confirming the posture plan; `disable/impl.md` for removal; `catalog/impl.md` + `state list` for listing currently configured packs.
+1. **Classify the intent silently — never announce routing to the user.** Internal flow labels (AOps / Access / Compliance standard) are implementation details; the user sees only the outcome. Read [`references/disambiguation-guide.md`](./references/disambiguation-guide.md) — it lists the strong signals for each flow, the phrase patterns that need disambiguation, and the canonical worked example. If a strong signal matches, route silently. If the phrasing is ambiguous (matches AOps or Access), ask the [disambiguation question](#disambiguation-question) and wait for a digit reply. If the user replies with anything other than `1` or `2`, treat it as a re-statement of intent and re-classify. **Do not run any CLI command before classification is settled** — the disambiguation question itself does not need `uip`, and an unrelated request (platform ops, agent authoring) must redirect to a sibling skill before any setup happens here. If the request contains a standard name (`ISO 42001`), `apply standard`, `compliance posture`, `drift check`, `am I compliant`, `is my tenant compliant`, `what packs are available`, `what packs are configured`, `which standards are enabled`, `organization-wide`, or `disable standard` → route silently to the appropriate compliance standard plugin. Read `partial-apply/planning.md` for scoped requests; `coverage/impl.md` for posture checks; `catalog/impl.md` for discovery; `query/impl.md` for information queries — clause / recommendation lookups ("what does clause X recommend / say", "recommend for clause X") answered via `catalog get`, never from memory and never via `state`; `full-apply/impl.md` after confirming the posture plan; `disable/impl.md` for removal; `catalog/impl.md` + `state list` for listing currently configured packs.
 2. **Verify `uip` and login** *(only after classification routes to a governance flow).*
    ```bash
    which uip && uip --version
@@ -73,16 +73,27 @@ Activate on **any** governance / policy / rule intent — even when the user did
 
 ## Disambiguation Question
 
-When the user's intent fits both branches, render exactly this numbered list (no `AskUserQuestion`, no table) and wait for a digit reply:
+When the user's intent fits both branches, your entire reply is the question below — **nothing before it, nothing after it**. Emit it verbatim as your visible response AND write the identical text to any output file the user asked for (e.g. `./output.txt`). No preamble ("this is ambiguous…"), no `AskUserQuestion`, no heading, no bold, no table, no trailing narration ("I wrote this to the file…"). Surrounding prose hides the numbered list from downstream readers and is the failure mode this format prevents.
 
-```markdown
-### Which layer should this rule govern?
+Emit exactly this plain text:
 
-1. **Govern the product** — control what Studio / StudioX / Assistant / Robot / AI Trust Layer / Agent Builder *can do* (e.g. block ChatGPT inside Studio, enforce Workflow Analyzer, disable a Marketplace widget). Backed by `uip gov aops-policy`.
-2. **Govern resource/tool use** — control which Actor Processes / identities can *invoke* which child Resource as a tool (e.g. block agents tagged `Sandbox` from being called, only let the finance group trigger this Flow). Backed by `uip gov access-policy`.
+```text
+Which layer should this rule govern?
 
-Reply with the number.
+1. Govern the product — control what Studio / StudioX / Assistant / Robot / AI Trust Layer / Agent Builder can do.
+2. Govern resource/tool use — control which identities can invoke which child resources as tools.
+
+Reply with 1 or 2.
 ```
+
+**This question is the entire turn — STOP after it.** The gate exists to pause, not to get a head start:
+
+- After emitting the question (and writing the identical text to the requested output file), end the turn (`end_turn`) and wait for the user's digit.
+- Make no `uip` call; do not read further references, investigate, stage, or "pre-flight" either branch. The only tool call allowed is writing this question to the output file.
+- Do not claim you have already created, configured, or deployed anything — you have not.
+- If the reply is not `1` or `2`, re-emit the same question verbatim and stop again. Never guess a branch.
+
+Mapping (for your own routing after the reply — do NOT include in the emitted question): option 1 → `uip gov aops-policy`, option 2 → `uip gov access-policy`.
 
 The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Studio."* See [`references/disambiguation-guide.md`](./references/disambiguation-guide.md#worked-example--the-canonical-ambiguous-prompt) for the worked-out reasoning of why both interpretations produce a working but different artifact.
 
