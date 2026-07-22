@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "_doc": "Hand-authored fixtures for a faithful-replay of a classic BrowserScope (Attach Browser) COM/environmental fault (job 7c4e0b9a, process PortalReconciliation, folder Finance). The faulted unattended run (MOCK-HOST) plus a prior successful attended run (DEV-BOX) supply the environment delta. Matching is token-aware with plain-substring fallback (first match wins).",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Open-ended natural-language query; proxy to the real uip CLI per troubleshoot test rules."
+    },
+    {
+      "match": "or folders list",
+      "file": "folders.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "joblist.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "joblogs.json"
+    },
+    {
+      "match": "or jobs history",
+      "file": "jobhist.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "jobget.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}
