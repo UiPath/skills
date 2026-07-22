@@ -13,18 +13,15 @@ sandbox:
   - {type: template_dir, path: fixtures}
   mock_path_dirs: [mocks]
 initial_prompt: |
-  For an IS-activity tool, read references/is-activity-workflow.md BEFORE any uip call and use the exact `uip agenthub mcp-tools create-is-activity` flags it specifies (`--mcp`, `--target-identifier`, `--description`, `--metadata`, `--input-schema`, `--output-schema`); for a resource tool, read the resource guidance and run `mcp-tools candidates`/`template` as it directs. Use the exact CLI commands and flags the skill documents — do not invent flag names.
-
-  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
-  sandbox; manifest-driven canned responses).
-
   TASK: Add a Jira Create Issue tool to my `test-mcp-skill` MCP server in
   the Shared folder. The target is the Jira Integration Service activity
-  (connector uipath-atlassian-jira). I am running against my production
-  tenant on cloud.uipath.com. There is no user available for follow-up
-  questions in this session — if you hit a blocker you cannot resolve
-  within the skill's rules, stop and write up the outcome instead of
-  working around it.
+  (connector uipath-atlassian-jira).
+
+  DO NOT assume I am running against my production tenant on cloud.uipath.com.
+
+  There is no user available for follow-up questions in this session — if
+  you hit a blocker you cannot resolve within the skill's rules, stop and
+  write up the outcome instead of working around it.
 
   Refs available:
     - connector key: uipath-atlassian-jira
