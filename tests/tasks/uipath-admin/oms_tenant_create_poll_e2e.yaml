@@ -55,9 +55,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent polled async operation (advisory — codex may skip if create fails)"
+    description: "Agent polled async operation via organizations operation get"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+organizations\s+operation\s+get\b'
     min_count: 1
-    weight: 2.0
-    pass_threshold: 0
+    weight: 3.0
+    pass_threshold: 1.0
