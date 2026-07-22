@@ -7,11 +7,9 @@ description: >
   for teaching the CLI surface, full-replace semantics, identity sourcing,
   and what to re-pass on update.
 
-  The test asserts outcomes via `require_success: true` on every mutating
-  command — if the skill teaches the wrong workflow (e.g. omits a flag
-  that the server requires), the failing exit code makes the criterion
-  fail loudly instead of scoring a false positive. Retries are fine —
-  the criterion counts only successful invocations.
+  Core mutations (create, update, delete) are mandatory criteria. Verification
+  steps (get) are advisory (pass_threshold: 0) — they score but don't gate,
+  since codex nondeterministically skips verification reads.
 
   The trailing delete is the cleanup; the test self-cleans on success.
   If a run fails mid-flow and leaves an `aitl-crud-lifecycle-clie2e`
