@@ -56,10 +56,15 @@ MySolution/
 │   ├── project.uiproj OR project.json
 │   ├── bindings_v2.json
 │   └── ...
+├── <AppV2ProjectName>/                   <- AppV2 coded app (Coded or CodedAction).
+│   ├── project.uiproj                    <- ProjectType: "AppV2".
+│   ├── webAppManifest.json               <- Coded / CodedAction discriminator + bundlePath.
+│   └── source/dist/                      <- Build output (bundlePath: "source/dist").
 ├── resources/                            <- Auto-generated on add/import. NEVER hand-edit.
 │   └── solution_folder/
 │       ├── package/<name>.json           <- Auto-created on add. NOT cleaned by `project remove`.
-│       └── process/{process,flow}/<name>.json   <- Auto-created on add. Auto-cleaned on remove.
+│       ├── process/{process,flow}/<name>.json   <- Auto-created on add. Auto-cleaned on remove.
+│       └── app/{Coded,CodedAction}/<name>.json  <- AppV2 apps only. `kind: "app"`, `apiVersion: apps.uipath.com/v1`.
 └── userProfile/<user-uuid>/              <- Appears after first `project remove`.
 ```
 
@@ -67,7 +72,7 @@ MySolution/
 >
 > The `.uipx` also carries a `StudioMinVersion` field (e.g. `2025.10.0`). If users hit a version-mismatch when opening the solution, that's the constraint to check.
 
-> **Coded apps are not registered in `.uipx`.** UiPath Coded Web Apps and Coded Action Apps have no `project.uiproj` / `project.json` — `uip solution projects add` does not apply, and they are not packed by `uip solution pack`. They deploy independently via `uip codedapp publish` / `deploy`. A coded app directory can sit alongside a solution but is not part of its manifest. See [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
+> **AppV2 coded apps are first-class solution members when authored inside a `.uipx`.** They emit under `resources/solution_folder/app/{Coded,CodedAction}/`, pack / publish / deploy via `uip solution`, and are registered by `uip codedapp init` (auto), `uip solution projects add`, or `uip solution projects import`. For the full mechanism (manifest fields, subType detection, standalone escape hatch) see [SKILL.md Rule 7](../SKILL.md#critical-rules) and [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
 
 > **`.uis` bundles and the `pack` `.zip` are plain zip archives — unzip to inspect bundled contents.**
 

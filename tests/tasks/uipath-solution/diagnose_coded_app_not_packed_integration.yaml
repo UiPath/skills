@@ -1,16 +1,33 @@
 task_id: skill-solution-diagnose-coded-app-not-packed
 description: >
   Integration test (diagnose mode): agent root-causes why a coded-app
-  project in a solution folder isn't registered/packed, and prescribes the
-  independent coded-app deploy path. Covers Critical Rule "coded apps are
-  NOT in .uipx — deploy independently". Local reasoning — no tenant.
+  project in a solution folder isn't in the packed .uipx zip, and
+  prescribes registering it as an AppV2 solution member (via
+  `uip codedapp init` inside the solution, or `uip solution projects add`
+  on the existing folder). Covers Critical Rule 7: "AppV2 coded apps
+  register in `.uipx` when authored inside a solution". Local reasoning
+  — no tenant.
 
-  Ground truth verified against SKILL.md Critical Rules + Anti-Patterns:
-  coded-app projects (Coded Web Apps / Coded Action Apps) have no
-  project.uiproj / project.json, are NOT registered via
-  `uip solution project add`, and are NOT packed by `uip solution pack`;
-  each is published/deployed independently via `uip codedapp publish` /
-  `uip codedapp deploy`.
+  Ground truth verified against SKILL.md Critical Rule 7:
+  - AppV2 coded apps ARE first-class solution members when they carry
+    `ProjectType: "AppV2"` in `project.uiproj` and a `webAppManifest.json`
+    at the project root.
+  - `uip codedapp init` under a parent `.uipx` writes those manifests,
+    nests source under `source/dist/`, and auto-registers as
+    `Type: "AppV2"` — emitting `resources/solution_folder/app/{Coded,CodedAction}/`.
+  - `uip solution projects add` / `projects import` register existing
+    AppV2 folders too, reading `webAppManifest.config.isActionApp` to
+    pick the Coded / CodedAction subType.
+  - `uip solution pack` bundles them; `deploy run` provisions them.
+  - Only standalone coded apps — scaffolded outside any parent `.uipx`,
+    with no manifest entry — deploy independently via `uip codedapp
+    publish` / `deploy`.
+
+  A coded-app folder sitting inside a solution directory that is NOT
+  showing up in the packed zip is almost always either (a) never
+  registered (missing from `.uipx` Projects[]), or (b) scaffolded
+  standalone (flat `dist/`, no `webAppManifest.json`) — both fixed by
+  registering it in the solution.
 tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
 
 run_limits:
@@ -19,8 +36,8 @@ run_limits:
 initial_prompt: |
   My UiPath solution has a coded app project sitting in its folder, but it
   is not showing up in the solution manifest, and `uip solution pack`
-  doesn't seem to bundle it. `uip solution project add` on it didn't behave
-  like my other projects either.
+  doesn't seem to bundle it. `uip solution projects add` on it didn't
+  behave like my other projects either.
 
   Why isn't the coded app part of the solution, and how am I supposed to
   ship it?
@@ -33,24 +50,36 @@ success_criteria:
     weight: 1.5
 
   - type: llm_judge
-    description: "Agent explains coded apps are out-of-band and prescribes uip codedapp publish/deploy"
+    description: "Agent explains AppV2 coded apps ARE solution members and prescribes registering the folder"
     include_agent_output: true
     prompt: |
-      Evaluate ONLY the agent's final reply. Ground truth: coded-app
-      projects (Coded Web Apps / Coded Action Apps) have no project.uiproj /
-      project.json, so they are NOT registered into the `.uipx` via
-      `uip solution project add` and are NOT packed by `uip solution pack`.
-      They must be shipped independently with `uip codedapp publish` /
-      `uip codedapp deploy` (the rest of the solution still goes through the
-      normal pack/publish/deploy flow).
+      Evaluate ONLY the agent's final reply. Ground truth: AppV2 coded
+      apps ARE first-class solution members when they carry
+      `ProjectType: "AppV2"` in `project.uiproj` and a
+      `webAppManifest.json` at the project root. `uip codedapp init`
+      under a parent `.uipx` writes those manifests and auto-registers
+      as `Type: "AppV2"` in `.uipx`; `uip solution projects add` /
+      `projects import` register existing AppV2 folders too.
+      `uip solution pack` then bundles them and `deploy run` provisions
+      them — no separate `uip codedapp publish` / `deploy` step.
 
-      Score 1.0 if the reply explains that coded apps are not part of the
-      .uipx / not packed by solution pack (by design) AND prescribes
-      deploying the coded app independently via `uip codedapp publish` /
-      `uip codedapp deploy`. English or Romanian both fine.
+      The user's coded app is missing from the packed zip because it is
+      not registered in `.uipx` — either it was never added (`.uipx`
+      `Projects[]` has no entry for it), or it was scaffolded standalone
+      (flat `dist/`, no `webAppManifest.json`, so it doesn't look like
+      an AppV2 project the solution recognizes).
 
-      Score 0.0 if it blames a bug, tells the user to force-add it into the
-      .uipx, hand-edit the manifest, or otherwise treats the coded app as a
-      normal solution project.
+      Score 1.0 if the reply prescribes REGISTERING the coded app in the
+      solution — either by running `uip codedapp init <path>` from
+      inside the solution (which auto-registers), or by running
+      `uip solution projects add <existing-folder>` on an already-
+      scaffolded AppV2 folder that has a `project.uiproj` with
+      `ProjectType: "AppV2"` plus a `webAppManifest.json`. English or
+      Romanian both fine.
+
+      Score 0.0 if the reply tells the user coded apps are out-of-band
+      and must deploy independently via `uip codedapp publish` /
+      `deploy` (that is the OLD contract and is only true for standalone
+      apps with no parent `.uipx`).
     weight: 3.0
     pass_threshold: 0.7
