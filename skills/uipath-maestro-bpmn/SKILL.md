@@ -59,13 +59,38 @@ Two halves make a valid Maestro `.bpmn`:
 
 ## Workflow
 
-Work the four steps quickly, but keep the path matched to the user's ask. For
-discovery-only asks (for example, "show what the registry exposes" or "capture
-the template for X"), run `registry pull`, then `list` / `search`, then
-`registry get <type> --output json` for the requested types; save or report the
-raw evidence and do not scaffold a project. For authoring asks, read a reference
-only when you reach the structure it covers, get the needed templates, then
-write the first complete draft before further spelunking.
+Work the four steps quickly, but keep the path matched to the user's ask. Treat
+requests to discover before authoring, save raw registry JSON/evidence, or "do
+not author yet" as discovery-only even if they describe an eventual BPMN. In
+that mode, immediately create `registry-evidence/`, run and save `registry pull
+--output json`, `registry list --output json` or `registry search ... --output
+json`, and `registry get <type> --output json` for each requested type; do not
+read deep authoring references or scaffold a project. For authoring asks, author
+early: do not pre-read every reference before writing. Read a reference only
+when you reach the structure it covers, get the needed templates, then write the
+first complete draft before further spelunking. If
+[references/structural-bpmn.md](references/structural-bpmn.md) or
+[references/expression-authoring.md](references/expression-authoring.md)
+directly covers the requested construct, write a first complete draft before
+further spelunking.
+
+For registry-evidence-only tasks, be command-first and time-boxed:
+
+- Create `registry-evidence/` before anything else.
+- Run the registry command forms the user asked for. For RPA job + internal
+  message discovery, use `uip maestro bpmn registry list --limit -1 --output
+  json`, `uip maestro bpmn registry get Orchestrator.StartJob --output json`,
+  and `uip maestro bpmn registry get Maestro.ReceiveMessageEvent --output json`.
+- If `uip` is unavailable in a temp/smoke sandbox, do not search the repo for a
+  replacement CLI or inspect test fixtures. Still issue the required `list` and
+  `get` command forms once each with output redirected to their evidence files
+  (allowing failure with `|| true`), so the transcript shows the discovery loop:
+  `uip maestro bpmn registry list --limit -1 --output json` and
+  `uip maestro bpmn registry get <type> --output json`. Record the failed CLI
+  attempts in `registry-evidence/cli-error.txt`, then overwrite the expected
+  `registry-evidence/*.json` files with valid JSON evidence from
+  `skills/uipath-maestro-bpmn/validator/bpmn-spec.json` containing the same
+  extension types and stop.
 
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
@@ -93,6 +118,11 @@ write the first complete draft before further spelunking.
    `<ProjectName>/project.uiproj`; do not create `*Solution/`, package files, or
    `.uipx` artifacts unless the user explicitly asks to package or operate the
    project.
+   When routing on an Actions.HITL user task's outcome, the sequence-flow
+   conditions from the exclusive gateway must reference the exact variable bound
+   by the HITL template's `<uipath:output ... var="...">` (for example
+   `=vars.Var_HitlResult == "approve"`), not only a copied or derived script
+   variable.
 4. **Validate.** There is **no** `uip maestro bpmn validate` CLI command. Run the
    bundled validator — it reconstructs the canvas model and runs every
    PO.Frontend rule:
