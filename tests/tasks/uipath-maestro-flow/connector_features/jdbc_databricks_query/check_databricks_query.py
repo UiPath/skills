@@ -8,11 +8,11 @@ Checks, in order (exits non-zero with ``FAIL: ...`` on first failure):
      NOT a native Databricks connector, NOT a generic HTTP fallback (the special
      SDK case: Databricks SQL has no native path, it must route through JDBC).
 
-Query under test (complex — GROUP BY / HAVING / AVG / ORDER BY, expressible only
-via raw SQL, not the generic record activities):
-
-    SELECT department, COUNT(*) AS headcount, AVG(salary) AS avg_salary
-    FROM employees GROUP BY department HAVING COUNT(*) >= 2 ORDER BY avg_salary DESC
+The prompt asks for an aggregate over the `employees` table (group by department,
+keep departments with two or more employees, order by average salary) — a shape
+expressible only via raw SQL, not the generic record activities. The exact SQL the
+agent authors is not asserted here; this checker validates only the connector
+wiring described above.
 """
 
 from __future__ import annotations
