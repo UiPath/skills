@@ -32,7 +32,6 @@ from _shared.bpmn_check import (  # noqa: E402
     text_content,
 )
 
-PROJECT = Path.cwd() / "WikiPageviews"
 BPMN_NAME = "WikiPageviews.bpmn"
 REQUIRED_FILES = [
     "project.uiproj",
@@ -43,8 +42,8 @@ REQUIRED_FILES = [
 ]
 
 
-def load_json(name: str):
-    p = PROJECT / name
+def load_json(project: Path, name: str):
+    p = project / name
     if not p.is_file():
         fail(f"{name} is missing")
     try:
@@ -54,11 +53,15 @@ def load_json(name: str):
 
 
 def main() -> None:
-    for name in REQUIRED_FILES:
-        if not (PROJECT / name).is_file():
-            fail(f"{name} is missing")
-
     path, root = parse_bpmn("WikiPageviews")
+    bpmn_path = Path(path)
+    if bpmn_path.name != BPMN_NAME:
+        fail(f"expected BPMN file named {BPMN_NAME}, found {bpmn_path}")
+
+    project = bpmn_path.parent
+    for name in REQUIRED_FILES:
+        if not (project / name).is_file():
+            fail(f"{name} is missing beside {BPMN_NAME}")
 
     process = one_or_more(root, "process")[0]
     if process.attrib.get("isExecutable") != "true":
@@ -106,7 +109,7 @@ def main() -> None:
     require_no_private_connector_values(root)
 
     for name in ("entry-points.json", "operate.json", "package-descriptor.json"):
-        if BPMN_NAME not in json.dumps(load_json(name)):
+        if BPMN_NAME not in json.dumps(load_json(project, name)):
             fail(f"{name} must reference {BPMN_NAME}")
 
     print(f"OK: {path} fetches, routes failure, filters, aggregates, and ships consistent package metadata")
