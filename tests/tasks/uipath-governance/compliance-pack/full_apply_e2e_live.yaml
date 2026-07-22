@@ -4,9 +4,9 @@ description: >
   Agent must discover current posture, apply missing settings if gaps exist, and
   deliver a structured compliance summary.
 
-  Core CLI commands: catalog get → state coverage → state enable (if gaps) → state get (verify).
-  Core mutations (state enable) are mandatory criteria. Discovery steps and file
-  artifacts are advisory since codex may skip or format them differently.
+  Core mutations (state enable) are mandatory. pre_run cleanup guarantees the
+  pack starts disabled, so state enable is always required. A post-hoc
+  run_command verifies the mutation actually landed on the tenant.
 
   Requires UIPATH_CLI_ENABLE_ENV_AUTH + UIPATH_CLI_AUTH_TOKEN + org/tenant env vars.
 tags: [uipath-governance, e2e, mode:operate, lifecycle:setup, feature:compliance, live]
@@ -29,7 +29,6 @@ run_limits:
 initial_prompt: |
   Get my tenant aligned to ISO 42001. Analyze current posture gaps,
   apply any missing settings, and confirm the changes took effect.
-  Skip the apply if already fully covered.
 
   Save all CLI output to output.txt. Save a summary to report.json with
   the pack name and whether apply was performed.
@@ -55,14 +54,21 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent called state enable to apply settings (or state get to verify already applied)"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+(?:enable|get)\b'
+    description: "Agent called state enable to apply missing settings"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent called catalog get for ISO 42001 (advisory — codex may skip)"
+    description: "Agent called state get to verify post-apply state (advisory)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+get\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent called catalog get for ISO 42001 (advisory)"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\b'
     min_count: 1
     weight: 1.0
@@ -81,15 +87,23 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "CLI output contains evidence of live API data (advisory)"
-    command: 'grep -qE "Success|Result|Data|iso-42001" output.txt'
+    description: "CLI output contains evidence of live API response"
+    command: 'grep -qE "Success|Result|totalCount|iso-42001" output.txt'
     timeout: 10
     expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 0
+    weight: 2.0
+    pass_threshold: 1.0
 
   - type: file_exists
-    description: "report.json created (advisory — codex may not produce)"
+    description: "report.json created"
     path: "report.json"
-    weight: 1.0
-    pass_threshold: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json references iso-42001"
+    path: "report.json"
+    includes:
+      - "iso-42001"
+    weight: 1.5
+    pass_threshold: 1.0
