@@ -29,9 +29,7 @@ If the user prompt names no `.md` reference, default candidate is `./sdd.md`. As
 
 ## Entry
 
-Phase 0 is the run's start. Present the greenfield flow overview once (prefixed with the interview line) before the entry prompt, so the dev knows the phases and decision points ahead. See [SKILL.md § Kickoff — set dev expectations](../SKILL.md#kickoff--set-dev-expectations-first).
-
-When Phase 0 runs from scratch, AskUserQuestion (3 options):
+When Phase 0 runs from scratch, first print the new-case roadmap from `SKILL.md § User-facing roadmap`, then AskUserQuestion (3 options):
 
 | Option | Effect |
 |---|---|
@@ -39,9 +37,35 @@ When Phase 0 runs from scratch, AskUserQuestion (3 options):
 | `I'll provide an sdd.md path` | Re-prompt for path. Re-check trigger. |
 | `Abort` | Exit skill. No file changes. |
 
+### Early tenant grounding and parallel discovery
+
+After the user selects `Interview to generate sdd.md`, ask the Listen opener immediately. Do not make the user wait for tenant discovery before describing the case. Once the first description arrives, use dependency-safe waves:
+
+1. **Wave 1 — overlap independent intake.** In one parallel tool batch, read every supplied document and run `uip login status --output json`. Extract named systems, resources, environments, likely tasks, and roles from the user's description and documents while login status resolves.
+2. **Wave 2 — refresh before cache reads.** Only after login succeeds, run `uip maestro case registry pull`. Login → pull is sequential. If login or pull fails, continue the interview with `resource grounding unavailable` in working memory. Do not block Phase 0, do not treat missing cache files as empty results, and do not surface internal filenames. Phase 1 retries.
+3. **Wave 3 — fan out candidates.** Once the pull succeeds and Sketch has stable likely task types/names or connector keys, search all independent candidates in parallel:
+   - Runnable tasks (`process`, `agent`, `rpa`, `api-workflow`, `action`, `case-management`) → search the relevant caches by intended resource name and likely type.
+   - Connector activities/triggers → search likely operations/triggers and inspect enabled Integration Service connections for each named connector/system.
+   - Named systems with no stable task yet → record connector keys/connections as candidates only; do not invent connector tasks from the catalog.
+   Keep only the top 1-3 plausible matches per described item, including folder/version/type.
+4. **Wave 4 — resolve before confirmation.** Resolve trigger candidates before the case-shape packet and runnable/connector candidates before the work packet. Batch independent ambiguous resource/connection choices into one AskUserQuestion call when possible (up to 3 questions); keep each question scoped to one task, trigger, or connector.
+5. **Wave 5 — fan out schemas.** After selections, run every independent `tasks describe` / `case spec` call concurrently across the selected live resources. A unique high-confidence candidate may start schema discovery immediately; its result must be available before the work or operational packet that depends on it. An ambiguous candidate must be selected first.
+6. Use the resolved palette and schemas to make confirmation packets concrete. The later Resolve mode reconciles changed or stale items; it is not the first discovery pass.
+
+**Grounding guardrails:**
+
+- Registry and connection data are evidence, not requirements. Never create a stage/task because the tenant has a resource, and never rename domain work to match a resource.
+- Do not dump catalogs or broad option lists. Candidate prompts are scoped to a task, trigger, connector, or system the user already described.
+- A single high-confidence candidate can be carried silently into Resolve's auto-confirm bucket and schema fan-out; the user sees the resource in the work packet and the auto-confirm count at Approve.
+- Multiple resources with the same name in different folders are ambiguous. Ask with the folder in the option label.
+- A connector type with zero enabled connections is an unresolved connector identity, not proof the task should become `api-workflow` or Manual.
+- If the sketch changes a task's type, intended resource name, connector, or operation, discard stale candidates and re-search.
+- Parallelize reads and tenant I/O only after their prerequisites. Never run cache searches before a successful pull, schema discovery before an ambiguous selection, or final promotion before approval.
+- Phase 1 remains authoritative: it refreshes the registry again and reuses Phase 0 results only when the current SDD still matches them.
+
 ## Modes
 
-Phase 0 moves through five modes of attention. Listen opens broad (one prompt + read everything shared); **Ask then runs a progressive walk through every SDD dimension** (§Ask → Progressive coverage walk) so coverage never depends on what Listen happened to catch. Listen / Sketch / Ask loop freely as new context lands. Resolve and Approve are gates.
+Phase 0 moves through five modes of attention. Listen opens broad while tenant grounding starts; Sketch assembles the case model; Ask confirms it in three plain-language packets; Resolve reconciles only changed or unresolved tenant mappings; Approve validates the draft and promotes it after consent. Listen / Sketch / Ask loop freely as new context lands.
 
 ### Listen
 
@@ -61,8 +85,9 @@ What the agent does as the user responds:
 - **Mid-flow docs are first-class.** If the user drops a new doc during Sketch or Ask, re-read, update inferences, narrate the delta:
   > `Got the SLA spec. The Compliance SLA is 8 hours, not the 4-hour default I was about to use.`
 - **Verbal-only is fine.** A user who describes the process with no attachment is treated the same way — listen, narrate inferences.
+- **Named systems seed grounding.** When the user names a deployed resource, app, connector, external system, environment, or connection ("Salesforce Prod", "VendorRiskAgent", "Invoice Approval app"), add it to the candidate palette from §Early tenant grounding. Do not ask the user to browse all tenant resources; search only for what they named or what the sketch has inferred.
 
-Listen does not ask shaping questions — those belong in Ask's progressive walk (§Ask). The opening prompt is the *opener*, not the whole interview: capture what the user volunteers, then let the walk drive every dimension to depth. The single exception is technical: when a referenced doc is unreadable (see `.docx` / `.pptx` / scanned-PDF row above), request a paste so Listen can keep reading. Inferences are private to the sketch.
+Listen does not ask shaping questions — those belong in Ask's confirmation packets (§Ask). The opening prompt is the *opener*, not the whole interview: capture what the user volunteers, then let the packets drive every dimension to depth. The single exception is technical: when a referenced doc is unreadable (see `.docx` / `.pptx` / scanned-PDF row above), request a paste so Listen can keep reading. Inferences are private to the sketch.
 
 #### Domain-vocabulary capture (during Listen)
 
@@ -99,6 +124,7 @@ The agent privately fills out the SDD shape against [`sdd-template.md`](../asset
 - Required fields still missing → marked as gaps to Ask.
 - Optional fields still missing → marked `—` in the draft. No question.
 - **§1.5 declare-vs-xref (apply while sketching variables, every path).** Mint a §1.5 row ONLY for `In` / `Out` args, trigger-payload Variables, and case-level state read by a condition or in ≥ 2 places. An input that is just one upstream task's output is referenced directly (`<- "Stage"."Task".out` / `vars.$xref('Stage','Task','out')`), NEVER relayed through a new §1.5 variable. This holds on the **doc-derived path** (Listen reads a PDD/spec → Sketch) too, where the interactive Resolve back-solve does not run — so the steer must be applied here. See [sdd-generation-rules.md § 1.5 Case Variables](sdd-generation-rules.md) and § Variable lineage closure.
+- **Resource grounding while sketching.** As soon as a task has a stable likely type + intended resource name, or a connector/system has a stable connector key, search the candidate palette. Use matches to propose the right task type/resource/connection in Ask, but keep the draft portable: type-specific intended names are concrete, identity/folder fields remain tentative until Resolve finalizes them. A miss means "ask or unresolved later," never "change the business process."
 
 **Required fields (block until answered):**
 
@@ -111,46 +137,96 @@ The agent privately fills out the SDD shape against [`sdd-template.md`](../asset
 | ≥1 Task per stage with name + type | Listen / Ask per stage |
 | ≥1 Case exit condition | Listen / Ask |
 
-Write `sdd.draft.md` as the sketch firms up. Update in place each time a gap closes — one Read → mutate → Write/Edit cycle per change (Rule 13).
+Do not render or rewrite the complete `sdd.draft.md` after every answer. Persist resumable partial SDD state only after each confirmation packet is accepted: seed/update Case Definition + stage skeleton after packet 1, stage/task blocks after packet 2, and variables/personas/integrations after packet 3. Use one section-batched Read → mutate → Write/Edit cycle per accepted packet (maximum three routine draft updates). Free-text corrections update only the affected section. After Resolve reconciliation, render/fill the complete template once before Finalization.
 
 ### Ask
 
-Ask is a **progressive walk** through the SDD dimensions, not a gap-only afterthought. Listen seeds the sketch; Ask then walks every core dimension in order (§Progressive coverage walk), confirming or extending each so the SDD reaches full depth on task detail, personas, and decisions — not just what Listen happened to surface. Two cadences carry the prompts: **single-question** (default — shape-changing gaps) and **batched** (independent low-impact follow-ups only, so a 14-task case doesn't burn 14 prompts).
+Ask is a **three-packet confirmation walk**, not a gap-only afterthought or a field-by-field form. Listen seeds the sketch and early tenant grounding makes it concrete. Ask then presents the agent's reasoning in three short, plain-language summaries. Each packet asks the user to confirm, change, or add; the user validates the understandable case model rather than the SDD syntax.
 
-#### Progressive coverage walk (interview backbone)
+Before a packet, ask any unresolved Always-Ask question whose answer would materially change that packet. Do not hide two plausible interpretations inside a summary. After a packet is accepted, checkpoint only its affected SDD sections. The final Approve summary is the second confirmation layer before `sdd.md` exists.
 
-After Listen seeds the sketch, walk these dimensions **in order** — one prompt per dimension, each anchored to what the sketch already holds (`Here's what I have for <X> — confirm, change, or add`). This is the confirm-or-modify pattern, never a cold form. The walk guarantees coverage even when Listen was thin; it is what makes Phase 0 progressive rather than a single open question.
+#### Confirmation packet 1 — case shape
 
-Skip a dimension's prompt only when Listen already captured it verbatim at high confidence AND it is not on the §Always-Ask list. Rows 2, 3, 7, 8 are never skipped — they define the case shape.
+Resolve any connector/event trigger candidate needed by this packet, then show:
 
-| # | Dimension | Prompt (anchored to the sketch) | Feeds |
-|---|---|---|---|
-| 1 | Process & objective | `This case handles <X> to achieve <Y> — right?` | §1.1 |
-| 2 | Stage flow (E2E) | Show inferred stages in order; `Does this match start → finish?` Loop until confirmed — the only looping prompt. | §2 stages |
-| 3 | Tasks per stage + type | Per stage: list inferred tasks + proposed type; `What work happens in <Stage>, and who or what does each step?` Pick each type via [sdd-generation-rules.md § Choosing the task type](sdd-generation-rules.md#choosing-the-task-type). | §2 task summary, task blocks |
-| 4 | Personas / owners | Show inferred roles; `Who works these tasks, and which stages do they own?` | §3 personas, task Owner |
-| 5 | Decisions / gates | `Where does someone approve / decline / escalate?` Each gate → an `action` task with buttons, or a routing exit. | task buttons, exits |
-| 6 | Data per stage | `What information is collected or produced at each step?` | §1.5 variables |
-| 7 | Trigger & exit | `What kicks this off, and what does 'done' look like?` Trigger type is Always-Ask the moment a portal / form / schedule / event is named. | §1.3, §1.4 |
-| 8 | Exceptions / escalations | `What goes wrong, and how is it handled?` Each handler → a secondary (exception) stage — see [sdd-generation-rules.md § Mental model](sdd-generation-rules.md#mental-model-stages-secondary-stages-tasks). | secondary stages |
-| 9 | SLA / timing | Only when the user mentioned timing. `How long should <stage / case> take?` | §1.2, stage SLA |
+- One-sentence objective.
+- What starts the case.
+- Primary stage flow from start to finish.
+- Every interrupting secondary stage, stated as what pauses active work, how it starts, and whether it returns or closes the case.
+- Successful completion and alternate outcomes.
 
-Each row is a single-question prompt by default. Collapse only the safe-to-default rows (4 persona descriptions, 9 SLA when timing was never raised) into the one allowed §Batched prompt. Trigger type (7), task type on ambiguous verbs (3), and case exit (7) stay single-question — they are Always-Ask.
+Use a compact shape such as:
 
-#### Buildability musts (capture during the walk)
+```text
+Starts when: A request arrives from the customer portal
+Main flow: Intake → Review → Fulfillment
+Interrupting work:
+- Escalation pauses Review and returns to Review
+- Withdrawal pauses active work and closes the case
+Done when: Fulfillment completes
+```
 
-Five things decide whether the SDD builds in one pass. Capture each *during* the walk above — they are where SDDs silently become unbuildable:
+Do not expose rule names, `Interrupting: Yes`, or stage-entry syntax. Ask one confirmation question. Corrections loop within this packet until the shape is accepted.
 
-1. **Exception trigger source** (row 8) — per lane, ask *how it fires*: a gate decision → `selected-stage-completed`/`selected-stage-exited` (+ `IF` on the decision var); a person launches it → `user-selected-stage`; an external event → `wait-for-connector`. `Interrupting: Yes` for mid-stage lanes; terminal lanes end (`exit-only` + §1.4a case-exit), return lanes use `return-to-origin`. Keep each lane's entry **distinct** — identical entries fail `validate`. See [sdd-generation-rules.md § Logical integrity](sdd-generation-rules.md#logical-integrity--stage-graph).
-2. **Decision outcome → route** (row 5) — per button, capture its outcome variable AND destination (advance / which exception / loop). No outcome may dead-end: a status string with nowhere to go is a broken branch. When the destination is an exception lane, that lane's entry MUST key off this variable's value (§Logical integrity step 5) — a button that "routes to the X lane" while X is entered only by an external event is a dead branch, blocked at Finalization step 15.
-3. **Task output capture** (row 6) — per configure/decide/capture task, name the §1.5 variable that stores its result. A form that collects values (rate, terms) but binds no output silently loses them.
-4. **Required-input back-solve** (row 6) — per send/connector/agent, map every required input to a variable: an email needs a recipient *address* var (not a name); an agent needs its source data.
-5. **Conditional gates** (rows 4–5) — ask if any role or step is conditional on a value (loan size, risk, region). Model a guarded rule + persona, never a prose footnote (e.g. `>$5M → Credit Analyst review`).
-6. **Connector failure cover** (rows 3, 8) — when an `execute-connector-activity` / `wait-for-connector` sits in a primary (non-exception) stage on the critical path, ask whether a failure needs handling. Model the handler as an exception lane entered on the failure / error event; with ≥ 2 such connector tasks and no cover, Finalization raises a `high` review item (`rev_no_failure_path`). Record provenance if the user declines.
+#### Confirmation packet 2 — work inside stages
+
+Before this packet, fan out all stable resource/connection searches, resolve independent ambiguities in batched prompts, and fetch schemas for unique or selected live resources. For every stage, show each task in source order with:
+
+- Task name and plain-language purpose.
+- Task type (`Human action`, `Agent`, `Process`, `API workflow`, `Connector activity`, `Wait`, or `Child case` in user-visible text).
+- Activation (`Sequential`, `Event-driven`, or `Manually triggered`).
+- `Required` or `Optional`; manually triggered tasks are always shown as optional.
+- Owner/persona when known.
+- Selected tenant resource/connection, or `Not available yet` when unresolved.
+
+Example:
+
+```text
+Review
+1. Extract application details — Agent — Sequential — Required — ApplicationTriageAgent
+2. Review application — Human action — Sequential — Required — Underwriter
+3. Request specialist review — Human action — Manually triggered — Optional — Underwriter
+```
+
+Do not expose `adhoc`, resource IDs, folder IDs, or cache terminology. If the case has more than 5 stages or 10 tasks, split this packet into consecutive stage groups while retaining one conceptual work confirmation; do not produce one prompt per task.
+
+#### Confirmation packet 3 — operational contract
+
+Run all selected-resource schema discovery before this packet. Show only business-relevant facts:
+
+- Decision outcomes and their destination stages/outcomes.
+- Information entering and leaving each task/stage, including every required live-resource input.
+- Resource and enabled-connection mappings.
+- Personas/ownership not already obvious from packet 2.
+- Case/stage/action timing the user mentioned.
+- Unavailable resources, connections, or required inputs that will remain unresolved.
+
+Use a compact summary grouped under `Decisions`, `Data`, `Resources`, `Timing`, and `Not available yet`. Ask one confirmation question. If tenant schema discovery introduces a requirement that contradicts packet 2, return to the affected packet and show only the delta before continuing.
+
+#### Packet rules
+
+- A packet is mandatory even when Listen was detailed; high-confidence content is presented for confirmation rather than skipped.
+- Preserve the user's vocabulary and stage/task order.
+- User corrections invalidate only affected downstream reasoning. Re-search/re-describe only resources whose type, intended name, connector, operation, or binding changed.
+- Do not re-confirm unchanged packets. Show a delta confirmation when later tenant evidence materially changes an accepted packet; otherwise continue silently.
+- The three packets replace the old one-prompt-per-dimension walk. Always-Ask questions and genuine resource ambiguities remain focused questions because they prevent shape-changing mistakes.
+
+#### Buildability musts (capture across the packets)
+
+Eight things decide whether the SDD builds in one pass. Capture each in the named packet before it is accepted — they are where SDDs silently become unbuildable:
+
+1. **Exception trigger source** (packet 1) — per lane, ask *how it fires*: a gate decision → `selected-stage-completed`/`selected-stage-exited` (+ `IF` on the decision var); a person launches it → `user-selected-stage`; an external event → `wait-for-connector`. Secondary stages are interrupting lanes: set `Interrupting: Yes` on the stage and on every secondary-stage entry row. Terminal lanes end (`exit-only` + §1.4a case-exit); return lanes use `return-to-origin`. Keep each lane's entry **distinct** — identical entries fail `validate`. See [sdd-generation-rules.md § Logical integrity](sdd-generation-rules.md#logical-integrity--stage-graph).
+2. **Decision outcome → route** (packet 3) — per button, capture its outcome variable AND destination (advance / which exception / loop). No outcome may dead-end: a status string with nowhere to go is a broken branch. When the destination is an exception lane, that lane's entry MUST key off this variable's value (§Logical integrity step 5) — a button that "routes to the X lane" while X is entered only by an external event is a dead branch, blocked at Finalization step 15.
+3. **Task output capture** (packet 3) — per configure/decide/capture task, name the §1.5 variable that stores its result. A form that collects values (rate, terms) but binds no output silently loses them.
+4. **Required-input back-solve** (packet 3) — per send/connector/agent, map every required input to a variable: an email needs a recipient *address* var (not a name); an agent needs its source data.
+5. **Conditional gates** (packets 2–3) — ask if any role or step is conditional on a value (loan size, risk, region). Model a guarded rule + persona, never a prose footnote (e.g. `>$5M → Credit Analyst review`).
+6. **Connector failure cover** (packets 1–3) — when an `execute-connector-activity` / `wait-for-connector` sits in a primary (non-exception) stage on the critical path, ask whether a failure needs handling. Model the handler as an exception lane entered on the failure / error event; with ≥ 2 such connector tasks and no cover, Finalization raises a `high` review item (`rev_no_failure_path`). Record provenance if the user declines.
+7. **Manual activation classifier** (packets 1–2) — decide which "manual" surface the user means before rendering: a user/API starts a new case → Manual trigger; a case worker launches one optional task inside the current stage → task `adhoc` + `Required: No`; a case worker chooses an interrupting exception/rework lane → secondary stage with `user-selected-stage`, not task `adhoc`.
+8. **Resource/connection grounding** (packets 1–3) — for each runnable or connector-bound task, capture the intended resource/connector name early and check the candidate palette. A resolved-looking type with no live instance still needs a portable intended name plus unresolved identity. A connector operation with 0 or >1 enabled connections needs an Ask before the packet that displays it; do not let the SDD reach Approve with a silent connection guess.
 
 #### Single-question (default for shape-changing gaps)
 
-**One question at a time**, ranked by information value. Use plain AskUserQuestion. Update `sdd.draft.md` after each answer. Apply to:
+**One question at a time**, ranked by information value. Use plain AskUserQuestion before the affected packet, stage the answer in working memory, and checkpoint it with that packet rather than rewriting the draft immediately. Apply to:
 
 - Trigger type (when external system / portal / form / schedule / signup / event is mentioned)
 - Task type on ambiguous verbs or compliance-override conflicts
@@ -161,9 +237,11 @@ Five things decide whether the SDD builds in one pass. Capture each *during* the
 
 These fields change the generated case shape; bundling them obscures the decision and survives the Approve scan.
 
-#### Batched (low-impact follow-ups only)
+#### Batched independent choices
 
-One AskUserQuestion with up to 4 `multiSelect: true` rows for fields whose value can be defaulted safely AND whose default does NOT change case shape:
+Batching is allowed in two places only: (a) up to 3 independent ambiguous resource/connection selections before packets 1–2, and (b) one low-impact AskUserQuestion for fields whose defaults do not change case shape. Never batch dependent questions.
+
+Low-impact fields:
 
 | Field | Default if not picked |
 |---|---|
@@ -175,7 +253,7 @@ One AskUserQuestion with up to 4 `multiSelect: true` rows for fields whose value
 | Optional task SLA on `action` tasks | `—` (inherits case SLA) |
 | App-view detail (Section 3) | "Case list" + "Case detail" baseline view names |
 
-Use sparingly — at most one batched prompt in the whole interview. Each row defaulted records `inferred-default:<reason>` in the source ledger.
+Use the low-impact batch at most once in the whole interview. Each row defaulted records `inferred-default:<reason>` in the source ledger. Resource/connection batches do not consume this allowance because they replace independent per-item prompts with the same choices.
 
 #### When to Ask vs Default
 
@@ -183,7 +261,7 @@ Use sparingly — at most one batched prompt in the whole interview. Each row de
 
 **Default with narration** ONLY when ALL three high-confidence criteria hold for the field:
 
-1. **Verbatim or one-step mechanical.** The value is either (a) written verbatim by the user, (b) lifted from a doc the user shared and currently in your context, or (c) a one-step mechanical derivation. Allowed derivations: `PascalCase → 2–4 letter prefix`; `no roles mentioned → persona=Process Owner`; user said `"I kick it off"` / `"we run it manually"` / `"ad-hoc"` → `trigger=Manual`.
+1. **Verbatim or one-step mechanical.** The value is either (a) written verbatim by the user, (b) lifted from a doc the user shared and currently in your context, or (c) a one-step mechanical derivation. Allowed derivations: `PascalCase → 2–4 letter prefix`; `no roles mentioned → persona=Process Owner`; user said `"I kick it off"` / `"we start the case manually"` → `trigger=Manual`. If the user says `"manual"` / `"ad-hoc"` about in-case work, ask whether they mean an `adhoc` task or a user-selected secondary stage.
 2. **No interpretation step.** If you have to choose between two plausible meanings, it's interpretation — Ask.
 3. **Field is not on the Always-Ask list below.**
 
@@ -243,7 +321,9 @@ Classification of each reply:
 
 ### Resolve
 
-Before registry lookup, establish the concrete intended resource name for every `process`, `agent`, `rpa`, `api-workflow`, `action`, and `case-management` task. Write it to the task type's portable-name field: `Resolved Resource` for process/agent/rpa/api-workflow, the `Action App: <deploymentTitle>` value in `HITL Implementation` for action, and `Child Case` for case-management. Preserve a name the user supplied; if it is absent, ask rather than silently substituting the task's display name. These portable-name fields are NEVER `<UNRESOLVED>`.
+Resolve is incremental and starts during Sketch. It must finish each tenant-dependent decision **before** the confirmation packet that displays that decision. The late Resolve mode is reconciliation only: confirm that accepted task types, intended resource names, connectors, operations, folders, identities, and schemas still match the current draft. Do not restart from a blank search set when §Early tenant grounding already found candidates. If any matching field changed during Ask, discard only that stale candidate and re-search/re-describe it.
+
+Before final registry selection, establish the concrete intended resource name for every `process`, `agent`, `rpa`, `api-workflow`, `action`, and `case-management` task. Write it to the task type's portable-name field: `Resolved Resource` for process/agent/rpa/api-workflow, the `Action App: <deploymentTitle>` value in `HITL Implementation` for action, and `Child Case` for case-management. Preserve a name the user supplied; if it is absent, ask rather than silently substituting the task's display name. These portable-name fields are NEVER `<UNRESOLVED>`.
 
 Find each matching registry resource using that intended name. Search the cache file under `~/.uip/case-resources/` by name keywords. Filename varies by component type — common cases:
 
@@ -252,7 +332,7 @@ Find each matching registry resource using that intended name. Search the cache 
 - `typecache-activities-index.json` — for `execute-connector-activity` (`CONNECTOR_ACTIVITY`)
 - `typecache-triggers-index.json` — for `wait-for-connector` (`CONNECTOR_TRIGGER`)
 
-Run `uip maestro case registry pull` first if cache absent. See [registry-discovery.md § Cache File Index](registry-discovery.md#cache-file-index) for the authoritative file list, identifier fields, and cross-type fallback rules.
+If §Early tenant grounding did not complete a successful pull, run `uip login status --output json` and then `uip maestro case registry pull` before treating any cache as searchable. If the pull fails, follow §Failure modes: keep portable intended names, mark only identity/folder fields unresolved, and let Phase 1 retry. See [registry-discovery.md § Cache File Index](registry-discovery.md#cache-file-index) for the authoritative file list, identifier fields, and cross-type fallback rules.
 
 **Resource reality — resolve EVERY runnable across all registry types, and confirm a LIVE instance, not just a type match.** Resolving the real identity here is what lets Phase 1–3 build in one pass; defer it and the build halts on first use.
 
@@ -272,9 +352,9 @@ A *type* match with **no live instance** still ships an unresolved identity + a 
 
 > `Searching registry for "InvoiceValidation"… 2 matches.`
 
-#### Resolve cadence — auto-confirm gate (one upfront prompt, then auto-pick single-match)
+#### Resolution cadence — parallel fan-out and packet confirmation
 
-Before per-task prompts, run all task searches in parallel, then bucket results:
+As soon as stable intended names/types are available, run or reuse all independent task, trigger, operation, and connection searches in parallel, then bucket results:
 
 | Bucket | Definition |
 |---|---|
@@ -282,18 +362,11 @@ Before per-task prompts, run all task searches in parallel, then bucket results:
 | **B — ambiguous** | Multiple matches (**including the same resource name present in ≥2 folders** — a cross-folder name never auto-confirms), OR single match with no token overlap |
 | **C — empty** | 0 matches across cache files |
 
-Present a single upfront AskUserQuestion **only when bucket A is non-empty**:
+Provisionally select bucket A without a separate gate, record `tenant-registry:<resource-name>` provenance with `auto_confirmed: true` and `grounded_early: true`, and show the concrete selection in confirmation packet 2. Packet 2 is the user's confirmation of those picks; the Approve summary also surfaces `Auto-confirmed: N registry matches (single-match high-confidence).`
 
-| Option | Effect |
-|---|---|
-| `Auto-confirm <N> single-match high-confidence resolutions; ask me about the rest` | Record bucket A picks silently; proceed to per-task prompts only for bucket B + C |
-| `Ask me about every task` | Skip auto-confirm; present per-task prompt for every task |
+#### Batched ambiguity prompts (bucket B + bucket C remainder)
 
-For each bucket A auto-confirm, record `tenant-registry:<resource-name>` provenance in `tasks/registry-resolved.json` with an additional `auto_confirmed: true` flag. The Approve summary's `Inferred / defaulted` block surfaces the count: `Auto-confirmed: N registry matches (single-match high-confidence).` The user re-validates at Approve.
-
-#### Per-task prompts (bucket B + bucket C remainder)
-
-Per-task AskUserQuestion (4 options max). **When candidate matches differ by folder, each option label MUST carry the match's folder `fullyQualifiedName`** — the user is choosing a folder, not just a name. Tasks resolve independently, so the resulting case may bind different tasks to resources in different folders/solutions (mixing is valid — there is no single-solution constraint):
+Use one AskUserQuestion call with up to 3 independent questions; each question represents one ambiguous task/trigger/connector and has 4 options max. Continue in additional batches when needed. **When candidate matches differ by folder, each option label MUST carry the match's folder `fullyQualifiedName`** — the user is choosing a folder, not just a name. Tasks resolve independently, so the resulting case may bind different tasks to resources in different folders/solutions (mixing is valid — there is no single-solution constraint):
 
 | Option | Effect |
 |---|---|
@@ -308,7 +381,7 @@ Per-task AskUserQuestion (4 options max). **When candidate matches differ by fol
 
 Identity is not the whole contract. The SDD's task Inputs / Outputs `Field` cells MUST match the resource's real argument / field names verbatim (see [sdd-generation-rules.md § Task content rules](sdd-generation-rules.md#task-content-rules)), and a connector's *required* inputs stay invisible until its schema is read. For every task resolved to a **live instance** (skip tasks whose identity is `<UNRESOLVED>` — no identity, no schema), pull its contract and use it to fill the `Field` cells from the real names and to back-solve required inputs against the *actual* list, not the user's recollection.
 
-Run in parallel after the picks land — `--output json`, connectors via `spec`, runnables via `tasks describe`:
+Run in parallel after the picks land — `--output json`, connectors via `spec`, runnables via `tasks describe`. Start a bucket-A candidate immediately so its contract is ready before packet 2 or 3; wait for the user's selection before describing a bucket-B candidate:
 
 | Resolved task type | Discovery command | Yields |
 |---|---|---|
@@ -323,37 +396,39 @@ For each task with required inputs the sketch has not mapped, one AskUserQuestio
 
 Map each answer to a variable, a literal, or an upstream task's output (§Ask → Buildability musts). **When the answer is an upstream task's output, reference it directly** — whole-value `<- "Stage"."Task".out` or, inside a larger `=js:` expression, `vars.$xref('Stage','Task','out')` — and do NOT mint a §1.5 Case Variable for it (the emitting task is its own producer; see [sdd-generation-rules.md § Resolved-resource I/O completeness](sdd-generation-rules.md#resolved-resource-io-completeness)). For an event trigger, surface required event params the same way (e.g., which mailbox folder) and fill each payload-extraction Variable's `sourceFields` path from the discovered output shape. A filter clause the connector can't support → narrate and Ask for a substitute. A required input the user skips → `<UNRESOLVED>` + a `high` review item (optional input skipped → `medium`). Coverage closes against the resource's **own required-input list**, not the user's recollection — every required input ends Resolve either bound or `<UNRESOLVED>`+review-item; the Approve gate re-checks this (§Finalization step 19).
 
-**Connection selection (connector tasks).** For each `execute-connector-activity`, `wait-for-connector`, and connector event trigger, resolve the IS **connection**, not just the activity `typeId`. When the cache holds **0 or > 1** connections for the connector, AskUserQuestion which connection — in business terms (the account / environment name, never the `connectionId`). Never auto-pick among multiple, never leave `connectionId` silently `<UNRESOLVED>`; a missing connection is a `high` review item per §Resource reality.
+**Connection selection (connector tasks).** For each `execute-connector-activity`, `wait-for-connector`, and connector event trigger, resolve the IS **connection**, not just the activity `typeId`. When the cache holds **0 or > 1** connections for the connector, include that connector in the next batched ambiguity prompt — in business terms (the account / environment name, never the `connectionId`). Never auto-pick among multiple, never leave `connectionId` silently `<UNRESOLVED>`; a missing connection is a `high` review item per §Resource reality.
 
 **Action-app field fidelity.** For each `action` task resolved to a deployed app, author the Input / Output Schema **only** from the app's `tasks describe` fields. If the user described context the app does not expose, AskUserQuestion: `Deploy a task-specific app` / `Limit inputs to the app's fields` / `Placeholder — resolve later`. Never author a field the app lacks — it cannot bind ([sdd-generation-rules.md § Finalization step 16](sdd-generation-rules.md#finalization)). If ONE app is the best match for ≥ 2 tasks that each need different fields, that is the generic-substitute smell — surface it (`rev_substitute_app`) rather than authoring divergent schemas onto the same app.
 
-**Cost.** One CLI call per resolved task, run in parallel and resolved-only. The trade is a longer Resolve for far fewer Phase 3 / 4 binding failures — wrong `Field` names and unmapped required inputs that otherwise surface only after Rule 2 locks the file.
+**Cost.** One CLI call per resolved task, run in parallel and resolved-only. This discovery happens before confirmation rather than as a late serial Resolve, so it reduces wall-clock time while preventing wrong `Field` names and unmapped required inputs from surviving into Phase 3 / 4.
 
-After all picks and schema discovery, write `tasks/registry-resolved.json` (Rule 9 shape — including each resolved task's fetched I/O contract). The persisted contract MUST record, per resolved task, each declared **input name + `required` flag** and the full **declared output-field list** — Phase 3 io-binding Check 5 re-verifies required-input coverage and output-field fidelity against this without re-fetching ([io-binding/impl-json.md § Check 5](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)). Update `sdd.draft.md`: a resolved task uses the selected entry's canonical type-specific name, exact folder, and identity; an unresolved task retains its requested portable name and uses `<UNRESOLVED>` only for its identity/folder fields. Also update the matching Section 4 roll-up row when that resource family has one. Any unresolved task carries a paired `review_items[]` entry in the same JSON when the file is written.
+After all picks and schema discovery, freeze the shared resolution state. Then persist `tasks/registry-resolved.json` and the affected `sdd.draft.md` sections concurrently because they are distinct files. The JSON uses Rule 9 shape and MUST record, per resolved task, each declared **input name + `required` flag** and the full **declared output-field list** — Phase 3 io-binding Check 5 re-verifies required-input coverage and output-field fidelity against this without re-fetching ([io-binding/impl-json.md § Check 5](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)). In the draft, a resolved task uses the selected entry's canonical type-specific name, exact folder, and identity; an unresolved task retains its requested portable name and uses `<UNRESOLVED>` only for its identity/folder fields. Also update the matching Section 4 roll-up row when that resource family has one. Any unresolved task carries a paired `review_items[]` entry in the same JSON.
+
+At late reconciliation, compare every accepted mapping to the frozen state. If nothing material changed, continue without another prompt. If a resource disappeared, a connection changed, a schema added a required input, or an accepted task changed type/name/operation, show one plain-language delta confirmation and update only the affected packet. Re-read `sdd.draft.md` and `tasks/registry-resolved.json` in parallel before Finalization.
 
 > **Phase 1 handoff.** `sdd.md` is the authoritative handoff; `tasks/registry-resolved.json` is an optional cache/audit artifact. Phase 1 reuses an entry only after its type, searched cache, canonical name, exact folder, and identity match the current SDD per [planning.md § Phase 0 carryover](planning.md#step-2--locate-and-parse-the-design-document). A missing, unresolved, or mismatched field makes the entry stale and triggers discovery from the SDD's type-specific portable name (`Resolved Resource`, Action App title, or `Child Case`).
 
 ### Approve
 
-Before renaming, run the **Finalization checks** in [sdd-generation-rules.md § Finalization](sdd-generation-rules.md#finalization) — the full 16-step list including stage-graph connectivity (step 12), domain-fidelity scan (step 13), architect's-lens advisory pass (step 14), decision-routing closure (step 15), and action-app schema fidelity (step 16). Any blocking failure (steps 1–10, 12, 13, 15) routes back to `Re-edit` / `Restart` / `Abort`. Advisory pass (step 14) emits `medium` review items but does not block; `high` review items (step 16, `rev_no_failure_path` at threshold, `rev_substitute_app`) gate via the `Approve despite N high-severity items` opt-in.
+Complete `sdd.draft.md`, then run all 19 **Finalization checks** in [sdd-generation-rules.md § Finalization](sdd-generation-rules.md#finalization) against the draft. Do not create `sdd.md` yet. Any blocking failure routes back to `Re-edit` / `Restart` / `Abort`. Advisory pass (step 14) emits `medium` review items but does not block; `high` review items gate through an explicit opt-in.
 
 On pass:
 
-1. Atomic rename `sdd.draft.md` → `sdd.md`.
-2. Print concise summary (not the full document):
+1. Print a concise commit summary (not the full document). This is the second confirmation layer over the three accepted packets:
 
 ```
-Phase 0 complete.
+Ready to create sdd.md.
 
-Path:    ./sdd.md
-Stages:  N
-Tasks:   N
-  - process: N
-  - agent: N
-  - ...
-Integrations: N
-Personas:     N
-Child cases:  N
+Case: <name>
+Starts when: <plain-language trigger>
+Main flow: <Primary A> → <Primary B> → <Primary C>
+Interrupting work:
+  - <Secondary>: pauses <origin>; <returns to origin | closes case>
+Outcomes: <successful completion>; <alternate exits>
+
+Tasks: N  sequential=N  event-driven=N  manually-triggered=N
+Resources: resolved=N  not-available-yet=N
+Integrations: N  Personas: N  Child cases: N
 Review items:    high=N  medium=N  low=N
 Auto-confirmed:  N registry matches (single-match high-confidence)
 
@@ -374,24 +449,26 @@ Architect advisories (medium review items — non-blocking):
   ...
 ```
 
-The **`Inferred / defaulted` block is mandatory** whenever Sketch defaulted ANY field. List every defaulted value with source attribution. Omit the block only if zero fields were defaulted. This is the user's last chance to catch wrong defaults before Rule 2 locks the file — never collapse to counts alone when defaults exist.
+The summary MUST include the plain-language start, main flow, interrupting secondary stages, outcomes, task activation counts, and resolved/unavailable resource counts. It must be sufficient to approve without opening the SDD. The **`Inferred / defaulted` block is mandatory** whenever Sketch defaulted ANY field. List every defaulted value with source attribution. Omit the block only if zero fields were defaulted. This is the user's last chance to catch wrong defaults before Rule 2 locks the file — never collapse to counts alone when defaults exist.
 
 The **`Caller obligation` block** is mandatory when any §1.5 row has `Category: In` + `Type: file`. Omit otherwise. The text is fixed; do not paraphrase.
 
 The **`Architect advisories` block** lists each `medium` review item emitted by the architect's-lens pass ([sdd-generation-rules.md § Architect's lens](sdd-generation-rules.md#architects-lens)). Omit when count is 0. These do not block Approve but should be visible.
 
-Source-attribution examples: `(PascalCase derivation)`, `(no roles mentioned → Process Owner)`, `(no SLA stated → 3-day default)`, `(verb "review" — defaulted to action)`, `(user said "ad-hoc" → trigger=Manual)`.
+Source-attribution examples: `(PascalCase derivation)`, `(no roles mentioned → Process Owner)`, `(no SLA stated → 3-day default)`, `(verb "review" — defaulted to action)`, `(user said "start the case manually" → trigger=Manual)`, `(user said "manual follow-up task" → task entry=adhoc)`.
 
-3. AskUserQuestion (4 options — base set; if any `high` review items exist, replace `Approve and proceed to Phase 1` with `Approve despite N high-severity items` populated with the count):
+2. AskUserQuestion (4 options — base set; if any `high` review items exist, replace `Create SDD and continue` with `Create SDD despite N high-severity items` populated with the count):
 
 | Option | Next |
 |---|---|
-| `Approve and proceed to Phase 1` | Exit Phase 0. Begin [planning.md](planning.md) Step 1. |
-| `Generate HTML preview` | Write `./sdd-viewer.html` (§HTML preview). Re-show this prompt. |
-| `Edit and re-validate` | Free-text correction → update affected section of `sdd.md` → re-run Finalization checks → re-show summary. |
-| `Restart or abort` | Follow-up AskUserQuestion (`Restart interview` / `Abort`). Restart wipes `sdd.md`, `sdd.draft.md`, `tasks/registry-resolved.json` and returns to §Entry. Abort exits skill, leaves artifacts in place. |
+| `Create SDD and continue` | Atomically rename `sdd.draft.md` → `sdd.md`, then exit Phase 0 and begin [planning.md](planning.md) Step 1. |
+| `Generate HTML preview` | Write `./sdd-viewer.html` from the validated draft (§HTML preview). Re-show this prompt. |
+| `Change something` | Free-text correction → update only the affected section of `sdd.draft.md` → re-run affected Finalization checks → re-show summary. |
+| `Restart or abort` | Follow-up AskUserQuestion (`Restart interview` / `Abort`). Restart wipes `sdd.draft.md` and `tasks/registry-resolved.json`, then returns to §Entry. Abort exits and leaves draft artifacts in place. |
 
-**Free-text corrections are first-class refines.** A message like "actually the SLA on Compliance is 8 hours not 4" is treated as an edit — update the section in `sdd.md`, narrate the change, return to Approve. The user does not need to pick the `Edit` option to make corrections.
+3. Only after the user approves, atomically rename `sdd.draft.md` → `sdd.md`, report its path, and proceed. If `sdd.md` appeared since Phase 0 started, abort instead of overwriting it.
+
+**Free-text corrections are first-class refines.** A message like "actually the SLA on Compliance is 8 hours not 4" is treated as an edit — update the affected section in `sdd.draft.md`, narrate the change, return to Approve. The user does not need to pick the `Change something` option to make corrections.
 
 #### Edit validation
 
@@ -441,7 +518,7 @@ Write the populated file to `./sdd-viewer.html` (Read + Write only, Rule 13). Te
 
 Re-show the Approve prompt. The viewer is a review aid, not a checkpoint — it does not replace the Approve gate.
 
-If the user edits `sdd.md` after a preview is generated, the existing `sdd-viewer.html` is stale. Either regenerate it (re-pick `Generate HTML preview` at Approve) or leave it — Phase 1 ignores the file either way.
+If the user edits `sdd.draft.md` after a preview is generated, the existing `sdd-viewer.html` is stale. Either regenerate it (re-pick `Generate HTML preview` at Approve) or leave it — Phase 1 ignores the file either way.
 
 ## Resumption
 
@@ -449,12 +526,12 @@ When `sdd.draft.md` is present at trigger time, AskUserQuestion (4 options):
 
 | Option | Effect |
 |---|---|
-| `Resume from where I left off` | Re-read `sdd.draft.md`. Infer position (all required fields present = Sketch + Ask done; `tasks/registry-resolved.json` present = Resolve done). Continue from the next mode. |
+| `Resume from where I left off` | Re-read `sdd.draft.md`. Infer the last complete packet from populated sections; when `tasks/registry-resolved.json` is present, reconcile it against the draft before resuming. Continue from the next incomplete packet. |
 | `Discard draft, restart` | Delete `sdd.draft.md` + `tasks/registry-resolved.json`. Return to §Entry. |
 | `Use draft as-is, finalize` | Run Approve gate on the draft as-is. Edit validation may flag missing required fields. |
 | `Abort` | Exit. No file changes. |
 
-Listen output is never persisted. Resumption picks up from Sketch onward.
+Raw Listen output is never persisted. Resumption picks up from the last confirmed packet recorded in the partial draft.
 
 ## Forbidden vocabulary (user-visible output)
 
@@ -495,10 +572,10 @@ Phase 1 ([planning.md](planning.md) Step 2) reads `sdd.md` exactly as a user-pro
 
 - **Do NOT overwrite an existing `sdd.md`.** Strict binary trigger; presence = trust-as-written.
 - **Do NOT suggest or invoke any other skill automatically during the interview.** Keep the interview self-contained; the user may explicitly invoke another skill when needed.
-- **Do NOT persist Listen output as a transcript.** Inferences live in the draft (the sketch), not in a separate file.
+- **Do NOT persist Listen output as a transcript.** Inferences live in the working sketch and the packet-checkpointed draft, not in a separate transcript file.
 - **Do NOT use `sed`/`awk`/`python`/`node` to mutate `sdd.draft.md`, `sdd.md`, `tasks/registry-resolved.json`, or `sdd-viewer.html`.** Read + Write/Edit only (Rule 13).
-- **Do NOT bundle questions in Ask.** One per message. Bundles re-introduce the form-feel Phase 0 is reframed to avoid.
-- **Do NOT silently auto-pick a registry match in Resolve.** AskUserQuestion every task; never infer (Rule 2 spirit).
-- **Do NOT treat the HTML preview as a checkpoint.** It's a review aid. Approve is the only gate.
+- **Do NOT bundle dependent or shape-changing questions.** Ask those one at a time before the affected packet. Independent resource/connection ambiguities may share one call (up to 3 questions), and each confirmation packet intentionally summarizes several already-reasoned facts.
+- **Do NOT silently auto-pick ambiguous registry matches.** Single-match high-confidence resources may be provisionally selected only through the §Resolve cadence, must be shown in confirmation packet 2, and must surface as a count at Approve. Ambiguous matches, cross-folder name matches, missing connections, and empty matches always ask or become explicit unresolved identities with review items.
+- **Do NOT treat the HTML preview as approval.** It is a review aid; the final create-SDD approval is still required after the three packet confirmations.
 - **Do NOT narrate filenames or schema mechanics in user-visible output.** See §Forbidden vocabulary.
 - **Do NOT ask for permission to read user-provided docs.** If the user named them, read them.
