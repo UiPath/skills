@@ -29,6 +29,7 @@ const nextVersion = `${nextLine}.0`;              // 1.200.0
 const run = "18052309";
 const previewVer = `${version}-preview.${run}`;   // 1.199.0-preview.18052309
 const npmUrl = `https://www.npmjs.com/package/@uipath/skills/v/${previewVer}`;
+const branchUrl = `${repo}/tree/release/v${line}`;
 const prUrl = `${repo}/pull/1234`;
 
 const OK = ":checkbox_ticked:";
@@ -38,7 +39,7 @@ const scenarios = [
   {
     title: `${OK} *Sprint release cut — \`${line}\`*  ·  _[DEMO 1/3: success]_`,
     lines: [
-      `${OK} Release branch \`release/v${line}\` cut from \`main\` (version \`${version}\`)`,
+      `${OK} Release branch \`release/v${line}\` cut from \`main\` (version \`${version}\`, <${branchUrl}|view branch>)`,
       `${OK} Preview package published to npmjs — \`@uipath/skills@${previewVer}\` (<${npmUrl}|view on npmjs>)`,
       `${OK} Version-bump PR opened: \`main\` → \`${nextVersion}\` (<${prUrl}|#1234>)`,
     ],
@@ -46,7 +47,7 @@ const scenarios = [
   {
     title: `${WARN} *Sprint release cut — \`${line}\`*  ·  _[DEMO 2/3: preview publish failed]_`,
     lines: [
-      `${OK} Release branch \`release/v${line}\` cut from \`main\` (version \`${version}\`)`,
+      `${OK} Release branch \`release/v${line}\` cut from \`main\` (version \`${version}\`, <${branchUrl}|view branch>)`,
       `${WARN} Preview package publish to npmjs FAILED — \`@uipath/skills@${previewVer}\` (<${runUrl}|see logs>)`,
       `${OK} Version-bump PR opened anyway: \`main\` → \`${nextVersion}\` (<${prUrl}|#1234>) — ${WARN} verify the failed publish before merging`,
     ],
