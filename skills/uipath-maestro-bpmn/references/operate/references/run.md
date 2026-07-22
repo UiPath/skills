@@ -54,7 +54,8 @@ If Studio Web URL is not returned, print `Studio Web URL: <not returned by CLI>`
 > element-execution list reports each element's status (Completed/Faulted) but
 > never the runtime *values*. A Completed final status with all elements green
 > proves the process ran — NOT that any output variable holds the expected value.
-> To read a computed business result, take the returned instance id and run
+> To inspect runtime variable definitions and any values the runtime exposes,
+> take the returned instance id and run
 > `uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json`
 > (below). Debug instances are ephemeral — read variables in the same session,
 > right after the debug run. Match returned keys case-insensitively
@@ -113,8 +114,10 @@ When a run starts, report:
 - Next inspection command or status path.
 
 When the user cares about a business result, final status alone is insufficient.
-Also report the relevant output variable or the reason it could not be
-inspected.
+Also report the relevant output variable definition and any value the API
+returns. Current BPMN live debug can expose a root output definition while
+returning that computed root output value as `null`; call out that
+runtime/debug API limitation when you see it.
 
 ## Status and traces
 

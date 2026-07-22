@@ -99,7 +99,7 @@ registry `xmlTemplate` of whatever node you need.
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
           <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
           <uipath:output name="tier" type="string" var="Var_Tier" source="=result.response" />
         </uipath:mapping>
       </bpmn:extensionElements>
@@ -143,6 +143,9 @@ the process via `extensionElements`, or use the canvas `<uipath:variables>`
 block directly. Variable bodies are CDATA. Reference variables in expressions as
 `vars.<id>` — see [expression-authoring.md](expression-authoring.md).
 Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
+For a value produced only by a task output, prefer root
+`<uipath:output id="..." name="..." type="..." />`; preserve the exact id and
+target that same id from `uipath:output var="..."`.
 
 ## Script tasks (`BPMN.ScriptTask`) — Jint runtime contract
 
@@ -158,14 +161,27 @@ template, but the runtime contract is fixed:
   `value="v2"`. For v2+ the script returns JSON under `response`.
 - Mapped `args` fields are read as **top-level identifiers** in the script body
   (`amount`, not `args.amount`); the input mapping itself stays `name="args"`
-  and maps each field by variable id (`=vars.Var_Amount`).
-- Map the return back through `source="=result.response"` (scalar) or
-  `source="=result.response.<field>"` (object field); `var` points at a declared
-  variable id (do not put the target id in `name`).
+  with `type="json"` and `target="bodyField"`, and maps each field by variable
+  id (`=vars.Var_Amount`). Include `<uipath:input name="args" type="json"
+  target="bodyField"><![CDATA[{}]]></uipath:input>` even when there are no
+  inputs; this is part of the `BPMN.ScriptTask` registry template.
+- Map the returned object's property back through `source="=result.response"`
+  (the conventional scalar property) or `source="=result.response.<field>"`
+  (another object field); `var` points at a declared variable id (do not put the
+  target id in `name`).
 - When the output mapping uses `source="=result.response"`, return an object
   with a `response` property, such as `return { response: 6 * 7 };`. Do not
   return the bare primitive `42` for that mapping shape; there is no
   `response` property to bind, so the runtime variable stays empty.
+- Do not use `source="=result"` with a bare scalar return in live debug/runtime
+  BPMN. Studio Web can report `FinalStatus: Completed` while the target root
+  variable still reads back as `{}` or `null` from
+  `debug-instance variables-all`.
+- For live debug/runtime runs, never use `source="=this.result"` or
+  `<uipath:type value="BPMN.Variables" ...>` on a script task output mapping.
+  That older structural-test shape can pass local validation but leaves root
+  variables `null` or faults in Studio Web. Use the `BPMN.ScriptTask` mapping
+  with `source="=result.response"`.
 - Do not mutate `Globals.*`, `vars.*`, or process variables inside the script
   body. The supported path is: return a value from the script, then use a
   `uipath:output` mapping to write it to the declared variable. Direct mutation
@@ -177,7 +193,7 @@ template, but the runtime contract is fixed:
     <uipath:scriptVersion value="v3" />
     <uipath:mapping version="v1">
       <uipath:type value="BPMN.ScriptTask" version="v1" />
-      <uipath:input name="args"><![CDATA[{"amount":"=vars.Var_Amount","daysOverdue":"=vars.Var_DaysOverdue"}]]></uipath:input>
+      <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount","daysOverdue":"=vars.Var_DaysOverdue"}]]></uipath:input>
       <uipath:output name="riskScore" type="number" var="Var_RiskScore" source="=result.response" />
     </uipath:mapping>
   </bpmn:extensionElements>
