@@ -186,7 +186,7 @@ Procedure per section:
 2. **Section-sized writes** — pick by T-entry count:
    - **Small sections (<10 T-entries)** — N Edits in sequence, one per T-entry. Edit targets the smallest unambiguous slice of JSON the T-entry mutates (one node, one array field, one task's `data.inputs`).
    - **Large sections (≥10 T-entries)** — container-sized Edits replacing the section's container slice (e.g., entire `schema.nodes` array for stages, a stage's full `data.tasks` array for tasks within that stage). When the section spans multiple stages (typical for §4.6 tasks), the write unit is **per-stage** — one Edit per stage's `data.tasks` container, never one combined Edit spanning stages. Compose each container's post-section state in reasoning from the Read snapshot, then emit via Edit. **Whole-file Write is NOT a fallback here** — if a container slice is too large for a single unambiguous `old_string`/`new_string` pair, split it further (per lane, per task group), never widen to the whole file.
-3. **Skip the re-Read between sibling Edits** — Edit's tool result confirms applied state in context; explicit re-Read is redundant for in-memory correctness.
+3. **Skip the re-Read between sibling Edits** — Edit's tool result confirms applied state in context; explicit re-Read is redundant for in-memory correctness. Ad-hoc shell inspection is equally forbidden between siblings: no `cat`/`grep`/`jq`/`ls`/`python3` re-checks of `caseplan.json` or `tasks.md`. The section-entry Read and the section-end validate are the ONLY state checks — an observed run burned ~90 single-command inspection turns re-verifying state its Edit results had already confirmed.
 4. **One `validate`** at section boundary (Pre-flight Item 12 above).
 
 **Same-file sequential Edits — anchoring.** N Edits against `caseplan.json` in one section serialize in order; each later Edit runs against the text the earlier ones already changed. `caseplan.json` has keys that recur across nodes (`"tasks"`, `"data"`, `"entryConditions"`, `"exitConditions"`, `"inputs"`) — a bare recurring key is NOT a safe anchor.
@@ -207,7 +207,7 @@ Procedure per section:
 
 **Audit trail via TaskUpdate.** Reviewers see T-by-T progress in the todo log, not in the file diff. Each plugin seeds TaskCreate items keyed by T-number; mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit/Write returns success. The transcript shows one or N writes per section — what changes is the dropped re-Read between siblings and the dropped standalone narration turns.
 
-**CLI-gated sections — gather-then-write.** Where each T-entry needs its own CLI call before its JSON shape is known (Phase 2 §4.6 non-connector `tasks describe`; Phase 3 §9.7 connector `case spec`): run all CLI calls first, collect results in reasoning, then enter the Read → N-Edits → validate batch.
+**CLI-gated sections — gather-then-write.** Where each T-entry needs its own CLI call before its JSON shape is known (Phase 2 §4.6 non-connector `tasks describe`; Phase 3 §9.7 connector `case spec`): run all CLI calls first — deduped by `(type, id)`, one call per unique id, reused for every T-entry sharing it — collect results in reasoning, then enter the Read → N-Edits → validate batch.
 
 **Recovery.** On any mid-batch interruption (Edit failure, context compact, abort): re-Read `caseplan.json` + `tasks.md`, scan for next un-applied T-entry, resume from there. No sidecar checkpoint file. For CLI-gated sections, re-run the CLI calls for un-applied entries — typically cheap.
 

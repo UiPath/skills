@@ -213,24 +213,39 @@ For each task in the sdd.md, extract its concrete portable name from the type-sp
 | `action` | `Action App: <deploymentTitle>` in `HITL Implementation` | `Deployment Folder` |
 | `case-management` | `Child Case` | `Folder Path` |
 
-The portable name is REQUIRED and never `<UNRESOLVED>`. Do not fall back to the task display name. Then filter the cache file using `cat ... | python3 -c "..."` or the `Read` tool. **Do NOT use `node -e 'const fs=require("fs")...'` for cache reads — this violates Rule 13 even when the target is a resource cache file, not a skill artifact.**
+The portable name is REQUIRED and never `<UNRESOLVED>`. Do not fall back to the task display name. **Do NOT use `node -e 'const fs=require("fs")...'` for cache reads — this violates Rule 13 even when the target is a resource cache file, not a skill artifact.**
+
+**Run ALL pending lookups as ONE `python3` script in ONE Bash turn.** Build the full lookup list first — every task's `(query, primary cache file)` pair from §1, fallback files included — then execute a single script that loads each needed index file once and prints matches for every pair. One `cat | python3` per task or per index file is FORBIDDEN: an observed run spent 58 single-command turns on lookups one script covers, each paying ~5s inference latency + full prompt-cache replay.
 
 ```bash
-cat ~/.uip/case-resources/<type>-index.json | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-for item in data:
-    name = item.get('name', '') or item.get('deploymentTitle', '')
-    if '<task_name>' in name:
-        folders = item.get('folders', [])
-        folder = folders[0].get('fullyQualifiedName', '') if folders else ''
-        if not folder:
-            df = item.get('deploymentFolder', {})
-            folder = df.get('fullyQualifiedName', '') if df else ''
-        ident = item.get('entityKey') or item.get('id') or item.get('uiPathActivityTypeId', '')
-        print(json.dumps({'identifier': ident, 'name': name, 'folder': folder}))
-"
+python3 << 'EOF'
+import json, os
+base = os.path.expanduser('~/.uip/case-resources')
+# one row per pending lookup: (sdd task, cache file basename, portable name query)
+lookups = [
+    ("<Stage>/<Task>", "<type>-index.json", "<portable name>"),
+    # ... every remaining task, primary + cross-type fallback files
+]
+cache = {}
+for _, f, _ in lookups:
+    if f not in cache:
+        p = os.path.join(base, f)
+        cache[f] = json.load(open(p)) if os.path.exists(p) else None  # None = missing file, NOT empty (see note above)
+for task, f, q in lookups:
+    data = cache[f]
+    if data is None:
+        print(json.dumps({'task': task, 'cacheFile': f, 'error': 'index file missing'})); continue
+    for item in data:
+        name = item.get('name') or item.get('deploymentTitle') or item.get('displayName', '')
+        if q in name:
+            folders = item.get('folders') or []
+            folder = folders[0].get('fullyQualifiedName', '') if folders else (item.get('deploymentFolder') or {}).get('fullyQualifiedName', '')
+            ident = item.get('entityKey') or item.get('id') or item.get('uiPathActivityTypeId', '')
+            print(json.dumps({'task': task, 'cacheFile': f, 'identifier': ident, 'name': name, 'folder': folder}))
+EOF
 ```
+
+A `{'error': 'index file missing'}` row triggers the "Missing file ≠ empty match" rule ([Prerequisites](#prerequisites)) — pull, then re-run the batch for the affected rows only.
 
 **Match priority:**
 1. **Exact name + exact folder** — strongest match, use directly.
