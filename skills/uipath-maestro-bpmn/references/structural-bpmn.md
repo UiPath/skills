@@ -17,6 +17,12 @@ Where the registry stops, the canvas serializer is authoritative. Each
 gap below is labelled **REGISTRY GAP** — the registry exposes no template for
 it, so author it from this reference.
 
+BPMN XML element names are case-sensitive. Use the exact lower-camel BPMN tag
+names the serializer emits, such as `<bpmn:startEvent>`,
+`<bpmn:intermediateCatchEvent>`, `<bpmn:scriptTask>`, and `<bpmn:endEvent>`.
+Do not use PascalCase variants like `<bpmn:IntermediateCatchEvent>`; XML accepts
+them syntactically, but BPMN tools do not treat them as the same elements.
+
 ## The document scaffold (REGISTRY GAP)
 
 The registry emits no `<bpmn:definitions>` / `<bpmn:process>` root and no
@@ -156,6 +162,10 @@ template, but the runtime contract is fixed:
 - Map the return back through `source="=result.response"` (scalar) or
   `source="=result.response.<field>"` (object field); `var` points at a declared
   variable id (do not put the target id in `name`).
+- When the output mapping uses `source="=result.response"`, return an object
+  with a `response` property, such as `return { response: 6 * 7 };`. Do not
+  return the bare primitive `42` for that mapping shape; there is no
+  `response` property to bind, so the runtime variable stays empty.
 - Do not mutate `Globals.*`, `vars.*`, or process variables inside the script
   body. The supported path is: return a value from the script, then use a
   `uipath:output` mapping to write it to the declared variable. Direct mutation
@@ -245,6 +255,12 @@ Payload shapes the canvas serializes:
   Maestro internal-message events (`Maestro.ReceiveMessageEvent` /
   `Maestro.SendMessageEvent`) carry the `uipath:event` payload **and** a bare
   `<bpmn:messageEventDefinition />` (see their registry templates).
+  A mid-flow wait for an inbound message is a
+  `<bpmn:intermediateCatchEvent>` with incoming and outgoing sequence flows,
+  the registry-provided `Maestro.ReceiveMessageEvent` payload under
+  `bpmn:extensionElements`, and a sibling `<bpmn:messageEventDefinition />`.
+  Do not model a mid-flow receive as `bpmn:receiveTask`, `bpmn:serviceTask`, a
+  start event, or the PascalCase `bpmn:IntermediateCatchEvent`.
 - **Error**: `<bpmn:errorEventDefinition errorRef="Error_1" />` with a
   `<bpmn:error id="Error_1" name="…" errorCode="…"/>` at definitions level. An
   error end event with no `errorRef` fails to parse at runtime
