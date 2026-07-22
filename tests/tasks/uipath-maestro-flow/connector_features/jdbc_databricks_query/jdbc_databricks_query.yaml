@@ -41,24 +41,16 @@ initial_prompt: |
   Create a new Flow project called "DatabricksQuery" with a manual trigger.
 
   It should run a SQL query against a Databricks database using the Database Hub
-  (JDBC) "Execute Query Synchronously" connector activity, and expose the query
-  result as a flow output. Run this aggregate query over the `employees` table —
-  it groups by department, keeps only departments with two or more employees, and
-  orders them by average salary (this is why raw SQL is required — the generic
-  record activities cannot express GROUP BY / HAVING / aggregates):
+  (JDBC) connector, and expose the query result as a flow output. Run an aggregate
+  query over the `employees` table that groups by department, keeps only
+  departments with two or more employees, and orders them by average salary.
 
-    SELECT department, COUNT(*) AS headcount, AVG(salary) AS avg_salary
-    FROM employees
-    GROUP BY department
-    HAVING COUNT(*) >= 2
-    ORDER BY avg_salary DESC
+  Discover the Databricks-backed Database Hub (JDBC) connection in the
+  `Shared/uipath-maestro-flow` folder from the tenant — do NOT hand-author or
+  invent a connection id. If the JDBC connector isn't available in your registry,
+  stop rather than falling back to a generic HTTP request.
 
-  Discover the Databricks-backed Database Hub (JDBC) connection from the tenant —
-  do NOT hand-author or invent a connection id. If the JDBC connector isn't
-  available in your registry, stop rather than falling back to a generic HTTP
-  request.
-
-  Validate the final flow file.
+  Validate the final flow file and debug it.
 
   Do NOT ask for approval, confirmation, or feedback.
   Do NOT pause between planning and implementation.
@@ -73,19 +65,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent refreshed the node manifest (`uip maestro flow registry pull`) before searching"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+pull'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "uip maestro flow validate was called"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "uip maestro flow debug was called"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+debug'
+    min_count: 1
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
