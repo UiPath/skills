@@ -21,7 +21,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion"]
 
 sandbox:
-  driver: tempdir
   python: {}
 
 pre_run:
