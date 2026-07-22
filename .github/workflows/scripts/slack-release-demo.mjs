@@ -1,6 +1,9 @@
 // Posts DEMO sprint-cut Slack notifications (mock data) so the team can preview
 // how the real biweekly cut notification renders in each outcome. No real cut,
 // no publish. Mechanism mirrors UiPath/cli: SLACK_BOT_TOKEN + chat.postMessage.
+//
+// Emojis match Studio's Sprint Release Bot (#dev-studio-robot):
+//   :checkbox_ticked: = succeeded   ·   :warning: = failed / skipped.
 
 import { readFileSync } from "node:fs";
 
@@ -25,58 +28,43 @@ const nextVersion = `${nextLine}.0`;              // 1.200.0
 // Illustrative build/PR identifiers (real runs stamp the run number / PR id).
 const run = "18052309";
 const previewVer = `${version}-preview.${run}`;   // 1.199.0-preview.18052309
-const devVer = `${version}-dev.${run}`;           // 1.199.0-dev.18052309
 const npmUrl = `https://www.npmjs.com/package/@uipath/skills/v/${previewVer}`;
-const pkgsUrl = `${repo}/pkgs/npm/skills`;
 const prUrl = `${repo}/pull/1234`;
 
-const OK = "✅";
-const FAIL = "❌";
-const SKIP = "⏭️";
+const OK = ":checkbox_ticked:";
+const WARN = ":warning:";
 
 const scenarios = [
   {
-    title: `${OK} *Sprint release cut — \`${line}\`*  ·  _[DEMO 1/4: all steps succeeded]_`,
+    title: `${OK} *Sprint release cut — \`${line}\`*  ·  _[DEMO 1/3: success]_`,
     lines: [
       `${OK} Release branch \`release/v${line}\` cut from \`main\` (version \`${version}\`)`,
-      `${OK} Dev build published to GitHub Packages — \`@uipath/skills@${devVer}\` (<${pkgsUrl}|packages>)`,
       `${OK} Preview package published to npmjs — \`@uipath/skills@${previewVer}\` (<${npmUrl}|view on npmjs>)`,
       `${OK} Version-bump PR opened: \`main\` → \`${nextVersion}\` (<${prUrl}|#1234>)`,
-      `_Stable (\`latest\`) is promoted manually — see docs/RELEASE.md._`,
     ],
   },
   {
-    title: `${FAIL} *Sprint release cut — \`${line}\`*  ·  _[DEMO 2/4: preview publish failed]_`,
+    title: `${WARN} *Sprint release cut — \`${line}\`*  ·  _[DEMO 2/3: preview publish failed]_`,
     lines: [
       `${OK} Release branch \`release/v${line}\` cut from \`main\` (version \`${version}\`)`,
-      `${OK} Dev build published to GitHub Packages — \`@uipath/skills@${devVer}\` (<${pkgsUrl}|packages>)`,
-      `${FAIL} Preview publish to npmjs FAILED — \`@uipath/skills@${previewVer}\` (<${runUrl}|see logs>)`,
-      `${SKIP} Version-bump PR skipped — \`main\` stays on \`${version}\` until the preview publish succeeds`,
+      `${WARN} Preview package publish to npmjs FAILED — \`@uipath/skills@${previewVer}\` (<${runUrl}|see logs>)`,
+      `${OK} Version-bump PR opened anyway: \`main\` → \`${nextVersion}\` (<${prUrl}|#1234>) — ${WARN} verify the failed publish before merging`,
     ],
   },
   {
-    title: `${FAIL} *Sprint release cut — \`${line}\`*  ·  _[DEMO 3/4: dev build publish failed]_`,
+    title: `${WARN} *Sprint release cut — \`${line}\`*  ·  _[DEMO 3/3: branch cut failed]_`,
     lines: [
-      `${OK} Release branch \`release/v${line}\` cut from \`main\` (version \`${version}\`)`,
-      `${FAIL} Dev build publish to GitHub Packages FAILED — \`@uipath/skills@${devVer}\` (<${runUrl}|see logs>)`,
-      `${SKIP} Preview publish skipped — dev build must succeed first`,
-      `${SKIP} Version-bump PR skipped — \`main\` stays on \`${version}\``,
-    ],
-  },
-  {
-    title: `${FAIL} *Sprint release cut — \`${line}\`*  ·  _[DEMO 4/4: branch cut failed]_`,
-    lines: [
-      `${FAIL} Release branch \`release/v${line}\` cut from \`main\` FAILED (<${runUrl}|see logs>)`,
-      `${SKIP} Dev + preview publish skipped`,
-      `${SKIP} Version-bump PR skipped`,
+      `${WARN} Release branch \`release/v${line}\` cut from \`main\` FAILED (<${runUrl}|see logs>)`,
+      `${WARN} Preview package publish skipped`,
+      `${WARN} Version-bump PR skipped — no branch was cut`,
     ],
   },
 ];
 
 const banner =
   ":test_tube: *Sprint-cut Slack notification — DEMO previews (mock data, no real cut)*\n" +
-  "The four threaded replies below show how the biweekly `sprint-release-cut.yml` " +
-  "notification will look in each outcome. Emojis: ✅ succeeded · ❌ failed · ⏭️ skipped.";
+  "The threaded replies below show how the biweekly `sprint-release-cut.yml` " +
+  "notification will look in each outcome. Emojis: :checkbox_ticked: succeeded · :warning: failed / skipped.";
 
 async function post(text, threadTs) {
   const body = { channel, text, unfurl_links: false };
