@@ -1,0 +1,29 @@
+2026-07-20 23:35:49 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:35:49 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:35:49 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:35:49 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:35:49 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:35:49 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a single Maestro BPMN file `InvoiceApproval.b...
+2026-07-20 23:35:49 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:37:29 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> f28d8b75-734e-4960-921e-2410113b43bd
+2026-07-20 23:37:29 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:37:29 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:37:29 [DEBUG] coder_eval.orchestrator: Agent response received (3956 chars)
+2026-07-20 23:37:29 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:37:29 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:37:29 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:37:29 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:37:29 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Authored BPMN is well-formed, structurally sound, and fully shaped': python3 $TASK_DIR/check_author_validate.py
+2026-07-20 23:37:29 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_author_validate.py' exited with code 0
+2026-07-20 23:37:29 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: InvoiceApproval.bpmn is well-formed, fully shaped, and gateway-routed
+---
+2026-07-20 23:37:29 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:37:29 [INFO] coder_eval.orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+2026-07-20 23:37:29 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:37:29 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:37:29 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-author-validate
+2026-07-20 23:37:29 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=101.4s score=1.000 iterations=1

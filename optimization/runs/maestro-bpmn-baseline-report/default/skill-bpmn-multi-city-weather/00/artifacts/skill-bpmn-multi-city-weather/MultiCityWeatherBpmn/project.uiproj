@@ -1,0 +1,10 @@
+{
+  "name": "MultiCityWeatherBpmn",
+  "projectVersion": "1.0.0",
+  "description": "Multi-city weather classification using parallel multi-instance script task",
+  "projectType": "ProcessOrchestration",
+  "main": "MultiCityWeatherBpmn.bpmn",
+  "schemaVersion": "4.0",
+  "studioVersion": "24.10.0",
+  "targetFramework": "Portable"
+}

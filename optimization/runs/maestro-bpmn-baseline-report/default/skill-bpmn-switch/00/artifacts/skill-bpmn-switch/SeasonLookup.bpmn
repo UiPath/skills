@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_Quarter" name="Quarter" type="number" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Start -->
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_ToGw</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Exclusive gateway: fan out to one branch per quarter value -->
+    <bpmn:exclusiveGateway id="Gw_Season" name="Quarter?" default="Flow_Winter">
+      <bpmn:incoming>Flow_ToGw</bpmn:incoming>
+      <bpmn:outgoing>Flow_Spring</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Summer</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Fall</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Winter</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- End events: one per season -->
+    <bpmn:endEvent id="End_Spring" name="Spring">
+      <bpmn:incoming>Flow_Spring</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Summer" name="Summer">
+      <bpmn:incoming>Flow_Summer</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Fall" name="Fall">
+      <bpmn:incoming>Flow_Fall</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Winter" name="Winter">
+      <bpmn:incoming>Flow_Winter</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_ToGw" sourceRef="Start_1" targetRef="Gw_Season" />
+
+    <bpmn:sequenceFlow id="Flow_Spring" sourceRef="Gw_Season" targetRef="End_Spring">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Quarter == 1</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_Summer" sourceRef="Gw_Season" targetRef="End_Summer">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Quarter == 2</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_Fall" sourceRef="Gw_Season" targetRef="End_Fall">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Quarter == 3</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Flow_Winter is the default branch (no condition) -->
+    <bpmn:sequenceFlow id="Flow_Winter" sourceRef="Gw_Season" targetRef="End_Winter" />
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Start event -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="272" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Exclusive gateway -->
+      <bpmndi:BPMNShape id="S_Gw_Season" bpmnElement="Gw_Season">
+        <dc:Bounds x="270" y="265" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- End events: Spring (top), Summer (upper-mid), Fall (lower-mid), Winter (bottom) -->
+      <bpmndi:BPMNShape id="S_End_Spring" bpmnElement="End_Spring">
+        <dc:Bounds x="430" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Summer" bpmnElement="End_Summer">
+        <dc:Bounds x="430" y="192" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Fall" bpmnElement="End_Fall">
+        <dc:Bounds x="430" y="352" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Winter" bpmnElement="End_Winter">
+        <dc:Bounds x="430" y="462" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edge: Start -> Gateway -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ToGw" bpmnElement="Flow_ToGw">
+        <di:waypoint x="196" y="290" />
+        <di:waypoint x="270" y="290" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Edge: Gateway -> Spring (Q1) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Spring" bpmnElement="Flow_Spring">
+        <di:waypoint x="295" y="265" />
+        <di:waypoint x="295" y="100" />
+        <di:waypoint x="430" y="100" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Edge: Gateway -> Summer (Q2) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Summer" bpmnElement="Flow_Summer">
+        <di:waypoint x="295" y="265" />
+        <di:waypoint x="295" y="210" />
+        <di:waypoint x="430" y="210" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Edge: Gateway -> Fall (Q3) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Fall" bpmnElement="Flow_Fall">
+        <di:waypoint x="295" y="315" />
+        <di:waypoint x="295" y="370" />
+        <di:waypoint x="430" y="370" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Edge: Gateway -> Winter (Q4, default) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Winter" bpmnElement="Flow_Winter">
+        <di:waypoint x="295" y="315" />
+        <di:waypoint x="295" y="480" />
+        <di:waypoint x="430" y="480" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

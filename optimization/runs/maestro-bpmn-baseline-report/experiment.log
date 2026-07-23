@@ -1,0 +1,1671 @@
+# Run Log: maestro-bpmn-baseline-report-1
+# Aggregated from 48 task(s)
+# Generated: 2026-07-21 01:07:27
+
+================================================================================
+
+
+================================================================================
+TASK: default/skill-bpmn-agent-job/00
+================================================================================
+
+2026-07-20 23:14:19 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:19 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:14:19 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:14:19 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:14:19 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:19 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Create a local BPMN project named "ApproverCountAgen...
+2026-07-20 23:14:19 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:20:39 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> e8e5efcc-bc69-4d36-9538-2a4cb6528d3f
+2026-07-20 23:20:39 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:20:39 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:20:39 [DEBUG] coder_eval.orchestrator: Agent response received (8063 chars)
+2026-07-20 23:20:39 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:20:39 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:20:39 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:20:39 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Agent invocation uses Orchestrator.StartAgentJob with input and a declared output variable': python3 $TASK_DIR/check_agent_job.py
+2026-07-20 23:20:39 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_agent_job.py' exited with code 0
+2026-07-20 23:20:39 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: ApproverCountAgent/ApproverCountAgent.bpmn wires Orchestrator.StartAgentJob with bound input and output variable
+---
+2026-07-20 23:20:39 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:20:39 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:20:39 [WARNING] coder_eval.orchestrator: Visible turns (20) exceeded expected_turns (16) at iteration 1 for task skill-bpmn-agent-job. Run continues — max_turns remains the hard cap.
+2026-07-20 23:20:39 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:20:39 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:20:39 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-agent-job
+2026-07-20 23:20:39 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=381.7s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-api-workflow-task/00
+================================================================================
+
+2026-07-20 23:06:00 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:06:00 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:06:01 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:06:01 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:06:01 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:06:01 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Maestro BPMN Process Orchestration project at:
+  ApiWorkflowDispatch/ApiWorkflowDisp...
+2026-07-20 23:06:01 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:12:23 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> ca5cd705-4b64-45f7-8233-1dc20e05a4ac
+2026-07-20 23:12:23 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:12:23 [WARNING] coder_eval.agents.claude_code_agent: [coder] Agent exhausted max_turns (40); turn ended without completing
+2026-07-20 23:12:23 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:23 [DEBUG] coder_eval.orchestrator: Agent response received (6462 chars)
+2026-07-20 23:12:23 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:12:23 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:12:23 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'API workflow uses bpmn:serviceTask with Orchestrator.ExecuteApiWorkflowAsync': python3 $TASK_DIR/check_api_workflow_task.py
+2026-07-20 23:12:23 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_api_workflow_task.py' exited with code 0
+2026-07-20 23:12:23 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: API workflow serviceTask wrapper and package lifecycle are present
+---
+2026-07-20 23:12:23 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:12:23 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-20 23:12:23 [WARNING] coder_eval.orchestrator: Agent exhausted max_turns (40) without passing criteria.
+2026-07-20 23:12:23 [WARNING] coder_eval.orchestrator: Visible turns (45) exceeded expected_turns (32) at iteration 1 for task skill-bpmn-api-workflow-task. Run continues — max_turns remains the hard cap.
+2026-07-20 23:12:23 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:23 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:12:23 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-api-workflow-task
+2026-07-20 23:12:23 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=383.6s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-author-validate/00
+================================================================================
+
+2026-07-20 23:14:42 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:42 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:14:42 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:14:42 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:14:42 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:42 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a single Maestro BPMN file `InvoiceApproval.b...
+2026-07-20 23:14:42 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:17:18 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 6103b17b-8ced-44aa-a692-2bc1e997ed1a
+2026-07-20 23:17:19 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:17:19 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:17:19 [DEBUG] coder_eval.orchestrator: Agent response received (3771 chars)
+2026-07-20 23:17:19 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:17:19 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:17:19 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:17:19 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:17:19 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Authored BPMN is well-formed, structurally sound, and fully shaped': python3 $TASK_DIR/check_author_validate.py
+2026-07-20 23:17:19 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_author_validate.py' exited with code 0
+2026-07-20 23:17:19 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: InvoiceApproval.bpmn is well-formed, fully shaped, and gateway-routed
+---
+2026-07-20 23:17:19 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:17:19 [INFO] coder_eval.orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+2026-07-20 23:17:19 [WARNING] coder_eval.orchestrator: Visible turns (25) exceeded expected_turns (20) at iteration 1 for task skill-bpmn-author-validate. Run continues — max_turns remains the hard cap.
+2026-07-20 23:17:19 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:17:19 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:17:19 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-author-validate
+2026-07-20 23:17:19 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=158.3s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-business-rule-task/00
+================================================================================
+
+2026-07-20 23:09:52 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:09:52 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:09:52 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:09:52 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:09:52 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:09:52 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Maestro BPMN Process Orchestration project at:
+  BusinessRuleDecision/BusinessRuleDe...
+2026-07-20 23:09:52 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:14:37 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 1e28357f-c8f4-474c-a0fe-2da3f9d2532b
+2026-07-20 23:14:37 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:14:37 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:37 [DEBUG] coder_eval.orchestrator: Agent response received (5506 chars)
+2026-07-20 23:14:37 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:14:37 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:14:37 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Business rule task uses bpmn:businessRuleTask with Orchestrator.BusinessRules': python3 $TASK_DIR/check_business_rule_task.py
+2026-07-20 23:14:37 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_business_rule_task.py' exited with code 0
+2026-07-20 23:14:37 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: businessRuleTask wrapper and package lifecycle are present
+---
+2026-07-20 23:14:37 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:14:37 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-20 23:14:37 [WARNING] coder_eval.orchestrator: Visible turns (35) exceeded expected_turns (28) at iteration 1 for task skill-bpmn-business-rule-task. Run continues — max_turns remains the hard cap.
+2026-07-20 23:14:37 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:37 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:14:37 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-business-rule-task
+2026-07-20 23:14:37 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=286.8s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-calculator/00
+================================================================================
+
+2026-07-20 23:04:56 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:04:56 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:04:56 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:04:56 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:04:56 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:04:56 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a local Maestro BPMN project named "Calculato...
+2026-07-20 23:04:56 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:12:13 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 359a453f-3744-4f08-b314-71216e9f9bc9
+2026-07-20 23:12:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:12:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:14 [DEBUG] coder_eval.orchestrator: Agent response received (5168 chars)
+2026-07-20 23:12:14 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:12:14 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:12:14 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:12:14 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN has multi-way exclusive-gateway routing, one script task per branch, and valid DI': python3 $TASK_DIR/check_calculator.py
+2026-07-20 23:12:14 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_calculator.py' exited with code 0
+2026-07-20 23:12:14 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: CalculatorBpmn/CalculatorBpmn.bpmn routes an operator through a multi-way exclusive gateway with per-branch script tasks
+---
+2026-07-20 23:12:14 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:12:14 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:12:14 [WARNING] coder_eval.orchestrator: Visible turns (34) exceeded expected_turns (22) at iteration 1 for task skill-bpmn-calculator. Run continues — max_turns remains the hard cap.
+2026-07-20 23:12:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:14 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:12:14 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-calculator
+2026-07-20 23:12:14 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=439.0s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-contract-variant-wrappers/00
+================================================================================
+
+2026-07-21 00:52:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-21 00:52:26 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-21 00:52:26 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-21 00:52:26 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-21 00:52:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-21 00:52:26 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a local BPMN project named "ContractVariantsBpmn".
+Use synthetic placeholder resource names o...
+2026-07-21 00:52:26 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-21 01:07:26 [ERROR] coder_eval.orchestrator: Task timed out: Task timed out after 900s
+2026-07-21 01:07:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-21 01:07:26 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-21 01:07:26 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-contract-variant-wrappers
+2026-07-21 01:07:26 [INFO] coder_eval.orchestrator: Task finished: status=TIMEOUT duration=901.3s score=0.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-dice-roller/00
+================================================================================
+
+2026-07-20 23:12:12 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:12 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:12:12 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:12:12 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:12:12 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:12 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a local Maestro BPMN project named "DiceRolle...
+2026-07-20 23:12:12 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:15:21 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 87ac27a7-a7c9-42c6-87a9-f7d17a5d6f8b
+2026-07-20 23:15:21 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:15:21 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:15:21 [DEBUG] coder_eval.orchestrator: Agent response received (3343 chars)
+2026-07-20 23:15:21 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:15:21 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:15:21 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN has a randomness script task and an exclusive gateway on the result, with valid DI': python3 $TASK_DIR/check_dice_roller.py
+2026-07-20 23:15:21 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_dice_roller.py' exited with code 0
+2026-07-20 23:15:21 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: DiceRollerBpmn/DiceRollerBpmn.bpmn rolls a die in a script task and classifies it through an exclusive gateway
+---
+2026-07-20 23:15:21 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:15:21 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-20 23:15:21 [WARNING] coder_eval.orchestrator: Visible turns (25) exceeded expected_turns (20) at iteration 1 for task skill-bpmn-dice-roller. Run continues — max_turns remains the hard cap.
+2026-07-20 23:15:21 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:15:21 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:15:21 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-dice-roller
+2026-07-20 23:15:21 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=191.1s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-e2e-customer-escalation/00
+================================================================================
+
+2026-07-20 23:12:29 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:29 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:12:29 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:12:29 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:12:29 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:29 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a new local Maestro BPMN Process Orchestration project named
+CustomerEscalation. The project ...
+2026-07-20 23:12:29 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:17:10 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 0263a3e1-7aea-47e5-be0c-5b1710371f2a
+2026-07-20 23:17:10 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:17:10 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:17:10 [DEBUG] coder_eval.orchestrator: Agent response received (6190 chars)
+2026-07-20 23:17:10 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:17:10 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:17:10 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:17:10 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:17:10 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Generated BPMN project has two classifier scripts, gateway routing, a user-task escalation path, a ticket script, and package references': python3 $TASK_DIR/check_customer_escalation.py
+2026-07-20 23:17:10 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_customer_escalation.py' exited with code 0
+2026-07-20 23:17:10 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: CustomerEscalation/CustomerEscalation.bpmn classifies, routes, escalates via a user task, and ships consistent package metadata
+---
+2026-07-20 23:17:10 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:17:10 [DEBUG] coder_eval.evaluation.judge_context: judge_context: include_reference=True but reference not set
+2026-07-20 23:17:16 [DEBUG] coder_eval.evaluation.checker: Criterion 'llm_judge' score: 1.00
+2026-07-20 23:17:16 [INFO] coder_eval.orchestrator: Success criteria: 5/5 passed, weighted score: 1.000
+2026-07-20 23:17:16 [WARNING] coder_eval.orchestrator: Visible turns (32) exceeded expected_turns (28) at iteration 1 for task skill-bpmn-e2e-customer-escalation. Run continues — max_turns remains the hard cap.
+2026-07-20 23:17:16 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:17:16 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:17:16 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-e2e-customer-escalation
+2026-07-20 23:17:16 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=289.3s score=1.000 iterations=1
+2026-07-20 23:17:16 [DEBUG] coder_eval.evaluation.judge_persistence: spilled 1 judge transcript(s) to /work/output
+
+
+================================================================================
+TASK: default/skill-bpmn-e2e-invoice-exception-triage/00
+================================================================================
+
+2026-07-20 23:12:18 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:18 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:12:18 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:12:18 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:12:18 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:19 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a new local Maestro BPMN Process Orchestration project named
+InvoiceExceptionTriage. The proj...
+2026-07-20 23:12:19 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:16:07 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 4bb837cc-cfb8-4ebe-b583-234213e082c5
+2026-07-20 23:16:07 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:16:07 [WARNING] coder_eval.agents.claude_code_agent: [coder] Agent exhausted max_turns (40); turn ended without completing
+2026-07-20 23:16:07 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:16:07 [DEBUG] coder_eval.orchestrator: Agent response received (5751 chars)
+2026-07-20 23:16:07 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:16:07 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:16:07 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:16:07 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:16:07 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Generated BPMN project has the required process structure and package references': python3 $TASK_DIR/check_invoice_exception_triage.py
+2026-07-20 23:16:07 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_invoice_exception_triage.py' exited with code 0
+2026-07-20 23:16:07 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+InvoiceExceptionTriage BPMN project structure is valid
+---
+2026-07-20 23:16:07 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:16:07 [DEBUG] coder_eval.evaluation.judge_context: judge_context: include_reference=True but reference not set
+2026-07-20 23:16:15 [DEBUG] coder_eval.evaluation.checker: Criterion 'llm_judge' score: 1.00
+2026-07-20 23:16:15 [INFO] coder_eval.orchestrator: Success criteria: 5/5 passed, weighted score: 1.000
+2026-07-20 23:16:15 [WARNING] coder_eval.orchestrator: Agent exhausted max_turns (40) without passing criteria.
+2026-07-20 23:16:15 [WARNING] coder_eval.orchestrator: Visible turns (42) exceeded expected_turns (25) at iteration 1 for task skill-bpmn-e2e-invoice-exception-triage. Run continues — max_turns remains the hard cap.
+2026-07-20 23:16:15 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:16:15 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:16:15 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-e2e-invoice-exception-triage
+2026-07-20 23:16:15 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=237.7s score=1.000 iterations=1
+2026-07-20 23:16:15 [DEBUG] coder_eval.evaluation.judge_persistence: spilled 1 judge transcript(s) to /work/output
+
+
+================================================================================
+TASK: default/skill-bpmn-e2e-wiki-pageviews/00
+================================================================================
+
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:15 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a new local Maestro BPMN Process Orchestration project named
+WikiPageviews. The project must ...
+2026-07-20 23:02:15 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:12:59 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> ed8a9390-7688-49e5-88e0-d79745cb9481
+2026-07-20 23:13:00 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:13:00 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:13:00 [DEBUG] coder_eval.orchestrator: Agent response received (4673 chars)
+2026-07-20 23:13:00 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:13:00 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:13:00 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:13:00 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:13:00 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Generated BPMN project has a fetch script, an error-routing gateway, distinct filter and aggregate scripts, and package references': python3 $TASK_DIR/check_wiki_pageviews.py
+2026-07-20 23:13:00 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_wiki_pageviews.py' exited with code 0
+2026-07-20 23:13:00 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: WikiPageviews/WikiPageviews.bpmn fetches, routes failure, filters, aggregates, and ships consistent package metadata
+---
+2026-07-20 23:13:00 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:13:00 [DEBUG] coder_eval.evaluation.judge_context: judge_context: include_reference=True but reference not set
+2026-07-20 23:13:07 [DEBUG] coder_eval.evaluation.checker: Criterion 'llm_judge' score: 1.00
+2026-07-20 23:13:07 [INFO] coder_eval.orchestrator: Success criteria: 5/5 passed, weighted score: 1.000
+2026-07-20 23:13:07 [WARNING] coder_eval.orchestrator: Visible turns (30) exceeded expected_turns (28) at iteration 1 for task skill-bpmn-e2e-wiki-pageviews. Run continues — max_turns remains the hard cap.
+2026-07-20 23:13:07 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:13:07 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:13:07 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-e2e-wiki-pageviews
+2026-07-20 23:13:07 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=656.7s score=1.000 iterations=1
+2026-07-20 23:13:07 [DEBUG] coder_eval.evaluation.judge_persistence: spilled 1 judge transcript(s) to /work/output
+
+
+================================================================================
+TASK: default/skill-bpmn-edit-add-node/00
+================================================================================
+
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+A valid Maestro BPMN file `OrderIntake.bpmn` is in t...
+2026-07-20 23:02:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:03:52 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 982b981e-605a-4619-a192-599af94ff9a0
+2026-07-20 23:03:52 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:03:52 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:03:52 [DEBUG] coder_eval.orchestrator: Agent response received (4565 chars)
+2026-07-20 23:03:52 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:03:52 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:03:52 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:03:52 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'New script node inserted and wired, untouched content preserved, file still structurally sound': python3 $TASK_DIR/check_add_node.py
+2026-07-20 23:03:52 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_add_node.py' exited with code 0
+2026-07-20 23:03:52 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: script node inserted, flow rewired, untouched content preserved
+---
+2026-07-20 23:03:52 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:03:52 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:03:52 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:03:52 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:03:52 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-edit-add-node
+2026-07-20 23:03:52 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=102.3s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-edit-add-output/00
+================================================================================
+
+2026-07-20 23:13:12 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:13:12 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:13:12 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:13:12 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:13:12 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:13:12 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+A valid Maestro BPMN file `Invoicing.bpmn` is in the...
+2026-07-20 23:13:12 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:14:06 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 1d775b4e-2308-4de2-86c4-1384b5d97826
+2026-07-20 23:14:06 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:14:06 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:06 [DEBUG] coder_eval.orchestrator: Agent response received (3350 chars)
+2026-07-20 23:14:06 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:14:06 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:14:06 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:14:06 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'New output + backing variable added, existing output/variables preserved, file still structurally sound': python3 $TASK_DIR/check_add_output.py
+2026-07-20 23:14:06 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_add_output.py' exited with code 0
+2026-07-20 23:14:06 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: new output + variable added, existing output and payloads preserved
+---
+2026-07-20 23:14:06 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:14:06 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:14:06 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:06 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:14:06 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-edit-add-output
+2026-07-20 23:14:06 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=55.8s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-edit-group-to-subflow/00
+================================================================================
+
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+A valid Maestro BPMN file `Fulfillment.bpmn` is in t...
+2026-07-20 23:02:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:11:08 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 2684f00f-ce0b-4289-b0b3-d4a5b87afe41
+2026-07-20 23:11:08 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:11:08 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:11:08 [DEBUG] coder_eval.orchestrator: Agent response received (4391 chars)
+2026-07-20 23:11:08 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:11:08 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:11:08 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:11:08 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Group extracted into a subprocess, Ship Parcel preserved in main flow, file still structurally sound': python3 $TASK_DIR/check_group_to_subflow.py
+2026-07-20 23:11:09 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_group_to_subflow.py' exited with code 0
+2026-07-20 23:11:09 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: Pick/Pack extracted into a subprocess, Task_Ship preserved in main flow
+---
+2026-07-20 23:11:09 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:11:09 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:11:09 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:11:09 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:11:09 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-edit-group-to-subflow
+2026-07-20 23:11:09 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=539.0s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-edit-move-node/00
+================================================================================
+
+2026-07-20 23:11:08 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:11:08 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:11:08 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:11:08 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:11:08 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:11:08 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+A valid Maestro BPMN file `Onboarding.bpmn` is in th...
+2026-07-20 23:11:08 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:12:06 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> cf4353ff-9baa-4b0e-8a66-10d7f6670f86
+2026-07-20 23:12:06 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:12:06 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:06 [DEBUG] coder_eval.orchestrator: Agent response received (2729 chars)
+2026-07-20 23:12:06 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:12:06 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:12:06 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:12:06 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Tasks reordered by rewiring flows, payloads preserved, file still structurally sound': python3 $TASK_DIR/check_move_node.py
+2026-07-20 23:12:06 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_move_node.py' exited with code 0
+2026-07-20 23:12:06 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: nodes reordered, flows rewired, payloads preserved
+---
+2026-07-20 23:12:06 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:12:06 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:12:06 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:06 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:12:06 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-edit-move-node
+2026-07-20 23:12:06 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=59.3s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-edit-remove-node/00
+================================================================================
+
+2026-07-20 23:10:27 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:10:27 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:10:27 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:10:27 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:10:27 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:10:27 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+A valid Maestro BPMN file `ShipmentReview.bpmn` is i...
+2026-07-20 23:10:27 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:12:07 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 020fe5dc-e490-4bce-9fd8-7c155246c4c1
+2026-07-20 23:12:07 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:12:07 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:07 [DEBUG] coder_eval.orchestrator: Agent response received (4629 chars)
+2026-07-20 23:12:07 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:12:07 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:12:07 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:12:07 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Task removed, flow healed, DI clean, untouched content preserved, file still structurally sound': python3 $TASK_DIR/check_remove_node.py
+2026-07-20 23:12:08 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_remove_node.py' exited with code 0
+2026-07-20 23:12:08 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: Task_Enrich removed, flow healed, DI clean, untouched content preserved
+---
+2026-07-20 23:12:08 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:12:08 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:12:08 [WARNING] coder_eval.orchestrator: Visible turns (29) exceeded expected_turns (18) at iteration 1 for task skill-bpmn-edit-remove-node. Run continues — max_turns remains the hard cap.
+2026-07-20 23:12:08 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:08 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:12:08 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-edit-remove-node
+2026-07-20 23:12:08 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=102.3s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-edit-update-node/00
+================================================================================
+
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:15 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:15 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:15 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:15 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+A valid Maestro BPMN file `RiskScoring.bpmn` is in t...
+2026-07-20 23:02:15 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:02:58 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 9208762d-8c24-41a5-91f2-85928861cbf9
+2026-07-20 23:02:58 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:02:58 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:58 [DEBUG] coder_eval.orchestrator: Agent response received (2080 chars)
+2026-07-20 23:02:58 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:02:58 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:02:58 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:02:58 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Score threshold updated to 1000, siblings untouched, file still structurally sound': python3 $TASK_DIR/check_update_node.py
+2026-07-20 23:02:58 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_update_node.py' exited with code 0
+2026-07-20 23:02:58 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: Task_Score threshold updated, siblings untouched
+---
+2026-07-20 23:02:58 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:02:58 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:02:58 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:58 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:02:58 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-edit-update-node
+2026-07-20 23:02:58 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=47.8s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-event-trigger-start/00
+================================================================================
+
+2026-07-20 23:14:42 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:42 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:14:42 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:14:42 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:14:42 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:42 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Create a local BPMN project named "InboxTriggerBpmn"...
+2026-07-20 23:14:42 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:17:32 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 8ccaa315-1623-4512-a735-a6a3333bf9cf
+2026-07-20 23:17:32 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:17:32 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:17:32 [DEBUG] coder_eval.orchestrator: Agent response received (5342 chars)
+2026-07-20 23:17:32 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:17:32 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:17:32 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:17:32 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Connector event-trigger start is a public-safe draft with valid structure': python3 $TASK_DIR/check_event_trigger_start.py
+2026-07-20 23:17:32 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_event_trigger_start.py' exited with code 0
+2026-07-20 23:17:32 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: InboxTriggerBpmn/InboxTriggerBpmn.bpmn starts on a public-safe connector event-trigger draft
+---
+2026-07-20 23:17:32 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:17:32 [DEBUG] coder_eval.evaluation.judge_context: judge_context: include_reference=True but reference not set
+2026-07-20 23:17:40 [DEBUG] coder_eval.evaluation.checker: Criterion 'llm_judge' score: 1.00
+2026-07-20 23:17:40 [INFO] coder_eval.orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+2026-07-20 23:17:40 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:17:40 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:17:40 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-event-trigger-start
+2026-07-20 23:17:40 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=179.1s score=1.000 iterations=1
+2026-07-20 23:17:40 [DEBUG] coder_eval.evaluation.judge_persistence: spilled 1 judge transcript(s) to /work/output
+
+
+================================================================================
+TASK: default/skill-bpmn-feet-inches/00
+================================================================================
+
+2026-07-20 23:04:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:04:26 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:04:26 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:04:26 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:04:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:04:26 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a local Maestro BPMN project named "FeetInche...
+2026-07-20 23:04:26 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:12:43 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> aaa7d86b-d856-4992-a41b-eaa58b9e253f
+2026-07-20 23:12:43 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:12:43 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:43 [DEBUG] coder_eval.orchestrator: Agent response received (4822 chars)
+2026-07-20 23:12:43 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:12:43 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:12:43 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN is a linear script-task pipeline with variable passing and valid DI': python3 $TASK_DIR/check_feet_inches.py
+2026-07-20 23:12:43 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_feet_inches.py' exited with code 0
+2026-07-20 23:12:43 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: FeetInchesBpmn/FeetInchesBpmn.bpmn is a sequential script-task pipeline with variable passing between nodes
+---
+2026-07-20 23:12:43 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:12:43 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-20 23:12:43 [WARNING] coder_eval.orchestrator: Visible turns (30) exceeded expected_turns (22) at iteration 1 for task skill-bpmn-feet-inches. Run continues — max_turns remains the hard cap.
+2026-07-20 23:12:43 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:43 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:12:43 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-feet-inches
+2026-07-20 23:12:43 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=498.4s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-gateway-sequence-flows/00
+================================================================================
+
+2026-07-20 23:14:09 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:09 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:14:09 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:14:09 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:14:09 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:09 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a local BPMN project named "InvoiceTriageBpmn" for this process:
+- Manual start with input va...
+2026-07-20 23:14:09 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:18:22 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 3c7ae15e-be7e-4b88-b797-df0145e4d1f3
+2026-07-20 23:18:22 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:18:22 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:18:22 [DEBUG] coder_eval.orchestrator: Agent response received (5350 chars)
+2026-07-20 23:18:22 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:18:22 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN source was created': find InvoiceTriageBpmn -maxdepth 1 -type f -name '*.bpmn' | grep -q .
+2026-07-20 23:18:22 [DEBUG] coder_eval.sandbox: Command 'find InvoiceTriageBpmn -maxdepth 1 -type f -name '*.bpmn' | grep -q .' exited with code 0
+2026-07-20 23:18:22 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:18:22 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Gateway and sequence-flow structure is valid': python3 $TASK_DIR/check_gateway_sequence_flows.py
+2026-07-20 23:18:22 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_gateway_sequence_flows.py' exited with code 0
+2026-07-20 23:18:22 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: InvoiceTriageBpmn/InvoiceTriageBpmn.bpmn has gateways, conditional/default flows, and BPMN DI
+---
+2026-07-20 23:18:22 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:18:22 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-20 23:18:22 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:18:22 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:18:22 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-gateway-sequence-flows
+2026-07-20 23:18:22 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=255.1s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-hitl-boolean-decision/00
+================================================================================
+
+2026-07-20 23:03:30 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:03:30 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:03:30 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:03:30 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:03:30 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:03:30 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a local BPMN project named "VendorApprovalBpmn" for vendor onboarding:
+
+1. Manual start.
+2. A...
+2026-07-20 23:03:30 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:16:12 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 792484ca-53c6-4b7d-9dad-81876e718e6c
+2026-07-20 23:16:12 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:16:12 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:16:12 [DEBUG] coder_eval.orchestrator: Agent response received (5882 chars)
+2026-07-20 23:16:12 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:16:12 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:16:12 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:16:12 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Boolean approval is typed boolean and routed as a boolean (not stringly-typed)': python3 $TASK_DIR/check_quality_boolean_decision.py
+2026-07-20 23:16:12 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_quality_boolean_decision.py' exited with code 0
+2026-07-20 23:16:12 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: VendorApprovalBpmn/VendorApprovalBpmn.bpmn models the approval as a boolean and routes on it as a boolean
+---
+2026-07-20 23:16:12 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:16:12 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:16:12 [WARNING] coder_eval.orchestrator: Visible turns (31) exceeded expected_turns (24) at iteration 1 for task skill-bpmn-hitl-boolean-decision. Run continues — max_turns remains the hard cap.
+2026-07-20 23:16:12 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:16:12 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:16:12 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-hitl-boolean-decision
+2026-07-20 23:16:12 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=763.7s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-hitl-brownfield-insert/00
+================================================================================
+
+2026-07-20 23:12:09 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:09 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:12:10 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:12:10 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:12:10 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:10 [DEBUG] coder_eval.orchestrator: Sending prompt: An existing UiPath Maestro BPMN project is at `OrderFulfillmentBpmn/` in the
+current directory. Its ...
+2026-07-20 23:12:10 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:14:28 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> f3a43acf-90cc-4cbe-86a3-29b115ec8cd2
+2026-07-20 23:14:28 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:14:28 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:28 [DEBUG] coder_eval.orchestrator: Agent response received (3927 chars)
+2026-07-20 23:14:28 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:14:28 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:14:28 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:14:28 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'HITL spliced in surgically: original IDs/scripts preserved, only the target edge re-routed': python3 $TASK_DIR/check_quality_brownfield_insert.py
+2026-07-20 23:14:28 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_quality_brownfield_insert.py' exited with code 0
+2026-07-20 23:14:28 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn spliced the HITL gate in surgically, preserving original structure
+---
+2026-07-20 23:14:28 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:14:28 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:14:28 [WARNING] coder_eval.orchestrator: Visible turns (23) exceeded expected_turns (22) at iteration 1 for task skill-bpmn-hitl-brownfield-insert. Run continues — max_turns remains the hard cap.
+2026-07-20 23:14:28 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:28 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:14:28 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-hitl-brownfield-insert
+2026-07-20 23:14:28 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=139.9s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-hitl-completed-wired/00
+================================================================================
+
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a local BPMN project named "PurchaseApprovalBpmn" with this process:
+manual start -> HITL app...
+2026-07-20 23:02:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:05:57 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> a688ceb0-3add-44e0-92bd-a877d2d84ab9
+2026-07-20 23:05:57 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:05:57 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:05:57 [DEBUG] coder_eval.orchestrator: Agent response received (4375 chars)
+2026-07-20 23:05:57 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:05:57 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:05:57 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:05:57 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'HITL completion is wired to a downstream step that reaches an end event': python3 $TASK_DIR/check_smoke_completed_wired.py
+2026-07-20 23:05:57 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_smoke_completed_wired.py' exited with code 0
+2026-07-20 23:05:57 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: PurchaseApprovalBpmn/PurchaseApprovalBpmn.bpmn wires HITL completion to a downstream step that reaches an end event
+---
+2026-07-20 23:05:57 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:05:57 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:05:57 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:05:57 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:05:57 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-hitl-completed-wired
+2026-07-20 23:05:57 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=227.0s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-hitl-multi-outcome-routing/00
+================================================================================
+
+2026-07-20 23:02:13 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:13 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:13 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:13 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:13 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:13 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a local BPMN project named "LeaveRequestBpmn" with this process:
+
+1. Manual start.
+2. HITL us...
+2026-07-20 23:02:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:14:38 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 608e7382-5dd2-4155-a900-82abb18410fc
+2026-07-20 23:14:38 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:14:38 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:38 [DEBUG] coder_eval.orchestrator: Agent response received (4443 chars)
+2026-07-20 23:14:38 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:14:38 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:14:38 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:14:38 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'HITL outcome routed through an exclusive gateway into three distinct paths': python3 $TASK_DIR/check_smoke_multi_outcome_routing.py
+2026-07-20 23:14:38 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_smoke_multi_outcome_routing.py' exited with code 0
+2026-07-20 23:14:38 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: LeaveRequestBpmn/LeaveRequestBpmn.bpmn routes the HITL outcome into three distinct gateway branches
+---
+2026-07-20 23:14:38 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:14:38 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:14:38 [WARNING] coder_eval.orchestrator: Visible turns (39) exceeded expected_turns (24) at iteration 1 for task skill-bpmn-hitl-multi-outcome-routing. Run continues — max_turns remains the hard cap.
+2026-07-20 23:14:38 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:38 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:14:38 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-hitl-multi-outcome-routing
+2026-07-20 23:14:38 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=748.9s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-hitl-result-downstream/00
+================================================================================
+
+2026-07-20 23:02:13 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:13 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a local BPMN project named "ExpenseApprovalBpmn" with this process:
+
+1. Manual start.
+2. HITL...
+2026-07-20 23:02:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:09:48 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 3af44b9c-91fc-409f-8959-678b44218eed
+2026-07-20 23:09:48 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:09:48 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:09:48 [DEBUG] coder_eval.orchestrator: Agent response received (5340 chars)
+2026-07-20 23:09:48 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:09:48 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:09:48 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:09:48 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'A downstream gateway condition references the HITL output variable': python3 $TASK_DIR/check_quality_result_downstream.py
+2026-07-20 23:09:48 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_quality_result_downstream.py' exited with code 0
+2026-07-20 23:09:48 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn routes downstream on the HITL decision variable(s) ['Var_ApprovalDecision']
+---
+2026-07-20 23:09:48 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:09:48 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:09:48 [WARNING] coder_eval.orchestrator: Visible turns (34) exceeded expected_turns (24) at iteration 1 for task skill-bpmn-hitl-result-downstream. Run continues — max_turns remains the hard cap.
+2026-07-20 23:09:48 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:09:48 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:09:48 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-hitl-result-downstream
+2026-07-20 23:09:48 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=458.0s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-hitl-rpa-wrappers/00
+================================================================================
+
+2026-07-20 23:08:43 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:08:43 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:08:43 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:08:43 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:08:43 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:08:43 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a local BPMN project named "EmployeeAccessBpmn" with this flow:
+manual start -> HITL approval...
+2026-07-20 23:08:43 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:13:18 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 2a2e52ba-e614-456e-a8bf-842b2b5e0bce
+2026-07-20 23:13:18 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:13:18 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:13:18 [DEBUG] coder_eval.orchestrator: Agent response received (5797 chars)
+2026-07-20 23:13:18 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:13:18 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:13:18 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'HITL and RPA wrappers use the documented BPMN element types': python3 $TASK_DIR/check_hitl_rpa_wrappers.py
+2026-07-20 23:13:18 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_hitl_rpa_wrappers.py' exited with code 0
+2026-07-20 23:13:18 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: EmployeeAccessBpmn/EmployeeAccessBpmn.bpmn contains documented HITL and RPA wrappers
+---
+2026-07-20 23:13:18 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:13:18 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-20 23:13:18 [WARNING] coder_eval.orchestrator: Visible turns (29) exceeded expected_turns (14) at iteration 1 for task skill-bpmn-hitl-rpa-wrappers. Run continues — max_turns remains the hard cap.
+2026-07-20 23:13:18 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:13:18 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:13:18 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-hitl-rpa-wrappers
+2026-07-20 23:13:18 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=276.7s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-hitl-schema-design/00
+================================================================================
+
+2026-07-20 23:02:13 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:13 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a local BPMN project named "VendorPOReviewBpmn" for purchase-order
+review:
+
+- Manual start.
+-...
+2026-07-20 23:02:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:10:22 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> f069fdcb-b95e-4852-aaea-3e8d9f50f12b
+2026-07-20 23:10:22 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:10:22 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:10:22 [DEBUG] coder_eval.orchestrator: Agent response received (6536 chars)
+2026-07-20 23:10:22 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:10:22 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:10:22 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:10:22 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'HITL has context inputs and typed, declared output mappings': python3 $TASK_DIR/check_quality_schema_design.py
+2026-07-20 23:10:22 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_quality_schema_design.py' exited with code 0
+2026-07-20 23:10:22 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: VendorPOReviewBpmn/VendorPOReviewBpmn.bpmn HITL presents context and captures typed, declared reviewer outputs
+---
+2026-07-20 23:10:22 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:10:22 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:10:22 [WARNING] coder_eval.orchestrator: Visible turns (23) exceeded expected_turns (22) at iteration 1 for task skill-bpmn-hitl-schema-design. Run continues — max_turns remains the hard cap.
+2026-07-20 23:10:22 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:10:22 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:10:22 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-hitl-schema-design
+2026-07-20 23:10:22 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=492.5s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-http-weather/00
+================================================================================
+
+2026-07-20 23:12:50 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:50 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:12:50 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:12:50 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:12:50 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:50 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Create a local BPMN project named "OpenMeteoWeatherH...
+2026-07-20 23:12:50 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:16:04 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 331145b4-4f47-48ab-862e-24ea05e6e620
+2026-07-20 23:16:04 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:16:04 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:16:04 [DEBUG] coder_eval.orchestrator: Agent response received (6637 chars)
+2026-07-20 23:16:04 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:16:04 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:16:04 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:16:04 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:16:04 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'HTTP sendTask is connectionless manual GET to Open-Meteo with a bound output variable': python3 $TASK_DIR/check_http_weather.py
+2026-07-20 23:16:04 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_http_weather.py' exited with code 0
+2026-07-20 23:16:04 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn is a connectionless manual GET to Open-Meteo with a bound output
+---
+2026-07-20 23:16:04 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:16:04 [INFO] coder_eval.orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+2026-07-20 23:16:04 [WARNING] coder_eval.orchestrator: Visible turns (31) exceeded expected_turns (16) at iteration 1 for task skill-bpmn-http-weather. Run continues — max_turns remains the hard cap.
+2026-07-20 23:16:04 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:16:04 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:16:04 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-http-weather
+2026-07-20 23:16:04 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=195.8s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-integration-service-boundary/00
+================================================================================
+
+2026-07-20 23:43:33 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:43:33 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:43:33 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:43:33 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:43:33 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:43:33 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a local BPMN draft project named "SlackDigestBoundaryBpmn".
+The intended process is:
+manual s...
+2026-07-20 23:43:33 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:51:16 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> e1bfb1e8-f958-4fbb-a8b4-37d83927556e
+2026-07-20 23:51:16 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:51:16 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:51:16 [DEBUG] coder_eval.orchestrator: Agent response received (6973 chars)
+2026-07-20 23:51:16 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:51:16 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:51:16 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Integration Service draft stays inside the CLI-owned boundary': python3 $TASK_DIR/check_integration_service_boundary.py
+2026-07-20 23:51:17 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_integration_service_boundary.py' exited with code 0
+2026-07-20 23:51:17 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn keeps Integration Service details in the CLI-owned boundary
+---
+2026-07-20 23:51:17 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:51:17 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-20 23:51:17 [WARNING] coder_eval.orchestrator: Visible turns (30) exceeded expected_turns (19) at iteration 1 for task skill-bpmn-integration-service-boundary. Run continues — max_turns remains the hard cap.
+2026-07-20 23:51:17 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:51:17 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:51:17 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-integration-service-boundary
+2026-07-20 23:51:17 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=465.0s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-loop-multiply/00
+================================================================================
+
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a local Maestro BPMN project named "LoopMulti...
+2026-07-20 23:02:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:07:20 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> a3d6f714-0084-4ce6-a3e1-4c1e6b7d4a75
+2026-07-20 23:07:20 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:07:20 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:20 [DEBUG] coder_eval.orchestrator: Agent response received (5521 chars)
+2026-07-20 23:07:20 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:07:20 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:07:20 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:07:20 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN has a sequential multi-instance marker with a bound collection and valid DI': python3 $TASK_DIR/check_loop_multiply.py
+2026-07-20 23:07:20 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_loop_multiply.py' exited with code 0
+2026-07-20 23:07:20 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: LoopMultiplyBpmn/LoopMultiplyBpmn.bpmn multiplies a collection through a sequential multi-instance marker
+---
+2026-07-20 23:07:20 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:07:20 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:07:20 [WARNING] coder_eval.orchestrator: Visible turns (28) exceeded expected_turns (22) at iteration 1 for task skill-bpmn-loop-multiply. Run continues — max_turns remains the hard cap.
+2026-07-20 23:07:20 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:20 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:07:20 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-loop-multiply
+2026-07-20 23:07:20 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=310.1s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-message-catch/00
+================================================================================
+
+2026-07-20 23:03:11 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:03:11 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:03:11 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:03:11 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:03:11 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:03:11 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Create a local BPMN project named "AwaitApprovalMess...
+2026-07-20 23:03:11 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:07:10 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> f64e1d69-d1b0-4ab8-bbbc-c22648ad1a71
+2026-07-20 23:07:10 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:07:10 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:10 [DEBUG] coder_eval.orchestrator: Agent response received (5201 chars)
+2026-07-20 23:07:10 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:07:10 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:07:10 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:07:10 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Receive-message wait is a mid-flow intermediate catch event with the start preserved': python3 $TASK_DIR/check_message_catch.py
+2026-07-20 23:07:10 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_message_catch.py' exited with code 0
+2026-07-20 23:07:10 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: AwaitApprovalMessage/AwaitApprovalMessage.bpmn waits mid-flow on a receive-message catch event with the start preserved
+---
+2026-07-20 23:07:10 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:07:10 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:07:10 [WARNING] coder_eval.orchestrator: Visible turns (36) exceeded expected_turns (16) at iteration 1 for task skill-bpmn-message-catch. Run continues — max_turns remains the hard cap.
+2026-07-20 23:07:10 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:10 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:07:10 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-message-catch
+2026-07-20 23:07:10 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=240.7s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-multi-city-weather/00
+================================================================================
+
+2026-07-20 23:07:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:14 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:07:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:07:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:07:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:14 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a local Maestro BPMN project named "MultiCity...
+2026-07-20 23:07:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:14:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 820447a9-a3ef-4301-951a-2d7d73e00d51
+2026-07-20 23:14:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:14:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:14 [DEBUG] coder_eval.orchestrator: Agent response received (4881 chars)
+2026-07-20 23:14:14 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:14:14 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:14:14 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:14:14 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN has a parallel multi-instance marker with a bound cities collection and valid DI': python3 $TASK_DIR/check_multi_city_weather.py
+2026-07-20 23:14:14 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_multi_city_weather.py' exited with code 0
+2026-07-20 23:14:14 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: MultiCityWeatherBpmn/MultiCityWeatherBpmn.bpmn classifies cities through a parallel multi-instance script task
+---
+2026-07-20 23:14:14 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:14:14 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:14:14 [WARNING] coder_eval.orchestrator: Visible turns (25) exceeded expected_turns (22) at iteration 1 for task skill-bpmn-multi-city-weather. Run continues — max_turns remains the hard cap.
+2026-07-20 23:14:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:14 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:14:14 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-multi-city-weather
+2026-07-20 23:14:14 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=420.9s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-operate-diagnose-minimal-fault-triage/00
+================================================================================
+
+2026-07-20 23:07:24 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:24 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:07:25 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:07:25 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:07:25 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:25 [DEBUG] coder_eval.orchestrator: Sending prompt: A UiPath Maestro BPMN process run failed. Diagnose it using the mocked `uip`
+CLI responses already a...
+2026-07-20 23:07:25 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:08:31 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 13a75fc6-878b-4790-9413-94f7f823307b
+2026-07-20 23:08:31 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:08:31 [DEBUG] coder_eval.utils: `uip` at /work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage/mocks/uip is not inside a recognizable node_modules/@uipath tree
+2026-07-20 23:08:31 [DEBUG] coder_eval.orchestrator: Agent response received (3254 chars)
+2026-07-20 23:08:31 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:08:31 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:08:31 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:08:31 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:08:31 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:08:31 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:08:31 [DEBUG] coder_eval.evaluation.judge_context: judge_context: include_reference=True but reference not set
+2026-07-20 23:08:39 [DEBUG] coder_eval.evaluation.checker: Criterion 'llm_judge' score: 1.00
+2026-07-20 23:08:39 [INFO] coder_eval.orchestrator: Success criteria: 6/6 passed, weighted score: 1.000
+2026-07-20 23:08:39 [WARNING] coder_eval.orchestrator: Visible turns (18) exceeded expected_turns (16) at iteration 1 for task skill-bpmn-operate-diagnose-minimal-fault-triage. Run continues — max_turns remains the hard cap.
+2026-07-20 23:08:39 [DEBUG] coder_eval.utils: `uip` at /work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage/mocks/uip is not inside a recognizable node_modules/@uipath tree
+2026-07-20 23:08:39 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:08:39 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage
+2026-07-20 23:08:39 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=75.7s score=1.000 iterations=1
+2026-07-20 23:08:39 [DEBUG] coder_eval.evaluation.judge_persistence: spilled 1 judge transcript(s) to /work/output
+
+
+================================================================================
+TASK: default/skill-bpmn-parallel-fork-join/00
+================================================================================
+
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a single Maestro BPMN file `ParallelSync.bpmn...
+2026-07-20 23:02:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:04:23 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 766d198c-268f-4a1f-8490-f17c9e9538b6
+2026-07-20 23:04:23 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:04:23 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:04:23 [DEBUG] coder_eval.orchestrator: Agent response received (3235 chars)
+2026-07-20 23:04:23 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:04:23 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:04:23 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:04:23 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN forks into >=2 distinct parallel branches and synchronizes them at a join gateway, with full DI': python3 $TASK_DIR/check_fork_join.py
+2026-07-20 23:04:23 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_fork_join.py' exited with code 0
+2026-07-20 23:04:23 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: ParallelSync.bpmn forks into parallel branches and synchronizes them at a join gateway
+---
+2026-07-20 23:04:23 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:04:23 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:04:23 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:04:23 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:04:23 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-parallel-fork-join
+2026-07-20 23:04:23 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=133.5s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-reading-list/00
+================================================================================
+
+2026-07-20 23:43:33 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:43:33 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:43:33 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:43:33 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:43:33 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:43:33 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a local Maestro BPMN project named "ReadingLi...
+2026-07-20 23:43:33 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:50:12 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 3ddaf60e-52a2-4758-933c-420cd2a22e66
+2026-07-20 23:50:12 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:50:12 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:50:12 [DEBUG] coder_eval.orchestrator: Agent response received (5485 chars)
+2026-07-20 23:50:12 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:50:12 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:50:12 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN has distinct filter and map script tasks over the catalog and valid DI': python3 $TASK_DIR/check_reading_list.py
+2026-07-20 23:50:12 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_reading_list.py' exited with code 0
+2026-07-20 23:50:12 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: ReadingListBpmn/ReadingListBpmn.bpmn curates the catalog through distinct filter and map script tasks
+---
+2026-07-20 23:50:12 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:50:12 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-20 23:50:12 [WARNING] coder_eval.orchestrator: Visible turns (24) exceeded expected_turns (22) at iteration 1 for task skill-bpmn-reading-list. Run continues — max_turns remains the hard cap.
+2026-07-20 23:50:12 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:50:12 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:50:12 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-reading-list
+2026-07-20 23:50:12 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=400.3s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-registry-discovery/00
+================================================================================
+
+2026-07-20 23:05:05 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:05:05 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:05:05 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:05:05 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:05:05 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:05:06 [DEBUG] coder_eval.orchestrator: Sending prompt: Use the installed `uip` CLI's Maestro BPMN registry surface to discover the
+documented wrapper surfa...
+2026-07-20 23:05:06 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:07:36 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> ff555649-e2a6-4767-9c43-c85c6abacfbb
+2026-07-20 23:07:36 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:07:36 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:36 [DEBUG] coder_eval.orchestrator: Agent response received (5840 chars)
+2026-07-20 23:07:36 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:07:36 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:07:36 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:07:36 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:07:36 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:07:36 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Registry evidence covers documented agent, queue, and connector wrapper types': python3 $TASK_DIR/check_registry_discovery.py
+2026-07-20 23:07:36 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_registry_discovery.py' exited with code 0
+2026-07-20 23:07:36 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: registry-evidence covers agent/queue/connector wrappers across 7 files
+---
+2026-07-20 23:07:36 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:07:36 [INFO] coder_eval.orchestrator: Success criteria: 5/5 passed, weighted score: 1.000
+2026-07-20 23:07:36 [WARNING] coder_eval.orchestrator: Visible turns (33) exceeded expected_turns (28) at iteration 1 for task skill-bpmn-registry-discovery. Run continues — max_turns remains the hard cap.
+2026-07-20 23:07:36 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:36 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:07:36 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-registry-discovery
+2026-07-20 23:07:36 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=151.8s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-rpa-job/00
+================================================================================
+
+2026-07-20 23:12:10 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:10 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:12:10 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:12:10 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:12:10 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:10 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Create a local BPMN project named "InvoiceExtraction...
+2026-07-20 23:12:10 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:14:36 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 969a3181-c7e2-4db1-8210-55527fb87ab3
+2026-07-20 23:14:36 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:14:36 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:36 [DEBUG] coder_eval.orchestrator: Agent response received (3810 chars)
+2026-07-20 23:14:36 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:14:36 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:14:36 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:14:36 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'RPA job serviceTask uses Orchestrator.StartJob with input and a declared output variable': python3 $TASK_DIR/check_rpa_job.py
+2026-07-20 23:14:37 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_rpa_job.py' exited with code 0
+2026-07-20 23:14:37 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: InvoiceExtractionRpa/InvoiceExtractionRpa.bpmn wires Orchestrator.StartJob with bound input and output variable
+---
+2026-07-20 23:14:37 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:14:37 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:14:37 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:37 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:14:37 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-rpa-job
+2026-07-20 23:14:37 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=148.0s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-script-jint-guidance/00
+================================================================================
+
+2026-07-20 23:14:34 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:34 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:14:34 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:14:34 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:14:34 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:34 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a local BPMN project named "RiskScoreScriptBpmn".
+The process should manually start with `amo...
+2026-07-20 23:14:34 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:16:56 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 9da340f7-07f2-4312-b07a-b4a6708511d0
+2026-07-20 23:16:56 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:16:56 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:16:56 [DEBUG] coder_eval.orchestrator: Agent response received (6325 chars)
+2026-07-20 23:16:56 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:16:56 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN source was created': find RiskScoreScriptBpmn -maxdepth 1 -type f -name '*.bpmn' | grep -q .
+2026-07-20 23:16:56 [DEBUG] coder_eval.sandbox: Command 'find RiskScoreScriptBpmn -maxdepth 1 -type f -name '*.bpmn' | grep -q .' exited with code 0
+2026-07-20 23:16:56 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:16:56 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Script task follows Jint-compatible BPMN guidance': python3 $TASK_DIR/check_script_jint_guidance.py
+2026-07-20 23:16:56 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_script_jint_guidance.py' exited with code 0
+2026-07-20 23:16:56 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: RiskScoreScriptBpmn/RiskScoreScriptBpmn.bpmn contains a Jint-compatible BPMN script task
+---
+2026-07-20 23:16:56 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:16:56 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-20 23:16:56 [WARNING] coder_eval.orchestrator: Visible turns (22) exceeded expected_turns (15) at iteration 1 for task skill-bpmn-script-jint-guidance. Run continues — max_turns remains the hard cap.
+2026-07-20 23:16:56 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:16:56 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:16:56 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-script-jint-guidance
+2026-07-20 23:16:56 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=143.2s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-script-jint-lifecycle/00
+================================================================================
+
+2026-07-20 23:07:40 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:40 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:07:40 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:07:40 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:07:40 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:40 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Maestro BPMN Process Orchestration project at:
+  ScriptNormalizer/ScriptNormalizer
+
+...
+2026-07-20 23:07:40 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:12:05 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> f1aac194-e9dc-4e6e-a6cf-adc068c0de94
+2026-07-20 23:12:05 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:12:05 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:05 [DEBUG] coder_eval.orchestrator: Agent response received (3642 chars)
+2026-07-20 23:12:05 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:12:05 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:12:05 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Script task uses JavaScript/v3 Jint-safe source and package lifecycle files': python3 $TASK_DIR/check_script_jint_lifecycle.py
+2026-07-20 23:12:05 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_script_jint_lifecycle.py' exited with code 0
+2026-07-20 23:12:05 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: scriptTask uses JavaScript/v3 Jint-safe source and package lifecycle files
+---
+2026-07-20 23:12:05 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:12:05 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-20 23:12:05 [WARNING] coder_eval.orchestrator: Visible turns (31) exceeded expected_turns (22) at iteration 1 for task skill-bpmn-script-jint-lifecycle. Run continues — max_turns remains the hard cap.
+2026-07-20 23:12:05 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:12:05 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:12:05 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-script-jint-lifecycle
+2026-07-20 23:12:05 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=266.4s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-simple-approval-bpmn/00
+================================================================================
+
+2026-07-20 23:43:33 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:43:33 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:43:33 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:43:33 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:43:33 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:43:33 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a local BPMN project named "ExpenseApprovalBpmn" for this process:
+- Manual start with input ...
+2026-07-20 23:43:33 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:55:54 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 814cd25a-65eb-4b33-876f-78a2732f47bd
+2026-07-20 23:55:55 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:55:55 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:55:55 [DEBUG] coder_eval.orchestrator: Agent response received (4818 chars)
+2026-07-20 23:55:55 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:55:55 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:55:55 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:55:55 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Simple approval BPMN combines StartAgentJob, gateway, CreateQueueItem, script, variables, migration, and DI': python3 $TASK_DIR/check_simple_approval_bpmn.py
+2026-07-20 23:55:55 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_simple_approval_bpmn.py' exited with code 0
+2026-07-20 23:55:55 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn contains the documented simple approval BPMN shape
+---
+2026-07-20 23:55:55 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:55:55 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:55:55 [WARNING] coder_eval.orchestrator: Visible turns (26) exceeded expected_turns (24) at iteration 1 for task skill-bpmn-simple-approval-bpmn. Run continues — max_turns remains the hard cap.
+2026-07-20 23:55:55 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:55:55 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:55:55 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-simple-approval-bpmn
+2026-07-20 23:55:55 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=743.2s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-smoke-registry-discovery/00
+================================================================================
+
+2026-07-20 23:13:19 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/home/azureuser/.npm-global/lib/node_modules/@uipath from `uip` at /home/azureuser/.npm-global/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:13:19 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:13:19 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:13:19 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:13:19 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/home/azureuser/.npm-global/lib/node_modules/@uipath from `uip` at /home/azureuser/.npm-global/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:13:20 [DEBUG] coder_eval.orchestrator: Sending prompt: I want to author a UiPath Maestro BPMN process that starts an RPA job and
+waits for an internal mess...
+2026-07-20 23:13:20 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:14:05 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 3fc7caf3-65d4-4259-b69c-c74fff21f16c
+2026-07-20 23:14:05 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:14:05 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/home/azureuser/.npm-global/lib/node_modules/@uipath from `uip` at /home/azureuser/.npm-global/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:05 [DEBUG] coder_eval.orchestrator: Agent response received (4486 chars)
+2026-07-20 23:14:05 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:14:05 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:14:05 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:14:05 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:14:05 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Raw registry evidence covers the RPA-job and receive-message types': python3 $TASK_DIR/check_registry_discovery.py
+2026-07-20 23:14:05 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_registry_discovery.py' exited with code 0
+2026-07-20 23:14:05 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: registry-evidence covers Orchestrator.StartJob, Maestro.ReceiveMessageEvent across 4 raw output files
+---
+2026-07-20 23:14:05 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:14:05 [INFO] coder_eval.orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+2026-07-20 23:14:05 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/home/azureuser/.npm-global/lib/node_modules/@uipath from `uip` at /home/azureuser/.npm-global/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:05 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:14:05 [INFO] coder_eval.orchestrator: Sandbox preserved to: runs/maestro-bpmn-baseline-report-1/default/skill-bpmn-smoke-registry-discovery/00/artifacts/skill-bpmn-smoke-registry-discovery
+2026-07-20 23:14:05 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=46.0s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-subprocess/00
+================================================================================
+
+2026-07-20 23:04:27 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:04:27 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:04:27 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:04:27 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:04:27 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:04:27 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a single Maestro BPMN file `SubflowDemo.bpmn`...
+2026-07-20 23:04:27 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:07:22 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 1d729484-e857-428c-b30f-2a5780e15917
+2026-07-20 23:07:22 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:07:22 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:22 [DEBUG] coder_eval.orchestrator: Agent response received (3616 chars)
+2026-07-20 23:07:22 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:07:22 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:07:22 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:07:22 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN encapsulates logic in a subProcess (nested start/activity/end) or callActivity, with a shape and resolvable flows': python3 $TASK_DIR/check_subprocess.py
+2026-07-20 23:07:22 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_subprocess.py' exited with code 0
+2026-07-20 23:07:22 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: SubflowDemo.bpmn encapsulates logic in a subProcess with a diagram shape
+---
+2026-07-20 23:07:22 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:07:22 [DEBUG] coder_eval.evaluation.judge_context: judge_context: include_reference=True but reference not set
+2026-07-20 23:07:28 [DEBUG] coder_eval.evaluation.checker: Criterion 'llm_judge' score: 1.00
+2026-07-20 23:07:28 [INFO] coder_eval.orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+2026-07-20 23:07:28 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:28 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:07:28 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-subprocess
+2026-07-20 23:07:28 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=182.2s score=1.000 iterations=1
+2026-07-20 23:07:28 [DEBUG] coder_eval.evaluation.judge_persistence: spilled 1 judge transcript(s) to /work/output
+
+
+================================================================================
+TASK: default/skill-bpmn-switch/00
+================================================================================
+
+2026-07-20 23:14:10 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:10 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:14:11 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:14:11 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:14:11 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:11 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a single Maestro BPMN file `SeasonLookup.bpmn...
+2026-07-20 23:14:11 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:15:38 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 21f10ce9-6c0f-473d-9b6f-7f4ee27b487c
+2026-07-20 23:15:38 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:15:38 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:15:38 [DEBUG] coder_eval.orchestrator: Agent response received (3123 chars)
+2026-07-20 23:15:38 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:15:38 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:15:38 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:15:38 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN has a multi-way exclusive gateway (3+ conditioned branches + default), full DI, resolvable flows': python3 $TASK_DIR/check_switch.py
+2026-07-20 23:15:39 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_switch.py' exited with code 0
+2026-07-20 23:15:39 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: SeasonLookup.bpmn has a multi-way exclusive gateway (3 conditioned + 1 default)
+---
+2026-07-20 23:15:39 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:15:39 [DEBUG] coder_eval.evaluation.judge_context: judge_context: include_reference=True but reference not set
+2026-07-20 23:15:43 [DEBUG] coder_eval.evaluation.checker: Criterion 'llm_judge' score: 1.00
+2026-07-20 23:15:43 [INFO] coder_eval.orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+2026-07-20 23:15:43 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:15:43 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:15:43 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-switch
+2026-07-20 23:15:43 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=94.1s score=1.000 iterations=1
+2026-07-20 23:15:43 [DEBUG] coder_eval.evaluation.judge_persistence: spilled 1 judge transcript(s) to /work/output
+
+
+================================================================================
+TASK: default/skill-bpmn-terminate/00
+================================================================================
+
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a single Maestro BPMN file `TerminateParallel...
+2026-07-20 23:02:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:04:44 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 93960df9-163c-4f88-928f-427791d40c29
+2026-07-20 23:04:44 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:04:44 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:04:44 [DEBUG] coder_eval.orchestrator: Agent response received (3281 chars)
+2026-07-20 23:04:44 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:04:44 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:04:44 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:04:44 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN has a terminate end event on one branch, a normal end on another, a fork, full DI, resolvable flows': python3 $TASK_DIR/check_terminate.py
+2026-07-20 23:04:45 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_terminate.py' exited with code 0
+2026-07-20 23:04:45 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: TerminateParallel.bpmn has a terminate end event on one branch and a normal end on another
+---
+2026-07-20 23:04:45 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:04:45 [DEBUG] coder_eval.evaluation.judge_context: judge_context: include_reference=True but reference not set
+2026-07-20 23:04:50 [DEBUG] coder_eval.evaluation.checker: Criterion 'llm_judge' score: 1.00
+2026-07-20 23:04:50 [INFO] coder_eval.orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+2026-07-20 23:04:50 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:04:50 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:04:50 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-terminate
+2026-07-20 23:04:50 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=160.7s score=1.000 iterations=1
+2026-07-20 23:04:50 [DEBUG] coder_eval.evaluation.judge_persistence: spilled 1 judge transcript(s) to /work/output
+
+
+================================================================================
+TASK: default/skill-bpmn-timer/00
+================================================================================
+
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:15 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a single Maestro BPMN file `TimerWait.bpmn` i...
+2026-07-20 23:02:15 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:03:24 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 27805430-41f3-49fe-b1a8-5b6d23e3c6d2
+2026-07-20 23:03:24 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:03:24 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:03:24 [DEBUG] coder_eval.orchestrator: Agent response received (2637 chars)
+2026-07-20 23:03:24 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:03:24 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:03:24 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:03:24 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN has a wired intermediate timer catch event with a valid ISO-8601 definition, full DI, resolvable flows': python3 $TASK_DIR/check_timer.py
+2026-07-20 23:03:25 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_timer.py' exited with code 0
+2026-07-20 23:03:25 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: TimerWait.bpmn has a wired intermediate timer catch event with a valid definition
+---
+2026-07-20 23:03:25 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:03:25 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:03:25 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:03:25 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:03:25 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-timer
+2026-07-20 23:03:25 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=74.4s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-timer-start/00
+================================================================================
+
+2026-07-20 23:02:13 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:13 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:13 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:13 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:13 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Create a local BPMN project named "ScheduledReportBp...
+2026-07-20 23:02:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:07:34 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 9dd428df-1272-47b6-9c40-626cdbc1fcbd
+2026-07-20 23:07:34 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:07:34 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:34 [DEBUG] coder_eval.orchestrator: Agent response received (4015 chars)
+2026-07-20 23:07:34 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:07:34 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:07:34 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:07:34 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:07:34 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Timer start event is a recurring scheduled start with valid structure': python3 $TASK_DIR/check_timer_start.py
+2026-07-20 23:07:34 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_timer_start.py' exited with code 0
+2026-07-20 23:07:34 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: ScheduledReportBpmn/ScheduledReportBpmn.bpmn starts on a recurring timer schedule (R/PT1H)
+---
+2026-07-20 23:07:34 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:07:34 [INFO] coder_eval.orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+2026-07-20 23:07:34 [WARNING] coder_eval.orchestrator: Visible turns (34) exceeded expected_turns (18) at iteration 1 for task skill-bpmn-timer-start. Run continues — max_turns remains the hard cap.
+2026-07-20 23:07:34 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:07:34 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:07:34 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-timer-start
+2026-07-20 23:07:34 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=324.8s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-transform-filter/00
+================================================================================
+
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a single Maestro BPMN file `TransformFilterDe...
+2026-07-20 23:02:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:04:21 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 9266ee98-9df3-4a4e-aebf-e5641504a501
+2026-07-20 23:04:21 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:04:21 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:04:21 [DEBUG] coder_eval.orchestrator: Agent response received (2971 chars)
+2026-07-20 23:04:21 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:04:21 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:04:21 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:04:21 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN has a Jint-safe scriptTask (v3, mapped I/O) implementing a filter transform, with full DI': python3 $TASK_DIR/check_transform_filter.py
+2026-07-20 23:04:21 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_transform_filter.py' exited with code 0
+2026-07-20 23:04:21 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: TransformFilterDemo.bpmn has a Jint-safe scriptTask performing a filter transform
+---
+2026-07-20 23:04:21 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:04:21 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:04:21 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:04:21 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:04:21 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-transform-filter
+2026-07-20 23:04:21 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=130.6s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-transform-group-by/00
+================================================================================
+
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:02:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:02:14 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a single Maestro BPMN file `TransformGroupByD...
+2026-07-20 23:02:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:05:01 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 477d4a97-4044-4a6b-9d4e-85708a747fb7
+2026-07-20 23:05:01 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:05:01 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:05:01 [DEBUG] coder_eval.orchestrator: Agent response received (2787 chars)
+2026-07-20 23:05:01 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:05:01 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:05:01 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:05:01 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN has a Jint-safe scriptTask (v3, mapped I/O) implementing a group-by transform, with full DI': python3 $TASK_DIR/check_transform_group_by.py
+2026-07-20 23:05:01 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_transform_group_by.py' exited with code 0
+2026-07-20 23:05:01 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: TransformGroupByDemo.bpmn has a Jint-safe scriptTask performing a group-by transform
+---
+2026-07-20 23:05:01 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:05:01 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:05:01 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:05:01 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:05:01 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-transform-group-by
+2026-07-20 23:05:01 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=171.6s score=1.000 iterations=1
+
+
+================================================================================
+TASK: default/skill-bpmn-transform-map/00
+================================================================================
+
+2026-07-20 23:11:12 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:11:12 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:11:13 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:11:13 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:11:13 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:11:13 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a single Maestro BPMN file `TransformMapDemo....
+2026-07-20 23:11:13 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:14:36 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 7a809cf4-c08a-49b1-b84f-e78e7f525275
+2026-07-20 23:14:37 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:14:37 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:37 [DEBUG] coder_eval.orchestrator: Agent response received (3056 chars)
+2026-07-20 23:14:37 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:14:37 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-20 23:14:37 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-20 23:14:37 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'BPMN has a Jint-safe scriptTask (v3, mapped I/O) implementing a map/uppercase transform, with full DI': python3 $TASK_DIR/check_transform_map.py
+2026-07-20 23:14:37 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_transform_map.py' exited with code 0
+2026-07-20 23:14:37 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: TransformMapDemo.bpmn has a Jint-safe scriptTask performing a map/uppercase transform
+---
+2026-07-20 23:14:37 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:14:37 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-20 23:14:37 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:14:37 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:14:37 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-transform-map
+2026-07-20 23:14:37 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=205.7s score=1.000 iterations=1
+

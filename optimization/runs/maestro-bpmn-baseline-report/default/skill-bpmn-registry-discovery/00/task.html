@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-registry-discovery · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-registry-discovery</h1>
+    <div class="subtitle">Registry discovery eval: agent uses the Maestro BPMN registry surface to discover documented agent, queue, and connector wrapper types and to save public-safe CLI evidence for the skill&#x27;s supported-element map without inventing private resource metadata. Requires the `uip` CLI on PATH.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">2m 32s</span>
+    <span class="badge neutral">$0.5550</span>
+    <span class="badge warning">expected_turns exceeded (33/28)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-20T23:05:04</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">2m 32s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">41</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">32</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(5/5 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>file_exists</td>
+  <td>Registry discovery evidence directory was created</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">File &#x27;registry-evidence&#x27; exists</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent ran a Maestro BPMN registry list call</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+list/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+list/)
+Examples: [&#x27;uip maestro bpmn registry list --limit -1 --output json 2&gt;&amp;1&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent ran a Maestro BPMN registry search call</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+search/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+search/)
+Examples: [&#x27;uip maestro bpmn registry search agent --output json 2&gt;&amp;1&#x27;, &#x27;uip maestro bpmn registry search queue --output json 2&gt;&amp;1&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent ran a Maestro BPMN registry get call</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 4/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+get/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 4/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+get/)
+Examples: [&#x27;uip maestro bpmn registry get Orchestrator.StartAgentJob --output json 2&gt;&amp;1&#x27;, &#x27;uip maestro bpmn registry get Orchestrator.CreateQueueItem --output json 2&gt;&amp;1&#x27;, &#x27;uip maestro bpmn registry get Orchestrator.CreateAndWaitForQueueItem --output json 2&gt;&amp;1&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Registry evidence covers documented agent, queue, and connector wrapper types</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_registry_discovery.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_registry_discovery.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: registry-evidence covers agent/queue/connector wrappers across 7 files
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">41 assistant turns</span>
+      <span class="badge neutral">in 27 · out 11923 · cache 869035</span>
+      <span class="badge neutral">2m 30s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-registry-discovery
+
+Use the installed `uip` CLI&#x27;s Maestro BPMN registry surface to discover the
+documented wrapper surface for agent, queue, and connector resource types.
+Save evidence locally without uploading, publishing, deploying, debugging, or
+running anything.
+
+Requirements:
+- Save outputs under a local `registry-evidence/` directory you create.
+- Capture raw JSON evidence for the overall registry catalog, a filtered
+  lookup for at least one documented agent or queue wrapper type, and the
+  detailed registry record for at least one documented wrapper type.
+- Use `--output json` for parsed CLI calls and write only the raw JSON output
+  files into `registry-evidence/`.
+- Do not invent connection IDs, folder keys, tenant URLs, real connector
+  keys, or release keys.
+- Do not upload, publish, deploy, debug, or run anything.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now run filtered searches for agent and queue wrapper types:
+[ASSISTANT] Now get the detailed registry records for the documented wrapper types — agent (`Orchestrator.StartAgentJob`) and queue types (`Orchestrator.CreateQueueItem`, `Orchestrator.CreateAndWaitForQueueItem`), plus the A2A connector agent type:
+[ASSISTANT] Also get the A2A connector agent type for completeness:
+[ASSISTANT] Now write the three detailed registry record files:
+[ASSISTANT] Let me verify the final directory contents:
+[ASSISTANT] All evidence is saved. Here&#x27;s a summary of what was captured in `registry-evidence/`:
+
+---
+
+## Evidence captured in `registry-evidence/`
+
+| File | CLI command | What it shows |
+|---|---|---|
+| `registry-catalog.json` | `uip maestro bpmn registry list --limit -1 --output json` | Full catalog of all 30 OOTB extension types across agent, queue, connector, HITL, RPA, and message categories |
+| `search-agent.json` | `uip maestro bpmn registry search agent --output json` | Filtered view of 7 agent-related wrapper types: `Orchestrator.StartAgentJob`, `Intsvc.AsyncExecution`, `Intsvc.SyncAgentExecution`, `Intsvc.AsyncAgentExecution`, `Orchestrator.StartAgenticProcess`, `Orchestrator.StartAgenticProcessAsync`, `A2A.AgentExecution` |
+| `search-queue.json` | `uip maestro bpmn registry search queue --output json` | Filtered view of 2 queue wrapper types: `Orchestrator.CreateQueueItem`, `Orchestrator.CreateAndWaitForQueueItem` |
+| `get-Orchestrator.StartAgentJob.json` | `uip maestro bpmn registry get Orchestrator.StartAgentJob --output json` | Full detailed record: `xmlTemplate`, `contextFields` (name + folderPath with process binding), `bindingInfo`, input/output patterns for the Agent Builder wrapper |
+| `get-Orchestrator.CreateQueueItem.json` | `uip maestro bpmn registry get Orchestrator.CreateQueueItem --output json` | Full detailed record: `xmlTemplate`, `contextFields` (queueName/folderId/folderPath), queue `bindingInfo`, discovery notes |
+| `get-Orchestrator.CreateAndWaitForQueueItem.json` | `uip maestro bpmn registry get Orchestrator.CreateAndWaitForQueueItem --output json` | Full detailed record for the blocking queue variant (shares design schema with `CreateQueueItem`) |
+| `get-A2A.AgentExecution.json` | `uip maestro bpmn registry get A2A.AgentExecution --output json` | Full detailed record for the A2A external-agent connector type: no binding required (`BindingPattern: none`), input fields (agentUrl, skillId, input, authToken, agentName), full output schema notes |
+
+Key findings from the registry:
+- **Agent wrappers**: `Orchestrator.StartAgentJob` uses a `process` binding (resolved at runtime via `=bindings.&lt;id&gt;`); `A2A.AgentExecution` requires no binding (URL/skillId are direct inputs).
+- **Queue wrappers**: Both queue types use `BindingPattern: queue` and share the same design schema; `CreateQueueItem` hosts on `bpmn:SendTask` (fire-and-forget), `CreateAndWaitForQueueItem` hosts on `bpmn:ServiceTask` (blocking).
+- **Connector types**: IS connector wrappers (`Intsvc.*AgentExecution`) use `BindingPattern: connection` and `RequiresDiscovery: Yes` — they need `--connection-id` enrichment before authoring.
+[RESULT - SUCCESS] All evidence is saved. Here&#x27;s a summary of what was captured in `registry-evidence/`:
+
+---
+
+## Evidence captured in `registry-evidence/`
+
+| File | CLI command | What it shows |
+|---|---|---|
+| `registry-catalog.json` | `uip maestro bpmn registry list --limit -1 --output json` | Full catalog of all 30 OOTB extension types across agent, queue, connector, HITL, RPA, and message categories |
+| `search-agent.json` | `uip maestro bpmn registry search agent --output json` | Filtered view of 7 agent-related wrapper types: `Orchestrator.StartAgentJob`, `Intsvc.AsyncExecution`, `Intsvc.SyncAgentExecution`, `Intsvc.AsyncAgentExecution`, `Orchestrator.StartAgenticProcess`, `Orchestrator.StartAgenticProcessAsync`, `A2A.AgentExecution` |
+| `search-queue.json` | `uip maestro bpmn registry search queue --output js</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (32)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.26s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/registry-workflow.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Registry workflow
+2	
+3	Every `uipath:*` payload in a Maestro `.bpmn` comes from the registry — never
+4	from prose, never hand-written. This file is the loop for turning user intent
+5	into registry-backed XML.
+6	
+7	## 1. Sync and discover
+8	
+9	```bash
+10	uip maestro bpmn registry pull            # sync + cache (login for connectors/processes)
+11	uip maestro bpmn registry list --limit -1 --output json   # all extension types
+12	uip maestro bpmn registry search &lt;keyword&gt; --output json  # find a type by intent
+13	uip is connections list --all-folders --output json   # live IS connections (all folders)
+14	```
+15	
+16	Map the user&#x27;s intent to an extension type from the list. Confirm the choice
+17	with the user (and the specific connection / process / queue) before authoring.
+18	**Never fabricate an identifier** — see [cli-conventions.md](cli-conventions.md).
+19	
+20	**Connection discovery must be exhaustive.** Always pass `--all-folders` to
+21	`uip is connections list` — connections live in many folders and a folder-scoped
+22	listing silently misses them. An empty or unmatched result from a missing
+23	`--all-folders`, or from a connector key guessed from a brand name rather than
+24	fou
+
+… (truncated, 10064 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/cli-conventions.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# CLI Conventions (authoring)
+2	
+3	This reference covers the **authoring-side** CLI surface only: the read-only
+4	registry discovery commands used to produce a valid, importable Maestro `.bpmn`
+5	file. The registry commands below never mutate cloud state. Operate and diagnose
+6	use different CLI commands — see
+7	[operate/CAPABILITY.md](operate/CAPABILITY.md) and
+8	[diagnose/CAPABILITY.md](diagnose/CAPABILITY.md).
+9	
+10	## Discovery commands (read-only, authoring-safe)
+11	
+12	All commands below are discovery/read-only. None mutate cloud state.
+13	
+14	| Command | Purpose |
+15	| --- | --- |
+16	| `uip maestro bpmn registry pull [-f\|--force]` | Sync and cache the registry. Without login, only OOTB extension types are synced; login adds discovered connectors and processes. |
+17	| `uip maestro bpmn registry list [--limit &lt;n\|-1&gt;]` | List cached extension types (and discovered connectors/processes). Default 30; use `--limit -1` for all. |
+18	| `uip maestro bpmn registry search &lt;keyword&gt;` | Find entries by keyword across extension type, label, connector name, process name. |
+19	| `uip maestro bpmn registry get &lt;extensionType&gt; [--connection-id &lt;id&gt;] [--object-name &lt;name&gt;]` | Get the full 
+
+… (truncated, 2239 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Create registry-evidence/ directory&quot;,
+  &quot;description&quot;: &quot;Create the output directory at /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #1 created successfully: Create registry-evidence/ directory</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Pull registry and capture full catalog JSON&quot;,
+  &quot;description&quot;: &quot;Run uip maestro bpmn registry pull, then uip maestro bpmn registry list --limit -1 --output json and save to registry-evidence/registry-catalog.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #2 created successfully: Pull registry and capture full catalog JSON</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Capture filtered search evidence for agent/queue wrapper types&quot;,
+  &quot;description&quot;: &quot;Run registry search for agent and queue keywords and save JSON output to registry-evidence/&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #3 created successfully: Capture filtered search evidence for agent/queue wrapper types</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Capture detailed registry records for documented wrapper types&quot;,
+  &quot;description&quot;: &quot;Run uip maestro bpmn registry get for at least one agent type and one queue type with --output json, save to registry-evidence/&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #4 created successfully: Capture detailed registry records for documented wrapper types</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;1&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #1 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">40ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence &amp;&amp; echo \&quot;Directory created\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Directory created</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;1&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #1 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;2&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #2 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.79s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry pull 2&gt;&amp;1&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryPullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypeCount&quot;: 30,
+    &quot;ConnectorCount&quot;: 0,
+    &quot;ProcessCount&quot;: 0,
+    &quot;ProcessCountsByType&quot;: {
+      &quot;Process&quot;: 0,
+      &quot;ProcessOrchestration&quot;: 0,
+      &quot;Agent&quot;: 0,
+      &quot;Flow&quot;: 0,
+      &quot;Api&quot;: 0,
+      &quot;Function&quot;: 0,
+      &quot;CaseManagement&quot;: 0,
+      &quot;BusinessRules&quot;: 0
+    },
+    &quot;FromCache&quot;: false,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh registry. Only built-in (OOTB) extension types synced. Run &#x27;uip login&#x27; to discover connectors and processes.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.86s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry list --limit -1 --output json 2&gt;&amp;1&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryListSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypes&quot;: [
+      {
+        &quot;ExtensionType&quot;: &quot;uipath:Activity&quot;,
+        &quot;Label&quot;: &quot;Canvas activity&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;none&quot;,
+        &quot;BindingPattern&quot;: &quot;none&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;No&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Actions.HITL&quot;,
+        &quot;Label&quot;: &quot;Create action app task&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:UserTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;none&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.StartJob&quot;,
+        &quot;Label&quot;: &quot;Start and wait for RPA workflow&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;process&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.StartAgentJob&quot;,
+        &quot;Label&quot;: &quot;Start and wait for agent&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;:
+
+… (truncated, 8573 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/registry-catalog.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;Result\&quot;: \&quot;Success\&quot;,\n  \&quot;Code\&quot;: \&quot;RegistryListSuccess\&quot;,\n  \&quot;Data\&quot;: {\n    \&quot;ExtensionTypes\&quot;: [\n      {\n        \&quot;ExtensionType\&quot;: \&quot;uipath:Activity\&quot;,\n        \&quot;Label\&quot;: \&quot;Canvas activity\&quot;,\n        \&quot;BpmnElement\&quot;: \&quot;bpmn:ServiceTask\&quot;,\n        \&quot;ExtensionTag\&quot;: \&quot;uipath:activity\&quot;,\n        \&quot;InputPattern\&quot;: \&quot;none\&quot;,\n        \&quot;BindingPattern\&quot;: \&quot;none\&quot;,\n        \&quot;RequiresDiscovery\&quot;: \&quot;No\&quot;\n      },\n      {\n        \&quot;Extens… (9374 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/registry-catalog.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;2&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #2 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;3&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #3 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.26s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry search agent --output json 2&gt;&amp;1&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistrySearchSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypes&quot;: [
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.StartAgentJob&quot;,
+        &quot;Label&quot;: &quot;Start and wait for agent&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;process&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Intsvc.AsyncExecution&quot;,
+        &quot;Label&quot;: &quot;Start and wait for external agent&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;separateInputs&quot;,
+        &quot;BindingPattern&quot;: &quot;connection&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Intsvc.SyncAgentExecution&quot;,
+        &quot;Label&quot;: &quot;Start and wait for external agent&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;separateInputs&quot;,
+        &quot;BindingPattern&quot;: &quot;connection&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Intsvc.AsyncAgentExecution&quot;,
+        &quot;Label&quot;: &quot;Start and wait for external agent&quot;,
+        &quot;BpmnElement&quot;:
+
+… (truncated, 1409 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.75s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry search queue --output json 2&gt;&amp;1&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistrySearchSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypes&quot;: [
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.CreateQueueItem&quot;,
+        &quot;Label&quot;: &quot;Create queue item&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:SendTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;queue&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.CreateAndWaitForQueueItem&quot;,
+        &quot;Label&quot;: &quot;Create and wait for queue item&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;queue&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      }
+    ],
+    &quot;Connectors&quot;: [],
+    &quot;Processes&quot;: [],
+    &quot;ProcessesByType&quot;: {
+      &quot;Process&quot;: 0,
+      &quot;ProcessOrchestration&quot;: 0,
+      &quot;Agent&quot;: 0,
+      &quot;Flow&quot;: 0,
+      &quot;Api&quot;: 0,
+      &quot;Function&quot;: 0,
+      &quot;CaseManagement&quot;: 0,
+      &quot;BusinessRules&quot;: 0
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.62s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/search-agent.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;Result\&quot;: \&quot;Success\&quot;,\n  \&quot;Code\&quot;: \&quot;RegistrySearchSuccess\&quot;,\n  \&quot;Data\&quot;: {\n    \&quot;ExtensionTypes\&quot;: [\n      {\n        \&quot;ExtensionType\&quot;: \&quot;Orchestrator.StartAgentJob\&quot;,\n        \&quot;Label\&quot;: \&quot;Start and wait for agent\&quot;,\n        \&quot;BpmnElement\&quot;: \&quot;bpmn:ServiceTask\&quot;,\n        \&quot;ExtensionTag\&quot;: \&quot;uipath:activity\&quot;,\n        \&quot;InputPattern\&quot;: \&quot;mergedBody\&quot;,\n        \&quot;BindingPattern\&quot;: \&quot;process\&quot;,\n        \&quot;RequiresDiscovery\&quot;: \&quot;Yes\&quot;\n… (2210 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/search-agent.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">32ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/search-queue.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;Result\&quot;: \&quot;Success\&quot;,\n  \&quot;Code\&quot;: \&quot;RegistrySearchSuccess\&quot;,\n  \&quot;Data\&quot;: {\n    \&quot;ExtensionTypes\&quot;: [\n      {\n        \&quot;ExtensionType\&quot;: \&quot;Orchestrator.CreateQueueItem\&quot;,\n        \&quot;Label\&quot;: \&quot;Create queue item\&quot;,\n        \&quot;BpmnElement\&quot;: \&quot;bpmn:SendTask\&quot;,\n        \&quot;ExtensionTag\&quot;: \&quot;uipath:activity\&quot;,\n        \&quot;InputPattern\&quot;: \&quot;mergedBody\&quot;,\n        \&quot;BindingPattern\&quot;: \&quot;queue\&quot;,\n        \&quot;RequiresDiscovery\&quot;: \&quot;Yes\&quot;\n      },\n … (591 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/search-queue.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;3&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #3 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;4&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #4 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.80s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get Orchestrator.StartAgentJob --output json 2&gt;&amp;1&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;Orchestrator.StartAgentJob&quot;,
+      &quot;Label&quot;: &quot;Start and wait for agent&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+      &quot;Placements&quot;: {
+        &quot;Activity&quot;: {
+          &quot;Type&quot;: &quot;bpmn:ServiceTask&quot;
+        }
+      },
+      &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+      &quot;ContextFields&quot;: [
+        {
+          &quot;Name&quot;: &quot;name&quot;,
+          &quot;DisplayName&quot;: &quot;Agent&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: true,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: true,
+          &quot;DefaultValue&quot;: null,
+          &quot;BindingInfo&quot;: {
+            &quot;Resource&quot;: &quot;process&quot;,
+            &quot;ResourceKeyPattern&quot;: &quot;${metadata.key}&quot;,
+            &quot;PropertyAttribute&quot;: &quot;name&quot;
+          }
+        },
+        {
+          &quot;Name&quot;: &quot;folderPath&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: true,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: true,
+          &quot;DefaultValue&quot;: null,
+          &quot;BindingInfo&quot;: {
+            &quot;Resource&quot;: &quot;process&quot;,
+            &quot;ResourceKeyPattern&quot;: &quot;${metadata.key}&quot;,
+            &quot;PropertyAttribute&quot;: &quot;folderPath&quot;
+      
+
+… (truncated, 1350 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.28s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get Orchestrator.CreateQueueItem --output json 2&gt;&amp;1&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;Orchestrator.CreateQueueItem&quot;,
+      &quot;Label&quot;: &quot;Create queue item&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:SendTask&quot;,
+      &quot;Placements&quot;: {
+        &quot;Activity&quot;: {
+          &quot;Type&quot;: &quot;bpmn:SendTask&quot;
+        }
+      },
+      &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+      &quot;ContextFields&quot;: [
+        {
+          &quot;Name&quot;: &quot;queueName&quot;,
+          &quot;DisplayName&quot;: &quot;Queue name&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: null,
+          &quot;BindingInfo&quot;: {
+            &quot;Resource&quot;: &quot;queue&quot;,
+            &quot;ResourceKeyPattern&quot;: &quot;${metadata.key}&quot;,
+            &quot;PropertyAttribute&quot;: &quot;Key&quot;
+          }
+        },
+        {
+          &quot;Name&quot;: &quot;folderId&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: null
+        },
+        {
+          &quot;Name&quot;: &quot;folderPath&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+ 
+
+… (truncated, 1525 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.63s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get Orchestrator.CreateAndWaitForQueueItem --output json 2&gt;&amp;1&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;Orchestrator.CreateAndWaitForQueueItem&quot;,
+      &quot;Label&quot;: &quot;Create and wait for queue item&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+      &quot;Placements&quot;: {
+        &quot;Activity&quot;: {
+          &quot;Type&quot;: &quot;bpmn:ServiceTask&quot;
+        }
+      },
+      &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+      &quot;ContextFields&quot;: [
+        {
+          &quot;Name&quot;: &quot;queueName&quot;,
+          &quot;DisplayName&quot;: &quot;Queue name&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: null,
+          &quot;BindingInfo&quot;: {
+            &quot;Resource&quot;: &quot;queue&quot;,
+            &quot;ResourceKeyPattern&quot;: &quot;${metadata.key}&quot;,
+            &quot;PropertyAttribute&quot;: &quot;Key&quot;
+          }
+        },
+        {
+          &quot;Name&quot;: &quot;folderId&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: null
+        },
+        {
+          &quot;Name&quot;: &quot;folderPath&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+     
+
+… (truncated, 1634 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.91s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get A2A.AgentExecution --output json 2&gt;&amp;1&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;A2A.AgentExecution&quot;,
+      &quot;Label&quot;: &quot;Start and wait for A2A agent&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+      &quot;Placements&quot;: {
+        &quot;Activity&quot;: {
+          &quot;Type&quot;: &quot;bpmn:ServiceTask&quot;
+        }
+      },
+      &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+      &quot;ContextFields&quot;: [],
+      &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+      &quot;InputName&quot;: &quot;body&quot;,
+      &quot;InputTarget&quot;: &quot;body&quot;,
+      &quot;OutputSource&quot;: null,
+      &quot;OutputType&quot;: &quot;A2A.AgentExecution&quot;,
+      &quot;OutputName&quot;: &quot;a2aResponse&quot;,
+      &quot;UseRelativeSource&quot;: true,
+      &quot;BindingPattern&quot;: &quot;none&quot;,
+      &quot;RequiresDiscovery&quot;: false,
+      &quot;IsDynamic&quot;: true,
+      &quot;XmlTemplate&quot;: &quot;&lt;bpmn:ServiceTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:activity version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;A2A.AgentExecution\&quot; version=\&quot;v1\&quot; /&gt;\n      &lt;uipath:input name=\&quot;body\&quot; type=\&quot;json\&quot; target=\&quot;body\&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;\n      &lt;uipath:output name=\&quot;a2aResponse\&quot; type=\&quot;A2A.AgentExecution\&quot; var=\&quot;{varId}\&quot; /&gt;\n    &lt;/uipath:activity&gt;\n  &lt;/bpmn:extensionElements&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incomin
+
+… (truncated, 1622 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18.49s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-Orchestrator.StartAgentJob.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;Result\&quot;: \&quot;Success\&quot;,\n  \&quot;Code\&quot;: \&quot;RegistryGetSuccess\&quot;,\n  \&quot;Data\&quot;: {\n    \&quot;ExtensionType\&quot;: {\n      \&quot;ExtensionType\&quot;: \&quot;Orchestrator.StartAgentJob\&quot;,\n      \&quot;Label\&quot;: \&quot;Start and wait for agent\&quot;,\n      \&quot;BpmnElement\&quot;: \&quot;bpmn:ServiceTask\&quot;,\n      \&quot;Placements\&quot;: {\n        \&quot;Activity\&quot;: {\n          \&quot;Type\&quot;: \&quot;bpmn:ServiceTask\&quot;\n        }\n      },\n      \&quot;ExtensionTag\&quot;: \&quot;uipath:activity\&quot;,\n      \&quot;ContextFields\&quot;: [\n     … (2151 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-Orchestrator.StartAgentJob.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12.51s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-Orchestrator.CreateQueueItem.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;Result\&quot;: \&quot;Success\&quot;,\n  \&quot;Code\&quot;: \&quot;RegistryGetSuccess\&quot;,\n  \&quot;Data\&quot;: {\n    \&quot;ExtensionType\&quot;: {\n      \&quot;ExtensionType\&quot;: \&quot;Orchestrator.CreateQueueItem\&quot;,\n      \&quot;Label\&quot;: \&quot;Create queue item\&quot;,\n      \&quot;BpmnElement\&quot;: \&quot;bpmn:SendTask\&quot;,\n      \&quot;Placements\&quot;: {\n        \&quot;Activity\&quot;: {\n          \&quot;Type\&quot;: \&quot;bpmn:SendTask\&quot;\n        }\n      },\n      \&quot;ExtensionTag\&quot;: \&quot;uipath:activity\&quot;,\n      \&quot;ContextFields\&quot;: [\n        {\n      … (2326 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-Orchestrator.CreateQueueItem.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.18s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-Orchestrator.CreateAndWaitForQueueItem.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;Result\&quot;: \&quot;Success\&quot;,\n  \&quot;Code\&quot;: \&quot;RegistryGetSuccess\&quot;,\n  \&quot;Data\&quot;: {\n    \&quot;ExtensionType\&quot;: {\n      \&quot;ExtensionType\&quot;: \&quot;Orchestrator.CreateAndWaitForQueueItem\&quot;,\n      \&quot;Label\&quot;: \&quot;Create and wait for queue item\&quot;,\n      \&quot;BpmnElement\&quot;: \&quot;bpmn:ServiceTask\&quot;,\n      \&quot;Placements\&quot;: {\n        \&quot;Activity\&quot;: {\n          \&quot;Type\&quot;: \&quot;bpmn:ServiceTask\&quot;\n        }\n      },\n      \&quot;ExtensionTag\&quot;: \&quot;uipath:activity\&quot;,\n      \&quot;Conte… (2435 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-Orchestrator.CreateAndWaitForQueueItem.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">60ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-A2A.AgentExecution.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;Result\&quot;: \&quot;Success\&quot;,\n  \&quot;Code\&quot;: \&quot;RegistryGetSuccess\&quot;,\n  \&quot;Data\&quot;: {\n    \&quot;ExtensionType\&quot;: {\n      \&quot;ExtensionType\&quot;: \&quot;A2A.AgentExecution\&quot;,\n      \&quot;Label\&quot;: \&quot;Start and wait for A2A agent\&quot;,\n      \&quot;BpmnElement\&quot;: \&quot;bpmn:ServiceTask\&quot;,\n      \&quot;Placements\&quot;: {\n        \&quot;Activity\&quot;: {\n          \&quot;Type\&quot;: \&quot;bpmn:ServiceTask\&quot;\n        }\n      },\n      \&quot;ExtensionTag\&quot;: \&quot;uipath:activity\&quot;,\n      \&quot;ContextFields\&quot;: [],\n      \&quot;… (2423 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-A2A.AgentExecution.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;4&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #4 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -1 /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>get-A2A.AgentExecution.json
+get-Orchestrator.CreateAndWaitForQueueItem.json
+get-Orchestrator.CreateQueueItem.json
+get-Orchestrator.StartAgentJob.json
+registry-catalog.json
+search-agent.json
+search-queue.json</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">32</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">32 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">2.05s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>10</td></tr><tr><td class='mono'>TaskUpdate</td><td>8</td></tr><tr><td class='mono'>Write</td><td>7</td></tr><tr><td class='mono'>TaskCreate</td><td>4</td></tr><tr><td class='mono'>Read</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Write</td><td>18.49s</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/work/output/artifacts/skill-bpmn-r...</td></tr><tr><td class='mono'>Write</td><td>12.51s</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/work/output/artifacts/skill-bpmn-r...</td></tr><tr><td class='mono'>Write</td><td>6.18s</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/work/output/artifacts/skill-bpmn-r...</td></tr><tr><td class='mono'>Bash</td><td>5.63s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry get Orchest...</td></tr><tr><td class='mono'>Bash</td><td>4.28s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry get Orchest...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>TaskUpdate → TaskUpdate → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">2m 32s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">41</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">2m 30s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">27</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">11,923</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">30,775</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">869,035</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">911,760</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.5550</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>60</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.197.0-alpha.20260626.7673</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;agent-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;functions-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;gov-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;insights-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;solution-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.4</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.46.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-20T23:07:36</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

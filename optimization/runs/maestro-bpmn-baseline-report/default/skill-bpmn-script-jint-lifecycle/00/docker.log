@@ -1,0 +1,6 @@
+23:07:40 [INFO   ] [default/skill-bpmn-script-jint-lifecycle/00] orchestrator: API routing: aws_bedrock
+23:12:05 [INFO   ] [default/skill-bpmn-script-jint-lifecycle/00] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+23:12:05 [WARNING] [default/skill-bpmn-script-jint-lifecycle/00] orchestrator: Visible turns (31) exceeded expected_turns (22) at iteration 1 for task skill-bpmn-script-jint-lifecycle. Run continues — max_turns remains the hard cap.
+23:12:05 [INFO   ] [default/skill-bpmn-script-jint-lifecycle/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+23:12:05 [INFO   ] [default/skill-bpmn-script-jint-lifecycle/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-script-jint-lifecycle
+23:12:05 [INFO   ] [default/skill-bpmn-script-jint-lifecycle/00] orchestrator: Task finished: status=SUCCESS duration=266.4s score=1.000 iterations=1

@@ -1,0 +1,290 @@
+{
+  "Result": "Success",
+  "Code": "RegistryListSuccess",
+  "Data": {
+    "ExtensionTypes": [
+      {
+        "ExtensionType": "uipath:Activity",
+        "Label": "Canvas activity",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "none",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      },
+      {
+        "ExtensionType": "Actions.HITL",
+        "Label": "Create action app task",
+        "BpmnElement": "bpmn:UserTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.StartJob",
+        "Label": "Start and wait for RPA workflow",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "process",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.StartAgentJob",
+        "Label": "Start and wait for agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "process",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.BusinessRules",
+        "Label": "Execute business rule [Preview]",
+        "BpmnElement": "bpmn:BusinessRuleTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "businessRule",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.ActivityExecution",
+        "Label": "Execute connector activity",
+        "BpmnElement": "bpmn:SendTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.HttpExecution",
+        "Label": "Execute HTTP request (Legacy)",
+        "BpmnElement": "bpmn:SendTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "none",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      },
+      {
+        "ExtensionType": "Intsvc.UnifiedHttpRequest",
+        "Label": "Execute HTTP request",
+        "BpmnElement": "bpmn:SendTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      },
+      {
+        "ExtensionType": "Intsvc.WaitForEvent",
+        "Label": "Wait for connector event",
+        "BpmnElement": "bpmn:ReceiveTask",
+        "ExtensionTag": "uipath:event",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.EventTrigger",
+        "Label": "Wait for connector event (trigger)",
+        "BpmnElement": "bpmn:StartEvent",
+        "ExtensionTag": "uipath:event",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.AsyncExecution",
+        "Label": "Start and wait for external agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.SyncAgentExecution",
+        "Label": "Start and wait for external agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.AsyncAgentExecution",
+        "Label": "Start and wait for external agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.SyncWorkflowExecution",
+        "Label": "Start and wait for external workflow",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.AsyncWorkflowExecution",
+        "Label": "Start and wait for external workflow",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.ExecuteApiWorkflowAsync",
+        "Label": "Start and wait for API workflow [Preview]",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "process",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.CreateQueueItem",
+        "Label": "Create queue item",
+        "BpmnElement": "bpmn:SendTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "queue",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.CreateAndWaitForQueueItem",
+        "Label": "Create and wait for queue item",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "queue",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.StartAgenticProcess",
+        "Label": "Start and wait for agentic process",
+        "BpmnElement": "bpmn:CallActivity",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "process",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.StartAgenticProcessAsync",
+        "Label": "Start agentic process",
+        "BpmnElement": "bpmn:CallActivity",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "process",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.StartCaseMgmtProcess",
+        "Label": "Start and wait for case management",
+        "BpmnElement": "bpmn:CallActivity",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "process",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.StartCaseMgmtProcessAsync",
+        "Label": "Start case management",
+        "BpmnElement": "bpmn:CallActivity",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "process",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "A2A.AgentExecution",
+        "Label": "Start and wait for A2A agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      },
+      {
+        "ExtensionType": "BPMN.Variables",
+        "Label": "BPMN Variables",
+        "BpmnElement": "bpmn:Task",
+        "ExtensionTag": "uipath:mapping",
+        "InputPattern": "none",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      },
+      {
+        "ExtensionType": "BPMN.ScriptTask",
+        "Label": "Execute script",
+        "BpmnElement": "bpmn:ScriptTask",
+        "ExtensionTag": "uipath:mapping",
+        "InputPattern": "scriptArgs",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      },
+      {
+        "ExtensionType": "Intsvc.TimerTrigger",
+        "Label": "Timer trigger",
+        "BpmnElement": "bpmn:StartEvent",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "none",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      },
+      {
+        "ExtensionType": "Maestro.ReceiveMessageEvent",
+        "Label": "Receive internal message",
+        "BpmnElement": "bpmn:IntermediateCatchEvent",
+        "ExtensionTag": "uipath:event",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      },
+      {
+        "ExtensionType": "Maestro.SendMessageEvent",
+        "Label": "Send internal message",
+        "BpmnElement": "bpmn:IntermediateThrowEvent",
+        "ExtensionTag": "uipath:event",
+        "InputPattern": "splitInputsItemData",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      },
+      {
+        "ExtensionType": "Maestro.CaseRulesEvaluator",
+        "Label": "Case rules evaluator",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      },
+      {
+        "ExtensionType": "Maestro.CaseManagerGuardrails",
+        "Label": "Case manager guardrails",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      }
+    ],
+    "Connectors": [],
+    "Processes": [],
+    "ProcessesByType": {
+      "Process": 0,
+      "ProcessOrchestration": 0,
+      "Agent": 0,
+      "Flow": 0,
+      "Api": 0,
+      "Function": 0,
+      "CaseManagement": 0,
+      "BusinessRules": 0
+    }
+  }
+}

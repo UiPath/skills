@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_Amount" name="Amount" type="number" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:exclusiveGateway id="Gw_AmountCheck" name="Amount check" default="Flow_Default">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_OverThreshold</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Default</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:endEvent id="End_Approved" name="Approved">
+      <bpmn:incoming>Flow_OverThreshold</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="End_Standard" name="Standard approval">
+      <bpmn:incoming>Flow_Default</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Gw_AmountCheck" />
+
+    <bpmn:sequenceFlow id="Flow_OverThreshold" sourceRef="Gw_AmountCheck" targetRef="End_Approved">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Amount > 1000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_Default" sourceRef="Gw_AmountCheck" targetRef="End_Standard" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_End_Approved" bpmnElement="End_Approved"><dc:Bounds x="366" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Standard" bpmnElement="End_Standard"><dc:Bounds x="366" y="166" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_AmountCheck" bpmnElement="Gw_AmountCheck"><dc:Bounds x="256" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_1" bpmnElement="Flow_1"><di:waypoint x="178" y="118" /><di:waypoint x="281" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Default" bpmnElement="Flow_Default"><di:waypoint x="281" y="125" /><di:waypoint x="384" y="184" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_OverThreshold" bpmnElement="Flow_OverThreshold"><di:waypoint x="281" y="125" /><di:waypoint x="384" y="118" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
