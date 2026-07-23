@@ -24,6 +24,7 @@ OUTPUT_NAMES = {
     "slackAction",
     "responseMode",
     "caseKey",
+    "lastAttachmentName",
     "failureReason",
 }
 
@@ -241,7 +242,7 @@ def cases() -> list[dict[str, Any]]:
                 "serviceState": "uNaVaIlAbLe",
                 "workaroundAvailable": False,
                 "duplicateIssueKey": "",
-                "attachmentCount": 3,
+                "attachments": [{"name": "outage.png"}, {"name": "trace.zip"}],
                 "agentOutputValid": True,
                 "jiraAvailable": True,
                 "autoSendEnabled": False,
@@ -257,6 +258,7 @@ def cases() -> list[dict[str, Any]]:
                 "slackAction": "PostAlert",
                 "responseMode": "Draft",
                 "caseKey": correlation(run_id, "SEV1-NEW"),
+                "lastAttachmentName": "trace.zip",
                 "failureReason": "",
             },
         },
@@ -268,7 +270,7 @@ def cases() -> list[dict[str, Any]]:
                 "serviceState": "dEgRaDeD",
                 "workaroundAvailable": True,
                 "duplicateIssueKey": "SUP-4821",
-                "attachmentCount": 1,
+                "attachments": [{"name": "logs.txt"}],
                 "agentOutputValid": True,
                 "jiraAvailable": True,
                 "autoSendEnabled": True,
@@ -284,6 +286,7 @@ def cases() -> list[dict[str, Any]]:
                 "slackAction": "PostAlert",
                 "responseMode": "Draft",
                 "caseKey": correlation(run_id, "SEV2-DUP"),
+                "lastAttachmentName": "logs.txt",
                 "failureReason": "",
             },
         },
@@ -295,7 +298,7 @@ def cases() -> list[dict[str, Any]]:
                 "serviceState": "AVAILABLE",
                 "workaroundAvailable": False,
                 "duplicateIssueKey": "",
-                "attachmentCount": 0,
+                "attachments": [],
                 "agentOutputValid": True,
                 "jiraAvailable": False,
                 "autoSendEnabled": True,
@@ -311,6 +314,7 @@ def cases() -> list[dict[str, Any]]:
                 "slackAction": "NoAlert",
                 "responseMode": "Send",
                 "caseKey": correlation(run_id, "SEV3-SEND"),
+                "lastAttachmentName": "",
                 "failureReason": "",
             },
         },
@@ -322,7 +326,10 @@ def cases() -> list[dict[str, Any]]:
                 "serviceState": "Unavailable",
                 "workaroundAvailable": False,
                 "duplicateIssueKey": "SUP-IGNORED",
-                "attachmentCount": 2,
+                "attachments": [
+                    {"name": "unknown.eml"},
+                    {"name": "screenshot.png"},
+                ],
                 "agentOutputValid": False,
                 "jiraAvailable": False,
                 "autoSendEnabled": True,
@@ -338,6 +345,7 @@ def cases() -> list[dict[str, Any]]:
                 "slackAction": "NoAlert",
                 "responseMode": "Draft",
                 "caseKey": correlation(run_id, "CRM-NONE"),
+                "lastAttachmentName": "",
                 "failureReason": "CrmNotFound",
             },
         },
@@ -349,7 +357,7 @@ def cases() -> list[dict[str, Any]]:
                 "serviceState": "Degraded",
                 "workaroundAvailable": True,
                 "duplicateIssueKey": "",
-                "attachmentCount": 0,
+                "attachments": [],
                 "agentOutputValid": False,
                 "jiraAvailable": False,
                 "autoSendEnabled": False,
@@ -365,6 +373,7 @@ def cases() -> list[dict[str, Any]]:
                 "slackAction": "NoAlert",
                 "responseMode": "Draft",
                 "caseKey": correlation(run_id, "CRM-MULTI"),
+                "lastAttachmentName": "",
                 "failureReason": "CrmAmbiguous",
             },
         },
@@ -376,7 +385,10 @@ def cases() -> list[dict[str, Any]]:
                 "serviceState": "Unavailable",
                 "workaroundAvailable": False,
                 "duplicateIssueKey": "",
-                "attachmentCount": 4,
+                "attachments": [
+                    {"name": "classifier.json"},
+                    {"name": "body.txt"},
+                ],
                 "agentOutputValid": False,
                 "jiraAvailable": False,
                 "autoSendEnabled": True,
@@ -392,6 +404,7 @@ def cases() -> list[dict[str, Any]]:
                 "slackAction": "NoAlert",
                 "responseMode": "Draft",
                 "caseKey": correlation(run_id, "AGENT-BAD"),
+                "lastAttachmentName": "",
                 "failureReason": "InvalidAgentOutput",
             },
         },
@@ -403,7 +416,7 @@ def cases() -> list[dict[str, Any]]:
                 "serviceState": "UNAVAILABLE",
                 "workaroundAvailable": False,
                 "duplicateIssueKey": "SUP-9000",
-                "attachmentCount": 2,
+                "attachments": [{"name": "outage.png"}],
                 "agentOutputValid": True,
                 "jiraAvailable": False,
                 "autoSendEnabled": True,
@@ -419,6 +432,7 @@ def cases() -> list[dict[str, Any]]:
                 "slackAction": "NoAlert",
                 "responseMode": "Draft",
                 "caseKey": correlation(run_id, "JIRA-DOWN"),
+                "lastAttachmentName": "",
                 "failureReason": "JiraUnavailable",
             },
         },
@@ -430,7 +444,7 @@ def cases() -> list[dict[str, Any]]:
                 "serviceState": "aVaIlAbLe",
                 "workaroundAvailable": False,
                 "duplicateIssueKey": "SUP-7777",
-                "attachmentCount": 0,
+                "attachments": [],
                 "agentOutputValid": True,
                 "jiraAvailable": False,
                 "autoSendEnabled": True,
@@ -446,6 +460,7 @@ def cases() -> list[dict[str, Any]]:
                 "slackAction": "NoAlert",
                 "responseMode": "Draft",
                 "caseKey": correlation(run_id, "SEV3-DUP-JIRA-DOWN"),
+                "lastAttachmentName": "",
                 "failureReason": "",
             },
         },
@@ -457,7 +472,7 @@ def cases() -> list[dict[str, Any]]:
                 "serviceState": "UnAvAiLaBlE",
                 "workaroundAvailable": True,
                 "duplicateIssueKey": "",
-                "attachmentCount": 0,
+                "attachments": [],
                 "agentOutputValid": True,
                 "jiraAvailable": True,
                 "autoSendEnabled": False,
@@ -473,6 +488,39 @@ def cases() -> list[dict[str, Any]]:
                 "slackAction": "PostAlert",
                 "responseMode": "Draft",
                 "caseKey": correlation(run_id, "SEV2-WORKAROUND"),
+                "lastAttachmentName": "",
+                "failureReason": "",
+            },
+        },
+        {
+            "name": "whitespace-duplicate-is-new-escalation",
+            "inputs": {
+                "customerTier": "Standard",
+                "crmMatchCount": 1,
+                "serviceState": "Degraded",
+                "workaroundAvailable": True,
+                "duplicateIssueKey": " \t  ",
+                "attachments": [
+                    {"name": "first.txt"},
+                    {"name": "second.txt"},
+                    {"name": "final.txt"},
+                ],
+                "agentOutputValid": True,
+                "jiraAvailable": True,
+                "autoSendEnabled": True,
+                "businessImpact": "A stakeholder supplied whitespace as the issue key",
+                "correlationId": correlation(run_id, "TRIM-DUP"),
+            },
+            "expected": {
+                "route": "NewEscalation",
+                "severity": "Sev2",
+                "engineeringNeeded": True,
+                "jiraAction": "CreateIssue",
+                "attachmentAction": "SaveToDrive",
+                "slackAction": "PostAlert",
+                "responseMode": "Draft",
+                "caseKey": correlation(run_id, "TRIM-DUP"),
+                "lastAttachmentName": "final.txt",
                 "failureReason": "",
             },
         },
@@ -507,15 +555,15 @@ def verify_case(case: dict[str, Any]) -> None:
         label=f"incidents for {case['name']}",
     )
     assert_no_incidents(incidents)
-    print(f"OK: {case['name']} completed with all nine exact typed outputs")
+    print(f"OK: {case['name']} completed with all ten exact typed outputs")
 
 
 def main() -> None:
     if not BPMN.is_file():
         fail(f"missing BPMN file: {BPMN}")
     hidden_cases = cases()
-    if len(hidden_cases) != 9:
-        fail("grader bug: expected exactly nine hidden cases")
+    if len(hidden_cases) != 10:
+        fail("grader bug: expected exactly ten hidden cases")
     for case in hidden_cases:
         verify_case(case)
 

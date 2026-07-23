@@ -83,57 +83,6 @@ discovery rather than guessing. Otherwise proceed with the supplied contract.
    (extra gateways, events, boundary events, containers, multi-instance markers),
    then generate one `BPMNShape`/`BPMNEdge` per node and flow.
 
-   Large executable processes whose stopping point requires complete local
-   package metadata are more reliable when assembled in bounded checkpoints
-   instead of one giant XML write. For that case, the bundled scaffold helper
-   can create the metadata and typed start-to-end shell before nodes and DI are
-   added:
-
-   ```bash
-   python3 scripts/scaffold-project.py <ProjectName> \
-     --input requestId:string \
-     --output-variable status:string
-   ```
-
-   Keep each declared type unchanged: `integer` and `number` are distinct. For
-   a larger acyclic process made only from registry-confirmed `BPMN.Variables`
-   activities and gateways, the optional plan assembler can expand a compact
-   node/flow plan into mappings, incoming/outgoing references, and BPMN DI:
-
-   ```bash
-   python3 scripts/assemble-variable-process.py <ProjectName> process-plan.json
-   ```
-
-   The plan still owns each task, output mapping, gateway, default, guarded
-   flow, and topology. Use `{{variableName}}` in expressions; unknown variables
-   and JavaScript-only operators without `=js:` are rejected. Minimal shape:
-
-   ```json
-   {
-     "nodes": [
-       {"id":"Task_Set","kind":"task","name":"Set status",
-        "outputs":{"status":"Approved"}},
-       {"id":"GW_Decide","kind":"exclusiveGateway","name":"Approved?",
-        "default":"Flow_No"},
-       {"id":"GW_Merge","kind":"exclusiveGateway","name":"Merge"}
-     ],
-     "flows": [
-       {"id":"Flow_Start","source":"Start_1","target":"GW_Decide"},
-       {"id":"Flow_Yes","source":"GW_Decide","target":"Task_Set",
-        "condition":"={{approved}} == true"},
-       {"id":"Flow_No","source":"GW_Decide","target":"GW_Merge"},
-       {"id":"Flow_Done","source":"Task_Set","target":"GW_Merge"},
-       {"id":"Flow_End","source":"GW_Merge","target":"End_1"}
-     ]
-   }
-   ```
-
-   The assembler does not support connector, agent, RPA, HITL, or event nodes;
-   author those directly from their exact registry templates. Use `--replace`
-   only to regenerate a plan-owned BPMN after editing that plan.
-   Do not use either helper for an enrichment-blocked draft, or whenever the
-   user says generated package metadata must remain absent. In that case,
-   author only the permitted draft files and leave CLI-owned metadata missing.
 4. **Validate.** There is **no** `uip maestro bpmn validate` CLI command. Run the
    bundled validator — it reconstructs the canvas model and runs every
    PO.Frontend rule:
