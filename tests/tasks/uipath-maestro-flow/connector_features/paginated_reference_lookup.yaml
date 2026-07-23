@@ -34,7 +34,7 @@ success_criteria:
   - type: command_executed
     description: "Agent invoked `uip is resources run list ... curated_channels` more than once (pagination loop ran)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+"?uipath-salesforce-slack"?\s+"?curated_channels'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+[\\"]*uipath-salesforce-slack[\\"]*\s+[\\"]*curated_channels'
     min_count: 2
     weight: 3.0
     pass_threshold: 1.0
