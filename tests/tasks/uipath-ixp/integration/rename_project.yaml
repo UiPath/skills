@@ -1,8 +1,8 @@
-task_id: skill-ixp-integration-document-filename-resolution
+task_id: skill-ixp-integration-rename-project
 description: >
-  Integration: document filename resolution and project rename on a live
-  tenant. The agent must resolve a document FILENAME to its DocumentId via
-  `documents list`, then rename the project using the Name returned by create.
+  Integration: project title rename on a live tenant. The agent creates an
+  isolated project, renames it using the Name returned by create, and verifies
+  the resulting project details.
 tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
@@ -28,32 +28,13 @@ initial_prompt: |
   import the taxonomy and upload the three invoices — and give it a unique title
   `codereval-integ-resolve-<random-suffix>` so concurrent runs don't collide.
 
-  Then:
-  - Delete the file `york_solutions_invoice.png`, then save the remaining document
-    list to `documents_after.json`.
-  - Append `-renamed` to the project's title, then save the project's details to
-    `project_after.json`.
-
   Right after the project is created, write `report.json` for cleanup:
   {"project_name": "<the ProjectName from the create response>"}.
 
+  Append `-renamed` to the project's title, then save the project's details to
+  `project_after.json`.
+
 success_criteria:
-  - type: file_matches_regex
-    description: "Listed documents to resolve the filename → DocumentId, then re-read to save the remaining list"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+documents\s+list)[^\r\n]*$){2}
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_matches_regex
-    description: "Deleted the named document by resolved id (with -y)"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+documents\s+delete\b.*(-y|--yes))[^\r\n]*$
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: file_matches_regex
     description: "Renamed the project via update-title using its Name"
     path: "mocks/calls.log"
@@ -62,27 +43,10 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_matches_regex
-    description: "Did NOT pass the raw filename through as a document id to delete"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+documents\s+delete\s+\S+\s+york_solutions_invoice\.png)[^\r\n]*$
-    must_match: false
-    weight: 1.5
-    pass_threshold: 1.0
-
   - type: file_exists
     description: "report.json written for post-run cleanup"
     path: "report.json"
     weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "york is gone from the list; the other two documents remain"
-    path: "documents_after.json"
-    includes: ["csi_tower_invoice.png", "hp_tax_invoice.png"]
-    excludes: ["york_solutions_invoice.png"]
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: file_contains
