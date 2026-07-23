@@ -22,7 +22,7 @@ Non-UIA `uip rpa` commands (`focus-activity`, `test-data add-queue`, `run`, `val
 
 ## Pitfall-callout exception
 
-A **short pitfall callout** (1–3 lines per item) MAY name a runtime symptom (error string or broken behavior) AND the UIA subcommand category it occurs in, when the callout warns about a known waste-of-calls failure mode. Each callout MUST anchor to the UIA package docs for canonical syntax — link the relevant package doc directly (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/<guide>.md`). UIA behavior pitfalls belong in the package guide's own § Common UIA Pitfalls, not in skill files.
+A **short pitfall callout** (1–3 lines per item) MAY name a runtime symptom (error string or broken behavior) AND the UIA subcommand category it occurs in, when the callout warns about a known waste-of-calls failure mode. Each callout MUST anchor to the UIA package docs for canonical syntax — name the relevant package reference and route through the entry point (`ui-automation-guide.md` § Documentation); never link a package reference file by path. UIA behavior pitfalls belong in the package guide's own § Common UIA Pitfalls, not in skill files.
 
 What stays out, even in pitfall callouts: concrete flag names, flag values, artifact filenames, bash blocks, runnable examples, and full flag tables. Name the failure and the fix direction; the package owns the exact syntax. Use this exception sparingly. The default is still the category-pointer pattern below.
 
@@ -35,7 +35,7 @@ Describe capability at the category level and route to UIA docs for concrete syn
 - "the indication commands" — not `indicate-application` / `indicate-element`
 - "recover mode" — not `--mode recover`
 - "the target definition file" — not `Target_Definition.json`
-- Doc pointers: reference package docs directly by installed path (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/<path>`). Keep the set of package files referenced from skill files small and entry-point-shaped — prefer `ui-automation-guide.md` (the authoring entry point; it routes onward) over deep links; deep-link a `references/<purpose>-guide.md` only when the pointer serves exactly that one purpose
+- Doc pointers: `ui-automation-guide.md` (installed path `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) is the ONLY package file skill files may reference by path — the authoring entry point; its § Documentation routes to every other package doc. Point at other package content by name plus the guide section that routes to it (e.g. "the target-capture orchestration reference the guide mandates"), never by path — deep links couple the skill to the package's doc layout, which evolves with the package
 
 ## Example
 
@@ -45,7 +45,7 @@ Describe capability at the category level and route to UIA docs for concrete syn
 
 **Correct** (points at UIA docs for concrete syntax):
 
-> Query existing screens via the OR CLI, then attach the screen per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
+> Query existing screens via the OR CLI, then attach the screen per the package's target-attachment guide (routed from `ui-automation-guide.md` § Documentation).
 
 ## Where to put new content
 

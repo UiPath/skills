@@ -167,7 +167,7 @@ For end-to-end authoring of `ConnectorActivity` XAML (connection + type ID + Con
 
 ### UI Automation — Target Configuration Gate (MANDATORY)
 
-Before writing any XAML with UI activities: the UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first (SKILL.md Rule 7). Every UI element target MUST be configured through the `uia-configure-target` skill flow — the package's `references/uia-configure-target-workflows.md` MUST be read IN FULL first.
+Before writing any XAML with UI activities: the UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first (SKILL.md Rule 7). Every UI element target MUST be configured through the `uia-configure-target` skill flow — the guide mandates the target-capture orchestration reference to read IN FULL first.
 
 **NEVER** manually call low-level `uip rpa uia` CLI commands outside of the skill flow.
 

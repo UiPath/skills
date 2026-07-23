@@ -49,7 +49,7 @@ When a workflow fails at runtime with a selector error:
 1. **The app is already in the right state.** The debug session paused at the failing activity, so the app's current DOM reflects the state that activity needs to target.
 2. **Identify the failing element** -- read the error to find which descriptor/element failed.
 3. **Read the window selector** -- from the Object Repository files, find the screen's selector that scopes the failing element.
-4. **Run the `uia-improve-selector` skill in recover mode.** Read `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-improve-selector/USAGE.md`, pick the appropriate invocation form for this context, run the staging CLI command from that form, spawn a subagent with the Agent tool to run the skill in recover mode against the staged folder, then run the write-back CLI command from the same form to persist the recovered selector.
+4. **Run the `uia-improve-selector` skill in recover mode.** Read the skill's USAGE.md (listed in the package guide § Documentation), pick the appropriate invocation form for this context, run the staging CLI command from that form, spawn a subagent with the Agent tool to run the skill in recover mode against the staged folder, then run the write-back CLI command from the same form to persist the recovered selector.
 5. **Clean up and re-run** -- follow the procedure above (stop, diff, close leaked windows, re-run).
 
 Repeat until the workflow completes successfully. Each failure advances the app to the next problematic state, making recovery self-correcting.
@@ -201,7 +201,7 @@ Application (InvoicePortal)
 Precondition: the source project has captured descriptors (`.objects/` content). If it has none, capture targets first (the package guide's § Configuring Targets) — there is nothing to promote, and hand-writing descriptors is forbidden.
 
 1. Develop the first process against its **local** Object Repository, configuring targets as usual (§ Configuring Targets in the package guide).
-2. Promote the reusable descriptors into a dedicated UI Library project — a library project ([library-authoring-guide.md](library-authoring-guide.md)) holding the shared Object Repository; pack and upload per [library-authoring-guide.md § Pack & Publish](library-authoring-guide.md). Concrete Object Repository manipulation steps: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/object-repository.md`.
+2. Promote the reusable descriptors into a dedicated UI Library project — a library project ([library-authoring-guide.md](library-authoring-guide.md)) holding the shared Object Repository; pack and upload per [library-authoring-guide.md § Pack & Publish](library-authoring-guide.md). Concrete Object Repository manipulation steps: the package's Object Repository reference (routed from the package guide § Documentation).
 3. **One UI Library per corporate application** (SAP, Salesforce, Workday) — an update to one app's selectors must not force re-deployment of another's.
 4. New automations against that application consume the UI Library from the start. Process-specific one-off descriptors stay in the local Object Repository.
 
