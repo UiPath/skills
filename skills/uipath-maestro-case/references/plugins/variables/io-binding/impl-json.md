@@ -272,6 +272,16 @@ See [implementation.md § Step 12 — End-of-Phase-3 validator pass](../../../im
 
 **Extract outputs.** For every `->` row, re-resolve its full source path against the Step 0 schema using the algorithm above. Require the emitted output's `name` and `type` to equal the resolved name and leaf type. For a nested path, also require that the top-level parent was not separately auto-minted unless tasks.md contains a schema-discovered bare item for it. A mismatch is `ERROR`: correct the output from the resolved descriptor and re-run this check before Phase 4. Do not accept a passing `uip maestro case validate` as evidence here; structural validation does not compare a nested binding with its schema leaf.
 
+**Output shape parity — tasks and connector condition rules only.** Map each `tasks.md` owner to its concrete sink (`task.data.outputs[]` or `rule.uipath.outputs[]`) using the same stage/task/rule lookup as its write recipe; never infer ownership from `elementId`. Match each expected item within that sink only:
+
+| `tasks.md` form | Unique emitted-row discriminator |
+|---|---|
+| `<field> -> <caseVar>` | `source == "=<field>" && var == value == <caseVar>` |
+| `<caseVar> = <expression>` | `custom == true && name == var == <caseVar>` |
+| schema-discovered bare `<name>` | `name == <name> && custom != true && originalVar` absent |
+
+Require exactly one match with the complete corresponding [Output Binding Shape](#output-binding-shapes) after schema resolution, canonicalization, and Step 11.5; inversely reject sink entries with no expected item. On mismatch, regenerate that owner’s sink once from `tasks.md` plus its Step 0 schema, repeat Step 11.5, and re-check; halt before Phase 4 if still invalid. Trigger outputs are out of scope and retain their shapes from [`global-vars/impl-json.md`](../global-vars/impl-json.md#loop-a--trigger-spec-output-dispatch-for-trigger-sourced-rows).
+
 ### Check 4 — No surviving `$xref` markers
 
 Scan every string value in `caseplan.json` for the literal token `$xref(`. The [Step 11.5 pass](#in-expression-marker-resolution-step-115) should have resolved them all; any survivor means its name-triple or output reference ID failed to resolve. This is the same class of failure as a Check 1 unresolved `=vars.X` — so it gets the **same interactive remediation**, NOT a silent ERROR. Never ship a marker to runtime (`vars.$xref(...)` throws — a method call on `vars`).
@@ -422,6 +432,7 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | Type mismatch (input vs variable) | `WARNING` | Proceed |
 | Extract output `name` / `type` differs from its resolved schema descriptor (Check 3) | `ERROR` | Correct from the exact resolved leaf; re-run Check 3 |
 | Nested extract also auto-mints its top-level parent without a separate schema-discovered bare item (Check 3) | `ERROR` | Remove the undeclared parent auto-mint; re-run Check 3 |
+| Task/rule output is missing, duplicated, undeclared, or violates its operator-specific shape (Check 3) | `ERROR` | Regenerate that owner’s sink once from `tasks.md` + Step 0 schema, repeat Step 11.5, re-check; halt before Phase 4 if still invalid |
 
 Example log entry (pseudocode — record in-reasoning, not via subprocess):
 
