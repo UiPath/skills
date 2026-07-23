@@ -1,0 +1,25 @@
+{
+  "name": "InvoiceApiClient",
+  "description": "Process",
+  "main": "Wf_PostInvoice.xaml",
+  "dependencies": {
+    "UiPath.System.Activities": "[26.2.6]",
+    "UiPath.WebAPI.Activities": "2.4.0"
+  },
+  "schemaVersion": "4.0",
+  "projectVersion": "1.0.0",
+  "expressionLanguage": "CSharp",
+  "targetFramework": "Windows",
+  "entryPoints": [
+    {
+      "filePath": "Wf_PostInvoice.xaml",
+      "input": [],
+      "output": [],
+      "uniqueId": "44444444-4444-4444-4444-444444444444"
+    }
+  ],
+  "designOptions": {
+    "outputType": "Process",
+    "fileInfoCollection": []
+  }
+}
