@@ -1,7 +1,7 @@
 #!/bin/sh
 # Offline `uip` mock for the uipath-ixp SHAPE-ONLY smoke tasks.
 #
-# These smoke tasks grade the complete invocation recorded in calls.log and
+# These smoke tasks are graded from complete invocations in calls.log and
 # must NOT authenticate or reach a live tenant.
 # Without this mock the smoke harness (tests/experiments/smoke.yaml +
 # .github/workflows/smoke-skills.yml) injects a live alpha bot token, so a bare
@@ -9,8 +9,9 @@
 # `doc-abc-123` — i.e. real traffic with no test value. `mock_path_dirs: [mocks]`
 # PATH-prepends this script so `uip` resolves here instead of the real CLI.
 #
-# It records the expanded invocation and fails like an unauthenticated CLI
-# WITHOUT any network call, matching each task's expected auth-error framing.
+# It records each expanded invocation and fails like an unauthenticated CLI
+# WITHOUT any network call, matching each task's "commands will fail with auth
+# errors — expected" prompt framing.
 {
     printf 'uip %s' "$*" | tr '\r\n' '  '
     printf '\n'

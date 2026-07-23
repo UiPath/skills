@@ -6,7 +6,7 @@ description: >
   the readonly `UID` shell variable (Rule 6); non-OCR `--corrections`
   (Rule 8); marking-missing a field IXP predicted (Rule 12); passing
   the project Title instead of its Name (Rule 7). Agent ignores the
-  hints. Criteria grade the bash invocation, not a self-report.
+  hints. Criteria grade actual CLI invocations, not a self-report.
 tags: [uipath-ixp, smoke, lifecycle:execute]
 
 run_limits:
