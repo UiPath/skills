@@ -1,8 +1,8 @@
 # Agent Review Checklist
 
-Comprehensive quality checklist for UiPath AI agent projects — both low-code (agent.json) and coded (Python) agents.
+Manual quality checklist for UiPath AI agent projects — both low-code (`agent.json`) and coded (Python) agents.
 
-> **Unit of Work:** Before running the technical checks below, complete Step 3a (Unit of Work Discovery) from SKILL.md. For low-code agents the declared unit is `agent.json` → `inputSchema`. For coded agents it's the `Input` Pydantic class in `main.py`. The actual unit is what the agent produces per invocation — if one input triggers iteration over an array of entities and produces N tool invocations or state changes that should have been separate agent calls, that is a Granularity Mismatch (see [rpa-common-issues.md](../rpa/rpa-common-issues.md) for the generic pattern).
+> **Unit of Work:** Before running the checks below, complete Step 3a (Unit of Work Discovery) from `SKILL.md`. For low-code agents the declared unit is `agent.json` → `inputSchema`. For coded agents it is the `Input` Pydantic class in `main.py`. Compare that contract with what one invocation actually produces, and report one-to-many behavior using the transaction-shape guidance in `SKILL.md`.
 
 ## 1. Agent Type Appropriateness
 
@@ -21,284 +21,125 @@ Before reviewing implementation details, verify the right agent type was chosen:
 
 **Severity:** Flag agent type mismatch as **Warning** with recommendation.
 
-## 2. Low-Code Agent Quality (agent.json)
+## 2. Low-Code Agent Quality
 
-### Schema Validation
+> Report captured refresh, validation, and review-CLI failures verbatim. Do not reproduce checks those commands actually performed. A deterministic rule that the installed CLI did not emit must not be treated as having passed. The judgment catalog owns focused, rule-tagged semantic checks; the rows below cover broader deployment and operational context.
 
-| Check | Severity | How to Verify |
-|---|---|---|
-| `agent.json` passes schema validation | Critical | `uip agent validate ./path --output json` |
-| `version` field is set (e.g., `"1.1.0"`) | Critical | Read agent.json |
-| `name` field is set and descriptive | Warning | Read agent.json |
-| Exactly 2 messages (system + user) | Critical | Read agent.json → `messages` array |
-| `inputSchema` and `outputSchema` defined | Warning | Read agent.json *(rule: `MISSING_INPUT_SCHEMA`, `MISSING_OUTPUT_SCHEMA`)* |
-| `settings.model` is set | Critical | Read agent.json |
-| `settings.maxIterations` is configured (default 25) | Info | Read agent.json *(rule: `LC_SETTINGS_MAXITERATIONS_FIT`)* |
-| `settings.temperature` is appropriate for task | Info | Read agent.json *(rule: `LC_SETTINGS_TEMPERATURE_FIT`)* |
-
-### System Prompt Quality
+### Project and Model Fit
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| System prompt defines explicit role/persona | Warning | Read first message content *(rule: `LC_PROMPT_ROLE_DEFINITION`)* |
-| System prompt defines scope and boundaries | Warning | Check for "you should NOT" or boundary statements *(rule: `LC_PROMPT_SCOPE_BOUNDARIES`)* |
-| System prompt includes tool usage guidelines | Warning | Check for tool-specific instructions *(rule: `LC_PROMPT_WHEN_GUIDANCE`)* |
-| System prompt includes escalation criteria | Warning | Check for "escalate when" conditions *(rule: `LC_PROMPT_STOPPING_CRITERIA`)* |
-| System prompt specifies output format | Info | Check for format instructions *(rule: `LC_PROMPT_OUTPUT_FORMAT`)* |
-| System prompt is in English (best performance) | Info | Check language |
-| No hardcoded examples that should be in eval sets | Info | Check for inline examples |
-| Prompt length appropriate (not excessively long) | Info | Check token count *(rule: `SYSTEM_PROMPT_TOO_LONG`)* |
-| Prompts over ~2000 tokens have clear structural headers (Role / Task / Constraints / Output Format / Examples) | Warning | Long prompts without structure degrade LLM attention. Flag >2000-token prompts that read as unstructured prose *(rule: `LC_PROMPT_OVERSPECIFICATION`)* |
-| NO hardcoded customer-specific logic in the system prompt (names, rules, identifiers specific to one tenant/customer) | Warning | Customer-specific content should live in Context Grounding / knowledge base / config — not in the prompt. Makes the agent reusable across customers |
+| Project name communicates the agent's business purpose | Warning | Compare the name with the prompt, schemas, and business context |
+| Selected model fits the task, cost, latency, and governance requirements | Warning | Compare model capabilities and deployment constraints with the intended workload |
 
-### Temperature Guidance
-
-| Task Type | Recommended Range | Flag If |
-|---|---|---|
-| Factual extraction, classification | 0.0-0.3 | >0.5 |
-| Conversational, general-purpose | 0.4-0.7 | >0.8 for production |
-| Creative generation | 0.8-1.2 | >1.5 |
-
-### Tool Configuration
+### System Prompt Deployment Fit
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| All tools have descriptive names (lowercase, alphanumeric, no special chars) | Warning | Read resources array |
-| All tools have clear descriptions (purpose, effects, risks) | Warning | Read tool descriptions |
-| No overpermissioned tools (agent has access to tools it doesn't need) | Warning | Review tool list against agent's purpose *(rule: `LC_TOOL_MINIMALITY_SUFFICIENCY`, `LC_FAILURE_AUTHORITY_ESCALATION`)* |
-| Process/API workflow tools reference correct published resource names | Critical | Verify referenced processes exist |
-| Connector tools have valid connection configurations | Critical | Check connection references |
-| Tool descriptions explain when to use AND when NOT to use each tool | Info | Read descriptions *(rule: `LC_PROMPT_WHEN_GUIDANCE`, `LC_TOOL_DESCRIPTION_MISLEADING`)* |
-| Tool count is bounded — agents with >3 tools risk tool-selection overload; >7 is a strong smell | Warning | Count tools per agent. If >3, verify each is essential and non-overlapping; if >7, consider splitting into multiple specialized agents |
-| Read-only agents do NOT have write-capable tools | Warning | If agent purpose is classification/triage/lookup (read-only), no write/delete/send/modify tools should be present *(rule: `LC_TOOL_DANGEROUS_COMBINATION`)* |
-| Output-consuming workflows validate agent output against expected schema before use | Warning | Check calling workflow: agent output should be validated (schema check, type check) before downstream activities consume it *(rule: `CODED_LLM_OUTPUT_UNVALIDATED`, `LC_OUTPUT_CLASSIFIER_NO_ENUM`)* |
+| Prompt language is suitable for deployed users and tested tool/runtime capabilities | Info | Review supported user languages and test multilingual tool calls where applicable |
 
-### Context Grounding Configuration
+### Tool Integration
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Retrieval mode appropriate (JIT/DeepRAG for runtime docs, index for stable corpora) | Info | Read context grounding config *(rule: `LC_TOOL_RESPONSE_NOT_GROUNDED`)* |
-| Index names are descriptive and versioned | Info | Check naming patterns *(rule: `LOWCODE_CONTEXT_INDEX_NAME_PLACEHOLDER`)* |
-| Context resources have descriptions explaining when to retrieve | Info | Check `description` on each context resource *(rule: `LOWCODE_CONTEXT_NO_DESCRIPTION`)* |
-| Chunk count balanced (not too few = missed context, not too many = token waste) | Info | Check retrieval config |
-| Threshold configured appropriately (0 is default — higher risks excluding relevant passages) | Info | Check threshold value |
+| Referenced processes, API workflows, and connections resolve in the target environment with the required access model | Critical | Verify published resources, shared connections, permissions, and environment mappings |
+| Callers in review scope handle the agent's declared output contract correctly | Warning | Trace agent outputs into consuming workflows and compare expected fields, types, and failure states |
+| Tool-call audit data is sufficient for the side effects and compliance risk involved | Info | Verify production traces or logs capture the tool, target, outcome, correlation, and actor where required |
 
-### Escalation Coverage
+### Context Grounding
+
+For agents using context grounding:
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Escalation resources defined for high-risk decisions | Warning | Check resources for escalation type *(rule: `LC_FAILURE_IRREVERSIBLE_ACTION`)* |
-| Escalation criteria specified in system prompt | Warning | Read system prompt for escalation guidance *(rule: `LC_PROMPT_STOPPING_CRITERIA`)* |
-| Escalation assignee configured | Critical | Check escalation resource config |
-| Escalation is not overbroad (universal quantifier without narrowing condition) | Warning | Check escalation description *(rule: `LC_ESCALATION_OVERBROAD`)* |
-| Agent does not make irreversible decisions without escalation path | Warning | Review decision scope *(rule: `LC_FAILURE_IRREVERSIBLE_ACTION`)* |
+| Retrieval strategy and ingestion mode fit the source material and query pattern | Warning | Compare runtime versus indexed retrieval and text versus mixed-media ingestion with the use case |
+| Index naming and alias strategy distinguish the corpus and deployment environment while allowing source versions to change without prompt churn | Info | Compare index names, stable aliases, source versions, and environment mappings with the release strategy |
+| Referenced indexes resolve in the target environment and intended users can access them | Critical | Verify index identity, permissions, and environment mapping |
+| Sync cadence keeps knowledge fresh enough for the business decision | Warning | Compare source-change frequency, ingestion schedule, and acceptable staleness |
+| Result count balances recall, latency, and token cost | Info | Evaluate representative queries against the configured result count |
+| Threshold balances precision against the risk of missing relevant content | Info | Evaluate representative positive, ambiguous, and no-answer queries |
+| Context descriptions distinguish sources well enough for multi-source retrieval | Info | Compare descriptions and confirm each gives a clear selection cue |
+
+### Escalation Operations
+
+| Check | Severity | How to Verify |
+|---|---|---|
+| Escalation target resolves and has appropriate ownership and SLA | Critical | Verify the target in the deployment environment and confirm operational ownership, coverage, and response time |
 
 ### Guardrails
 
-| Check | Severity | How to Verify |
-|---|---|---|
-| Recommended guardrails present for the agent's use cases — e.g. PII detection when it handles personal data, injection protection for free-text input, content-safety for generated content, a tool audit-log for sensitive tools | Info | Compare agent context vs catalog use cases; the finding names the recommended scope and action (a blocking/escalating action for protection, a log action for audit) *(rule: `LC_GUARDRAIL_RECOMMENDED`)* |
-| No guardrail misapplied to an agent that shouldn't have it (e.g. PII on a generate-only agent) | Warning | Compare guardrail vs agent purpose / catalog `when_not_to_use` *(rule: `LC_GUARDRAIL_MISAPPLIED`)* |
-| Custom tool guardrails for destructive operations | Info | Check tool guardrail rules |
-| Guardrail action fits its scope — a blocking/escalating action at scopes meant to prevent a violation (Agent, Llm), a log action only for an audit trail (e.g. on a tool that legitimately needs the data). A log action at a prevention scope (Agent or Llm) is ineffective: it records the violation but does not stop it. | Warning | Review action vs scope vs catalog `when_not_to_use` *(rule: `LC_GUARDRAIL_ACTION_INEFFECTIVE`)* |
+Review guardrails only through the review CLI and the structured guardrail workflow in `SKILL.md` Step 2.5. Carry those findings verbatim or apply their catalog rules; do not create parallel manual guardrail findings from this checklist.
 
-> **Guardrail format — CLI-owned (Step 2.5a), never eyeballed.** All format / schema / set-membership checks run in `uip agent review` and are carried verbatim from its output: `GUARDRAIL_*` (validator existence, allowed scope, parameter presence / type / value, name/description), `GUARDRAIL_CUSTOM_*` (discriminators, operator, value, Tool-scope + single `matchNames`), `LOWCODE_*GUARDRAIL*` (`guardrail.policies` field, tool-ref existence). Do not re-verify by eye (SKILL.md Step 2.5a). Built-in-validator checks are skipped (not failed) when the CLI can't fetch the authored validator catalog (offline / not authed) — record in "Rules Skipped"; custom-rule checks are pure static, no catalog needed.
+## 3. Coded Agent Quality
 
-### Memory Management
+### Dependency Maintenance
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Memory key length under 80-character limit | Warning | Check memory key definitions |
-| Memory TTL appropriate for use case (default 3-month expiry) | Info | Check memory retention configuration |
-| Sensitive data (PII, credentials) not stored in agent memory | Warning | Review memory key-value content and patterns |
+| Every dependency has a demonstrated runtime or development use | Info | Trace imports, plugins, and build tooling before recommending removal |
+| Version constraints balance reproducibility, supported compatibility, and upgrade policy | Warning | Compare constraints and lock data with the organization's release strategy |
 
-## 3. Coded Agent Quality (Python)
-
-### Project Structure
+### Runtime Design
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| `main.py` exists with entry point function | Critical | `ls main.py` *(rule: `MISSING_AGENT_CONFIG`)* |
-| Framework config file exists (`langgraph.json`, `llama_index.json`, `openai_agents.json`, `google_adk.json`, `pydantic_ai.json`, `agent_framework.json`, or `uipath.json`) | Critical | Check for config file *(rule: `MISSING_AGENT_CONFIG`)* |
-| `pyproject.toml` exists with valid config | Critical | Read pyproject.toml *(rule: `MISSING_PYPROJECT`)* |
-| ~~`pyproject.toml` does NOT have `[build-system]` section~~ | ~~Critical~~ | **Retired** — the corresponding `NO_BUILD_SYSTEM` rule was retired (SDK FAQ shows `pyproject.toml` with `[build-system]` per PEP 518). Keep only as manual check if specific `uip codedagent` packaging errors point at it. |
-| `.env` file not committed to source control | Critical | Check .gitignore and git status *(rule: `ENV_FILE_TRACKED`, `GITIGNORE_INCOMPLETE`)* |
+| LLM clients and other expensive resources initialize at a scope appropriate to the runtime | Warning | Assess import-time side effects, credential availability, reuse, concurrency, and redundant per-call construction |
+| Observability captures the business decisions, tool outcomes, latency, and correlation needed to diagnose production failures | Warning | Trace representative execution paths and assess the usefulness of emitted spans and events |
+| LLM and external-service timeouts fit the end-to-end SLA and fallback behavior | Info | Compare timeout and retry budgets with upstream and downstream limits |
 
-### Dependencies (pyproject.toml)
-
-| Check | Severity | How to Verify |
-|---|---|---|
-| `uipath` package in dependencies | Critical | Read pyproject.toml |
-| Framework integration package present (`uipath-langchain` for LangGraph, `uipath-llamaindex` for LlamaIndex, etc.) | Critical | Check pyproject.toml against framework config *(rule: `FRAMEWORK_DEP_MISSING`)* |
-| No unnecessary dependencies | Info | Review dependency list |
-| Dependencies pinned or version-constrained | Warning | Check version specifiers |
-| `requires-python` is `>=3.11` | Critical | Read pyproject.toml *(rule: `REQUIRES_PYTHON_TOO_LOW`)* |
-| `uipath-dev` in `[dependency-groups] dev`, not `[project] dependencies` | Warning | Read pyproject.toml *(rule: `UIPATH_DEV_IN_RUNTIME_DEPS`)* |
-
-### Code Quality
-
-| Check | Severity | How to Verify |
-|---|---|---|
-| No module-level LLM instantiation | Critical | Check top-level code in main.py for LLM client creation |
-| LLM clients created inside functions/nodes (lazy initialization) | Critical | Verify initialization is inside functions |
-| Pydantic `BaseModel` used for Input and Output | Warning | Check for Input/Output class definitions |
-| `@traced()` decorator on main function and key helpers | Warning | Grep for `@traced` |
-| `@mockable()` decorator on functions calling external services | Warning | Grep for `@mockable` |
-| Correct import: `from uipath.platform import UiPath` (NOT `from uipath import UiPath` — that path does not exist and raises `ImportError`) | Critical | Check import statements |
-| HITL imports correct: `CreateTask`/`WaitTask` (not `CreateAction`/`WaitAction`) | Critical | Check HITL-related imports |
-| Structured output via `with_structured_output(MyModel)` | Info | Check LLM output patterns *(rule: `CODED_LLM_OUTPUT_UNVALIDATED` for the inverse)* |
-| No hardcoded API keys or secrets | Critical | Grep for `api_key=`, `secret=` in string literals *(rule: `HARDCODED_CREDENTIALS`)* |
-| No bare `except:` blocks (catch specific exceptions) | Warning | Grep for `except:` without exception type *(rule: `BARE_EXCEPT`)* |
-| Async patterns used correctly (if async) | Warning | Check async/await usage *(rule: `LLAMAINDEX_SYNC_STEP` for LlamaIndex)* |
-
-### Framework-Specific Checks
+### Framework-Specific Design
 
 #### LangGraph
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| `graph` variable is a compiled `CompiledStateGraph` | Critical | Check main.py for graph compilation *(rule: `LANGGRAPH_NO_GRAPH_VAR`, `LANGGRAPH_GRAPH_NOT_COMPILED`)* |
-| State class properly defined with all required fields | Warning | Check StateGraph definition *(rule: `STATEGRAPH_MISSING_INPUT_OUTPUT`, `CODED_SCHEMA_COMPLETENESS`)* |
-| Conditional edges use proper routing logic | Warning | Review edge conditions |
-| No infinite loops in graph (cycles must have exit conditions) | Critical | Review graph topology |
-| Reducer-accumulated state fields are forwarded in node returns | Warning | Check graph nodes returning reducer-typed fields *(rule: `LIST_ACCUMULATOR_NOT_FORWARDED`)* |
-| No `MemorySaver()` in deployable code (runtime injects checkpointer) | Info | Grep for `MemorySaver` *(rule: `MEMORYSAVER_PRODUCTION`)* |
-| Checkpointing configured for long-running graphs | Info | Check for checkpoint config |
+| Conditional routing matches the capabilities and contracts of destination nodes | Warning | Trace each route condition through representative states and worker responsibilities |
+| Every graph cycle has a business-valid exit condition | Critical | Review graph topology and termination behavior for unresolved and repeated states |
+| Checkpointing strategy fits long-running, resumable, and conversational behavior | Info | Compare persistence needs, recovery expectations, and runtime-provided checkpointing |
 
 #### LlamaIndex
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Agent workflow properly defined | Warning | Check agent setup *(rule: `LLAMAINDEX_NO_WORKFLOW_VAR`)* |
-| `@step`-decorated methods are `async def` | Critical | Grep for `@step` *(rule: `LLAMAINDEX_SYNC_STEP`)* |
-| Retry mechanisms present for retrieval failures | Warning | Check error handling *(rule: `CODED_ERROR_HANDLING`)* |
-| Index management follows best practices | Info | Check index usage |
+| Index lifecycle and retrieval design fit corpus size, freshness, and query behavior | Info | Review index construction, update strategy, retrieval flow, and expected workload |
 
 #### OpenAI Agents SDK
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Agent role explicitly defined | Warning | Check agent configuration *(rule: `OPENAI_AGENTS_NO_AGENT_VAR`)* |
-| `Agent[ContextModel](...)` subscript used for typed input | Warning | Check `Agent(...)` calls *(rule: `OPENAI_AGENTS_NO_GENERIC_TYPE`)* |
-| `output_type=` keyword passed to `Agent(...)` | Warning | Check `Agent(...)` calls *(rule: `OPENAI_AGENTS_NO_OUTPUT_TYPE`)* |
-| `set_default_openai_client(...)` called (route via Gateway) | Info | Grep for `set_default_openai_client` *(rule: `OPENAI_AGENTS_NO_CLIENT_SETUP`)* |
-| No `interrupt` / `MemorySaver` / `InvokeProcess` (LangGraph-only features) | Critical | Grep for unsupported features *(rule: `OPENAI_AGENTS_UNSUPPORTED_FEATURE`)* |
-| Structured tool use with examples | Info | Check tool definitions |
-| Guardrails configured (input/output validation) | Warning | Check guardrail setup |
+| Structured tool results are mapped coherently into agent context and downstream decisions | Warning | Trace tool-result fields across calls, handoffs, and final output construction |
 
-### Error Handling
+## 4. Evaluation Quality
+
+### Scenario and Decision Coverage
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Try-except blocks around external service calls | Warning | Check error handling *(rule: `CODED_ERROR_HANDLING`)* |
-| `InvokeProcess` results branched on `status` (success / failed / faulted) | Warning | Grep for `InvokeProcess` *(rule: `CODED_INVOKEPROCESS_NO_FALLBACK`)* |
-| Graceful degradation when tools fail | Warning | Check tool error paths *(rule: `CODED_ERROR_HANDLING`)* |
-| Timeout configuration for LLM calls | Info | Check timeout settings |
-| No bare `except:` blocks (catch specific exceptions) | Warning | Grep for `except:` without exception type *(rule: `BARE_EXCEPT`)* |
-
-## 4. Evaluation Quality (Both Types)
-
-### Evaluation Set Existence
-
-| Check | Severity | How to Verify |
-|---|---|---|
-| At least one smoke evaluation set exists | Warning | `ls evaluations/eval-sets/smoke-test.json` or similar *(rule: `NO_EVALS`, `MISSING_EVAL_DIR`)* |
-| Eval set covers happy path (basic successful scenarios) | Warning | Read eval set |
-| Eval set covers edge cases (missing data, unusual inputs) | Info | Read eval set *(rule: `EVAL_DUPLICATE_EXPECTED_OUTPUTS`, `EVAL_LOW_DIVERSITY`)* |
-| Eval set covers error scenarios (invalid inputs, service failures) | Info | Read eval set |
-| Minimum 30 test cases for production readiness | Info | Count evaluations in eval sets *(rule: `TOO_FEW_EVALS`, `FEW_EVALS`)* |
-| No duplicate / copy-paste eval inputs | Warning | Compare datapoint `inputs` *(rule: `EVAL_COPY_PASTE_INPUTS`)* |
-| Eval `expectedOutput` is not a placeholder literal (`TODO`, `FIXME`, etc.) | Warning | Read eval datapoints *(rule: `EVAL_PLACEHOLDER_OUTPUTS`)* |
-| No eval label leakage (expected output appearing verbatim in inputs) | Warning | Compare expectedOutput against inputs *(rule: `EVAL_LABEL_LEAKAGE`)* |
-| Eval set tiering aligned with FDE Architecture Review guidance: ~10-20 dev evals, ~50 benchmark cases, 200-400 UAT cases for production-critical agents | Warning | Check for tiered eval sets (smoke/dev/benchmark/UAT). Customer-critical agents with <50 benchmark cases are under-tested |
-| Eval sets include **corrected failures** (cases that initially failed, were fixed, and are retained as regression tests) — NOT only happy-path / successful trajectories | Warning | Review eval dataset sourcing. Datasets built only from successful runs suffer selection bias — the agent passes evaluations that don't reflect real-world failure modes |
-| Eval sets include adversarial / malicious inputs (prompt injection attempts, malformed data, boundary conditions) | Warning | Check for negative test cases |
-| Trust score / confidence thresholds defined for probabilistic outputs (classification, extraction) | Warning | For agents producing labeled outputs, a minimum confidence threshold should gate autonomous action; below threshold → escalate |
-| Low-confidence / UNCLEAR results have a defined escalation path (Action Center, human review, human-in-the-loop fallback) | Warning | Check consuming workflow for "what happens when confidence < threshold" branch |
-
-### Evaluator Configuration
-
-| Check | Severity | How to Verify |
-|---|---|---|
-| Multiple evaluator types configured (not just one) | Warning | Check evaluatorRefs *(rule: `EVAL_LLM_JUDGE_ONLY`, `EVAL_NO_LLM_JUDGE`)* |
-| Trajectory evaluator present for multi-step agents (with specific `expectedAgentBehavior`) | Warning | Check for trajectory evaluators *(rule: `CODED_EVAL_TRAJECTORY_SPECIFICITY`, `EVAL_TRAJECTORY_NEEDS_TRACE_SPANS`)* |
-| Output-based evaluator present | Warning | Check for LLMJudgeOutputEvaluator or ExactMatchEvaluator |
-| Evaluator selection matches agent archetype (see table below) | Warning | Compare agent type to evaluators *(rule: `CODED_EVAL_ARCHETYPE_FIT`)* |
-| Eval set has no broken evaluator references | Critical | Cross-check `evaluatorRefs` against `evaluations/evaluators/*.json` *(rule: `EVAL_BROKEN_EVALUATOR_REF`)* |
-| Tool-call evaluators present when agent has tools | Warning | Check for `uipath-tool-call-*` evaluators *(rule: `EVAL_NO_TOOL_CALL_EVALUATORS`)* |
-| LLM judges use strong models with reasoning prompts and low temperature | Warning | Walk LLM judge configs *(rule: `EVAL_JUDGE_WEAK_MODEL`, `EVAL_JUDGE_NO_REASONING`, `EVAL_JUDGE_HIGH_TEMPERATURE`)* |
-
-### Evaluator Selection Guide
-
-| Agent Type | Primary Evaluator | Secondary | Notes |
-|---|---|---|---|
-| Deterministic (calculator, lookup) | ExactMatchEvaluator | — | Pass/fail on exact output |
-| Text generation (summarizer, writer) | LLMJudgeOutputEvaluator | ContainsEvaluator | Semantic + keyword |
-| Multi-step orchestrator | LLMJudgeTrajectoryEvaluator | JsonSimilarityEvaluator | Path + output |
-| API/data integration | JsonSimilarityEvaluator | ExactMatchEvaluator | Structural + exact |
-| Classification/triage | BinaryClassificationEvaluator | LLMJudgeOutputEvaluator | Label + reasoning |
+| Evaluation scenarios cover representative happy paths, edge and error cases, corrected production failures, and adversarial inputs in proportion to deployment risk | Warning | Compare the scenario set with the business process, production incident history, threat model, and deployment criticality |
+| Confidence policy is appropriate for probabilistic outputs | Warning | Confirm thresholds are calibrated against observed errors and the cost of false positives and false negatives |
+| Low-confidence or unclear results have a viable downstream escalation path | Warning | Trace the consuming workflow and verify the human-review or fallback path in the target environment |
 
 ### Mocking Strategy
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| External dependencies mocked in eval sets | Warning | Check mockingStrategy in eval sets |
-| Mock responses are realistic (not placeholder data) | Info | Review mock data |
-| Mocking consistent across eval sets | Info | Compare mocking strategies |
+| External dependencies are mocked realistically and consistently without replacing the behavior under evaluation | Warning | Compare mocks across evaluation sets with production contracts, representative responses, and failure modes |
 
-## 5. Agent Type Decision Review
+## 5. Platform Constraints
 
-Before reviewing implementation details, verify the automation spectrum choice is appropriate:
-
-### Deterministic vs Non-Deterministic Assessment
-
-| Criterion | Deterministic (RPA) | Rules-Based (RPA + Business Rules) | Non-Deterministic (Agent) | Hybrid (Agentic Workflow) |
-|---|---|---|---|---|
-| Input type | Structured, predictable | Structured with conditional logic | Unstructured, ambiguous | Mix of both |
-| Decision logic | Fixed if-then-else | Enumerable rules (DMN, decision tables) | Probabilistic, LLM reasoning | Agent reasons, RPA executes |
-| Output consistency | Same input → same output | Same input → same output | Variable outputs | Controlled variability |
-| Cost predictability | High | High | Medium-low (token variance) | Medium |
-| Testing approach | Full regression, deterministic | Rule coverage testing | Evaluation sets, LLM-as-judge | Both approaches |
-| Best for | Data entry, file processing, form filling | Loan approval, classification, routing | Support triage, research, content generation | Complex processes with ambiguous steps |
-
-**Flag as Warning:** Agent used for a fully deterministic task (should be RPA). RPA used for a task requiring reasoning over unstructured input (should be agent or hybrid).
-
-### UiPath Agent Deployment Pre-Flight (Official Best Practices)
-
-| Check | Severity | How to Verify |
-|---|---|---|
-| System prompt includes role, constraints, and 3-5 input-mapped examples | Warning | Read system prompt |
-| All tools have name, description, and input/output schema | Warning | Check tool definitions |
-| Tool call logging enabled for audit and debugging | Info | Check logging config |
-| At least one knowledge base grounded | Info | Check context grounding |
-| Minimum 30 manual tests covering typical, edge, and malformed inputs | Warning | Check test records |
-| 30+ curated test cases in evaluation sets | Warning | Count eval set cases |
-| 70%+ score on evaluation sets with no regressions | Warning | Run evaluations |
-| English used as default language for prompts and schemas | Info | Check language |
-
-### Agent Limitations Awareness
-
-Review whether the agent design accounts for known UiPath limitations:
+Verify current platform documentation before reporting a limitation:
 
 | Limitation | Impact | Check |
 |---|---|---|
-| Conversational agents cannot run automations on user's local desktop | Critical if desktop execution expected | Verify architecture doesn't assume local execution |
-| Only shared Integration Service connections work (not individual) | Warning | Check connection types |
-| Agent does NOT ask for user confirmation before executing tools | Critical for destructive operations | Verify guardrails exist |
-| File uploads limited to 5MB | Warning if processing large documents | Check file handling |
-| Non-English characters may impact tool calls | Warning for multilingual agents | Check language handling |
-| Memory key has 80-character limit; key-value pairs have 3-month TTL | Info | Check memory usage |
-| Teams/Slack: only direct messages supported (no channels, no @mentions) | Info | Check deployment channel |
+| Conversational agents cannot run automations on the user's local desktop | Critical if desktop execution is expected | Verify the architecture does not assume local execution |
+| File-upload limits may exclude expected documents | Warning if large documents are expected | Compare current platform limits with representative files and failure handling |
+| Channel integrations may support only a subset of message patterns | Info | Verify required Teams or Slack interaction patterns against current channel capabilities |
 
 ## 6. Deployment Readiness
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Agent validates without errors | Critical | Run validation command |
-| Smoke evaluation passes (70%+ score) | Warning | Run evaluations *(rule: `EVAL_RUN_LOW_PASS_RATE`, `EVAL_RUN_NEVER_EXECUTED`)* |
-| No `.env` file or secrets in committed code | Critical | Check git status *(rule: `ENV_FILE_TRACKED`, `GITIGNORE_INCOMPLETE`, `HARDCODED_CREDENTIALS`)* |
-| `.venv/` excluded from `uipath.json` `packOptions.directoriesExcluded` | Warning | Read uipath.json *(rule: `DEPLOY_VENV_NOT_EXCLUDED`)* |
-| Version management in place | Info | Check versioning |
+| Release and version-management policy supports compatibility, rollback, and traceability | Info | Review release identifiers, change history, rollback procedure, and consumer compatibility expectations |
 
 ## 7. Agent Security Review
 
@@ -306,28 +147,22 @@ Review whether the agent design accounts for known UiPath limitations:
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Agent has only necessary tools (principle of least privilege) | Warning | Review tool list *(rule: `LC_TOOL_MINIMALITY_SUFFICIENCY`, `LC_FAILURE_AUTHORITY_ESCALATION`)* |
-| Destructive tools (delete, modify) have guardrails or escalation | Warning | Check tool guardrails *(rule: `LC_TOOL_DANGEROUS_COMBINATION`, `LC_FAILURE_IRREVERSIBLE_ACTION`)* |
-| No tools that expose internal systems unnecessarily | Warning | Review tool descriptions |
-| File-access tools restricted to appropriate paths | Info | Check tool configurations |
+| File-access tools are restricted to business-approved paths and storage locations | Warning | Verify effective permissions and path restrictions in the target environment |
 
 ### Data Protection
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| No PII in agent traces or logs (unless required) | Warning | Review trace content *(rule: `CODED_PII_IN_TRACES`)* |
-| Sensitive inputs/outputs masked appropriately | Warning | Check data handling *(rule: `CODED_PII_IN_TRACES`)* |
-| Context grounding indexes don't contain sensitive data in public-facing agents | Critical | Review index content |
-| Memory TTL configured (default 3-month, 80-char key limit) | Info | Check memory config |
+| Context indexes containing sensitive data are inaccessible to unintended audiences | Critical | Verify source classification, index ACLs, and the agent's deployed audience |
+| Production traces and logs exclude or mask sensitive values not required for diagnosis or audit | Warning | Inspect representative trace and log payloads against data classification and incident-response needs |
+| Memory retention matches the business purpose, privacy policy, and deletion obligations | Info | Compare configured retention with data classification and regulatory requirements |
+| Sensitive data is stored in memory only when necessary and with appropriate protection | Warning | Review memory use against minimization, access-control, and encryption requirements |
 
-### Prompt Injection Defense
+### User-Facing Controls
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| System prompt includes boundary instructions | Warning | Review system prompt *(rule: `LC_PROMPT_SCOPE_BOUNDARIES`)* |
-| External data treated as untrusted (clear delimiters) | Warning | Check data handling patterns *(rule: `CODED_PROMPT_USER_INPUT_UNSANITIZED`, `LC_FAILURE_PROMPT_INJECTION`)* |
-| Output validation present (schema-based) | Info | Check output handling *(rule: `CODED_LLM_OUTPUT_UNVALIDATED`, `LC_OUTPUT_CLASSIFIER_NO_ENUM`)* |
-| Rate limiting configured for user-facing agents | Info | Check rate limit config |
+| Rate limiting and abuse controls fit the exposure and cost of user-facing agents | Info | Verify effective tenant, channel, and upstream limits under expected and abusive traffic |
 
 ## 8. AI Trust Layer Audit
 
@@ -337,43 +172,29 @@ Verify that the organization's AI Trust Layer is properly configured for the age
 
 | Toggle | Default | Review Action |
 |---|---|---|
-| Enable calls to third-party AI models | Enabled | Verify this is intentional — disable if agent should only use UiPath-hosted models |
-| Enable Agents | Yes | Required for agent operation |
+| Enable calls to third-party AI models | Enabled | Verify this is intentional; disable if the agent should use only UiPath-hosted models |
+| Enable Agents | Yes | Required for low-code agent operation |
 | Enable Coded Agents | Yes | Disable if only low-code agents are used |
-| Enable Document Understanding features | Yes | Disable if not using DU with AI |
-| Enable UiPath GenAI activities | Yes | Verify scope — disable unused capabilities |
+| Enable Document Understanding features | Yes | Disable if Document Understanding is not used |
+| Enable UiPath GenAI activities | Yes | Verify scope and disable unused capabilities |
 
-**Review principle:** Apply least-privilege — disable any toggle the agent does not need.
+**Review principle:** Apply least privilege by disabling toggles the deployed solution does not need.
 
 ### Trace and Audit Settings
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Trace TTL configured per compliance requirements (1, 7, or 30 days) | Warning | Check AI Trust Layer settings |
-| Input/output audit saving enabled for production agents | Warning | Verify prompt/completion storage is active |
-| PII protection configured (pseudonymization before reaching models) | Warning | Check PII masking settings |
+| Trace retention fits compliance requirements | Warning | Verify the effective AI Trust Layer retention setting |
+| Input/output audit saving is appropriate for production agents | Warning | Balance incident investigation needs with data-minimization requirements |
+| PII protection is configured before data reaches models where required | Warning | Verify effective pseudonymization or masking with representative sensitive inputs |
 
-## 9. Context Engineering Quality
-
-For agents using context grounding (RAG):
-
-| Check | Severity | How to Verify |
-|---|---|---|
-| Index names are versioned and descriptive (e.g., `HR-Policies-2025-Q3`) | Info | Check context grounding index names |
-| Ingestion mode matches document type (Basic for text, Advanced for mixed text/image) | Warning | Check ingestion configuration |
-| Regular sync cadence established for knowledge freshness | Warning | Check sync schedule — stale indexes produce outdated answers |
-| Results count balanced (more chunks = more recall but more tokens) | Info | Check retrieval configuration |
-| Threshold score tuned (default 0 — raising improves precision but risks missing content) | Info | Check threshold value |
-| Context descriptions are informative for multi-source retrieval | Info | Review context source descriptions |
-
-## 10. Agent Governance Policies (2025.10+)
+## 9. Agent Governance Policies
 
 If the organization uses Automation Ops agent governance:
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Minimum reliability score enforced before production deployment | Warning | Check governance policy for score threshold |
-| Maximum token count configured (controls response cost) | Info | Check token limit policy |
-| Temperature threshold enforced (0=Precise, 1=Creative) | Info | Check temperature policy |
-| Agentic guardrails catalog reviewed and applicable guardrails enabled | Warning | Check guardrail configuration |
-| Human review required for Autopilot-generated suggestions | Info | Check approval workflow |
+| Minimum reliability score matches production risk tolerance | Warning | Verify the effective governance threshold and its evidence base |
+| Maximum token count controls response cost without truncating valid work | Info | Compare the effective token limit with representative executions |
+| Temperature policy matches allowed task variability | Info | Compare the effective threshold with classification, extraction, and generation workloads |
+| Human review is required for Autopilot-generated suggestions where business risk warrants it | Info | Verify effective approval policy and reviewer ownership |
