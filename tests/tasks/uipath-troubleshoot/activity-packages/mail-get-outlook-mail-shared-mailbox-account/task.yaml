@@ -38,15 +38,8 @@ reference:
 
 initial_prompt: |
   My PayablesInvoiceReader process is faulting in Orchestrator on every
-  run — it says the mail folder does not exist. The folder is
-  "RPA Production".
-
-  The thing is, the "Invoices" folder it reads is definitely there — I can
-  see it in Outlook myself. Why can't the robot find it, and how do I fix
-  it?
-
-  The project source for the failing process is in the current working
-  directory.
+  run — it says the mail folder "Invoices" does not exist. The process
+  runs in the "RPA Production" folder. Can you investigate why?
 
 success_criteria:
   - type: skill_triggered
