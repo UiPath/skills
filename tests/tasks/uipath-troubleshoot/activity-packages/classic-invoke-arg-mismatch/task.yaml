@@ -2,7 +2,7 @@ task_id: skill-troubleshoot-classic-invoke-arg-mismatch
 description: >
   Faithful replay of a UiPath troubleshooting investigation. The agent runs
   the uipath-troubleshoot skill against a uip CLI mock and the failing project
-  source in the working directory. Success = the agent reaches the same root
+  source. Success = the agent reaches the same root
   cause as RESOLUTION.md.
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
@@ -75,7 +75,8 @@ simulation:
   constraints:
     - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
-    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "If the agent asks where the project source / XAML is, answer with the current working directory: respond exactly `.` (a single dot)."
+    - "Never invent or provide new factual data beyond your initial report — you don't know any other details. EXCEPTION: the project source path is a real fact about your setup and may be shared (`.`)."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6
