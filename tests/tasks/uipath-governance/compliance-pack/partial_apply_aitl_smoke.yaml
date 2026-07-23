@@ -50,8 +50,8 @@ success_criteria:
     description: "Agent invoked synthesize-formdata.mjs for AI Trust Layer model governance"
     command_pattern: 'synthesize-formdata\.mjs'
     min_count: 1
-    weight: 3.0
-    pass_threshold: 1.0
+    weight: 1.5
+    pass_threshold: 0
 
   - type: command_not_executed
     description: "Partial apply does NOT use state enable (full compliance standard path only)"

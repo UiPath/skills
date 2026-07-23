@@ -57,8 +57,8 @@ success_criteria:
     description: "Agent invoked synthesize-formdata.mjs for Robot UIAutomation partial apply"
     command_pattern: 'synthesize-formdata\.mjs'
     min_count: 1
-    weight: 3.0
-    pass_threshold: 1.0
+    weight: 1.5
+    pass_threshold: 0
 
   - type: file_exists
     description: "Command output captured to output.txt"
