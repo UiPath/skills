@@ -93,54 +93,29 @@ If `sdd.md` already exists: skip Phase 0, hand to Phase 1 unchanged.
 
 ### Phase 1 — Planning
 
-Read [references/planning.md](references/planning.md). Produces:
+Read and follow [references/planning.md](references/planning.md) end to end. It owns the Phase 1 contract: registry resolution and create-on-missing, root-level `tasks/` artifacts, `tasks.md` generation, and the auto-proceed/review-first exit. Re-read `tasks/tasks.md` before Phase 2.
 
-- `tasks/tasks.md` — T-numbered entries (stages → tasks → conditions → SLA)
-- `tasks/registry-resolved.json` — audit trail
-- When the user picks **Create** at the Rule 17 gate, Phase 1 also builds the selected agent(s) / API workflow(s) as in-solution siblings (one sub-agent per resource — `uipath-agents` for agents, `uipath-api-workflow` for API workflows), registers them (`uip solution projects add` + `resources refresh`), and binds them as resolved tasks. Registration and `--local` rediscovery need an enclosing solution `.uipx`, so the Create flow **first ensures the solution exists** (`uip solution init` if absent — Phase 2 Step 6.0 then skips its own `init`). See [references/registry-discovery.md § Create-on-Missing](references/registry-discovery.md#create-on-missing-build-and-rediscovery).
-
-> **`tasks/` is created at the working root, adjacent to `sdd.md` — NEVER inside the solution/project folder (`<Solution>/`).** This holds regardless of where the case file lives: `caseplan.json` sits at `<Solution>/<Project>/caseplan.json`, but the planning artifacts (`tasks.md`, `registry-resolved.json`) stay next to `sdd.md` at the root.
-
-Auto-proceed to Phase 2 (re-read `tasks.md` first) — plan treated as approved. Stop after `tasks.md` only if the request explicitly asked for a plan-only / review-first run (Rule 7).
+For Phases 2–6, read [references/implementation.md](references/implementation.md) and [references/phased-execution.md](references/phased-execution.md) before executing any T-entry. `implementation.md` owns step order and file mutations; `phased-execution.md` owns phase boundaries, prompts, retries, re-entry, and abort semantics.
 
 ### Phase 2 — Prototyping
 
-Read [references/implementation.md](references/implementation.md) + [references/phased-execution.md](references/phased-execution.md). Builds structural shape only:
-
-1. Solution + project + root case (Step 6)
-2. Triggers — manual / timer / event, including placeholder event triggers per Rule 8 (Step 6.1)
-3. Global variables + arguments (Step 6.2) — including In arguments whose `elementId` references the `TriggerId` (captured in Step 6.1) of the trigger named by the row's `sourceTriggers`, or the primary trigger when blank
-4. Refresh entry-points.json input/output from the declared In/Out args (Step 6.3) — per [`references/entry-points-sync.md`](references/entry-points-sync.md)
-5. Stages (Step 7)
-6. Tasks — shape only (Step 9): non-connector with full `data.inputs[]` schema + empty values; connector with `typeId` + `connectionId` only (no `case spec`); unresolved as placeholders per Rule 8
-7. Informational validate (Step 9.5.1) — do NOT halt on errors/warnings
-8. **HARD STOP** (Step 9.5.2–9.5.5): `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`: `uip solution resources refresh --solution-folder <SolutionDir> --output json` then `uip solution upload`, print DesignerUrl, AskUserQuestion: `Continue to implementation` / `Abort`. On `Abort`: dump `build-issues.md`, exit (no cleanup).
+Follow the Phase 2 sections in both execution references: build the structural skeleton, run informational skeleton validation, then take the unconditional review gate in Rule 11.
 
 ### Phase 3 — Implementation
 
-Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Then:
-
-1. Connector schema + defaults (Step 9.7) — `is resources/triggers describe`
-2. I/O binding all task classes (Step 9.8) — per [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md)
-3. Conditions all 4 scopes (Step 10)
-4. SLA + escalation (Step 11)
-5. In-expression `vars.$xref` marker resolution (Step 11.5) — per [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md)
-
-No hard stop on Phase 3 exit — proceed directly to Phase 4.
+Follow the Phase 3 re-entry, implementation, and exit-check sections in both execution references, including all eight end-of-Phase-3 checks. Proceed directly to Phase 4 unless a check's canonical contract requires a halt.
 
 ### Phase 4 — Validate
 
-1. Run Step 12 once at the Phase 3 → Phase 4 boundary. It performs Checks 1–8, including bindings sidecar parity (Check 7) and global output-ID uniqueness (Check 8).
-2. After all Step 12 checks pass, run full `uip maestro case validate`. Retry up to 3×; on 3rd failure **HARD STOP** AskUserQuestion: `Retry with fix` / `Pause for manual edit` / `Abort`
-3. Dump `build-issues.md` (Step 12.1)
+Follow the Phase 4 sections in both execution references for authoritative validation, retry handling, and the issue-log dump.
 
 ### Phase 5 — Debug
 
-Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session` / `Skip to Publish`. On `Run`: `uip solution resources refresh` then `uip maestro case debug` (never auto-run — Rule 12). Loop on completion until `Skip to Publish`.
+Follow the Phase 5 sections in both execution references for the completion report, explicit debug-consent gate, and debug loop. Never auto-run debug (Rule 12).
 
 ### Phase 6 — Publish
 
-**HARD STOP** AskUserQuestion (Step 14): `Publish to Studio Web` / `Done`. On `Publish`: `uip solution resources refresh` then `uip solution upload`, print DesignerUrl (Step 15). Exit on either choice.
+Follow the Phase 6 sections in both execution references for the explicit publish-or-done gate and optional Studio Web upload.
 
 ## Reference Navigation
 
