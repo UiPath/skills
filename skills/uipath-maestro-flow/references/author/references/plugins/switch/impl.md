@@ -58,3 +58,4 @@ Each case creates a dynamic output port `case-{id}`. An optional `default` port 
 | Case expression error | Invalid JavaScript in case expression | Check `=js:` expression syntax |
 | Wrong port name in edge | Port ID doesn't match case ID | Ensure edge `sourcePort` is `case-{id}` matching the case's `id` field |
 | `$vars.nodeId` is undefined | Upstream node not connected or wrong ID | Check edges and node IDs |
+| `Cannot read property '…' of undefined` in a downstream script (debug Faults) | A downstream node read `$vars.<switch>.output.<field>` — a Switch is routing-only and has no `.output` | Recompute the condition in the downstream node from the same upstream `$vars` the Switch tested; do not read the gateway's result. See [node-output-wiring.md § Routing Nodes](../../../shared/node-output-wiring.md#routing-nodes-decision--switch-have-no-output) |
