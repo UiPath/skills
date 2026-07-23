@@ -29,6 +29,7 @@ One UIA activity set covers every UI target:
 
 - **Multi-platform** — Windows and macOS.
 - **Desktop and web** — native desktop applications and browsers, driven through the same activities.
+- **Resilient targeting** — targets are configured with strict or fuzzy selectors (reinforced by anchors), Computer Vision, or semantic matching; `uia-configure-target` picks the route and falls back between them automatically.
 - **Combined in a single automation** — desktop and browser apps interoperate in one workflow with no bridge or handoff. Multi-screen, multi-application flows (read from a desktop app, act in a browser, verify across both) are first-class.
 
 ## UIA Prerequisites
