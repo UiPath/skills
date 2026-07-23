@@ -4,7 +4,7 @@ confidence: high
 
 # HTTP Client Exception (DAP-RT-1103)
 
-> **Fault bucket: 🛠 B2 — Service/provider-side (not customer-fixable in the workflow → escalate).** A network-level failure between the robot and UiPath's Integration Service endpoint. On self-hosted robots the customer owns the egress path (firewall/proxy/DNS) — that part is theirs to fix; it is never a workflow change. On UiPath-hosted cloud robots there is no customer-side network to fix — escalate. Lead with: "This is a connectivity issue between the robot and UiPath's cloud, not a workflow bug — check network egress or escalate." See [dap-error-codes-reference.md](../dap-error-codes-reference.md#fault-ownership--the-two-bucket-decision).
+> **Fault bucket: 👤 A or 🛠 B1, determined by runtime ownership.** This is a network-level failure between the robot and UiPath's Integration Service endpoint—not a third-party provider response. On self-hosted robots, customer-owned DNS/firewall/proxy/TLS egress is A; on UiPath-hosted robots or when the UiPath endpoint is failing, it is B1 and must be escalated. Lead with: "This is connectivity between the robot and UiPath's cloud, not a workflow or provider API rejection—check the owning egress path or escalate." See [dap-error-codes-reference.md](../dap-error-codes-reference.md#fault-ownership--the-two-bucket-decision).
 
 ## Context
 
