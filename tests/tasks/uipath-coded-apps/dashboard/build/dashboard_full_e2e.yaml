@@ -14,7 +14,6 @@ run_limits:
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
   node: {}
 
 # Cleanup: the dashboard build mints a fresh OAuth external app per run
