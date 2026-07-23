@@ -15,6 +15,8 @@ tags: [uipath-review, smoke]
 
 run_limits:
   expected_turns: 24
+  max_turns: 30
+  turn_timeout: 1800
 
 initial_prompt: |
   A small UiPath RPA project needs a quality review.

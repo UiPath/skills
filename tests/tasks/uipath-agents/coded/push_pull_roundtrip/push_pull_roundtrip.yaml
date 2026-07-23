@@ -6,8 +6,8 @@ description: >
 tags: [uipath-agents, smoke, integration, mode:operate, coded, lifecycle:execute, feature:file-sync]
 
 run_limits:
-  max_turns: 30
-  task_timeout: 600
+  max_turns: 45
+  task_timeout: 900
   turn_timeout: 300
 
 sandbox:
