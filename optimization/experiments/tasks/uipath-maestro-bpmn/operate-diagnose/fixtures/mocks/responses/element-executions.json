@@ -1,0 +1,10 @@
+[
+  {
+    "elementId": "Start_Manual",
+    "state": "Completed"
+  },
+  {
+    "elementId": "Task_InvokeLegacyRpa",
+    "state": "Faulted"
+  }
+]

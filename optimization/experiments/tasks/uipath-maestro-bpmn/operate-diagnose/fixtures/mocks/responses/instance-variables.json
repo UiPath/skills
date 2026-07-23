@@ -1,0 +1,13 @@
+{
+  "instanceId": "inst-triage-001",
+  "variables": [
+    {
+      "name": "invoiceId",
+      "value": "INV-SYNTH-001"
+    },
+    {
+      "name": "triageStatus",
+      "value": "PendingChildProcess"
+    }
+  ]
+}
