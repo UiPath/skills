@@ -6,7 +6,7 @@ This skill must work against every future version of `UiPath.UIAutomation.Activi
 
 **Stays in `skills/uipath-rpa/`:** policy this skill owns — UIA prerequisites/version gating and upgrade consent (SKILL.md § UIA Prerequisites), the skill-side UIA policies in `references/uia-starter-guide.md` (run/debug orchestration, placeholder-stub deliverable pattern, UI Library publishing), critical rules, and pointers into the package docs.
 
-**Lives in the UIA package docs** (ships to `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`): the UIA authoring guide (`ui-automation-guide.md` — window baseline, capture orchestration, pitfalls, control-specific interaction, coded/XAML patterns), target-capture orchestration (`references/uia-configure-target-workflows.md`), single-purpose task recipes, CLI subcommand syntax, skill invocation arguments, internal procedure step numbers, artifact filenames, bash blocks invoking `uip rpa uia ...`, flag tables, troubleshooting entries.
+**Lives in the UIA package docs** (ships to `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`): the UIA authoring guide (`ui-automation-guide.md` — window baseline, capture orchestration, pitfalls, control-specific interaction, coded/XAML patterns), target-capture orchestration and `uia-configure-target` invocation modes (`references/uia-configure-target-guide.md`), single-purpose task recipes, CLI subcommand syntax, skill invocation arguments, internal procedure step numbers, artifact filenames, bash blocks invoking `uip rpa uia ...`, flag tables, troubleshooting entries.
 
 ## Forbidden in skill files
 
@@ -52,11 +52,11 @@ Describe capability at the category level and route to UIA docs for concrete syn
 | New content | Home |
 |-------------|------|
 | UIA authoring guidance (capture flows, pitfalls, coded/XAML patterns, control-specific interaction) | UIA package: `docs/ui-automation-guide.md` (or the reference it routes to) |
-| Target-capture orchestration | UIA package: `docs/references/uia-configure-target-workflows.md` |
+| Target-capture orchestration + `uia-configure-target` invocation modes | UIA package: `docs/references/uia-configure-target-guide.md` |
 | CLI subcommand syntax, full flag tables, troubleshooting | UIA package: `docs/references/cli-reference.md` (searched for specific sections — never read in full) |
 | Single-purpose CLI task recipe (window baseline, input methods, advancing UI state, …) | UIA package: `docs/references/<purpose>-guide.md`, listed with a purpose description in `docs/overview.md` § References |
-| Skill invocation guide for callers | UIA package: `docs/skills/<skill>/USAGE.md` |
-| Skill internal procedure | UIA package: `docs/skills/<skill>/SKILL.md` |
+| Skill invocation guide for callers | UIA package: `docs/references/<skill>-guide.md` (`uia-configure-target-guide.md`, `uia-improve-selector-guide.md`) — skills ship no USAGE.md |
+| Skill internal procedure | UIA package: `docs/skills/<skill>/SKILL.md` — the only file under `docs/skills/<skill>/` |
 | uipath-rpa-owned UIA policy (prerequisites/consent, run/debug orchestration, stub deliverables, UI Library publishing) | `skills/uipath-rpa/references/` with pointers to package docs for concrete syntax |
 
 New UIA docs go into the UIA package's source repo under `UiPath.UIAutomation.Activities.Package/docs/`. When the package is installed in a project, these docs land at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`.
