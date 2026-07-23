@@ -367,7 +367,7 @@ The trailing `` `{stage_id}` `` (e.g., `` `stage-intake` ``) MUST appear so read
 | Description | yes (primary) / optional (secondary) | One prose sentence |
 | Required for case completion | yes | `Yes` (primary, default) / `No` (secondary stages always `No`) |
 | Interrupting | secondary stages only | `Yes` / `No` — does this stage interrupt active stages on activation? |
-| Stage SLA | yes when stage has SLA | Duration + type, plus escalation table |
+| Stage SLA | yes when stage has SLA | Default duration + `time-based` or `condition-based`, plus conditional-rule and escalation tables |
 
 ### Stage Entry Conditions table
 
@@ -399,6 +399,14 @@ Optional. Used for early hand-offs / routing. Same columns and order as the comp
 | `selected-tasks-completed("<Task>")` / `wait-for-connector` | optional | `exit-only` / `wait-for-user` | `No` | optional |
 
 `return-to-origin` is a completion exit, not a divergent exit: render it in the `Yes` table with `required-tasks-completed` (or `wait-for-connector`). Never generate `return-to-origin` + `No` + `selected-tasks-completed`.
+
+### Stage conditional SLA rules table
+
+Render when the Stage SLA type is `condition-based`. Each expression-keyed override targets this stage's `data.slaRules[]` and precedes its default row.
+
+| Expression | SLA | Unit | Display Name |
+|---|---|---|---|
+| condition evaluated against case variables | positive count | `min` / `h` / `d` / `w` / `m` | non-empty, stage-unique title without `:` |
 
 ### Stage SLA escalation table
 

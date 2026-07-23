@@ -85,6 +85,8 @@ def _sdd_frontend_issues(text: str, source: str = "sdd.md") -> list[str]:
     stage_names: list[str] = []
     in_stage_sla = False
     in_variable_sla = False
+    stage_variable_sla = False
+    variable_sla_names: set[str] = set()
 
     def check_duration(count_text: str, unit_text: str, line_no: int) -> None:
         try:
@@ -102,12 +104,21 @@ def _sdd_frontend_issues(text: str, source: str = "sdd.md") -> list[str]:
         if stripped == "#### Stage SLA":
             in_stage_sla = True
             in_variable_sla = False
+            stage_variable_sla = False
         elif stripped == "### Variable SLA Rules":
             in_variable_sla = True
             in_stage_sla = False
+            stage_variable_sla = False
+            variable_sla_names = set()
+        elif stripped == "##### Stage Variable SLA Rules":
+            in_variable_sla = True
+            in_stage_sla = False
+            stage_variable_sla = True
+            variable_sla_names = set()
         elif stripped.startswith("#"):
             in_stage_sla = False
             in_variable_sla = False
+            stage_variable_sla = False
 
         case_sla = re.match(r"^\|\s*Case-Level SLA\s*\|\s*([0-9]+(?:\.[0-9]+)?)\s+([A-Za-z]+)", line, re.I)
         if case_sla:
@@ -118,6 +129,29 @@ def _sdd_frontend_issues(text: str, source: str = "sdd.md") -> list[str]:
             check_duration(cells[0], cells[1], line_no)
         if in_variable_sla and len(cells) >= 3 and re.fullmatch(r"\d+(?:\.\d+)?", cells[1]):
             check_duration(cells[1], cells[2], line_no)
+            expression = cells[0].strip().strip("\"'")
+            if not expression or expression in {"—", "-"}:
+                issues.append(
+                    f"sla: conditional rule requires an expression at "
+                    f"{source}:{line_no}"
+                )
+            if stage_variable_sla:
+                display = cells[3].strip().strip("\"'") if len(cells) >= 4 else ""
+                if not display or display in {"—", "-"}:
+                    issues.append(
+                        f"naming: SLA title is missing at {source}:{line_no}"
+                    )
+                elif display in variable_sla_names:
+                    issues.append(
+                        f"naming: duplicate SLA title {display!r} at "
+                        f"{source}:{line_no}"
+                    )
+                else:
+                    variable_sla_names.add(display)
+                if ":" in display:
+                    issues.append(
+                        f"naming: SLA title contains ':' at {source}:{line_no}"
+                    )
 
         stage = re.match(r"###\s+(Stage \d+|Exception Stage|Secondary Stage):\s*(.*)", line.strip())
         if stage:

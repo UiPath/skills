@@ -113,6 +113,27 @@ def test_return_to_origin_accepts_both_completing_triggers():
     )
 
 
+def test_stage_variable_sla_rules_are_checked():
+    text = """
+#### Stage SLA
+| 1 | m | 80% | Notify | Notify |
+##### Stage Variable SLA Rules
+| Expression | SLA | Unit | Display Name |
+|---|---|---|---|
+| - | 0 | d | - |
+| priority is Urgent | 10 | min | Urgent: SLA |
+| priority is Standard | 5 | d | Standard SLA |
+| priority is Escalated | 2 | w | Standard SLA |
+"""
+    issues = _sdd_frontend_issues(text)
+    assert any("conditional rule requires an expression" in issue for issue in issues)
+    assert any("count must be positive" in issue for issue in issues)
+    assert any("minute count" in issue for issue in issues)
+    assert any("SLA title is missing" in issue for issue in issues)
+    assert any("SLA title contains ':'" in issue for issue in issues)
+    assert any("duplicate SLA title 'Standard SLA'" in issue for issue in issues)
+
+
 def test_tasks_sla_validation_matches_frontend_contract():
     tasks = '''
 ## T01: Set default SLA for "root"

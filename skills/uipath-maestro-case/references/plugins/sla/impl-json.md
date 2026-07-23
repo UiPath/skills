@@ -17,7 +17,7 @@ Compose the `slaRules[]` array for each target (root or stage) in one write. Gro
 | T-entry kind | Required fields | Notes |
 |---|---|---|
 | Default SLA | `target`, `count`, `unit`, `display-name` | One per target. Emitted as the `=js:true` entry, always last. |
-| Conditional rule | `target: "root"`, `condition` (natural-language), `count`, `unit`, `display-name` | Root-only. Translated to `=js:<expr>` at execution; see Expression Translation below. |
+| Conditional rule | `target: "root"` \| `"<stage-name>"`, `condition` (natural-language), `count`, `unit`, `display-name` | Translated to `=js:<expr>` at execution and prepended to the target's default; see Expression Translation below. |
 | Escalation | `target`, `attach-to: T<m>` \| `default`, `trigger-type`, `at-risk-percentage?`, `recipients[]`, `display-name` | `attach-to` points to the T-number of the parent rule (or the default). |
 
 ## ID generation
@@ -33,6 +33,8 @@ Record every `T<n> → esc_xxxxxx` in `id-map.json` under `{kind: "escalation", 
 - `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules`
 - Accepted node types: `case-management:Stage` (a secondary/exception stage is the same node with `data.stageType === "secondary"`).
 - If the stage node isn't found, halt and AskUserQuestion with candidate stage labels + "Something else".
+
+> **Stage conditional rules are direct JSON only.** `uip maestro case sla rules add` exposes a root-only CLI surface; do not use it for a stage target. Compose the stage's complete conditional + default array here and write `node.data.slaRules`.
 
 ## Recipe — one target
 

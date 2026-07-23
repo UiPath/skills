@@ -16,7 +16,7 @@ Pick this plugin whenever the sdd.md mentions deadlines, service-level agreement
 | Sub-op | Purpose |
 |--------|---------|
 | **Default SLA** | The time-based catch-all SLA. One per target (root or stage). Written into the SLA rules array with `expression: "=js:true"`. See [impl-json.md § Target resolution](impl-json.md) for the destination paths. |
-| **Conditional SLA rules** | Expression-driven SLA overrides. Root-only. Prepended to the root SLA rules array ahead of the default. |
+| **Conditional SLA rules** | Expression-driven SLA overrides. Supported on root and stage targets. Prepended to the target's SLA rules array ahead of the default. |
 | **Escalation rules** | Notifications triggered at-risk or on breach. Attached to a specific rule via `escalationRule[]`. |
 
 ## Applying SLA at Root vs Stage
@@ -26,7 +26,7 @@ Pick this plugin whenever the sdd.md mentions deadlines, service-level agreement
 
 Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage > root.
 
-> **Conditional SLA rules are root-only.** They live in `metadata.slaRules[]`; per-stage conditional SLA is not supported. If the sdd.md describes one, flag to the user.
+> **Conditional SLA rules use the same target scope as defaults.** Root rules live in `metadata.slaRules[]`; stage rules live in the stage node's `data.slaRules[]`. On either target, conditional entries precede the trailing `=js:true` default.
 
 > **Secondary-stage SLA is supported.** Author it the same way as a regular Stage SLA — write `data.slaRules[]` on the `case-management:Stage` node (the secondary stage, i.e. `data.stageType: "secondary"`). See [`impl-json.md`](impl-json.md).
 
@@ -47,6 +47,7 @@ Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage >
 
 | Field | Source | Notes |
 |-------|--------|-------|
+| `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
 | `expression` | sdd.md condition | Natural-language in planning; the execution phase translates. **Do not fabricate syntax during planning.** |
 | `count`, `unit` | sdd.md duration for this condition | Same units as default |
 | `display-name` | sdd.md or generated fallback | Required non-empty unique title, no `:`; use `SLA Rule {N}` only when the author supplied no title. |
@@ -134,7 +135,7 @@ Rationale values: `auto-exact-email`, `auto-exact-name`, `user-picked-from-N`, `
 SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each target, order within the target:
 
 1. Default SLA T-entry
-2. Conditional SLA rule T-entries (root only)
+2. Conditional SLA rule T-entries for that target
 3. Escalation rule T-entries (one per rule)
 
 ## tasks.md Entry Format
@@ -154,7 +155,8 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 ### Conditional SLA rule
 
 ```markdown
-## T<n>: Add conditional SLA rule for root case — <condition summary>
+## T<n>: Add conditional SLA rule for "<target>" — <condition summary>
+- target: "root" | "<stage-name>"
 - display-name: "Urgent SLA"              # required; target-unique, no ':'
 - condition: "<natural-language condition from sdd.md>"
 - count: 30
@@ -196,7 +198,7 @@ Before emitting SLA T-entries, reject or repair the same cases the Case App reje
 ## Anti-Patterns
 
 - **Do not fabricate expression syntax.** Describe conditional SLA rules in natural language during planning; the execution phase handles the exact syntax.
-- **Do not put conditional SLA rules on stages.** Conditional SLA rules live in `metadata.slaRules[]` only. Flag to the user if the sdd.md describes a per-stage conditional SLA.
+- **Do not lose the conditional rule's target.** Root and stage rules have the same entry shape but different destinations (`metadata.slaRules[]` vs `node.data.slaRules[]`). Preserve `target` through `tasks.md`.
 - **Do not invert rule order.** Conditional rules are evaluated in insertion order — insert them in the priority order the sdd.md specifies.
 - **Do not skip the resolver to save a CLI call.** Email / group-name recipients MUST go through [§ Identity Resolution](#identity-resolution). Writing `<UNRESOLVED: ...>` directly without attempting `uip admin users/groups list` is a planning bug.
 - **Do not fabricate UUIDs.** When the resolver returns 0 / multi / partial matches, AskUserQuestion or keep `<UNRESOLVED>` — never guess a UUID, never auto-pick the first candidate without the exact-email / exact-name gate.

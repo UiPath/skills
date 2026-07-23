@@ -350,9 +350,21 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 #### Stage SLA
 
+> Stage SLA supports the same conditional + default `slaRules[]` model as the case root. For `condition-based`, keep the default row below and add one or more Stage Variable SLA Rules before it.
+
+**SLA Type:** {time-based | condition-based}
+
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
 | {count} | {min \| h \| d \| w \| m} | {percentage}% | {Notify: recipient or specific action} | {Notify: recipient or specific action} |
+
+##### Stage Variable SLA Rules
+
+> Include only for a condition-based Stage SLA. Each row is written before that stage's trailing `=js:true` default.
+
+| Expression | SLA | Unit | Display Name |
+|------------|-----|------|--------------|
+| {conditionExpression evaluated against case variables} | {count} | {min \| h \| d \| w \| m} | {non-empty stage-unique title without `:`} |
 
 #### Tasks
 

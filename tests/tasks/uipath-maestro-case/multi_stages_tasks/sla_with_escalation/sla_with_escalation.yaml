@@ -1,12 +1,14 @@
 task_id: skill-case-multi-sla-with-escalation
 description: >
   Build a Case Management definition that exercises root-level SLA,
-  TWO conditional overrides, and a regular-stage SLA — covering four
+  TWO root conditional overrides, and a regular-stage SLA with its own
+  conditional override — covering four
   of the five SLA units in one test (min/d/w/m). Root: default 3
   weeks (unit=w) + conditional 30 minutes (unit=min) for Urgent
   priority + conditional 5 days (unit=d) for Standard priority,
   inserted in priority order. Resolve (regular stage) carries its own
-  default SLA of 1 month (unit=m) — the regular-stage SLA path that
+  conditional 2 weeks for Urgent priority plus a default SLA of 1
+  month (unit=m) — the regular-stage conditional-SLA path that
   no other multi_stages_tasks test covers (exception_stage uses h on a
   secondary stage). The root default rule carries an at-risk 80%
   MULTI-RECIPIENT escalation (User manager@corp.com + UserGroup
@@ -18,7 +20,7 @@ description: >
   both escalation trigger types (at-risk + sla-breached), both
   recipient scopes (User + UserGroup), MULTI-RECIPIENT escalation
   (≥2 recipients on one notification), regular-Stage data.slaRules,
-  and the d + w + m + min duration units. Recipient UUIDs are
+  stage-level conditional-rule placement, and the d + w + m + min duration units. Recipient UUIDs are
   unresolved and stay as UNRESOLVED skeletons per the skill rules.
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:conditional-sla, feature:stage-sla]
 max_iterations: 1
@@ -39,7 +41,7 @@ initial_prompt: |
 
   **Case Definition Blueprint** · Generic — SLA Rule & Escalation Coverage
 
-  Root-level SLA with TWO conditional overrides plus a regular-stage SLA — covering four of the five SLA units (min/d/w/m) in one test. Exercises multiple slaRules in priority order, conditional-rule expression-driven SLA, escalation attached to a conditional rule (not just the default), both escalation trigger types (at-risk + sla-breached), both recipient scopes (User + UserGroup), MULTI-RECIPIENT escalation (≥2 recipients on one notification), and regular-Stage data.slaRules.
+  Root-level SLA with TWO conditional overrides plus a regular-stage SLA with its own conditional override — covering four of the five SLA units (min/d/w/m) in one test. Exercises multiple slaRules in priority order, root and stage conditional-rule placement, escalation attached to a conditional rule (not just the default), both escalation trigger types (at-risk + sla-breached), both recipient scopes (User + UserGroup), MULTI-RECIPIENT escalation (≥2 recipients on one notification), and regular-Stage data.slaRules.
 
   > **Unresolved recipients.** Recipient UUIDs are not provided. The agent MUST leave them as UNRESOLVED skeletons per the skill rules; do NOT fabricate UUIDs.
 
@@ -51,7 +53,7 @@ initial_prompt: |
   | Property | Value |
   |---|---|
   | Case Name | SlaWithEscalation |
-  | Case Description | Root-level SLA with two conditional overrides (Urgent 30min, Standard 5d) and a default of 3w; Resolve stage carries its own 1m SLA. |
+  | Case Description | Root-level SLA with two conditional overrides (Urgent 30min, Standard 5d) and a default of 3w; Resolve stage carries an Urgent 2w conditional override plus its own 1m default. |
   | Case Identifier | Prefix: SWE, Type: constant |
   | Priority | Choiceset: Urgent, Standard - Default: Standard |
   | Case-Level SLA | 3w (default) |
@@ -111,11 +113,12 @@ initial_prompt: |
   | No stage exit hand-off declared. | - | exit-only | - | No |
   **Stage SLA**
 
-  Stage-level data.slaRules — overrides the root default while Resolve is active. Stage data.description is set to "Active resolution stage; carries its own monthly SLA."
+  Stage-level data.slaRules — overrides the root SLA while Resolve is active. The conditional row must precede the default. Stage data.description is set to "Active resolution stage; carries its own monthly SLA."
 
-  | # | Rule Type | Duration | Unit | Escalation |
-  |---|---|---|---|---|
-  | 1 | Default | 1 | m | - |
+  | # | Rule Type | Expression | Duration | Unit | Display Name | Escalation |
+  |---|---|---|---|---|---|---|
+  | 1 | Conditional | priority is Urgent | 2 | w | Resolve Urgent SLA | - |
+  | 2 | Default | - | 1 | m | Resolve Default SLA | - |
   ```
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the
@@ -134,7 +137,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "case-level slaRules (metadata.slaRules) has 2 conditional rules in priority order — Urgent (30min, sla-breached UserGroup escalation) then Standard (5d) — followed by default 3w with MULTI-RECIPIENT at-risk escalation (User + UserGroup on one notification); Resolve stage carries its own data.slaRules with default 1m (unit=m) AND data.description set; together SLA units min/d/w/m all exercised"
+    description: "case-level slaRules (metadata.slaRules) has 2 conditional rules in priority order — Urgent (30min, sla-breached UserGroup escalation) then Standard (5d) — followed by default 3w with MULTI-RECIPIENT at-risk escalation (User + UserGroup on one notification); Resolve stage carries its own data.slaRules with conditional priority-is-Urgent rule named Resolve Urgent SLA at 2w before default 1m AND data.description set; together SLA units min/d/w/m all exercised"
     command: "python3 $TASK_DIR/check_sla_with_escalation.py"
     timeout: 720
     expected_exit_code: 0
