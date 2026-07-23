@@ -1,4 +1,4 @@
-task_id: skill-ixp-integration-name-resolution
+task_id: skill-ixp-integration-document-filename-resolution
 description: >
   Integration: document filename resolution and project rename on a live
   tenant. The agent must resolve a document FILENAME to its DocumentId via
