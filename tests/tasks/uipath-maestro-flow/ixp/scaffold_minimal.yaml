@@ -22,6 +22,13 @@ initial_prompt: |
   Model used: Invoice Model
   Script node: contains a JavaScript that logs OK when it receives the
   extraction result.
+  When authoring the IxP node directly, include both `outputs.output` and
+  `outputs.error` on the node instance, and set `inputs.fileRef` to a
+  `=js:$vars.<upstream>.output.<field>` expression rather than a literal string.
+  Copy the output definitions from registry get when a real IxP node exists; if
+  falling back to `core.logic.mock`, still expose equivalent `output` and
+  `error` variables for downstream `$vars.<extractor>.output` and
+  `$vars.<extractor>.error` references.
 
   Important:
   - The `uip` CLI is already available.
