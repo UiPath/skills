@@ -14,6 +14,7 @@ sandbox:
   # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
   # ixp-tool, not the BYOS host's stale pre-migration plugin.
   driver: docker
+  python: {}
   mock_path_dirs: [mocks]
   template_sources:
     - type: template_dir
@@ -93,9 +94,5 @@ success_criteria:
 
 # Safety net: delete the project even if the agent's in-band cleanup never ran.
 post_run:
-  - command: |
-      set +e
-      name="$(jq -r '.project_name // empty' report.json 2>/dev/null)"
-      test -z "$name" || uip ixp projects delete "$name" -y --output json >/dev/null 2>&1
-      exit 0
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/cleanup_project.py"
     timeout: 60
