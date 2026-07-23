@@ -3,6 +3,7 @@
   "rules": [
     { "match": "login status",                                      "file": "login_status.json" },
     { "match": "or folders list",                                    "file": "or_folders_list.json" },
+    { "match": "mcp list --help",                                    "file": "mcp_list_help.txt" },
     { "match": "agenthub mcp list",                                  "file": "agenthub_mcp_list.json" },
     { "match": "agenthub mcp-tools list",                            "file": "agenthub_mcp_tools_list.json" },
     { "match": "agenthub mcp-tools candidates --category is-activity", "file": "candidates_unavailable.json", "exit_code": 1 },

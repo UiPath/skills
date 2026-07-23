@@ -1,6 +1,8 @@
 {
   "version": 2,
   "rules": [
+    { "match": "mcp list --help",                                      "file": "mcp_list_help.txt" },
+    { "match": "agenthub mcp list",                                    "file": "agenthub_mcp_list.json" },
     { "match": "agenthub mcp-tools create-is-activity --help",             "file": "create_is_activity_help.txt" },
     { "match": "agenthub mcp get test-mcp-skill",                         "file": "agenthub_mcp_get.json" },
     { "match": "agenthub mcp-tools list --mcp test-mcp-skill",            "file": "mcp_tools_list.json" },

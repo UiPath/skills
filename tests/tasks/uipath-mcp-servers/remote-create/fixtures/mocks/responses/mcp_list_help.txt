@@ -1,0 +1,21 @@
+                                                        uip mcp
+                                          Model Context Protocol (MCP) server
+                                    Use --help with nested commands for more detail.
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ uip mcp [options] [command]                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ help    display help for command                                                                                     │
+│ serve   Start the MCP server (stdio transport)                                                                       │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ -h, --help                            display help for command                                                       │
+│ --output <table|json|yaml|plain>      Output format (default: json)                                                  │
+│ --output-filter <expression>          JMESPath expression applied to the Data field of the response envelope         │
+│ --log-level <debug|info|warn|error>   Log level threshold (default: info)                                            │
+│ --log-file <path>                     Write logs to file instead of stderr                                           │
+│ --profile <name>                      Use a named login profile                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
