@@ -8,7 +8,7 @@ tags: [uipath-agents, smoke, integration, mode:operate, coded, lifecycle:execute
 run_limits:
   max_turns: 30
   task_timeout: 600
-  turn_timeout: 600
+  turn_timeout: 300
 
 sandbox:
   template_sources:
