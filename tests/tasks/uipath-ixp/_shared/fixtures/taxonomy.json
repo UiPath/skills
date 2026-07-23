@@ -1,0 +1,183 @@
+{
+  "entity_defs": [
+    {
+      "id": "566c42e2ae1d7c21",
+      "name": "Boolean",
+      "title": "Boolean",
+      "inherits_from": [
+        "0000000000000046"
+      ],
+      "trainable": true,
+      "color": 0,
+      "instructions": "Use to represent boolean values in text."
+    },
+    {
+      "id": "c128ad65bd8af3f8",
+      "name": "Date",
+      "title": "",
+      "inherits_from": [
+        "0000000000000007"
+      ],
+      "trainable": true,
+      "color": 1,
+      "instructions": ""
+    },
+    {
+      "id": "b3a63e6483adaaba",
+      "name": "Exact Text",
+      "title": "",
+      "inherits_from": [],
+      "trainable": true,
+      "color": 2,
+      "instructions": ""
+    },
+    {
+      "id": "59483fee51fcb287",
+      "name": "Inferred Text",
+      "title": "Inferred Text",
+      "inherits_from": [],
+      "trainable": true,
+      "color": 3,
+      "instructions": "Use for text that might not appear verbatim in the text."
+    },
+    {
+      "id": "7d337b2e9d750bca",
+      "name": "Monetary Quantity",
+      "title": "",
+      "inherits_from": [
+        "0000000000000006"
+      ],
+      "trainable": true,
+      "color": 4,
+      "instructions": ""
+    },
+    {
+      "id": "6d574ac2b340c117",
+      "name": "Number",
+      "title": "Number",
+      "inherits_from": [
+        "0000000000000044"
+      ],
+      "trainable": true,
+      "color": 5,
+      "instructions": "Use to represent amounts or quantities in text."
+    }
+  ],
+  "label_groups": [
+    {
+      "name": "default",
+      "label_defs": [
+        {
+          "name": "Invoice Header",
+          "id": "3c06badf01156d89",
+          "instructions": "Top-level header fields of a vendor invoice (numbers, dates, parties, totals).",
+          "moon_form": [
+            {
+              "field_id": "64229d679643139c",
+              "id": "b3a63e6483adaaba",
+              "field_type_id": "b3a63e6483adaaba",
+              "kind": "Exact Text",
+              "name": "Invoice Number",
+              "instructions": "The unique invoice identifier assigned by the vendor, found in the header area near 'Invoice Number' or 'Invoice #'. Example: '0118617-IN', '68F1048859'.",
+              "rule_set": null
+            },
+            {
+              "field_id": "6c4f28353fe5716e",
+              "id": "c128ad65bd8af3f8",
+              "field_type_id": "c128ad65bd8af3f8",
+              "kind": "Date",
+              "name": "Invoice Date",
+              "instructions": "The date the invoice was issued, in the header area near 'Invoice Date' or 'Date'. Example: '8/4/2018', '16.05.2017'.",
+              "rule_set": null
+            },
+            {
+              "field_id": "2966c67a1e4056b6",
+              "id": "b3a63e6483adaaba",
+              "field_type_id": "b3a63e6483adaaba",
+              "kind": "Exact Text",
+              "name": "Vendor Name",
+              "instructions": "The full legal name of the vendor (the company issuing the invoice), typically at the top of the document. Example: 'YORK SOLUTIONS, LLC', 'HP PPS Sales Sdn. Bhd.'.",
+              "rule_set": null
+            },
+            {
+              "field_id": "a14b72a5744ef739",
+              "id": "b3a63e6483adaaba",
+              "field_type_id": "b3a63e6483adaaba",
+              "kind": "Exact Text",
+              "name": "Vendor Address",
+              "instructions": "The mailing address of the vendor (the company issuing the invoice), near the vendor name in the header. Include street or P.O. Box, city, state or region, and postal code.",
+              "rule_set": null
+            },
+            {
+              "field_id": "81274a7a617005a4",
+              "id": "b3a63e6483adaaba",
+              "field_type_id": "b3a63e6483adaaba",
+              "kind": "Exact Text",
+              "name": "Bill-To Name",
+              "instructions": "The legal name of the entity being billed (the customer receiving the invoice). Distinct from the vendor. Example: 'Motorola Solutions'.",
+              "rule_set": null
+            },
+            {
+              "field_id": "804b6b8683493016",
+              "id": "b3a63e6483adaaba",
+              "field_type_id": "b3a63e6483adaaba",
+              "kind": "Exact Text",
+              "name": "Bill-To Address",
+              "instructions": "The customer's billing address, found in a 'Bill To' or 'Invoice To' block. Distinct from the vendor's address.",
+              "rule_set": null
+            },
+            {
+              "field_id": "ddee29d4d3f3656e",
+              "id": "7d337b2e9d750bca",
+              "field_type_id": "7d337b2e9d750bca",
+              "kind": "Monetary Quantity",
+              "name": "Subtotal",
+              "instructions": "The pre-tax subtotal amount of the invoice. If no separate subtotal line is shown, leave unannotated.",
+              "rule_set": null
+            },
+            {
+              "field_id": "56c73e5c34cfbb5e",
+              "id": "7d337b2e9d750bca",
+              "field_type_id": "7d337b2e9d750bca",
+              "kind": "Monetary Quantity",
+              "name": "Tax Amount",
+              "instructions": "The total tax applied to the invoice (GST, VAT, sales tax). If no tax line is shown, leave unannotated.",
+              "rule_set": null
+            },
+            {
+              "field_id": "30aa291819196acc",
+              "id": "7d337b2e9d750bca",
+              "field_type_id": "7d337b2e9d750bca",
+              "kind": "Monetary Quantity",
+              "name": "Total Amount",
+              "instructions": "The final amount due on the invoice, including any taxes. Example: '5,600.00', '714.51', '$4,310.99'.",
+              "rule_set": null
+            },
+            {
+              "field_id": "2937864ac4f7ee85",
+              "id": "b3a63e6483adaaba",
+              "field_type_id": "b3a63e6483adaaba",
+              "kind": "Exact Text",
+              "name": "Payment Terms",
+              "instructions": "Payment terms text, e.g. 'Net 30', 'NET 15 Days', '75 DAYS'. Found near terms or due date in the header.",
+              "rule_set": null
+            },
+            {
+              "field_id": "43a022943c19461c",
+              "id": "b3a63e6483adaaba",
+              "field_type_id": "b3a63e6483adaaba",
+              "kind": "Exact Text",
+              "name": "PO Number",
+              "instructions": "The customer's purchase order number associated with this invoice. Example: 'NP95125990'. Distinct from any vendor-side order or reference number.",
+              "rule_set": null
+            }
+          ]
+        }
+      ],
+      "label_collection_name": null,
+      "trainable": true,
+      "hidden": false,
+      "instructions": "Extract invoice header fields (invoice number, invoice date, vendor name, vendor address, bill-to name, bill-to address, subtotal, tax amount, total amount, payment terms, PO number) from Motorola vendor invoices."
+    }
+  ]
+}

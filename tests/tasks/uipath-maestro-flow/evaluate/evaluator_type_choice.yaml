@@ -15,7 +15,7 @@ run_limits:
   max_turns: 50
 
 initial_prompt: |
-  Use the `uipath-maestro-flow` skill's evaluate capability to scaffold a
+  Scaffold a
   project and add three evaluators — one per goal — picking the correct
   `--type` for each.
 
@@ -67,7 +67,7 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+solution\s+(new|init)'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: command_executed
     description: "Agent initialized the Flow project"

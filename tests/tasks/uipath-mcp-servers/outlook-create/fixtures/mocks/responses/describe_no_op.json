@@ -1,0 +1,9 @@
+{
+  "Result": "Success", "Code": "IsResourcesDescribe",
+  "Data": {
+    "name": "ListCalendarEvents", "displayName": "List Calendar Events", "elementKey": "uipath-microsoft-outlook365",
+    "availableOperations": [
+      { "name": "List", "path": "/ListCalendarEvents", "method": "GET", "curated": "Get Event List (Calendar Event)" }
+    ]
+  }
+}

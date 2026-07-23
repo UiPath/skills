@@ -1,0 +1,65 @@
+task_id: skill-api-workflow-nested-control-flow
+description: >
+  Skill-guided e2e: agent composes nested control flow — a ForEach loop with a
+  per-iteration If, wrapped in a TryCatch — to classify a list of scores and
+  count passes. Tests whether the skill teaches hierarchical composition,
+  globally-unique keys across nested scopes (rule 3), and the If wrapper inside
+  a loop body.
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:loop, node:decision]
+
+initial_prompt: |
+  Author a UiPath API Workflow — in a project named `ScorePasses` (its workflow
+  file will be `ScorePasses/Workflow.json`) — that:
+  - Takes a `scores` input (an array of integers)
+  - Iterates the array with a ForEach; uses an If to count scores >= 50 as passes
+  - Wraps the whole loop in a TryCatch so a bad element can't abort the batch
+  - Returns { "passes": <count of scores >= 50> }  (e.g. [40,60,90,10] → 2, [10,30] → 0)
+
+  It must survive a StudioWeb designer roundtrip.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete workflow in a single pass.
+
+success_criteria:
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); python -c "import json,sys; json.load(open(sys.argv[1]))" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Composes ForEach + If wrapper + TryCatch"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "ForEach" "$WF" && grep -q "#Body" "$WF" && grep -q "#Wrapper" "$WF" && grep -q "TryCatch" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Counts passes in [40,60,90,10] as 2 (field-qualified to avoid spurious '2' matches)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --input-arguments ''{"scores":[40,60,90,10]}'' --output json | grep -qiE ''"passes"[ :]+2'''
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Counts passes in [10,30] as 0 (proves real classification, not a constant 2)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --input-arguments ''{"scores":[10,30]}'' --output json | grep -qiE ''"passes"[ :]+0'''
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 14
+  max_turns: 40

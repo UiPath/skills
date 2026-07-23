@@ -1,0 +1,6 @@
+{
+  "Name": "LongRunningProcess",
+  "ProjectType": "Process",
+  "Description": "Long-running process that logs progress around a single multi-minute step.",
+  "MainFile": "Main.xaml"
+}

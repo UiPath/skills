@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "d6e7f809-0a1b-4c2d-3e4f-5a6b7c8d9e01",
+      "State": "Faulted",
+      "ProcessName": "PriceUpdater",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-27T09:12:40.420Z",
+      "EndTime": "2026-05-27T09:12:46.330Z",
+      "CreationTime": "2026-05-27T09:12:40.190Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

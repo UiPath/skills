@@ -1,0 +1,158 @@
+task_id: skill-datafabric-smoke-entities
+description: >
+  Smoke test: agent uses the uipath-platform skill to manage entity schemas
+  offline — list native entities, create a new entity with typed fields (fieldName
+  key, EntityFieldDataType strings) including advanced per-type constraints
+  (lengthLimit, decimalPrecision, minValue / maxValue), retrieve a schema and
+  identify field IDs from Fields[].ID, add new fields (addFields), and update an
+  existing field's metadata and constraints (updateFields with id key). Tests
+  all entity command syntax in a single pass.
+tags: [uipath-platform, data-fabric, smoke, entities, mode:build, lifecycle:setup]
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+initial_prompt: |
+  We already have an Employees UiPath Data Fabric entity. It holds first name, last name, and
+  hire date.
+
+  Could you help me with this:
+
+    - Show me the lists we already have on the tenant.
+
+    - Add a new Departments list called `CE_SmokeDepartments`. Each
+      department should hold:
+        - a name — required, up to 100 characters
+        - a head count — whole number, somewhere between 0 and 10,000
+        - a budget in dollars — up to two decimal places, between $0
+          and $999,999
+        - a description — free-form long text, up to 2000 characters
+
+    - Read the Employees list back so we know what's in it.
+
+    - On Employees, add a salary — dollars and cents, never negative.
+
+    - Rename the hire-date entry to "Date Hired" and make it required.
+
+    - On Departments, stretch the name length limit up to 200
+      characters.
+
+  Please don't remove anything or delete lists.
+
+  Important:
+  - The `uip` CLI is available but not connected to a live tenant. Commands
+    will fail — that is expected. Run each command exactly once regardless
+    of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,
+    do NOT troubleshoot.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed native-only entities (skill recommendation; soft — a plain `entities list` also works for discovery)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+list\s+.*--native-only'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent used fieldName (not name) in entity create body"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*fieldName'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved entity schema with entities get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+get\s+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used addFields key in entities update body"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*addFields'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used updateFields with lowercase id key in entities update body"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update[\s\S]*?updateFields[\s\S]*?\\?\"[Ii]d\\?\"'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied lengthLimit on a STRING field in entities create"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*lengthLimit'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied decimalPrecision on a DECIMAL field in entities create"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*decimalPrecision'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied minValue/maxValue on a numeric field in entities create"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*(minValue|maxValue)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent changed a field's lengthLimit via updateFields"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*updateFields.*lengthLimit'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py
+      --name-prefix CE_SmokeDepartments
+    timeout: 120
+    fail_on_error: false
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py
+      --name-prefix CE_SmokeEmployees
+    timeout: 120
+    fail_on_error: false
+
+post_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py
+      --name-prefix CE_SmokeDepartments
+    timeout: 120
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py
+      --name-prefix CE_SmokeEmployees
+    timeout: 120

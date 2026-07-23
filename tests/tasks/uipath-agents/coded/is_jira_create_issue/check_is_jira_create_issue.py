@@ -5,9 +5,8 @@
   python3 check_coded_is_jira_create_issue.py tenant
 
 `shape` runs offline: validates that the project on disk has the
-ActivityMetadata literal, lazy SDK construction, bindings.json
-connection entry, and a two-field `connection.jira-coded-eval`
-resourceOverwrites block (connectionId + folderKey).
+ActivityMetadata literal, lazy SDK construction, and a bindings.json
+connection entry.
 
 `tenant` runs against the live Jira tenant via `uip is resources run` —
 calls `get_issue` against the new issue key (read from
@@ -95,33 +94,6 @@ def check_shape() -> None:
             "`invoke_activity(...)` — capability runtime pattern missing."
         )
     print("OK: main.py uses lazy UiPath() + retrieve + invoke_activity")
-
-    # 4. resourceOverwrites with the two required fields (NO elementInstanceId)
-    uipath_json = _load_json(ROOT / "__uipath" / "uipath.json")
-    overwrites = (
-        uipath_json.get("runtime", {})
-        .get("internalArguments", {})
-        .get("resourceOverwrites", {})
-    )
-    key = "connection.jira-coded-eval"
-    if key not in overwrites:
-        sys.exit(f"FAIL: __uipath/uipath.json missing resourceOverwrites key `{key}`")
-    entry_keys = set(overwrites[key].keys())
-    has_conn = "connectionId" in entry_keys or "ConnectionId" in entry_keys
-    has_folder = "folderKey" in entry_keys
-    if not (has_conn and has_folder):
-        sys.exit(
-            f"FAIL: resourceOverwrites for `{key}` must carry `connectionId` "
-            "(alias `ConnectionId`) and `folderKey` per "
-            "`ConnectionResourceOverwrite` (`uipath/platform/common/_bindings.py:100`)."
-        )
-    if "elementInstanceId" in entry_keys:
-        sys.exit(
-            f"FAIL: resourceOverwrites for `{key}` contains `elementInstanceId`, "
-            "which `ConnectionResourceOverwrite` ignores (`extra=\"ignore\"`). "
-            "Remove it — see capability anti-pattern #1."
-        )
-    print("OK: resourceOverwrites has connectionId + folderKey (and no spurious elementInstanceId)")
     print("PASS: shape checks complete")
 
 

@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "9937b232-5a94-44ab-8aee-ce6ea52d3bb4",
+      "State": "Faulted",
+      "ProcessName": "ParseDocument",
+      "ReleaseName": "ParseDocument",
+      "StartTime": "2026-06-23T17:37:35.027Z",
+      "EndTime": "2026-06-23T17:37:36.453Z",
+      "CreationTime": "2026-06-23T17:36:33.247Z",
+      "Type": "Unattended",
+      "Source": "Manual",
+      "Priority": null
+    }
+  ]
+}

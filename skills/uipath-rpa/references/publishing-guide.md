@@ -8,7 +8,7 @@ How to take a built `.nupkg` from `uip rpa pack` and get it onto Orchestrator or
 |---|---|---|
 | Run the project as an Orchestrator process / link as a Test Manager automation | **Pack → Orchestrator package upload** | This file § Pack → Upload |
 | Edit / visualize in Studio Web | **Solution upload** | [uipath-solution](../../uipath-solution/SKILL.md) (solution upload) |
-| Deploy a packed solution (`.uipx`) to Orchestrator with the deployment lifecycle | **Solution publish** | [uipath-solution](../../uipath-solution/references/operate/pack-and-deploy.md) |
+| Deploy a packed solution (`.uipx`) to Orchestrator with the deployment lifecycle | **Solution publish** | [uipath-solution](../../uipath-solution/references/pack-and-deploy.md) |
 
 This file documents the first row only — the legacy Orchestrator package feed flow that `uip tm testcases link-automation` requires.
 
@@ -46,9 +46,9 @@ uip or packages upload "<NUPKG_PATH>" --output json
 |---|---|---|
 | `<NUPKG_PATH>` | Yes (positional) | Path to the `.nupkg` produced by `pack`. |
 | `--feed-id <UUID>` | No | Target a non-default feed. Defaults to the tenant feed. |
-| `-t, --tenant <NAME>` | No | Override the authenticated tenant. |
+| `--folder-path <PATH>` / `--folder-key <UUID>` | No | Target a specific folder feed. |
 
-Output JSON includes the package `Id` (the package name Orchestrator stores) and `Version`. Hold on to the `Id` — it is the `--package-name` value that `uip tm testcases link-automation` and `uip or processes create` need.
+Output JSON includes the package `Id` (the package name Orchestrator stores) and `Version`. Hold on to the `Id` — `uip tm testcases link-automation` takes it as `--package-name`; `uip or processes create` takes it as `--package-key` (with `--package-version` separately).
 
 > **There is no `uip or packages publish` or `uip rpa publish`.** Agents that try those names get "unknown command". Pack writes a file; upload pushes that file. Two commands, two domains (`rpa`, `or`).
 
@@ -57,7 +57,7 @@ Output JSON includes the package `Id` (the package name Orchestrator stores) and
 Folder key (UUID — required by `processes create`, `link-automation`, etc.):
 
 ```bash
-uip or folders list-current-user --output json
+uip or folders list --output json
 ```
 
 The returned `Key` is the UUID; the `FullyQualifiedName` is the human path. Either is accepted by `--folder-path` / `--folder-key` — most other CLI calls require the UUID.
@@ -77,4 +77,4 @@ For the full Pack → Upload → Link → Execute pipeline targeted at Test Mana
 - **`uip solution publish` expects a packed `.zip`, not a project directory.** Solutions: run `uip solution pack` first, then `uip solution publish "<ZIP_PATH>"`. Single projects: use `uip or packages upload` instead.
 - **Confusing `solution upload` and `solution publish`.** `upload` pushes to Studio Web (browser editing). `publish` pushes a packed solution `.zip` to the Orchestrator solution feed for `solution deploy`. They are NOT interchangeable. See [uipath-solution](../../uipath-solution/SKILL.md) for the decision tree.
 - **Re-uploading the same version.** Orchestrator rejects duplicate `<id>:<version>` uploads. Bump `--package-version` (or `project.json` `projectVersion`) before re-packing.
-- **`pack` succeeds but `analyze` ran with errors.** A successful pack with errors in the analyzer log usually means warnings only. Re-run `uip rpa analyze --project-dir "<PROJECT_DIR>"` if you need a clean failure / pass signal.
+- **`pack` succeeds but `analyze` ran with errors.** A successful pack with errors in the analyzer log usually means warnings only. Re-run `uip rpa analyze "<PROJECT_DIR>"` (project dir is positional) if you need a clean failure / pass signal.

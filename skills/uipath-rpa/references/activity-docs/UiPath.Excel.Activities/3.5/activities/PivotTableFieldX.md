@@ -6,4 +6,4 @@
 |---------------|
 | `FieldName`, `Function="Sum"`, `Type="Row"` (nested inside `CreatePivotTableXv2` body) |
 
-Use `uip rpa activities get-default-xaml --use-studio` for full XAML.
+Use `uip rpa activities get-default-xaml` for full XAML.

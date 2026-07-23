@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-27T14:38:17.534Z",
+      "Message": "[Throw SKU Not Found] Today's published price for SKU-7392 not found in PublishedPrices sheet"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-27T14:38:17.582Z",
+      "Message": "Today's published price for SKU-7392 not found in PublishedPrices sheet\r\nin Main.xaml\r\n    at Throw \"Throw SKU Not Found\"\r\n    at If \"Guard empty result\"\r\n    at Sequence \"Process Published Prices\"\r\n    at ExcelApplicationScope \"Excel Application Scope\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

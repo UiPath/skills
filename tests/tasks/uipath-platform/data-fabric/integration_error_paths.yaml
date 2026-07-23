@@ -1,0 +1,196 @@
+task_id: skill-datafabric-integration-error-paths
+description: >
+  Integration: ~13 negative CLI paths against `CE_ErrorPathsTest` —
+  required-field / unique / type-mismatch / missing-Id / not-found on
+  insert / update / delete, CSV header-mismatch + malformed CSV, and
+  file-upload edges (non-FILE column, non-existent record, missing local
+  file). Every command is expected to fail; agent must capture the raw
+  error and NOT retry. Grading via command-shape + llm_judge on verbatim
+  error surfacing.
+tags:
+  [
+    uipath-platform,
+    data-fabric,
+    integration,
+    error-paths,
+    mode:diagnose,
+    lifecycle:setup,
+  ]
+run_limits:
+  expected_turns: 25
+  max_turns: 50
+  turn_timeout: 600
+
+initial_prompt: |
+  We have a UiPath Data Fabric entity called `CE_ErrorPathsTest` set up with two rows:
+    - SEED-001, score 10, tag "tag-unique"
+    - SEED-002, score 20, tag "tag-other"
+
+  The list has three columns: a Code (required, short), a Score
+  (whole number), and a Tag (must be unique across rows). Please
+  find the IDs of those two rows by looking them up on Code — call
+  them `seed_id` and `seed_id2` so we can refer back.
+
+  Then please try each of these — they'll all fail, that's the point.
+  Just tell me what came back for each:
+
+  Adding, changing, and removing rows:
+    - Add a new row that skips the Code (just Score = 5).
+    - Add a row with Tag "tag-unique" — the first seed row already
+      has that tag.
+    - Add a row where Score is set to "not-a-number" (text in the
+      number column).
+    - Update a row without telling it which row.
+    - Update a row with a made-up ID `does-not-exist-aaa`.
+    - Update `seed_id2` by changing its tag to "tag-unique".
+    - Update `seed_id` by setting its Score to "bad-value".
+    - Delete a made-up row `does-not-exist-bbb`.
+
+  Loading data from a spreadsheet:
+    - Make a file called `wrong_headers.csv` with header
+      "WrongField,Score" and one row "val,10". Try to load it in.
+    - Make a file called `malformed.csv` with this exact content:
+        Code,Score
+        "unclosed-quote,5
+      Try to load that in too.
+
+  Attaching files (make a tiny `temp.txt` first as the source):
+    - Try to attach it to the Score column (Score isn't a file
+      column).
+    - Try to attach it to a made-up row ID `does-not-exist-ccc`.
+    - Try to attach a file that doesn't exist — `./no-such-file.bin`.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted at least one records insert (error scenarios — seed already pre-seeded)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent resolved seed records via records query (not via insert)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*Code'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted at least one records update (error scenarios)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+update'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted records delete with non-existent ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+delete'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted CSV import (header mismatch and malformed)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+import'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted file upload (error scenarios)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+files\s+upload\s+.*--file'
+    min_count: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent created wrong_headers.csv locally for the CSV-header-mismatch scenario"
+    path: "wrong_headers.csv"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent created malformed.csv locally for the malformed-CSV scenario"
+    path: "malformed.csv"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent created temp.txt locally as the file-upload source"
+    path: "temp.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent surfaced each error verbatim to the user, rather than paraphrasing or hiding it"
+    include_agent_output: true
+    prompt: |
+      The user asked the agent to attempt ~13 operations that are all
+      expected to fail (missing required field, unique-violation, type
+      mismatch, missing Id, non-existent record IDs, CSV header mismatch,
+      malformed CSV, file upload to non-FILE column, file upload to
+      non-existent record, file upload of missing local file). The user
+      explicitly said "just tell me what came back for each" and asked NOT
+      to guess or rewrite values.
+
+      Read the agent's final response. For each failed operation, did the
+      agent report the actual error the platform returned — a real error
+      string / code / structured error, not a paraphrase like "that failed"
+      or "some kind of error occurred"?
+
+      Score 1.0 if the agent surfaced ~10+ distinct verbatim error messages
+      (allowing minor formatting).
+      Score 0.5 if some errors were verbatim but others were paraphrased or
+      merged into a single generic report.
+      Score 0.0 if the agent hid errors, summarised them without any raw
+      text, OR skipped scenarios that were requested.
+    weight: 2.5
+    pass_threshold: 0.5
+
+pre_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
+      --entity-name CE_ErrorPathsTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/error_paths.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/error_paths.records.json
+    timeout: 180
+    fail_on_error: false
+
+post_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_ErrorPathsTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/error_paths.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/error_paths.records.json
+    timeout: 180

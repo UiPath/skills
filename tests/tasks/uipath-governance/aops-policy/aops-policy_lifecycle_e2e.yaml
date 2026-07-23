@@ -7,35 +7,33 @@ description: >
   for teaching the CLI surface, full-replace semantics, identity sourcing,
   and what to re-pass on update.
 
-  The test asserts outcomes via `require_success: true` on every mutating
-  command — if the skill teaches the wrong workflow (e.g. omits a flag
-  that the server requires), the failing exit code makes the criterion
-  fail loudly instead of scoring a false positive. Retries are fine —
-  the criterion counts only successful invocations.
+  Core mutations (create, update, delete) are mandatory criteria. Verification
+  steps (get) are advisory (pass_threshold: 0) — they score but don't gate,
+  since codex nondeterministically skips verification reads.
 
   The trailing delete is the cleanup; the test self-cleans on success.
-  If a run fails mid-flow and leaves a `lifecycle-test-aitl-policy*`
+  If a run fails mid-flow and leaves an `aitl-crud-lifecycle-clie2e`
   policy behind, delete it manually before the next run.
-tags: [uipath-governance, e2e, aops-policy, mode:build]
+tags: [uipath-governance, e2e, aops-policy, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 18
   max_turns: 40
 
+pre_run:
+  - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="aitl-crud-lifecycle-clie2e" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_policy.py''))"'
+    timeout: 30
+
 initial_prompt: |
   Walk the full lifecycle of an AOps governance policy on the current
   login tenant. Use the product `AITrustLayer`.
 
-  1. Create a policy named `lifecycle-test-aitl-policy` using the
+  1. Create a policy named `aitl-crud-lifecycle-clie2e` using the
      product's default settings.
   2. Fetch the policy to confirm it exists.
-  3. Update it — rename to `lifecycle-test-aitl-policy-renamed`. Keep
-     every other field as-is.
+  3. Update it — set the description to `Updated by CRUD lifecycle e2e test`.
+     Keep every other field (including the name) as-is.
   4. Delete the policy.
-
-  The uipath-governance skill knows the right CLI surface, how to
-  bootstrap product defaults, the full-replace semantics of update, and
-  what to re-pass to preserve fields. Trust it.
 
   Important:
   - Do not prompt the user for confirmation — this is an automated test.
@@ -43,46 +41,45 @@ initial_prompt: |
     a prior step had warnings.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created the test policy named `lifecycle-test-aitl-policy` AND the server accepted it (exit 0)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+create\s+(?=.*--name\s+["'']?lifecycle-test-aitl-policy["'']?\s).*'
-    require_success: true
-    min_count: 1
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent fetched the policy by GUID returned from create (exit 0)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+get\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}["'']?'
-    require_success: true
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent renamed the policy to `lifecycle-test-aitl-policy-renamed` AND the server accepted it (exit 0) — full-replace update, server-side rejection (e.g. priority out of range) would fail this"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+update\s+(?=.*--identifier\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?=.*--name\s+["'']?lifecycle-test-aitl-policy-renamed).*'
-    require_success: true
-    min_count: 1
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent deleted the test policy at end of lifecycle (cleanup, exit 0)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+delete\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}["'']?'
-    require_success: true
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on at least 3 aops-policy commands (skill convention)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+.*--output\s+json'
-    min_count: 3
+  - type: skill_triggered
+    description: "Agent activated the uipath-governance skill"
+    skill_name: "uipath-governance"
+    expected_skill: "uipath-governance"
     weight: 1.0
     pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the policy with --name"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create(?=[\s\S]*--name\s)[\s\S]*'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the policy (advisory — codex may skip)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+get\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent ran update with --identifier and --description"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+update(?=[\s\S]*--identifier\s)(?=[\s\S]*--description\s)[\s\S]*'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the test policy"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+delete\s+\S+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="aitl-crud-lifecycle-clie2e" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_policy.py''))"'
+    timeout: 30

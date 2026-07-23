@@ -74,6 +74,13 @@ uip maestro flow registry search slack --output json \
 
 `registry search` returns `Data` as a **flat array of PascalCase objects** — `NodeType`, `Category`, `DisplayName`, `Description`, `Version`, `Tags`, `AvailableOnTenant`. Not `Data.Nodes`, not lowercase `type`/`category`; those shapes do not exist. Knowing the shape lets you write the right expression on call #1 — which is the actual protection. Do **not** rely on `--output-filter` to *catch* a wrong-shape guess: a syntactically valid expression that simply doesn't match (e.g. `--output-filter "Nodes"` or `"Nodes[*].NodeType"` against the flat array) returns `Data: []` with **exit 0** — the same silent trap as `python3`/`jq` (see the silent-`[]` note below). Only an *invalid* expression fails loudly with exit 3: a syntax error, or a type error such as `keys(@)` on an array.
 
+> **Never `head`/`tail`/`grep -m`/pager a discovery query** (`registry search`, `is connectors list`, any `list`/`search`). A row past the cutoff reads exactly like a row that doesn't exist — the same false-absence trap as the silent `[]`, self-inflicted. To check existence, push the predicate into `--output-filter` so the result is *all* matches and already small; cap rows only on data already known complete or already filtered.
+>
+> ```bash
+> uip … registry search slack --output json --output-filter "[?contains(NodeType,'get-channel-info')].NodeType"   # right: every match
+> uip … registry search slack --output json --output-filter "[*].{…}" | head -100                                # wrong: hides matches past line 100
+> ```
+
 ### When to fall back to `python3` / `jq`
 
 `--output-filter` is the preferred extraction mechanism, but it is not a general-purpose transformation tool. Fall back to `python3 -c` or `jq` when JMESPath cannot express the operation:
@@ -119,7 +126,7 @@ Always check `Result` first. On failure, `Message` and `Instructions` carry the 
 | Capability | Login required? |
 |---|---|
 | **Author** | No — `flow init`, `validate`, `format`, registry (OOTB nodes), `Edit` / `Write` edits, planning all work offline |
-| **Operate** | **Yes** — `solution upload`, `solution resource refresh`, `flow debug`, `flow pack`, `process run`, `job status`, `job traces` all require `uip login` |
+| **Operate** | **Yes** — `solution upload`, `solution resources refresh`, `flow debug`, `flow pack`, `process run`, `job status`, `job traces` all require `uip login` |
 | **Diagnose** | **Yes** — `instance incidents`, `instance variables`, `instance asset`, `incident get`, `incident summary` all require `uip login` |
 
 Tenant-specific connector and resource nodes in the registry also require login. Without login, registry shows OOTB nodes only. **In-solution sibling projects** are always available via `--local` without login.

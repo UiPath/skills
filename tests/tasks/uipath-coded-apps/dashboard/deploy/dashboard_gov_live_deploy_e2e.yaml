@@ -1,0 +1,135 @@
+task_id: uipath-coded-apps-dashboard-gov-live-deploy-e2e
+description: >
+  Live governance-mode deploy of a runtime-compliance dashboard into a
+  DISPOSABLE per-run shared folder (codedapp-govtest-<uuid>), NOT the real
+  shared AdminDashboards — because `uip codedapp` has no delete verb, the only
+  teardown is folder-delete, which cascades to the deployed app. Exercises the
+  governance branch end-to-end: provision the disposable folder via
+  setup-admin-folder.mjs, pack -> publish -> deploy with governance tags, and
+  record the folder in report.json so post_run cleans it up.
+tags: [uipath-coded-apps, e2e, dashboard, mode:operate, lifecycle:setup]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+  turn_timeout: 1200
+  task_timeout: 1500
+
+sandbox:
+  node: {}
+
+pre_run:
+  # App name + routingName carry a per-run EPOCH suffix so repeated runs never
+  # collide on the published package version (name+version) or the fresh-deploy
+  # routing slug. Without this, re-runs publish the SAME app name at 1.0.0, hit
+  # "version already exists", and the agent burns turns looping version bumps.
+  - command: |
+      EPOCH=$(date +%s)
+      mkdir -p .dashboard dist
+      echo "<html></html>" > dist/index.html
+      cat > .dashboard/state.json <<EOF
+      {
+        "app": { "name": "Runtime Compliance Dashboard $EPOCH", "routingName": "runtime-compliance-$EPOCH", "semver": "1.0.0" },
+        "env": "alpha", "org": "testorg", "tenant": "testTenant",
+        "cloudUrl": "https://alpha.uipath.com",
+        "widgets": ["policy-denials", "rule-compliance"],
+        "deployment": { "systemName": null, "folderKey": null, "folderName": null, "appUrl": null, "pinnedToGovernance": false, "lastDeployedAt": null }
+      }
+      EOF
+    timeout: 15
+    fail_on_error: true
+
+initial_prompt: |
+  Deploy my Runtime Compliance dashboard to Automation Cloud as a governance
+  dashboard, pinned to the Governance UI.
+
+  This dashboard is a governance dashboard, so it needs a governance home
+  folder with elevated access. Do NOT use the real shared AdminDashboards
+  folder for this run — instead provision a fresh per-run shared folder named
+  exactly `codedapp-govtest-<EPOCH>` (substitute a unique value for <EPOCH>)
+  using the skill's governance provisioning script, and deploy into it. This
+  isolates the run so it can be cleaned up afterward.
+
+  IMMEDIATELY after `uip codedapp deploy` succeeds — before any further work —
+  write `report.json` at the sandbox root:
+    {
+      "app_name": "Runtime Compliance Dashboard",
+      "deployment_id": "<systemName or deploymentId from .uipath/app.config.json>",
+      "folder": "<the codedapp-govtest-<EPOCH> folder name you created>"
+    }
+  The `folder` field is REQUIRED — post_run reads it to clean up.
+
+  This is a non-interactive automated test — treat the plan as pre-approved and
+  complete the whole deploy in this same turn. Do NOT wait for confirmation and
+  do NOT ask any question. Before starting, load the uipath-coded-apps skill.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Order/variable-tolerant: agents commonly bind the folder name to a shell var
+  # (FOLDER_NAME="codedapp-govtest-…"; node …/setup-admin-folder.mjs "$FOLDER_NAME"),
+  # so the literal appears BEFORE the script name. Two lookaheads (DOTALL) just
+  # require both tokens present in the same command, in any order.
+  - type: command_executed
+    description: "Governance provisioning ran against a DISPOSABLE codedapp-govtest-* folder, not the real AdminDashboards"
+    tool_name: "Bash"
+    command_pattern: '(?=.*setup-admin-folder\.mjs)(?=.*codedapp-govtest-)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT provision the real shared AdminDashboards folder"
+    tool_name: "Bash"
+    command_pattern: 'setup-admin-folder\.mjs.*AdminDashboards'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the pack -> publish -> deploy sequence"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+(pack|publish|deploy)'
+    min_count: 3
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Order/variable-tolerant: agents bind tags to a var (TAGS="governance,dashboard";
+  # deploy … --tags "$TAGS"), so `governance` appears in the assignment, not
+  # literally after --tags. Require a deploy command + a --tags flag + the
+  # governance token anywhere in the same command (DOTALL lookaheads).
+  - type: command_executed
+    description: "Deploy used governance tags (governance or governance,dashboard)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*uip\s+codedapp\s+deploy)(?=.*--tags)(?=.*governance)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Deploy ran non-interactively into the provisioned folder via --folder-key"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy\b.*--folder-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+# report.json is written by the agent (see initial_prompt) purely so the
+# post_run cleanup below can find the disposable folder to delete. It is
+# deliberately NOT a success_criterion — the disposable folder name is already
+# graded via the setup-admin-folder.mjs check above, and grading a self-written
+# file is a self-report anti-pattern. post_run reads it as cleanup infra only.
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_codedapp_folder.py"
+    timeout: 60
+# No external-app cleanup here: this is a DEPLOY-only test (pre-seeded dist/, no
+# build flow), so it never mints an OAuth external app — nothing records a Client
+# ID for cleanup_external_app.py to act on. That cleanup lives on the dashboard
+# BUILD tests (dashboard_full_e2e / dashboard_scaffold), which run the build flow
+# that mints one.

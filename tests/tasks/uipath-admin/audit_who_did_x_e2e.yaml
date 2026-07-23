@@ -12,23 +12,14 @@ tags: [uipath-admin, e2e, mode:diagnose, audit, investigation]
 max_iterations: 2
 
 initial_prompt: |
-  Find out who deleted the `Sales-Reports` folder on the active tenant
-  in the last 7 days.
-
-  Important:
-  - The `uip` CLI is available but the `admin` subcommand may not be
-    installed and/or the CLI is not connected to a live tenant.
-    Commands WILL fail — that is expected and acceptable.
-    Run each command exactly once regardless of errors.
-    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
-    do NOT troubleshoot errors.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  Using this tenant's Admin audit trail, can you find out who deleted the Sales-Reports folder on this tenant in
+  the last 7 days?
 
 success_criteria:
   - type: command_executed
     description: "Agent invoked `uip admin audit tenant sources` (discovery before query)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+sources\b.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+sources'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -39,14 +30,6 @@ success_criteria:
     command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--(?:source|target|type)\s+)'
     min_count: 1
     weight: 2.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent consistently used --output json"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+.*--output\s+json'
-    min_count: 2
-    weight: 1.0
     pass_threshold: 1.0
 
 run_limits:

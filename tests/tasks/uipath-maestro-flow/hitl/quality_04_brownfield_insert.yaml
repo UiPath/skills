@@ -3,7 +3,7 @@ description: >
   Quality test: agent inserts a HITL node into an existing flow without
   breaking the existing nodes or wiring. Tests that the agent can correctly
   remove an existing edge and re-wire it through a new HITL node.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
 run_limits:
   expected_turns: 34
@@ -33,7 +33,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes after brownfield insert"
-    command: "uip maestro flow validate ContractReview/ContractReview/ContractReview.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -51,7 +51,7 @@ success_criteria:
     description: "Flow contains the inserted HITL node"
     path: "ContractReview/ContractReview/ContractReview.flow"
     includes:
-      - '"uipath.human-in-the-loop"'
+      - '"uipath.human-in-the-loop.quick-form"'
     weight: 2.5
     pass_threshold: 1.0
 
@@ -59,7 +59,7 @@ success_criteria:
     description: "HITL completed handle is wired"
     path: "ContractReview/ContractReview/ContractReview.flow"
     includes:
-      - '"completed"'
+      - 'completed'
     weight: 2.0
     pass_threshold: 1.0
 

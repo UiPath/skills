@@ -8,23 +8,21 @@ description: >
   retrievalMode, and that a `uipath.agent.resource.context.index` flow
   node is wired to the autonomous agent node's `context` handle.
   Indexes always live externally to the solution.
-tags: [uipath-agents, e2e, low-code, inline-flow]
+tags: [uipath-agents, e2e, mode:build, low-code, inline-flow, context-grounding]
 
 run_limits:
   expected_turns: 90
   turn_timeout: 1200
 
+# Explicitly mentioning "autonomous" here since the "question"/"answer" prompt may
+# cause the coding agent to assume the conversational low-code agent variant.
 initial_prompt: |
-  Create a UiPath solution "KnowledgeFlowSol" containing a flow project
-  "KnowledgeFlow" with an inline low-code agent. The agent accepts a
-  required `question` (string) and returns a string `answer`. It must
-  ground its answers in the existing semantic index named
-  "UiPathAgentsProductKnowledge" that is already deployed in the
-  tenant (indexes always live outside the solution).
-
-  Use the real folder and index name from the tenant — do not
-  hard-code or guess these values. Name the agent's context resource
-  `UiPathAgentsProductKnowledge` (matching the index).
+  Create a UiPath Flow project "KnowledgeFlow" that runs an autonomous inline 
+  low-code agent which answers a user's `question` (string) and returns an `answer`
+  (string). It should base its answers on our existing
+  "UiPathAgentsProductKnowledge" knowledge index — which is already set up in
+  our tenant — instead of answering from general knowledge. Wire it into the
+  flow. The solution should be named "KnowledgeFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -37,7 +35,7 @@ success_criteria:
     command_pattern: 'uip\s+solution\s+init'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: command_executed
     description: "Agent scaffolded the inline agent with --inline-in-flow"
@@ -47,21 +45,25 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Advisory, non-gating: inline agents can discover the index identity via the
+  # flow registry (uip maestro flow registry search/get) instead of solution
+  # resources list, so don't gate on it here. Standalone agents (context_index)
+  # have no flow registry and keep this gating.
   - type: command_executed
-    description: "Agent discovered the index identity with uip solution resource list --kind Index"
+    description: "Advisory: agent discovered the index identity with uip solution resources list (informational, non-gating)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+list\b.*--kind\s+Index'
+    command_pattern: 'uip\s+solution\s+resources\s+list\b'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Agent fetched the index configuration with uip solution resource get"
+    description: "Agent fetched the index configuration with uip solution resources get"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+get\b'
+    command_pattern: 'uip\s+solution\s+resources\s+get\b'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent searched the flow registry for the context index manifest"
@@ -100,19 +102,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent validated the inline agent with --inline-in-flow"
+    description: "Agent refreshed the inline agent with --inline-in-flow"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+validate\s+.*--inline-in-flow'
+    command_pattern: 'uip\s+agent\s+refresh\s+.*--inline-in-flow'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip commands"
+    description: "Agent validated the inline agent with --inline-in-flow"
     tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
+    command_pattern: 'uip\s+agent\s+validate\s+.*--inline-in-flow'
     min_count: 1
-    weight: 1.0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: file_exists

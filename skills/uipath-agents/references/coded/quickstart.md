@@ -47,7 +47,7 @@ Use `uip codedagent <cmd>`, not `uv run uipath <cmd>`. The wrapper injects sessi
 - **Auth MUST be an interactive question only when needed and values are missing.** If the session check fails and the user did not provide all of environment / organization / tenant, your ENTIRE response must be a single direct question. Do NOT wrap it in bullet points, "Next Steps" headers, or status summaries. Just ask and stop:
 
   > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
-- **In a flow, coded agents are referenced via the [`agent`](../../../uipath-maestro-flow/references/plugins/agent/) plugin** — node type `uipath.core.agent.{key}`, `Orchestrator.StartAgentJob`. See [flow-integration.md](flow-integration.md) for the three patterns: in-solution sibling folder, Orchestrator-published, tool resource.
+- **In a flow, coded agents are referenced via the `agent` plugin (uipath-maestro-flow skill)** — node type `uipath.core.agent.{key}`, `Orchestrator.StartAgentJob`. See [flow-integration.md](flow-integration.md) for the three patterns: in-solution sibling folder, Orchestrator-published, tool resource.
 
 ## Lifecycle Stages
 
@@ -70,7 +70,7 @@ Each stage has a reference file with detailed instructions. Read **only** the re
 Two top-level build paths. Pick one before starting — the lifecycle and publish mechanism differ.
 
 - **Scenario 1 — Standalone Coded Agent** — the agent is its own tenant resource, published via `uip codedagent deploy`. Use when the agent runs on its own, is called from multiple flows, or needs independent versioning.
-- **Scenario 2 — In-Solution Coded Agent in a Flow** — the agent lives as a **sibling folder** to a flow project, registered into the solution via `uip solution project add`. The flow references it as an in-solution `uipath.core.agent.<resourceKey>` node, where `<resourceKey>` is the local UUID minted by `uip solution project add` and discoverable via `uip maestro flow registry list --local`. Use when the agent is tightly coupled to one flow.
+- **Scenario 2 — In-Solution Coded Agent in a Flow** — the agent lives as a **sibling folder** to a flow project, registered into the solution via `uip solution projects add`. The flow references it as an in-solution `uipath.core.agent.<resourceKey>` node, where `<resourceKey>` is the local UUID minted by `uip solution projects add` and discoverable via `uip maestro flow registry list --local`. Use when the agent is tightly coupled to one flow.
 
 ## Quick Start: Scenario 1 — Standalone Coded Agent
 
@@ -78,7 +78,7 @@ When the user asks to create and deploy an agent end-to-end, follow these steps 
 
 **IMPORTANT: Do NOT stop between steps to ask "would you like me to continue?" or list next steps. Execute the entire flow automatically.** Pause only when (a) you hit an **architectural fork** — a step with multiple valid implementations (framework choice, HITL pattern, evaluator type, deploy target, conversational vs not, etc.) — or (b) you need data only the user has (credentials, project ID). At a fork, apply **infer-or-ask**: if the prompt or context names the choice, infer it and continue; otherwise output ONLY the choice question as your entire response, then STOP and wait. For missing data, output ONLY the data request. After getting the answer, resume immediately. Forks for each step are documented in that step's referenced file — read the reference when you reach the step; do not guess.
 
-Steps 8 and 9 are mandatory stops **for greenfield**: always ask, even if the user only said "build". Use `AskUserQuestion` (or platform equivalent); fall back to plain text only when no UI tool exists. They are **automatically resolved** for `local-workspace` (auto-sync) and for `existing-coded` with `has_project_id == true` (push) — see steps 8 and 9 for the branch logic.
+Steps 8 and 9 are mandatory stops **for greenfield**: always ask the user, even if the user only said "build". They are **automatically resolved** for `local-workspace` (auto-sync) and for `existing-coded` with `has_project_id == true` (push) — see steps 8 and 9 for the branch logic.
 
 1. **Framework** — **Skip if `framework != none`** (already chosen — verify the right `<framework>.json` is present and continue). Else select per the [Framework Selection](#framework-selection) section below.
 2. **Setup** — Idempotent by `project_state` and `has_venv`:
@@ -118,40 +118,43 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
    Skip init only when the edit is purely inside node bodies / helpers (logic, prompts, business rules) and leaves every schema and the entry signature byte-identical. Then test locally with `uip codedagent run <ENTRYPOINT> '<input>'` (use the entrypoint name from `entry-points.json`, e.g., `main`).
 7. **Evaluate** — Run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report`. Idempotent by `has_evaluators` / `has_smoke_set`: create the missing one(s) only — **never overwrite an existing evaluator config or smoke set**, the user may have tuned them.
 
-   **Note:** `uipath-llm-judge-trajectory-similarity` requires emitted trace spans to populate `AgentRunHistory`. Plain `StateGraph` agents without explicit OpenTelemetry tracing produce empty history → all cases score 0.0 even on successful runs. If the smoke set scores 0.0, verify the agent actually executed (via local `uip codedagent run`) before treating it as a logic failure; consider an output-only evaluator for non-conversational graphs.
+   **Default the smoke evaluator to an output-based type, never a trajectory or tool-call evaluator** (those score 0.0 on single-step agents — use them only for multi-step / tool-using agents). Pick:
 
-   **If `has_evaluators == false`**, create `evaluations/evaluators/llm-judge-trajectory.json`. If the default `model` below is not available in the user's tenant, call `sdk.agenthub.get_available_llm_models()` and substitute a `model_name` from the returned list.
+   - **Deterministic or structured output** (a fixed string, number, or JSON shape) → `uipath-exact-match`, `uipath-contains`, or `uipath-json-similarity`. No LLM, no tenant model needed, binary/continuous scoring. Prefer this whenever the task allows it.
+   - **Natural-language output** (summaries, reports, free text) → `uipath-llm-judge-output-semantic-similarity` (`LLMJudgeOutputEvaluator`). Scores output semantics, works without tracing.
+
+   **If `has_evaluators == false`**, create `evaluations/evaluators/llm-judge-output.json` (default for NL output; swap to a deterministic type above when the output is fixed/structured). For any `uipath-llm-judge-*` type, if the default `model` below is not available in the user's tenant, run `uip codedagent list-models` and substitute an available model name.
 
    ```json
    {
      "version": "1.0",
-     "id": "LLMJudgeTrajectoryEvaluator",
-     "evaluatorTypeId": "uipath-llm-judge-trajectory-similarity",
+     "id": "LLMJudgeOutputEvaluator",
+     "evaluatorTypeId": "uipath-llm-judge-output-semantic-similarity",
      "evaluatorConfig": {
-       "name": "LLMJudgeTrajectoryEvaluator",
+       "name": "LLMJudgeOutputEvaluator",
        "model": "gpt-4o-mini-2024-07-18",
        "defaultEvaluationCriteria": {
-         "expectedAgentBehavior": "Agent should process the input and return a response."
+         "expectedOutput": {"<output_field>": "A correct, on-topic response for the given input."}
        }
      }
    }
    ```
 
-   **If `has_smoke_set == false`**, create `evaluations/eval-sets/smoke-test.json` with 2-3 test cases based on the agent's input schema (version is string `"1.0"`, top-level `id`/`name` required, test cases in `evaluations` array):
+   **If `has_smoke_set == false`**, create `evaluations/eval-sets/smoke-test.json` with 2-3 test cases based on the agent's input/output schema (version is string `"1.0"`, top-level `id`/`name` required, test cases in `evaluations` array). Key each case's criteria on the evaluator `id` you created above, and shape `expectedOutput` to match the agent's actual output field(s):
    ```json
    {
      "version": "1.0",
      "id": "smoke-test",
      "name": "Smoke Test",
-     "evaluatorRefs": ["LLMJudgeTrajectoryEvaluator"],
+     "evaluatorRefs": ["LLMJudgeOutputEvaluator"],
      "evaluations": [
        {
          "id": "test-1",
          "name": "Basic test",
-         "inputs": {"field": "value"},
+         "inputs": {"<input_field>": "value"},
          "evaluationCriterias": {
-           "LLMJudgeTrajectoryEvaluator": {
-             "expectedAgentBehavior": "Agent should process the input and return a response."
+           "LLMJudgeOutputEvaluator": {
+             "expectedOutput": {"<output_field>": "A correct, on-topic response for this input."}
            }
          }
        }
@@ -162,7 +165,7 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
    **Finally**, run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report` (use the entrypoint name from `entry-points.json`).
 8. **Delivery target.** Single branch point. **Evaluate branches in order — Local Workspace projects also have `UIPATH_PROJECT_ID` set in `.env`, so the `local-workspace` check MUST come before the `has_project_id` check, or Local Workspace will incorrectly fall into the push branch:**
 
-   - **(1) `project_state == local-workspace`** → Studio Web auto-syncs saves to the remote SW project, so options A and B (manual push / solution upload) are skipped — they would be redundant or break sync identity. The user may still want a local dev console. Stop and ask via `AskUserQuestion` (header `"Delivery"`, `multiSelect: false`):
+   - **(1) `project_state == local-workspace`** → Studio Web auto-syncs saves to the remote SW project, so options A and B (manual push / solution upload) are skipped — they would be redundant or break sync identity. The user may still want a local dev console. Stop and ask the user (single choice, "Delivery"):
 
      **Question:** *Studio Web is auto-syncing this workspace. Do you want a local dev console too?*
 
@@ -177,7 +180,7 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
 
      Do **not** run `uip codedagent push` for this branch (that's recovery only — see [lifecycle/local-workspace.md](lifecycle/local-workspace.md) § Studio-Web-Auto-Sync). Do **not** present options A or B.
    - **(2) `has_project_id == true` (cloud workspace, project ID already set)** → Run `uip codedagent push` to upload local edits, then continue to step 9. No fork question — the delivery choice was made in a prior session.
-   - **(3) Else (greenfield / cloud workspace not yet wired)** → Stop and ask via `AskUserQuestion` (header `"Delivery"`, `multiSelect: false`).
+   - **(3) Else (greenfield / cloud workspace not yet wired)** → Stop and ask the user (single choice, "Delivery").
 
      **Question:** *How do you want to use the agent next?*
 
@@ -195,7 +198,7 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
        ```bash
        uip solution init "<SOLUTION_NAME>"
        cd "<SOLUTION_NAME>"
-       uip solution project import --source "../<AGENT_PROJECT_DIR>" --output json
+       uip solution projects import --source "../<AGENT_PROJECT_DIR>" --output json
        rm -rf "<AGENT_PROJECT_DIR>/.venv" "<AGENT_PROJECT_DIR>/__pycache__" \
               "<AGENT_PROJECT_DIR>/__uipath" "<AGENT_PROJECT_DIR>/eval-results.json"
        uip solution upload . --output json
@@ -203,7 +206,7 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
      - **C** → run `uip codedagent dev` in the background; surface the URL (default `http://localhost:8080`). Prereq: `uipath-dev` (added during scaffold). **STOP — do NOT proceed to step 9.** Local dev is a terminal choice.
      - **Skip** → continue to step 9.
 
-9. **Deploy.** Reachable from any `project_state` after option **Skip** at step 8 (greenfield or local-workspace), after the auto-push in branch (2), or after options **A** / **B** in greenfield. After option **C** at step 8, the run ends — do not ask. Stop and ask via `AskUserQuestion` (header `"Deploy target"`, `multiSelect: false`).
+9. **Deploy.** Reachable from any `project_state` after option **Skip** at step 8 (greenfield or local-workspace), after the auto-push in branch (2), or after options **A** / **B** in greenfield. After option **C** at step 8, the run ends — do not ask. Stop and ask the user (single choice, "Deploy target").
 
    **Question:** *Do you want to deploy the agent? If yes, which target?*
 
@@ -274,7 +277,7 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 
    ```bash
    cd ..
-   uip solution project add "<AgentName>" "<SolutionName>.uipx" --output json
+   uip solution projects add "<AgentName>" "<SolutionName>.uipx" --output json
    ```
 
    After this command, `resources/solution_folder/process/agent/<AgentName>.json` holds the `resource.key`. Read that file (or the `--output json` response) to capture the UUID — it is what the flow node's `type` (`uipath.core.agent.<resourceKey>`) and `model.bindings.resourceKey` will reference.
@@ -290,10 +293,12 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
    The second command's `Data.Node` object is what gets pasted verbatim into the flow's top-level `definitions[]` array.
 
 7. **Wire the agent node into the `.flow` file.** Edit `<FlowName>.flow` directly:
-   - Add a `uipath.core.agent.<resourceKey>` node to `nodes[]` with `inputs.detail` matching the agent's input schema and `model.section: "In this solution"`.
+   - Add a `uipath.core.agent.<resourceKey>` node to `nodes[]` with one `inputs.<field>` entry per property in the agent's input schema (see step 6's `Data.Node.inputDefinition`) and `model.section: "In this solution"`.
+   - For input field values, see [embedding-in-flows.md § Wiring the Agent's Inputs](embedding-in-flows.md#wiring-the-agents-inputs).
    - Add the definition from step 6 to `definitions[]`.
    - Add a top-level `bindings[]` entry for the agent (no duplicates per `(resourceKey, propertyAttribute)`).
    - Add edges from upstream nodes to the agent's input port and from its output port downstream.
+   - To surface the agent's output as a flow-level result, declare an `out` global and map it on the End node with `"source": "=js:$vars.<agentNodeId>.output.<field>"` (outputs DO use `=js:`; only inputs do not).
 
    See [embedding-in-flows.md](embedding-in-flows.md) for the directory layout and [flow-integration.md § Pattern 1](flow-integration.md#pattern-1-in-solution-coded-agent) for the JSON shape.
 
@@ -308,14 +313,15 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 
 ## Framework Selection
 
-Infer the framework from the user's prompt when possible. If ambiguous, ask them to choose:
+> **First — is this an agent at all?** If the task is deterministic logic with no LLM reasoning (validate data, call an API with custom auth, transform records, upload/download files), it's a **Python Coded Function** — not an agent. Use the [`uipath-functions`](/uipath:uipath-functions) skill instead of this one. Coded Functions use typed I/O (`@dataclass`, Pydantic `BaseModel`, or a thin Python class with typed annotations) and a `functions` map in `uipath.json`; what distinguishes an agent is LLM reasoning and a framework graph.
 
-1. **Coded Function** — Plain Python with `Input`/`Output` models. No LLM. Best for deterministic logic.
-2. **LangGraph** — StateGraph with conditional routing, tool use, interrupts. Best for complex LLM agents.
-3. **LlamaIndex** — Workflow with events and RAG support. Best for knowledge retrieval.
-4. **OpenAI Agents** — Lightweight agent with tools and handoffs. Best for simple LLM agents; lacks HITL, process invocation, and state persistence.
+If the task needs LLM reasoning, infer the framework from the user's prompt when possible. If ambiguous, ask them to choose:
 
-**Inference hints:** mentions of tools/tool calling, multi-step, or orchestration → LangGraph. RAG or knowledge retrieval → LlamaIndex. Simple handoffs or lightweight LLM → OpenAI Agents. No LLM needed → Coded Function. Summarize / research / synthesize over PDF or TXT (incl. bucket files, attachments) → not a framework choice — see [capabilities/deeprag/planning.md](capabilities/deeprag/planning.md). Per-row CSV extraction → see [capabilities/batch-transform/planning.md](capabilities/batch-transform/planning.md). When in doubt, ask.
+1. **LangGraph** (recommended — best integrated with the UiPath ecosystem) — StateGraph with conditional routing, tool use, interrupts. Best for complex LLM agents.
+2. **LlamaIndex** — Workflow with events and RAG support. Most complete LangGraph alternative.
+3. **OpenAI Agents** — Lightweight agent with tools and handoffs. Best for simple LLM agents; lacks HITL, process invocation, and state persistence.
+
+**Inference hints:** mentions of tools/tool calling, multi-step, or orchestration → LangGraph. Simple handoffs or lightweight LLM → OpenAI Agents. No LLM needed → not an agent — use [`uipath-functions`](/uipath:uipath-functions). Summarize / research / synthesize over PDF or TXT (incl. bucket files, attachments) → not a framework choice — see [capabilities/deeprag/planning.md](capabilities/deeprag/planning.md). Per-row CSV extraction → see [capabilities/batch-transform/planning.md](capabilities/batch-transform/planning.md). When in doubt, ask.
 
 **Always tell the user which framework you selected and why** before proceeding to build. Example: "I'll use **LangGraph** for this agent since it involves tool calling and multi-step orchestration."
 

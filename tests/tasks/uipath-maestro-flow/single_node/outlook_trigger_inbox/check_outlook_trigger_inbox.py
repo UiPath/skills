@@ -154,7 +154,14 @@ def check_folder_id_fresh():
     live = _uip_resources_run(
         ["list", CONNECTOR_KEY, "MailFolder", "--connection-id", conn_id, "--output", "json"]
     )
-    live_ids = {f.get("id") for f in _extract_list_items(live)}
+    # Read the item id case-insensitively (a CLI that PascalCases --output json
+    # keys per PR #2266 emits `Id`, not `id`) and drop any None so a missed key
+    # can't collapse the set to `{None}` and falsely accuse the agent.
+    live_ids = {
+        fid
+        for f in _extract_list_items(live)
+        if (fid := (f.get("id") or f.get("Id")))
+    }
     if not live_ids:
         sys.exit(
             "FAIL: resources run/execute list MailFolder returned no folders on the bound connection"

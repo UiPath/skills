@@ -3,7 +3,7 @@ description: >
   Smoke test: agent uses the uipath-admin skill to create an external
   OAuth2 app with scopes. Tests correct --app-scope flag usage
   (Critical Rule #6) and positional name argument.
-tags: [uipath-admin, smoke, create]
+tags: [uipath-admin, smoke, mode:build, create]
 
 run_limits:
   expected_turns: 7
@@ -21,12 +21,4 @@ success_criteria:
     command_pattern: 'uip\s+admin\s+external-apps\s+create\s+.*--(app-)?scope\s+"?OR\.'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0

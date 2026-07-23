@@ -7,7 +7,7 @@ Interact with external services through UiPath Integration Service — discover 
 ## Prerequisites
 
 - `uip` must be authenticated (`uip login`)
-- Correct folder context must be set if using folder-scoped connections (`--folder`)
+- Correct folder context must be set if using folder-scoped connections (`--folder-key`)
 
 ## Core Principles
 

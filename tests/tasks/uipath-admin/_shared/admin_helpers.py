@@ -53,6 +53,22 @@ def find_one(data: dict, needle: str, fields: list[str]) -> dict | None:
     return matches[0] if matches else None
 
 
+def poll(fn, max_attempts: int = 4, delay: int = 5):
+    """Retry fn() up to max_attempts times with delay between attempts.
+
+    Returns the first truthy result. Returns None after all attempts fail.
+    Handles eventual consistency in tenant APIs.
+    """
+    for i in range(max_attempts):
+        result = fn()
+        if result:
+            return result
+        if i < max_attempts - 1:
+            logger.info("Attempt %d/%d returned falsy — retrying in %ds", i + 1, max_attempts, delay)
+            time.sleep(delay)
+    return None
+
+
 def fail(message: str):
     """Print FAIL message and exit 1."""
     print(f"FAIL: {message}")

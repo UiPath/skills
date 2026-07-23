@@ -1,0 +1,12 @@
+{
+  "Result": "Success",
+  "Code": "IsResourcesDescribe",
+  "Data": {
+    "name": "send_message_to_channel_v2",
+    "displayName": "Send Message to Channel",
+    "elementKey": "uipath-salesforce-slack",
+    "availableOperations": [
+      { "name": "Create", "path": "/send_message_to_channel_v2", "method": "POST", "curated": "Send Message to Channel" }
+    ]
+  }
+}

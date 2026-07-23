@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "DocsAIAsk",
+  "Data": {
+    "query_id": "e0f0dc74-f5e3-44d8-b9c8-feef5b3410fd",
+    "text": "UiPath Orchestrator does not provide an automatic *retry policy* feature specifically for **child jobs** out of the box. However, you can manage faulted jobs and implement retries using a combination of Orchestrator capabilities and your own logic:\n\n1. **Understand faulted jobs**\n   - A job is **Faulted** if it failed to start or an unhandled error occurred during execution. Faulted jobs must be restarted manually.  \n   - See [Job States](https://docs-staging.uipath.com/orchestrator/automation-cloud/latest/user-guide/job-states): Faulted jobs are not auto\u2011retried by Orchestrator itself.  \n\n2. **Manual / controlled retry**\n   - From the **Jobs** page, you can restart any job that reached a final state (**Stopped**, **Faulted**, **Successful**) using **More Actions &gt; Restart**. This uses the same initial settings and lets you adjust parameters before retrying.  \n   - This applies to both parent and child jobs if they are visible as separate jobs in Orchestrator.  \n\n3. **Implementing retry logic for child jobs**\n   - Build retry behavior into the **parent workflow**:\n     - After starting a child job, monitor its state via activities (e.g., querying job status).\n     - If the child job ends in **Faulted**, have the parent workflow:\n       - Decide whether to retry (based on a counter / max attempts).\n       - Start the child job again (new job) with the same or adjusted input.\n   - Use Orchestrator job states (**Faulted**, **Successful**, **Stopped**) as conditions in your logic.  \n\n4. **Diagnostics for failures**\n   - Use **View Details** on the job to see why it faulted.\n   - If **Enable Recording** was on for unattended jobs, you can [download execution media](https://docs-staging.uipath.com/orchestrator/automation-cloud/latest/user-guide/managing-jobs#downloading-execution-media) to analyze the failure before deciding on retry.\n\nBecause there is no built\u2011in child\u2011job retry policy, all retry rules (max attempts, backoff, etc.) must be implemented in your workflows or external orchestration logic.\n",
+    "sources": [
+      "https://docs-staging.uipath.com/orchestrator/automation-cloud/latest/user-guide/job-states",
+      "https://docs-staging.uipath.com/orchestrator/standalone/2020.10/user-guide/managing-jobs"
+    ],
+    "disclaimers": [],
+    "followups": [
+      "How can I design a parent workflow that monitors and restarts a child job based on its Orchestrator job state?",
+      "Is there a recommended pattern for logging and alerting when a child job repeatedly faults in Orchestrator?",
+      "How do I configure and use execution recordings to troubleshoot faulted child jobs before retrying?"
+    ]
+  }
+}

@@ -9,7 +9,7 @@ Every task input is wired using one of two modes. Pick based on the source of th
 | Mode | Tasks.md syntax | Implementation |
 |------|-----------------|----------------|
 | **Literal or expression** | `input = "<value>"` | Write `"<value>"` to `task.data.inputs[i].value` in caseplan.json |
-| **Cross-task reference** | `input <- "Stage"."Task".output` | Resolve source output's `var` → write `"=vars.<var>"` to target input's `value` |
+| **Cross-task reference** | `input <- "Stage"."Task".output` | Resolve the source's output reference ID → write `"=vars.<outputReferenceId>"` to target input's `value` |
 
 For the full JSON shapes and binding procedure, see [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md).
 
@@ -36,6 +36,8 @@ When using the literal/expression mode, the `--value` string can start with one 
 
 > The prefix tells you WHAT the value refers to. The **sink** tells you HOW to wrap it — see [§ Canonical form per sink](#canonical-form-per-sink) below.
 
+> **Variable / binding ids are always letter-leading.** Formal-arg slots use a `v` prefix, bindings use `b`, and companion ids inherit the (letter-leading) variable name — so `<id>` in `=vars.<id>` / `=bindings.<id>` is always a valid C# identifier. Dot notation is always safe; bracket notation (`vars["…"]`) is never needed. A digit-leading id would fail the case BPMN with `illegal ID` — see [global-vars § Formal-arg slot ID format](plugins/variables/global-vars/impl-json.md#formal-arg-slot-id-format).
+
 ## Canonical form per sink
 
 Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime evaluators based on the sink it lands in. **The wrap form must match the sink** — wrong wrap is a silent runtime fault (the literal string arrives at the consumer instead of the resolved value).
@@ -57,12 +59,18 @@ Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime 
 | **Connector body field — dot-notation** (curated connectors) | (no plain branch) | `=js:(<expr>)` — uniform wrap, parens always |
 | **Connector trigger filter expression** (`body.filters.expression`) with variable refs | n/a | `` =js:`<JMESPath with ${vars.X} interpolations>` `` |
 | **Connector trigger filter expression** plain literal (no variables) | Unwrapped CEQL/JMESPath text | n/a |
-| **`conditionExpression`** (stage entry/exit, task entry, case exit, trigger rules, edge transitions) | (no plain branch) | `=js:<expr>` — no outer parens; sub-clauses get manual parens when combining via `&&` / `\|\|` |
+| **`conditionExpression`** (stage entry/exit, task entry, case exit, trigger rules) | (no plain branch) | `=js:<expr>` — no outer parens; sub-clauses get manual parens when combining via `&&` / `\|\|` |
 | **SLA rule `expression`** | (no plain branch) | `=js:<expr>` (default: `=js:true`) |
 | **Task output `source` / `target`** | `=vars.<varId>` / `=<rawFieldName>` | n/a (always plain) |
 | **Binding refs in `data.context`, `caseShape.context`** | `=bindings.<id>` | n/a |
 
 > **JIT object mode (out of scope for this version).** When an activity's `inputMetadata.inputMode === "jitObject"` (synthetic HTTP request bodies, generic body-passthrough activities), the whole connector body becomes one `=js:({...})` expression with bare JS variable references inline. The skill currently routes synthetic HTTP through `queryParameters` instead. JIT-mode authoring is not documented in this version.
+
+### Equality operators
+
+In any `=js:` expression use **strict** `===` / `!==`, never loose `==` / `!=`. JS eval coerces types on loose equality (`vars.flag == "true"` is truthy for the string `"true"`), which silently breaks boolean/number routing — and validation passes either way (loose `==` is valid JS), so nothing flags it.
+
+SDD IF columns and `tasks.md` conditions use natural shorthand — `approved == true`, `status != "done"`. When rewriting into a `conditionExpression` (or any `=js:` sink) you MUST upgrade the operator: `approved == true` → `=js:vars.approved === true`. Do NOT transcribe `==` / `!=` verbatim.
 
 ### Conservative rule for `=metadata.X`
 
@@ -115,11 +123,36 @@ The execution phase resolves names to IDs by reading caseplan.json:
 src_stage = find_node_by_label(nodes, "Stage Name")
 src_task  = find_task_by_name(src_stage, "Task Name")
 src_output = find_output_by_name(src_task, "output_name")
-target_input.value = f"=vars.{src_output['var']}"
+output_reference_id = resolve_output_reference_id(caseplan, src_output)
+target_input.value = f"=vars.{output_reference_id}"
 # Write updated caseplan.json back to disk
 ```
 
-See [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md) for the full procedure.
+See [plugins/variables/io-binding/impl-json.md § Output reference ID](plugins/variables/io-binding/impl-json.md#output-reference-id-authoritative) for the authoritative resolver. It reads a normal / bare / reassigned output's `.id`; only a custom `=` output, which has no `.id`, resolves through its verified root companion's `.id`.
+
+### In-expression references (`vars.$xref(...)`)
+
+Whole-value `<-` (above) resolves only when it IS the entire input value. To reference an upstream task output from **inside** a `=js:` expression — a composite payload, a `conditionExpression`, an SLA `expression`, a computed `=` output — embed a `vars.$xref(...)` marker. This eliminates the "middle variable" that would otherwise exist solely to carry one task's output into a downstream expression.
+
+**Marker form** (quote-safe — single quotes are legal inside a JSON double-quoted value):
+
+```
+vars.$xref('Stage Name','Task Name','output_name')
+```
+
+- Three args = the same name-triple as whole-value `<-`: source stage `data.label`, source task `displayName`, source output `name`.
+- Single quotes ONLY — double quotes break the enclosing JSON string. Names containing a literal `'` are unsupported (re-author the name).
+- Drop it anywhere a bare `vars.X` is legal inside an `=js:` expression. It resolves to bare `vars.<outputReferenceId>` (NOT `=vars.` — it is already inside `=js:`).
+
+**Example** — composite input payload, no middle variables:
+
+```json
+"value": "=js:({ approvalDecision: vars.$xref('AP Review','AP lead approval','outcome'), urgentPaymentDecision: vars.$xref('AP Review','Urgent payment','outcome') })"
+```
+
+**Resolution** — a single post-pass near the end of Phase 3 (Step 11.5, after conditions and SLA are written) walks every string value in `caseplan.json`, resolves each marker through the common output-reference-ID algorithm, and substitutes `vars.<outputReferenceId>` in place. Because it runs after all outputs are minted and deduped, it reads the real suffixed `.id` (`outcome2`, `data6`) rather than a reassigned output's Case-variable `.var` pointer. An unresolved marker is a build-time ERROR surfaced via **AskUserQuestion** (Check 4), not a silent fail — and `vars.$xref` would throw at runtime too (a method call on `vars`). See [plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution](plugins/variables/io-binding/impl-json.md#in-expression-marker-resolution-step-115).
+
+> **Additive, not a replacement.** Whole-value `input <- "Stage"."Task".out` resolves to `=vars.<outputReferenceId>` through the same algorithm. The `vars.$xref(...)` marker is only for the in-expression case. Use whole-value `<-` when the output IS the input; use the marker when the output is one term inside a larger `=js:` expression.
 
 ## Examples
 
@@ -141,7 +174,9 @@ See [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/imp
 - inputs:
   - emails <- "Triage"."Fetch Inbox".emails
   - customer_id <- "Triage"."Fetch Inbox".customer_id
-- outputs: category, priority_score
+- outputs:
+  - category
+  - priority_score
 ```
 
 ### Mixed inputs (HITL/action)
@@ -154,7 +189,9 @@ See [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/imp
   - classification <- "Triage"."Classify Emails".category
   - priority       <- "Triage"."Classify Emails".priority_score
   - deadline       = "=js:new Date(Date.now() + 86400000).toISOString()"
-- outputs: decision, comments
+- outputs:
+  - decision
+  - comments
 ```
 
 ## Anti-Patterns

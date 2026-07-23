@@ -6,8 +6,8 @@ description: >
   `-f` fields → ActivityMetadata literal → invoke_activity) against a
   live Jira connection, then run the coded agent locally and create a
   real Jira issue. The check script verifies tenant state (issue exists
-  with expected summary) and project shape (bindings + literal +
-  two-field resourceOverwrites: connectionId + folderKey, no elementInstanceId).
+  with expected summary) and project shape (bindings connection entry +
+  ActivityMetadata literal).
 
   Tenant prerequisite: a `uipath-atlassian-jira` connection in folder
   `Shared/uipath-agents` named `jira-coded-eval`. The Jira project
@@ -36,8 +36,6 @@ initial_prompt: |
   a Jira issue through Integration Service when it runs. Build it, run it
   locally, and confirm the issue actually got created in Jira.
 
-  Use the `uipath-agents` skill to figure out how.
-
   Use the Jira connection `jira-coded-eval` in the `Shared/uipath-agents`
   folder. Everything specific about the issue — the summary text, which
   project and issue type, and the epic it should sit under — is in
@@ -52,11 +50,10 @@ initial_prompt: |
   pass.
 
 success_criteria:
-  - type: command_executed
+  - type: skill_triggered
     description: "Agent loaded the uipath-agents skill"
-    tool_name: "Skill"
-    command_pattern: "uipath-agents"
-    min_count: 1
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
     weight: 1.0
     pass_threshold: 1.0
 
@@ -107,7 +104,7 @@ success_criteria:
     pass_threshold: 0.3
 
   - type: run_command
-    description: "Project shape: ActivityMetadata literal, lazy SDK init, bindings connection entry, 2-field resourceOverwrites (connectionId + folderKey, no elementInstanceId)"
+    description: "Project shape: ActivityMetadata literal, lazy SDK init, bindings connection entry"
     command: "python3 $TASK_DIR/check_is_jira_create_issue.py shape"
     timeout: 30
     expected_exit_code: 0

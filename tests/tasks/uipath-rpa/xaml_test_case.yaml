@@ -10,6 +10,9 @@ tags: [uipath-rpa, windows, integration, mode:build, feature:test-case]
 
 run_limits:
   expected_turns: 36
+  max_turns: 40
+  turn_timeout: 900
+  task_timeout: 900
 
 initial_prompt: |
   I need a UiPath XAML test project called "LoginTests" with a first XAML
@@ -18,7 +21,7 @@ initial_prompt: |
   The working directory starts empty. Scaffold the project with
   `uip rpa init --name "LoginTests" --location "." --template-id TestAutomationProjectTemplate`.
   Studio Desktop is NOT available — skip any CLI commands that require
-  --use-studio.
+  a running Studio Desktop instance.
 
   Requirements:
   - Create one XAML test case at `LoginTests/TestLoginSuccess.xaml` that
@@ -46,7 +49,6 @@ initial_prompt: |
 success_criteria:
   - type: command_executed
     description: "Agent invoked uip rpa init for the Tests project"
-    tool_name: "Bash"
     command_pattern: 'uip\s+rpa\s+init.*TestAutomationProjectTemplate'
     min_count: 1
     weight: 1.0
@@ -58,13 +60,16 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Test case uses the canonical Given-When-Then sub-sequence structure"
+  - type: file_check
+    description: "Test case uses the Given-When-Then sub-sequence structure (with or without the '... ' prefix)"
     path: "LoginTests/TestLoginSuccess.xaml"
-    includes:
-      - '"... Given"'
-      - '"... When"'
-      - '"... Then"'
+    patterns:
+      - pattern: 'DisplayName="[^"]*\bGiven\b'
+        must_match: true
+      - pattern: 'DisplayName="[^"]*\bWhen\b'
+        must_match: true
+      - pattern: 'DisplayName="[^"]*\bThen\b'
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
@@ -96,7 +101,6 @@ success_criteria:
 
   - type: command_executed
     description: "Agent ran uip rpa validate on the test case"
-    tool_name: "Bash"
     command_pattern: 'uip\s+rpa\s+validate.*TestLoginSuccess\.xaml'
     min_count: 1
     weight: 1.0

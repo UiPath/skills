@@ -1,0 +1,66 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-11aa1111-001",
+      "JobKey": "11aa1111-2222-3333-4444-555566667777",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-11aa1111-002",
+      "JobKey": "11aa1111-2222-3333-4444-555566667777",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.418Z",
+      "Message": "[ExcelWriteCellProcess] Starting daily write — workbook C:\\Robot\\Data\\sales-2026-05.xlsx",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-11aa1111-003",
+      "JobKey": "11aa1111-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:01.510Z",
+      "Message": "Use Excel File: sales-2026-05.xlsx — workbook opened (Modern scope, OpenXML provider)",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-11aa1111-004",
+      "JobKey": "11aa1111-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:01.812Z",
+      "Message": "Read Range: A1:B10 (Modern) — completed, 10 rows read into ReadData",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-11aa1111-005",
+      "JobKey": "11aa1111-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.110Z",
+      "Message": "Write Cell: status=Done (Classic Workbook surface) — opening workbook C:\\Robot\\Data\\sales-2026-05.xlsx for direct write (Classic surface does not delegate to surrounding scope)",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-11aa1111-006",
+      "JobKey": "11aa1111-2222-3333-4444-555566667777",
+      "Level": "Error",
+      "Timestamp": "2026-05-20T08:00:02.802Z",
+      "Message": "Write Cell: status=Done (Classic Workbook surface) — System.IO.IOException: The process cannot access the file 'C:\\Robot\\Data\\sales-2026-05.xlsx' because it is being used by another process.",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

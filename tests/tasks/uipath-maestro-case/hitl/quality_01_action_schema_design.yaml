@@ -86,10 +86,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `fetch.fetchPoData` | Fetch PO Data | process | System |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `fetch.fetchPoData` | Fetch PO Data | process | Yes | No | system | — |
 
   ##### Task 1.1: Fetch PO Data (`fetch.fetchPoData`)
 
@@ -124,10 +124,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `review.reviewPo` | Review PO | action | Procurement Officer |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `review.reviewPo` | Review PO | action | Yes | No | Procurement Officer | — |
 
   ##### Task 2.1: Review PO (`review.reviewPo`)
 
@@ -176,7 +176,7 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
+  #### Tasks
   (none)
   ```
 
@@ -271,4 +271,6 @@ post_run:
 
 run_limits:
   expected_turns: 66
-  max_turns: 90
+  task_timeout: 900
+  max_turns: 120
+  turn_timeout: 900

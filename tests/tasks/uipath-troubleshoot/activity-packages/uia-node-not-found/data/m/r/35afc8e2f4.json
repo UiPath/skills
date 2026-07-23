@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "DocsAIAsk",
+  "Data": {
+    "query_id": "5878d901-7741-48c7-84e1-1e48480a638e",
+    "text": "To handle faulted jobs in Orchestrator, use the built\u2011in job management options and, if enabled, recordings to analyze failures. Retries themselves are not described in the provided docs, so I\u2019ll focus on what is documented.\n\n**1. Understand and identify faulted jobs**\n\n- A job is **Faulted** if it failed to start or the process threw an unhandled error during execution. Faulted jobs **must be restarted manually**.  \n  \u2013 See [Job States](https://docs-staging.uipath.com/orchestrator/automation-suite/2.2510/user-guide/job-states).\n\n**2. Inspect why the job faulted**\n\n- In **Jobs**:\n  - Click **Details** to open the **Job Details** window and see why the job faulted (Robot, process, environment, start/end times, input/output, etc.).  \n  - Click **View Logs** (More Actions &gt; **View Logs**) to open the **Logs** page for that job.  \n    \u2013 From [Managing Jobs](https://docs-staging.uipath.com/orchestrator/standalone/2020.10/user-guide/managing-jobs) and [Job States](https://docs-staging.uipath.com/orchestrator/automation-suite/2.2510/user-guide/job-states).\n\n- For unattended faulted jobs with **Enable Recording** turned on:\n  - Use **More Options &gt; Download Recording** to get the execution media and review the last moments before failure.  \n    \u2013 See [About Jobs \u2013 Recording](https://docs-staging.uipath.com/orchestrator/standalone/2020.10/user-guide/about-jobs) and [Job States](https://docs-staging.uipath.com/orchestrator/automation-suite/2.2510/user-guide/job-states).\n\n**3. Restart faulted jobs**\n\n- From the **Jobs** list:\n  - Click **More Actions &gt; Restart** on a job in **Faulted**, **Stopped**, or **Successful** state.  \n  - Adjust settings in the **Start Job** window if needed, then click **Start**.  \n    \u2013 From [Managing Jobs](https://docs-staging.uipath.com/orchestrator/standalone/2020.10/user-guide/managing-jobs).\n\n**4. Retry policies**\n\n- The provided documents do **not** describe configuring automatic retry policies for faulted jobs or processes. Those settings (e.g., queue item retries, process\u2011level retry logic) are outside the scope of the included pages.\n\n---\n",
+    "sources": [
+      "https://docs-staging.uipath.com/orchestrator/automation-suite/2.2510/user-guide/job-states",
+      "https://docs-staging.uipath.com/orchestrator/standalone/2020.10/user-guide/managing-jobs",
+      "https://docs-staging.uipath.com/orchestrator/standalone/2020.10/user-guide/about-jobs"
+    ],
+    "disclaimers": [
+      "Installation and administration instructions, if incorrectly implemented, can result in system disruptions or data loss.\nVerify if your scenario aligns with the documentation sources linked for this answer. We recommend creating a backup before making any changes."
+    ],
+    "followups": [
+      "How can I design retries in Studio workflows when a job or activity fails?",
+      "How do I configure queue-based retry policies for failed queue items in Orchestrator?",
+      "Can you help me interpret a specific faulted job\u2019s logs or error message?"
+    ]
+  }
+}

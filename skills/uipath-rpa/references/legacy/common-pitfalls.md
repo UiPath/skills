@@ -37,7 +37,7 @@ These classic activities **must** be placed inside a specific parent scope:
 
 ## Scope Activities Require ActivityAction Body (CRITICAL for XAML Generation)
 
-Scope activities (Excel Application Scope, ExcelProcessScopeX, ExcelApplicationCard, Word Application Scope, etc.) do **NOT** accept direct children. They require an `ActivityAction<T>` body wrapper with a `DelegateInArgument`. Placing activities directly inside the scope element will fail validation.
+Scope activities (Excel Application Scope, ExcelProcessScopeX, ExcelApplicationCard, Word Application Scope, etc.) do **NOT** accept direct children. They require an `ActivityAction<T>` body wrapper with a `DelegateInArgument`. `RetryScope` follows the same wrap-the-body rule but uses a bare `ActivityAction` (no `x:TypeArguments`, no `DelegateInArgument`) — see the per-activity table below. Placing activities directly inside the scope element will fail validation.
 
 **Wrong — direct children (fails validation):**
 ```xml
@@ -75,6 +75,7 @@ Scope activities (Excel Application Scope, ExcelProcessScopeX, ExcelApplicationC
 | `PowerPointApplicationScope` | (PowerPoint handle type) | `PowerPointApplication` | PowerPoint COM scope |
 | `TryCatch` | (special — `Catches` collection) | — | Not ActivityAction, but has nested body structure |
 | `Parallel` | (multiple `Branches`) | — | Each branch is a separate Sequence |
+| `RetryScope` | _(none — bare `<ActivityAction>`)_ | — | Body property is `.ActivityBody` (not `.Body`); `ActivityAction` takes no type argument or `DelegateInArgument` |
 
 **`find-activities` now returns `Body` info** when an activity requires an `ActivityAction<T>` body — check the output before writing XAML for scope activities.
 

@@ -1,0 +1,45 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "cb00355c-3835-4c18-b37e-af5c7609c599",
+    "State": "Pending",
+    "JobPriority": "Normal",
+    "SpecificPriorityValue": 45,
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "BatchExecutionKey": "711bbba5-c21b-45c0-a556-c18ef5f8b516",
+    "CreationTime": "2026-05-28T08:48:18.580Z",
+    "ReleaseName": "NewBlankTask",
+    "Type": "Unattended",
+    "EnvironmentVariables": "",
+    "HasMediaRecorded": false,
+    "HasVideoRecorded": false,
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": true,
+    "OrganizationUnitId": 1500287,
+    "FolderKey": "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+    "Reference": "",
+    "ProcessType": "Process",
+    "ResumeOnSameContext": false,
+    "LocalSystemAccount": "",
+    "RemoteControlAccess": "None",
+    "AutopilotForRobots": {
+      "Enabled": true,
+      "HealingEnabled": true
+    },
+    "Id": 65401221,
+    "PendingReasons": {
+      "IsValid": false,
+      "Errors": [
+        "Windows process. This job can only run on a windows machine and there is none connected to this folder.",
+        "Windows .NET5 process. This job can only run on a windows machine with a minimum 21.10 robot version and there is none connected to this folder."
+      ],
+      "ErrorCodes": [
+        "TemplateNoHostsAvailable",
+        "DynamicJobConnectedMachinesInvalid",
+        "DynamicJobConnectedMachinesWindowsRobotVersionInvalid"
+      ]
+    }
+  }
+}

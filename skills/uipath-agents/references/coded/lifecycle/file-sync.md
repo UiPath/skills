@@ -27,7 +27,7 @@ uip codedagent push --ignore-resources
 ## Prerequisites
 
 - Authenticated session (see [authentication](../../authentication.md)).
-- `UIPATH_PROJECT_ID` set in `.env` (the CLI does not inject this one — it identifies the target project in Studio Web).
+- `UIPATH_PROJECT_ID` set in `.env` — verify by reading the file directly (`Read <project-dir>/.env`). The CLI reads this file at runtime; do not check `$UIPATH_PROJECT_ID` in the shell (env vars do not persist across Bash tool calls).
 
 ```env
 UIPATH_PROJECT_ID=12345

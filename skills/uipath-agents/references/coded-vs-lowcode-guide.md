@@ -19,6 +19,7 @@ Reference for comparing **coded** (Python) and **low-code** (agent.json) agents.
 | Full runtime control over LLM prompts | ❌ | ✅ |
 | Multi-model / multi-framework strategies | ❌ | ✅ |
 | Fastest path to first working agent | ✅ | ❌ |
+| Conversational (chat-style, multi-turn) use-cases | ✅ | currently not recommended for production, use low-code |
 | Embed inline in a flow project | ✅ | ❌ |
 | Embed as sibling project in same solution | ✅ | ✅ |
 | Invoke as published agent node in a flow | ✅ | ✅ |
@@ -110,6 +111,6 @@ Each agent type uses its own CLI and lifecycle. The solution's `uip solution dep
 - **Low-code agents** support 5 Flow patterns: inline embedding, published node, solution-level, external, and tool resource
 - **Coded agents** support 3 Flow patterns: in-solution sibling project (`uipath.core.agent.<resourceKey>` with `section: "In this solution"`), published node (`uipath.core.agent.<resourceKey>` via `uip codedagent deploy`), and tool resource
 - **Low-code inline embedding**: `uip agent init --inline-in-flow` creates a `<projectId-uuid>` subdirectory inside the flow project
-- **Coded solution-level embedding**: The coded agent lives as a sibling folder to the flow project; `uip solution project add` mints the `resource.key` that the flow's `uipath.core.agent.<resourceKey>` node references, discoverable via `uip maestro flow registry list --local` (see [coded/embedding-in-flows.md](coded/embedding-in-flows.md))
+- **Coded solution-level embedding**: The coded agent lives as a sibling folder to the flow project; `uip solution projects add` mints the `resource.key` that the flow's `uipath.core.agent.<resourceKey>` node references, discoverable via `uip maestro flow registry list --local` (see [coded/embedding-in-flows.md](coded/embedding-in-flows.md))
 - Node types differ by pattern: inline low-code uses `uipath.agent.autonomous`; every other case (published low-code, in-solution coded, published coded) uses `uipath.core.agent.{key}`
 - For coded agent Flow integration details, see [coded/flow-integration.md](coded/flow-integration.md)

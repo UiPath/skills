@@ -3,12 +3,12 @@ description: >
   Smoke test: agent builds a flow where a Decision node reads the HITL
   reviewer's boolean field and routes to two separate downstream branches.
   Verifies both true and false edges of the Decision node are wired.
-tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, smoke, lifecycle:generate, shape:multi-node, node:hitl]
 
 run_limits:
   expected_turns: 31
   max_turns: 80
-  turn_timeout: 600
+  turn_timeout: 900
 
 initial_prompt: |
   Build a UiPath Flow named "LeaveRequest" with this structure:
@@ -22,7 +22,7 @@ initial_prompt: |
   4. true branch  → Script node that logs "Leave approved" → End
   5. false branch → Script node that logs "Leave rejected" → End
 
-  Use the inline quickform HITL node (uipath.human-in-the-loop).
+  Use the inline quickform HITL node (uipath.human-in-the-loop.quick-form).
   Wire: Trigger → HITL →|completed| Decision → both branches → Script → End
 
   The Decision node condition must reference the HITL output using the
@@ -33,7 +33,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes"
-    command: "uip maestro flow validate LeaveRequest/LeaveRequest/LeaveRequest.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -43,7 +43,7 @@ success_criteria:
     description: "Flow contains inline HITL node"
     path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
     includes:
-      - '"uipath.human-in-the-loop"'
+      - '"uipath.human-in-the-loop.quick-form"'
     weight: 2.0
     pass_threshold: 1.0
 

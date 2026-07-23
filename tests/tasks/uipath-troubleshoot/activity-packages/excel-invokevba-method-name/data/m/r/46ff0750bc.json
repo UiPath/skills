@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-14T08:05:16.341Z",
+      "Message": "[Invoke VBA] Cannot run the macro 'ProcessInvoces'. The macro may not be available in this workbook or all macros may be disabled."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-14T08:05:16.398Z",
+      "Message": "Cannot run the macro 'ProcessInvoces'. The macro may not be available in this workbook or all macros may be disabled.\r\nin Main.xaml\r\n    at InvokeVBAX \"Invoke VBA\"\r\n    at ExcelApplicationCard \"Use Excel File\"\r\n    at ExcelProcessScope \"Excel Process Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

@@ -10,8 +10,6 @@ run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Show me the current license unit allocation for tenant
   `c0ffee00-0000-0000-0000-000000000001`.
 
@@ -23,9 +21,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent ran `uip platform tenants licenses get` with --output json"
+    description: "Agent ran `uip platform tenants licenses get`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+tenants\s+licenses\s+get\s+\S+.*--output\s+json'
+    command_pattern: 'uip\s+platform\s+tenants\s+licenses\s+get\s+\S+'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

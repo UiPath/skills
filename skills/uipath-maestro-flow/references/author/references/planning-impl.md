@@ -56,7 +56,6 @@ uip maestro flow registry get <node-type> --output json
 | `uipath.core.flow.*`            | [flow/impl.md](plugins/flow/impl.md)                           |
 | `uipath.core.api-workflow.*`    | [api-workflow/impl.md](plugins/api-workflow/impl.md)           |
 | `uipath.core.hitl.*`            | [hitl/impl.md](plugins/hitl/impl.md)                           |
-| `uipath.connector.uipath-uipath-dataservice.*` | [connector/data-fabric/impl.md](plugins/connector/data-fabric/impl.md) |
 | `uipath.ixp.*`                  | [ixp/impl.md](plugins/ixp/impl.md)                             |
 | `uipath.connector.*`            | [connector/impl.md](plugins/connector/impl.md)                 |
 | `uipath.connector.trigger.*`    | [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
@@ -91,6 +90,7 @@ If Phase 1 flagged a resource as not found, check two sources:
 **1. In-solution discovery (preferred — no login required):**
 ```bash
 uip maestro flow registry list --local --output json
+uip maestro flow registry search "<resource-name>" --local --output json   # keyword match when the list is long
 ```
 Run from the flow project directory. If the resource exists as a sibling project in the same `.uipx` solution, it appears here — use `registry get "<node-type>" --local --output json` to get the full manifest.
 
@@ -115,7 +115,7 @@ IxP extraction nodes (`uipath.ixp.*`) skip binding resolution. Design-time confi
 
 For each `core.logic.mock` node in the architectural plan:
 
-1. Check in-solution discovery first: `uip maestro flow registry list --local --output json`
+1. Check in-solution discovery first: `uip maestro flow registry list --local --output json` (or `registry search "<name>" --local --output json` for keyword match)
 2. If found locally: replace the mock with the in-solution resource node type, update inputs/outputs
 3. If not found locally, check tenant registry: `uip maestro flow registry search "<name>" --output json`
 4. If published: replace the mock with the real resource node type, update inputs/outputs

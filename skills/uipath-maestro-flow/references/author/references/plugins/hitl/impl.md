@@ -4,7 +4,7 @@ Two node types implement human-in-the-loop checkpoints. Choose based on whether 
 
 ---
 
-## Option 1 — `uipath.human-in-the-loop` (Inline Schema — OOTB)
+## Option 1 — `uipath.human-in-the-loop.quick-form` (Inline Schema — OOTB)
 
 This is the preferred option. No registry pull, no app publishing, no tenant dependency. Write the node directly into the `.flow` file as JSON.
 
@@ -15,7 +15,7 @@ This is the preferred option. No registry pull, no app publishing, no tenant dep
 
 ### Adding / Editing
 
-For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Use `Edit` / `Write` for HITL node authoring.** Do not use the dedicated HITL CLI for this non-carve-out structural edit. Wire the `completed` port after adding the node.
+For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Use `Edit` / `Write` for HITL node authoring.** Do not use the dedicated HITL CLI for this non-carve-out structural edit. Wire the `outcome-completed` port after adding the node.
 
 ### Quick Reference
 
@@ -24,11 +24,10 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 ```json
 {
   "id": "hitlReview1",
-  "type": "uipath.human-in-the-loop",
-  "typeVersion": "<DEFINITION_VERSION>",
+  "type": "uipath.human-in-the-loop.quick-form",
+  "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {
-    "type": "quick",
     "schema": {
       "schemaId": "<uuid>",
       "fields": [
@@ -69,40 +68,40 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 
 **Field format rules:**
 - **Input fields**: `binding: "vars.<nodeId>.output.<field>"` (raw path, no `=js:$` prefix). No `variable` property on input fields.
-- **Output fields**: `variable: "vars.<globalName>"` (with `vars.` prefix). No `binding`.
+- **Output fields**: `variable: "vars.<globalName>"` (`vars.` prefix required). No `binding`.
 - **InOut fields**: both `binding` and `variable`, same formats as above.
 - `schemaId` (not `id`) at the schema level — generate a fresh UUID.
-- `typeVersion` — set to the published `uipath.human-in-the-loop` node-definition version (no registry pull needed for this OOTB inline form; if unsure, confirm with `uip maestro flow registry get uipath.human-in-the-loop`). Use the exact single-dot `x.y` form (e.g. `"1.0"`, not `"1.0.0"`).
+- `typeVersion` — always `"1.0"` for `uipath.human-in-the-loop.quick-form`. **Do not run `registry get` to derive this value; do not use `"1.1"` or any other version.** The OOTB HITL node version is stable at `1.0`.
 - No `model` block on node instances — only the definition carries it.
 
 **outputs block**: only `output` (with `properties` for output/inOut fields + `Action` outcome) and `status` (with `enum`/`default` from outcomes). No per-field `custom: true` entries.
 
-**Ports:** `input` (target) → `completed` (source)
+**Ports:** `input` (target) → `outcome-completed` (source, label: Completed)
 
 **Output variables:**
 - `$vars.{nodeId}.output` — object with all `output` / `inOut` field values, keyed by **field `id`**
 - `$vars.{nodeId}.output.{fieldId}` — individual field value (e.g. `$vars.hitlReview1.output.decision`)
 - `$vars.{nodeId}.status` — selected outcome name (e.g. `"Approve"`, `"Reject"`)
-- `$vars.{globalId}` — workflow-global variable for output/inOut fields; `globalId` is derived from `field.variable` (strip `vars.` prefix)
+- `$vars.{globalId}` — workflow-global alias; `globalId` is `field.variable` with `vars.` stripped. **Do not use this in scripts — always use `$vars.{nodeId}.output.{fieldId}` instead.**
 
 ---
 
-## Option 2 — App-Based HITL (`uipath.human-in-the-loop` with `inputs.type = "custom"`)
+## Option 2 — App-Based HITL (`uipath.human-in-the-loop.coded-action-app`)
 
-Use when there is an existing deployed Action Center app that should serve as the task form. Same node type as Option 1 — only `inputs.type`, `inputs.app`, and `inputs.appInputBindings` differ.
+Use when there is an existing deployed Action Center app that should serve as the task form.
 
 ### Discovery
 
 **CLI (primary path):**
 
 ```bash
-uip solution resource list --kind App --output json
+uip solution resources list --kind App --output json
 ```
 
 Returns all Action Center app types (`vB Action`, `workflow Action`, `Coded Action`, `JS Action`). Filter by app name. Then retrieve the configuration:
 
 ```bash
-uip solution resource get <key> --output json
+uip solution resources get <key> --output json
 ```
 
 **Direct API fallback (if CLI unavailable):**
@@ -120,11 +119,10 @@ Full step-by-step (app search → retrieve-configuration → resource files → 
 ```json
 {
   "id": "invoiceReview1",
-  "type": "uipath.human-in-the-loop",
+  "type": "uipath.human-in-the-loop.coded-action-app",
   "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Invoice Review" },
   "inputs": {
-    "type": "custom",
     "recipient": { "channels": ["ActionCenter"], "connections": {}, "assignee": { "type": "group" } },
     "app": {
       "displayName": "Invoice Approval",
@@ -176,6 +174,8 @@ Full step-by-step (app search → retrieve-configuration → resource files → 
 }
 ```
 
+**`typeVersion`** — fill in the version returned by `uip maestro flow registry get <appKey>` for the specific deployed app. Unlike QuickForm (always `"1.0"`), AppTask version varies per app definition.
+
 **`inputs.app`**: `inputSchema` and `outputSchema` are JSON Schema objects (`{ "type": "object", "properties": { ... } }`), **not arrays**.
 
 **`inputs.appInputBindings`** — maps app input parameter names to binding expressions. Format: `"=vars.<path>"` (with `=` prefix, no `js:`). Key = parameter name from `inputSchema.properties`. Without this, all input fields appear blank.
@@ -201,4 +201,4 @@ Manual Trigger -> RPA Process (extract) -> HITL (review) -> Decision (approved?)
 | Node type not found in registry (Option 2) | App not published or registry stale | If in same solution: `uip maestro flow registry list --local`. Otherwise: `uip login` then `uip maestro flow registry pull --force` |
 | Task never completes | Human hasn't submitted the form | Check task assignment in Orchestrator |
 | Output missing expected fields | App form doesn't match expected schema | Verify app form fields match what the flow expects |
-| `completed` port unwired (Option 1) | Missing edge on output handle | Wire the `completed` output handle — an unwired `completed` blocks the flow indefinitely |
+| `outcome-completed` port unwired (Option 1) | Missing edge on output handle | Wire the `outcome-completed` output handle — an unwired `outcome-completed` blocks the flow indefinitely |

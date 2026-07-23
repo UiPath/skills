@@ -14,7 +14,7 @@ npm -g install @uipath/cli
 uip skills install
 ```
 
-Select the skills you need from the wizard. Skills are installed into your coding agent's directory and ready to use.
+`uip skills install` finds the AI coding agents installed on your machine and installs the skills for all of them, into each agent's directory, ready to use. If it can't find any agent, it asks which one to target. To install for just one agent, pass `--agent <name>` (e.g. `--agent claude`).
 
 <details>
 <summary>Don't have Node.js installed?</summary>
@@ -62,8 +62,8 @@ The repository ships skills covering authoring, platform operations, and diagnos
 
 | Skill | Description |
 |-------|-------------|
-| **uipath-solution** | Solution lifecycle (`.uipx`) — author SDD from PDD, then `uip solution init/pack/publish/deploy/activate`. |
-| **uipath-planner** | Multi-skill task planner — reads SDDs or non-PDD requests and derives an executable task list across the other skills. |
+| **uipath-planner** | Solution planner & designer — turn a Process Design Document into an implementation-ready Solution Design Document (SDD), then derive an executable multi-skill task list across the other skills. |
+| **uipath-solution** | Solution lifecycle (`.uipx`) — `uip solution init/pack/publish/deploy/activate`. |
 | **uipath-review** | Read-only auditor — structural, quality, and best-practice review across RPA, agents, flows, BPMN, coded apps, and solutions. |
 
 ### Platform & Operations
@@ -80,6 +80,44 @@ The repository ships skills covering authoring, platform operations, and diagnos
 |-------|-------------|
 | **uipath-troubleshoot** | Root-cause investigation across any UiPath product — errors, failures, regressions, stuck jobs, traces, incidents. |
 | **uipath-feedback** | Submit bug reports and improvement suggestions via `uip feedback send`. |
+
+### Lifecycle Status
+
+Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-status.json) — the source of truth. The table below is generated; refresh it with `python3 scripts/check-skill-status.py --write-readme`.
+
+<!-- BEGIN GENERATED SKILL STATUS -->
+| Skill | Status |
+|-------|--------|
+| `uipath-admin` | In-development |
+| `uipath-agents` | In-development |
+| `uipath-api-workflow` | In-development |
+| `uipath-automation-discovery` | Preview |
+| `uipath-coded-apps` | Preview |
+| `uipath-connector-builder` | In-development |
+| `uipath-feedback` | Stable |
+| `uipath-functions` | Preview |
+| `uipath-governance` | In-development |
+| `uipath-human-in-the-loop` | In-development |
+| `uipath-insights` | Preview |
+| `uipath-ixp` | In-development |
+| `uipath-maestro-bpmn` | In-development |
+| `uipath-maestro-case` | In-development |
+| `uipath-maestro-flow` | In-development |
+| `uipath-mcp-servers` | In-development |
+| `uipath-planner` | Preview |
+| `uipath-platform` | Preview |
+| `uipath-review` | Preview |
+| `uipath-rpa` | Preview |
+| `uipath-solution` | Preview |
+| `uipath-tasks` | Preview |
+| `uipath-test` | In-development |
+| `uipath-troubleshoot` | Preview |
+
+**Status legend:**
+- **Stable** — Stable, production-ready surface; safe for production.
+- **Preview** — Not yet stable; may be broadly available or gated/allowlisted, and surface and behavior may change.
+- **In-development** — Skill itself is incomplete or unstable; coverage is partial.
+<!-- END GENERATED SKILL STATUS -->
 
 ## Agents
 
@@ -111,11 +149,22 @@ The command prints the recommended JSON and offers to merge it into your setting
 
 ### Google Gemini CLI
 
-Gemini CLI is supported by `uip skills install` — pick **Gemini CLI** when the wizard prompts for a target and skills are wired up automatically.
+Gemini CLI is supported by `uip skills install`. If the Gemini CLI is on your PATH, it's detected automatically and skills are wired up. If no agent is detected, pick **Gemini CLI** when prompted.
 
 ### OpenAI Codex CLI
 
 This repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
+
+This repository also includes Codex plugin metadata under `.codex-plugin/`. The Codex plugin manifest exposes the same `skills/` directory and shared session hooks.
+
+Install with Codex CLI:
+
+```bash
+codex plugin marketplace add UiPath/skills --ref main
+codex plugin add uipath@uipath-marketplace
+```
+
+The marketplace entry currently uses a `plugins/uipath` symlink so Codex can load the repository root as the plugin root; remove it once [openai/codex#17066](https://github.com/openai/codex/issues/17066) is resolved.
 
 > **Windows users:** This repo uses git symlinks. Clone with symlinks enabled:
 > ```bash

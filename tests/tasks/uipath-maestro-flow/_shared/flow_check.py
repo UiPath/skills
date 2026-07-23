@@ -39,7 +39,47 @@ import os
 import re
 import subprocess
 import sys
+import time
 from typing import Any, Iterable, Sequence
+
+
+# Raw stdout of the most recent ``uip maestro flow debug`` invocation, stashed by
+# :func:`run_debug` so the output-assertion helpers can dump the FULL runtime
+# response to stderr when they fail. This is the diagnostic channel for the
+# chronic "debug Completes but Variables/Globals come back empty" flake
+# (e.g. skill-flow-calculator 0.375): the captured stderr lands in
+# ``task.json.success_criteria_results[].details``, so a failing eval preserves
+# the exact payload (finalStatus, elementExecutions, globals, incidents) that the
+# checker saw — which is otherwise ephemeral and unrecoverable post-run.
+_LAST_DEBUG_RAW: str | None = None
+
+
+# A `uip maestro flow debug` run can die on a transient server-side error — a
+# gateway timeout / 5xx while polling the debug instance, which the CLI reports
+# as `Result:Failure`, `ErrorCode:server_error`, `Retry:RetryLater` (the CLI's
+# own Instructions say "retry once before reporting"). This is orchestration
+# infrastructure hiccuping mid-run, NOT the built flow being wrong: a single
+# 504 on GET /debug-instances/<id>/element-executions failed a whole seeded
+# check (customer-escalation-triage). Distinct from a real flow failure (a
+# `finalStatus` that completed-with-fault, or wrong outputs), which must fail
+# immediately. Retry ONLY on the transient markers below.
+_DEBUG_RETRY_MARKERS = ('"retry": "retrylater"', '"errorcode": "server_error"')
+
+
+def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
+    """True iff a failed ``flow debug`` invocation looks like a transient
+    server-side error (5xx / RetryLater) worth retrying, rather than a real
+    flow fault. Case-insensitive so CLI key casing can't slip past."""
+    if result.returncode == 0:
+        return False
+    blob = f"{result.stdout}\n{result.stderr}".lower()
+    if any(marker in blob for marker in _DEBUG_RETRY_MARKERS):
+        return True
+    # Fall back to an explicit 5xx HttpStatus in the error Context.
+    data = _parse_json(result.stdout)
+    status = _get_ci(data or {}, "Context", default={})
+    http = _get_ci(status if isinstance(status, dict) else {}, "HttpStatus")
+    return isinstance(http, int) and 500 <= http < 600
 
 
 # ── Public helpers ──────────────────────────────────────────────────────────
@@ -51,9 +91,17 @@ def run_debug(
     attachments: dict[str, str] | None = None,
     timeout: int = 240,
     project_glob: str = "**/project.uiproj",
+    retries: int = 3,
+    backoff_seconds: float = 5.0,
 ) -> dict:
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing.
+
+    Transient server-side errors (5xx / ``RetryLater`` while polling the debug
+    instance — see :func:`_is_transient_debug_error`) are retried up to
+    ``retries`` times with ``backoff_seconds`` between attempts. A real flow
+    fault (non-transient failure, or a run that completes with the wrong
+    ``finalStatus``) fails immediately without burning retries.
 
     ``attachments`` maps a file-typed input variable ``id`` to a local file path;
     each pair is passed as ``--attachment <id>=<path>`` (repeatable). The variable
@@ -65,7 +113,14 @@ def run_debug(
         cmd.extend(["--inputs", json.dumps(inputs)])
     for var_id, local_path in (attachments or {}).items():
         cmd.extend(["--attachment", f"{var_id}={local_path}"])
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    global _LAST_DEBUG_RAW
+    for attempt in range(retries):
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        _LAST_DEBUG_RAW = r.stdout
+        if r.returncode == 0 or not _is_transient_debug_error(r):
+            break
+        if attempt + 1 < retries:
+            time.sleep(backoff_seconds)
     if r.returncode != 0:
         _fail(f"flow debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}")
     data = _parse_json(r.stdout)
@@ -107,6 +162,82 @@ def assert_flow_has_node_type(
                 f"No node matches type hint {hint!r}. "
                 f"Node types seen: {sorted(types_seen)}"
             )
+
+
+def assert_flow_has_any_node_type(
+    hints: Sequence[str], *, project_glob: str = "**/project.uiproj"
+) -> None:
+    """Require that AT LEAST ONE hint matches some ``.flow`` node ``type``
+    across the project (case-insensitive, substring — same semantics as
+    :func:`assert_flow_has_node_type`, but any-of instead of all-of).
+
+    Use this any-of matcher — rather than the AND-matcher
+    :func:`assert_flow_has_node_type` — when a task accepts more than one
+    legitimate node shape for the SAME step. The weather tasks are the
+    canonical case: the open-meteo API call may be built either as a raw
+    ``core.action.http`` node OR as the curated tenant connector
+    ``uipath.connector.custom-codereval-openmeteoapis.getcurrentweather``,
+    and the maestro-flow skill's node-selection ladder legitimately steers
+    the agent to the connector when one is present. Pinning the AND-matcher
+    to ``core.action.http`` rejects the connector shape even though it calls
+    the very API the test targets.
+
+    Pairs with a runtime output assertion: this file check confirms a node
+    of one acceptable *kind* was built; the output check confirms execution
+    produced the expected result.
+    """
+    if not hints:
+        return
+    types_seen: set[str] = set()
+    for node in _iter_flow_nodes(project_glob):
+        t = node.get("type")
+        if t:
+            types_seen.add(t)
+    for hint in hints:
+        needle = hint.lower()
+        if any(needle in t.lower() for t in types_seen):
+            return
+    _fail(
+        f"No node matches any type hint {list(hints)}. "
+        f"Node types seen: {sorted(types_seen)}"
+    )
+
+
+def assert_flow_has_api_node_targeting(
+    service_hints: Sequence[str], *, project_glob: str = "**/project.uiproj"
+) -> None:
+    """Require an API-capable node that actually targets one of the services.
+
+    An API-capable node is one whose ``type`` contains ``core.action.http`` or
+    ``uipath.connector``; it targets the service when ANY ``service_hints``
+    entry appears anywhere in the node's JSON (case-insensitive substring) —
+    the connector key in the node type, the URL of a manual HTTP node, or the
+    ``targetConnector`` in a connector-proxy HTTP node's detail.
+
+    Use this instead of a bare type hint when the flow legitimately contains
+    OTHER nodes of the same generic type: e.g. in the Slack weather pipeline a
+    Slack connector-proxy ``core.action.http.v2`` node would satisfy a plain
+    ``core.action.http`` hint, letting a flow with no weather node at all pass
+    the structural gate. Scoping the content match to API-capable node types
+    keeps a Script node that merely mentions the service from counting.
+    """
+    if not service_hints:
+        return
+    needles = [hint.lower() for hint in service_hints]
+    api_types_seen: set[str] = set()
+    for node in _iter_flow_nodes(project_glob):
+        t = str(node.get("type") or "")
+        t_lower = t.lower()
+        if "core.action.http" not in t_lower and "uipath.connector" not in t_lower:
+            continue
+        api_types_seen.add(t)
+        blob = json.dumps(node).lower()
+        if any(needle in blob for needle in needles):
+            return
+    _fail(
+        f"No core.action.http/uipath.connector node targets any of {list(service_hints)}. "
+        f"API-capable node types seen: {sorted(api_types_seen)}"
+    )
 
 
 def assert_flow_has_exact_node_type(
@@ -239,10 +370,77 @@ def assert_outputs_contain(
     ok = len(missing) == 0 if require_all else len(present) > 0
     if not ok:
         mode = "all of" if require_all else "any of"
-        _fail(
+        _fail_with_capture(
             f"Outputs missing {mode} {list(needles)}; present={present}; "
             f"missing={missing}\nOutputs: {haystack[:1000]}"
         )
+
+
+def get_last_debug_raw() -> str | None:
+    """Return the raw stdout of the most recent ``run_debug`` call (the full
+    ``uip maestro flow debug`` JSON envelope), or ``None`` if none ran yet.
+    Useful for persisting the execution trace for post-run inspection."""
+    return _LAST_DEBUG_RAW
+
+
+def assert_output_nonempty(payload: dict, name: str) -> Any:
+    """Assert a named output global (e.g. an End-node-mapped ``out`` variable)
+    is present and non-empty, and return its value.
+
+    Looks the variable up by name in the runtime payload's ``variables.globals``
+    dict and ``variables.globalVariables`` array (both casings). "Non-empty"
+    means: present, not ``None``, and — once stringified — not whitespace-only
+    (so ``""``, ``"   "``, ``{}``, ``[]`` all fail)."""
+    variables = _get_ci(payload, "variables", "Variables") or {}
+    globals_dict = _get_ci(variables, "globals", "Globals") or {}
+    value = _get_ci(globals_dict, name)
+    if value is None:
+        for v in _get_ci(variables, "globalVariables", "GlobalVariables") or []:
+            if str(_get_ci(v, "id", "Id", "name", "Name") or "").lower() == name.lower():
+                value = _get_ci(v, "value", "Value")
+                break
+    text = "".join(str(v) for v in _leaves(value) if v is not None).strip()
+    if not text:
+        present = list(globals_dict.keys())
+        _fail_with_capture(
+            f"Output {name!r} is missing or empty; present globals={present}\n"
+            f"value={value!r}"
+        )
+    return value
+
+
+def assert_named_output_contains(
+    payload: dict,
+    name: str,
+    needles: str | Sequence[str],
+    *,
+    require_all: bool = True,
+) -> str:
+    """Assert a NAMED output global is present, non-empty, and contains the
+    needle(s). Returns the stringified value.
+
+    Unlike :func:`assert_outputs_contain` — which flattens the WHOLE payload and
+    so matches trigger-input echoes (e.g. an ``invoiceNumber`` input global makes
+    the invoice string "present" even when the agent never drafted it) — this
+    scopes the match to one declared output global, the value a downstream
+    consumer actually receives. Use it to grade that an agent's drafted text
+    landed in the mapped flow output, not merely that a string appears somewhere
+    in the debug dump.
+    """
+    value = assert_output_nonempty(payload, name)  # fails if missing/empty
+    haystack = _stringify(_leaves(value))
+    if isinstance(needles, str):
+        needles = [needles]
+    present = [n for n in needles if n.lower() in haystack]
+    missing = [n for n in needles if n.lower() not in haystack]
+    ok = len(missing) == 0 if require_all else len(present) > 0
+    if not ok:
+        mode = "all of" if require_all else "any of"
+        _fail_with_capture(
+            f"Output {name!r} missing {mode} {list(needles)}; present={present}; "
+            f"missing={missing}\n{name}={haystack[:1000]}"
+        )
+    return haystack
 
 
 def assert_output_int_in_range(payload: dict, lo: int, hi: int) -> int:
@@ -252,7 +450,7 @@ def assert_output_int_in_range(payload: dict, lo: int, hi: int) -> int:
     haystack = _stringify(collect_outputs(payload))
     hits = [int(m) for m in re.findall(r"-?\d+", haystack) if lo <= int(m) <= hi]
     if not hits:
-        _fail(
+        _fail_with_capture(
             f"No integer in [{lo}, {hi}] found in outputs\nOutputs: {haystack[:1000]}"
         )
     return hits[0]
@@ -272,7 +470,9 @@ def assert_output_value(payload: dict, expected: Any) -> None:
         if isinstance(expected, str) and isinstance(v, str):
             if expected.lower() in v.lower():
                 return
-    _fail(f"No output equals expected {expected!r}\nOutputs: {_stringify(outs)[:1000]}")
+    _fail_with_capture(
+        f"No output equals expected {expected!r}\nOutputs: {_stringify(outs)[:1000]}"
+    )
 
 
 def read_flow_input_vars(project_dir: str) -> list[str]:
@@ -412,6 +612,65 @@ def _is_flow_project(path: str) -> bool:
 
 def _stringify(values: Iterable[Any]) -> str:
     return json.dumps(list(values), default=str).lower()
+
+
+def _dump_debug_capture(context: str = "") -> None:
+    """Emit the most recent raw ``flow debug`` response to stderr for diagnosis.
+
+    Called on output-assertion failures so the captured criterion output preserves
+    the full runtime payload — the only way to inspect the chronic
+    "Completed-but-empty-Variables" flake after the (ephemeral) debug run is gone.
+    Best-effort and side-effect-free: never raises, so it cannot mask the real
+    assertion failure that follows.
+    """
+    raw = _LAST_DEBUG_RAW
+    if not raw:
+        return
+    tag = f" ({context})" if context else ""
+    lines = [f"=== FLOW_DEBUG_RAW_CAPTURE BEGIN{tag} ==="]
+    try:
+        # Parse via the tolerant helper, not bare json.loads: the CLI may emit a
+        # banner/warning before the JSON (the reason run_debug uses _parse_json),
+        # and a plain json.loads would drop the whole structured summary to
+        # "<unparsable>" even though the run produced a valid payload.
+        parsed = _parse_json(raw)
+        if parsed is None:
+            raise ValueError("no JSON object found in debug stdout")
+        data = _get_ci(parsed, "Data") or {}
+        variables = _get_ci(data, "variables", "Variables") or {}
+        summary = {
+            "finalStatus": _get_ci(data, "finalStatus", "FinalStatus"),
+            "globals": _get_ci(variables, "globals", "Globals"),
+            "globalVariables": _get_ci(variables, "globalVariables", "GlobalVariables"),
+            "elementOutputs": [
+                {
+                    "id": _get_ci(e, "elementId", "ElementId", "id", "Id"),
+                    "outputs": _get_ci(e, "outputs", "Outputs"),
+                }
+                for e in (_get_ci(variables, "elements", "Elements") or [])
+            ],
+            "elementExecutions": [
+                {
+                    "id": _get_ci(x, "elementId", "ElementId", "id", "Id"),
+                    "type": _get_ci(x, "elementType", "ElementType", "extensionType"),
+                    "status": _get_ci(x, "status", "Status"),
+                }
+                for x in (_get_ci(data, "elementExecutions", "ElementExecutions") or [])
+            ],
+            "incidents": _get_ci(data, "incidents", "Incidents"),
+        }
+        lines.append("SUMMARY: " + json.dumps(summary, default=str))
+    except Exception as exc:  # noqa: BLE001 — diagnostics must never mask the real failure
+        lines.append(f"SUMMARY: <unparsable: {exc!r}>")
+    lines.append("RAW: " + raw.strip())
+    lines.append("=== FLOW_DEBUG_RAW_CAPTURE END ===")
+    print("\n".join(lines), file=sys.stderr)
+
+
+def _fail_with_capture(msg: str):
+    """Dump the raw debug payload (diagnostics) then fail with ``msg``."""
+    _dump_debug_capture(msg.split("\n", 1)[0])
+    _fail(msg)
 
 
 def _fail(msg: str):

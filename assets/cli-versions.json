@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "generated_at": "2026-06-02T00:00:00Z",
+  "environments": {
+    "alpha": {
+      "cliVersion": "1.2"
+    },
+    "staging": {
+      "cliVersion": "1.1"
+    },
+    "cloud": {
+      "cliVersion": "0.1"
+    }
+  }
+}

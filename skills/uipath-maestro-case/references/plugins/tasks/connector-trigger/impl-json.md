@@ -98,7 +98,7 @@ For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** pe
 }
 ```
 
-Append the task to the target stage's `tasks[]` array. Default: own task set (one task per lane). **Exception:** if this task is a parallel member of a `runs-sequentially` group, push into the shared lane of that group (shared lane = parallel siblings inside the sequence, semantic).
+Append the task to the target stage's `data.tasks` structure in its planned order. Lane placement is structural/layout state; it does not express sequencing. Add `runs-sequentially` to the task's entry conditions when the frontend toggle is selected.
 
 ### Step 8 — Append root-level bindings
 
@@ -128,4 +128,4 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 4. When the trigger has event parameters: `data.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`)
 5. Root bindings exist for ConnectionId + folderKey with the minted ids; `data.bindings[]` is empty `[]`
 6. Each entry in `data.inputs[]` / `data.outputs[]` has `var` / `id` / `elementId` minted; uniqueness rule applied for outputs
-7. `bindings_v2.json` `resources` array matches the schema-appropriate bindings array (v19: `root.data.uipath.bindings[]`; v20: top-level `bindings[]`) after the deferred sync
+7. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync

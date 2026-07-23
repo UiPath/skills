@@ -1,0 +1,1 @@
+{"Result":"Success","Code":"IsConnectionsList","Data":[{"id":"conn-mock-outlook-01","name":"mock.user@example.com-outlook","folder":{"key":"folder-mock-workspace","displayName":"mock.user@example.com's workspace"},"enabled":true}]}

@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "e8c7d6f5-4a3b-4c2d-9e1f-0a2b3c4d5e60",
+      "State": "Faulted",
+      "ProcessName": "ReportRefresher",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-13T10:42:18.220Z",
+      "EndTime": "2026-05-13T10:42:22.110Z",
+      "CreationTime": "2026-05-13T10:42:18.005Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

@@ -1,0 +1,41 @@
+task_id: skill-admin-audit-org-export-csv-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-admin skill to run
+  `export` with `--file-format csv` at ORG scope (not tenant). Mirrors
+  the tenant CSV smoke. Org-scope exports cover admin events
+  (memberships, license, tenant lifecycle) that don't live under any
+  single tenant — picking the wrong scope returns the wrong data
+  silently.
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, mode:operate, audit, export, scope-org]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  I need all of yesterday's organization-level Admin audit events (things like
+  memberships, license changes, and tenant lifecycle) as a single CSV I
+  can open in Excel for a compliance review. Save it in a folder called
+  audit-org-yesterday.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin audit org export` (org scope) with --from-date, --to-date, --output-path, AND --file-format csv"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-path\s+\S+)(?=.*--file-format\s+csv\b)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed the requested ./audit-org-yesterday base directory"
+    tool_name: "Bash"
+    # --output-path is a base directory; the CLI generates the .csv name inside it,
+    # so assert the agent used the requested base dir (any leading path is fine).
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b.*--output-path\s+\S*audit-org-yesterday(?![\w.])'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

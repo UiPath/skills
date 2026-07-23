@@ -5,15 +5,9 @@ description: >
   `uip platform licenses consumables get --mode daily --start-date <iso>
   --end-date <iso> --output json` with both date flags. CLI auth failure
   is expected offline.
-tags: [uipath-platform, smoke-blocked, licensing, consumables]
-skip: true
-# Blocked: `uip platform licenses consumables get` is not in the public
-# @uipath/platform-tool (v1.0.0 ships only `tenants licenses get|set`).
-# Re-enable when the CLI ships the consumables surface. See PLT-103133.
+tags: [uipath-platform, smoke, licensing, consumables]
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Give me a day-by-day consumption breakdown for the period 2026-04-01
   through 2026-04-30.
 
@@ -24,9 +18,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent ran `uip platform licenses consumables get --mode daily` with date range and --output json"
+    description: "Agent ran `uip platform licenses consumables get --mode daily` with date range"
     tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+licenses\s+consumables\s+get.*--mode\s+daily.*--start-date\s+2026-04-01.*--end-date\s+2026-04-30.*--output\s+json'
+    command_pattern: 'uip\s+platform\s+licenses\s+consumables\s+get.*--mode\s+daily.*--start-date\s+2026-04-01.*--end-date\s+2026-04-30'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

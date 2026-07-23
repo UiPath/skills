@@ -1,0 +1,70 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" VisualBasic.Settings="{x:Null}" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:uix="http://schemas.uipath.com/workflow/activities/excel" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Excel</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="sd:DataTable" Name="Rows" xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common" />
+    </Sequence.Variables>
+    <ui:LogMessage DisplayName="Log: starting per-row status update" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[ExcelWriteCellProcess] Per-row status update — workbook C:\Robot\Data\sales-2026-05.xlsx&quot;]" />
+    <uix:UseExcelFile DisplayName="Use Excel File: sales-2026-05.xlsx" WorkbookPath="C:\Robot\Data\sales-2026-05.xlsx" ReferenceName="ExcelWorkbookScope" sap2010:WorkflowViewState.IdRef="UseExcelFile_1">
+      <uix:UseExcelFile.Body>
+        <ActivityAction x:TypeArguments="uix:IExcelWorkbookActivities">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="uix:IExcelWorkbookActivities" Name="ExcelWorkbookScope" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <uix:ReadRange DisplayName="Read Range: A1:F313" Range="A1:F313" SheetName="Sales" Result="[Rows]" sap2010:WorkflowViewState.IdRef="ReadRange_1" />
+            <!-- ANTI-PATTERN: Write Cell inside For Each Row loop.
+                 Each iteration acquires the Range COM object, writes one cell, releases.
+                 Over many iterations Excel COM accumulates RCW garbage, file-lock churn races
+                 with itself, and the activity eventually faults with "wrong format, or Excel is busy".
+                 The correct pattern: mutate Rows in memory only inside the loop, then call a single
+                 Write Range outside the loop. -->
+            <ui:ForEach x:TypeArguments="sd:DataRow" DisplayName="For Each Row in Rows" Values="[Rows.AsEnumerable()]" sap2010:WorkflowViewState.IdRef="ForEach_1" xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common">
+              <ui:ForEach.Body>
+                <ActivityAction x:TypeArguments="sd:DataRow">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="sd:DataRow" Name="row" />
+                  </ActivityAction.Argument>
+                  <Sequence DisplayName="Row body" sap2010:WorkflowViewState.IdRef="Sequence_3">
+                    <Assign DisplayName="Compute row status" sap2010:WorkflowViewState.IdRef="Assign_1">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:Object">[row("Status")]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:Object">[If(CDec(row("Amount").ToString) > 1000, "High", "Normal")]</InArgument>
+                      </Assign.Value>
+                    </Assign>
+                    <uix:WriteCell DisplayName="Write Cell: row N status" Range="[&quot;E&quot; &amp; (CInt(row(&quot;RowIndex&quot;).ToString) + 1).ToString]" SheetName="Sales" Value="[row(&quot;Status&quot;).ToString]" sap2010:WorkflowViewState.IdRef="WriteCell_1" />
+                  </Sequence>
+                </ActivityAction>
+              </ui:ForEach.Body>
+            </ui:ForEach>
+            <ui:LogMessage DisplayName="Log: per-row update finished" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[ExcelWriteCellProcess] Per-row update finished.&quot;]" />
+          </Sequence>
+        </ActivityAction>
+      </uix:UseExcelFile.Body>
+    </uix:UseExcelFile>
+  </Sequence>
+</Activity>

@@ -1,0 +1,12 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpToolsList",
+  "Data": {
+    "items": [
+      { "id": "tool-mock-remote-01", "name": "search",  "mcpName": "mock-remote-api", "description": "Search the mock API." },
+      { "id": "tool-mock-remote-02", "name": "fetch",   "mcpName": "mock-remote-api", "description": "Fetch a document by id." }
+    ],
+    "total": 2,
+    "count": 2
+  }
+}

@@ -22,6 +22,8 @@ If `~/.uip/case-resources/typecache-activities-index.json` does not exist, run `
 
 Read `~/.uip/case-resources/typecache-activities-index.json` directly. Match on `displayName` or `connectorKey` + operation description from sdd.md. Record `uiPathActivityTypeId`.
 
+**No match (Scenario A — connector not found).** A 0-match inside the existing cache is gated by Rule 17 — run the [registry-discovery.md § MUST Confirm Before Placeholder Fallback](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) AskUserQuestion (`Force pull` / `Use placeholders for all`) for the lookup batch before any fallback. Only after the user picks `Use placeholders for all`: mark `type-id` `<UNRESOLVED: no typecache activity for <query>>`, skip § 2 (no `activity-type-id` to pass to `get-connection`), and fall through to § Unresolved Fallback (placeholder task, `data: {}`). Continue planning — do not halt ([planning.md § 3.4](../../../planning.md)).
+
 ### 2. Resolve the connection
 
 ```bash
@@ -30,15 +32,16 @@ uip maestro case registry get-connection \
   --activity-type-id "<uiPathActivityTypeId>" --output json
 ```
 
-Returns `Entry`, `Config`, and `Connections`.
+Returns `Entry`, `Config`, and `Connections`. If the sdd.md names a connection, match it by `name` and use it directly. Otherwise **always present the choice via AskUserQuestion — do not auto-select**, even when one connection exists:
 
-- **Single connection** → use it.
-- **Multiple connections** → **AskUserQuestion** with connection names + "Something else".
-- **Empty `Connections`** → mark `<UNRESOLVED: no IS connection for <connectorKey>>` and omit `input-values:`. Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
+- **`Connections` non-empty** → list connections by `name` **plus a "Create a new connection" option**.
+- **`Connections` empty** → offer **Create a new connection** / **Skip (defer)**.
+- **Create chosen** → create it (background `is connections create`, capture `ConnectionId`), then continue with the new id. Procedure: [connector-integration.md § Creating a Connection](../../../connector-integration.md#creating-a-connection).
+- **Skip / create fails** → mark `<UNRESOLVED: no IS connection for <connectorKey>>` and omit `input-values:` ([§ Unresolved Fallback](#unresolved-fallback)).
 
-Record `connection-id`, `connector-key`, `object-name` from the response.
+Record `connection-id`, `connector-key`, `object-name` from the response (or from the create output).
 
-Connection selection rules (default-preference, `--refresh` retry, multi-connection disambiguation, ping verification, BYOA workflow): see [/uipath:uipath-platform — connections.md](../../../../../uipath-platform/references/integration-service/connections.md).
+Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../../../../uipath-platform/references/integration-service/connections.md).
 
 ### 3. Discover the operation contract via `case spec`
 
@@ -86,7 +89,7 @@ Run the `discoverCommand` exactly as given. Match the sdd.md value to `lookupNam
 
 > **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing tasks.md. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
 
-> **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
+> **Paginate when looking up by name.** `run list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
 
 If a reference cannot be resolved, **AskUserQuestion** with the candidates (dropdown when finite set, plus "Something else"). Do not guess.
 
@@ -106,6 +109,8 @@ This is a hard gate — do NOT proceed to writing tasks.md until every required 
 
 SDD input names rarely match connector field names exactly. Match each SDD input to a `bodyFields`/`pathParameters`/`queryParameters` entry by comparing the SDD field name against the `displayName` (or `name`) from Step 3.
 
+An SDD input that matches `spec.inputs.*` remains a normal Step 6 input even when its name is literally `filter`: include it in `input-values`; Step 7 applies only when the SDD separately requests a structured filter tree and `spec.filter` supports one.
+
 For each required field in spec.inputs.*, there must be a matching SDD input. If a required field has no match, **AskUserQuestion** — never leave required fields unmapped.
 
 Values can be:
@@ -114,9 +119,9 @@ Values can be:
 - **Case variable references** — `=vars.X` (impl wraps as `=js:(vars.X)` for the connector body sink before passing to the CLI)
 - **Metadata references** — `=metadata.X` (impl wraps as `=js:(metadata.X)`)
 - **Pre-wrapped operator expressions** — `=js:(vars.amount > 5000)` (already canonical — pass-through)
-- **Cross-task refs** — `<- "Stage"."Task".output` (impl resolves to `=vars.<outputVar>` then wraps)
+- **Cross-task refs** — `<- "Stage"."Task".output` (impl resolves through the common [output-reference-ID algorithm](../../variables/io-binding/impl-json.md#output-reference-id-authoritative) to `=vars.<outputReferenceId>`, then wraps)
 
-> **tasks.md carries SDD-natural form.** The implementation step (Step 9.7 of connector-activity impl) rewrites every reference to its canonical sink form when constructing `--input-details`. Connector body sinks use `=js:(<expr>)`. Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../../bindings-and-expressions.md#canonical-form-per-sink).
+> **tasks.md carries SDD-natural form.** The implementation step (Step 9.7 of connector-activity impl) rewrites every reference to its canonical sink form when constructing `--input-details`. Connector body sinks use `=js:(<expr>)`. Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ### 7. Optional — author a server-side filter
 
@@ -175,6 +180,8 @@ Planner emits to `tasks.md input-values.bodyParameters`:
 
 ## tasks.md Entry Format
 
+Populate `outputs:` using the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list).
+
 ```markdown
 ## T<n>: Add connector-activity task "<display-name>" to "<stage>"
 - type-id: <uiPathActivityTypeId>
@@ -183,6 +190,8 @@ Planner emits to `tasks.md input-values.bodyParameters`:
 - object-name: <objectName>
 - input-values: {"bodyParameters":{...},"queryParameters":{...},"pathParameters":{...}}
 - filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Active\"","value":"Active"},"uiId":null}]}
+- outputs:                            # optional; omit only when the SDD declares none
+  - <SDD output row, copied verbatim>
 - isRequired: true
 - runOnlyOnce: false
 - order: after T<m>
@@ -193,6 +202,8 @@ Planner emits to `tasks.md input-values.bodyParameters`:
 `filter:` is optional and present only when the operation supports CEQL (i.e. `spec.filter` was non-null in step 7).
 
 ## Unresolved Fallback
+
+Two entry paths: **Scenario A** — connector not found in TypeCache ([§ 1 No-match](#1-find-the-connector-in-typecache), after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the Step 2 create offer is **declined** or fails (or the run is non-interactive). When `Connections` is empty, offer to create one first (Step 2) — do not jump straight here.
 
 > **Rule 17 exception.** Empty `Connections` from `get-connection` (the connector activity exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to placeholder.
 

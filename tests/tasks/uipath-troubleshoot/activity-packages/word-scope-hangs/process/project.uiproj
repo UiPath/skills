@@ -1,0 +1,6 @@
+{
+  "Name": "NDAFiller",
+  "ProjectType": "Process",
+  "Description": "Fills an NDA document by opening it and replacing the counterparty placeholder with the counterparty name via Word activities.",
+  "MainFile": "Main.xaml"
+}

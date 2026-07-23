@@ -14,15 +14,30 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Load the uipath-maestro-flow skill and follow its workflow exactly.
+  PRECONDITION CHECK — do this FIRST, before any flow work:
+  Run `uip is connections list --all-folders --output json` once. Group the
+  enabled connections by `ConnectorKey` and find a connector with two or
+  more enabled connections. That connector supplies A and B.
+
+  If no connector has two or more enabled connections, the precondition
+  is not met for this tenant. Stop IMMEDIATELY: write
+  `PRECONDITION_NOT_MET.txt` at the sandbox root containing one line per
+  ConnectorKey with its enabled-connection count, then end your turn.
+
+  Do NOT try to create a second connection via `uip is connections create`
+  or `--no-wait`. OAuth authorization requires an interactive browser and
+  cannot complete in this sandbox; pending connections are not a valid
+  substitute. Do NOT scan for mocks or alternative connectors beyond the
+  single `connections list` call above.
+
+  If the precondition IS met, proceed:
 
   Build a flow named "BindingsReconfigure" — Manual Trigger → IS connector
   node → End — saved as `BindingsReconfigure/flow_files/BindingsReconfigure.flow`
   with `BindingsReconfigure/project.uiproj`.
 
-  Pick two distinct connections (different connectionIds) backed by the same
-  connector — if the tenant only has one connection for a given connector,
-  fall back to any connector that has two live connections.
+  Pick the connector that has two or more enabled connections, and use two
+  distinct connection ids from that connector as A and B.
 
   Record the ids at the sandbox root and snapshot the .flow after each configure:
 
@@ -35,11 +50,20 @@ initial_prompt: |
       cp BindingsReconfigure/flow_files/BindingsReconfigure.flow after_b.flow
 
 success_criteria:
+  # min_count: 1 (not 2). Per uipath-maestro-flow SKILL.md rule #10, agents
+  # chain sequential `uip` calls — e.g. `node configure <A> && ... && node
+  # configure <B> && validate && format` — into ONE Bash event. command_executed
+  # counts matching Bash events, not command occurrences within an event, so a
+  # correct batched run registers only 1 match and this criterion false-fails.
+  # Multiplicity is instead proven by the A/B snapshot checks below: after_a
+  # references connection A while after_b references ONLY B (no leak, equal
+  # count) — a result a single configure cannot produce. Mirrors the min_count:1
+  # convention in multi_connector_independence.yaml / no_duplicate_connection_bindings.yaml.
   - type: command_executed
-    description: "Agent called `node configure` at least twice"
+    description: "Agent used `uip flow node configure` at least once"
     tool_name: "Bash"
     command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+node\\s+configure"
-    min_count: 2
+    min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 

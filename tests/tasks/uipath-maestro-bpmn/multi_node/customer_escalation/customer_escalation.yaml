@@ -1,0 +1,85 @@
+task_id: skill-bpmn-e2e-customer-escalation
+description: >
+  Skill-guided e2e evaluation (ported from the Flow customer_escalation eval):
+  agent uses the uipath-maestro-bpmn skill to author a synthetic BPMN process
+  that classifies an inbound request with two script tasks, routes on the
+  combined signal through an exclusive gateway, and escalates via a human user
+  task on the high-touch path while a standard path generates a ticket in a
+  script task. Includes full package metadata. Authoring only, public-safe, no
+  cloud effects and no live connector.
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", "node:hitl", "feature:escalation"]
+
+run_limits:
+  expected_turns: 28
+  turn_timeout: 1200
+  max_turns: 90
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Create a new local Maestro BPMN Process Orchestration project named
+  CustomerEscalation. The project must be fully synthetic and public-safe.
+
+  Model this process:
+  - Manual start accepts request variables (e.g. subject, senderDomain).
+  - A script task classifyUrgency sets an `urgent` boolean.
+  - A script task classifyVip sets a `vip` boolean.
+  - An exclusive gateway routeEscalation routes the high-touch case (urgent AND
+    vip) to a human user task named "Escalate to specialist", and all other
+    cases (default) to a script task createTicket that produces a ticket id.
+  - Each path ends at its own end event.
+
+  Model the escalation and ticketing with a user task and a script task — do NOT
+  use a live Integration Service connector; keep the whole project local and
+  self-contained.
+
+  Include BPMN DI shapes/edges for all visible elements and create the package
+  metadata files expected by the skill:
+  project.uiproj, bindings_v2.json, entry-points.json, operate.json, and
+  package-descriptor.json.
+
+  Do NOT upload, publish, deploy, debug, run a process, ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and implementation.
+  Build the complete local project end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source file was created"
+    path: "CustomerEscalation/CustomerEscalation.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Project metadata file was created"
+    path: "CustomerEscalation/project.uiproj"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Package operate metadata was created"
+    path: "CustomerEscalation/operate.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Generated BPMN project has two classifier scripts, gateway routing, a user-task escalation path, a ticket script, and package references"
+    command: "python3 $TASK_DIR/check_customer_escalation.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent kept the lifecycle local and avoided cloud-side operations"
+    weight: 2.0
+    pass_threshold: 0.7
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: >
+      Pass if the agent created only local project files and did not run or
+      request approval for BPMN debug, process run, upload, publish, or deploy
+      commands. Fail if tool calls or the final answer show any cloud-side
+      lifecycle mutation or any request to perform one.

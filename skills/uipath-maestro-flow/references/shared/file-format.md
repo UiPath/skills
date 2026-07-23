@@ -36,6 +36,10 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 }
 ```
 
+> **Key order is NOT guaranteed — never anchor edits on it.** The skeleton above is illustrative; the CLI does not commit to a stable top-level key sequence or to which optional keys are present. Real flows vary: `runtime` may appear (and has been observed *before* `nodes`, not after `definitions`) or be absent entirely; `bindings`, `variables`, `solutionId`, `projectId`, and a trailing `metadata` object surface in different positions depending on CLI version and what the flow contains. When editing a `.flow`, anchor each `Edit` on the **target array's own key** (`"nodes": [`, `"edges": [`, `"definitions": [`, or `layout.nodes`) located in the text you just `Read` — never on "the key that follows X." See [greenfield.md — Anchoring parallel `.flow` Edits](../author/references/greenfield.md#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order).
+
+Optional top-level `runtime`: a CLI-managed object that appears on some flows (e.g. after `uip maestro flow node add` for an HTTP/connector node) and is absent on others. It is not user-authored — do not add, remove, or anchor on it. Its presence and position are not guaranteed.
+
 **Top-level `version`** = workflow file-format version. **Use the exact value `uip maestro flow init` scaffolds** — do not hand-pick, hardcode, or downgrade it. It is not a semver string; the schema gates on an exact literal for the current file-format version, so an older value (e.g. `"1.0"`, `"1.0.0"`) that worked for a legacy parser will fail for a new flow. `init` always writes the accepted value; preserve it. To see the current value, scaffold a throwaway flow with `init` and read its top-level `version`, or read it from an existing `init`-generated `.flow`.
 
 > **Don't confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) are validated by `versionSchema`, a regex that accepts both `x.y` and `x.y.z` (`/^\d+\.\d+(\.\d+)?$/`, error `'Version must be in format "x.y" or "x.y.z"'`). Both layers are canonically `x.y`, but the node-level regex still accepts legacy 3-part strings so registry definitions (`"1.0"`) and older scaffolded nodes (`"1.0.0"`) both parse. The two layers report distinct errors, but Zod may collapse a node-level mismatch to path `(root)`. If you see a version-related error at `(root)`, audit the top-level `version` first; if it's correct, check each node's `typeVersion` against the matching `definitions[].version`.
@@ -94,7 +98,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 > [error] [(root)] Schema validation failed: Invalid input: expected object, received undefined
 > ```
 >
-> The error path is `(root)` and does NOT pinpoint which node or which field is missing. If you see this error after editing a `.flow` file, audit every node for a `display` block before doing anything else. (Improving the validator's path specificity is tracked in [MST-9368](https://uipath.atlassian.net/browse/MST-9368).)
+> The error path is `(root)` and does NOT pinpoint which node or which field is missing. If you see this error after editing a `.flow` file, audit every node for a `display` block before doing anything else.
 
 > **No instance `model` block.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`). This applies to every inline-agent-related node too: `uipath.agent.autonomous` plus every attached `uipath.agent.resource.*` node (tool, escalation, context) carries source identity at `inputs.source`. Their definitions declare `model.source: true`; flow-core hoists that identity onto each instance's `inputs.source`. Do not write a `"model": { "source": ... }` block on the instance.
 >
@@ -211,7 +215,7 @@ Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for ev
 
 **What format does:**
 - Arranges nodes horizontally (left-to-right) with `nodeSpacing: 96`, anchored to the leftmost node's original position
-- Sets `size` to `{ "width": 96, "height": 96 }` on every non-`stickyNote` node — non-96 sizes render as rectangles in Studio Web
+- Sets each node's `size` to match its canvas shape: inline agents (`uipath.agent.autonomous` / `uipath.agent.conversational`, `shape: rectangle`) → `{ "width": 288, "height": 96 }`; containers (loops/groups) → `{ "width": 560, "height": 320 }`; everything else — including referenced `uipath.core.agent.<guid>` nodes — → `{ "width": 96, "height": 96 }`. A size that disagrees with the node's shape renders misshapen in Studio Web.
 - Skips `stickyNote` nodes from layout (they keep their custom position and size)
 - Recurses into every subflow and rewrites its `subflows[<id>].layout` map
 
@@ -297,7 +301,7 @@ uip maestro flow registry get <node-type> --output json
 
 Any node with `supportsErrorHandling: true` in the registry exposes an implicit `error` source port for catching node-level failures. This applies to HTTP, Script, Transform (all variants), connector activities, agent nodes, and RPA nodes — essentially every action node.
 
-The port is **not** listed in the registry's `handleConfiguration`. It's only visible at serialization time: when the flow contains an outgoing edge with `sourcePort: "error"` from the node, the serializer emits a BPMN boundary error event attached to the node.
+The port is **not** listed in the registry's `handleConfiguration`. Studio Web only exposes it when the source node has `inputs.errorHandlingEnabled: true`; when the flow contains an outgoing edge with `sourcePort: "error"` from that node, the serializer emits a BPMN boundary error event attached to the node. Because of this gate, `uip maestro flow validate` reports an error when a node has an outgoing `sourcePort: "error"` edge but `inputs.errorHandlingEnabled` is not `true` — so the inconsistency is caught before publish rather than surfacing as a hidden edge in Studio Web.
 
 ### When the error port fires
 
@@ -319,6 +323,17 @@ uip maestro flow registry get <node-type> --output json --output-filter "Node.Su
 # Add an outgoing edge with sourcePort: "error"
 uip maestro flow edge add <Project>.flow <actionNodeId> <errorHandlerId> \
   --source-port error --target-port input --output json
+```
+
+`uip maestro flow edge add --source-port error` and `uip maestro flow format` set `inputs.errorHandlingEnabled: true` on the source node automatically. When editing `.flow` JSON directly, set the flag yourself:
+
+```json
+{
+  "id": "<actionNodeId>",
+  "inputs": {
+    "errorHandlingEnabled": true
+  }
+}
 ```
 
 Inside the error handler, `$vars.{actionNodeId}.error` resolves to the error object. For HTTP it's `{ code, message, detail, category, status }`; other nodes have similar shapes — check the node's `outputDefinition.error.schema` in the registry.

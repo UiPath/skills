@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpToolsTemplate",
+  "Data": {
+    "type": "resource",
+    "name": "resource-tool",
+    "processType": "automation",
+    "description": "",
+    "targetIdentifier": "resource-id",
+    "targetFolderKey": "folder-guid",
+    "inputSchema": { "type": "object", "properties": {}, "additionalProperties": false },
+    "outputSchema": { "type": "object", "properties": {}, "additionalProperties": false },
+    "metadata": {
+      "processType": "automation",
+      "processKey": "<resource-id>",
+      "folderKey": "<folder-guid>"
+    }
+  }
+}

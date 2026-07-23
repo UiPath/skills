@@ -1,0 +1,8 @@
+{
+  "Result":"Success","Code":"AgentHubMcpToolsCandidates",
+  "Data":{"items":[
+    {"objectName":"ApplyGmailLabel","methodName":"POST","displayName":"Apply Label","curated":true},
+    {"objectName":"ArchiveEmail",   "methodName":"POST","displayName":"Archive Email","curated":true},
+    {"objectName":"ListEmail",      "methodName":"GET", "displayName":"List Emails", "curated":true}
+  ],"total":3}
+}

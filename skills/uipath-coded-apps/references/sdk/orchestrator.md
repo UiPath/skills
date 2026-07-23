@@ -45,12 +45,16 @@ import type {
   BucketGetResponse,
   BucketGetAllOptions,
   BucketGetByIdOptions,
+  BucketGetByNameOptions,
+  BucketGetFilesOptions,
+  BucketFile,
   BucketGetFileMetaDataWithPaginationOptions,
   BucketGetFileMetaDataOptions,
   BucketGetReadUriOptions,
   BucketGetUriResponse,
   BucketUploadFileOptions,
   BucketUploadResponse,
+  BucketDeleteFileOptions,
   BlobItem,
 } from '@uipath/uipath-typescript/buckets';
 
@@ -141,7 +145,7 @@ Returns `Promise<QueueGetResponse>`. The `folderId` is required.
 
 `QueueGetResponse` fields: `key`, `name`, `id`, `description`, `maxNumberOfRetries`, `acceptAutomaticallyRetry`, `retryAbandonedItems`, `enforceUniqueReference`, `encrypted`, `createdTime`, `slaInMinutes`, `riskSlaInMinutes`, `folderId`, `folderName`.
 
-## Buckets Service (Scopes: `OR.Administration` or `OR.Administration.Read`)
+## Buckets Service (Scopes: `OR.Buckets` or `OR.Buckets.Read`; `OR.Buckets.Write` for `deleteFile`)
 
 ### getAll(options?: BucketGetAllOptions)
 
@@ -152,6 +156,16 @@ Returns `NonPaginatedResponse<BucketGetResponse>` or `PaginatedResponse<BucketGe
 Returns `Promise<BucketGetResponse>`.
 
 `BucketGetResponse` fields: `id`, `name`, `description`, `identifier`, `storageProvider`, `storageContainer`, `options`, `foldersCount`.
+
+### getByName(name: string, options?: BucketGetByNameOptions)
+
+Returns `Promise<BucketGetResponse>`. Resolves a bucket by name within a folder. `BucketGetByNameOptions` is `FolderScopedOptions` — supply one of `folderId`, `folderKey`, or `folderPath` (same precedence as Assets/Processes) plus optional `expand` / `select`. Throws `NotFoundError` if no bucket matches.
+
+### getFiles(bucketId: number, options?: BucketGetFilesOptions)
+
+Returns `NonPaginatedResponse<BucketFile>` or `PaginatedResponse<BucketFile>`. Folder-scoped (`folderId` / `folderKey` / `folderPath`); supports regex filtering, query options, and pagination. Each `BucketFile` includes `isDirectory` so callers can distinguish folders from files. **Note:** Additional fields may be available — check the TypeScript types.
+
+> **`getFiles` vs `getFileMetaData`.** `getFiles` returns `BucketFile` items (folder-aware, supports regex filtering) and is folder-scoped via `FolderScopedOptions`. `getFileMetaData` returns flat `BlobItem` items by `prefix` and takes a positional `folderId`. Prefer `getFiles` for directory-style browsing.
 
 ### getFileMetaData(bucketId: number, folderId: number, options?: BucketGetFileMetaDataWithPaginationOptions)
 
@@ -164,6 +178,10 @@ Returns `Promise<BucketUploadResponse>` with `{ success, statusCode }`. Options:
 ### getReadUri(options: BucketGetReadUriOptions)
 
 Returns `Promise<BucketGetUriResponse>` with `{ uri, httpMethod, requiresAuth, headers }`. Options: `{ bucketId, folderId, path, expiryInMinutes? }`.
+
+### deleteFile(bucketId: number, path: string, options?: BucketDeleteFileOptions)
+
+Returns `Promise<void>`. Deletes a single file from the bucket by `path`. `BucketDeleteFileOptions` is folder-scoped (`folderId` / `folderKey` / `folderPath`). Requires `OR.Buckets` or `OR.Buckets.Write`.
 
 ## Processes Service (Scopes: `OR.Execution` / `OR.Execution.Read`, `OR.Jobs` / `OR.Jobs.Write` for start)
 
@@ -195,7 +213,31 @@ Returns `Promise<ProcessStartResponse[]>`. The `request` must include either `pr
 
 ### getAll(options?: JobGetAllOptions)
 
-Returns `NonPaginatedResponse<JobGetResponse>` or `PaginatedResponse<JobGetResponse>`. Options extend `RequestOptions & PaginationOptions & { folderId?: number }`. Supports `filter`, `orderby`, `expand`, `select`.
+Returns `NonPaginatedResponse<JobGetResponse>` or `PaginatedResponse<JobGetResponse>`. Options extend `RequestOptions & PaginationOptions & { folderId?: number }`. Supports `filter`, `orderby`, `expand`, `select`. Rows are on `.items`.
+
+**Example response** (`.items`) — an agent job next to a standard RPA job. The agent job is `packageType: "Agent"` (the SDK maps raw `ProcessType` → `packageType`). Note `sourceType` is the *trigger origin* (here both happen to differ) and does NOT identify an agent — see § Job classification:
+
+```json
+{
+  "items": [
+    {
+      "id": 4012, "key": "a1b2c3d4-0000-0000-0000-000000000001",
+      "state": "Successful", "packageType": "Agent", "sourceType": "Manual",
+      "processName": "InvoiceTriageAgent",
+      "startTime": "2026-06-09T10:01:22Z", "endTime": "2026-06-09T10:01:48Z",
+      "createdTime": "2026-06-09T10:01:20Z", "hostMachineName": "AGENT-RUNTIME-3"
+    },
+    {
+      "id": 4011, "key": "a1b2c3d4-0000-0000-0000-000000000002",
+      "state": "Faulted", "packageType": "Process", "sourceType": "Schedule",
+      "processName": "DailyReconcile",
+      "startTime": "2026-06-09T09:40:00Z", "endTime": "2026-06-09T09:41:12Z",
+      "createdTime": "2026-06-09T09:39:58Z", "hostMachineName": "BOT-07"
+    }
+  ],
+  "count": 2
+}
+```
 
 ### getById(id: string, folderId: number, options?: JobGetByIdOptions)
 
@@ -217,7 +259,55 @@ Returns `Promise<void>`. Resumes a job currently in `Suspended` state. `JobResum
 
 Returns `Promise<JobGetResponse>` — a **new** job with a new `key`, in `Pending` state. The original job must be in a final state (`Successful`, `Faulted`, or `Stopped`). Inputs are inherited from the original.
 
-`JobGetResponse` fields: `key`, `id`, `state`, `createdTime`, `startTime`, `endTime`, `lastModifiedTime`, `resumeTime`, `processName`, `entryPointPath`, `processVersionId`, `hostMachineName`, `inputArguments`, `outputArguments`, `environmentVariables`, `type`, `packageType`, `runtimeType`, `serverlessJobType`, `jobPriority`, `specificPriorityValue`, `stopStrategy`, `remoteControlAccess`, `batchExecutionKey`, `parentJobKey`, `traceId`, `parentSpanId`, `errorCode`, `jobError`, `subState`, `machine`, `robot`, `process`. The `machine`, `robot`, and `process` fields are populated only when requested via `expand`.
+`JobGetResponse` fields: `key`, `id`, `state`, `createdTime`, `startTime`, `endTime`, `lastModifiedTime`, `resumeTime`, `processName`, `entryPointPath`, `processVersionId`, `hostMachineName`, `inputArguments`, `outputArguments`, `environmentVariables`, `type`, `sourceType`, `packageType`, `runtimeType`, `serverlessJobType`, `jobPriority`, `specificPriorityValue`, `stopStrategy`, `remoteControlAccess`, `batchExecutionKey`, `parentJobKey`, `traceId`, `parentSpanId`, `errorCode`, `jobError`, `subState`, `machine`, `robot`, `process`. The `machine`, `robot`, and `process` fields are populated only when requested via `expand`.
+
+### Job classification — agent vs process vs app
+
+An agent job is identified by **`packageType === 'Agent'`** on the SDK response object. The SDK's `JobMap` renames the raw API field `ProcessType → packageType`, so a raw job with `ProcessType: "Agent"` arrives as `packageType: "Agent"`.
+
+| Where | Field | Agent job value |
+|-------|-------|-----------------|
+| SDK response object (`fnBody` reads this) | `packageType` | `"Agent"` |
+| OData server-side `filter` string (raw API name) | `ProcessType` | `"Agent"` |
+
+> **Do NOT use `sourceType` to find agent jobs.** `sourceType` (raw `Source` / `JobSourceType`) is the **trigger origin** — `Manual`, `Schedule`, `Queue`, `Agent`, `Apps`, `HttpTrigger`, … An agent job can be triggered manually (`sourceType: "Manual"`), and `sourceType: "Agent"` only means "started by an agent source," which is a different thing. Filtering on `sourceType === 'Agent'` is wrong in both directions.
+
+Field mappings (raw → SDK, from `JobMap`): `releaseName → processName`, `creationTime → createdTime`, `organizationUnitId → folderId`. Job latency ← `endTime − startTime` (both timestamps; `endTime` is null while `Running`).
+
+Server-side filters (use the raw field name `ProcessType` in the OData string):
+- Agent jobs: `getAll({ filter: "ProcessType eq 'Agent'", orderby: 'CreationTime desc' })`
+- Faulted agent jobs: `getAll({ filter: "State eq 'Faulted' and ProcessType eq 'Agent'" })`
+- Reading results: `result.items.filter(j => j.packageType === 'Agent')` (client-side, mapped field name)
+
+#### Filterable vs read-only Job fields
+
+A field appearing in the response does **NOT** make it valid in an OData `$filter`. The SDK's mapped (renamed) response fields are **read-only** — filtering on them throws `Invalid OData query options … Could not find a property named '<field>'` at request time (invisible to `tsc`).
+
+| Read-only (response only — NEVER in `$filter`) | Filter on the raw field instead |
+|---|---|
+| `processName` (← `releaseName`) | match **client-side**: `items.filter(j => j.processName === name)` |
+| `createdTime` (← `creationTime`) | `CreationTime` (e.g. `orderby: 'CreationTime desc'`) |
+| `folderId` (← `organizationUnitId`) | folder is scoped via header, not `$filter` |
+| `packageType` (← `ProcessType`) | `ProcessType` |
+
+Safe `$filter` fields: **`ProcessType`**, **`State`**, **`CreationTime`**, **`StartTime`**. To find a specific agent's jobs, filter `ProcessType eq 'Agent'` and match the name **client-side** on `processName` — there is no server-side name filter.
+
+#### Recipe — jobs for a named agent → its most-recent trace's spans
+
+The bridge from a clicked agent to its spans (e.g. a `rowLink` table's `fetchDetailByKey`):
+
+```ts
+import type { MetricDetailByKeyFn } from '@/lib/metric-contract'
+
+export const fetchDetailByKey: MetricDetailByKeyFn = async (sdk, agentName) => {
+  const { Jobs } = await import('@uipath/uipath-typescript/jobs')
+  const { AgentTraces } = await import('@uipath/uipath-typescript/traces')
+  const jobs = (await new Jobs(sdk).getAll({ filter: "ProcessType eq 'Agent'", orderby: 'CreationTime desc' }))?.items ?? []
+  const job = jobs.find(j => j.processName === agentName)   // client-side match — processName is read-only
+  if (!job?.traceId) return []
+  return await new AgentTraces(sdk).getSpansByTraceId(job.traceId)   // Job carries traceId (see traces.md)
+}
+```
 
 ## Job-Attached Methods (JobMethods)
 
@@ -241,13 +331,17 @@ if (completed) {
 
 ## Attachments Service (Scopes: `OR.Folders` or `OR.Folders.Read`)
 
-Standalone service for retrieving Orchestrator attachment metadata and a signed URL for downloading the blob. `Jobs.getOutput()` uses this internally to resolve file-type output arguments — most app code will not need to call it directly, but if you call `Jobs.getOutput()` you must add `OR.Folders` (or `OR.Folders.Read`) to the app's scopes in addition to `OR.Jobs`.
+Standalone service for retrieving an Orchestrator attachment's metadata and a signed URL for downloading the blob. Coded Action Apps use this to resolve a `type: "file"` input — the file reference handed in by the automation (Maestro / Agent / RPA) — into downloadable bytes. `Jobs.getOutput()` also uses it internally to resolve file-type output arguments — if you call `Jobs.getOutput()` you must add `OR.Folders` (or `OR.Folders.Read`) to the app's scopes in addition to `OR.Jobs`.
+
+This service exposes **only** `getById` — there is no `getAll`, no create, and no delete.
 
 ### getById(id: string, options?: AttachmentGetByIdOptions)
 
-Returns `Promise<AttachmentResponse>`. Options support OData `expand` / `select`.
+Returns `Promise<AttachmentResponse>`. `id` is the attachment **UUID** (string) — not a number. Throws `ValidationError` if `id` is empty. `AttachmentGetByIdOptions` supports OData `expand` / `select`.
 
 `AttachmentResponse` fields: `id`, `name`, `jobKey?`, `attachmentCategory?`, `lastModifiedTime?`, `lastModifierUserId?`, `createdTime?`, `creatorUserId?`, `blobFileAccess: BucketGetUriResponse` (the signed URL + headers — `{ uri, httpMethod, requiresAuth, headers }`).
+
+Resolve a `file`-typed input to its bytes. Respect `requiresAuth` — when `true`, pass `headers` on the download request:
 
 ```typescript
 import { Attachments } from '@uipath/uipath-typescript/attachments';

@@ -1,0 +1,86 @@
+task_id: skill-admin-audit-scope-ambiguity-smoke
+description: >
+  Smoke test: agent receives an ambiguous audit request ("Show me the
+  Admin audit trail") with no prior scope context. Per Rule 23 the agent
+  must recognize the org-vs-tenant scope ambiguity and STOP TO ASK a
+  clarifying question — never silently default to a single scope.
+
+  Gating signal: the agent calls AskUserQuestion (it asked to disambiguate
+  scope). That is the deterministic, non-interactive-safe signal that it
+  did not silently pick a scope. The original "ask AND then run nothing"
+  assertion is NOT enforceable in a non-interactive harness — the agent
+  receives no answer, so after asking it may proceed (often querying BOTH
+  scopes, which is acceptable). So the four command_not_executed checks are
+  advisory (pass_threshold 0): retained to REPORT what the agent ran, not
+  to gate. A truly-silent agent that runs a scope without ever asking fails
+  the AskUserQuestion gate.
+
+  Platform note: runs without an authenticated tenant — commands will fail
+  with auth errors. That is acceptable; what matters is that the agent asks
+  to clarify scope rather than silently defaulting to one.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, scope-ambiguity]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  Show me the Admin audit trail for the last 24 hours.
+
+success_criteria:
+  # GATE: the agent must recognize the org-vs-tenant ambiguity and ask a
+  # clarifying question instead of silently defaulting. Asking (AskUserQuestion)
+  # is the deterministic signal; "ask AND run nothing" can't be enforced
+  # non-interactively (the agent gets no answer and proceeds), so we gate on
+  # the ask itself. No command_pattern → any AskUserQuestion call counts.
+  - type: command_executed
+    description: "Agent stopped to clarify scope (called AskUserQuestion) instead of silently defaulting"
+    tool_name: "AskUserQuestion"
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory (pass_threshold 0): report which skill engaged. Post audit-surface
+  # separation either uipath-admin or uipath-platform can correctly drive the
+  # stop-and-ask, so router choice is not pass/fail.
+  - type: skill_triggered
+    description: "Agent engaged the uipath-admin skill (advisory; uipath-platform also acceptable post-separation)"
+    skill_name: "uipath-admin"
+    expected_skill: "uipath-admin"
+    weight: 1.0
+    pass_threshold: 0
+
+  # Advisory (pass_threshold 0): report whether the agent ran a scoped audit
+  # query (excluding `--help` discovery). Non-interactively the agent may query
+  # one or both scopes AFTER asking; that does not gate — the AskUserQuestion
+  # gate above is the real guard.
+  - type: command_not_executed
+    description: "Advisory: agent ran `audit tenant events` (reported, non-gating)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b'
+    exclude_pattern: '--help'
+    weight: 3.0
+    pass_threshold: 0
+
+  - type: command_not_executed
+    description: "Advisory: agent ran `audit org events` (reported, non-gating)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+events\b'
+    exclude_pattern: '--help'
+    weight: 3.0
+    pass_threshold: 0
+
+  - type: command_not_executed
+    description: "Advisory: agent ran `audit tenant sources` (reported, non-gating)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+sources\b'
+    exclude_pattern: '--help'
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: command_not_executed
+    description: "Advisory: agent ran `audit org sources` (reported, non-gating)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+sources\b'
+    exclude_pattern: '--help'
+    weight: 2.0
+    pass_threshold: 0

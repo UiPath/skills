@@ -186,7 +186,7 @@ Common failure modes when authoring, running, packaging, or publishing API workf
 
 ## StudioWeb Roundtrip Pitfalls
 
-These are issues that surface only when a workflow is opened or run in **StudioWeb** (alpha.uipath.com). Workflows that pass `uip api-workflow run --no-auth` may still fail in cloud for these reasons.
+These are issues that surface only when a workflow is opened or run in **StudioWeb** (cloud.uipath.com). Workflows that pass `uip api-workflow run --no-auth` may still fail in cloud for these reasons.
 
 ### `ReferenceError: <literal> is not defined` after opening in StudioWeb
 
@@ -205,7 +205,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **What does NOT need wrapping:** numbers (`0`, `42`), booleans (`true`/`false`), values that already evaluate expressions (`"${$workflow.input.x}"`, `"${$context.variables.tier}"`), and the activity-control strings `then: "exit"` / `then: "end"`.
 - **Heuristic:** any time you'd write `"foo"` as a *literal value* you intend the workflow to use, wrap it as `"${'foo'}"`. The CLI evaluates the expression and gets the string `'foo'`; StudioWeb leaves the already-wrapped form alone.
 
-### Object-valued Response gets corrupted; fields evaluate to literal expression text (SW-28452 / cli#1537)
+### Object-valued Response gets corrupted; fields evaluate to literal expression text
 
 - **Symptom:** Workflow runs correctly under `uip api-workflow run` and Response returns the expected object (e.g. `{ tier: "GOLD", count: 3 }`). After opening + saving in StudioWeb, the same Response now returns each field's value as the **literal text of its expression** rather than the evaluated value — `tier` becomes the string `"${$context.variables.tier}"` (one long string, often 100+ chars), not `"GOLD"`. StudioWeb's own output-schema validator may flag the mismatch ("Output-ul nu corespunde schemei de output configurate").
 - **Cause:** StudioWeb's designer rewrites Response object payloads on save. Authored `{ "response": { "tier": "${...}", "count": "${...}" } }` is collapsed into a single stringified expression: `"response": "${{\"tier\":\"${...}\",\"count\":\"${...}\"}}"`. The outer `${{ ... }}` is a JS object-literal expression form, but inside it the keys/values are inside JS **double-quoted** strings (`"tier":"${...}"`) — and JS double-quoted strings don't interpolate `${...}`, only template literals do. So each field's value resolves to the literal characters `${...}`, not the evaluated expression.
@@ -237,8 +237,8 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Why it works:** Inside the outer `${{ ... }}` you're already in JS expression scope. The body is a JS object literal where unquoted keys are identifiers (`tier:`, `count:`), references like `$context.variables.tier` evaluate directly, string literals use single quotes (`status: 'ok'`), and numbers/booleans are bare (`count: 0`, `flag: true`). The designer recognizes the whole thing as a single expression and leaves it alone — it doesn't try to reinterpret each field.
 - **Either expression-form works:** `"${ { ... } }"` (single-brace expression containing a JS object literal) and `"${{ ... }}"` (double-brace object-literal-expression form) evaluate to the same value. Pick one convention; this skill standardizes on the double-brace form, but you may see single-brace in the wild and they are interchangeable.
 - **Single-value responses are fine as-is:** `"response": "${$context.outputs.Javascript_1}"` or `"response": "${'done'}"` — the designer only mangles object payloads, not single expressions.
-- **On-disk is authoritative — re-validate after every designer save.** Even with the single-expression workaround, every StudioWeb designer save may re-trigger normalization passes that corrupt the Response shape. Treat the file on disk as the source of truth: after any designer roundtrip, re-run `uip api-workflow run --no-auth --output json` and inspect the Response output. If a field has become the literal text of its expression (a long string instead of the evaluated value), the file was re-corrupted — re-apply the single-expression workaround in the file directly, and consider keeping CLI-authored workflows out of designer save cycles until SW-28452 ships.
-- **Upstream:** designer-side bug SW-28452. CLI issue with full pre/post diff and runtime evidence: [UiPath/cli#1537](https://github.com/UiPath/cli/issues/1537). Fix lives in the api-workflows translator for Response tasks (needs to preserve object payloads losslessly). Until that ships, the single-expression workaround is required and may need re-applying after each designer roundtrip.
+- **On-disk is authoritative — re-validate after every designer save.** Even with the single-expression workaround, every StudioWeb designer save may re-trigger normalization passes that corrupt the Response shape. Treat the file on disk as the source of truth: after any designer roundtrip, re-run `uip api-workflow run --no-auth --output json` and inspect the Response output. If a field has become the literal text of its expression (a long string instead of the evaluated value), the file was re-corrupted — re-apply the single-expression workaround in the file directly, and consider keeping CLI-authored workflows out of designer save cycles until the designer fix ships.
+- **Upstream:** designer-side StudioWeb bug. Fix lives in the api-workflows translator for Response tasks (needs to preserve object payloads losslessly). Until that ships, the single-expression workaround is required and may need re-applying after each designer roundtrip.
 
 ### Multi-key `Assign.set` silently drops all but one variable
 
@@ -294,7 +294,12 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   uip is connections ping <alternate-uuid> --output json
   # If Code: "ConnectionPing" — use this UUID in the workflow
   ```
-- **What NOT to do:** do NOT proceed with the failing UUID and "flag for follow-up." A workflow authored against a non-pinging connection will 401 in cloud regardless of how correct the JSON is. If neither the filtered nor unfiltered listing yields a working UUID, abort and tell the user to re-authenticate (`uip is connections edit <uuid>` opens an OAuth browser flow) or create a fresh connection in the StudioWeb UI.
+  If the unfiltered listing is also empty, the connection may live in another folder — both listings are folder-scoped. Search every folder before giving up:
+  ```bash
+  uip is connections list --all-folders --output json
+  # Each row carries Folder / FolderKey. Take an Enabled Id, then ping it.
+  ```
+- **What NOT to do:** do NOT proceed with the failing UUID and "flag for follow-up." A workflow authored against a non-pinging connection will 401 in cloud regardless of how correct the JSON is. Do NOT conclude "no connection exists" from an empty filtered or unfiltered listing — run `--all-folders` first. Only if the filtered, unfiltered, AND `--all-folders` listings all fail to yield a working UUID should you abort and tell the user to re-authenticate (`uip is connections edit <uuid>` opens an OAuth browser flow) or create a fresh connection in the StudioWeb UI.
 - **See also:** [connector-activity-discovery.md — Step 2](connector-activity-discovery.md#step-2--verify-a-vendor-connection-intsvc-kind-only) for the full discovery+fallback flow.
 
 ### IntSvc kind activity output read at the root returns `undefined`
@@ -432,11 +437,11 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   Also check that `bindings_v2.json`'s `"key"` matches `Workflow.json`'s `connectionId` matches the missing resource file's intended `"key"` — same UUID across all three.
 - **Fix (preferred — two CLI commands):**
   ```bash
-  # 1. Generate bindings_v2.json from Workflow.json (pure local; no auth needed):
+  # 1. Generate bindings_v2.json from Workflow.json (local for connections; queries IS for resource picker fields):
   uip api-workflow bindings sync --workflow <path-to-Workflow.json> --output json
 
   # 2. Sync catalogue + debug overwrites via @uipath/resource-builder-sdk (requires uip login):
-  uip solution resource refresh --solution-folder <path-to-solution-root> --output json
+  uip solution resources refresh --solution-folder <path-to-solution-root> --output json
   ```
   Step 1 walks the workflow, extracts IntSvc connector activities, dedupes by connection UUID, and writes the canonical `bindings_v2.json` next to the workflow — what StudioWeb normally produces in-memory on workflow open. Step 2 reads that file, uses the SDK's `addOrUpdateResourceToSolutionAsync` to write the catalogue file, and `editOverwritesAsync` to write the per-user debug overwrites. Both commands are idempotent and safe to re-run.
 
@@ -476,17 +481,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### Required request field dropped by `registry stub`
 
 - **Symptom:** A vendor curated activity (Outlook `getNewestEmail`, Gmail `searchMessages`, …) runs locally — sometimes returning unexpected results (wrong folder, no filter applied) — and fails in cloud with a 4xx, OR the StudioWeb properties panel marks a field with a red border and an "invalid" badge but no clear error text. `registry stub`'s output shows `queryParameters: {}`, `pathParameters: {}`, or `bodyParameters: {}` for an endpoint that obviously needs inputs.
-- **Cause:** **`uip api-workflow registry stub` silently drops `required: true` request fields that weren't passed via `--inputs`.** The IS Elements metadata is correct (`fieldsContainer.inputFields[]` inside the stub's `metadata.configuration` blob lists every field with the right `required` flag), but the stub doesn't populate the matching `<location>Parameters` slot from it. Verified for `getNewestEmail`: requires `parentFolderId` (`fieldLocation: "query"`), stub returns `queryParameters: {}`.
-- **Detection:** Two ways to surface the missing fields.
-  - **From the stub output directly.** Parse the JSON-encoded string at `Data.Activity.<SlotKey>.metadata.configuration` → `optionalConfiguration.fieldsContainer.inputFields[]`. Filter for `required === true`. Any entry whose `name` is absent from the corresponding `with.<fieldLocation>Parameters` block is missing.
-  - **Cleaner: re-describe the operation.** Call `uip is resources describe`:
-    ```bash
-    uip is resources describe <connector-key> <object-name> \
-      --operation <operation> \
-      --connection-id <pinged-uuid> \
-      --output json
-    ```
-    `<operation>` is the IS-Elements operation name (`List`, `Create`, `Get`, …) — listed by the same command without `--operation`. The returned `Data.queryParameters[]` / `Data.pathParameters[]` / `Data.bodyParameters[]` arrays mark each entry with `required`.
+- **Cause:** **`uip api-workflow registry stub` only populates `<location>Parameters` from `--inputs`** — a `required: true` field not passed there stays out of the activity. The stub does flag it: `Data.Parameters` / `Data.RequestFields` carry the IS schema's `required` flags, and a missing required field raises a `Data.Warnings` entry (`"Required field(s) not provided via --inputs: parentFolderId"`). The failure mode arises when that warning is ignored.
+- **Prevention:** Follow the documented order — `uip is resources describe <connector-key> <object-name> --operation <Op> --connection-id <pinged-uuid>` BEFORE stubbing, then pass the required values via `--inputs` so the stub is complete on the first run.
+- **Detection:** Read `Data.Warnings` and `Data.Parameters` / `Data.RequestFields` in the stub output — a `"Required field(s) not provided"` entry means the describe step was skipped or a value was missed.
 - **Fix:** Either re-run the stub with the missing fields included via `--inputs`:
   ```bash
   uip api-workflow registry stub <activity-type-id> \
@@ -503,7 +500,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
     }
   }
   ```
-- **Well-known shortcuts.** MS Graph accepts well-known folder names (`"inbox"`, `"sentitems"`, `"drafts"`) as `parentFolderId`. They run, but StudioWeb's FolderPicker only displays the friendly folder name when the value matches an ID from its lookup cache. For exact UI fidelity, fetch the real ID via `uip is resources execute <connector-key> list <object-name> --connection-id <uuid>` against the field's `lookup.path` (often `/MailFolders`, `/Folders`, etc.).
+- **Well-known shortcuts.** MS Graph accepts well-known folder names (`"inbox"`, `"sentitems"`, `"drafts"`) as `parentFolderId`. They run, but StudioWeb's FolderPicker only displays the friendly folder name when the value matches an ID from its lookup cache. For exact UI fidelity, fetch the real ID via `uip is resources run list <connector-key> <object-name> --connection-id <uuid>` against the field's `lookup.path` (often `/MailFolders`, `/Folders`, etc.).
 - **Heuristic:** when the stub returns empty `queryParameters` / `pathParameters` / `bodyParameters` for a non-trivial vendor operation, treat it as the bug. Real endpoints (CRUD on real objects, list-with-filters operations) almost never have zero required inputs.
 - **Upstream:** the stub IS surfacing the metadata it has — `metadata.configuration` contains the full `inputFields` list — so this is a CLI-side fix where the stub should populate defaults/placeholders from `required: true` fields, not a missing-data issue. Until that ships, the cross-check is mandatory per skill rule 16 step 4.
 - **See also:** [connector-activity-discovery.md — Required-field cross-check](connector-activity-discovery.md#required-field-cross-check--the-stub-drops-required-true-request-fields).
@@ -517,7 +514,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   - **Fix:** Switch to IntSvc kind (`call: "UiPath.IntSvc"`, `with.connector` = the vendor key, `with.endpoint` = `"/<curated-operation-name>"`). See [connector-activity-discovery.md — IntSvc kind](connector-activity-discovery.md#intsvc-kind--call-uipathintsvc-vendor-curated-activity) — IntSvc kind is for vendor activities, Http kind is only for the `uipath-uipath-http` HTTP Request activity.
 
   **Sub-case B — Connection is in a broken state.** The endpoint is right (e.g. `/getNewestEmail` on an Outlook connection), but the connection's upstream OAuth token is expired, never properly authorized, or the running identity doesn't have access to the connection.
-  - **Fix:** Run `uip is connections ping <connection-uuid> --output json`. If it returns `Code: "ConnectionNotEnabled"`, re-authenticate via `uip is connections edit <connection-uuid>` (opens browser for OAuth) or fix in the StudioWeb UI. If it returns `Code: "ConnectionPing"` (success) but the cloud still 401s, check that your CLI login (`uip login status`) is in the same org+tenant your browser is using at alpha.uipath.com — a tenant mismatch will reject the connection ID at the proxy layer.
+  - **Fix:** Run `uip is connections ping <connection-uuid> --output json`. If it returns `Code: "ConnectionNotEnabled"`, re-authenticate via `uip is connections edit <connection-uuid>` (opens browser for OAuth) or fix in the StudioWeb UI. If it returns `Code: "ConnectionPing"` (success) but the cloud still 401s, check that your CLI login (`uip login status`) is in the same org+tenant your browser is using at cloud.uipath.com — a tenant mismatch will reject the connection ID at the proxy layer.
 
 - **Prevention:** The discovery flow's Step 4b (`uip is connections ping`) is mandatory specifically to catch sub-case B before authoring. Don't author against a connection that doesn't ping — the workflow shape will look right and even run locally, but fail at deployment time.
 
@@ -547,12 +544,12 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### `Workflow status is not "Successful"` (executor returns failure)
 - **Cause:** A task threw during execution
 - **Fix:** Read `Message` and `Instructions` in the failure output. Common patterns:
-  - JS_Invoke: missing `return` statement, runtime error in script body, undefined `$context.outputs.<TaskName>` (prior task did not run or did not `export`)
+  - JS_Invoke: missing `return` statement, runtime error in script body, undefined `$context.outputs.<Activity>` (prior activity did not run or did not `export`)
   - Assign expression: invalid `${...}` syntax, referencing an undefined variable in strict mode
   - Loop body: condition variable not updated (DoWhile infinite loop), missing `#Body` suffix, wrong export pattern
 
-### `$context.outputs.<TaskName>` is undefined
-- **Cause:** The prior task did not `export` its output back into context
+### `$context.outputs.<Activity>` is undefined
+- **Cause:** The prior activity did not `export` its output back into context
 - **Fix:** Add the standard export to the prior task — see [expressions-and-context.md](expressions-and-context.md)
 
 ### Strict-mode JS error inside a JS_Invoke
@@ -561,6 +558,19 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   - Replace `var` with `const` / `let`
   - Use optional chaining: `$context?.outputs?.Javascript_1?.items`
   - Ensure object literals have unique keys
+
+### Failed cloud run after publish (job faulted in Orchestrator)
+
+- **Symptom:** The workflow passed `validate` and `run --no-auth` locally, packed, published, and deployed — but a triggered cloud run faults. Local re-runs still pass.
+- **Cause:** Faults that only surface in cloud — real vendor responses, connection auth/token state, trigger payload shape, tenant/folder scoping — none of which the local runtime exercises.
+- **Fix:** Diagnose from the deployed job, not the local file:
+  ```bash
+  uip or jobs get <jobId> --output json                  # status + fault summary
+  uip or jobs logs <jobId> --output json                 # execution logs for the run
+  uip traces spans get --job-key <jobKey> --output json  # span-level execution trace (also accepts a <trace-id> positional)
+  ```
+  (Folder scoping differs: `uip or jobs list` accepts `--folder-path`/`--folder-key`/`--all-folders`; `uip or triggers list` accepts only `--folder-path`/`--folder-key`; `uip or jobs start <process-key>` infers the folder. `uip or jobs traces` is Agent-type-process-only; use `traces spans get` for API-workflow jobs.)
+  Map the surfaced error back to a fix with the category order below (Structure > Expression > Activity Config > Logic). If the fault is a 401 / `ConnectionNotEnabled`, `uip is connections ping <uuid>` the bound connection first. Full operate + diagnose command map: [operating-published-workflows.md](operating-published-workflows.md). For deep, multi-signal root-cause (what changed, cross-run comparison, incident correlation), hand off to **uipath-troubleshoot**.
 
 ---
 
@@ -572,7 +582,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### `Failed to parse <solution>.uipx`
 - **Cause:** Solution file is malformed JSON
-- **Fix:** Re-create with `uip solution new <name>` and re-add projects via `uip solution project add`
+- **Fix:** Re-create with `uip solution init <name>` and re-add projects via `uip solution projects add`
 
 ### Generated `operate.json` or `package-descriptor.json` mismatch
 - **Cause:** Stale files committed by hand or from an older CLI version
@@ -580,7 +590,18 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### `.nupkg` produced but missing workflow files
 - **Cause:** Workflow JSON not located in the project directory the packager scanned
-- **Fix:** Verify workflow files are in the project folder declared in the solution `.uipx`, alongside `project.json`
+- **Fix:** Verify `Workflow.json` is in the project folder whose `project.uiproj` is declared in the solution `.uipx`
+
+### API workflow runs/deploys fine but does NOT appear or open in Studio Web
+- **Symptom:** The workflow runs under `uip api-workflow run`, the solution packs, publishes, and deploys as an API process — but after uploading the solution to Studio Web the API project is invisible / not editable. Importing it directly fails with `Failed to import new projects at the overwrite operations`.
+- **Cause:** The project uses the **runtime-only** shape — `project.json` + `workflows/WF_*.json`, no `.uiproj`. Studio Web's import (`isProjectFolder`) only recognizes a folder as a project when it contains a `.uiproj` file; a `project.json`-only folder is rejected as `invalid_project_folder`. Every runtime gate (validate / run / pack / publish / deploy) passes on this shape, so the defect surfaces only when a human opens Studio Web. This was the Woolworths private-preview RCA root cause. Root reason it happened: the project was hand-assembled instead of scaffolded with `uip api-workflow init`, which always produces the correct shape.
+- **Fix (preferred — re-scaffold):** For each broken `Type: "Api"` project, run `uip api-workflow init <newName>` inside the solution directory and copy the old main workflow's `document`/`do` content into the new `Workflow.json`. `init` writes the correct `project.uiproj` / `entry-points.json` / `bindings_v2.json` and registers the project in the `.uipx`. Then delete the old `project.json` folder (and its `.uipx` entry).
+- **Fix (in-place conversion)** when you must keep the existing folder/`Id` (SKILL.md rule 19a, [workflow-file-format.md](workflow-file-format.md#project-structure-studio-web-editable-contract)):
+  - Add `project.uiproj` (`ProjectType: "Api"`, `MainFile: "Workflow.json"`) and `entry-points.json` (`filePath: "content/Workflow.json"`, no leading slash, `type: "Api"`). Copy `bindings_v2.json` if present.
+  - Rename the main workflow to `Workflow.json` at the project root.
+  - Edit the `.uipx` `ProjectRelativePath` from `<folder>/project.json` → `<folder>/project.uiproj`, **preserving the project `Id` and `Type`**. Do NOT use `uip solution projects remove`+`add` — it mints a new `Id`.
+  - Remove the stray `project.json` / `workflows/` (a mismatched `project.json` triggers `ProjectMetadataMismatchError`).
+  - Re-pack, then confirm the project opens in Studio Web (runtime/pack success alone does not prove it).
 
 ---
 
@@ -602,10 +623,10 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ## Validation Pitfalls
 
-### Not re-running after a fix
+### Not re-validating after a fix
 - **Symptom:** Reported "fixed" but errors remain
-- **Cause:** Skipped re-running `uip api-workflow run --no-auth` after applying a fix
-- **Fix:** ALWAYS re-run after every edit. The CLI is the only validator — there is no `uip api-workflow validate` command.
+- **Cause:** Skipped re-running the validators after applying a fix
+- **Fix:** ALWAYS re-run after every edit. Two validators: `uip api-workflow validate <Workflow.json>` (offline static — schema + semantic checks, autonomous) then `uip api-workflow run --no-auth` (runtime — catches expression/connection errors static analysis can't). See SKILL.md rules 20–21.
 
 ### Fixing in wrong order
 - **Symptom:** Fixing one error creates more errors; thrashing

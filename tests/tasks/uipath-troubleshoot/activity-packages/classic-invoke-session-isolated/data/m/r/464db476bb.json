@@ -1,0 +1,33 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "6b1e4d70-3a92-4c58-8f01-2d7c9a3e5b14",
+    "StartTime": "2026-07-16T11:03:47.610Z",
+    "EndTime": "2026-07-16T11:03:48.190Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Agent",
+    "SourceType": "Agent",
+    "Info": "Invoke GenerateReport: Validation Error: When TargetSession is set to a value other than Current, the invoked workflow must run isolated. TargetSession 'PictureInPicture' requires UnSafe (Isolated) = True.\r\n\r\nin Main.xaml\r\n    at InvokeWorkflowFile \"Invoke GenerateReport\"\r\n    at Sequence \"Main\"\r\n    at DynamicActivity \"Main\"\r\n\r\nSystem.Activities.InvalidWorkflowException: Validation errors encountered while processing the workflow tree.\r\n   at System.Activities.Validation.ActivityValidationServices.ThrowIfViolationsExist(IList`1 validationErrors)\r\n   at UiPath.Core.Activities.InvokeWorkflowFile.CacheMetadata(NativeActivityMetadata metadata)\r\n   at UiPath.Core.Activities.InvokeWorkflowFile.<ExecuteAsync>d__.MoveNext()",
+    "CreationTime": "2026-07-16T11:03:47.610Z",
+    "ReleaseName": "ReportDispatch",
+    "Type": "Attended",
+    "InputArguments": "{}",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "RuntimeType": "StudioPro",
+    "RequiresUserInteraction": true,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 1500287,
+    "FolderKey": "c3d97a20-4e18-4b37-9a52-7f0c1b8e6d49",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\user1",
+    "OrchestratorUserIdentity": "original_email@test.com",
+    "LastModificationTime": "2026-07-16T11:03:48.190Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "6b1e4d703a924c588f012d7c9a3e5b14",
+    "Id": 66121775
+  }
+}

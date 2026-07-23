@@ -49,7 +49,7 @@ success_criteria:
     description: "Input fields have binding expressions pointing to upstream script output"
     path: "SupplierOnboarding/SupplierOnboarding/SupplierOnboarding.flow"
     includes:
-      - '"binding": "=js:$vars.'
+      - '"binding": "vars.'
       - "fetchSupplier"
       - ".output.supplierName"
     weight: 3.0

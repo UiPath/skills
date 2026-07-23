@@ -1,0 +1,12 @@
+{
+  "Result": "Failure",
+  "Code": "AgentHubMcpToolsCreate",
+  "Message": "Connection 'conn-mock-jira-02' lives in folder 'Finance' (folder-mock-finance), not in the MCP server folder 'Shared' (folder-mock-shared).",
+  "Reason": "CrossFolderConnection",
+  "Data": {
+    "candidates": [
+      { "id": "conn-mock-jira-02", "name": "finance.team@example.com-jira", "folder": { "key": "folder-mock-finance", "displayName": "Finance" } }
+    ]
+  },
+  "Hint": "Pass --target-folder-path <name> or --target-folder-key <guid> for the connection's folder, or pick a candidate connection in the server folder."
+}

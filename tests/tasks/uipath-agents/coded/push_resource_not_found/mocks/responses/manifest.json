@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "match": "is connections list",
+      "file": "is-connections-list.json",
+      "description": "Mock uip is connections list — real connection key is slack-triage-prod"
+    },
+    {
+      "match": "login status",
+      "file": "login-status.json",
+      "description": "Mock uip login status — agent is authenticated"
+    },
+    {
+      "match": "codedagent setup",
+      "file": "codedagent-setup.json",
+      "description": "Mock uip codedagent setup"
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\": \"Success\"}\n",
+    "exit_code": 0
+  }
+}

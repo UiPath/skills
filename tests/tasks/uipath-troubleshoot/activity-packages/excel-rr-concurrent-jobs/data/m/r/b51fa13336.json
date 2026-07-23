@@ -1,0 +1,58 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "aa111111-2222-3333-4444-555566667777",
+      "StartTime": "2026-05-19T08:00:01.300Z",
+      "EndTime": "2026-05-19T08:00:01.812Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelDailyImport",
+      "Source": "Schedule",
+      "Reference": "HourlySalesB",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0011111-2222-3333-4444-555566667777",
+      "Info": "UiPath.Excel.ExcelException: Error opening workbook 'C:\\Robot\\Data\\sales-2026-05.xlsx'. ---> System.IO.IOException: The process cannot access the file 'C:\\Robot\\Data\\sales-2026-05.xlsx' because it is being used by another process.",
+      "ErrorCode": "Activity"
+    },
+    {
+      "Key": "bb222222-3333-4444-5555-666677778888",
+      "StartTime": "2026-05-19T08:00:00.500Z",
+      "EndTime": "2026-05-19T08:00:08.105Z",
+      "State": "Successful",
+      "ReleaseName": "ExcelDailyImport",
+      "Source": "Schedule",
+      "Reference": "HourlySalesA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0011111-2222-3333-4444-555566667777",
+      "Info": null,
+      "ErrorCode": null
+    },
+    {
+      "Key": "cc333333-1111-2222-3333-444455556666",
+      "StartTime": "2026-05-19T07:30:00.500Z",
+      "EndTime": "2026-05-19T07:30:07.205Z",
+      "State": "Successful",
+      "ReleaseName": "ExcelDailyImport",
+      "Source": "Schedule",
+      "Reference": "HourlySalesA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0011111-2222-3333-4444-555566667777",
+      "Info": null,
+      "ErrorCode": null
+    },
+    {
+      "Key": "dd444444-1111-2222-3333-444455556666",
+      "StartTime": "2026-05-19T07:30:01.300Z",
+      "EndTime": "2026-05-19T07:30:01.792Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelDailyImport",
+      "Source": "Schedule",
+      "Reference": "HourlySalesB",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0011111-2222-3333-4444-555566667777",
+      "Info": "UiPath.Excel.ExcelException: Error opening workbook 'C:\\Robot\\Data\\sales-2026-05.xlsx'. ---> System.IO.IOException: The process cannot access the file 'C:\\Robot\\Data\\sales-2026-05.xlsx' because it is being used by another process.",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

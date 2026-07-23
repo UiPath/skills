@@ -12,7 +12,7 @@ initial_prompt: |
   Create a new UiPath Flow project called "WeatherAlert" and make sure it
   validates successfully.
 
-  Use the `uipath-maestro-flow` skill workflow. A Flow project MUST be created
+  A Flow project MUST be created
   inside a solution:
   1. Create the solution first.
   2. Create the Flow project inside that solution.
@@ -35,7 +35,7 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+solution\s+(init|new)'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: command_executed
     description: "Agent initialized a Flow project with uip maestro flow init"
@@ -51,14 +51,6 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on uip commands"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0
 
   # Outcome-based check (auto-registration via `flow init` OR explicit

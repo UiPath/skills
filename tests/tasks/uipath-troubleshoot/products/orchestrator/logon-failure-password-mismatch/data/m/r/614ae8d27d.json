@@ -1,0 +1,49 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Recent Faulted jobs in UnattendedDemo. Three failures on RobotUser1 with identical 'Logon failed' error (0x0000052E) within ~25 minutes — same-user persistent failure pattern, classic branch 3 fingerprint.",
+  "Data": [
+    {
+      "Key": "aabb1122-3344-5566-7788-99aabbccdd00",
+      "State": "Faulted",
+      "ProcessName": "InvoiceIngestor",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T11:30:00.412Z",
+      "EndTime": "2026-05-12T11:30:01.118Z",
+      "CreationTime": "2026-05-12T11:30:00.190Z"
+    },
+    {
+      "Key": "aabb1100-3344-5566-7788-99aabbccdd11",
+      "State": "Faulted",
+      "ProcessName": "InvoiceIngestor",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T11:15:00.211Z",
+      "EndTime": "2026-05-12T11:15:00.987Z",
+      "CreationTime": "2026-05-12T11:14:59.980Z"
+    },
+    {
+      "Key": "aabb1099-3344-5566-7788-99aabbccdd22",
+      "State": "Faulted",
+      "ProcessName": "InvoiceIngestor",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T11:05:00.155Z",
+      "EndTime": "2026-05-12T11:05:00.901Z",
+      "CreationTime": "2026-05-12T11:04:59.880Z"
+    }
+  ]
+}

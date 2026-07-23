@@ -1,0 +1,10 @@
+{
+  "Result": "Success", "Code": "AgentHubMcpToolsCandidates",
+  "Data": {
+    "items": [
+      { "objectName": "ListCalendarEvents", "methodName": "GET",  "displayName": "List Calendar Events", "curated": true },
+      { "objectName": "CreateEvent",        "methodName": "POST", "displayName": "Create Event",         "curated": true },
+      { "objectName": "ListEmails",         "methodName": "GET",  "displayName": "List Emails",          "curated": true }
+    ], "total": 3
+  }
+}

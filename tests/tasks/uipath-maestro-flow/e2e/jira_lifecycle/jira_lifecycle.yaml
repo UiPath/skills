@@ -1,0 +1,74 @@
+task_id: skill-flow-ipe-jira-lifecycle
+description: >
+  E2E live Jira coverage of a composite loop-and-switch flow. The agent builds
+  ONE Flow (manual trigger) that iterates a seeded batch of issues and, per
+  item, creates an Atlassian Jira issue and then branches on the item's
+  `priority` (a Switch or Decision node) to a branch-specific "Add Comment":
+  `High` items get the seeded `escalated_marker`, all others the
+  `routine_marker`. Grading executes the flow against a real Jira sandbox
+  connection (`flow debug`) and re-reads the tenant: it asserts the loop created
+  every seeded issue and the branch node routed each to the correct comment
+  branch. The batch + markers are
+  unique per run (`seed.json`), so a fabricated or hardcoded output cannot pass.
+  Every created issue is cleaned up in post_run.
+
+  Tenant prerequisite: a `uipath-atlassian-jira` connection in folder
+  `Shared/uipath-maestro-flow` (currently the single Jira connection there),
+  reaching the `CE` / "Coder Eval" project (issue type Task). Targets live in
+  the task's `jira_is.py`.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:loop, node:switch, node:decision, connector, e2e, uipath-atlassian-jira, ipe, mode:build]
+
+run_limits:
+  expected_turns: 55
+  task_timeout: 2700
+  max_turns: 150
+  turn_timeout: 900
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_lifecycle/seed_jira.py"
+    timeout: 60
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_lifecycle/teardown_jira.py"
+    timeout: 180
+
+initial_prompt: |
+  Create a new Flow project called "JiraLifecycle" with a manual trigger.
+
+  Read `seed.json` in the current directory. It contains a list of `issues`
+  (each with a `summary` and a `priority`), the `project_key` and `issuetype_id`
+  to create issues under, and two comment bodies: `escalated_marker` and
+  `routine_marker`.
+
+  Build a flow that loops over the `issues` list and, for EACH item:
+    1. Creates a Jira issue with the item's `summary`, using the Atlassian Jira
+       "Create Issue" connector activity (with `project_key` / `issuetype_id`).
+    2. Branches on the item's `priority`: when it is "High", add a comment whose
+       body is `escalated_marker`; otherwise add a comment whose body is
+       `routine_marker`. Use the Atlassian Jira "Add Comment" activity against
+       the issue created in step 1.
+
+  Pass every summary and comment body verbatim from seed.json.
+
+  Use the Atlassian Jira connection available in the `Shared/uipath-maestro-flow`
+  folder. If the Atlassian Jira connector isn't available in your registry, stop
+  rather than falling back to a generic HTTP request.
+
+  Validate the final flow file.
+
+success_criteria:
+  - type: command_executed
+    description: "uip maestro flow validate was called"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "JiraLifecycle checks: valid flow with a loop + switch over the Jira connector, debug creates every seeded issue, and each carries the comment its priority branch should have posted"
+    command: "python3 $TASK_DIR/check_jira_lifecycle.py"
+    timeout: 1200
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

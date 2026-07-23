@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "aa111111-7777-bbbb-cccc-ddddeeeeffff",
+      "StartTime": "2026-06-18T09:15:02.110Z",
+      "EndTime": "2026-06-18T09:15:08.640Z",
+      "State": "Faulted",
+      "ReleaseName": "PythonInvoiceParser",
+      "Source": "Manual",
+      "Reference": "InvoiceRunA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "fa111111-2222-3333-4444-555566667777",
+      "Info": "UiPath.Python.RemoteException wrapping System.IO.IOException: Pipe is broken: \"Invoke Python Method: extract_total\"",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

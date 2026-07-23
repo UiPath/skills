@@ -45,3 +45,13 @@
 {"id": "uipath-maestro-flow-045", "prompt": "I have a `.flow` file I generated locally. Import it into my existing Studio Web solution.", "expected_skill": "uipath-maestro-flow"}
 {"id": "uipath-maestro-flow-046", "prompt": "Add a script node after the loop that logs the iteration inputs and outputs as JSON.", "expected_skill": "uipath-maestro-flow"}
 {"id": "uipath-maestro-flow-047", "prompt": "Write Jint JavaScript logic for a script node", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-048", "prompt": "What IxP models can I access in maestro?", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-049", "prompt": "What document extractors can I add to this flow?", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-050", "prompt": "List the published IxP extractors available to my .flow", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-051", "prompt": "Which IxP runtime projects can I wire into a Maestro flow node?", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-052", "prompt": "Show me the IxP document-understanding models I can use in maestro", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-053", "prompt": "What are my options for IxP nodes in a Maestro flow?", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-054", "prompt": "Add an IxP node to my flow that reads PDF invoices from a SharePoint folder and extracts the structured fields so the next step can post them to SAP", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-055", "prompt": "Build a UiPath Flow that pulls vendor name, invoice number, date, and total out of PDF invoices in a SharePoint folder, then posts the result to our accounting system", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-056", "prompt": "Add a document-extraction step to my flow that reads receipt images from a folder and pulls out merchant, date, and total", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-057", "prompt": "I have a Maestro flow. Add an IxP node that classifies incoming PDF forms and extracts their fields before the next step", "expected_skill": "uipath-maestro-flow"}

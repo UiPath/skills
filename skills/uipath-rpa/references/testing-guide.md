@@ -6,11 +6,30 @@ Reference for XAML test automation features in UiPath RPA projects — XAML test
 
 ## Table of Contents
 
+- [Test Manager Setup (CLI)](#test-manager-setup-cli)
 - [XAML Test Case Structure (Given-When-Then)](#xaml-test-case-structure-given-when-then)
 - [Data-Driven Testing](#data-driven-testing)
 - [XAML Test Activities](#xaml-test-activities)
 - [Execution Templates](#execution-templates)
 - [Mock Testing (XAML Only) — WIP](#mock-testing-xaml-only--wip)
+
+---
+
+## Test Manager Setup (CLI)
+
+Linking a project to Test Manager (server connection + default project) can be done headlessly with `uip rpa tm`, without opening Studio — useful before authoring test cases that reference Test Manager test cases. Full verb/flag reference: [cli-reference.md § Test Manager](cli-reference.md). The essentials:
+
+```
+uip rpa tm connect --url "https://<host>/<org>/<tenant>/testmanager_" --project-dir "<PROJECT_DIR>" --output json
+uip rpa tm set-default-project --id <project-guid> --name "<name>" --key "<KEY>" --project-dir "<PROJECT_DIR>" --output json
+uip rpa tm status --project-dir "<PROJECT_DIR>" --output json
+```
+
+Behavior to know when authoring:
+- **`set-default-project` requires a connected server** — run `connect` first, or it is rejected (nothing is written).
+- **Switching to a different server** (`connect` to a different host/org/tenant) **clears the default project** — it belonged to the old server. Re-link one with `set-default-project` afterwards.
+- **`reloadHint` in the output**: if the project is open in a **Studio older than 26.0.197**, the change isn't picked up until the project is reloaded. When you see `reloadHint`, tell the user to **close and reopen the project in Studio**. Studio 26.0.197+ applies the change live (no `reloadHint`).
+- The CLI does **not** validate the project id against the server; obtain a real id from Test Manager (the runtime `uip tm project list` tool can list them).
 
 ---
 
@@ -160,7 +179,7 @@ Three commands attach different data source types to a test case. All three regi
 #### `test-data add-variation` — File-based (JSON)
 
 ```bash
-uip rpa test-data add-variation --test-case-path "<TEST_CASE_FILE>" --data-variation-path "<DATA_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa test-data add-variation --test-case-path "<TEST_CASE_FILE>" --data-variation-path "<DATA_FILE>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 | Parameter | Required | Description |
@@ -172,7 +191,7 @@ Parses fields from the JSON file and creates one argument per field with matchin
 
 **Example:**
 ```bash
-uip rpa test-data add-variation --test-case-path "TestProcessInvoice.cs" --data-variation-path ".variations/InvoiceData.json" --project-dir "C:\MyProject" --output json --use-studio
+uip rpa test-data add-variation --test-case-path "TestProcessInvoice.cs" --data-variation-path ".variations/InvoiceData.json" --project-dir "C:\MyProject" --output json
 ```
 
 #### `test-data add-queue` — Orchestrator Test Data Queue
@@ -180,7 +199,7 @@ uip rpa test-data add-variation --test-case-path "TestProcessInvoice.cs" --data-
 > **Prerequisite:** Use the **uipath-platform** skill to discover queue details (name, ID, folder) before calling this command.
 
 ```bash
-uip rpa test-data add-queue --test-case-path "<TEST_CASE_FILE>" --queue-name "<QUEUE_NAME>" --folder-path "<FOLDER>" --queue-id <ID> --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa test-data add-queue --test-case-path "<TEST_CASE_FILE>" --queue-name "<QUEUE_NAME>" --folder-path "<FOLDER>" --queue-id <ID> --project-dir "<PROJECT_DIR>" --output json
 ```
 
 | Parameter | Required | Description |
@@ -194,7 +213,7 @@ Creates an `IDictionary<string, object>` argument named after the queue (camelCa
 
 **Example:**
 ```bash
-uip rpa test-data add-queue --test-case-path "TestLoanApproval.cs" --queue-name "loan_applications" --folder-path "Shared" --queue-id 123 --project-dir "C:\MyProject" --output json --use-studio
+uip rpa test-data add-queue --test-case-path "TestLoanApproval.cs" --queue-name "loan_applications" --folder-path "Shared" --queue-id 123 --project-dir "C:\MyProject" --output json
 ```
 
 > **Critical:** Do NOT rename the auto-generated test data queue argument. If you change its name, data retrieval silently fails.
@@ -206,7 +225,7 @@ uip rpa test-data add-queue --test-case-path "TestLoanApproval.cs" --queue-name 
 > 2. **Install the target entity into the project** if not already installed — `uip rpa data-fabric-entities install --add "<ENTITY_NAME>" --project-dir "<PROJECT_DIR>" --output json`. `test-data add-entity` requires the entity's generated type to exist in the project. See [cli-reference.md § Data Fabric Entities](cli-reference.md#commands----data-fabric-entities).
 
 ```bash
-uip rpa test-data add-entity --test-case-path "<TEST_CASE_FILE>" --entity-name "<ENTITY_NAME>" --entity-type-name "<ENTITY_TYPE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa test-data add-entity --test-case-path "<TEST_CASE_FILE>" --entity-name "<ENTITY_NAME>" --entity-type-name "<ENTITY_TYPE>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 | Parameter | Required | Description |
@@ -219,7 +238,7 @@ Creates an argument of the entity type named after the entity (camelCase). Requi
 
 **Example:**
 ```bash
-uip rpa test-data add-entity --test-case-path "TestLoanApproval.cs" --entity-name "LoanApplication" --entity-type-name "LoanApplication" --project-dir "C:\MyProject" --output json --use-studio
+uip rpa test-data add-entity --test-case-path "TestLoanApproval.cs" --entity-name "LoanApplication" --entity-type-name "LoanApplication" --project-dir "C:\MyProject" --output json
 ```
 
 ### Data-Driven Testing Best Practices

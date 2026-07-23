@@ -15,6 +15,7 @@ Always. This plugin is invoked for the very first T-entry (`T01`) in every `task
 | `case-identifier` | sdd.md (optional; defaults to `name`) | The runtime identifier. |
 | `identifier-type` | sdd.md (optional; default `constant`) | `constant` \| `external`. Use `external` when sdd.md says the identifier comes from an upstream system. |
 | `case-app-enabled` | sdd.md (default `false`) | `true` if the sdd.md says the case is exposed via the Case App UI. |
+| `directly-pass-task-outputs` | sdd.md (default `true`) | Passes task outputs through messages instead of shared variables, avoiding parallel-task race conditions. `false` only if sdd.md explicitly requests shared-variable passing. |
 | `description` | sdd.md case description |  |
 
 ## identifier-type Guidance
@@ -49,9 +50,10 @@ The case plugin writes a pure skeleton at T01 — no trigger node. The primary t
 - case-identifier: "<identifier>"
 - identifier-type: constant
 - case-app-enabled: false
+- directly-pass-task-outputs: true
 - description: "<one-sentence description>"
 - order: first
-- verify: Confirm caseplan.json written and parses; root.id == "root", nodes == [], edges == []
+- verify: Confirm caseplan.json written and parses; id matches /^case-[A-Za-z0-9]{10}$/, version == "23.0.0", nodes == [], edges == []
 ```
 
 > **External variant.** Replace the two identifier lines with `identifier-type: external` + `case-identifier: "=vars.<varId>"` (or a `=js:` expression). See § External identifier value.
@@ -73,6 +75,8 @@ The case file lives inside a solution + project structure. After T01 completes, 
       caseplan.json                ← § Write caseplan.json writes
 ```
 
-Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution init` and `uip solution project add` bookend T01 as Step 6.0 and Step 6.0b.
+Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution init` and `uip solution projects add` bookend T01 as Step 6.0 and Step 6.0b.
+
+**Naming (canonical) — the solution identity is derived ONCE and reused by every step that scaffolds or references the solution.** `<SolutionName>` = the case Name (SDD §1 Metadata), sanitized to a valid directory name; `<SolutionDir>` = `<workingRoot>/<SolutionName>` (the working root adjacent to `sdd.md`). **Step 6.0 AND the Rule-17 Create prerequisite ([registry-discovery.md § Create-on-Missing → 0](../../registry-discovery.md#create-on-missing-build-and-rediscovery)) MUST derive `<SolutionName>` + `<SolutionDir>` identically** — so a solution scaffolded early by a Phase-1 Create is the *same* `.uipx` Step 6.0 then finds and skips. A divergent name or location forks the solution: the built agent sibling registers in one `.uipx`, the case project lands in another, and the case cannot resolve its own agent at runtime. (`<ProjectName>` is T01's to choose under `<SolutionDir>/`.)
 
 See [implementation.md Step 6](../../implementation.md) for the authoritative 3-step execution sequence.

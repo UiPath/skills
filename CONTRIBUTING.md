@@ -32,8 +32,9 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 ├── commands/                  # Plugin-namespaced slash commands shipped to end users
 │   └── *.md                   # Each file becomes /uipath:<filename>
 ├── hooks/                     # Session-initialization hooks
-│   ├── hooks.json             # Hook definitions (SessionStart, etc.)
-│   └── ensure-uip.sh         # Cross-platform tool installation script
+│   ├── hooks.json             # Hook definitions (SessionStart, etc.) — polyglot dispatch
+│   ├── send-telemetry.sh      # Telemetry hook (bash twin)
+│   └── send-telemetry.ps1     # Telemetry hook (PowerShell twin — keep in sync)
 ├── references/                # Shared documentation and activity references
 │   └── activity-docs/         # Per-package, per-version activity API docs
 ├── skills/                    # Individual skill implementations
@@ -178,7 +179,28 @@ Links to reference documents in the `references/` folder for detailed topics.
 - **Include anti-patterns.** A "What NOT to Do" section saves more time than a "What to Do" section.
 - **Link to references for depth.** Keep SKILL.md focused on workflow and rules. Move detailed API docs, schemas, and examples into `references/`.
 
-### 4. Add Reference Documents (Optional)
+### 4. Register Lifecycle Status
+
+Every skill must declare its maturity in [`assets/skill-status.json`](assets/skill-status.json) — the single source of truth (status is NOT stored in SKILL.md). Add an entry under `skills`:
+
+```json
+"uipath-<your-skill>": {
+  "status": "preview",
+  "confluence": { "page_id": null, "url": null },
+  "last_synced": null
+}
+```
+
+Use one of: `stable`, `preview`, `in-development`. Then regenerate the README status table and validate:
+
+```bash
+python3 scripts/check-skill-status.py --write-readme
+python3 scripts/check-skill-status.py
+```
+
+CI (`validate-skill-status.yml`) fails if a skill is missing from the manifest, has an invalid status, leaves a stale `[PREVIEW]` / `> **Preview**` marker in SKILL.md, or if the README table is out of date.
+
+### 5. Add Reference Documents (Optional)
 
 Reference files go in `references/` and follow these conventions:
 
@@ -187,7 +209,7 @@ Reference files go in `references/` and follow these conventions:
 - **Organize by subdomain** when a skill covers multiple areas (e.g., `references/integration-service/`, `references/lifecycle/`)
 - **Link from SKILL.md** so the agent can discover them
 
-### 5. Add Templates/Assets (Optional)
+### 6. Add Templates/Assets (Optional)
 
 Static files like code templates go in `assets/`:
 
@@ -206,8 +228,22 @@ Static files like code templates go in `assets/`:
 
 Hooks are defined in `hooks/hooks.json` and run during plugin lifecycle events (e.g., `SessionStart`).
 
-- Hook scripts must work **cross-platform** (Windows, macOS, Linux)
-- Use `bash` as the shell — avoid OS-specific commands
+- **Every session hook ships as twin scripts**: `hooks/<name>.sh` (bash — macOS, Linux, Windows with Git Bash) and `hooks/<name>.ps1` (PowerShell — Windows without Git Bash, or pwsh where installed). No shell ships by default on both Windows and macOS, so both twins are required for zero-install coverage
+- **The twins MUST stay behaviorally identical** — any change to one requires the equivalent change to the other in the same PR. The telemetry contract guards in `tests/scripts/` run both twins against the same assertions
+- `hooks.json` registers one **bash/PowerShell polyglot command** per event: sh-family shells execute the `.sh` branch and see the PowerShell branch only as heredoc data; PowerShell block-comments the sh branch via `<# … #>` and executes the `.ps1` branch. Canonical shape (replace `<name>`):
+
+  ```
+  echo `# <#` >/dev/null
+  bash "${CLAUDE_PLUGIN_ROOT}/hooks/<name>.sh"
+  exit $?
+  : <<'POLYEOF' #> > $null
+  & "${CLAUDE_PLUGIN_ROOT}/hooks/<name>.ps1"
+  if ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }
+  POLYEOF
+  ```
+
+  Constraints: do not add a `shell` field; never put the sequence `#>` in the sh branch; keep the PowerShell branch inside the `: <<'POLYEOF' … POLYEOF` heredoc — shells that parse the whole command up front (zsh, used by Codex on macOS via `$SHELL -lc`) otherwise fail on PowerShell syntax. Verified under bash, dash (`sh -c`), zsh, and Windows PowerShell 5.1
+- `.ps1` scripts must stay compatible with **both** Windows PowerShell 5.1 and PowerShell 7+ — no `&&`/`||` pipeline chains, no ternary/null-conditional operators
 - Keep hooks idempotent — safe to run multiple times
 - Set appropriate timeouts (default: 180 seconds)
 
@@ -292,6 +328,7 @@ Before submitting your PR, verify:
 - [ ] Anti-patterns / "What NOT to Do" section is included for non-trivial skills
 - [ ] No references to other skills (skills must be self-contained)
 - [ ] All links to reference files use relative paths and point to existing files
+- [ ] Lifecycle status registered in `assets/skill-status.json` and README table regenerated (run `python3 scripts/check-skill-status.py`)
 
 ### References
 - [ ] File names use kebab-case

@@ -1,0 +1,79 @@
+task_id: skill-review-rpa-hardcoded-config
+description: >
+  Judgment test for uipath-review on an RPA (XAML) project that bakes
+  environment-specific values into Assign activities and a Log Message: a
+  production API URL, an absolute input folder path, a magic-number timeout
+  (30000) and a business threshold (0.85) — none externalized to a Config
+  file or Orchestrator Assets. The reviewer must read the XAML and flag the
+  hardcoded values (ST-USG-005 / ST-DBP-021 or prose) and recommend
+  externalizing them.
+
+  Platform note: `uip rpa validate/build/analyze` require Windows and may not
+  run on Linux CI — those CLI checks are advisory. The defects are caught by
+  reading the workflow, which is platform-independent.
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  A UiPath RPA project exists at `HardcodedBot` in the current directory.
+  Review it for quality and best-practice issues, focusing on configuration
+  and maintainability, and produce a structured review report with Critical /
+  Warning / Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `HardcodedBot/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `HardcodedBot/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside HardcodedBot/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*HardcodedBot'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside HardcodedBot/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*HardcodedBot'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Advisory: uip rpa validate/build/analyze ran (Critical Rule 2) — recorded, not gating"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+(validate|build|analyze)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Report flags hardcoded values and recommends Config/Assets"
+    command: "python3 $TASK_DIR/check_hardcoded_config.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

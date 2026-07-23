@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobHistory",
+  "Data": [
+    {
+      "State": "Pending",
+      "Timestamp": "2026-05-28T08:48:18.620Z",
+      "JobId": 65401221
+    }
+  ]
+}

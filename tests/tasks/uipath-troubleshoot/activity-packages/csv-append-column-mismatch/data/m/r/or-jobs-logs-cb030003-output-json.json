@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-13T11:11:08.240Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-13T11:11:09.310Z",
+      "Message": "[Add Data Column - OrderId] Added column 'OrderId' to the DataTable"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-13T11:11:09.520Z",
+      "Message": "[Add Data Column - Customer] Added column 'Customer' to the DataTable"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-13T11:11:10.210Z",
+      "Message": "[Append To CSV] The input DataTable has 2 column(s) but the existing file 'data\\orders.csv' has 3 column(s) (OrderId, Customer, Total). The rows cannot be appended because the column structure does not match."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-13T11:11:10.270Z",
+      "Message": "Append To CSV: DataTable column count does not match the target CSV.\r\nin Main.xaml\r\n    at AppendToCsvFile \"Append To CSV\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-13T11:11:10.300Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

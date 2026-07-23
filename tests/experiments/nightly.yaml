@@ -26,13 +26,16 @@ defaults:
         - TRACES_SMOKE_PROCESS_KEY
         - E2E_PROCESS_KEY
         - E2E_LONG_PROCESS_KEY
+        - CODEX_API_KEY
+        - CODEX_BASE_URL
       extra_mounts:
         - ~/.uipath:/.uipath:rw
 
   agent:
-    type: claude-code
+    # type omitted on purpose — the runner selects the harness via --type (codex/antigravity);
+    # coder-eval's baseline default experiment supplies claude-code otherwise.
     permission_mode: acceptEdits
-    model: claude-sonnet-4-6
+    model: claude-sonnet-5
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     system_prompt: |
       You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
@@ -45,7 +48,7 @@ defaults:
   # wire cleanup_solutions.py into their own post_run — that must run before
   # this step (still needs npm-installed CLIs).
   post_run:
-    - command: "rm -rf node_modules .npm-prefix"
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
       timeout: 30
 
 variants:

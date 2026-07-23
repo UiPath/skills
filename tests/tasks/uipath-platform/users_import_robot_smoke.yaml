@@ -21,11 +21,20 @@ initial_prompt: |
 
   Use `--output json` on all uip commands.
 
+  Important:
+  - This is a CLI-shape smoke test. Run the `uip or users import` command once
+    with the supplied id, `--type DirectoryRobot`, `--domain autogen`, and
+    `--output json`.
+  - Auth, Forbidden, and 404 errors are acceptable in this environment. After
+    the import command returns, stop and summarize the result. Do NOT retry,
+    log in, refresh tokens, inspect environment variables, decode tokens, call
+    REST APIs with curl, or run alternate commands.
+
 success_criteria:
   - type: command_executed
     description: "Agent called `uip or users import` (the single IS→tenant integration point)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+users\s+import'
+    command_pattern: 'uip\s+(or|orchestrator)\s+users\s+import'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -33,7 +42,7 @@ success_criteria:
   - type: command_executed
     description: "Agent passed --type DirectoryRobot"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+users\s+import.*--type\s+DirectoryRobot'
+    command_pattern: 'uip\s+(or|orchestrator)\s+users\s+import[\s\S]*--type\s+DirectoryRobot'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -41,7 +50,7 @@ success_criteria:
   - type: command_executed
     description: "Agent passed --directory-id (required for Robot — server-side Key check)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+users\s+import.*--directory-id'
+    command_pattern: 'uip\s+(or|orchestrator)\s+users\s+import[\s\S]*--directory-id'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -49,22 +58,14 @@ success_criteria:
   - type: command_executed
     description: "Agent passed --domain (required; 'autogen' for Robot)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+users\s+import.*--domain\s+autogen'
+    command_pattern: 'uip\s+(or|orchestrator)\s+users\s+import[\s\S]*--domain\s+autogen'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+users\s+import.*--output\s+json'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_not_executed
     description: "Agent did NOT omit --type (would default to DirectoryUser → silent corruption)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+users\s+import(?!.*--type)'
+    command_pattern: 'uip\s+(or|orchestrator)\s+users\s+import(?!\s+--help)(?![\s\S]*--type)'
     weight: 2.0
     pass_threshold: 1.0

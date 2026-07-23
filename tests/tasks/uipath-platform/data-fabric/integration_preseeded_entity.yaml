@@ -1,0 +1,180 @@
+task_id: skill-datafabric-integration-preseeded-entity
+description: >
+  Integration test: agent discovers CodeEvalTestEntity (auto-creating and
+  seeding it with 20 records if missing), then exercises the full Discover
+  workflow — introspect schema (7 fields), run 5 filterGroup queries with
+  known expected counts (Active=true → 12, Score>7 → 6, Title="The Matrix"
+  → 1, Title contains "Matrix" → 3), verify sort order (Score desc → 10.0
+  first), paginate all 20 records, do a targeted Notes update and restore.
+  Entity is never deleted.
+tags: [uipath-platform, data-fabric, integration, pre-seeded, discover, mode:operate, lifecycle:discover]
+run_limits:
+  expected_turns: 40
+  max_turns: 90
+  turn_timeout: 900
+
+initial_prompt: |
+  We have a movie UiPath Data Fabric entity called `CodeEvalTestEntity` already loaded up
+  with 20 rows. Please help me poke at it — no changes I don't ask
+  for, and please don't delete anything.
+
+  Start by reading the list's settings back and tell me what columns
+  it has and their types.
+
+  Then run each of these searches and tell me the count that came
+  back:
+    - All the active rows
+    - Everything with a score above 7
+    - Title exactly "The Matrix"
+    - Title contains "Matrix"
+    - Score at least 7 AND active
+
+  Sort everything by score, highest first — tell me the top score.
+
+  Page through every row in batches of 5, one page at a time. Walk
+  me through how many rows you saw and whether the paging behaved
+  cleanly.
+
+  Then pick any active row and put a short note on it — something
+  like "reviewed" is fine. Read it back so I can see the note landed,
+  then clear the note back out and read it once more to confirm it's
+  empty. Let me know which row you used.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed entities to discover CodeEvalTestEntity"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected the entity schema (entities get or list) before querying"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+(get|list)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran multiple filterGroup queries"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query'
+    min_count: 4
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent paginated through records with --limit"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+(list|query)\s+.*--limit'
+    min_count: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated a record and verified with records get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+update'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified updates with records get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+get'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used filterGroup key in records query body"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup'
+    min_count: 4
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used logicalOperator in AND filterGroup query (step 4e)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*logicalOperator'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran records update with an Id in the body (Rule 5) — case-insensitive on the key, tolerates line-continuations, accepts --body inline or --file JSON"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+update[\s\S]*?(?:--body[\s\S]*?\\?\"[Ii]d\\?\"|--file\s+\S+\.json)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent's reported counts match the expected values for each of the 5 filter queries + the sort/pagination observations"
+    include_agent_output: true
+    prompt: |
+      The agent queried a pre-seeded 20-row `CodeEvalTestEntity` (movies)
+      and was asked to report specific counts:
+
+        Q1. Active=true → 12 rows
+        Q2. Score > 7 → 6 rows (scores 7.5 through 10.0)
+        Q3. Title exactly "The Matrix" → 1 row
+        Q4. Title contains "Matrix" → 3 rows
+        Q5. Score >= 7 AND active → 7 rows
+        Q6. Sort by score desc — top score = 10.0
+        Q7. Full pagination walk (page size 5) → 4 pages, 20 unique IDs
+
+      Read the agent's final response. Score 1.0 if at LEAST 5 of these
+      7 observations are correctly reported (allowing minor phrasing
+      variance — "12 active rows" or "12 records where Active is true"
+      both fine).
+      Score 0.5 if 3-4 are correct.
+      Score 0.0 if 3+ are wrong OR queries were skipped.
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
+      --entity-name CodeEvalTestEntity
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/codeeval_test_entity.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/codeeval_test_entity.records.json
+    timeout: 240
+    fail_on_error: false
+
+post_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CodeEvalTestEntity
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/codeeval_test_entity.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/codeeval_test_entity.records.json
+    timeout: 240

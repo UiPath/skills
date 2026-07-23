@@ -1,0 +1,6 @@
+{
+  "Name": "FeedLoader",
+  "ProjectType": "Process",
+  "Description": "FeedLoader automation project.",
+  "MainFile": "Main.xaml"
+}

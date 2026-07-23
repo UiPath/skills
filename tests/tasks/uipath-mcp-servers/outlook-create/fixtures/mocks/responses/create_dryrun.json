@@ -1,0 +1,1 @@
+{"Result":"Success","Code":"DryRun","Data":{"plan":{"method":"POST","url":"/api/servers/test-mcp-skill/tools","resolved":{"targetIdentifier":"conn-mock-outlook-01","targetFolderKey":"folder-mock-workspace"}}}}

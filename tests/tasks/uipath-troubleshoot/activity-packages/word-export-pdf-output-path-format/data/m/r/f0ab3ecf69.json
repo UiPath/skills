@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "c5d6e7f8-a9b0-4193-bc2d-3e4f50617283",
+      "Name": "Report PDFs",
+      "Path": "Report PDFs",
+      "Description": "Production folder for report PDF generation.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{"Result":"Success","Code":"ExecuteOperation","Data":{"items":[
+  {"id":"INBOX",   "name":"INBOX",         "type":"system"},
+  {"id":"STARRED", "name":"STARRED",       "type":"system"},
+  {"id":"Label_1", "name":"Mock-Important","type":"user"}
+]}}

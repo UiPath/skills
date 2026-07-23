@@ -1,0 +1,38 @@
+task_id: skill-admin-audit-export-csv-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-admin skill to run a
+  minimal `export` with `--file-format csv` against a small window.
+  Validates the three required flags (`--from-date`, `--to-date`,
+  `--output-path`) plus the new `--file-format csv` selector, and that
+  the agent passes a base directory (the CLI generates the .csv name inside it).
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, mode:operate, audit, export]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  I need yesterday's tenant Admin audit events as a single CSV I can open in
+  Excel for a quick review. Put it in a folder called audit-yesterday.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin audit tenant export` with --from-date, --to-date, --output-path, AND --file-format csv"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-path\s+\S+)(?=.*--file-format\s+csv\b)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed the requested ./audit-yesterday base directory"
+    tool_name: "Bash"
+    # --output-path is a base directory; the CLI generates the .csv name inside it,
+    # so assert the agent used the requested base dir (any leading path is fine).
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--output-path\s+\S*audit-yesterday(?![\w.])'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

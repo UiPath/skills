@@ -1,0 +1,67 @@
+task_id: skill-review-agents-coded-guardrail-wrong-import
+description: >
+  Smoke test for uipath-review on a LangChain coded agent that imports guardrail
+  symbols from `uipath.platform.guardrails` instead of `uipath_langchain.guardrails`
+  (and never imports the latter), so the LangChain adapter never registers and the
+  guardrail silently no-ops. pre_run scaffolds the agent and injects the wrong
+  import. The reviewer must run `uip codedagent review` (Step 2.5a) — which emits
+  `CODED_GUARDRAIL_WRONG_IMPORT` deterministically and offline (no catalog/auth) —
+  then carry it into the report. Exercises the coded guardrail deterministic path.
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover, guardrail]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/coded_review_guardrail_wrong_import/inject_guardrail_wrong_import.py"
+    timeout: 30
+
+initial_prompt: |
+  A coded UiPath agent project (LangChain) exists at `CodedAgent`. Review it for
+  issues and save your review report to `./_review_report.md`.
+
+  This is a read-only review — do not modify anything inside `CodedAgent/`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside CodedAgent/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*CodedAgent'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside CodedAgent/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*CodedAgent'
+    weight: 3.0
+
+  # CODED_GUARDRAIL_WRONG_IMPORT is emitted only by `uip codedagent review`
+  # (Step 2.5a). It's deterministic and offline, so this gate proves the CLI ran,
+  # letting the run_command check accept either the verbatim rule_id or a
+  # summarized wrong-import finding without letting an eyeballed guess pass.
+  - type: command_executed
+    description: "Ran the coded review CLI (Step 2.5a) — the source of the wrong-import finding"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+review'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Review report surfaces the CLI finding (CODED_GUARDRAIL_WRONG_IMPORT, or describes the wrong-import / silent-no-op problem)"
+    command: "python3 $TASK_DIR/check_coded_review_guardrail_wrong_import.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

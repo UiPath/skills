@@ -1,0 +1,41 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-11T13:22:48.240Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-11T13:22:49.160Z",
+      "Message": "[Python Scope] Initializing Python engine (Target: x64, Path: C:\\Python39, Version: Python_39)"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-11T13:22:49.610Z",
+      "Message": "[Python Scope] Python engine initialized. WorkingFolder resolved to the package directory (no WorkingFolder set)."
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-11T13:22:49.880Z",
+      "Message": "[Load Python Script] Loading scripts\\ledger_sync.py"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-11T13:22:50.300Z",
+      "Message": "[Load Python Script] One or more errors occurred. ---> Python.Runtime.PythonException: Error loading the python script: ModuleNotFoundError: No module named 'ledger_utils' (ledger_sync.py, line 7)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-11T13:22:50.380Z",
+      "Message": "One or more errors occurred. ---> Python.Runtime.PythonException: ModuleNotFoundError: No module named 'ledger_utils'\r\n  File \"ledger_sync.py\", line 7, in <module>\r\n    import ledger_utils\r\nin Main.xaml\r\n    at PythonScope \"Python Scope\"\r\n    at LoadScript \"Load Python Script\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-11T13:22:50.450Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

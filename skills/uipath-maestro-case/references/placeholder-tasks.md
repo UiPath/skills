@@ -10,7 +10,7 @@ Registry pulls are often incomplete during early authoring:
 - Custom Integration Service connectors have not been registered.
 - IS connections for registered connectors are not yet provisioned.
 
-If the skill halted on every unresolved resource, the generated `caseplan.json` would be a small fragment — not reviewable, not validatable, not useful. Placeholders solve that: the full **workflow structure** (stages, edges, conditions, SLA, ordering, task names + types) lands in `caseplan.json`, and only the parts that strictly require a registry lookup (task-type-id, connection-id, input/output schemas) are deferred.
+If the skill halted on every unresolved resource, the generated `caseplan.json` would be a small fragment — not reviewable, not validatable, not useful. Placeholders solve that: the full **workflow structure** (stages, conditions, SLA, ordering, task names + types) lands in `caseplan.json`, and only the parts that strictly require a registry lookup (task-type-id, connection-id, input/output schemas) are deferred.
 
 The user reviews structure first, then attaches real resources once they exist.
 
@@ -21,14 +21,14 @@ The user reviews structure first, then attaches real resources once they exist.
 | `type` | ✓ | ✓ | ✓ |
 | `displayName` | ✓ | ✓ | ✓ |
 | `isRequired`, `shouldRunOnlyOnce` | ✓ | ✓ | ✓ |
-| `data.context.taskTypeId` (non-connector) / `data.typeId` (connector) | real ID | **key omitted** | fake ID |
+| `data.typeId` (connector) / `data.name` + `data.folderPath` = `=bindings.<id>` (non-connector) | real ID | **key omitted** | fake ID |
 | `data.connectionId` (connector) | real UUID | **key omitted** | fake UUID |
 | `data.inputs[]` value JSON (connector) | real values | **omitted** | `{}` |
 | Input / output variable bindings | real JSON edits via `io-binding` plugin | **skipped entirely** (no `data.inputs[]` to edit) | edits targeting nonexistent input names |
 | Task-entry conditions | ✓ | ✓ | ✓ |
 | Referenced by stage-exit `selected-tasks-completed` | ✓ | ✓ | ✓ |
 
-**Mocks are forbidden** because Case's typed cross-task outputs reject references to non-existent output schemas at validation time. A fabricated task-type-id causes `uip maestro case validate` to emit errors about unknown bindings. A placeholder sidesteps this by having no bindings at all — clean validation, clear `<UNRESOLVED>` markers in `tasks.md`, explicit upgrade path.
+**Mocks are forbidden for tasks** because Case's typed cross-task outputs reject references to non-existent output schemas at validation time. A fabricated task-type-id causes `uip maestro case validate` to emit errors about unknown bindings. A placeholder sidesteps this by having no bindings at all — clean validation, clear `<UNRESOLVED>` markers in `tasks.md`, explicit upgrade path.
 
 ## When a Placeholder Is Created
 
@@ -41,7 +41,7 @@ During **execution** (Phase 2, Step 9), for any `tasks.md` entry whose `taskType
 
 ## JSON Shape
 
-Placeholders occupy a `laneIndex` in `stageNode.data.tasks[laneIndex][]`, the same way full tasks do — default one task per lane for FE readability, lane is layout-only. **Exception:** when a placeholder participates in a `runs-sequentially` group and is meant to run in parallel with sibling tasks in that group, it shares the same `laneIndex` as those siblings (shared lane = parallel siblings inside the sequential group, semantic).
+Placeholders occupy a position in `stageNode.data.tasks`, the same way full tasks do. Preserve their order and retain any `runs-sequentially` entry condition from the task plan; lane-sharing does not express sequence.
 
 A placeholder task in `caseplan.json.nodes[<stage>].data.tasks[<lane>][]`:
 
@@ -65,7 +65,7 @@ A placeholder task in `caseplan.json.nodes[<stage>].data.tasks[<lane>][]`:
 }
 ```
 
-Note the empty `data: {}` — no `taskTypeId`, no folder path, no input/output wiring. The shape is uniform across classes: connector placeholders use `type` `connector-activity` / `connector-trigger`; action placeholders too — no exception for `data.taskTitle` or other action-specific keys.
+Note the empty `data: {}` — no `taskTypeId`, no folder path, no input/output wiring. The shape is uniform across classes: connector placeholders use `type` `execute-connector-activity` / `wait-for-connector`; action placeholders too — no exception for `data.taskTitle` or other action-specific keys.
 
 ### In-stage timer
 
@@ -77,7 +77,7 @@ Case-level event triggers (`type: "case-management:Trigger"` with `serviceType: 
 
 ### Connector condition rules
 
-When a `wait-for-connector` rule's connector hasn't resolved at write-time, the rule is emitted without `uipath` — the rule itself is not a placeholder; only its connector configuration is deferred (same pattern as task `data:{}`). Full recipe + skip behavior + upgrade path: [connector-trigger-common.md § Placeholder fallback](connector-trigger-common.md#placeholder-fallback).
+When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit the rule with a **stub `uipath`** (`serviceType` + 2 `"placeholder"` context fields: `connectorKey` + `operation`) — a deliberate mock that validates clean but fails at Studio Web / debug / run until replaced. Full recipe + skip behavior + upgrade path: [connector-trigger-common.md § Placeholder fallback](connector-trigger-common.md#placeholder-fallback).
 
 ## `tasks.md` Planning-Entry Shape
 
@@ -111,9 +111,11 @@ Rules:
 - `Stage "<name>" has a task with no configuration` — one per placeholder.
 - `Stage "<name>" has no tasks` — if every task in a stage is absent (not even a placeholder).
 
-These are **expected** and do not block the build. Errors only appear when cross-task bindings reference non-existent outputs — which is exactly why the skill forbids mocks.
+These are **expected** and do not block the build. Errors only appear when cross-task bindings reference non-existent outputs — which is exactly why the skill forbids fabricated task mocks (except the sanctioned connector-rule stub — see § Connector condition rules).
 
 ## Upgrade Procedure — Placeholder → Full Task
+
+> **Built-inline agents / API workflows are not placeholders.** An `agent` or `api-workflow` the user chose to **Create** at the Rule 17 gate is built and bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — it enters Phase 2 as a fully resolved task, never a placeholder, and skips this procedure. This procedure covers creatable resources the user **declined/skipped or whose build failed** (their recovery is the same as any other unresolved kind — register the real resource, below), plus every other unresolved kind.
 
 When the user has registered the real resource:
 
@@ -127,7 +129,7 @@ uip maestro case registry pull --force
 
 ### 2. Resolve the task-type-id
 
-Read the relevant cache file directly per [registry-discovery.md](registry-discovery.md) — e.g., `process-index.json` for processes, `action-apps-index.json` for action apps.
+Read the relevant cache file directly per [registry-discovery.md](registry-discovery.md) — e.g., `process-index.json` for processes, `action-apps-index.json` for action apps. For a **manually-built in-solution sibling** (agent or api-workflow), find it offline by name with `uip maestro case registry search "<name>" --type <agent|api> --local --output json` (`agent` for an agent sibling, `api` for an api-workflow sibling; select the exact-name `Data.Resources[].Resource` entry; use `search` — `get --local` matches only the opaque `entityKey`, not the name). Its `Resource.EntityKey` is an opaque derived key (not the `.uipx` `Projects[].Id`), audit-only; the node binds by name+folder. Read the sibling's I/O field names from its raw `entry-points.json` (the `--output json` keys are PascalCased). For an **api-workflow sibling**, read its I/O per the fallback chain in [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution) — flat `entryPoints[0].input.properties` → `input.schema.document.properties` wrapper → `Workflow.json` root schemas when the entry-point I/O is `null`; note any fallback in the report.
 
 ### 3. Fetch the schema
 
@@ -139,9 +141,9 @@ Read `caseplan.json`, locate the placeholder task by `id`, and mutate its `data`
 
 | Task class | `data` mutation |
 |---|---|
-| `process`, `agent`, `rpa`, `api-workflow`, `case-management` | Set `data.name`, `data.folderPath`, `data.context.taskTypeId = <entityKey>`. Write `data.inputs[]` / `data.outputs[]` from the `tasks describe` schema (each input `value: ""` to start). |
-| `action` | Set `data.context.taskTypeId = <actionAppId>`, `data.taskTitle`, `data.priority`, `data.recipient` (if known). Write `data.inputs[]` / `data.outputs[]` from the schema. |
-| `connector-activity`, `connector-trigger` | Set `data.typeId`, `data.connectionId`. Write `data.inputs[]` / `data.outputs[]` from the `is describe` schema. |
+| `process`, `agent`, `rpa`, `api-workflow`, `case-management` | Set `data.name`, `data.folderPath` (both `=bindings.<id>` refs). Write `data.inputs[]` / `data.outputs[]` from the `tasks describe` schema (each input `value: ""` to start). |
+| `action` | Set `data.name`, `data.folderPath` (`=bindings.<id>`), `data.taskTitle`, `data.priority`, `data.recipient` (if known). Write `data.inputs[]` / `data.outputs[]` from the schema. |
+| `execute-connector-activity`, `wait-for-connector` | Set `data.typeId`, `data.connectionId`. Write `data.inputs[]` / `data.outputs[]` from the `case spec` schema (per the connector plugin's `impl-json.md`). |
 
 Per-class JSON shape lives in `plugins/tasks/<type>/impl-json.md` — match those exactly.
 
@@ -153,7 +155,7 @@ Wire each input per the `io-binding` plugin — see [`plugins/variables/io-bindi
 
 1. Read `caseplan.json`; locate the task's `data.inputs[]` by input `name`.
 2. For literals/expressions from the `wiring notes` code block (`foo = =metadata.x`) — write the RHS string to `input.value`.
-3. For cross-task references (`foo <- "Stage"."Task".output`) — resolve the source task's output `var` from `caseplan.json`, then write `=vars.<var>` to the target input's `value`.
+3. For cross-task references (`foo <- "Stage"."Task".output`) — resolve the source output reference ID using [`io-binding/impl-json.md` § Output reference ID](plugins/variables/io-binding/impl-json.md#output-reference-id-authoritative), then write `=vars.<outputReferenceId>` to the target input's `value`.
 4. Write `caseplan.json` back.
 
 ### 6. Re-validate
@@ -185,7 +187,24 @@ When the build finishes with placeholders, the skill's completion report must li
 - **Custom IS connectors** (N): U Submit (GetSubmission), U Place (SubmitPlannedMarkets), …
 ```
 
-The user uses this list to drive external resource creation, then runs the upgrade procedure.
+When agents / API workflows were **built inline** at the gate, list them separately — they are resolved, not placeholders:
+
+```
+### Agents / API workflows built inline (N)
+
+| Stage | Task | Resource | Status |
+|-------|------|----------|--------|
+| Triage | Classify PO | Classify PO (agent) | built as in-solution sibling via uipath-agents; bound via --local |
+| Enrich | Fetch Rates | RateFetcher (api-workflow) | built as in-solution sibling via uipath-api-workflow; bound via --local |
+
+### Built but not referenced (reject case)
+
+| Resource | Note |
+|----------|------|
+| Sentiment (agent) | built sibling on disk; task dropped from plan — reuse or remove manually |
+```
+
+The user uses the placeholder/external lists to drive external resource creation, then runs the upgrade procedure; the "built inline" list is informational (already wired).
 
 ## Anti-Patterns
 
@@ -193,3 +212,6 @@ The user uses this list to drive external resource creation, then runs the upgra
 - **Do NOT partially bind inputs on a placeholder.** A placeholder has no `data.inputs[]` to edit — the io-binding plugin logs a `SKIPPED` entry and moves on. Half-bound placeholders are harder to upgrade than bare ones.
 - **Do NOT skip task-entry conditions on placeholders.** Conditions are structural; they work on the TaskId and must be created so the workflow order is visible in review.
 - **Do NOT create placeholders for timer tasks.** Timers have no registry dependency — use the full `wait-for-timer` plugin.
+- **Do NOT create a placeholder for an agent or API workflow the user chose to build inline.** It is built + bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a resolved task, not a placeholder.
+- **Do NOT build an agent or API workflow from SDD content alone.** Inline create runs only for resources the user explicitly selected at the Rule 17 gate. The built resource is an in-solution **sibling** that co-deploys with the case — never a separate tenant publish.
+- **Invoking `uipath-agents` / `uipath-api-workflow` for the inline build is sanctioned** — it is not a violation of the "don't auto-invoke other skills" anti-pattern, which still applies to every non-creatable kind (regular RPA process, action, case-management, connectors, agentic process) and to `uipath-planner`.

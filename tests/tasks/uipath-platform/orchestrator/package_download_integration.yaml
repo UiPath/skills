@@ -9,15 +9,13 @@ agent:
 
 pre_run:
   - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
-    timeout: 30
+    timeout: 60
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
     timeout: 60
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
-
   I want a local copy of the package that one of my processes is using —
   I need to inspect what's inside it. The process ID is in `seed.json`;
   figure out which package and version it's bound to, then download

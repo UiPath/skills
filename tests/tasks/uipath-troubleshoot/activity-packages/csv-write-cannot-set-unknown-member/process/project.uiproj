@@ -1,0 +1,6 @@
+{
+  "Name": "ReportExport",
+  "ProjectType": "Process",
+  "Description": "ReportExport automation project.",
+  "MainFile": "Main.xaml"
+}

@@ -1,6 +1,6 @@
 # XAML Outlook Mail Activities
 
-Office 365 Outlook mail activity patterns for `UiPath.MicrosoftOffice365.Activities`. Always get full XAML from `uip rpa activities get-default-xaml --use-studio` — this file covers confirmed namespace and attribute patterns from real workflows only.
+Office 365 Outlook mail activity patterns for `UiPath.MicrosoftOffice365.Activities`. Always get full XAML from `uip rpa activities get-default-xaml` — this file covers confirmed namespace and attribute patterns from real workflows only.
 
 ## Package
 
@@ -39,5 +39,5 @@ Use `uip is connections list --output json` to obtain the connection GUID. If no
 | Recipients | `<CSharpValue x:TypeArguments="scg:IEnumerable(x:String)">new string[]{"a@b.com"}</CSharpValue>` |
 | FilterExpression booleans | Backtick-quoted: `` `true` ``, `` `false` `` |
 | FilterExpression AND | `&amp;&amp;` (XML-escaped `&&`) |
-| BackupSlot (SendMail) | `MailboxArg` child required; `AttachmentsArg` and `InputTypeArg` also needed — use `uip rpa activities get-default-xaml --use-studio` for full structure |
-| Full XAML | Always use `uip rpa activities get-default-xaml --use-studio` for complete activity XAML |
+| BackupSlot (SendMail) | `MailboxArg` child required; `AttachmentsArg` and `InputTypeArg` also needed — use `uip rpa activities get-default-xaml` for full structure |
+| Full XAML | Always use `uip rpa activities get-default-xaml` for complete activity XAML |

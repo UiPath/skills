@@ -5,21 +5,26 @@ description: >
   agent that escalates uncertain cases to an EXTERNAL ActionCenter app
   already deployed to Orchestrator (not inside this solution).
   Verifies the escalation resource.json under the inline agent's UUID
-  subdirectory + a `uipath.agent.resource.escalation` flow node wired
-  to the autonomous agent node's `escalation` handle.
-tags: [uipath-agents, e2e, low-code, inline-flow]
+  subdirectory has an actionCenter channel bound to the deployed
+  "FraudEscalation" app (appName, folderName, UUID resourceKey), and that a
+  `uipath.agent.resource.escalation` flow node is wired to the
+  autonomous agent node's `escalation` handle.
+tags: [uipath-agents, e2e, mode:build, low-code, inline-flow]
 
 run_limits:
   expected_turns: 66
   turn_timeout: 1200
 
+# An agent left to itself often models "escalate to a human" as a human-in-the-loop
+# flow node — fine in general, but this task specifically exercises the agent
+# Escalation capability, so the prompt asks for it explicitly.
 initial_prompt: |
-  Create a UiPath solution "FraudFlowSol" containing a flow project
-  "FraudFlow". The flow should use an inline low-code agent that
-  triages transactions and escalates uncertain cases to an EXISTING
-  EXTERNAL ActionCenter app named "FraudEscalationQueue" already
-  deployed to the Orchestrator "Shared" folder (not inside this
-  solution). Wire the escalation as a resource on the inline agent.
+  Create a UiPath Flow project "FraudFlow" that runs an inline low-code agent
+  which triages transactions and, when it isn't confident, escalates the case to
+  a human reviewer through our existing "FraudEscalation" Action Center app —
+  it's already running in Orchestrator, not part of this solution. Set this up
+  using the agent's Escalation capability, wired into the flow — not a standalone human-in-the-loop node. The
+  solution should be named "FraudFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -31,15 +36,58 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+init'
     min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
+    weight: 1.5
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: command_executed
     description: "Agent scaffolded the inline agent with --inline-in-flow"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+init\s+.*--inline-in-flow'
     min_count: 1
-    weight: 2.0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered the FraudEscalation app identity with uip solution resources list --kind App"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--kind\s+App'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Enforced: the app is EXTERNAL, so fetching its action schema with `resources
+  # get` (after discovering it via `resources list --kind App` above) is mandatory
+  # to author the channel — there is no alternative lookup path.
+  - type: command_executed
+    description: "Agent fetched the app action schema with uip solution resources get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent searched the flow registry for the escalation node (informational, non-gating — the escalation node key is fixed, so the agent may fetch it directly)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+search\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent fetched the escalation node manifest from the flow registry"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.resource\.escalation'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the inline autonomous agent node manifest from the flow registry"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.autonomous'
+    min_count: 1
+    weight: 1.5
     pass_threshold: 1.0
 
   # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
@@ -55,19 +103,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Agent refreshed the inline agent with --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh\s+.*--inline-in-flow'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent validated the inline agent with --inline-in-flow"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+validate\s+.*--inline-in-flow'
     min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on uip commands"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: file_exists
@@ -77,7 +125,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Inline external escalation: resource.json shape + escalation flow node + escalation-handle edge"
+    description: "Inline external escalation: resource.json shape (actionCenter channel, appName, folderName, resourceKey) + escalation flow node + escalation-handle edge"
     command: "python3 $TASK_DIR/check_inline_external_escalation.py"
     timeout: 30
     expected_exit_code: 0

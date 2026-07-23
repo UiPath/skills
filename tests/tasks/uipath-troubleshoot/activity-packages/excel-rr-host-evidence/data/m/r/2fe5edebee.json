@@ -1,0 +1,46 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-ee555555-001",
+      "JobKey": "ee555555-6666-7777-8888-99990000aaaa",
+      "Level": "Info",
+      "Timestamp": "2026-05-19T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee555555-002",
+      "JobKey": "ee555555-6666-7777-8888-99990000aaaa",
+      "Level": "Info",
+      "Timestamp": "2026-05-19T08:00:01.418Z",
+      "Message": "[ExcelDailyImport] Starting daily sales import — reading C:\\Robot\\Data\\sales-2026-05.xlsx",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee555555-003",
+      "JobKey": "ee555555-6666-7777-8888-99990000aaaa",
+      "Level": "Trace",
+      "Timestamp": "2026-05-19T08:00:01.512Z",
+      "Message": "Use Excel File: sales-2026-05.xlsx — executing",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee555555-004",
+      "JobKey": "ee555555-6666-7777-8888-99990000aaaa",
+      "Level": "Error",
+      "Timestamp": "2026-05-19T08:00:01.802Z",
+      "Message": "Use Excel File: sales-2026-05.xlsx — UiPath.Excel.ExcelException: Error opening workbook 'C:\\Robot\\Data\\sales-2026-05.xlsx'. ---> System.IO.IOException: The process cannot access the file 'C:\\Robot\\Data\\sales-2026-05.xlsx' because it is being used by another process.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

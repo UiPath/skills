@@ -17,7 +17,7 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | Field | Source | Notes |
 |-------|--------|-------|
 | `<stage-id>`, `<task-id>` | Captured from prior steps | |
-| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Entry rule {N}`. |
+| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. |
 | `rule-type` | From catalog below | |
 | `selected-tasks-ids` | Required for `selected-tasks-completed` | Comma-separated task IDs |
 | `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline) |
@@ -32,11 +32,27 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | `selected-tasks-completed` | Fires when specific sibling tasks in the same stage complete | `selectedTasksIds` |
 | `wait-for-connector` | Waits for a connector event (binds an IS connector trigger under `uipath`) | connector fields; `conditionExpression` optional |
 | `adhoc` | Ad hoc tasks run only when a user triggers them from the case app. | `conditionExpression` (optional) |
-| `runs-sequentially` | Sequential tasks run in the order they appear in the stage from top to bottom. Parallel members of the group share a `lane`; solo members get own lane. | `conditionExpression` (optional) |
+| `runs-sequentially` | Sequential tasks run in the order they appear in the stage from top to bottom. The frontend toggle writes this rule as the task's entry condition. | `conditionExpression` (optional) |
+
+### Frontend task-mode mapping
+
+The Case App selector has three distinct modes:
+
+| UI mode | JSON/task-entry meaning | Required behavior |
+|---|---|---|
+| Sequential | `runs-sequentially` only | Preserve the frontend's ordered `data.tasks` structure. Parallel task sets remain allowed; the first sequential task starts when the stage is entered, and later sequential tasks use the upstream-task completion trigger represented by the preserved task-set/order structure. |
+| Event-triggered | An authored event/condition, normally `wait-for-connector` for an external event | Do not add `runs-sequentially`. A stage-entered task is not automatically an event-triggered task; retain the explicit event rule and its connector configuration. |
+| Manually-triggered (adhoc) | `adhoc` only | Set `isRequired: false`; the user launches it from the Case App. Do not add another entry event or treat it as sequential. |
+
+`adhoc` is task-entry-only. It is never a stage entry rule and never a substitute for `wait-for-connector`.
+
+For generated SDDs, a plain immediate-predecessor chain should already be authored as `runs-sequentially`. If a task row says `selected-tasks-completed("<previous task>")`, preserve it only when the SDD is intentionally expressing a condition/event-driven sibling gate, branch convergence, or non-immediate dependency.
 
 ## Ordering
 
 Task entry conditions are created **after** all tasks in the stage have been added (so `selected-tasks-ids` can resolve).
+
+For sequential tasks, preserve the frontend's ordered `data.tasks` structure, including any parallel task sets; do not flatten the stage into one global chain. Add one `runs-sequentially` entry condition to each sequential task. The first task uses the rule as its stage-entry trigger; later tasks use it as the upstream-task-completed trigger. Do not add a separate `current-stage-entered` condition to the first sequential task. Lane or task-set placement is structural; the entry rule carries the sequential intent.
 
 ## tasks.md Entry Format
 
@@ -44,7 +60,7 @@ Task entry conditions are created **after** all tasks in the stage have been add
 ## T<n>: Add task-entry condition for "<task>" in "<stage>" — <summary>
 - target-stage: "<stage-name>"
 - target-task: "<task-name>"
-- display-name: "<name>"                  # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry rule {N}"
+- display-name: "<name>"                  # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry Rule {N}"
 - rule-type: selected-tasks-completed
 - selected-tasks: "<Task A>, <Task B>"
 - condition-expression: "=js:vars.X..."   # optional gate on case state, NOT the event payload

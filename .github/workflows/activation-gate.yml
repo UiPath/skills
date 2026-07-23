@@ -79,20 +79,19 @@ jobs:
         skill: ${{ fromJSON(needs.detect.outputs.skills) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          repository: UiPath/coder_eval
-          token: ${{ secrets.GH_PAT }}
-          path: .coder_eval
+      # Pin coder_eval to tests/.coder-eval-version so the activation gate runs
+      # the same engine as the smoke, ad-hoc, and nightly paths.
+      - name: Resolve coder_eval pin
+        id: ceref
+        run: echo "version=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-python@v5
         with: { python-version: '3.13' }
       - uses: astral-sh/setup-uv@v4
 
+      # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
+      # deps). Activation runs under the tempdir driver -- no agent image.
       - name: Install coder-eval
-        working-directory: .coder_eval
-        env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
-        run: uv pip install --system .
+        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
 
       - name: Run activation gate
         env:

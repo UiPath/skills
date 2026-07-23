@@ -17,7 +17,7 @@ Configure tenant settings, manage calendars for scheduling, export audit logs, a
 
 ## Prerequisites
 
-- Authenticated (`uip login`)
+- Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
 - Tenant selected (`uip login tenant set "<tenant>"`)
 - Appropriate admin permissions (Settings and Audit Logs require tenant admin; other commands vary by role)
 
@@ -29,11 +29,11 @@ Tenant settings are dot-notation key-value pairs that control tenant behavior. U
 
 | Command | What it does |
 |---------|--------------|
-| `uip or settings list` | List all settings. Filter with `--scope Application\|Tenant\|User\|All`. |
+| `uip or settings list` | List all settings as curated `{Name, Value, Scope}` rows. Filter with `--scope Application\|Tenant\|User\|All`; `--all-fields` for the raw DTO. |
 | `uip or settings get <key>` | Get a single setting value by key. |
 | `uip or settings update <key> <value>` | Update a setting value. |
 | `uip or settings execution` | Get execution settings with display names, types, and allowed values. Use `--scope 0` (Global) or `--scope 1` (Robot). |
-| `uip or settings timezones` | List all valid timezone IDs (for use with `Abp.Timing.TimeZone`). |
+| `uip or settings timezones` | List all valid timezone IDs as `{Name, Value}` rows — pass the `Value` to `Abp.Timing.TimeZone`. |
 
 **Common setting keys:**
 
@@ -80,7 +80,7 @@ uip or calendars create "US Holidays" --time-zone "America/New_York" --output js
 # Save the returned Key (GUID)
 
 # Use the calendar key when creating a time trigger
-uip resource triggers create --type time --name "WeekdayReport" \
+uip or triggers create --type time --name "WeekdayReport" \
   --release-key <process-key> --cron "0 9 * * 1-5" \
   --calendar-key <calendar-key> --time-zone "America/New_York" \
   --runtime-type Unattended --job-priority Normal \
@@ -91,7 +91,9 @@ uip resource triggers create --type time --name "WeekdayReport" \
 
 ## Audit Logs
 
-Audit logs record who did what and when across the tenant. Filter by component, action, user, or date range. Export to CSV for compliance reporting.
+> **Two audit surfaces — route by intent.** `uip or audit-logs` (this section) is Orchestrator's **operational** audit: entity/operation changes *inside Orchestrator* (folder / queue / asset / process / job / setting CRUD; `Component, User, Action, Operation, Time`). For the **organization/tenant audit trail** — audit events / history / trail, login or sign-in history, who-did-what-when-where, cross-service activity, or a compliance dump/export — use `uip admin audit <org|tenant>` (the **uipath-admin** skill), *not* this command, **even when the request is worded generically** ("audit logs", "export the audit", "the last 7 days of audit"). Reach for `uip or audit-logs` only when the user explicitly wants Orchestrator's own operational audit view (e.g., filtering by Orchestrator `--component` / `--action`).
+
+`uip or audit-logs` records Orchestrator entity/operation changes — who created, updated, deleted, or ran Orchestrator resources. Filter by component, action, user, or date range; export to CSV for Orchestrator-scoped reporting.
 
 | Command | What it does |
 |---------|--------------|
@@ -158,7 +160,7 @@ uip or feeds list --output json
 Feed IDs are used with:
 - `uip or packages list --feed-id <id>` -- browse packages in a specific feed
 - Omit `--feed-id` to use the default tenant feed
-- `uip resource libraries list` does NOT accept `--feed-id` -- it always queries the default tenant feed. Filter results client-side via `--output-filter "<JMESPath>"`.
+- `uip or libraries list` does NOT accept `--feed-id` -- it always queries the default tenant feed. Filter results client-side via `--output-filter "<JMESPath>"`.
 
 ---
 
@@ -213,7 +215,7 @@ uip or attachments download "<attachment-id>" -o error-screenshot.png
 - **Calendar timezone affects trigger scheduling.** A trigger using a calendar will skip dates according to the calendar's timezone, which may differ from the trigger's own timezone. Keep them aligned.
 - **Audit log export is async.** The `--export` flag triggers a server-side export job. The CLI polls until the CSV is ready, then downloads it. Large exports may take a few seconds.
 - **Credential store keys are numeric**, not GUIDs. This is an exception to the usual GUID convention in the Orchestrator CLI.
-- **Feed IDs apply to `packages` only.** `uip or packages` commands accept `--feed-id` for multi-feed tenants; `uip resource libraries` commands do NOT — they always target the default tenant feed.
+- **Feed IDs apply to `packages` only.** `uip or packages` commands accept `--feed-id` for multi-feed tenants; `uip or libraries` commands do NOT — they always target the default tenant feed.
 - **Attachments are tenant-scoped.** You do not need `--folder-path` or `--folder-key` -- the `list` command resolves the folder from the job key automatically.
 
 ---
@@ -221,5 +223,5 @@ uip or attachments download "<attachment-id>" -o error-screenshot.png
 ## Related
 
 - [setup-environment.md](setup-environment.md) -- Credential stores are used during unattended user setup.
-- Triggers & Webhooks (calendars are referenced by `--calendar-key` when creating time triggers) → [`uipath-resources`](../resources/triggers-and-webhooks.md)
+- Triggers & Webhooks (calendars are referenced by `--calendar-key` when creating time triggers) → [triggers-and-webhooks.md](triggers-and-webhooks.md)
 - [orchestrator.md](orchestrator.md) -- Parent reference with common flags and pagination patterns.

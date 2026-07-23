@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpToolsCreateResource",
+  "Data": {
+    "dryRun": true,
+    "resolved": {
+      "name": "Run Mock Invoice Process",
+      "description": "Run the Mock Invoice automation in the Shared folder.",
+      "mcp": "test-mcp-skill",
+      "category": "automation",
+      "targetIdentifier": "process-mock-invoice-01",
+      "metadata": {
+        "processType": "automation",
+        "processKey": "process-mock-invoice-01",
+        "folderKey": "folder-mock-shared"
+      },
+      "inputSchema":  { "type": "object", "properties": {}, "additionalProperties": false },
+      "outputSchema": { "type": "object", "properties": {}, "additionalProperties": false }
+    }
+  }
+}

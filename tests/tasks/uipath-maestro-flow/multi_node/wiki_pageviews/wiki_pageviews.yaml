@@ -32,13 +32,12 @@ initial_prompt: |
   return the literal string `Article not found`.
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
-  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
 
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "uip maestro flow validate WikiPageviews/WikiPageviews/WikiPageviews.flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

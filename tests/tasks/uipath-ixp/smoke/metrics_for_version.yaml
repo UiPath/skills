@@ -1,0 +1,34 @@
+task_id: skill-ixp-metrics-for-version-smoke
+description: >
+  Smoke: agent fetches validation metrics scoped to one model version
+  (version 14) — that version's per-field/per-group scores, not the latest.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
+initial_prompt: |
+  In the IXP project my_invoices-f1afa9ef-ixp, get the metrics for version 14.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent fetched version-scoped metrics via `get-metrics … --model-version 14`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+get-metrics\b(?=.*(--model-version|-m)\s+14\b).*'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0

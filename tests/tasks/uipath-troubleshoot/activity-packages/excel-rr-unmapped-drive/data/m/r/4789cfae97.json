@@ -1,0 +1,46 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-ee5555aa-001",
+      "JobKey": "ee555555-aaaa-bbbb-cccc-dddddddddddd",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee5555aa-002",
+      "JobKey": "ee555555-aaaa-bbbb-cccc-dddddddddddd",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.418Z",
+      "Message": "[ExcelDailyImport] Starting daily sales import — reading Z:\\Data\\sales-2026-05.xlsx",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee5555aa-003",
+      "JobKey": "ee555555-aaaa-bbbb-cccc-dddddddddddd",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:01.510Z",
+      "Message": "Use Excel File: Z:\\Data\\sales-2026-05.xlsx — opening workbook (WorkbookPath='Z:\\Data\\sales-2026-05.xlsx')",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee5555aa-004",
+      "JobKey": "ee555555-aaaa-bbbb-cccc-dddddddddddd",
+      "Level": "Error",
+      "Timestamp": "2026-05-20T08:00:01.802Z",
+      "Message": "Use Excel File: Z:\\Data\\sales-2026-05.xlsx — System.IO.DirectoryNotFoundException: Could not find a part of the path 'Z:\\Data\\sales-2026-05.xlsx'.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

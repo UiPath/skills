@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "TraceSpans",
+  "Data": [
+    {
+      "spanId": "completion-0003",
+      "traceId": "cccccccccccccccccccccccccccccccc",
+      "name": "llm.completion",
+      "spanType": "completion",
+      "SPANTYPE": "completion",
+      "attributes": {
+        "error": "{\"detail\":\"Insufficient information to send the email: recipient is missing\"}",
+        "model": "gpt-5.4"
+      },
+      "ATTRIBUTES": {
+        "error": "{\"detail\":\"Insufficient information to send the email: recipient is missing\"}",
+        "model": "gpt-5.4"
+      }
+    }
+  ],
+  "spans": [
+    {
+      "name": "llm.completion",
+      "spanType": "completion",
+      "attributes": {
+        "error": "{\"detail\":\"Insufficient information to send the email: recipient is missing\"}"
+      }
+    }
+  ]
+}

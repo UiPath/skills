@@ -69,10 +69,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `lookup.lookupAge` | Lookup age via NameToAgeFixed2 API workflow | api-workflow | System |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `lookup.lookupAge` | Lookup age via NameToAgeFixed2 API workflow | api-workflow | Yes | No | system | — |
 
   ##### Task 1.1: Lookup age via NameToAgeFixed2 API workflow (`lookup.lookupAge`)
 
@@ -106,8 +106,6 @@ initial_prompt: |
   debug` yourself — the test harness runs it. Do NOT ask for approval,
   confirmation, or feedback. Build end-to-end in a single pass and finish
   with `uip maestro case validate` passing on the resulting caseplan.json.
-  Before starting, load the uipath-maestro-case skill. Read and follow its
-  workflow steps exactly.
 
 success_criteria:
   - type: run_command

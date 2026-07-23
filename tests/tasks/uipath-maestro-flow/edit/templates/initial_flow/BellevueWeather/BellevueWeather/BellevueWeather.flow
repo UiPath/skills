@@ -1,19 +1,25 @@
 {
   "id": "51e93e69-8d7b-4543-b079-cec6c73673ff",
-  "version": "1.0.0",
+  "version": "1.6",
   "name": "BellevueWeather",
   "nodes": [
     {
       "id": "start",
       "type": "core.trigger.manual",
-      "typeVersion": "1.0.0",
-      "display": { "label": "Manual trigger" },
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
       "inputs": {},
       "outputs": {
         "output": {
           "type": "object",
           "description": "The return value of the trigger.",
-          "source": "=result.response",
+          "source": {
+            "type": "literal",
+            "expression": "=result.response",
+            "fieldType": "string"
+          },
           "var": "output"
         }
       },
@@ -25,15 +31,21 @@
     {
       "id": "getWeather",
       "type": "core.action.http",
-      "typeVersion": "1.0.0",
-      "display": { "label": "Get Bellevue Weather" },
+      "typeVersion": "1.2",
+      "display": {
+        "label": "Get Bellevue Weather"
+      },
       "inputs": {
         "mode": "manual",
         "method": "GET",
         "url": "https://api.open-meteo.com/v1/forecast?latitude=47.6101&longitude=-122.2015&current=temperature_2m&temperature_unit=fahrenheit",
         "headers": {},
         "queryParams": {},
-        "body": "",
+        "body": {
+          "type": "literal",
+          "expression": "",
+          "fieldType": "object"
+        },
         "contentType": "application/json",
         "timeout": "PT15M",
         "retryCount": 0,
@@ -43,23 +55,35 @@
         "output": {
           "type": "object",
           "description": "The return value of the HTTP request",
-          "source": "=result.response",
+          "source": {
+            "type": "literal",
+            "expression": "=result.response",
+            "fieldType": "string"
+          },
           "var": "output"
         },
         "error": {
           "type": "object",
           "description": "Error information if the HTTP request fails",
-          "source": "=result.Error",
+          "source": {
+            "type": "literal",
+            "expression": "=result.Error",
+            "fieldType": "string"
+          },
           "var": "error"
         }
       },
-      "model": { "type": "bpmn:ServiceTask" }
+      "model": {
+        "type": "bpmn:ServiceTask"
+      }
     },
     {
       "id": "formatSummary",
       "type": "core.action.script",
-      "typeVersion": "1.0.0",
-      "display": { "label": "Format Weather Summary" },
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Format Weather Summary"
+      },
       "inputs": {
         "script": "const tempF = $vars.getWeather.output.body.current.temperature_2m;\nconst time = $vars.getWeather.output.body.current.time;\nreturn {\n  temperatureF: tempF,\n  summary: 'Bellevue weather today: ' + tempF + 'F at ' + time\n};"
       },
@@ -67,55 +91,85 @@
         "output": {
           "type": "object",
           "description": "The return value of the script",
-          "source": "=result.response",
+          "source": {
+            "type": "literal",
+            "expression": "=result.response",
+            "fieldType": "string"
+          },
           "var": "output"
         },
         "error": {
           "type": "object",
           "description": "Error information if the script fails",
-          "source": "=result.Error",
+          "source": {
+            "type": "literal",
+            "expression": "=result.Error",
+            "fieldType": "string"
+          },
           "var": "error"
         }
       },
-      "model": { "type": "bpmn:ScriptTask" }
+      "model": {
+        "type": "bpmn:ScriptTask"
+      }
     },
     {
       "id": "checkTemperature",
       "type": "core.logic.decision",
-      "typeVersion": "1.0.0",
-      "display": { "label": "Temp > 60F?" },
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Temp > 60F?"
+      },
       "inputs": {
         "expression": "$vars.formatSummary.output.temperatureF > 60",
         "trueLabel": "Nice Day",
         "falseLabel": "Bring a Jacket"
       },
-      "model": { "type": "bpmn:InclusiveGateway" }
+      "model": {
+        "type": "bpmn:InclusiveGateway"
+      }
     },
     {
       "id": "endNiceDay",
       "type": "core.control.end",
-      "typeVersion": "1.0.0",
-      "display": { "label": "Nice Day" },
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Nice Day"
+      },
       "inputs": {},
       "outputs": {
         "summary": {
-          "source": "=js:({ message: 'nice day', temperatureF: $vars.formatSummary.output.temperatureF, description: $vars.formatSummary.output.summary })"
+          "source": {
+            "type": "jsExpression",
+            "expression": "({ message: 'nice day', temperatureF: $vars.formatSummary.output.temperatureF, description: $vars.formatSummary.output.summary })",
+            "fieldType": "object"
+          }
         }
       },
-      "model": { "type": "bpmn:EndEvent" }
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
     },
     {
       "id": "endBringJacket",
       "type": "core.control.end",
-      "typeVersion": "1.0.0",
-      "display": { "label": "Bring a Jacket" },
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Bring a Jacket"
+      },
       "inputs": {},
       "outputs": {
         "summary": {
-          "source": "=js:({ message: 'bring a jacket', temperatureF: $vars.formatSummary.output.temperatureF, description: $vars.formatSummary.output.summary })"
+          "source": {
+            "type": "jsExpression",
+            "expression": "({ message: 'bring a jacket', temperatureF: $vars.formatSummary.output.temperatureF, description: $vars.formatSummary.output.summary })",
+            "fieldType": "object"
+          }
         }
       },
-      "model": { "type": "bpmn:EndEvent" }
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
     }
   ],
   "edges": [
@@ -159,9 +213,13 @@
     {
       "nodeType": "core.trigger.manual",
       "version": "1.0.0",
-      "category": "trigger",
       "description": "Start workflow manually",
-      "tags": ["trigger", "start", "manual"],
+      "category": "trigger",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
       "sortOrder": 40,
       "display": {
         "label": "Manual trigger",
@@ -180,25 +238,15 @@
               "handleType": "output",
               "showButton": true,
               "constraints": {
-                "forbiddenTargetCategories": ["trigger"]
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
               }
             }
           ],
           "visible": true
         }
       ],
-      "model": {
-        "type": "bpmn:StartEvent",
-        "entryPointId": true
-      },
-      "outputDefinition": {
-        "output": {
-          "type": "object",
-          "description": "Data passed when manually triggering the workflow.",
-          "source": "null",
-          "var": "output"
-        }
-      },
       "toolbarExtensions": {
         "design": {
           "actions": [
@@ -209,16 +257,33 @@
             }
           ]
         }
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
       }
     },
     {
       "nodeType": "core.action.http",
       "version": "1.0.0",
-      "category": "data-operations",
       "description": "Make API calls with branching and retry",
-      "tags": ["connector", "http", "api", "rest", "request"],
+      "category": "data-operations",
+      "tags": [
+        "connector",
+        "http",
+        "api",
+        "rest",
+        "request"
+      ],
       "sortOrder": 35,
-      "supportsErrorHandling": true,
       "display": {
         "label": "HTTP Request",
         "icon": "app-window",
@@ -252,6 +317,852 @@
               "type": "source",
               "handleType": "output",
               "label": "Default"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "inputDefaults": {
+        "mode": "manual",
+        "method": "GET",
+        "url": "",
+        "swaggerDefinition": null,
+        "authenticationType": "manual",
+        "application": "",
+        "connection": "",
+        "headers": {},
+        "queryParams": {},
+        "body": "",
+        "contentType": "application/json",
+        "timeout": "PT15M",
+        "retryCount": 0,
+        "branches": []
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Method is required"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(.*\\.\\S.*|.*\\$vars.*)$",
+            "errorMessage": {
+              "minLength": "URL is required",
+              "pattern": "URL must be a valid URL or variable expression"
+            }
+          },
+          "swaggerDefinition": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "authenticationType": {
+            "type": "string"
+          },
+          "application": {
+            "type": "string"
+          },
+          "connection": {
+            "type": "string"
+          },
+          "headers": {
+            "type": "object"
+          },
+          "queryParams": {
+            "type": "object"
+          },
+          "body": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "timeout": {
+            "type": "string",
+            "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+S)?)?$",
+            "errorMessage": {
+              "pattern": "Timeout must be in ISO 8601 duration format (e.g., PT15M, PT1H, P1D)"
+            }
+          },
+          "retryCount": {
+            "type": "number"
+          },
+          "branches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "conditionExpression": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "method",
+          "url"
+        ]
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "HTTP response object",
+          "source": "=response",
+          "var": "output",
+          "properties": {
+            "body": {
+              "type": "object",
+              "description": "Response body content",
+              "additionalProperties": true
+            },
+            "statusCode": {
+              "type": "number",
+              "description": "HTTP status code"
+            },
+            "headers": {
+              "type": "object",
+              "description": "Response headers",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "expansion": {
+          "processLevelVariables": [
+            {
+              "id": "{nodeId}.output",
+              "name": "output",
+              "type": "jsonSchema",
+              "elementId": "{nodeId}",
+              "custom": true
+            },
+            {
+              "condition": "hasEdgeFromHandle('error')",
+              "id": "{nodeId}.error",
+              "name": "error",
+              "type": "jsonSchema",
+              "elementId": "{nodeId}",
+              "custom": true
+            },
+            {
+              "condition": "!hasEdgeFromHandle('error')",
+              "id": "{nodeId}.boundaryError",
+              "name": "Error",
+              "type": "jsonSchema",
+              "elementId": "_Implicit_SubprocessBoundaryError_{nodeId}"
+            }
+          ],
+          "nodes": [
+            {
+              "id": "{nodeId}",
+              "type": "bpmn:SubProcess",
+              "replaceOriginal": true,
+              "data": {
+                "label": "{node.data.label}",
+                "isExpanded": true,
+                "model": {
+                  "serviceType": "BPMN.Variables",
+                  "subprocessVariables": {
+                    "inputOutputs": [
+                      {
+                        "id": "response",
+                        "name": "response",
+                        "type": "jsonSchema",
+                        "variableType": "inputOutput"
+                      },
+                      {
+                        "id": "error",
+                        "name": "error",
+                        "type": "jsonSchema",
+                        "variableType": "inputOutput"
+                      }
+                    ]
+                  },
+                  "outputs": [
+                    {
+                      "name": "output",
+                      "type": "jsonSchema",
+                      "source": "=vars.response",
+                      "var": "{nodeId}.output",
+                      "custom": true
+                    },
+                    {
+                      "name": "Error",
+                      "type": "jsonSchema",
+                      "source": "=vars.error",
+                      "var": "{nodeId}.error",
+                      "custom": true
+                    }
+                  ]
+                }
+              },
+              "nodes": [
+                {
+                  "id": "_Implicit_StartEvent_{nodeId}",
+                  "type": "bpmn:StartEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "HTTP Request Start"
+                  }
+                },
+                {
+                  "id": "_Implicit_HttpTask_{nodeId}",
+                  "type": "bpmn:SendTask",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "propagate": {
+                    "retry": {
+                      "condition": "node.data.inputs.retryCount > 0",
+                      "maxRetryCount": "node.data.inputs.retryCount",
+                      "retryBackoff": "node.data.inputs.timeout",
+                      "retryBackoffDefault": "PT1S",
+                      "retryAllErrors": "true",
+                      "retryBackoffType": "Static"
+                    }
+                  },
+                  "data": {
+                    "label": "{node.data.label}",
+                    "model": {
+                      "serviceType": "Intsvc.HttpExecution",
+                      "version": "v1",
+                      "context": [
+                        {
+                          "name": "mode",
+                          "type": "string",
+                          "source": "node.data.inputs.mode"
+                        },
+                        {
+                          "name": "method",
+                          "type": "string",
+                          "source": "node.data.inputs.method"
+                        },
+                        {
+                          "name": "url",
+                          "type": "string",
+                          "source": "node.data.inputs.url"
+                        },
+                        {
+                          "name": "headers",
+                          "type": "json",
+                          "source": "node.data.inputs.headers",
+                          "format": "json"
+                        },
+                        {
+                          "name": "parameters",
+                          "type": "json",
+                          "source": "node.data.inputs.queryParams",
+                          "format": "json"
+                        },
+                        {
+                          "name": "body",
+                          "type": "json",
+                          "source": "node.data.inputs.body",
+                          "format": "json"
+                        }
+                      ],
+                      "outputs": [
+                        {
+                          "name": "response",
+                          "type": "json",
+                          "source": "=response",
+                          "var": "response",
+                          "internal": true
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "_Implicit_EndEvent_Default_{nodeId}",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Default"
+                  }
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_EndEvent_Failure_{nodeId}",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Failure"
+                  }
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_BoundaryError_{nodeId}",
+                  "type": "bpmn:BoundaryEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Error",
+                    "attachedToId": "_Implicit_HttpTask_{nodeId}",
+                    "eventDefinition": {
+                      "type": "bpmn:ErrorEventDefinition",
+                      "id": "_Implicit_BoundaryError_{nodeId}_Error"
+                    },
+                    "model": {
+                      "outputs": [
+                        {
+                          "name": "Error",
+                          "type": "jsonSchema",
+                          "source": "=Error",
+                          "var": "error",
+                          "internal": true
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "edges": [
+                {
+                  "id": "_Implicit_Edge__Implicit_StartEvent_{nodeId}__Implicit_HttpTask_{nodeId}",
+                  "source": "_Implicit_StartEvent_{nodeId}",
+                  "target": "_Implicit_HttpTask_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "id": "_Implicit_Edge__Implicit_HttpTask_{nodeId}__Implicit_EndEvent_Default_{nodeId}",
+                  "source": "_Implicit_HttpTask_{nodeId}",
+                  "target": "_Implicit_EndEvent_Default_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_Edge__Implicit_BoundaryError_{nodeId}__Implicit_EndEvent_Failure_{nodeId}",
+                  "source": "_Implicit_BoundaryError_{nodeId}",
+                  "target": "_Implicit_EndEvent_Failure_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                }
+              ]
+            },
+            {
+              "condition": "!hasEdgeFromHandle('error')",
+              "id": "_Implicit_SubprocessBoundaryError_{nodeId}",
+              "type": "bpmn:BoundaryEvent",
+              "parentId": null,
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "data": {
+                "label": "",
+                "attachedToId": "{nodeId}",
+                "eventDefinition": {
+                  "type": "bpmn:ErrorEventDefinition",
+                  "id": "_Implicit_SubprocessBoundaryError_{nodeId}_Error"
+                },
+                "model": {
+                  "outputs": [
+                    {
+                      "name": "Error",
+                      "type": "jsonSchema",
+                      "source": "=Error",
+                      "var": "{nodeId}.boundaryError"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:ExclusiveGateway",
+              "condition": "(node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')) && originalEdges.length > 0",
+              "parentId": null,
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "data": {
+                "label": "Post-Subprocess Branch"
+              }
+            }
+          ],
+          "edges": [
+            {
+              "condition": "(node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')) && originalEdges.length > 0",
+              "id": "_Implicit_Edge_{nodeId}__Implicit_PostSubprocessGateway_{nodeId}",
+              "source": "{nodeId}",
+              "target": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {}
+            },
+            {
+              "forEach": "node.data.inputs.branches",
+              "condition": "node.data.inputs.branches.length > 0",
+              "matchOriginalEdgeByHandle": "branch-{branch.id}",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "conditionExpression": "{branch.conditionExpression}",
+                "label": "{branch.name}"
+              }
+            },
+            {
+              "condition": "node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "default",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "label": "Default"
+              }
+            },
+            {
+              "condition": "hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "error",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "conditionExpression": "=js:vars.{nodeId}.error != null || (vars.{nodeId}.output != null && vars.{nodeId}.output.statusCode >= 400)",
+                "label": "Error"
+              }
+            },
+            {
+              "condition": "node.data.inputs.branches.length === 0 && !hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "default",
+              "preserveEdgeId": true,
+              "source": "{nodeId}",
+              "type": "bpmn:SequenceFlow"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0.0",
+      "description": "Run custom JavaScript code",
+      "category": "data-operations",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "display": {
+        "label": "Script",
+        "icon": "code",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "inputDefaults": {
+        "script": ""
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      }
+    },
+    {
+      "nodeType": "core.logic.decision",
+      "version": "1.0.0",
+      "description": "Branch based on a true/false condition",
+      "category": "control-flow",
+      "tags": [
+        "control-flow",
+        "if",
+        "loop",
+        "switch"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Decision",
+        "icon": "trending-up-down",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "true",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.trueLabel}",
+              "constraints": {
+                "minConnections": 1
+              }
+            },
+            {
+              "id": "false",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.falseLabel}",
+              "constraints": {
+                "minConnections": 1
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "inputDefaults": {
+        "trueLabel": "True",
+        "falseLabel": "False"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A condition expression is required"
+          },
+          "trueLabel": {
+            "type": "string"
+          },
+          "falseLabel": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expression"
+        ]
+      },
+      "outputDefinition": {
+        "matchedCase": {
+          "type": "string",
+          "description": "The label of the matched branch (true/false label)",
+          "var": "matchedCase"
+        },
+        "matchedCaseId": {
+          "type": "string",
+          "description": "The branch that was taken (true or false)",
+          "var": "matchedCaseId"
+        }
+      },
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:InclusiveGateway"
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0.0",
+      "description": "Mark the end of a workflow path",
+      "category": "control-flow",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
+    },
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "description": "Start workflow manually",
+      "category": "trigger",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "replace",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      }
+    },
+    {
+      "nodeType": "core.action.http",
+      "version": "1.2",
+      "category": "data-operations",
+      "description": "Make API calls with branching and retry",
+      "tags": [
+        "connector",
+        "http",
+        "api",
+        "rest",
+        "request"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "HTTP Request",
+        "icon": "app-window"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "branch-{item.id}",
+              "type": "source",
+              "handleType": "output",
+              "label": "{item.name}",
+              "repeat": "inputs.branches"
+            },
+            {
+              "id": "default",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
             }
           ],
           "visible": true
@@ -336,14 +1247,22 @@
                   "id": "_Implicit_StartEvent_{nodeId}",
                   "type": "bpmn:StartEvent",
                   "parentId": "{nodeId}",
-                  "position": { "x": 0, "y": 0 },
-                  "data": { "label": "HTTP Request Start" }
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "HTTP Request Start"
+                  }
                 },
                 {
                   "id": "_Implicit_HttpTask_{nodeId}",
                   "type": "bpmn:SendTask",
                   "parentId": "{nodeId}",
-                  "position": { "x": 0, "y": 0 },
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
                   "propagate": {
                     "retry": {
                       "condition": "node.data.inputs.retryCount > 0",
@@ -360,15 +1279,48 @@
                       "serviceType": "Intsvc.HttpExecution",
                       "version": "v1",
                       "context": [
-                        { "name": "mode", "type": "string", "source": "node.data.inputs.mode" },
-                        { "name": "method", "type": "string", "source": "node.data.inputs.method" },
-                        { "name": "url", "type": "string", "source": "node.data.inputs.url" },
-                        { "name": "headers", "type": "json", "source": "node.data.inputs.headers", "format": "json" },
-                        { "name": "parameters", "type": "json", "source": "node.data.inputs.queryParams", "format": "json" },
-                        { "name": "body", "type": "json", "source": "node.data.inputs.body", "format": "json" }
+                        {
+                          "name": "mode",
+                          "type": "string",
+                          "source": "node.data.inputs.mode"
+                        },
+                        {
+                          "name": "method",
+                          "type": "string",
+                          "source": "node.data.inputs.method"
+                        },
+                        {
+                          "name": "url",
+                          "type": "string",
+                          "source": "node.data.inputs.url"
+                        },
+                        {
+                          "name": "headers",
+                          "type": "json",
+                          "source": "node.data.inputs.headers",
+                          "format": "json"
+                        },
+                        {
+                          "name": "parameters",
+                          "type": "json",
+                          "source": "node.data.inputs.queryParams",
+                          "format": "json"
+                        },
+                        {
+                          "name": "body",
+                          "type": "json",
+                          "source": "node.data.inputs.body",
+                          "format": "json"
+                        }
                       ],
                       "outputs": [
-                        { "name": "response", "type": "json", "source": "=response", "var": "response", "internal": true }
+                        {
+                          "name": "response",
+                          "type": "json",
+                          "source": "=response",
+                          "var": "response",
+                          "internal": true
+                        }
                       ]
                     }
                   }
@@ -377,23 +1329,36 @@
                   "id": "_Implicit_EndEvent_Default_{nodeId}",
                   "type": "bpmn:EndEvent",
                   "parentId": "{nodeId}",
-                  "position": { "x": 0, "y": 0 },
-                  "data": { "label": "Default" }
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Default"
+                  }
                 },
                 {
                   "condition": "hasEdgeFromHandle('error')",
                   "id": "_Implicit_EndEvent_Failure_{nodeId}",
                   "type": "bpmn:EndEvent",
                   "parentId": "{nodeId}",
-                  "position": { "x": 0, "y": 0 },
-                  "data": { "label": "Failure" }
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Failure"
+                  }
                 },
                 {
                   "condition": "hasEdgeFromHandle('error')",
                   "id": "_Implicit_BoundaryError_{nodeId}",
                   "type": "bpmn:BoundaryEvent",
                   "parentId": "{nodeId}",
-                  "position": { "x": 0, "y": 0 },
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
                   "data": {
                     "label": "Error",
                     "attachedToId": "_Implicit_HttpTask_{nodeId}",
@@ -403,7 +1368,13 @@
                     },
                     "model": {
                       "outputs": [
-                        { "name": "Error", "type": "jsonSchema", "source": "=Error", "var": "error", "internal": true }
+                        {
+                          "name": "Error",
+                          "type": "jsonSchema",
+                          "source": "=Error",
+                          "var": "error",
+                          "internal": true
+                        }
                       ]
                     }
                   }
@@ -439,7 +1410,10 @@
               "id": "_Implicit_SubprocessBoundaryError_{nodeId}",
               "type": "bpmn:BoundaryEvent",
               "parentId": null,
-              "position": { "x": 0, "y": 0 },
+              "position": {
+                "x": 0,
+                "y": 0
+              },
               "data": {
                 "label": "",
                 "attachedToId": "{nodeId}",
@@ -449,7 +1423,12 @@
                 },
                 "model": {
                   "outputs": [
-                    { "name": "Error", "type": "jsonSchema", "source": "=Error", "var": "{nodeId}.boundaryError" }
+                    {
+                      "name": "Error",
+                      "type": "jsonSchema",
+                      "source": "=Error",
+                      "var": "{nodeId}.boundaryError"
+                    }
                   ]
                 }
               }
@@ -459,8 +1438,13 @@
               "type": "bpmn:ExclusiveGateway",
               "condition": "(node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')) && originalEdges.length > 0",
               "parentId": null,
-              "position": { "x": 0, "y": 0 },
-              "data": { "label": "Post-Subprocess Branch" }
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "data": {
+                "label": "Post-Subprocess Branch"
+              }
             }
           ],
           "edges": [
@@ -490,7 +1474,9 @@
               "preserveEdgeId": true,
               "source": "_Implicit_PostSubprocessGateway_{nodeId}",
               "type": "bpmn:SequenceFlow",
-              "data": { "label": "Default" }
+              "data": {
+                "label": "Default"
+              }
             },
             {
               "condition": "hasEdgeFromHandle('error')",
@@ -516,8 +1502,14 @@
       "inputDefinition": {
         "type": "object",
         "properties": {
-          "mode": { "type": "string" },
-          "method": { "type": "string", "minLength": 1, "errorMessage": "Method is required" },
+          "mode": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Method is required"
+          },
           "url": {
             "type": "string",
             "minLength": 1,
@@ -527,33 +1519,65 @@
               "pattern": "URL must be a valid URL or variable expression"
             }
           },
-          "swaggerDefinition": { "type": ["object", "null"] },
-          "authenticationType": { "type": "string" },
-          "application": { "type": "string" },
-          "connection": { "type": "string" },
-          "headers": { "type": "object" },
-          "queryParams": { "type": "object" },
-          "body": { "type": "string" },
-          "contentType": { "type": "string" },
+          "swaggerDefinition": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "authenticationType": {
+            "type": "string"
+          },
+          "application": {
+            "type": "string"
+          },
+          "connection": {
+            "type": "string"
+          },
+          "headers": {
+            "type": "object"
+          },
+          "queryParams": {
+            "type": "object"
+          },
+          "body": {
+            "type": "object"
+          },
+          "contentType": {
+            "type": "string"
+          },
           "timeout": {
             "type": "string",
             "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+S)?)?$",
-            "errorMessage": { "pattern": "Timeout must be in ISO 8601 duration format (e.g., PT15M, PT1H, P1D)" }
+            "errorMessage": {
+              "pattern": "Timeout must be in ISO 8601 duration format (e.g., PT15M, PT1H, P1D)"
+            }
           },
-          "retryCount": { "type": "number" },
+          "retryCount": {
+            "type": "number"
+          },
           "branches": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "id": { "type": "string" },
-                "name": { "type": "string" },
-                "conditionExpression": { "type": "string" }
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "conditionExpression": {
+                  "type": "string"
+                }
               }
             }
           }
         },
-        "required": ["method", "url"]
+        "required": [
+          "method",
+          "url"
+        ]
       },
       "inputDefaults": {
         "mode": "manual",
@@ -565,7 +1589,7 @@
         "connection": "",
         "headers": {},
         "queryParams": {},
-        "body": "",
+        "body": {},
         "contentType": "application/json",
         "timeout": "PT15M",
         "retryCount": 0,
@@ -578,9 +1602,22 @@
           "source": "=response",
           "var": "output",
           "properties": {
-            "body": { "type": "object", "description": "Response body content", "additionalProperties": true },
-            "statusCode": { "type": "number", "description": "HTTP status code" },
-            "headers": { "type": "object", "description": "Response headers", "additionalProperties": { "type": "string" } }
+            "body": {
+              "type": "object",
+              "description": "Response body content",
+              "additionalProperties": true
+            },
+            "statusCode": {
+              "type": "number",
+              "description": "HTTP status code"
+            },
+            "headers": {
+              "type": "object",
+              "description": "Response headers",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
           }
         },
         "error": {
@@ -591,27 +1628,296 @@
           "schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
-            "required": ["code", "message", "detail", "category", "status"],
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
             "properties": {
-              "code": { "type": "string", "description": "Error code as a string" },
-              "message": { "type": "string", "description": "High-level error message" },
-              "detail": { "type": "string", "description": "Detailed error description" },
-              "category": { "type": "string", "description": "Error category" },
-              "status": { "type": "integer", "description": "HTTP status code" }
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
             },
             "additionalProperties": false
           }
         }
+      },
+      "form": {
+        "id": "http-properties-v2",
+        "title": "HTTP Request",
+        "sections": [
+          {
+            "id": "implementation",
+            "title": "Implementation",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs._httpToolbar",
+                "type": "custom",
+                "component": "http-curl-buttons",
+                "label": ""
+              },
+              {
+                "name": "inputs.mode",
+                "type": "select",
+                "label": "Mode",
+                "options": [
+                  {
+                    "label": "Manual",
+                    "value": "manual"
+                  },
+                  {
+                    "label": "API definition",
+                    "value": "apiDefinition"
+                  }
+                ]
+              },
+              {
+                "name": "inputs.swaggerDefinition",
+                "type": "custom",
+                "component": "http-swagger-section",
+                "label": "",
+                "rules": [
+                  {
+                    "id": "show-swagger",
+                    "conditions": [
+                      {
+                        "when": "inputs.mode",
+                        "is": "apiDefinition"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.method",
+                "type": "select",
+                "label": "HTTP method",
+                "options": [
+                  {
+                    "label": "GET",
+                    "value": "GET"
+                  },
+                  {
+                    "label": "POST",
+                    "value": "POST"
+                  },
+                  {
+                    "label": "PUT",
+                    "value": "PUT"
+                  },
+                  {
+                    "label": "PATCH",
+                    "value": "PATCH"
+                  },
+                  {
+                    "label": "DELETE",
+                    "value": "DELETE"
+                  }
+                ]
+              },
+              {
+                "name": "inputs.url",
+                "type": "custom",
+                "component": "http-url-field",
+                "label": "URL",
+                "componentProps": {
+                  "expressionValidationFields": [
+                    {
+                      "expectedType": "string"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "headers",
+            "title": "Headers",
+            "collapsible": true,
+            "defaultExpanded": false,
+            "fields": [
+              {
+                "name": "inputs.headers",
+                "type": "custom",
+                "component": "key-value-editor",
+                "label": "HTTP headers",
+                "componentProps": {
+                  "keyLabel": "Header name",
+                  "valueLabel": "Header value",
+                  "keyOptions": [
+                    "Accept",
+                    "Accept-Encoding",
+                    "Accept-Language",
+                    "Authorization",
+                    "Cache-Control",
+                    "Connection",
+                    "Content-Encoding",
+                    "Content-Length",
+                    "Content-Type",
+                    "Cookie",
+                    "Host",
+                    "If-Modified-Since",
+                    "If-None-Match",
+                    "Origin",
+                    "Referer",
+                    "User-Agent",
+                    "X-Requested-With",
+                    "X-Forwarded-For",
+                    "X-Api-Key"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "parameters",
+            "title": "Query parameters",
+            "collapsible": true,
+            "defaultExpanded": false,
+            "fields": [
+              {
+                "name": "inputs.queryParams",
+                "type": "custom",
+                "component": "key-value-editor",
+                "label": "Query parameters",
+                "componentProps": {
+                  "keyLabel": "Parameter name",
+                  "valueLabel": "Parameter value"
+                }
+              }
+            ]
+          },
+          {
+            "id": "body",
+            "title": "Body",
+            "collapsible": true,
+            "defaultExpanded": false,
+            "fields": [
+              {
+                "name": "inputs.contentType",
+                "type": "select",
+                "label": "Content type",
+                "options": [
+                  {
+                    "label": "application/json",
+                    "value": "application/json"
+                  },
+                  {
+                    "label": "application/xml",
+                    "value": "application/xml"
+                  },
+                  {
+                    "label": "text/plain",
+                    "value": "text/plain"
+                  },
+                  {
+                    "label": "application/x-www-form-urlencoded",
+                    "value": "application/x-www-form-urlencoded"
+                  }
+                ]
+              },
+              {
+                "name": "inputs.body",
+                "type": "custom",
+                "component": "code-editor",
+                "label": "Body",
+                "componentProps": {
+                  "language": "javascript",
+                  "mode": "expression",
+                  "expectedType": "any",
+                  "minHeight": 150,
+                  "placeholder": "{\n  \"key\": \"value\"\n}"
+                }
+              }
+            ]
+          },
+          {
+            "id": "branches",
+            "title": "Branches",
+            "collapsible": true,
+            "defaultExpanded": false,
+            "fields": [
+              {
+                "name": "inputs.branches",
+                "type": "custom",
+                "component": "http-branch-editor",
+                "label": "Response branches",
+                "description": "Define conditional branches based on response status or properties",
+                "componentProps": {
+                  "expressionValidationFields": [
+                    {
+                      "subPath": "conditionExpression",
+                      "validationMode": "expression",
+                      "expectedType": "boolean"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "advanced",
+            "title": "Advanced",
+            "collapsible": true,
+            "defaultExpanded": false,
+            "fields": [
+              {
+                "name": "inputs.timeout",
+                "type": "text",
+                "label": "Timeout",
+                "description": "ISO 8601 duration format (e.g., PT15M for 15 minutes, PT1H for 1 hour)"
+              },
+              {
+                "name": "inputs.retryCount",
+                "type": "number",
+                "label": "Retry count",
+                "description": "Number of times to retry on failure"
+              }
+            ]
+          }
+        ]
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
       }
     },
     {
       "nodeType": "core.action.script",
-      "version": "1.0.0",
-      "category": "data-operations",
+      "version": "1.0",
       "description": "Run custom JavaScript code",
-      "tags": ["code", "javascript", "python"],
+      "category": "data-operations",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
       "sortOrder": 35,
-      "supportsErrorHandling": true,
       "display": {
         "label": "Script",
         "icon": "code",
@@ -622,18 +1928,27 @@
         {
           "position": "left",
           "handles": [
-            { "id": "input", "type": "target", "handleType": "input" }
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
           ]
         },
         {
           "position": "right",
           "handles": [
-            { "id": "success", "type": "source", "handleType": "output" }
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            }
           ]
         }
       ],
-      "debug": { "runtime": "clientScript" },
-      "model": { "type": "bpmn:ScriptTask" },
+      "inputDefaults": {
+        "script": ""
+      },
       "inputDefinition": {
         "type": "object",
         "properties": {
@@ -644,9 +1959,10 @@
             "validationSeverity": "warning"
           }
         },
-        "required": ["script"]
+        "required": [
+          "script"
+        ]
       },
-      "inputDefaults": { "script": "" },
       "outputDefinition": {
         "output": {
           "type": "object",
@@ -662,25 +1978,57 @@
           "schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
-            "required": ["code", "message", "detail", "category", "status"],
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
             "properties": {
-              "code": { "type": "string", "description": "Error code as a string" },
-              "message": { "type": "string", "description": "High-level error message" },
-              "detail": { "type": "string", "description": "Detailed error description" },
-              "category": { "type": "string", "description": "Error category" },
-              "status": { "type": "integer", "description": "HTTP status code" }
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
             },
             "additionalProperties": false
           }
         }
+      },
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
       }
     },
     {
       "nodeType": "core.logic.decision",
-      "version": "1.0.0",
-      "category": "control-flow",
+      "version": "1.0",
       "description": "Branch based on a true/false condition",
-      "tags": ["control-flow", "if", "loop", "switch"],
+      "category": "control-flow",
+      "tags": [
+        "control-flow",
+        "if",
+        "loop",
+        "switch"
+      ],
       "sortOrder": 20,
       "display": {
         "label": "Decision",
@@ -692,7 +2040,11 @@
         {
           "position": "left",
           "handles": [
-            { "id": "input", "type": "target", "handleType": "input" }
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
           ],
           "visible": true
         },
@@ -704,29 +2056,45 @@
               "type": "source",
               "handleType": "output",
               "label": "{inputs.trueLabel}",
-              "constraints": { "minConnections": 1 }
+              "constraints": {
+                "minConnections": 1
+              }
             },
             {
               "id": "false",
               "type": "source",
               "handleType": "output",
               "label": "{inputs.falseLabel}",
-              "constraints": { "minConnections": 1 }
+              "constraints": {
+                "minConnections": 1
+              }
             }
           ],
           "visible": true
         }
       ],
-      "debug": { "runtime": "clientScript" },
-      "model": { "type": "bpmn:InclusiveGateway" },
+      "inputDefaults": {
+        "trueLabel": "True",
+        "falseLabel": "False"
+      },
       "inputDefinition": {
         "type": "object",
         "properties": {
-          "expression": { "type": "string", "minLength": 1, "errorMessage": "A condition expression is required" },
-          "trueLabel": { "type": "string" },
-          "falseLabel": { "type": "string" }
+          "expression": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A condition expression is required"
+          },
+          "trueLabel": {
+            "type": "string"
+          },
+          "falseLabel": {
+            "type": "string"
+          }
         },
-        "required": ["expression"]
+        "required": [
+          "expression"
+        ]
       },
       "outputDefinition": {
         "matchedCase": {
@@ -740,14 +2108,24 @@
           "var": "matchedCaseId"
         }
       },
-      "inputDefaults": { "trueLabel": "True", "falseLabel": "False" }
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:InclusiveGateway"
+      }
     },
     {
       "nodeType": "core.control.end",
-      "version": "1.0.0",
-      "category": "control-flow",
+      "version": "1.0",
       "description": "Mark the end of a workflow path",
-      "tags": ["control-flow", "end", "finish", "complete"],
+      "category": "control-flow",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
       "sortOrder": 20,
       "display": {
         "label": "End",
@@ -758,11 +2136,17 @@
         {
           "position": "left",
           "handles": [
-            { "id": "input", "type": "target", "handleType": "input" }
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
           ]
         }
       ],
-      "model": { "type": "bpmn:EndEvent" }
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
     }
   ],
   "bindings": [],
@@ -780,64 +2164,108 @@
         "id": "getWeather.output",
         "type": "object",
         "description": "HTTP response from open-meteo API",
-        "binding": { "nodeId": "getWeather", "outputId": "output" }
+        "binding": {
+          "nodeId": "getWeather",
+          "outputId": "output"
+        }
       },
       {
         "id": "getWeather.error",
         "type": "object",
         "description": "Error if weather fetch fails",
-        "binding": { "nodeId": "getWeather", "outputId": "error" }
+        "binding": {
+          "nodeId": "getWeather",
+          "outputId": "error"
+        }
       },
       {
         "id": "formatSummary.output",
         "type": "object",
         "description": "Formatted weather summary with temperature and description",
-        "binding": { "nodeId": "formatSummary", "outputId": "output" }
+        "binding": {
+          "nodeId": "formatSummary",
+          "outputId": "output"
+        }
       },
       {
         "id": "formatSummary.error",
         "type": "object",
         "description": "Error if formatting script fails",
-        "binding": { "nodeId": "formatSummary", "outputId": "error" }
+        "binding": {
+          "nodeId": "formatSummary",
+          "outputId": "error"
+        }
       }
     ]
   },
   "layout": {
     "nodes": {
       "start": {
-        "position": { "x": 200, "y": 144 },
-        "size": { "width": 96, "height": 96 },
+        "position": {
+          "x": 200,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
         "collapsed": false
       },
       "getWeather": {
-        "position": { "x": 450, "y": 144 },
-        "size": { "width": 96, "height": 96 },
+        "position": {
+          "x": 450,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
         "collapsed": false
       },
       "formatSummary": {
-        "position": { "x": 700, "y": 144 },
-        "size": { "width": 96, "height": 96 },
+        "position": {
+          "x": 700,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
         "collapsed": false
       },
       "checkTemperature": {
-        "position": { "x": 950, "y": 144 },
-        "size": { "width": 96, "height": 96 },
+        "position": {
+          "x": 950,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
         "collapsed": false
       },
       "endNiceDay": {
-        "position": { "x": 1200, "y": 44 },
-        "size": { "width": 96, "height": 96 },
+        "position": {
+          "x": 1200,
+          "y": 44
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
         "collapsed": false
       },
       "endBringJacket": {
-        "position": { "x": 1200, "y": 244 },
-        "size": { "width": 96, "height": 96 },
+        "position": {
+          "x": 1200,
+          "y": 244
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
         "collapsed": false
       }
     }
-  },
-  "metadata": {
-    "createdAt": "2026-04-15T19:41:18.514Z",
-    "updatedAt": "2026-04-15T19:41:18.514Z"
   }
 }

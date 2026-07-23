@@ -5,8 +5,12 @@ description: >
   channel" (Slack) tool that blocks posts containing forbidden terms before they are sent.
   Verifies that the catalog is fetched, a custom guardrail is written with Tool scope and
   matchNames targeting "Send message to channel", and the guardrail has valid rules.
-tags: [uipath-agents, e2e, low-code, guardrail]
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
 max_iterations: 1
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  disallowed_tools: ["TaskCreate", "TaskUpdate", "TaskList", "TaskGet"]
 
 sandbox:
   template_sources:
@@ -18,6 +22,7 @@ initial_prompt: |
   that posts research briefings to Slack. I'm worried it might accidentally publish
   CONFIDENTIAL content. What guardrail(s) should I add to prevent that, and can you
   set them up? Validate when done.
+
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
   implementation. Complete the entire task end-to-end in a single pass.
@@ -40,6 +45,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent validated the agent"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+validate'
@@ -56,6 +69,6 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
-  expected_turns: 16
+  expected_turns: 24
   max_turns: 40
   turn_timeout: 1200

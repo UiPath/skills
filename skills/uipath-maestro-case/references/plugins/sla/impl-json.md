@@ -16,9 +16,9 @@ Compose the `slaRules[]` array for each target (root or stage) in one write. Gro
 
 | T-entry kind | Required fields | Notes |
 |---|---|---|
-| Default SLA | `target`, `count`, `unit` | One per target. Emitted as the `=js:true` entry, always last. |
-| Conditional rule | `target: "root"`, `condition` (natural-language), `count`, `unit` | Root-only. Translated to `=js:<expr>` at execution; see Expression Translation below. |
-| Escalation | `target`, `attach-to: T<m>` \| `default`, `trigger-type`, `at-risk-percentage?`, `recipients[]`, `display-name?` | `attach-to` points to the T-number of the parent rule (or the default). |
+| Default SLA | `target`, `count`, `unit`, `display-name` | One per target. Emitted as the `=js:true` entry, always last. |
+| Conditional rule | `target: "root"`, `condition` (natural-language), `count`, `unit`, `display-name` | Root-only. Translated to `=js:<expr>` at execution; see Expression Translation below. |
+| Escalation | `target`, `attach-to: T<m>` \| `default`, `trigger-type`, `at-risk-percentage?`, `recipients[]`, `display-name` | `attach-to` points to the T-number of the parent rule (or the default). |
 
 ## ID generation
 
@@ -29,38 +29,28 @@ Record every `T<n> → esc_xxxxxx` in `id-map.json` under `{kind: "escalation", 
 
 ## Target resolution
 
-Read the `Schema:` header from `tasks.md` to pick the root-target path. Stage-target path is identical across schemas.
-
-### v19
-
-- `target: "root"` → `root.data.slaRules` (**inside `root.data`** — sibling of `intsvcActivityConfig` and `uipath`, NOT a top-level key and NOT a direct child of `root`)
-- `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules` (inside the stage node's `data`)
-
-### v20
-
-- `target: "root"` → **`metadata.slaRules`** (top-level `metadata` block, NOT `root.data.slaRules` — there is no `root` in v20)
-- `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules` (unchanged from v19 — node internals are identical)
-
-### Common
-
-- Accepted node types: `case-management:Stage` and `case-management:ExceptionStage`.
+- `target: "root"` → **`metadata.slaRules`** (top-level `metadata` block — there is no `root` key on disk)
+- `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules`
+- Accepted node types: `case-management:Stage` (a secondary/exception stage is the same node with `data.stageType === "secondary"`).
 - If the stage node isn't found, halt and AskUserQuestion with candidate stage labels + "Something else".
 
 ## Recipe — one target
 
-After grouping T-entries by target, compose the `slaRules` array and write it into the target's location per the table above. The composed array shape is **identical** across v19 and v20 — only the destination path differs.
+After grouping T-entries by target, compose the `slaRules` array and write it into the target's location per the rules above.
 
-### Composed array (both schemas)
+### Composed array
 
 ```json
 [
   {
+    "displayName": "SLA Rule 1",
     "expression": "=js:<translated-condition-1>",
     "count": <n>, "unit": "<min|h|d|w|m>",
     "escalationRule": [ <escalations with attach-to == conditional-1-T-number> ]
   },
   { "...additional conditional rules in sdd order..." },
   {
+    "displayName": "SLA Rule 2",
     "expression": "=js:true",
     "count": <default.count>, "unit": "<default.unit>",
     "escalationRule": [ <escalations with attach-to == default> ]
@@ -68,30 +58,12 @@ After grouping T-entries by target, compose the `slaRules` array and write it in
 ]
 ```
 
-### v19 root-target shape
-
-```json
-{
-  "root": {
-    "id": "root",
-    "name": "<name>",
-    "type": "case-management:root",
-    "...": "...",
-    "data": {
-      "intsvcActivityConfig": "v2",
-      "uipath": { "...": "..." },
-      "slaRules": [ <composed array above> ]
-    }
-  }
-}
-```
-
-### v20 root-target shape
+### Root-target shape
 
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "20.0.0",
+  "version": "23.0.0",
   "metadata": {
     "caseIdentifier": "<...>",
     "caseUnifiedSchemaEnabled": true,
@@ -102,18 +74,17 @@ After grouping T-entries by target, compose the `slaRules` array and write it in
 }
 ```
 
-For a stage target (both schemas), the same `slaRules` array is written under `node.data.slaRules` (sibling of `label`, `tasks`, `parentElement`).
+For a stage target, the same `slaRules` array is written under `node.data.slaRules` (sibling of `label`, `tasks`, `parentElement`).
 
 > **Common failures:**
-> - **v19:** emitting `slaRules` at the caseplan top level or directly on `root` (sibling of `data`). Both wrong — must nest inside `data`.
-> - **v20:** emitting `slaRules` under a non-existent `root` key, or under `root.data.slaRules`. Both wrong — must nest under top-level `metadata`. There is no `root` key in v20.
-> - **Either:** writing `slaRules` to a stage's top level (sibling of `id`/`type`). Stage SLA always lives under `node.data.slaRules` regardless of schema.
+> - Emitting `slaRules` under a non-existent `root` key. Wrong — must nest under top-level `metadata`. There is no `root` key on disk.
+> - Writing `slaRules` to a stage's top level (sibling of `id`/`type`). Stage SLA always lives under `node.data.slaRules`.
 
 Emission rules:
 
 1. **Conditional rules first, in T-entry order.** Priority = sdd order (top-most wins).
 2. **Default rule (`=js:true`) last.** Always emitted when any SLA T-entry targets this node — even escalation-only cases.
-3. **Bare default rule is legal.** If a target has escalations but no default SLA T-entry, emit `{expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`.
+3. **Escalation-only default rule is legal, but it still needs a title.** If a target has escalations but no default SLA T-entry, emit `{displayName:"SLA Rule 1", expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`.
 4. **Always emit `escalationRule` on every rule.** Use `"escalationRule": []` when a rule has no attached escalations. Never omit the key.
 5. **Omit `slaRules` key entirely** on targets with no SLA T-entries.
 
@@ -122,7 +93,7 @@ Emission rules:
 ```json
 {
   "id": "esc_xxxxxx",
-  "displayName": "<from T-entry, optional>",
+  "displayName": "<from T-entry or deterministic fallback>",
   "action": {
     "type": "notification",
     "recipients": [
@@ -136,7 +107,9 @@ Emission rules:
 }
 ```
 
-- `displayName` omitted entirely when T-entry doesn't supply one (don't emit `undefined`).
+- `displayName` is required for every SLA rule and escalation in the current Case App contract. Use the authored value or deterministic fallback; never emit blank/undefined. It must be unique within the target and MUST NOT contain `:`; reject the T-entry before writing JSON if it does.
+- Reject a non-positive `count`; for `unit: "min"`, reject values below 15 or above 1000.
+- Reject a non-default rule with an empty expression, an escalation with no recipients, or an `at-risk` escalation without `atRiskPercentage`.
 - `atRiskPercentage` included only when `triggerInfo.type === "at-risk"`.
 - `recipients` is an array — **one entry per sdd-declared recipient**.
 
@@ -156,9 +129,7 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 ## Post-write validation
 
-- **v19:** confirm `root.data.slaRules` or `node.data.slaRules` exists with the expected entries. Verify the key is nested under `data`.
-- **v20:** confirm `metadata.slaRules` (top-level) or `node.data.slaRules` (stage) exists. Verify v20's root-target uses `metadata` — not `root.data` (which doesn't exist in v20).
+- Confirm `metadata.slaRules` (root) or `node.data.slaRules` (stage) exists with the expected entries. Verify the root-target uses `metadata` — not `root.data` (which doesn't exist on disk).
 - Confirm the trailing entry's `expression === "=js:true"` when any SLA T-entry targeted this node.
 - Confirm every generated `esc_` ID appears in `id-map.json`.
-- Run `uip maestro case validate <file> --output json` after all SLA targets have been written (not per-target). In v20 mode, validate may reject due to CLI lag — capture output to build-issues.md, do not retry-loop (Rule 18).
-
+- Run `uip maestro case validate <file> --output json` after all SLA targets have been written (not per-target).

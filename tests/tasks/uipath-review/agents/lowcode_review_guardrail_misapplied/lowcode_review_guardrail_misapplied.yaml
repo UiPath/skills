@@ -1,0 +1,73 @@
+task_id: skill-review-agents-lowcode-guardrail-misapplied
+description: >
+  Integration test for uipath-review on a low-code agent that carries a
+  misapplied guardrail: a synthetic-test-data generator (its LLM never sees real
+  PII) has a `pii_detection` guardrail at Llm scope. `uip agent review` returns
+  it format-clean, so the reviewer must fetch the live catalog and read
+  `pii_detection`'s `when_not_to_use` ("Do not apply at Llm scope if the agent's
+  LLM never receives raw PII from the user") and cite `LC_GUARDRAIL_MISAPPLIED`.
+  Non-gating (integration tag): softer single-shot judgment than the gating
+  action-ineffective task. Needs the authed CLI.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover, guardrail]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_guardrail_misapplied/inject_guardrail_misapplied.py"
+    timeout: 30
+
+initial_prompt: |
+  A low-code UiPath agent project exists at `ReviewSol/SampleAgent` inside the
+  solution `ReviewSol`. Review the agent project for issues and save your review
+  report to `./_review_report.md` at the sandbox root.
+
+  This is a read-only review — do not modify anything inside `ReviewSol/`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside ReviewSol/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*ReviewSol'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside ReviewSol/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*ReviewSol'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Ran the review CLI first (Step 2.5a)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+review'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Fetched the live guardrail catalog (guardrails-review.md Step 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Review report cites LC_GUARDRAIL_MISAPPLIED for the misapplied Llm-scope PII guardrail"
+    command: "python3 $TASK_DIR/check_lowcode_review_guardrail_misapplied.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -1,0 +1,1 @@
+{"Result":"Success","Code":"DryRun","Data":{"plan":{"method":"PUT","url":"/api/servers/test-mcp-skill/tools/tool-mock-jira-create-001","note":"Persisted designTimeLookups: {fields.project.key: 'Mock Project - MOCKPROJ', fields.issuetype.id: 'Task - 10'}"}}}

@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-27T14:38:12.220Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-27T14:38:14.060Z",
+      "Message": "[Excel Application Scope] Opened workbook data\\DailyPrices.xlsx"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-27T14:38:16.940Z",
+      "Message": "[Lookup Range] Searched sheet 'PublishedPrices' for 'SKU-7392'; Result = '' (no match)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-27T14:38:17.534Z",
+      "Message": "[Throw SKU Not Found] Today's published price for SKU-7392 not found in PublishedPrices sheet"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-27T14:38:17.582Z",
+      "Message": "Today's published price for SKU-7392 not found in PublishedPrices sheet\r\nin Main.xaml\r\n    at Throw \"Throw SKU Not Found\"\r\n    at If \"Guard empty result\"\r\n    at Sequence \"Process Published Prices\"\r\n    at ExcelApplicationScope \"Excel Application Scope\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-27T14:38:17.602Z",
+      "Message": "Execution ended in: 00:00:05"
+    }
+  ]
+}

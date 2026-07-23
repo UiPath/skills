@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "IsResourcesDescribe",
+  "Data": {
+    "name": "send_message_to_channel_v2",
+    "displayName": "Send Message to Channel",
+    "elementKey": "uipath-salesforce-slack",
+    "operation": { "name": "Create", "path": "/send_message_to_channel_v2", "method": "POST" },
+    "parameters": [
+      { "name": "send_as", "type": "query", "displayName": "Send as", "required": true, "dataType": "string",
+        "reference": { "objectName": "available_tokens", "lookupNames": ["name","value"], "lookupValue": "value" } }
+    ],
+    "requestFields": [
+      { "name": "channel",        "displayName": "Channel",        "required": true,  "type": "string",
+        "reference": { "objectName": "curated_channels", "lookupNames": ["name","id"], "lookupValue": "id" } },
+      { "name": "messageToSend",  "displayName": "Message",        "required": true,  "type": "string", "description": "The text of the message to send." }
+    ],
+    "responseFields": [
+      { "name": "ts",      "type": "string", "displayName": "Message timestamp" },
+      { "name": "channel", "type": "string", "displayName": "Resolved channel id" }
+    ]
+  }
+}

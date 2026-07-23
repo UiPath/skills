@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-15T11:18:30.140Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-15T11:18:30.722Z",
+      "Message": "[Excel Process Scope] Opening workbook data\\Ledger.xlsx"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-15T11:18:33.311Z",
+      "Message": "[Use Excel File] Workbook opened successfully"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-15T11:18:34.642Z",
+      "Message": "[Invoke VBA] Wrong number of arguments or invalid property assignment"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-15T11:18:34.695Z",
+      "Message": "Wrong number of arguments or invalid property assignment\r\nin Main.xaml\r\n    at InvokeVBAX \"Invoke VBA\"\r\n    at ExcelApplicationCard \"Use Excel File\"\r\n    at ExcelProcessScope \"Excel Process Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-15T11:18:34.710Z",
+      "Message": "Execution ended in: 00:00:04"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-27T09:12:40.450Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-27T09:12:42.870Z",
+      "Message": "[Use Excel File] Opened workbook data\\PriceList.xlsx"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-27T09:12:44.110Z",
+      "Message": "[Filter Status = Active] Applied filter on sheet 'Prices' column 'Status' = 'Active'"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-27T09:12:45.880Z",
+      "Message": "[Lookup Range] Searched sheet 'Prices' for 'SKU-8842'; Result = '' (no match in visible range)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-27T09:12:46.262Z",
+      "Message": "[Throw SKU Not Found] SKU-8842 not found in price list"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-27T09:12:46.305Z",
+      "Message": "SKU-8842 not found in price list\r\nin Main.xaml\r\n    at Throw \"Throw SKU Not Found\"\r\n    at If \"Guard empty result\"\r\n    at Sequence \"Process Price List\"\r\n    at ExcelApplicationCard \"Use Excel File\"\r\n    at ExcelProcessScope \"Excel Process Scope\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-27T09:12:46.325Z",
+      "Message": "Execution ended in: 00:00:05"
+    }
+  ]
+}

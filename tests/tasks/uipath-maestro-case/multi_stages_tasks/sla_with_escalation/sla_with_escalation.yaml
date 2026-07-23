@@ -7,8 +7,8 @@ description: >
   priority + conditional 5 days (unit=d) for Standard priority,
   inserted in priority order. Resolve (regular stage) carries its own
   default SLA of 1 month (unit=m) — the regular-stage SLA path that
-  no other multi_stages_tasks test covers (exception_stage uses h on an
-  ExceptionStage). The root default rule carries an at-risk 80%
+  no other multi_stages_tasks test covers (exception_stage uses h on a
+  secondary stage). The root default rule carries an at-risk 80%
   MULTI-RECIPIENT escalation (User manager@corp.com + UserGroup
   "Operations Leadership" both notified at 80% risk); the Urgent
   conditional rule carries an sla-breached escalation to a single
@@ -32,7 +32,7 @@ run_limits:
 initial_prompt: |
   Build a UiPath Case Management solution named "SlaWithEscalation"
   containing a project also named "SlaWithEscalation" from the sdd.md
-  below. Use v20 schema. Write the sdd.md to disk first, then build from it.
+  below. Write the sdd.md to disk first, then build from it.
 
   ```
   # SDD — SlaWithEscalation
@@ -123,8 +123,6 @@ initial_prompt: |
   debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
   in a single pass and finish with `uip maestro case validate` passing on
   the resulting caseplan.json.
-  Before starting, load the uipath-maestro-case skill. Read and follow its
-  workflow steps exactly.
 
 success_criteria:
   - type: run_command

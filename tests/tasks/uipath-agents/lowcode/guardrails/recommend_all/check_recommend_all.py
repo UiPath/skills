@@ -116,6 +116,20 @@ def main() -> None:
     llm_types = [get_validator_type(g) for g in llm_guards]
     print(f"OK: Llm-scoped builtInValidator guardrail(s) present: {llm_types}")
 
+    # De-dup rule: must NOT stack both prompt_injection AND user_prompt_attacks —
+    # they share security_category "adversarial_input" at Llm PRE. Recommend one.
+    has_prompt_injection = any(get_validator_type(g) == "prompt_injection" for g in guardrails)
+    has_user_prompt_attacks = any(
+        get_validator_type(g) == "user_prompt_attacks" for g in guardrails
+    )
+    if has_prompt_injection and has_user_prompt_attacks:
+        sys.exit(
+            "FAIL: both prompt_injection and user_prompt_attacks validators are present. "
+            "They cover the same security_category (adversarial_input) at Llm PRE — "
+            "the recommender must pick exactly one, not stack both."
+        )
+    print("OK: adversarial-input validators are de-duplicated (not both stacked)")
+
     # Check for content-safety guardrail
     content_guards = [
         g for g in guardrails
@@ -129,6 +143,23 @@ def main() -> None:
         )
     content_types = [get_validator_type(g) for g in content_guards]
     print(f"OK: content-safety guardrail(s) present: {content_types}")
+
+    # Default-action rule: a security-critical guardrail must block, not just log.
+    # recommend_all always yields at least one adversarial-input + one content-safety
+    # guardrail, whose catalog-default action is block — so at least one $actionType "block"
+    # must be present.
+    has_block = any(
+        (g.get("action") or {}).get("$actionType") == "block" for g in guardrails
+    )
+    if not has_block:
+        action_types = [(g.get("action") or {}).get("$actionType") for g in guardrails]
+        sys.exit(
+            "FAIL: no guardrail uses $actionType 'block'. The recommended adversarial-input "
+            "and content-safety guardrails default to block in the catalog — a security-"
+            "critical guardrail must block, not be silently downgraded to log-only. "
+            f"Action types found: {action_types}"
+        )
+    print("OK: $actionType 'block' present (security-critical guardrail blocks)")
 
     print("OK: guardrail recommendation check passed")
 

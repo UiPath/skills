@@ -24,14 +24,6 @@ initial_prompt: |
   - SAP: HTTP POST request to the configured endpoint, sending the extracted
     invoice fields as the request body
 
-  Important:
-  - The `uip` CLI is already available.
-  - Use `--output json` on all uip commands.
-  - Work inside the stated working directory — do NOT `cd` to a parent.
-  - Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
-  - Run `uip maestro flow validate` at most ONCE. If it fails, stop.
-  - Do NOT iterate on validation errors.
-
 success_criteria:
   - type: skill_triggered
     skill_name: "uipath-maestro-flow"
@@ -87,12 +79,16 @@ success_criteria:
 
   - type: run_command
     description: "Generated flow references the IxP extraction output via $vars (downstream consumption)"
-    command: 'grep -rqE "\$vars\." --include="*.flow" .'
+    command: 'grep -rqF ''$vars.'' --include="*.flow" .'
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
 run_limits:
-  max_turns: 80
+  # Heavy multi-connector e2e: the one completed run used 882s / 71 turns. On the slow
+  # eu.anthropic Bedrock path it tips over a 900s cap, so the run is wall-clock-killed
+  # before finishing. 1500 is the modal connector/e2e budget (~600s headroom over the
+  # 882s fast baseline); max_turns 120 keeps margin over the observed 71. RE-12529.
+  max_turns: 120
   turn_timeout: 1200
-  task_timeout: 900
+  task_timeout: 1500

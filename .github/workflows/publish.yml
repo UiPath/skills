@@ -1,0 +1,173 @@
+name: Publish skills package
+
+# Publishing channels (registry follows channel — see docs/RELEASE.md):
+#   - push to `main`                       -> `dev`     : GitHub Packages
+#         Auto on every merge. Version `<base>-dev.<run_number>` (never
+#         committed). No provenance — GitHub Packages does not support it.
+#   - push to `release/v*`                 -> `preview` : npmjs (pre-release)
+#         Auto on every merge to a release line, mirroring UiPath/cli. Version
+#         `<base>-preview.<run_number>` (never committed), signed with
+#         `--provenance` via OIDC trusted publishing.
+#   - workflow_dispatch (channel: latest)  -> `latest`  : npmjs (stable)
+#         Committed `package.json` version. Stable is manual-only — there is
+#         no `release:` trigger; publishing a GitHub Release does not publish.
+#   - workflow_dispatch (channel: preview) -> `preview` : npmjs (pre-release)
+#   - workflow_dispatch (channel: dev)     -> `dev`     : GitHub Packages
+#
+# npmjs publishes (`latest`, `preview`) use OIDC trusted publishing +
+# `--provenance`. GitHub Packages publishes (`dev`) use the built-in
+# GITHUB_TOKEN and carry no provenance. `npm install @uipath/skills` (no tag,
+# from npmjs) always resolves the last stable release — `preview` and `dev`
+# are pre-release versions under their own dist-tags, so no un-tagged install
+# ever picks them. The version line tracks the CLI minor line so the CLI can
+# pin a compatible skills package.
+
+on:
+  push:
+    # main       -> `dev` build on GitHub Packages
+    # release/v* -> `preview` build on npmjs (mirrors UiPath/cli)
+    branches: [main, 'release/v*']
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Manual publish channel"
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - dev
+          - latest
+
+# Serialize publishes so rapid merges don't race on a shared dist-tag: each
+# run stamps a unique version, the group just orders the tag moves. Never
+# cancel an in-flight publish.
+concurrency:
+  group: publish-${{ github.event_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Validate version sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+      # Fails if version-manifest.json has drifted from package.json.
+      - run: node scripts/sync-version.mjs --check
+
+  publish-dev:
+    name: Publish dev to GitHub Packages
+    needs: [guard]
+    # Auto on every merge to main; also re-runnable via dispatch (channel=dev).
+    # release/v* pushes route to preview on npmjs (publish-npmjs), not here.
+    # The repo guard stops forks from attempting to publish on their own main.
+    if: >-
+      github.repository == 'UiPath/skills'
+      && ((github.event_name == 'push' && github.ref == 'refs/heads/main')
+          || (github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'dev'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@uipath"
+
+      # Stamp a prerelease suffix: <base>-dev.<run_number>. Dot-separated so
+      # semver orders the run number numerically. Never committed — only the
+      # published tarball carries it. sync-version.mjs rewrites the derived
+      # manifests and strips the suffix from the plugin manifests.
+      - name: Stamp dev version
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          BASE=$(node -p "require('./package.json').version")
+          DEV="${BASE}-dev.${RUN_NUMBER}"
+          npm version "$DEV" --no-git-tag-version --allow-same-version
+          node scripts/sync-version.mjs
+          echo "Publishing $DEV to dist-tag dev"
+
+      # setup-node wrote `@uipath:registry=https://npm.pkg.github.com/` + auth;
+      # the scoped registry routes this scoped package to GitHub Packages. The
+      # built-in GITHUB_TOKEN suffices given the job's `packages: write`
+      # permission above. No --provenance: GitHub Packages does not support it.
+      - name: Publish
+        run: npm publish --tag dev
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-npmjs:
+    name: Publish to npmjs (latest / preview)
+    needs: [guard]
+    # dispatch channel=latest              -> `latest`  (committed version).
+    # release/v* push / dispatch preview   -> `preview` (stamped pre-release).
+    if: >-
+      github.repository == 'UiPath/skills'
+      && ((github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
+          || (github.event_name == 'workflow_dispatch'
+              && (github.event.inputs.channel == 'latest' || github.event.inputs.channel == 'preview')))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # OIDC trusted publishing — no NPM_TOKEN. The npmjs trusted publisher
+      # for @uipath/skills must name this repo (UiPath/skills) and workflow
+      # (publish.yml); it is not restricted to a single ref, so release/v*
+      # pushes publish through the same OIDC exchange as tags on main.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+
+      # Node 22 ships npm 10.x; OIDC trusted publishing needs npm >= 11.5.1.
+      - name: Upgrade npm for trusted publishing
+        run: |
+          npm install -g npm@latest
+          echo "npm $(npm --version) / node $(node --version)"
+
+      # `preview` when: dispatch channel=preview, OR an auto push to a
+      # release/v* branch (mirrors UiPath/cli). Stamps `<base>-preview.<run>`
+      # (never committed). Otherwise `latest` (dispatch channel=latest)
+      # publishes the committed version. An explicit
+      # `--tag preview` on a pre-release version never moves `latest`, so
+      # `npm install @uipath/skills` still resolves the last stable release.
+      - name: Resolve dist-tag and stamp version
+        id: dist
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUBLISH_REF: ${{ github.ref }}
+          CHANNEL: ${{ github.event.inputs.channel }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          if [ "$CHANNEL" = "preview" ] || { [ "$EVENT_NAME" = "push" ] && [[ "$PUBLISH_REF" == refs/heads/release/* ]]; }; then
+            BASE=$(node -p "require('./package.json').version")
+            PREVIEW="${BASE}-preview.${RUN_NUMBER}"
+            npm version "$PREVIEW" --no-git-tag-version --allow-same-version
+            node scripts/sync-version.mjs
+            echo "tag=preview" >> "$GITHUB_OUTPUT"
+            echo "Publishing $PREVIEW to dist-tag preview"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+            echo "Publishing $(node -p "require('./package.json').version") to dist-tag latest"
+          fi
+
+      # No auth token and no setup-node registry-url — a token would make npm
+      # use token auth and bypass OIDC. We only pin the scoped package to
+      # npmjs; credentials come from the OIDC exchange. `--provenance` attaches
+      # a signed build attestation (allowed because the repo is public and the
+      # job has id-token: write); package.json `repository.url` must match.
+      - name: Publish to npmjs (OIDC trusted publishing)
+        run: |
+          npm config set @uipath:registry https://registry.npmjs.org/
+          npm publish --access public --provenance --tag ${{ steps.dist.outputs.tag }}

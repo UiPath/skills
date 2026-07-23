@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-15T11:18:34.642Z",
+      "Message": "[Invoke VBA] Wrong number of arguments or invalid property assignment"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-15T11:18:34.695Z",
+      "Message": "Wrong number of arguments or invalid property assignment\r\nin Main.xaml\r\n    at InvokeVBAX \"Invoke VBA\"\r\n    at ExcelApplicationCard \"Use Excel File\"\r\n    at ExcelProcessScope \"Excel Process Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

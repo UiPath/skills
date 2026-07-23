@@ -8,16 +8,16 @@ The flow needs to pause for a human to review, approve, or fill in data. Two nod
 
 | Use case | Node type | Form source |
 | --- | --- | --- |
-| Inline form designed right now (fields + outcomes defined in the flow) | `uipath.human-in-the-loop` | Schema embedded in node inputs — no app needed |
-| Existing coded app or Action Center app | `uipath.core.human-task.{key}` | Deployed app from Orchestrator |
+| Inline form designed right now (fields + outcomes defined in the flow) | `uipath.human-in-the-loop.quick-form` | Schema embedded in node inputs — no app needed |
+| Existing coded app or Action Center app | `uipath.human-in-the-loop.coded-action-app` | Deployed app from Orchestrator |
 
-**Prefer `uipath.human-in-the-loop`** for new flows. It is an OOTB node — no registry discovery, no app publishing, no tenant dependency.
+**Prefer `uipath.human-in-the-loop.quick-form`** for new flows. It is an OOTB node — no registry discovery, no app publishing, no tenant dependency.
 
 ---
 
-## Option 1 — `uipath.human-in-the-loop` (Inline Schema — OOTB)
+## Option 1 — `uipath.human-in-the-loop.quick-form` (Inline Schema — OOTB)
 
-Node type: `uipath.human-in-the-loop`
+Node type: `uipath.human-in-the-loop.quick-form`
 Available: always — no `uip login` or registry pull required.
 
 ### When to Select
@@ -35,9 +35,9 @@ Available: always — no `uip login` or registry pull required.
 
 | Input port | Output port |
 | --- | --- |
-| `input` | `completed` |
+| `input` | `outcome-completed` |
 
-**The output port must be wired.** A node with no edge on `completed` blocks the flow indefinitely.
+**The output port must be wired.** A node with no edge on `outcome-completed` blocks the flow indefinitely.
 
 ### Output Variables
 
@@ -72,14 +72,14 @@ Full JSON format and conversion examples: see [`uipath-human-in-the-loop` skill]
 ### Wiring Pattern
 
 ```
-[Upstream] -> [HITL] ->|completed| [Continue]
+[Upstream] -> [HITL] ->|outcome-completed| [Continue]
 ```
 
 ### Common Topology Patterns
 
 **Approval gate:**
 ```
-Trigger -> Fetch Data -> HITL (review) ->|completed| Decision (approved?) ->
+Trigger -> Fetch Data -> HITL (review) ->|outcome-completed| Decision (approved?) ->
   true: Script (process) -> End
   false: Script (log rejection) -> End
 ```
@@ -88,14 +88,14 @@ Trigger -> Fetch Data -> HITL (review) ->|completed| Decision (approved?) ->
 ```
 Trigger -> Process -> Decision (confidence ok?) ->
   true: Continue -> End
-  false: HITL (exception review) ->|completed| Script (retry with human input) -> End
+  false: HITL (exception review) ->|outcome-completed| Script (retry with human input) -> End
 ```
 
 ### Planning Annotation
 
 In the node table:
 ```
-| hitlReview | Invoice Review | human-task | uipath.human-in-the-loop | inputs: [invoiceId, amount] outputs: [decision] outcomes: [Approve, Reject] | result, status |
+| hitlReview | Invoice Review | human-task | uipath.human-in-the-loop.quick-form | inputs: [invoiceId, amount] outputs: [decision] outcomes: [Approve, Reject] | output, status |
 ```
 
 ---

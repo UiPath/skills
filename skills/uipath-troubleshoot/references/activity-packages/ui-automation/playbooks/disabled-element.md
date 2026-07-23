@@ -21,8 +21,6 @@ What this looks like:
 
 - Exception class: `UiPath.UIAutomationNext.Exceptions.UiNodeDisabledElementException`
 - Friendly message: `The target element is disabled. Operation canceled.`
-- HRESULT: `0x8004027D` (`E_UINODE_CANNOT_ALTER_DISABLED_ELEM`)
-- Stack origin: `UiInputService.<Click|Type|SetText|Check|Select>Async` → `DriverServiceCore.WrapComAsync` → `ExceptionExtensions.ThrowFriendly`
 - Activity duration is short (sub-second to a few seconds) — the failure is NOT a timeout. The element was found, then rejected.
 - Selector resolved successfully (no `NodeNotFoundException` / `SelectorNotFoundException` in the same trace).
 
@@ -79,3 +77,5 @@ Walk this tree from the top. Stop at the first branch that matches.
   Optional preventive add-ons (in addition to setting `AlterIfDisabled = True`):
   - If the disable is from a missing upstream step (e.g., the workflow forgot to type a query into a search box before clicking a dependent button), add that upstream step. `AlterIfDisabled = True` still belongs on the leaf as a defense-in-depth — it removes the abort even if the upstream step degrades.
   - If the workflow is sensitive to UI-version drift, keep Healing Agent enabled so future popup interferences get captured.
+
+**Applying these fixes.** Setting `AlterIfDisabled`, switching `Input Mode`, or adding a dismissal / upstream activity all change the workflow `.xaml` — interactive: the troubleshooter never edits the workflow itself; on the user's approval it delegates the apply, otherwise it recommends only. Enabling Healing Agent and any Studio Desktop Recovery Panel fix are Studio actions for the user — recommend them, do not execute.

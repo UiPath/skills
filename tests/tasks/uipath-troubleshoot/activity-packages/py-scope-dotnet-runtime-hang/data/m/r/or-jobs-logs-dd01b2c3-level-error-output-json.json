@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-12T09:20:12.640Z",
+      "Message": "[Python Scope] The Python host process did not respond. The job was stopped after exceeding its maximum execution time (15 minutes). No error was reported by the Python side."
+    }
+  ]
+}

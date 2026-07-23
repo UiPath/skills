@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "rules": [
+    { "match": "or folders list",                                                                "file": "or_folders_list.json" },
+    { "match": "agenthub mcp list",                                                              "file": "agenthub_mcp_list.json" },
+    { "match": "agenthub mcp-tools list",                                                        "file": "agenthub_mcp_tools_list.json" },
+    { "match": "agenthub mcp-tools candidates --category is-activity --name gmail",              "file": "candidates_by_name.json" },
+    { "match": "agenthub mcp-tools candidates --category is-activity --connector uipath-google-gmail", "file": "candidates_by_connector.json" },
+    { "match": "is connections list uipath-google-gmail",                                        "file": "connections_list.json" },
+    { "match": "is resources describe uipath-google-gmail ApplyGmailLabel --connection-id conn-mock-gmail-01 --operation Create", "file": "describe_op.json" },
+    { "match": "is resources describe uipath-google-gmail ApplyGmailLabel",                      "file": "describe_no_op.json" },
+    { "match": "is resources run list uipath-google-gmail labels",                           "file": "run_list_labels.json" },
+    { "match": "agenthub mcp-tools create-is-activity",                                          "file": "create_dryrun.json" }
+  ],
+  "unmocked_default": { "response": "{\"Result\":\"Failure\",\"Message\":\"command not mocked\"}\n", "exit_code": 1 }
+}

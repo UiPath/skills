@@ -2,24 +2,12 @@
 
 Structural reference for the case definition JSON. Shared across all node types. Per-task-type and per-condition-type field shapes live in each plugin's `impl-json.md`.
 
-> **Bilingual.** Top-level shape differs between v19 (default) and v20 (opt-in per SKILL.md Rule 18). Per-node and per-edge internal shapes are **identical** across schemas — only the wrapper changes. See § Top-level shape (v19) and § Top-level shape (v20) below.
-
-## Top-level shape (v19 — default)
-
-```json
-{
-  "root": { ... },
-  "nodes": [ ... ],
-  "edges": [ ... ]
-}
-```
-
-## Top-level shape (v20 — opt-in)
+## Top-level shape
 
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "20.0.0",
+  "version": "23.0.0",
   "name": "<case name>",
   "description": "<optional>",
   "metadata": {
@@ -28,6 +16,7 @@ Structural reference for the case definition JSON. Shared across all node types.
     "caseAppEnabled": false,
     "publishVersion": 2,
     "caseUnifiedSchemaEnabled": true,
+    "caseDirectlyPassTaskOutputs": true,
     "intsvcActivityConfig": "v2",
     "slaRules": [ ... ],
     "caseExitRules": [ ... ]
@@ -35,44 +24,16 @@ Structural reference for the case definition JSON. Shared across all node types.
   "bindings": [ ... ],
   "variables": { "inputs": [], "outputs": [], "inputOutputs": [] },
   "nodes": [ ... ],
-  "edges": [ ... ],
+  "edges": [],
   "layout": {}
 }
 ```
 
-### v19 → v20 field mapping
+### Layout-strip (Rule 18)
 
-| v19 path | v20 path |
-|---|---|
-| `root.id` (literal `"root"`) | top-level `id` (`case-<10>` generated) |
-| `root.name` | top-level `name` |
-| `root.description` | top-level `description` |
-| `root.caseIdentifier` | `metadata.caseIdentifier` |
-| `root.caseIdentifierType` | `metadata.caseIdentifierType` |
-| `root.caseAppEnabled` | `metadata.caseAppEnabled` |
-| `root.publishVersion` | `metadata.publishVersion` |
-| `root.caseUnifiedSchemaEnabled` | `metadata.caseUnifiedSchemaEnabled` |
-| `root.caseAppConfig` | `metadata.caseAppConfig` |
-| `root.allowAdhocOptionalStageTasks` | `metadata.allowAdhocOptionalStageTasks` |
-| `root.caseExecutionIncludesDebugVariables` | `metadata.caseExecutionIncludesDebugVariables` |
-| `root.caseExecutionUsesSyncCaseTasks` | `metadata.caseExecutionUsesSyncCaseTasks` |
-| `root.caseBpmnUseNewGlobalVariables` | `metadata.caseBpmnUseNewGlobalVariables` |
-| `root.waitForHumanSelectNextStageDFConnector` | `metadata.waitForHumanSelectNextStageDFConnector` |
-| `root.version` (`"v19"`) | top-level `version` (`"20.0.0"`) |
-| `root.data.slaRules` | `metadata.slaRules` |
-| `root.data.uipath.bindings` | top-level `bindings` |
-| `root.data.uipath.variables` | top-level `variables` |
-| `root.caseExitConditions` | `metadata.caseExitRules` *(field renamed)* |
-| `root.data.intsvcActivityConfig` | `metadata.intsvcActivityConfig` |
-| `nodes` | `nodes` *(unchanged shape — see § 2 below)* |
-| `edges` | `edges` *(unchanged shape — see § 3 below)* |
-| — | `layout: {}` *(new top-level — see § 7 below)* |
+Node-level layout fields move to a top-level `layout` block. The frontend transformer `transformCaseInMemoryJsonToDiskJson.ts` does this stripping when round-tripping through canvas; skill emits clean nodes from the start.
 
-### v20 layout-strip (Rule 19)
-
-In v20, node-level layout fields move to a top-level `layout` block. The frontend transformer `transformCaseInMemoryJsonToDiskJson.ts` does this stripping when round-tripping through canvas; skill emits clean nodes from the start.
-
-**Stripped from each node** (skill MUST NOT emit in v20):
+**Stripped from each node** (skill MUST NOT emit):
 - `position`
 - `style`
 - `measured`
@@ -80,12 +41,10 @@ In v20, node-level layout fields move to a top-level `layout` block. The fronten
 - `height`
 - `zIndex`
 
-**Stripped from each edge** (skill MUST NOT emit in v20):
+**Stripped from each edge** (skill MUST NOT emit):
 - `data.waypoints`
 
 **Lifted to** `layout.nodes[<nodeId>] = { position, style, measured, width, height }` and `layout.edges[<edgeId>] = { waypoints }` — but skill emits empty `layout: {}` because FE auto-layouts on canvas load. Skill is not a layout authority.
-
-**v19 mode preserves all current render-field rules** — see [`case-editing-operations.md`](case-editing-operations.md) Pre-flight Checklist Items 3, 4.
 
 ---
 
@@ -93,9 +52,8 @@ In v20, node-level layout fields move to a top-level `layout` block. The fronten
 
 | Entity | Prefix | Suffix length | Example |
 |---|---|---|---|
-| Stage (regular + exception) | `Stage_` | 6 | `Stage_aB3kL9` |
+| Stage (primary + secondary) | `Stage_` | 6 | `Stage_aB3kL9` |
 | Trigger (added after initial) | `trigger_` | 6 | `trigger_xY2mNp` |
-| Edge | `edge_` | 6 | `edge_Qz7hVr` |
 | Task | `t` | 8 | `t8GQTYo8O` |
 | Task entry condition | `c` | 8 | `c4fGhJ2Mn` |
 | Task entry rule | `r` | 8 | `rK9xQw3Lp` |
@@ -107,57 +65,54 @@ In v20, node-level layout fields move to a top-level `layout` block. The fronten
 
 ---
 
-## 1. root (v19) / top-level + metadata (v20)
+## 1. Top-level + metadata
 
-Metadata and configuration for the case definition. **v19** wraps everything under `root`; **v20** flattens to top-level + `metadata` block per the field-mapping table above. Field semantics are identical — only locations change.
+Metadata and configuration for the case definition. Top-level fields (`id`, `version`, `name`, `description`) sit alongside the `metadata` block.
 
 ```json
 {
-  "id": "<shortId>",
+  "id": "case-aBcDeFgHiJ",
+  "version": "23.0.0",
   "name": "Loan Approval",
-  "type": "case-management:root",
-  "caseIdentifier": "LOAN",
-  "caseAppEnabled": false,
-  "caseIdentifierType": "constant",
-  "version": "v19",
-  "publishVersion": 2,
-  "data": {
+  "description": "case description",
+  "metadata": {
+    "caseIdentifier": "LOAN",
+    "caseIdentifierType": "constant",
+    "caseAppEnabled": false,
+    "publishVersion": 2,
+    "caseUnifiedSchemaEnabled": true,
+    "caseDirectlyPassTaskOutputs": true,
+    "intsvcActivityConfig": "v2",
     "slaRules": [
       { "expression": "=js:true", "count": 5, "unit": "d" }
     ],
-    "intsvcActivityConfig": "v2",
-    "uipath": {
-      "bindings": [],
-      "variables": { "inputs": [], "outputs": [], "inputOutputs": [] }
-    }
-  },
-  "caseExitConditions": [],
-  "description": "case description"
+    "caseExitRules": []
+  }
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | string | Unique ID (auto-generated) |
+| `id` | string | Unique ID, `case-` + 10 random chars (auto-generated) |
+| `version` | string | Schema version — `"23.0.0"`. Emitted by the `case` plugin at T01. |
 | `name` | string | Human-readable name |
-| `type` | `"case-management:root"` | Literal — do not change |
-| `caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
-| `caseIdentifierType` | `"constant"` \| `"external"` | Selects how `caseIdentifier` is read. Default `constant`. |
-| `caseAppEnabled` | boolean | Whether the Case App UI is enabled |
-| `version` | string | Schema version — `"v19"` for current schema. Emitted by the `case` plugin at T01. |
-| `publishVersion` | number? | Publish version — `2` for current schema |
-| `data.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
-| `data.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
-| `data.uipath` | object? | Variable and binding declarations |
-| `caseExitConditions` | CaseExitCondition[]? | Conditions that mark the case as complete |
 | `description` | string? | Case description |
+| `metadata.caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
+| `metadata.caseIdentifierType` | `"constant"` \| `"external"` | Selects how `caseIdentifier` is read. Default `constant`. |
+| `metadata.caseAppEnabled` | boolean | Whether the Case App UI is enabled |
+| `metadata.publishVersion` | number? | Publish version — `2` for current schema |
+| `metadata.caseUnifiedSchemaEnabled` | boolean? | Unified-schema flag (`true`) |
+| `metadata.caseDirectlyPassTaskOutputs` | boolean? | Passes task outputs directly through messages instead of shared variables, fixing race conditions on task outputs in cases with parallel tasks. Schema-optional, defaults `true` when absent; skill emits the T01 `directly-pass-task-outputs` value (`true` unless sdd.md requested `false`). |
+| `metadata.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
+| `metadata.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Every rule has a non-empty target-unique `displayName` without `:`; default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
+| `metadata.caseExitRules` | CaseExitCondition[]? | Conditions that mark the case as complete |
 
 ### Case identifier (constant vs external)
 
 `caseIdentifierType` picks how `caseIdentifier` resolves at runtime:
 
 - **`constant`** (default) — `caseIdentifier` is a literal 2-4 char prefix (`"LOAN"`). Runtime emits the case external id as `<prefix>-<generated>`.
-- **`external`** — `caseIdentifier` is a `=`-prefixed expression (bare `=vars.<id>` or `=js:<expr>`). Runtime evaluates it; the result becomes the case external id verbatim (no prefix). Same `=vars.<id>` / `=js:` convention as [bindings-and-expressions.md](bindings-and-expressions.md) — no other engine. v20: field lives under `metadata` (see field-mapping table). Authoring forms + variable eligibility: [`plugins/case/planning.md` § External identifier value](plugins/case/planning.md).
+- **`external`** — `caseIdentifier` is a `=`-prefixed expression (bare `=vars.<id>` or `=js:<expr>`). Runtime evaluates it; the result becomes the case external id verbatim (no prefix). Same `=vars.<id>` / `=js:` convention as [bindings-and-expressions.md](bindings-and-expressions.md) — no other engine. Field lives under `metadata`. Authoring forms + variable eligibility: [`plugins/case/planning.md` § External identifier value](plugins/case/planning.md).
 
 ### CaseExitCondition
 
@@ -172,9 +127,11 @@ Metadata and configuration for the case definition. **v19** wraps everything und
 
 Rule structure uses DNF — see §4.
 
+`marksCaseComplete` is the case-close bit, not a stage-completion bit. A valid case has at least one root `metadata.caseExitRules[]` entry with `marksCaseComplete: true` (normally `required-stages-completed`). Entries with `marksCaseComplete: false` describe non-completing exits and must not be the only case-exit rules.
+
 ---
 
-## 2. nodes (four types, discriminated on `type`)
+## 2. nodes (three types, discriminated on `type`)
 
 ### a) Trigger Node — `"case-management:Trigger"`
 
@@ -184,7 +141,6 @@ Entry point. Written by the triggers plugin at T02. Exactly one per case (single
 {
   "id": "trigger_xY2mNp",
   "type": "case-management:Trigger",
-  "position": { "x": 200, "y": 0 },
   "data": {
     "label": "Start",
     "uipath": { "serviceType": "None" }
@@ -192,9 +148,7 @@ Entry point. Written by the triggers plugin at T02. Exactly one per case (single
 }
 ```
 
-`position` is fixed at `{ x: 200, y: 0 }` — not stateful like Stage.
-
-No `style`, `measured`, `width`, `zIndex`, or `parentElement` on Trigger nodes (unlike Stage).
+No `position`, `style`, `measured`, `width`, `zIndex`, or `parentElement` on Trigger nodes (Rule 18 layout-strip).
 
 `serviceType` values: `"None"`, `"Intsvc.EventTrigger"`, `"Intsvc.TimerTrigger"`. The specific binding/config shape for each trigger kind lives in the corresponding trigger plugin's `impl-json.md`.
 
@@ -202,17 +156,12 @@ No `style`, `measured`, `width`, `zIndex`, or `parentElement` on Trigger nodes (
 
 ### b) Stage Node — `"case-management:Stage"`
 
-Standard workflow stage. Contains tasks.
+Workflow stage. Contains tasks. Covers BOTH primary and secondary stages — discriminated by `data.stageType` (see §2c for the secondary variant). A primary stage omits `stageType`; a secondary stage sets `data.stageType: "secondary"`.
 
 ```json
 {
   "id": "Stage_aB3kL9",
   "type": "case-management:Stage",
-  "position": { "x": 100, "y": 200 },
-  "style": { "width": 304, "opacity": 0.8 },
-  "measured": { "width": 304, "height": 128 },
-  "width": 304,
-  "zIndex": 1001,
   "data": {
     "label": "Review Application",
     "description": "...",
@@ -228,46 +177,56 @@ Standard workflow stage. Contains tasks.
 }
 ```
 
-**Top-level node fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `position` | `{x,y}` | Auto-computed by CLI as `{ x: 100 + existingStageCount * 500, y: 200 }`. Direct-JSON-write must count existing stages before writing. |
-| `style` | object | Hard-coded `{ width: 304, opacity: 0.8 }`. |
-| `measured` | object | Hard-coded `{ width: 304, height: 128 }`. |
-| `width` | number | Hard-coded `304` (separate from `style.width` and `measured.width`). |
-| `zIndex` | number | Hard-coded `1001`. |
+No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node level (Rule 18 layout-strip).
 
 **`StageNodeData` fields:**
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `label` | string? | Display label |
+| `stageType` | `"primary" \| "secondary"` ? | Stage kind discriminator. Omitted on a primary stage (do NOT emit `"primary"`); set to `"secondary"` for a secondary stage, where it is the FIRST field in `data` (before `label`). See §2c. |
+| `label` | string? | Display label; required, unique across stages, and must not contain `:` |
 | `description` | string? | Stage description |
 | `isRequired` | boolean? | Whether the stage must complete before case exit (used by case-exit rule `required-stages-completed`) |
-| `parentElement` | `{id,type}` | Always `{ id: "root", type: schema.root.type }` |
+| `parentElement` | `{id,type}` | Always `{ id: "root", type: "case-management:root" }`. The literal `"root"` is canvas-side — there is no `"root"` node on disk. |
 | `isInvalidDropTarget` | boolean | Always `false` (UI drag-drop flag) |
 | `isPendingParent` | boolean | Always `false` (UI drag-drop flag) |
-| `tasks` | Task[][] | 2D array: `tasks[lane][index]`. Default: one task per lane (`tasks[0][0]`, `tasks[1][0]`, …) so the FE lays them out in separate columns; lane is layout-only, sequencing comes from task-entry conditions. Exception: tasks in a `runs-sequentially` group that should execute in parallel share the same lane — there, shared lane carries execution semantics (parallel siblings inside the sequential group). Empty array `[]` when no tasks yet. |
-| `slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for this stage. Default SLA is the trailing `"=js:true"` entry. Escalations nest inside each rule. See §6. |
-| `entryConditions` | EntryCondition[]? | See §3. Not initialized on regular Stage creation — added later by the conditions plugins. |
-| `exitConditions` | ExitCondition[]? | See §3. Not initialized on regular Stage creation — added later by the conditions plugins. |
+| `tasks` | Task[][] | 2D structural array. Preserve the task order used by the frontend. The `runs-sequentially` task-entry rule, not lane-sharing, expresses sequential execution. Empty array `[]` when no tasks yet. |
+| `slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for this stage. Every rule has a non-empty target-unique `displayName` without `:`; default SLA is the trailing `"=js:true"` entry. Escalations nest inside each rule. See §6. |
+| `entryConditions` | EntryCondition[]? | See §3. Not initialized on primary Stage creation — added later by the conditions plugins. (A secondary stage initializes these at creation — see §2c.) |
+| `exitConditions` | ExitCondition[]? | See §3. Not initialized on primary Stage creation — added later by the conditions plugins. (A secondary stage initializes these at creation — see §2c.) |
 | `instanceIdPrefix` | string? | Prefix for instance IDs |
 
-> **Regular `Stage` is created without `entryConditions`/`exitConditions`.** Match this by not emitting empty arrays for those fields when writing a regular stage. They are added later by the condition plugins when entry/exit conditions are written. See §3 for the condition shapes and §2b for how edge transitions reference the source stage's `exitConditions`.
+> **A primary `Stage` is created without `entryConditions`/`exitConditions`.** Match this by not emitting empty arrays for those fields when writing a primary stage. They are added later by the condition plugins when entry/exit conditions are written. (A secondary stage — `data.stageType: "secondary"` — initializes both to `[]` at creation; see §2c.) See §3 for the condition shapes. Transitions are driven entirely by these conditions (Rule 20, §4).
 
-### c) Exception Stage Node — `"case-management:ExceptionStage"`
+### c) Secondary (Exception) Stage — `case-management:Stage` with `data.stageType: "secondary"`
 
-Same top-level and render fields as regular Stage. Adds `entryConditions`, `exitConditions` initialized at creation time.
+Not a distinct node type. A secondary stage is a Stage node (§2b) with `data.stageType: "secondary"`. Same top-level and render fields as a primary Stage. Adds `entryConditions`, `exitConditions` initialized at creation time. The literal node type `case-management:ExceptionStage` is removed at schema v22 and MUST NOT be emitted.
 
-**Additional `ExceptionStageNodeData` fields:**
+```json
+{
+  "id": "Stage_cD4mNt",
+  "type": "case-management:Stage",
+  "data": {
+    "stageType": "secondary",
+    "label": "Handle Rejection",
+    "parentElement": { "id": "root", "type": "case-management:root" },
+    "isInvalidDropTarget": false,
+    "isPendingParent": false,
+    "tasks": [],
+    "entryConditions": [],
+    "exitConditions": []
+  }
+}
+```
+
+**Secondary-stage init on `StageNodeData`:** a secondary stage initializes these at creation (a primary stage omits them — see §2b):
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `entryConditions` | EntryCondition[] | Initialized to `[]` on create; see §3 |
 | `exitConditions` | ExitCondition[] | Initialized to `[]` on create; see §3 |
 
-> **SLA on ExceptionStage** — the runtime accepts `slaRules[]` on `ExceptionStage` the same way it does on regular `Stage`. Author per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
+> **SLA on a secondary Stage (`data.stageType: "secondary"`)** — the runtime accepts `slaRules[]` on a secondary Stage the same way it does on a primary Stage. Author per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
 
 ### d) Sticky Note Node — `"case-management:StickyNote"`
 
@@ -328,49 +287,15 @@ All conditions share the same shape but attach at different levels. Per-level fi
 
 ### CaseExitCondition (case-level)
 
-See `root.caseExitConditions` (v19) / `metadata.caseExitRules` (v20) in §1.
+See `metadata.caseExitRules` in §1.
 
 ---
 
-## 4. edges (two types, discriminated on `type`)
+## 4. edges — retired, always `[]`
 
-### a) TriggerEdge — `"case-management:TriggerEdge"`
+**The skill never authors edges (Rule 20).** `schema.edges` stays `[]` — the empty array remains in the schema for frontend compatibility. Stage transitions derive entirely from `entryConditions` / `exitConditions` (§3); the case start derives from the first stage's `case-entered` entry condition, not a `TriggerEdge`. The FE auto-derives canvas connectors from the conditions.
 
-Connects Trigger → Stage. No rules.
-
-```json
-{
-  "id": "edge_Qz7hVr",
-  "type": "case-management:TriggerEdge",
-  "source": "trigger_xY2mNp",
-  "target": "Stage_aB3kL9",
-  "sourceHandle": "trigger_xY2mNp____source____right",
-  "targetHandle": "Stage_aB3kL9____target____left",
-  "data": { "label": "Start" }
-}
-```
-
-### b) Edge — `"case-management:Edge"`
-
-Connects Stage → Stage. Transition conditions live on the source stage's `exitConditions`, not on the edge.
-
-```json
-{
-  "id": "edge_pK2mLq",
-  "type": "case-management:Edge",
-  "source": "Stage_aB3kL9",
-  "target": "Stage_cD4mNt",
-  "sourceHandle": "Stage_aB3kL9____source____right",
-  "targetHandle": "Stage_cD4mNt____target____left",
-  "data": { "label": "Approved" }
-}
-```
-
-**Handle format:** `<nodeId>____source____<direction>` or `<nodeId>____target____<direction>` — exactly **four underscores** on each side of `source` / `target`. Directions: `right`, `left`, `top`, `bottom`. Defaults used by the CLI: source=`right`, target=`left`.
-
-**Edge type is inferred from the source node:** Trigger source → `TriggerEdge`; Stage source → `Edge`.
-
-**`zIndex`** (number, optional) — omitted unless explicitly set.
+A canvas-round-tripped file may contain FE-materialized edge objects. Treat them as read-only — never copy, adapt, or author one; model flow with conditions (§3) instead. Stray-edge removal: [case-editing-operations.md § Delete an edge](case-editing-operations.md#delete-an-edge--defensive-only). Shapes for READING such files: [Appendix — Edge shapes](#appendix--edge-shapes-read-only--never-author).
 
 ---
 
@@ -388,7 +313,7 @@ Rules = Rule[][]
 
 | `rule` | Additional fields | Description |
 |--------|-------------------|-------------|
-| `wait-for-connector` | `id?`, `uipath?` (connector configuration — required for Studio Web validity; bare form is a valid deferred/placeholder state), `conditionExpression?` | Wait for an external connector event — see § Connector-bound rule below |
+| `wait-for-connector` | `id?`, `uipath` (connector config — **required**; absent → `connector activity missing`. Unresolved → **stub** placeholder, not bare — see § Placeholder fallback), `conditionExpression?` | Wait for an external connector event — see § Connector-bound rule below |
 | `case-entered` | `id?`, `conditionExpression?` | Fires when the case is first entered |
 | `selected-stage-completed` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has completed |
 | `selected-stage-exited` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has been exited |
@@ -399,6 +324,8 @@ Rules = Rule[][]
 | `user-selected-stage` | `id?`, `conditionExpression?` | Fires when a user manually selects/routes to this stage |
 | `adhoc` | `id?`, `conditionExpression?` | Ad-hoc expression-based condition |
 | `runs-sequentially` | `id?`, `conditionExpression?` | Sequential tasks run in the order they appear in the stage from top to bottom | 
+
+At task level, the frontend's manually-triggered/adhoc mode is represented by an `adhoc`-only entry condition and `isRequired: false`; it is not an event rule. External event mode uses an explicit event rule such as `wait-for-connector`; it is not implied by task order or lane placement.
 
 Not every rule type is valid at every level — see each condition plugin's `impl-json.md` for the allowed subset per location.
 
@@ -419,7 +346,7 @@ A `wait-for-connector` rule binds an IS connector trigger under **`uipath`** —
   "id": "<ruleId>",
   "uipath": {
     "serviceType": "Intsvc.WaitForEvent",
-    "context": [ { "name": "connectorKey", "value": "<key>", "type": "string" }, { "name": "connection", "value": "=bindings.<id>", "type": "string" }, { "name": "folderKey", "value": "=bindings.<id>", "type": "string" }, { "name": "resourceKey", "value": "<connection-id>", "type": "string" }, { "name": "objectName", "value": "<object>", "type": "string" }, { "name": "metadata", "type": "json", "body": { } } ],
+    "context": [ { "name": "connectorKey", "value": "<key>", "type": "string" }, { "name": "connection", "value": "=bindings.<id>", "type": "string" }, { "name": "resourceKey", "value": "<connection-id>", "type": "string" }, { "name": "folderKey", "value": "=bindings.<id>", "type": "string" }, { "name": "method", "value": "<httpMethod>", "type": "string" }, { "name": "path", "value": "<path>", "type": "string" }, { "name": "objectName", "value": "<object>", "type": "string" }, { "name": "operation", "value": "<eventOperation>", "type": "string" }, { "name": "metadata", "type": "json", "body": { } } ],
     "inputs": [ ],
     "outputs": [ ],
     "bindings": []
@@ -428,7 +355,7 @@ A `wait-for-connector` rule binds an IS connector trigger under **`uipath`** —
 }
 ```
 
-> CLI `validate` does NOT check `rule.uipath` — the case-tool connector validator is task-only (reads `task.data`). Confirm connector rules via Studio Web.
+> Full `validate` requires `rule.uipath` + `context` (absent → `connector activity missing`); the check is satisfied by `context` entries named `connectorKey` + `operation`, and does not inspect internals (a wrong `serviceType` passes). Confirm the connector resolves via Studio Web. The exact `context` field set is CLI-emitted and varies by connector — splice it verbatim from `case spec`; the 9 fields above are illustrative of an HTTP-event connector, not a fixed schema.
 
 ---
 
@@ -441,7 +368,7 @@ All SLA data on a target (root or stage) lives in a single `slaRules[]` array. T
   {
     "expression": "=js:vars.priority === 'Urgent'",
     "count": 30,
-    "unit": "m",
+    "unit": "min",
     "escalationRule": [
       {
         "id": "esc_aB3kL9",
@@ -484,14 +411,15 @@ Escalation `action.recipients[].scope`: `"User"` or `"UserGroup"`. `target` is t
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `expression` | string | Rule predicate. `"=js:true"` marks the default / fallback rule. |
+| `displayName` | string | Required, target-unique SLA title; must not contain `:`. |
+| `expression` | string | Rule predicate. `"=js:true"` marks the default / fallback rule. Non-default rules require a non-empty expression. |
 | `count` | number? | SLA duration count (optional — a bare escalation-only rule may omit this). |
 | `unit` | `"min" \| "h" \| "d" \| "w" \| "m"` ? | SLA duration unit (optional — paired with `count`). |
-| `escalationRule` | EscalationRule[]? | Notifications to fire at-risk or on breach. Runtime attaches escalations to whichever rule is active. |
+| `escalationRule` | EscalationRule[]? | Notifications to fire at-risk or on breach. Each escalation requires a non-empty target-unique `displayName` without `:`, at least one recipient, and an at-risk percentage when its trigger type is `at-risk`. Runtime attaches escalations to whichever rule is active. |
 
 Evaluated in array order; the first truthy expression wins. The trailing `"=js:true"` entry acts as the default.
 
-> **SLA capabilities** — escalation rules can attach to any rule (not only the default `"=js:true"`). `slaRules[]` is supported on `ExceptionStage`. A single `EscalationRule` may carry multiple `recipients[]`. See [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
+> **SLA capabilities** — escalation rules can attach to any rule (not only the default `"=js:true"`). `slaRules[]` is supported on a secondary Stage (`data.stageType: "secondary"`). A single `EscalationRule` may carry multiple `recipients[]`. See [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
 
 ---
 
@@ -506,14 +434,24 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `displayName` | string? | Human-readable label shown in the UI |
 | `type` | string | Task type — see task plugins under `plugins/tasks/` |
 | `data` | object | Type-specific configuration — see corresponding plugin's `impl-json.md`. For connector tasks, `data.bindings` references the root-level bindings array. |
-| `skipCondition` | string? | Expression — skip the task when truthy |
+| `skipCondition` | string? | `=js:` expression — skip the task when truthy. Use strict equality ([`bindings-and-expressions.md`](bindings-and-expressions.md#equality-operators)). |
 | `entryConditions` | TaskEntryCondition[]? | See §3. Written by the task-entry-conditions plugin from the SDD's authored Entry Condition rows — applied uniformly across task types (no auto-injection by task type). |
 | `shouldRunOnlyOnce` | boolean? | Run the task at most once per case, even if the stage is re-entered |
 | `shouldRunOnReEntry` | boolean? | *(deprecated — use `shouldRunOnlyOnce`)* Re-run when stage is re-entered |
 | `isRequired` | boolean? | Whether the task must complete for the stage to complete |
 | `description` | string? | Task description |
 
-**Positioning:** tasks have no `x`/`y`. They live in `stageNode.data.tasks[laneIndex][]` — a 2D array where the outer index is the lane (rendering column) and the inner index is the order within the lane. Default convention: one task per lane. Exception: within a `runs-sequentially` group, tasks that should run in parallel share the same lane (shared lane = parallel siblings, carries execution semantics).
+> **Envelope fields are top-level, not `data`.** Every field above except `data` lives directly on the task object — `skipCondition`, `entryConditions`, `shouldRunOnlyOnce`, `isRequired`, etc. are siblings of `data`, never nested inside it. `data` holds only the type-specific config defined by the task's plugin. An envelope field misplaced inside `data` passes `validate` silently (extra `data` keys aren't rejected) but is dead config the platform never reads.
+>
+> ```json
+> // WRONG — skipCondition nested in data, never applied:
+> { "displayName": "Hold", "data": { "timerType": "timeDuration", "timeDuration": "PT1H", "skipCondition": "=js:vars.skip === true" } }
+>
+> // RIGHT — skipCondition is a sibling of data:
+> { "displayName": "Hold", "skipCondition": "=js:vars.skip === true", "data": { "timerType": "timeDuration", "timeDuration": "PT1H" } }
+> ```
+
+**Positioning:** tasks have no `x`/`y`. They live in the stage's `data.tasks` 2D structural array. Do not infer execution order from lane-sharing. For a sequential chain, preserve declaration order and put `runs-sequentially` as the only entry rule on each task in the chain.
 
 **Task type catalog** (full shape in each plugin's `impl-json.md`):
 
@@ -529,44 +467,37 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
 
+> **Not supported yet — do NOT author.** `external-agent`, `external-workflow`, `document-extraction`, `flow-process`. None of these are valid in `caseplan.json` (SKILL.md Rule 16).
+
 ---
 
 ## 8. Minimal example
 
 ```json
 {
-  "root": {
-    "id": "root",
-    "name": "Simple Case",
-    "type": "case-management:root",
+  "id": "case-aBcDeFgHiJ",
+  "version": "23.0.0",
+  "name": "Simple Case",
+  "metadata": {
     "caseIdentifier": "Simple Case",
-    "caseAppEnabled": false,
     "caseIdentifierType": "constant",
-    "version": "v19",
+    "caseAppEnabled": false,
     "publishVersion": 2,
-    "data": {
-      "intsvcActivityConfig": "v2",
-      "uipath": {
-        "variables": {},
-        "bindings": []
-      }
-    }
+    "caseUnifiedSchemaEnabled": true,
+    "caseDirectlyPassTaskOutputs": true,
+    "intsvcActivityConfig": "v2"
   },
+  "bindings": [],
+  "variables": { "inputs": [], "outputs": [], "inputOutputs": [] },
   "nodes": [
     {
       "id": "trigger_xY2mNp",
       "type": "case-management:Trigger",
-      "position": { "x": 200, "y": 0 },
       "data": { "label": "Start" }
     },
     {
       "id": "Stage_aB3kL9",
       "type": "case-management:Stage",
-      "position": { "x": 100, "y": 200 },
-      "style": { "width": 304, "opacity": 0.8 },
-      "measured": { "width": 304, "height": 128 },
-      "width": 304,
-      "zIndex": 1001,
       "data": {
         "label": "Process",
         "parentElement": { "id": "root", "type": "case-management:root" },
@@ -576,16 +507,50 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
       }
     }
   ],
-  "edges": [
-    {
-      "id": "edge_Qz7hVr",
-      "type": "case-management:TriggerEdge",
-      "source": "trigger_xY2mNp",
-      "target": "Stage_aB3kL9",
-      "sourceHandle": "trigger_xY2mNp____source____right",
-      "targetHandle": "Stage_aB3kL9____target____left",
-      "data": {}
-    }
-  ]
+  "edges": []
 }
 ```
+
+---
+
+## Appendix — Edge shapes (read-only — never author)
+
+> **Read-only reference (Rule 20 — edges retired).** Documented ONLY so a canvas-round-tripped file (where the FE may have materialized edges) is still readable. Never copy these into a build or write an edge object into `caseplan.json` — see §4.
+
+### a) TriggerEdge — `"case-management:TriggerEdge"`
+
+Connects Trigger → Stage. No rules.
+
+```json
+{
+  "id": "edge_Qz7hVr",
+  "type": "case-management:TriggerEdge",
+  "source": "trigger_xY2mNp",
+  "target": "Stage_aB3kL9",
+  "sourceHandle": "trigger_xY2mNp____source____right",
+  "targetHandle": "Stage_aB3kL9____target____left",
+  "data": { "label": "Start" }
+}
+```
+
+### b) Edge — `"case-management:Edge"`
+
+Connects Stage → Stage. Transition conditions live on the source stage's `exitConditions`, not on the edge.
+
+```json
+{
+  "id": "edge_pK2mLq",
+  "type": "case-management:Edge",
+  "source": "Stage_aB3kL9",
+  "target": "Stage_cD4mNt",
+  "sourceHandle": "Stage_aB3kL9____source____right",
+  "targetHandle": "Stage_cD4mNt____target____left",
+  "data": { "label": "Approved" }
+}
+```
+
+**Handle format:** `<nodeId>____source____<direction>` or `<nodeId>____target____<direction>` — exactly **four underscores** on each side of `source` / `target`. Directions: `right`, `left`, `top`, `bottom`.
+
+**Type discriminator when reading:** Trigger source → `TriggerEdge`; Stage source → `Edge`. **`zIndex`** (number, optional) may appear.
+
+`edges` is empty: the skill authors no edges. The case starts because `Stage_aB3kL9` carries a `case-entered` entry condition (added by the stage-entry-conditions plugin), not because a `TriggerEdge` connects the trigger to it.

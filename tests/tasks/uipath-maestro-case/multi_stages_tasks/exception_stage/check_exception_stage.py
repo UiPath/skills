@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""ExceptionStage: two ExceptionStages (Issues + Critical), no edges, interrupting entries."""
+"""Secondary stages: two secondary stages (Issues + Critical), interrupting entries, return-to-origin (edges retired)."""
 
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
-    find_edges,
     find_node_by_label,
+    find_stages,
     first_rule_of_condition,
     get_default_sla,
-    iter_nodes_of_type,
     iter_stage_entry_conditions,
     iter_stage_exit_conditions,
     read_caseplan,
@@ -26,30 +25,46 @@ def main():
             f"FAIL: 'Process' node should be regular Stage, got type={process.get('type')!r}"
         )
 
-    exception_nodes = list(iter_nodes_of_type(plan, "case-management:ExceptionStage"))
-    labels = sorted((n.get("data") or {}).get("label") for n in exception_nodes)
-    if len(exception_nodes) != 2:
+    process_exits = list(iter_stage_exit_conditions(process))
+    process_exit_only = [
+        ec
+        for ec in process_exits
+        if ec.get("type") == "exit-only"
+        and ec.get("marksStageComplete") is True
+        and (first_rule_of_condition(ec) or {}).get("rule") == "required-tasks-completed"
+    ]
+    if not process_exit_only:
         sys.exit(
-            f"FAIL: expected 2 ExceptionStage nodes (Issues + Critical); "
-            f"got {len(exception_nodes)} with labels {labels}"
+            "FAIL: 'Process' should have an explicit exit-only exit condition "
+            "(required-tasks-completed, marksStageComplete=true); "
+            f"got exit types {[ec.get('type') for ec in process_exits]}"
+        )
+
+    def _is_secondary(n):
+        return (
+            (n.get("data") or {}).get("stageType") == "secondary"
+            or n.get("type") == "case-management:ExceptionStage"
+        )
+
+    secondary_nodes = [n for n in find_stages(plan, include_exception=True) if _is_secondary(n)]
+    labels = sorted((n.get("data") or {}).get("label") for n in secondary_nodes)
+    if len(secondary_nodes) != 2:
+        sys.exit(
+            f"FAIL: expected 2 secondary stages (Issues + Critical); "
+            f"got {len(secondary_nodes)} with labels {labels}"
         )
     if "Issues" not in labels or "Critical" not in labels:
         sys.exit(
-            f"FAIL: ExceptionStage labels must include 'Issues' and 'Critical'; "
+            f"FAIL: secondary stage labels must include 'Issues' and 'Critical'; "
             f"got {labels}"
         )
 
     issues = find_node_by_label(plan, "Issues")
     critical = find_node_by_label(plan, "Critical")
 
-    for label, node in (("Issues", issues), ("Critical", critical)):
-        inbound = find_edges(plan, target=node["id"])
-        outbound = find_edges(plan, source=node["id"])
-        if inbound or outbound:
-            sys.exit(
-                f"FAIL: exception stage {label!r} must have no edges; "
-                f"got inbound={len(inbound)} outbound={len(outbound)}"
-            )
+    # Edges retired: exception stages were never edge-wired anyway. Their
+    # reachability contract is an interrupting entry condition + a
+    # return-to-origin exit — both asserted below. Nothing edge-shaped remains.
 
     issues_entry = list(iter_stage_entry_conditions(issues))
     issues_interrupting = [c for c in issues_entry if c.get("isInterrupting") is True]
@@ -72,16 +87,15 @@ def main():
     if not critical_interrupting:
         sys.exit("FAIL: 'Critical' has no interrupting entry condition")
     critical_rule = first_rule_of_condition(critical_interrupting[0])
-    if not critical_rule or critical_rule.get("rule") != "wait-for-connector":
+    if not critical_rule or critical_rule.get("rule") != "selected-stage-exited":
         sys.exit(
-            f"FAIL: 'Critical' interrupting rule should be 'wait-for-connector'; "
+            f"FAIL: 'Critical' interrupting rule should be 'selected-stage-exited'; "
             f"got {critical_rule and critical_rule.get('rule')!r}"
         )
-    critical_expr = critical_rule.get("conditionExpression") or ""
-    if "critical_fault" not in critical_expr and "fault" not in critical_expr.lower():
+    if critical_rule.get("selectedStageId") != process["id"]:
         sys.exit(
-            f"FAIL: 'Critical' wait-for-connector conditionExpression should mention "
-            f"the fault event; got {critical_expr!r}"
+            f"FAIL: 'Critical' rule.selectedStageId should be Process id "
+            f"({process['id']}), got {critical_rule.get('selectedStageId')!r}"
         )
 
     for label, node in (("Issues", issues), ("Critical", critical)):
@@ -127,7 +141,7 @@ def main():
     if not timer_tasks:
         types_seen = sorted({t.get("type", "?") for t in issues_tasks})
         sys.exit(
-            f"FAIL: 'Issues' exception stage has no wait-for-timer task; "
+            f"FAIL: 'Issues' secondary stage has no wait-for-timer task; "
             f"types seen: {types_seen}"
         )
     ack = timer_tasks[0]
@@ -159,12 +173,14 @@ def main():
         )
 
     print(
-        "OK: 2 ExceptionStages (Issues + Critical) with 0 edges each; Issues has "
+        "OK: Process is a regular Stage with an explicit exit-only exit condition "
+        "(required-tasks-completed, marks complete); 2 secondary stages (Issues + "
+        "Critical) reached via interrupting entries (edges retired); Issues has "
         "interrupting selected-stage-exited entry referencing Process, "
         "return-to-origin exit, 2h SLA + sla-breached UserGroup escalation, AND a "
         "wait-for-timer task using timeDate (wait until 2026-05-01) with "
-        "current-stage-entered task-entry; Critical has interrupting "
-        "wait-for-connector entry on a fault event + return-to-origin exit"
+        "current-stage-entered task-entry; Critical has a second interrupting "
+        "selected-stage-exited entry referencing Process + return-to-origin exit"
     )
 
 

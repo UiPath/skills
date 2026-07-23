@@ -1,0 +1,72 @@
+task_id: skill-review-agents-lowcode-guardrail-audit-logging
+description: >
+  Integration test for uipath-review on a low-code agent with a
+  `SendCustomerEmail` tool that legitimately handles PII (recipient email) and
+  no guardrail. Blocking PII on that tool would break it, so the right
+  recommendation is a Tool-scope LOG guardrail for an audit trail. The reviewer
+  should apply guardrails-review.md Recommend Mode and emit
+  `LC_GUARDRAIL_RECOMMENDED` recommending a log/audit action (not block).
+  Non-gating (integration tag). Needs the authed CLI.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover, guardrail]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_guardrail_audit_logging/inject_guardrail_audit_logging.py"
+    timeout: 30
+
+initial_prompt: |
+  A low-code UiPath agent project exists at `ReviewSol/SampleAgent` inside the
+  solution `ReviewSol`. Review the agent project for issues and save your review
+  report to `./_review_report.md` at the sandbox root.
+
+  This is a read-only review — do not modify anything inside `ReviewSol/`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside ReviewSol/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*ReviewSol'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside ReviewSol/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*ReviewSol'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Ran the review CLI first (Step 2.5a)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+review'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Fetched the live guardrail catalog (guardrails-review.md Step 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Review report recommends a Tool-scope log/audit guardrail (LC_GUARDRAIL_RECOMMENDED, audit flavor)"
+    command: "python3 $TASK_DIR/check_lowcode_review_guardrail_audit_logging.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

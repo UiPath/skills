@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpToolsGet",
+  "Data": {
+    "id": "tool-mock-jira-create-001",
+    "type": 1,
+    "processType": "Api",
+    "name": "Create Issue",
+    "mcpName": "createIssue",
+    "description": "Create a Jira issue in project MOCKPROJ with type Task.",
+    "targetIdentifier": "conn-mock-jira-01",
+    "targetFolderKey": "folder-mock-workspace",
+    "serverId": "mcp-mock-id-001",
+    "inputSchema": "{\"type\":\"object\",\"properties\":{\"fields.summary\":{\"type\":\"string\",\"title\":\"Summary\"},\"fields.description\":{\"type\":\"string\",\"title\":\"Description\"}},\"required\":[\"fields.summary\"],\"additionalProperties\":false}",
+    "outputSchema": "{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"},\"key\":{\"type\":\"string\"}}}",
+    "metadata": "{\"connector\":{\"key\":\"uipath-atlassian-jira\"},\"object\":{\"path\":\"/curated_create_issue\",\"objectName\":\"curated_create_issue\",\"method\":\"POST\",\"contentType\":\"application/json\"},\"mapping\":{\"path\":[],\"query\":[],\"header\":[],\"field\":[\"fields.summary\",\"fields.description\"]},\"staticValues\":{\"query\":{},\"header\":{},\"path\":{},\"field\":{\"fields.project.key\":\"MOCKPROJ\",\"fields.issuetype.id\":\"10\"}},\"designTimeMetadata\":{\"designTimeLookups\":{},\"manageProperties\":[]},\"metadataVersion\":1}"
+  }
+}

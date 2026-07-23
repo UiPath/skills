@@ -6,8 +6,9 @@ description: >
   skeleton TaskId reachable from stage-exit `selected-tasks-completed`
   rules, and (c) produce a completion report that distinguishes skeleton
   vs resolved tasks and lists the external resources the user must
-  register before the skeleton can be upgraded. Replaces flow's
-  brownfield-insert test (case skill regenerates from scratch).
+  register before the skeleton can be upgraded. Greenfield generation
+  path (Rule 6 regenerate-from-scratch); in-place brownfield edits are a
+  separate journey (see references/brownfield.md).
 tags: [uipath-maestro-case, integration, lifecycle:generate, shape:multi-node, node:hitl, skeleton]
 initial_prompt: |
   Create a UiPath Case Management project named "ContractReviewCase" with
@@ -92,10 +93,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `extract.extractMetadata` | Extract Metadata | process | System |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `extract.extractMetadata` | Extract Metadata | process | Yes | No | system | — |
 
   ##### Task 1.1: Extract Metadata (`extract.extractMetadata`)
 
@@ -129,10 +130,10 @@ initial_prompt: |
   |---|---|---|---|
   | selected-tasks-completed("Approve Contract") | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `legalReview.approveContract` | Approve Contract | action | Legal Reviewer |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `legalReview.approveContract` | Approve Contract | action | Yes | No | Legal Reviewer | — |
 
   ##### Task 2.1: Approve Contract (`legalReview.approveContract`)
 
@@ -177,7 +178,7 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
+  #### Tasks
   (none)
   ```
 
@@ -287,4 +288,6 @@ post_run:
 
 run_limits:
   expected_turns: 73
-  max_turns: 110
+  task_timeout: 900
+  max_turns: 120
+  turn_timeout: 900

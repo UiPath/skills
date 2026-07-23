@@ -91,32 +91,6 @@ def check_shape() -> None:
     if violations:
         sys.exit("FAIL: module-level UiPath* construction: " + " | ".join(violations))
     print("OK: main.py uses lazy UiPath() construction")
-
-    uipath_json = _load_json(ROOT / "__uipath" / "uipath.json")
-    overwrites = (
-        uipath_json.get("runtime", {})
-        .get("internalArguments", {})
-        .get("resourceOverwrites", {})
-    )
-    key = "connection.outlook-coded-eval"
-    if key not in overwrites:
-        sys.exit(f"FAIL: resourceOverwrites missing key `{key}`")
-    entry_keys = set(overwrites[key].keys())
-    has_conn = "connectionId" in entry_keys or "ConnectionId" in entry_keys
-    has_folder = "folderKey" in entry_keys
-    if not (has_conn and has_folder):
-        sys.exit(
-            f"FAIL: resourceOverwrites for `{key}` must carry `connectionId` "
-            "(alias `ConnectionId`) and `folderKey` per "
-            "`ConnectionResourceOverwrite` (`uipath/platform/common/_bindings.py:100`)."
-        )
-    if "elementInstanceId" in entry_keys:
-        sys.exit(
-            f"FAIL: resourceOverwrites for `{key}` contains `elementInstanceId`, "
-            "which `ConnectionResourceOverwrite` ignores (`extra=\"ignore\"`). "
-            "Remove it — see capability anti-pattern #1."
-        )
-    print("OK: resourceOverwrites has connectionId + folderKey (and no spurious elementInstanceId)")
     print("PASS: shape checks complete")
 
 

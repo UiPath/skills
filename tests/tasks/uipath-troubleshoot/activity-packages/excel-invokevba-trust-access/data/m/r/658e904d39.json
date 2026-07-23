@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T09:14:05.241Z",
+      "Message": "[Invoke VBA] Programmatic access to Visual Basic Project is not trusted (HRESULT: 0x800AC472)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T09:14:05.288Z",
+      "Message": "Programmatic access to Visual Basic Project is not trusted\r\nin Main.xaml\r\n    at InvokeVBAX \"Invoke VBA\"\r\n    at ExcelApplicationCard \"Use Excel File\"\r\n    at ExcelProcessScope \"Excel Process Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

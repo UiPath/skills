@@ -1,0 +1,60 @@
+task_id: skill-api-workflow-validate-smoke
+description: >
+  Skill-guided smoke: agent authors a minimal API workflow (single Assign +
+  Response) and runs `uip api-workflow validate` as the offline closure step.
+  Tests whether the skill teaches the validate-before-run discipline (rule 20)
+  and the JSON workflow skeleton (WorkflowStart, root sequence, Response).
+tags: [uipath-api-workflow, smoke, mode:build, lifecycle:generate]
+
+initial_prompt: |
+  Author a UiPath API Workflow — in a project named `ReadyStatus` (its workflow
+  file will be `ReadyStatus/Workflow.json`) — that sets a variable `message` to
+  "ready" and returns { "status": "ready" }.
+
+  Validate it offline (no run needed) and confirm it reports valid. It must
+  survive a StudioWeb designer roundtrip.
+
+success_criteria:
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); python -c "import json,sys; json.load(open(sys.argv[1]))" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Has WorkflowStart system activity (rule 2)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "WorkflowStart" "$WF" && grep -q "isTransparent" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the offline validator with JSON output (rule 20 + rule 18)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+api-workflow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Static validation passes (Status: Valid)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow validate "$WF" --output json | grep -q ''"Status": "Valid"'''
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 7
+  max_turns: 25

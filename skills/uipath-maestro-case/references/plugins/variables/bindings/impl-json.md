@@ -2,16 +2,11 @@
 
 Top-level binding creation. Referenced by **all** task plugins — non-connector tasks for name + folderPath bindings, connector tasks for ConnectionId + folderKey bindings. Every task type MUST create bindings; see each task plugin's §Root-level bindings section.
 
-## Schema-dependent destination
+> **No `planning.md`** — bindings are created during implementation (driven by each task plugin's §Root-level bindings), not planned as standalone T-entries. Intentional, not a gap.
 
-Read `Schema:` header from `tasks.md` per Rule 18.
+## Destination
 
-| Schema | Bindings array path |
-|---|---|
-| **v19** | `root.data.uipath.bindings[]` |
-| **v20** | `bindings[]` *(top level — no `root` wrapper, no `data.uipath`)* |
-
-Field shape inside the array is **identical** across schemas. Only the destination path differs.
+Bindings live at top-level `bindings[]` in `caseplan.json` (no `root` wrapper, no `data.uipath`).
 
 ## What Bindings Are
 
@@ -31,7 +26,7 @@ The bindings array stores resource metadata for tasks — process names, folder 
 
 ## Binding Creation
 
-For every task, create **two** binding entries in the bindings array (path per § Schema-dependent destination above). Both bindings share the same `resourceKey`. The shape is identical for all task types — only the field values differ per the Per Task Type table above.
+For every task, create **two** binding entries in top-level `bindings[]`. Both bindings share the same `resourceKey`. The shape is identical for all task types — only the field values differ per the Per Task Type table above.
 
 **Every binding entry MUST include all 7 fields:** `id`, `name`, `type`, `resource`, `resourceKey`, `default`, `propertyAttribute` (plus optional `resourceSubType`). Omitting `name` or `type` causes Studio Web to fail to render the case.
 
@@ -114,6 +109,9 @@ Examples:
 - folderPath `"Shared"`, name `"KYC"` → `"Shared.KYC"`
 - folderPath `"Shared/Finance"`, name `"InvoiceProcess"` → `"Shared/Finance.InvoiceProcess"`
 - folderPath `""` (empty), name `"ReviewHITL"` → `".ReviewHITL"`
+- **api-workflow** — folderPath `"Shared/Finance/EnrichInvoice"`, name `"API Workflow"` → `"Shared/Finance/EnrichInvoice.API Workflow"`. The `name` here is the registry entry's literal `name` field (the constant `"API Workflow"` in `api-index.json`), **NOT** the workflow's own name — that lives in `folders[0].displayName` and as the folder-path leaf. Do NOT write `"Shared/Finance/EnrichInvoice.EnrichInvoice"`. See [api-workflow/planning.md § Registry Resolution](../../tasks/api-workflow/planning.md#registry-resolution).
+
+> **Inline-built sibling (agent / api-workflow) — `resourceKey` and `folderPath` are DECOUPLED (do NOT derive one from the other).** For an agent or API workflow built inline at the Rule 17 gate ([create-inline-common.md § Step 3](../../tasks/create-inline-common.md#step-3--binding-invariants)), the `folderPath` binding `default` is **`""`** (runtime co-located folder) but the `resourceKey` is the literal **`"solution_folder.<name>"`** (resource identity) — NOT `".<name>"`. The general `<folderPath>.<name>` formula does **not** apply here; hardcode the `solution_folder` prefix in `resourceKey` while leaving `folderPath` empty. This split is intentional: `solution_folder` identifies the resource for deploy/provisioning, `""` tells the running case to start the sibling in its own folder. Authoring `folderPath: "solution_folder"` (so `resourceKey` and `folderPath` agree) passes `validate` but fails at invocation with `folder not exist`.
 
 ### Data sources — connector tasks
 
@@ -130,7 +128,7 @@ Do NOT use literal strings.
 
 ## Deduplication
 
-Multiple tasks referencing the same resource share one binding pair. Deduped by `default + resource + resourceKey`. Before creating a new binding, check if an existing entry in the bindings array (v19: `root.data.uipath.bindings[]`; v20: top-level `bindings[]`) matches on all three fields. If found, reuse the existing binding's `id` instead of creating a new one.
+Multiple tasks referencing the same resource share one binding pair. Deduped by `default + resource + resourceKey`. Before creating a new binding, check if an existing entry in top-level `bindings[]` matches on all three fields. If found, reuse the existing binding's `id` instead of creating a new one.
 
 ## Binding ID Generation
 
@@ -138,4 +136,4 @@ IDs use `b` prefix + 8 alphanumeric chars (e.g., `bG0SraLpg`).
 
 ## bindings_v2.json Sync
 
-`bindings_v2.json` must mirror the bindings array in SDK format (source path: `root.data.uipath.bindings[]` in v19, top-level `bindings[]` in v20). Regenerated in batch (not per-task) at end of Step 9 and Step 9.7. See [bindings-v2-sync.md](../../../bindings-v2-sync.md).
+`bindings_v2.json` must mirror top-level `bindings[]` in SDK format. Regenerated in batch (not per-task) at end of Step 9 and Step 9.7. See [bindings-v2-sync.md](../../../bindings-v2-sync.md).

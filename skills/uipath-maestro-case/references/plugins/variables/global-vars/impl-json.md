@@ -16,7 +16,7 @@ return allVariables.find(v => v.id === variableId);
 |---|---|---|
 | `id` | The resolver match key | YES — sole match key |
 | `name` | Human-readable label / FE display | No — never matched |
-| `var` | Pointer field. On wires (Out-arg formal, trigger output): points OUTWARD to the slot. On self-declarations (task output, trigger spec auto-emit): mirrors `id`. | Only when `id` is absent (FE fallback: synthesizes `Variable.id = "=vars.<var>"` — partial form, non-resolvable) |
+| `var` | Pointer field. On wires (Out-arg formal, trigger output, reassigned task output): points OUTWARD to the target slot. On bare self-declarations and trigger spec auto-emits: mirrors `id`. | Only when `id` is absent (FE fallback: synthesizes `Variable.id = "=vars.<var>"` — partial form, non-resolvable) |
 | `elementId` | FE picker scope only. Controls which panel displays the variable. **Not used by the resolver.** | No |
 | `source` | Runtime extraction expression (e.g., `=Decision`, `=response.subject`) | No — read by BPMN engine at runtime |
 | `target` | Runtime write expression (rarely matters) | No |
@@ -28,10 +28,10 @@ return allVariables.find(v => v.id === variableId);
 
 | Array | Resolves `=vars.X`? | Notes |
 |---|---|---|
-| `root.data.uipath.variables.inputOutputs[]` | YES if `id` present | Canonical declaration site |
-| `root.data.uipath.variables.inputs[]` | YES — by random `id` | Picker-invisible (resolution works, but the FE picker does not surface it); target only via the companion |
-| `root.data.uipath.variables.outputs[]` | YES (the formal entry) | But its `var` points elsewhere — see Out-arg shape below |
-| `task.data.outputs[]` | YES if `id` present | Self-declares — task plugin writes id matching the SDD-given name |
+| `variables.inputOutputs[]` *(top level)* | YES if `id` present | Canonical declaration site |
+| `variables.inputs[]` *(top level)* | YES — by random `id` | Picker-invisible (resolution works, but the FE picker does not surface it); target only via the companion |
+| `variables.outputs[]` *(top level)* | YES (the formal entry) | But its `var` points elsewhere — see Out-arg shape below |
+| `task.data.outputs[]` | YES if `id` present | Bare outputs self-declare with `id === var`; reassigned outputs may have a collision-safe `id` while `var` points to the target Case variable |
 | `task.data.inputs[]` | YES — by random `id` | Picker-invisible; used for the In-arg formal slot |
 | `triggerNode.data.uipath.outputs[]` | YES if `id` present; **NO if only `var` (no `id`)** | Pattern A entries (`id === var`) self-resolve; Pattern C entries (`var` only) require a companion in `root.inputOutputs[]` |
 
@@ -43,48 +43,37 @@ Under the B refactor, this plugin is **the sole owner** of:
 
 | Array | Owns? |
 |---|---|
-| `root.data.uipath.variables.inputs[]` | Yes |
-| `root.data.uipath.variables.outputs[]` | Yes |
-| `root.data.uipath.variables.inputOutputs[]` | Yes |
+| `variables.inputs[]` *(top level)* | Yes |
+| `variables.outputs[]` *(top level)* | Yes |
+| `variables.inputOutputs[]` *(top level)* | Yes |
 | `triggerNode.data.uipath.outputs[]` | **Yes** — sole owner under B (was co-mutated with trigger plugin in previous design) |
 | `task.data.outputs[]` | No — task plugins self-declare; this plugin's writes never touch them |
 | `task.data.inputs[].value` | No — io-binding owns this |
-| `root.bindings[]` | No — connector / trigger plugins own resource bindings |
+| top-level `bindings[]` | No — connector / trigger plugins own resource bindings |
 
 ## Target Paths
-
-Read `Schema:` header from `tasks.md` per Rule 18. Trigger output mappings are identical across schemas (node internals untouched by v20).
-
-### v19
-
-| What | JSON path |
-|---|---|
-| In argument inputs | `root.data.uipath.variables.inputs[]` |
-| Out argument outputs | `root.data.uipath.variables.outputs[]` |
-| All internal variables | `root.data.uipath.variables.inputOutputs[]` |
-| Trigger output mappings | `nodes[<triggerIndex>].data.uipath.outputs[]` |
-
-### v20
 
 | What | JSON path |
 |---|---|
 | In argument inputs | `variables.inputs[]` *(top level)* |
 | Out argument outputs | `variables.outputs[]` *(top level)* |
 | All internal variables | `variables.inputOutputs[]` *(top level)* |
-| Trigger output mappings | `nodes[<triggerIndex>].data.uipath.outputs[]` *(unchanged from v19)* |
-
-> v20 hoists `root.data.uipath.variables` to top-level `variables`. Field shape inside is identical — only the destination path changes.
+| Trigger output mappings | `nodes[<triggerIndex>].data.uipath.outputs[]` |
 
 ## Uniqueness Rule
 
-Every `var` / `id` must be globally unique across the case. When a name collides, append a counter starting at 2:
+Every independently minted `var` / `id` must be globally unique across the case, except for the single root-companion alias defined below for an equal-name `->` extraction. When a name collides, append a counter starting at 2:
 
 ```
 "decision" exists → "decision2" → "decision3"
 "error" + "error2" exist → "error3"
 ```
 
-The `source` and `name` fields keep the original value — only `var` / `id` / `target` get the suffix.
+The `source` and `name` fields keep the original value. Independently minted `var` / `id` values and their `target` get the suffix; on a reassign shape, `originalVar` mirrors the allocated `id` and receives the same suffix.
+
+**Reassigned-output collision.** A normal `field -> caseVar` output owns an independently minted source-side `id` even though its `var` points at the existing Case variable. Deduplicate that `id` against the global pool and update `target` plus `originalVar` to match it; do not suffix the pointer `var`. For example, if `aPIOutput1` already exists, `APIOutput1 -> renamedResult` emits `id: "aPIOutput12"`, `target: "=aPIOutput12"`, `var: "renamedResult"`, and `originalVar: "aPIOutput12"`. See [io-binding § Output Binding Shapes](../io-binding/impl-json.md#output-binding-shapes).
+
+**Controlled alias — equal-name `->` extraction.** A reassigned task/rule output is a wire to an existing Case-variable slot, not an independent declaration. When `baseId == target case-variable id`, exclude exactly that matching `variables.inputOutputs[]` companion (`id == target`, `elementId == "root"`) from the source-side allocation scan. Do not exclude any task, trigger, rule, argument, or unrelated root entry. Thus the first `greeting -> greeting` may emit `id == var == originalVar == "greeting"` alongside the root companion, but if another output already owns `greeting`, the wire emits `id: "greeting2"`, `originalVar: "greeting2"`, and `target: "=greeting2"` while `var` and `value` remain `"greeting"`. Never suffix the root companion or the `var` pointer. `originalVar` marks both forms as reassigned, so `mutateRootVariables` retains the existing root companion instead of auto-mirroring a duplicate.
 
 ### Pool composition (what to scan)
 
@@ -92,22 +81,28 @@ Build the uniqueness pool from EVERY `var` / `id` currently in `caseplan.json`. 
 
 | Source | JSON path | Notes |
 |---|---|---|
-| Root variables | `root.data.uipath.variables.{inputs,outputs,inputOutputs}[]` (v19) / `variables.{inputs,outputs,inputOutputs}[]` (v20) | The canonical case-variable namespace |
+| Root variables | top-level `variables.{inputs,outputs,inputOutputs}[]` | The canonical case-variable namespace |
 | Task outputs | `nodes[<stage>].data.tasks[<lane>][].data.outputs[]` (for every task) | Self-declared task outputs |
 | Trigger outputs | `nodes[<trigger>].data.uipath.outputs[]` (for every trigger node) | Plain-name auto-emit + Pattern C wires |
 | **Stage entry / exit rule outputs** | `nodes[<stage>].data.entryConditions[].rules[][].uipath.outputs[]` AND `nodes[<stage>].data.exitConditions[].rules[][].uipath.outputs[]` | Connector-bound condition rules — outputs minted under `elementId = <stageId>-<ruleId>` |
-| **Case-exit rule outputs** | `root.caseExitConditions[].rules[][].uipath.outputs[]` (v19) / `metadata.caseExitRules[].rules[][].uipath.outputs[]` (v20) | Connector-bound case-exit rules — outputs minted under `elementId = root-<ruleId>` |
+| **Case-exit rule outputs** | `metadata.caseExitRules[].rules[][].uipath.outputs[]` | Connector-bound case-exit rules — outputs minted under `elementId = root-<ruleId>` |
 | **Task-entry rule outputs** | `nodes[<stage>].data.tasks[<lane>][].entryConditions[].rules[][].uipath.outputs[]` (for every task) | Connector-bound task-entry rules — outputs minted under `elementId = <stageId>-<ruleId>` |
 
 **Both directions.** When a connector rule mints outputs, dedupe against the union {tasks ∪ triggers ∪ rules ∪ root}. When a task or trigger mints outputs, dedupe against existing rule outputs too — NOT just tasks + triggers. The shared FE form (`FPSFormServiceTypeFields`) registers rule outputs in the same global pool (`getAllVariables()`), so any duplicate `var` / `id` across the {task, trigger, rule} space collapses in `allInputOutputsByElementMap` and cross-wires ownership at round-trip.
 
 **Skip guard.** Rules with no `uipath.outputs[]` (connector configuration unresolved — see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback)) contribute zero outputs to the pool and must be skipped during enumeration. Same skip pattern as placeholder tasks (`data:{}`).
 
+## Formal-arg slot ID format
+
+In/Out-arg formal slots (`variables.inputs[].id`, `variables.outputs[].id`) MUST start with a letter — mint as **`v` + 8 chars** from `[A-Za-z0-9]` (e.g. `vK3mNp9Qx`), same convention as task-input slots ([io-binding](../io-binding/impl-json.md)) and the FE. NOT a bare prefix-less random id.
+
+Rationale: the formal In-arg slot id surfaces in the case BPMN as `<uipath:input id="...">` and is dot-referenced via `=vars.<id>` (the bridge, § In argument). A prefix-less random id can lead with a digit → BPMN parser rejects it (`illegal ID <5AinMKBDm>`); C# identifier + XML NCName rules require a leading letter/underscore. Companion ids (`inputOutputs[].id`) keep the human-readable name (`applicantName`) and are already letter-leading — only the random formal-slot id needs the `v` prefix.
+
 ## Inputs the plugin reads at Phase 3 Step 6.2
 
-1. **`tasks.md`** variable T-entries — for category, type, default, sourceTrigger(s), sourceField(s)
+1. **`tasks.md`** variable T-entries — for category, type, default, sourceTrigger(s), sourceField(s). On `Category=In` rows, `sourceTriggers` is a single T-number selecting the bound trigger (blank → primary trigger)
 2. **`tasks/trigger-spec-cache.json`** — for each trigger's `caseShape.outputs[]` (un-minted), keyed by T-number. Written by trigger plugin at Step 6.1; see [`../../triggers/event/impl-json.md` § Step 8](../../triggers/event/impl-json.md) for the writer-side schema. Top-level keys are T-numbers (e.g., `T02`, `T03`); values have `context`, `inputs`, `outputs` from the trigger's `caseShape`, un-minted (no `var` / `id` / `elementId` synthesized).
-3. **`id-map.json`** — for `T<N> → trigger_xxxxxx` lookup when writing trigger.outputs[]
+3. **`id-map.json`** — for `T<N> → trigger_xxxxxx` lookup when writing trigger.outputs[] and resolving an `In`-arg's bound trigger node (row's `sourceTriggers`; blank → `id-map["T02"].id`, the primary trigger)
 4. **`caseplan.json`** — to locate trigger nodes (by triggerId from id-map) and existing root variable arrays
 
 ## Dispatcher — two loops
@@ -125,7 +120,7 @@ For each trigger in `trigger-spec-cache.json`:
 |---|---|---|---|---|---|
 | Not referenced by SDD | (no row) | `{name: <spec.name>, var: <spec.name>, type: <spec.type>, source: <spec.source>, value: <spec.name>}` — `type` and `source` come from the spec entry verbatim (e.g., `type: "jsonSchema"` + `source: "=response"`). **No `id`, no `elementId`** per FE auto-emit convention (`IntsvcActivityPropertiesUtils.tsx:288-302`). Plain-name auto-emit. | — | — | **Required** — `{id: <spec.name>, name: <spec.name>, type: <spec.type>, elementId: <triggerId>, body: <spec.body>}`. For `jsonSchema`-typed entries (e.g., `response`, `Error`), the companion holds the full body schema that the FE picker uses to discover sub-fields. Without it, sub-field picking is broken and the variable can't be selected in connector-task input bindings. |
 | Referenced as `Category=Variable` | row's `sourceField` path | `{name: <last segment of sourceField path>, var: <sdd-name>, type: <sdd-row.type>, source: "=<row.sourceField>", value: <sdd-name>}` (Pattern C wire). **No `id`, no `elementId`** — resolution flows through the companion in `root.inputOutputs[]`, not through this entry. `name` is the spec sub-field segment (e.g., `"Title"` when `sourceField: response.Title`) — matches FE convention where `name` is the display label of the source field. `source` is `=` prepended to the raw `sourceField` value from tasks.md; `type` comes from the SDD row, NOT the spec — author's chosen type wins. | — | — | `{id: <sdd-name>, name: <sdd-name>, type: <sdd-row.type>, elementId: "root", custom: true}` — companion with elementId="root" routes variable to Case Variables panel; `custom: true` marks it user-declared. |
-| Referenced as `Category=In` | — (In doesn't reference a payload field; the value comes from caller or Default at fire) | Bridge entry per § In argument below — `{name: <sdd-name>, type: <sdd-row.type>, source: "=vars.<inputId>", var: <sdd-name>}`. Works on ANY trigger type (manual, timer, event). For event triggers, the bridge propagates the formal slot's `default` to the companion at trigger fire (no caller-override path, but mechanics are identical). | per § In argument below | — | per § In argument below |
+| Referenced as `Category=In` | **Skip here** — `Category=In` is dispatched in Loop B by Category, NEVER by spec-output name-match (even if an In-arg's Name happens to equal a top-level spec name). The bridge + slot + companion bind to the row's `sourceTriggers` trigger (blank → primary T02), not the trigger Loop A is iterating. See Loop B + § In argument. | — (emit nothing) | — | — | — |
 | Referenced as `Category=Out` | — | **REJECT** (direction mismatch — Out-args flow case→caller) | — | — | — |
 
 **File-type carve-out:** when the spec output's `type` is `"file"` (or `"octet-stream"` — normalize to `"file"`), both rows above additionally require:
@@ -157,18 +152,22 @@ root.inputOutputs[]: [
 
 Six entries total: 3 trigger outputs (no id) + 3 companions (with id — resolution surface). The auto-emit companions carry the full body schemas so the FE picker can navigate sub-fields. The Pattern C companion has no body (its type is the primitive `string`).
 
-### Loop B — SDD-only rows (rows with no trigger source)
+### Loop B — non-extraction rows (In / Out / pure-state Variable)
 
-For each variable T-entry in `tasks.md` that has **no `sourceTrigger` / `sourceTriggers` field**:
+For each variable T-entry in `tasks.md` that is **`Category=In`** (any `sourceTriggers` — single or blank), **`Category=Out`**, or a **`Category=Variable`** row with **no `sourceTrigger` / `sourceTriggers` field**:
+
+> **`Category=In` always lands here** — even when it carries a `sourceTriggers` T-number. An In-arg names its bound trigger but extracts no payload field, so it is NEVER a Loop A (Pattern C) row. Only `Variable` rows with `sourceTrigger(s)` go to Loop A.
 
 | SDD row | `root.inputs[]` | `root.outputs[]` | `root.inputOutputs[]` |
 |---|---|---|---|
 | `Category=Variable` (pure state, no trigger) | — | — | `{id: <sdd-name>, name: <sdd-name>, type: <type>, elementId: "root", default: <value if Default set>, custom: true}` |
-| `Category=In` (any trigger type — manual / timer / event) | `{id: <random9>, name: <sdd-name>, type: <type>, default: <value>, elementId: <triggerId>}` | — | `{id: <sdd-name>, name: <sdd-name>, type: <type>, elementId: <triggerId>}` (no `custom` — argument companion). Additionally write the **bridge** on `triggerNode.outputs[]` (see § In argument below). |
-| `Category=Out` (companion ALWAYS emitted — see § Out argument) | — | `{id: <random9>, name: <sdd-name>, type: <type>, var: <sdd-name>}` (formal-arg pointer) | `{id: <sdd-name>, name: <sdd-name>, type: <type>, default: <value or "">, elementId: "root"}` (no `custom`) |
+| `Category=In` (any trigger type — manual / timer / event) | `{id: v<random8>, name: <sdd-name>, type: <type>, default: <value>, elementId: <triggerId>}` | — | `{id: <sdd-name>, name: <sdd-name>, type: <type>, elementId: <triggerId>}` (no `custom` — argument companion). Additionally write the **bridge** on `triggerNode.outputs[]` (see § In argument below). |
+| `Category=Out` (companion ALWAYS emitted — see § Out argument) | — | `{id: v<random8>, name: <sdd-name>, type: <type>, var: <sdd-name>}` (formal-arg pointer) | `{id: <sdd-name>, name: <sdd-name>, type: <type>, default: <value or "">, elementId: "root"}` (no `custom`) |
 | `Category=InOut` | (not supported in v1 — see SDD template) | (not supported in v1) | (not supported in v1) |
 
-> Loop A and Loop B can write the SAME `root.inputOutputs[]` entry when an SDD row appears in both contexts (e.g., a `Category=Variable` row with `sourceTrigger`). Apply dedup by `id`: if an entry with the same `id` already exists from Loop A, do not re-write in Loop B; Phase 2 validator has already confirmed there's no Type/Default conflict.
+> **`<triggerId>` for a `Category=In` row** resolves to `id-map.json[T<N>].id` where `T<N>` is the row's `sourceTriggers` (a single T-number); blank `sourceTriggers` → the primary trigger `id-map["T02"].id`. The formal slot, companion, and bridge all attach to that one trigger node. Full 3-entry shape: § In argument.
+>
+> Loop A and Loop B can write the SAME `root.inputOutputs[]` entry when a `Category=Variable` row appears in both contexts (e.g., a `Variable` with `sourceTrigger`). Apply dedup by `id`: if an entry with the same `id` already exists from Loop A, do not re-write in Loop B; Phase 2 validator has already confirmed there's no Type/Default conflict. `Category=In` rows never straddle the loops — they are emitted solely in Loop B with the In-arg 3-entry shape, never a Pattern-C entry.
 
 ## Pattern shapes by category
 
@@ -179,7 +178,7 @@ For each variable T-entry in `tasks.md` that has **no `sourceTrigger` / `sourceT
 SDD row: `Category=Variable`, no `sourceTriggers`, optional `Default`.
 
 ```json
-// root.data.uipath.variables.inputOutputs[]
+// variables.inputOutputs[]
 { "id": "caseStatus", "name": "caseStatus", "type": "string",
   "custom": true, "elementId": "root", "default": "Open" }
 ```
@@ -196,7 +195,7 @@ SDD row: `Category=Variable`, `sourceTriggers: T02`, `sourceFields: response.sub
   "source": "=response.subject", "type": "string", "value": "calendarTitle" }
 // No `id`, no `elementId` — FE auto-emit convention. `name` is the last segment of sourceField path.
 
-// root.data.uipath.variables.inputOutputs[]
+// variables.inputOutputs[]
 { "id": "calendarTitle", "name": "calendarTitle", "type": "string",
   "elementId": "root", "custom": true }
 ```
@@ -227,13 +226,17 @@ Resolver doesn't care that two trigger entries write to the same `vars.caseStart
 
 ### In argument
 
-SDD row: `Category=In`, `triggerRef: T02`. **Works on any trigger type — manual, timer, or event.** For event triggers, the bridge mechanics are identical; the formal slot's `default` propagates to the companion at trigger fire (no caller-override path since events have no API caller, but the structural emission is the same).
+SDD row: `Category=In`, optional `sourceTriggers: T<N>` (a single T-number selecting the bound trigger; blank → primary trigger T02). `sourceFields` is empty for In rows. **Works on any trigger type — manual, timer, or event.** For event triggers, the bridge mechanics are identical; the formal slot's `default` propagates to the companion at trigger fire (no caller-override path since events have no API caller, but the structural emission is the same).
+
+**Trigger resolution.** `<triggerId>` in the entries below = `id-map.json[T<N>].id` for the trigger named by `sourceTriggers`; blank `sourceTriggers` → `id-map["T02"].id` (the primary trigger). Entries 1 (formal slot) and 2 (companion) carry it as `elementId`; entry 3 (bridge) is written on that same trigger node's `data.uipath.outputs[]`. `sourceFields` is not consulted for In.
+
+> **Bare manual bound trigger:** a manual trigger has no `data.uipath` key (its signature — see [`../../triggers/manual/impl-json.md`](../../triggers/manual/impl-json.md)). When the bound trigger is manual (the common case — the primary trigger is usually manual), create `data.uipath = { "outputs": [] }` on that node before appending the bridge. Do NOT add a `serviceType` — its absence is what keeps the trigger manual.
 
 Three entries — formal slot + companion + bridge:
 
 ```json
 // 1. root.inputs[]  — formal-arg slot (caller writes here at fire, OR initialized via default for event triggers)
-{ "id": "<random9>", "name": "applicantName", "type": "string",
+{ "id": "v<random8>", "name": "applicantName", "type": "string",
   "default": "", "elementId": "<triggerId>" }
 
 // 2. root.inputOutputs[]  — companion (readable as =vars.applicantName)
@@ -241,13 +244,13 @@ Three entries — formal slot + companion + bridge:
   "elementId": "<triggerId>" }
 
 // 3. triggerNode.data.uipath.outputs[]  — bridge from formal slot to companion
-{ "name": "applicantName", "type": "string", "source": "=vars.<random9>", "var": "applicantName" }
+{ "name": "applicantName", "type": "string", "source": "=vars.v<random8>", "var": "applicantName" }
 // No `id`, no `elementId` on bridge — FE convention. `type` matches the SDD row's Type column.
 ```
 
-**Why three entries instead of one?** The runtime resolver (`VariablesService.findVariableByVariableId`) is a single string-equality find on `Variable.id`. The caller (or trigger fire for event triggers) writes the formal-arg's value into `vars.<random9>` at trigger fire (because `inputs[].id` is `<random9>`); downstream code wants to read it as `=vars.applicantName` (because that's the readable name). There is no automatic forwarding between the two slots — the bridge entry on `triggerNode.outputs[]` executes the copy at fire time: `source: "=vars.<random9>"` reads the formal slot, `var: "applicantName"` writes to the companion's slot. Without the bridge, `=vars.applicantName` resolves to undefined. The companion's `inputOutputs[]` entry alone declares the *name* in the namespace, but holds no *value* because nobody writes to it.
+**Why three entries instead of one?** The runtime resolver (`VariablesService.findVariableByVariableId`) is a single string-equality find on `Variable.id`. The caller (or trigger fire for event triggers) writes the formal-arg's value into `vars.v<random8>` at trigger fire (because `inputs[].id` is `v<random8>`); downstream code wants to read it as `=vars.applicantName` (because that's the readable name). There is no automatic forwarding between the two slots — the bridge entry on `triggerNode.outputs[]` executes the copy at fire time: `source: "=vars.v<random8>"` reads the formal slot, `var: "applicantName"` writes to the companion's slot. Without the bridge, `=vars.applicantName` resolves to undefined. The companion's `inputOutputs[]` entry alone declares the *name* in the namespace, but holds no *value* because nobody writes to it.
 
-> **Placeholder trigger interaction:** if the trigger is a placeholder (any type), write entries 1 + 2 only; skip the bridge (entry 3) — the placeholder has no `data.uipath.outputs` array. The placeholder trigger never fires, so the bridge would never execute anyway. **Consequence:** at runtime `vars.<name>` (the companion slot) is undefined — the `default` on the `inputs[]` formal slot does NOT propagate to the companion without the bridge. This is expected: a placeholder case is structurally incomplete and not meant to run until the trigger is resolved. Re-generate from scratch (Rule 6) after the trigger resolves to get the working bridge.
+> **Placeholder trigger interaction:** if the **bound trigger** (the one named by `sourceTriggers`, or the primary trigger when blank) is a placeholder (any type), write entries 1 + 2 only; skip the bridge (entry 3) — the placeholder has no `data.uipath.outputs` array. The placeholder trigger never fires, so the bridge would never execute anyway. **Consequence:** at runtime `vars.<name>` (the companion slot) is undefined — the `default` on the `inputs[]` formal slot does NOT propagate to the companion without the bridge. This is expected: a placeholder case is structurally incomplete and not meant to run until the trigger is resolved. Re-generate from scratch (Rule 6) after the trigger resolves to get the working bridge.
 
 **File-type In-arg carve-out:** when `type === "file"`:
 - Formal slot (entry 1) MUST add `body: <FILE_TYPE_JSON_SCHEMA>` (see [`## file type`](#file-type)) — drives entry-points.json `$ref: "#/definitions/job-attachment"` at packaging
@@ -271,12 +274,12 @@ SDD row: `Category=Out`. **Companion is ALWAYS emitted at write time** (per FE c
 Same shape regardless of Default presence (two entries):
 
 ```json
-// 1. root.data.uipath.variables.outputs[]  — formal Out-arg pointer
-{ "id": "<random9>", "name": "finalDecision", "type": "string",
+// 1. variables.outputs[]  — formal Out-arg pointer
+{ "id": "v<random8>", "name": "finalDecision", "type": "string",
   "var": "finalDecision" }
 // var is a POINTER — at case end, engine reads vars.finalDecision via this pointer
 
-// 2. root.data.uipath.variables.inputOutputs[]  — companion (always written)
+// 2. variables.inputOutputs[]  — companion (always written)
 { "id": "finalDecision", "name": "finalDecision", "type": "string",
   "default": "<value or empty string>", "elementId": "root" }
 // no custom — argument companions are NOT custom per FE convention
@@ -286,23 +289,23 @@ Same shape regardless of Default presence (two entries):
 
 ### InOut argument
 
-> **NOT supported in v1.** The SDD template's Category enum is `In | Out | Variable` only. If real customer cases require InOut, this section documents the FE-canonical shape for future re-introduction. Skill validators reject `Category=InOut` in v1 (Phase 2 — invalid Category value).
+> **NOT supported in v1.** The SDD template's Category enum is `In | Out | Variable` only. If real customer cases require InOut, this section documents the FE-canonical shape for future re-introduction. Skill validators reject `Category=InOut` in v1 (Phase 2 — invalid Category value). If revived, `<triggerId>` resolves per § In argument (`id-map[<sourceTriggers T-number>].id`; blank → `id-map["T02"].id`).
 
 Combines In + Out. One shared companion serves both:
 
 ```json
 // 1. root.inputs[]  — formal In slot
-{ "id": "<random9-in>", "name": "claimId", "type": "string",
+{ "id": "v<random8-in>", "name": "claimId", "type": "string",
   "default": "", "elementId": "<triggerId>" }
 
 // 2. root.inputOutputs[]  — shared companion
 { "id": "claimId", "name": "claimId", "type": "string", "elementId": "<triggerId>" }
 
 // 3. root.outputs[]  — formal Out slot pointing at same companion
-{ "id": "<random9-out>", "name": "claimId", "type": "string", "var": "claimId" }
+{ "id": "v<random8-out>", "name": "claimId", "type": "string", "var": "claimId" }
 
 // 4. triggerNode.outputs[]  — bridge from In formal slot to shared companion
-{ "name": "claimId", "type": "string", "source": "=vars.<random9-in>", "var": "claimId" }
+{ "name": "claimId", "type": "string", "source": "=vars.v<random8-in>", "var": "claimId" }
 ```
 
 Caller writes value; bridge copies to companion at trigger fire; task body updates `vars.claimId`; case end returns updated value to caller.
@@ -325,6 +328,8 @@ All logged per [`../../logging/impl-json.md`](../../logging/impl-json.md).
 > |---|---|---|
 > | Category column missing or empty | Phase 2 (planning) | SDD-only structural check; needs no spec data |
 > | `Category=Out` + `sourceTriggers` declared | Phase 2 | Direction mismatch is purely SDD-internal |
+> | `Category=In` + CSV `sourceTriggers` (>1 T-number) | Phase 2 | In binds exactly one trigger; SDD-internal |
+> | `Category=In` + non-empty `sourceFields` | Phase 2 | In extracts no payload field; SDD-internal |
 > | Same-Name pair (any column mismatch) | Phase 2 | Pure SDD consistency check; not re-validated in Phase 3 |
 > | Missing `Type` on In/Out row | Phase 2 | SDD-internal |
 > | `sourceTriggers` references nonexistent T-number | Phase 2 | tasks.md cross-reference, no spec needed |
@@ -335,7 +340,7 @@ All logged per [`../../logging/impl-json.md`](../../logging/impl-json.md).
 >
 > Phase 3 does NOT re-validate the Phase 2 structural checks — they are prerequisite-met by the time Phase 3 runs (Phase 2 rejects before tasks.md is finalized).
 >
-> **`Category=In` on event triggers is ALLOWED** in v1 (per SDD contract). The previous rejection rule for Category=In on event triggers is removed — the structural emission for In (3-entry: formal slot + companion + bridge) is identical regardless of trigger type. For event triggers, the formal slot's `default` propagates through the bridge to the companion at trigger fire; there's no caller-override path, but the mechanics are valid.
+> **`Category=In` on event triggers is ALLOWED** in v1 (per SDD contract). The previous rejection rule for Category=In on event triggers is removed — the structural emission for In (3-entry: formal slot + companion + bridge) is identical regardless of trigger type. For event triggers, the formal slot's `default` propagates through the bridge to the companion at trigger fire; there's no caller-override path, but the mechanics are valid. The bound trigger is the one named by `sourceTriggers` (blank → primary) and may be any type.
 
 ## Custom Outputs (`custom: true` on task.data.outputs[])
 
@@ -418,6 +423,8 @@ When a task's `data.outputs[]` entry has `id` set (which is always the case unde
 
 This is the **reassign shape** (FE Scenario B/D). The `originalVar` field tells the FE's `mutateRootVariables` to filter this entry out of root-mirroring (`VariableMutationUtils.ts:135`), so the case Variables companion stays intact across FE edits. Without `originalVar`, FE edits would create duplicate root entries and orphan the case variable.
 
+When source and destination have the same name (`Decision -> decision` after camel-casing, or `greeting -> greeting`), the shape does not become bare. With no unrelated owner, `id`, `var`, and `originalVar` may intentionally be identical and may match the root companion ID. With an unrelated collision, only `id`, `originalVar`, and `target` take the allocated suffix; `var` and `value` keep pointing to the existing Case variable. `originalVar` is required in both forms and is what makes the alias safe.
+
 For `=` operator rows (Scenario E), the task plugin emits a separate `custom: true` entry — see Custom Outputs section above.
 
 Per Out-arg companion rule above, the variables plugin ALWAYS writes a `root.inputOutputs[]` companion for Out-args (no longer conditional on Default). For case Variables sourced via `->` from tasks, the companion is also written so the variable is picker-visible at Case Variables panel.
@@ -434,4 +441,4 @@ The dispatcher logic lives in [io-binding/impl-json.md § Output Binding Shapes 
 
 Loop B (this file) handles the COMPANION emission — it scans `tasks.md` Case Variables rows agnostically of producer type. A `Category=Variable` row whose producer is a connector rule's `->` extract gets the same companion shape as one whose producer is a task's `->` extract. The producer (task plugin OR condition plugin) is responsible for writing the upstream `outputs[]` entry referencing the companion via `var: <caseVar.id>`.
 
-> **Skip guard.** Rules with no `uipath` (connector configuration unresolved) contribute no outputs to the global pool and no companions to Loop B — see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback).
+> **Skip guard.** Rules with no `uipath.outputs[]` (stub placeholder — connector configuration unresolved) contribute no outputs to the global pool and no companions to Loop B — see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback).

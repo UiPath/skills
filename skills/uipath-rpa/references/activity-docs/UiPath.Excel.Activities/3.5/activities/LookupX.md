@@ -6,4 +6,4 @@
 |---------------|
 | `SourceRange`, `Label`, `ResultRange="{x:Null}"`, output via `Value` child `OutArgument` |
 
-Use `uip rpa activities get-default-xaml --use-studio` for full XAML.
+Use `uip rpa activities get-default-xaml` for full XAML.

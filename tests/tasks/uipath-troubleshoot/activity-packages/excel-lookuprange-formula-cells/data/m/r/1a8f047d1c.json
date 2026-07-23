@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "f1a2b3c4-5d6e-4789-9b0c-1d2e3f4a5b6c",
+      "State": "Faulted",
+      "ProcessName": "DailyPriceSync",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-27T14:38:12.180Z",
+      "EndTime": "2026-05-27T14:38:17.610Z",
+      "CreationTime": "2026-05-27T14:38:11.940Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

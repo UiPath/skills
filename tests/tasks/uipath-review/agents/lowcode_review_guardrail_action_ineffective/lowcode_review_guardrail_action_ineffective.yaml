@@ -1,0 +1,78 @@
+task_id: skill-review-agents-lowcode-guardrail-action-ineffective
+description: >
+  Smoke test for uipath-review on a low-code agent whose guardrail is fully
+  format-valid but semantically wrong: a Tool-scoped `pii_detection` guardrail
+  with a `block` action sits on a `SendCustomerEmail` tool that legitimately
+  needs the recipient email. `uip agent review` returns the guardrail clean (no
+  `GUARDRAIL_*` finding), so the only way to catch it is to fetch the live
+  catalog and read `pii_detection`'s `when_not_to_use` ("Do not use at Tool
+  scope with Block ... if the tool requires PII to function"). The reviewer
+  must run the review CLI (Step 2.5a), fetch the guardrail catalog (Step 2.5b /
+  guardrails-review.md Audit Mode), and cite `LC_GUARDRAIL_ACTION_INEFFECTIVE`.
+  Un-eyeball-able (block looks protective), so it forces the catalog read —
+  needs the authed CLI (the smoke runner passes UIPATH_CLI_* auth).
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover, guardrail]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_guardrail_action_ineffective/inject_guardrail_action_ineffective.py"
+    timeout: 30
+
+initial_prompt: |
+  A low-code UiPath agent project exists at `ReviewSol/SampleAgent` inside the
+  solution `ReviewSol`. Review the agent project for issues and save your review
+  report to `./_review_report.md` at the sandbox root.
+
+  This is a read-only review — do not modify anything inside `ReviewSol/`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside ReviewSol/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*ReviewSol'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside ReviewSol/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*ReviewSol'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Ran the review CLI first (Step 2.5a) — guardrail is format-clean"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+review'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The forcing function: the action-vs-scope defect lives only in the live
+  # catalog's when_not_to_use, so a passing report must have fetched it.
+  - type: command_executed
+    description: "Fetched the live guardrail catalog (guardrails-review.md Step 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Review report applies the judgment catalog: cites LC_GUARDRAIL_ACTION_INEFFECTIVE"
+    command: "python3 $TASK_DIR/check_lowcode_review_guardrail_action_ineffective.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

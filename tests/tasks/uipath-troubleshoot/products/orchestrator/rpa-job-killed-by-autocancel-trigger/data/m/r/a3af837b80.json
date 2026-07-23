@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "JobHistory",
+  "_doc": "State transitions for the failing job. Running for exactly 600s before transitioning to Killing — matches the configured auto-cancel trigger time budget. The Source field on the Killing transition is 'Trigger:kill-after-10min', identifying the system-initiated cancel.",
+  "Data": [
+    {
+      "State": "Pending",
+      "Timestamp": "2026-05-19T08:00:00.302Z",
+      "Reason": "JobCreated"
+    },
+    {
+      "State": "Running",
+      "Timestamp": "2026-05-19T08:00:00.500Z",
+      "Reason": "ExecutorStarted"
+    },
+    {
+      "State": "Killing",
+      "Timestamp": "2026-05-19T08:10:00.000Z",
+      "Reason": "TimeBudgetExceeded",
+      "Strategy": "Kill",
+      "Source": "Trigger:kill-after-10min"
+    },
+    {
+      "State": "Faulted",
+      "Timestamp": "2026-05-19T08:10:00.875Z",
+      "Reason": "ExecutorExited",
+      "ExitCode": "0x40010004"
+    }
+  ]
+}

@@ -141,6 +141,7 @@ A monetary action above a threshold or of a certain type requires human sign-off
 - The human interaction is asynchronous notification only (use email/Slack activity instead)
 - The user explicitly says no human review is needed
 - The decision can be made by a rule or AI model with sufficient confidence
+- The user is asking about **runtime task management** — reassigning, monitoring, cancelling, or checking the status of existing Action Center tasks. These are operational questions answered by `uip tasks` commands or the Orchestrator UI, not by adding a HITL node. A question like "how do I reassign a task sitting for 3 days?" is task administration, not automation authoring — do not recommend adding a HITL checkpoint in response.
 
 ---
 

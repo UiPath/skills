@@ -3,12 +3,12 @@
 Required OAuth scopes for each `@uipath/uipath-typescript` SDK service and method.
 
 Use this reference to:
-1. Determine which scopes to include in `VITE_UIPATH_SCOPE` (`.env`)
+1. Determine which scopes to include in the `scope` field of `uipath.json`
 2. Determine which scopes to add to the UiPath External Application
 
 **Note:** Broader scopes cover granular ones (e.g., `OR.Assets` covers `OR.Assets.Read`). Use the most specific scope that satisfies the operations the app performs.
 
-> **Update scopes WHEN you add the feature.** Any new service call — a write op (`insertRecordById`, `updateRecordById`, `deleteRecordById`), an action-causing method (`Jobs.stop`/`resume`/`restart`, `Tasks.complete`/`assign`, `ProcessInstances.cancel`, `Exchanges.createFeedback`, etc.), or a call to a service the app hasn't used before — may need a scope broader than what the current `VITE_UIPATH_SCOPE` in `.env` carries. Check the tables below before shipping the feature. The External Application registration must also allow the scope; if not, the token request is rejected entirely (see [oauth-client-setup.md](oauth-client-setup.md)).
+> **Update scopes WHEN you add the feature.** Any new service call — a write op (`insertRecordById`, `updateRecordById`, `deleteRecordById`), an action-causing method (`Jobs.stop`/`resume`/`restart`, `Tasks.complete`/`assign`, `ProcessInstances.cancel`, `Exchanges.createFeedback`, etc.), or a call to a service the app hasn't used before — may need a scope broader than what the current `scope` field in `uipath.json` carries. Check the tables below before shipping the feature. The External Application registration must also allow the scope; if not, the token request is rejected entirely (see [oauth-client-setup.md](oauth-client-setup.md)).
 
 ---
 
@@ -47,11 +47,14 @@ Use this reference to:
 
 | Method | Required Scope |
 |--------|----------------|
-| `getAll()` | `OR.Administration` or `OR.Administration.Read` |
-| `getById()` | `OR.Administration` or `OR.Administration.Read` |
-| `getFileMetaData()` | `OR.Administration` or `OR.Administration.Read` |
-| `getReadUri()` | `OR.Administration` or `OR.Administration.Read` |
-| `uploadFile()` | `OR.Administration` or `OR.Administration.Read` |
+| `getAll()` | `OR.Buckets` or `OR.Buckets.Read` |
+| `getById()` | `OR.Buckets` or `OR.Buckets.Read` |
+| `getByName()` | `OR.Buckets` or `OR.Buckets.Read` |
+| `getFiles()` | `OR.Buckets` or `OR.Buckets.Read` |
+| `getFileMetaData()` | `OR.Buckets` or `OR.Buckets.Read` |
+| `getReadUri()` | `OR.Buckets` or `OR.Buckets.Read` |
+| `uploadFile()` | `OR.Buckets` |
+| `deleteFile()` | `OR.Buckets` or `OR.Buckets.Write` |
 
 ---
 
@@ -136,6 +139,8 @@ Use this reference to:
 |--------|----------------|
 | `getAll()` | `PIMS` |
 | `getIncidents()` | `PIMS` |
+| `getInstanceStatusTimeline()` | `Insights.RealTimeData Insights OR.Folders.Read` |
+| `getTopRunCount()` / `getTopFaultedCount()` / `getTopExecutionDuration()` | `Insights.RealTimeData Insights OR.Folders.Read` |
 
 ## Maestro Process Incidents (standalone)
 
@@ -150,6 +155,8 @@ Use this reference to:
 | Method | Required Scope |
 |--------|----------------|
 | `getAll()` | `PIMS` |
+| `getInstanceStatusTimeline()` | `Insights.RealTimeData Insights OR.Folders.Read` |
+| `getTopRunCount()` / `getTopFaultedCount()` / `getTopExecutionDuration()` | `Insights.RealTimeData Insights OR.Folders.Read` |
 
 ## Case Instances
 
@@ -161,6 +168,7 @@ Use this reference to:
 | `close()` / `pause()` / `resume()` / `reopen()` | `PIMS` |
 | `getExecutionHistory()` | `PIMS` |
 | `getActionTasks()` | `OR.Tasks` or `OR.Tasks.Read` |
+| `getSlaSummary()` / `getStagesSlaSummary()` | `Insights.RealTimeData Insights OR.Folders.Read PIMS` |
 
 ---
 
@@ -198,6 +206,13 @@ Combined scopes required: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `Conver
 |--------|----------------|
 | `getById()` / `getContentPartById()` | `OR.Execution.Read`, `OR.Jobs.Read` |
 
+### User Settings (`conversationalAgent.user`)
+
+| Method | Required Scope |
+|--------|----------------|
+| `getSettings()` | `OR.Users` or `OR.Users.Read` |
+| `updateSettings()` | `OR.Users` |
+
 ---
 
 ## Agent Feedback
@@ -206,6 +221,72 @@ Combined scopes required: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `Conver
 |--------|----------------|
 | `getAll()` | `Traces.Api` |
 | `getById()` | `Traces.Api` |
+| `getCategories()` | `Traces.Api` |
+| `submit()` | `Traces.Api` |
+| `updateById()` | `Traces.Api` |
+| `deleteById()` | `Traces.Api` |
+| `createCategory()` | `Traces.Api` |
+| `deleteCategory()` | `Traces.Api` |
+
+---
+
+## Widgets
+
+Scopes required by `@uipath/ui-widgets-*` React components. The widget's own runtime API calls are listed here — add scopes from the sections above for any additional SDK calls the host app makes.
+
+### Validation Station (`@uipath/ui-widgets-validation-station`)
+
+| Required Scope | Why |
+|----------------|-----|
+| `OR.Buckets` | Widget reads the document and extraction artifacts from a storage bucket and uploads the validated payload during save. Read-only `OR.Buckets.Read` is insufficient — the upload step requires write. |
+| `OR.Tasks` or `OR.Tasks.Write` | Required when the host app calls `task.complete()` in `onSaveComplete` (action apps, and web apps that complete the task on save). |
+
+See [widgets/validation-station.md](widgets/validation-station.md) for the full integration guide.
+
+> **TODO:** Document scopes for the remaining widgets when their integration guides land in `references/widgets/`:
+> - `@uipath/ui-widgets-conversational-agent-chat`
+> - `@uipath/ui-widgets-datatable`
+> - `@uipath/ui-widgets-multi-file-upload`
+
+---
+
+## Agents — Insights RTM (SDK ≥ 1.4.1)
+
+| Method | Required Scope |
+|--------|----------------|
+| `Agents.getAll()` / `getErrors()` | `Insights` and `Insights.RealTimeData` |
+| `Agents.getErrorsTimeline()` / `getConsumptionTimeline()` / `getLatencyTimeline()` | `Insights` and `Insights.RealTimeData` |
+
+## Agent Traces (SDK ≥ 1.4.1)
+
+| Method | Required Scope |
+|--------|----------------|
+| `AgentTraces.getErrorsTimeline()` / `getLatencyTimeline()` / `getUnitConsumption()` | `Insights` and `Insights.RealTimeData` |
+| `AgentTraces.getSpansByTraceId()` / `getSpansByReference()` | `Insights` and `Insights.RealTimeData` |
+| `Traces.getById()` / `getSpansByIds()` (generic spans — governance traces) | `Traces.Api` (+ `Insights` and `Insights.RealTimeData`) |
+
+## Agent Memory (SDK ≥ 1.4.1)
+
+| Method | Required Scope |
+|--------|----------------|
+| `AgentMemory.getTimeline()` / `getCallsTimeline()` / `getTopSpaces()` | `Insights` and `Insights.RealTimeData` |
+
+## Governance (SDK ≥ 1.4.1)
+
+| Method | Required Scope |
+|--------|----------------|
+| `Governance.getPolicyTraces()` / `getOperationSummary()` | `Insights` and `Insights.RealTimeData` — caller needs elevated (org-admin) access; `fullOrganization: true` returns 403 without org-admin |
+
+## Maestro Insights — RTM (SDK ≥ 1.4.x)
+
+These use the Insights RTM host (`INSIGHTS_RTM_BASE`). The SLA methods also touch PIMS-backed case data and require `PIMS` on top of the Insights scopes.
+
+| Method | Required Scope |
+|--------|----------------|
+| `Cases` / `MaestroProcesses` `.getTopRunCount()` / `getTopFaultedCount()` / `getTopExecutionDuration()` / `getTopElementFailedCount()` / `getInstanceStatusTimeline()` / `getElementStats()` | `Insights` · `Insights.RealTimeData` · `OR.Folders.Read` |
+| `CaseInstances.getSlaSummary()` / `getStagesSlaSummary()` | `Insights` · `Insights.RealTimeData` · `OR.Folders.Read` · **`PIMS`** |
+
+> All Insights RTM methods (Agents, Agent Traces, Agent Memory, Governance, Maestro Insights above) also require `OR.Folders.Read` — covered by the granted `OR.Folders`. `Cases.getAll` / `CaseInstances.getAll` (PIMS host, not Insights) require `PIMS` — see the Maestro sections above.
 
 ---
 
@@ -219,4 +300,7 @@ Combined scopes required: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `Conver
 | Orchestrator Processes (list + start) | `OR.Execution OR.Jobs` |
 | Orchestrator Jobs (list + read output) | `OR.Jobs.Read OR.Folders.Read` (add `OR.Folders.Read` so `Jobs.getOutput()` can resolve file-type output arguments via Attachments) |
 | Maestro full access | `PIMS OR.Execution.Read` |
-| Conversational Agent | `OR.Execution OR.Folders OR.Jobs ConversationalAgents Traces.Api` |
+| Maestro analytics / insights dashboards (top run/fault/duration counts, status timelines, SLA) | add `Insights.RealTimeData Insights OR.Folders.Read` (SLA summaries also need `PIMS`) |
+| Conversational Agent | `OR.Execution OR.Folders OR.Jobs ConversationalAgents Traces.Api` (add `OR.Users` for user-settings read/write) |
+| Insights RTM (Agents, Agent Traces, Agent Memory, Governance, Maestro Insights) | `Insights Insights.RealTimeData OR.Folders.Read` |
+| Maestro SLA (CaseInstances SLA summary) | `Insights Insights.RealTimeData OR.Folders.Read PIMS` |

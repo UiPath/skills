@@ -2,20 +2,11 @@
 
 Shared procedure for keeping `bindings_v2.json` in sync after any plugin writes to the bindings array in `caseplan.json`.
 
-## Schema-dependent source path
-
-Read `Schema:` header from `tasks.md` per Rule 18.
-
-| Schema | Source path in `caseplan.json` |
-|---|---|
-| **v19** | `root.data.uipath.bindings[]` |
-| **v20** | `bindings[]` *(top level)* |
-
-Field shape inside the array is identical across schemas — only the source path for the regeneration read differs. Output `bindings_v2.json` shape is unchanged across schemas.
+Bindings live at top-level `bindings[]` in `caseplan.json`. Output `bindings_v2.json` shape is independent of the source.
 
 ## When to Run
 
-**Batched, not per-task.** `bindings_v2.json` is only consumed by `uip solution resource refresh` (which runs once before upload/debug). No intermediate step reads it. Regenerating after every task wastes Read→convert→Write cycles on a growing file.
+**Batched, not per-task.** `bindings_v2.json` is only consumed by `uip solution resources refresh` (which runs once before upload/debug). No intermediate step reads it. Regenerating after every task wastes Read→convert→Write cycles on a growing file.
 
 Run at these three points only:
 
@@ -23,17 +14,17 @@ Run at these three points only:
 2. **End of Phase 3 Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache for tasks
 3. **End of Phase 3 Step 10** (after all connector condition RULES written across the 4 scopes — stage-entry, stage-exit, case-exit, task-entry) — adds Connection bindings + populates IS cache for rules. Required because connector rules are written in Step 10 (conditions), not Step 9.7 (tasks); without this third sync point, rule-introduced Connection/Folder bindings + IS-cache entries wouldn't land until the post-Phase-3 catch-all, and `resource refresh` would miss them.
 
-Individual task / rule plugins write bindings to `caseplan.json` per-target as normal (path per § Schema-dependent source path above). The batch regeneration reads the full bindings array once from the schema-appropriate path and converts everything in one pass.
+Individual task / rule plugins write bindings to `caseplan.json` per-target as normal (top-level `bindings[]`). The batch regeneration reads the full bindings array once and converts everything in one pass.
 
 ---
 
 ## § Regenerate bindings_v2.json
 
-After writing bindings (to the schema-appropriate path), regenerate `bindings_v2.json`. This file uses a **different format**: `caseplan.json` stores two entries per resource (one per property), `bindings_v2.json` stores one entry per resource with properties nested under `value`.
+After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`. This file uses a **different format**: `caseplan.json` stores two entries per resource (one per property), `bindings_v2.json` stores one entry per resource with properties nested under `value`.
 
 ### Procedure
 
-1. Read the bindings array from `caseplan.json` — `root.data.uipath.bindings[]` in v19, top-level `bindings[]` in v20
+1. Read top-level `bindings[]` from `caseplan.json`
 2. Group bindings by `resourceKey` — entries sharing the same key belong to one resource
 3. For each group, produce one resource entry using the shapes below
 4. Write the full file (always overwrite, never append) to `<SolutionDir>/<ProjectName>/bindings_v2.json`
@@ -51,6 +42,8 @@ After writing bindings (to the schema-appropriate path), regenerate `bindings_v2
   "metadata": { "subType": "<resourceSubType — omit metadata key if none>" }
 }
 ```
+
+> **Inline-built sibling exception (agent / api-workflow) — the one case where the shape's `<folderPath binding default>` placeholder does NOT take the caseplan default.** `value.folderPath.defaultValue` is **`"solution_folder"`** (resource identity), NOT the caseplan `folderPath` binding `default` (which is `""` for an inline sibling). `bindings_v2.json` keeps the `solution_folder` sentinel while the caseplan runtime `folderPath` stays `""` — they are intentionally decoupled. `value.name.defaultValue` and `metadata.subType` (`"Agent"` / `"Api"` per kind) follow the caseplan binding as usual. Full rationale: the inline-built-sibling decoupling blockquote later in this file.
 
 ### Connector resource entry
 
@@ -74,7 +67,7 @@ File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ 
 
 ## § Populate IS connection cache
 
-`uip solution resource refresh` reads a local IS cache that connector plugins must populate after `get-connection`. Applies to all three connector-resolving paths: connector **tasks** (Step 9.7), connector **triggers** (Step 8), and connector **condition rules** in any of the 4 scopes (Step 10).
+`uip solution resources refresh` reads a local IS cache that connector plugins must populate after `get-connection`. Applies to all three connector-resolving paths: connector **tasks** (Step 9.7), connector **triggers** (Step 6.1), and connector **condition rules** in any of the 4 scopes (Step 10).
 
 **Path:** `~/.uipath/cache/integrationservice/<connectorKey>/connections.json`
 
@@ -123,7 +116,7 @@ mkdir -p ~/.uipath/cache/integrationservice/<connectorKey>
 
 ## What `resource refresh` produces
 
-With `bindings_v2.json` and IS cache in place, `uip solution resource refresh` creates:
+With `bindings_v2.json` and IS cache in place, `uip solution resources refresh` creates:
 
 | Input | Output | Purpose |
 |---|---|---|
@@ -133,10 +126,12 @@ With `bindings_v2.json` and IS cache in place, `uip solution resource refresh` c
 
 All three required for `uip solution upload` and `uip maestro case debug` to work without "Resource is not configured" warnings.
 
+> **Inline-built siblings (agent / api-workflow) — `bindings_v2` identity and the caseplan runtime `folderPath` are DECOUPLED.** This is the one case where `bindings_v2.json` does NOT mirror the caseplan binding's `folderPath`. Keep the **resource identity** at the `solution_folder` sentinel everywhere it belongs — `bindings_v2.json` `key` (`"solution_folder.<name>"`) and `value.folderPath.defaultValue` (`"solution_folder"`), plus the caseplan `resourceKey` and the `resources/solution_folder/…` path. **BUT the caseplan task's `folderPath` binding `default` MUST be `""`** (co-located runtime folder), NOT the sentinel — `"solution_folder"` there fails at invocation with `folder not exist`. Prerequisite for deploy/debug: the sibling registered in the `.uipx`. Full rationale (deploy provisioning, runtime invocation): [create-inline-common.md § Step 3](plugins/tasks/create-inline-common.md#step-3--binding-invariants); per-type debug behavior in each type's § Step 3.
+
 ---
 
 ## Cleanup on task or rule removal
 
-When any task or connector condition rule is removed and its root bindings are pruned (per [case-editing-operations.md](case-editing-operations.md) § Delete a node / § Delete a connector condition rule):
+When any task or connector condition rule is removed and its root bindings are pruned (per [case-editing-operations.md](case-editing-operations.md) § Delete a node / § Delete a condition rule / § Delete a task):
 
 1. After pruning root bindings, regenerate `bindings_v2.json` from the updated array.

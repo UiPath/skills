@@ -7,8 +7,6 @@ user-invocable: true
 
 # UiPath Tasks (Action Center) — Agent Skill
 
-> **Preview** — skill is under active development; surface and behavior may change.
-
 Action Center is UiPath's human-in-the-loop platform. Tasks represent work items
 that require human input — form approvals, document validation, data labeling, and more.
 
@@ -35,8 +33,8 @@ When switching is required:
 # Check current environment, org, and tenant
 uip login status --output json
 
-# Login to Alpha with a specific tenant
-uip login --authority https://alpha.uipath.com --tenant MyTenant
+# Login to a specific environment (production cloud is the default)
+uip login --authority https://cloud.uipath.com --tenant MyTenant
 
 # List all available tenants (after login)
 uip login tenant list --output json

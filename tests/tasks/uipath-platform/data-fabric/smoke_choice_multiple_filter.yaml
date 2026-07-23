@@ -1,0 +1,126 @@
+task_id: skill-datafabric-smoke-choice-multiple-filter
+description: >
+  Smoke test: agent uses the uipath-platform skill to filter records on a
+  CHOICE_SET_MULTIPLE field — picking `contains` for membership and the
+  JSON-array string form of `=` for set equality, and avoiding the two known
+  HTTP 400 failure modes (bare value with `=`, bracket value with `contains`).
+  Verified server behavior — see references/records-query.md §
+  "Filtering on Choice-Set Fields".
+tags: [uipath-platform, data-fabric, smoke, complex-fields, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 25
+
+
+initial_prompt: |
+  We have an Expenses UiPath Data Fabric entity. Each expense has an amount and a `tags`
+  column where you can pick one or more from a fixed UiPath Data Fabric choice set. The
+  three tag options are travel, meals, and lodging (in that order —
+  travel is 1, meals is 2, lodging is 3).
+
+  Could you run these four searches for me:
+
+    - Show me every expense tagged as travel.
+    - Show me every expense whose tags are exactly travel and lodging
+      together, nothing else.
+    - Show me every expense that isn't tagged as meals.
+    - Show me how many expenses fall under each unique tag
+      combination.
+
+  Important:
+  - Do NOT invent operators like `equals`, `contains_any`, or `not_contains`. Use only the operators the uipath-platform skill documents for `records query` filters.
+  - The `uip` CLI is available but not connected to a live tenant. Commands
+    will fail — that is expected. Run each command exactly once regardless
+    of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,
+    do NOT troubleshoot.
+  - Use the placeholder entity ID `exp-ent-001` in every `uip df records query`
+    call. Do NOT look up the entity via `entities list`, do NOT try to create
+    it, do NOT hunt for a real ID — the queries will fail at the CLI, but the
+    JSON body shape is what matters here.
+
+success_criteria:
+  - type: command_executed
+    description: "Task 1 — agent used `contains` with a bare NumberId string for membership (travel=1)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"contains\")(?=.*\"value\"\s*:\s*\"1\")'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Task 2 — agent used `=` with a JSON-array string for set equality (travel + lodging = [1, 3])"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"=\")(?=.*\"value\"\s*:\s*\"\[1,\s*3\]\")'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Task 3 — agent used `not contains` for negated membership"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"not contains\")'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Task 4 — agent used groupBy on tags with COUNT aggregate"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"groupBy\"\s*:\s*\[\s*\"tags\")(?=.*\"function\"\s*:\s*\"COUNT\")'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Negative — agent must NOT use `=` with a bare value on tags (HTTP 400)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*\"fieldName\"\s*:\s*\"tags\"\s*,\s*\"operator\"\s*:\s*\"=\"\s*,\s*\"value\"\s*:\s*\"\d+\"'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Negative — agent must NOT use `contains` with a bracketed value on tags (HTTP 400)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"contains\")(?=.*\"value\"\s*:\s*\"\[)'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Negative — agent must NOT use unsupported operators on a CHOICE_SET_MULTIPLE field"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"(in|not in|startswith|endswith|>|<|>=|<=)\")'
+    min_count: 0
+    max_count: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Negative — agent must NOT pass a display label (`travel`/`meals`/`lodging`) into a tags filter"
+    tool_name: "Bash"
+    command_pattern: '(?si)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"value\"\s*:\s*\"(travel|meals|lodging)\")'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

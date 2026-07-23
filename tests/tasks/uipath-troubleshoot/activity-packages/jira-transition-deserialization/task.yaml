@@ -1,0 +1,102 @@
+task_id: skill-troubleshoot-jira-transition-deser
+description: >
+  UiPath troubleshooting agent must diagnose a Jira transition workflow that
+  faults with a Newtonsoft JSON error "Error converting value 'add' to type
+  'Atlassian.Jira.IssueFieldEditMetadataOperation'" while Get Transitions parses
+  the transition field metadata (a custom field with operations). The workflow
+  is configured correctly (dynamic Get Transitions, valid auth and URL), but the
+  project pins an OLD UiPath.Jira.Activities version (1.5.0) that has a known
+  metadata-deserialization bug on complex fields. Success = agent matches the
+  jira-transition-issue-failures playbook (sub-case T4), identifies the
+  package-version deserialization bug (NOT a missing field T1, invalid ID T2, or
+  permission/validator T3), AND recommends upgrading UiPath.Jira.Activities to a
+  current stable release (or migrating to the Integration Service Jira
+  connector), without fabricating host actions.
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: data
+  mock_path_dirs:
+  - m
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My JiraEscalation process faults in Orchestrator on every run. The folder is
+  "Escalations". It connects to Jira, but dies with a long .NET error about
+  "converting value" to some Atlassian metadata type while it is reading the
+  transitions for a ticket. The workflow logic looks right to me and I'm not
+  passing anything weird in.
+
+  I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
+  only Orchestrator. Diagnose what you can from Orchestrator and the project
+  source. If the answer needs something only I can check, give me the exact
+  things to verify and I'll come back with the result. Do not stall waiting on
+  me - hand me the list and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing JiraEscalation process. You
+    built the workflow to read transitions and escalate tickets. You are away
+    from the robot host and only have Orchestrator access. You trust the agent
+    and want a diagnosis or a check list.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, jira-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the check list at the end."
+    - "If asked which version of the Jira activities package the project uses, say it is whatever is pinned in project.json - the project is a couple of years old."
+    - "If asked whether you can upgrade packages, say yes, you can open Manage Packages in Studio."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

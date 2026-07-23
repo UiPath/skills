@@ -8,6 +8,23 @@ Use this guide when BPMN source changed and local package metadata must be refre
 - `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` are derived package metadata unless a CLI contract explicitly marks a field as user-authored.
 - Connector-backed or dynamically schematized `Intsvc.*` activity and event payloads are executable only after registry-backed enrichment supplies connector metadata, connection binding references, dynamic schemas, and generated package resources. Confirmed plain connectionless HTTP follows the documented pass-2 authoring recipe instead.
 
+## Local Synthetic Project Contract
+
+When no CLI generator is available and you must author a local-only synthetic
+BPMN project, make the project executable and package-shaped before packing:
+
+- The root process must be `<bpmn:process ... isExecutable="true">`.
+- `project.uiproj` must use lowercase `"main"` pointing at the BPMN file.
+- `operate.json` must use `"main"` with the bare BPMN filename, not a
+  `/content/<file>.bpmn#<start-event-id>` entry-point path, plus
+  `"contentType": "ProcessOrchestration"`.
+- `package-descriptor.json` must use a top-level `"content"` array with
+  `content/<file>` entries. Do not use `contentFiles` or a CLI scaffold
+  `"files"` mapping for synthetic local metadata.
+
+The minimal placeholder-safe JSON shape is shown below; keep it exact apart
+from project, file, and start event names.
+
 ## Regeneration Inputs
 
 Local regeneration reads:
@@ -131,13 +148,13 @@ JSON schema variables use their CDATA body as the property schema. Strip `$schem
 Generated `bindings_v2.json` must be a top-level object with
 `"version": "2.0"` and a `resources` array. Do not use a bare resource array, a
 single resource object, or an unversioned `{ "resources": [] }` object; those
-shapes are not the package contract consumed by solution resource refresh.
+shapes are not the package contract consumed by solution resources refresh.
 
 The resource array has two consumers with different tolerance:
 
 - Local/package binding expressions may need id-addressable entries that mirror
   root `uipath:binding` IDs.
-- `uip solution resource refresh` reads the same `resources` array and imports
+- `uip solution resources refresh` reads the same `resources` array and imports
   concrete dependencies only when it contains parseable resource entries.
   Process resources should come from CLI generation or fixture-backed binding
   entries with `id`, `kind`, `name`, `resourceKey`, `metadata`, `resource`,

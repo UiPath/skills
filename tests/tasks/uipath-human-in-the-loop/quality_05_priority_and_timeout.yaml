@@ -12,8 +12,7 @@ run_limits:
 
 initial_prompt: |
   Add a Human-in-the-Loop node to a new flow called "FinanceCompliance".
-  This is a financial compliance check — set it to HIGH priority and give
-  reviewers 48 hours to respond before it times out.
+  This is a financial compliance check — set it to HIGH priority.
 
   Wire the completed handle to a script node that logs the approval.
   Validate the flow after adding.
@@ -32,7 +31,7 @@ success_criteria:
     description: "HITL node is present in the flow file"
     path: "FinanceCompliance/FinanceCompliance/FinanceCompliance.flow"
     includes:
-      - '"uipath.human-in-the-loop"'
+      - '"uipath.human-in-the-loop.quick-form"'
     weight: 2.5
     pass_threshold: 1.0
 

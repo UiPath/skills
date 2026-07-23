@@ -18,7 +18,7 @@ uip admin audit
     └── export
 ```
 
-`org` and `tenant` are **subject subgroups**. Same three verbs under each. The two trees are 100% verb-symmetric — any flag valid on `tenant events` is also valid on `org events` (except `--tenant-id`, which is tenant-only).
+`org` and `tenant` are **subject subgroups** — pass scope as this **positional segment** (`uip admin audit org sources`, `uip admin audit tenant export`), **never as a `--scope` flag** (there is no `--scope` option; `audit sources --scope organization` is invalid). Same three verbs under each. The two trees are 100% verb-symmetric — any flag valid on `tenant events` is also valid on `org events` (except `--tenant-id`, which is tenant-only).
 
 ## Output `Data` shape varies by verb — quick reference
 
@@ -26,7 +26,7 @@ uip admin audit
 |---|---|
 | `audit <scope> sources` | array of `AuditEventSourceDto` |
 | `audit <scope> events` | object `{auditEvents, next, previous}` |
-| `audit <scope> export` | object `{Path, Bytes, Format, Days, NonEmptyDays}` |
+| `audit <scope> export` | object `{Path, Format, Bytes, Days, NonEmptyDays}` (+ `Files` for `json`, + `Events` for `--file-format csv`) |
 
 `events` is the one verb that legitimately returns an object — pagination cursors live alongside the rows. Full shape detail per verb in the sections below.
 
@@ -87,7 +87,7 @@ uip admin audit tenant events --from-date 2026-04-22T00:00:00Z --to-date 2026-04
 | Flag | Required | Description |
 |---|---|---|
 | `--from-date <iso>` | no | Start of time interval, ISO 8601. Inclusive. Recommended on any non-trivial query. |
-| `--to-date <iso>` | no | End of time interval, ISO 8601. Inclusive **of the exact instant** — pass the start of the next day (e.g. `2026-02-01`) or `T23:59:59.999Z` to capture a full final day. See [workflow-guide gotchas](./audit-workflow-guide.md#common-gotchas). |
+| `--to-date <iso>` | no | End of time interval, ISO 8601. Inclusive **of the exact instant** — pass the start of the next day (e.g. `2026-02-01`) or `T23:59:59.999Z` to capture a full final day. **`events` only** — on `export` both bounds are whole-day inclusive and the next-day trick over-exports (see export section). See [workflow-guide gotchas](./audit-workflow-guide.md#common-gotchas). |
 | `--source <guid...>` | no | Filter by event source IDs. Repeatable. Discover with `sources`. |
 | `--target <guid...>` | no | Filter by event target IDs. Repeatable. |
 | `--type <guid...>` | no | Filter by event type IDs. Repeatable. |
@@ -138,13 +138,32 @@ uip admin audit tenant events --from-date 2026-04-22T00:00:00Z --to-date 2026-04
 
 ## uip admin audit `<scope>` export
 
-Stream a ZIP from the long-term audit store covering `[--from-date, --to-date]`.
+Export the long-term audit store covering `[--from-date, --to-date]` (**whole UTC days, inclusive on both ends** — see the flags table) into a **base directory** (`--output-path`). Each run creates a uniquely-named output inside it — a folder of day-wise JSON files (default) or a single merged CSV — named `audit_<from>_<to>_<generated-at>` (generated-at to the second) so repeated exports of the same window never collide.
+
+> This is the organization/tenant audit **event store** (LTS-schema columns like `Identifier`, `DateCreatedUtc`, `ActorId`, `Action`, `Source`, `Category`) — the surface for compliance dumps, login history, and cross-platform "who did what where." It is **not** `uip or audit-logs list --export` (the uipath-platform skill), which exports a single Orchestrator tenant's operational actions with `Component,User,Action,Operation,Time` columns. Any audit-event or compliance export scoped to the org/tenant — as JSON files or a spreadsheet/Excel CSV, with a date window and an `--output-path` directory — belongs here.
 
 ```bash
+# Default (json) — all of January: creates ./audit-exports/audit_2026-01-01_2026-01-31_<generatedAt>/ with one JSON file per UTC day
 uip admin audit tenant export \
   --from-date 2026-01-01 \
-  --to-date 2026-02-01 \
-  --output-file ./audit-jan.zip \
+  --to-date 2026-01-31 \
+  --output-path ./audit-exports \
+  --output json
+
+# Single merged CSV — creates ./audit-exports/audit_2026-01-01_2026-01-31_<generatedAt>.csv
+uip admin audit tenant export \
+  --from-date 2026-01-01 \
+  --to-date 2026-01-31 \
+  --file-format csv \
+  --output-path ./audit-exports \
+  --output json
+
+# Single day (e.g. "yesterday") — same date for both bounds; resolve relative phrases with the real UTC clock
+day=$(date -u -d 'yesterday' +%F)   # macOS/BSD: date -u -v-1d +%F
+uip admin audit tenant export \
+  --from-date "$day" \
+  --to-date "$day" \
+  --output-path ./audit-exports \
   --output json
 ```
 
@@ -152,32 +171,50 @@ uip admin audit tenant export \
 
 | Flag | Required | Description |
 |---|---|---|
-| `--output-file <path>` | **yes** | Where to write the ZIP. Parent dir is created if missing; existing file is overwritten. Resolved to absolute internally. |
-| `--from-date <iso>` | **yes** | Start of time interval. Both bounds are required by Commander before any HTTP call. |
-| `--to-date <iso>` | **yes** | End of time interval. |
+| `--output-path <dir>` | **yes** | **Base directory** for the export (created if missing). **Pass a directory only — never a filename or extension**; the CLI generates the per-export name. A uniquely-named output is created inside it — a folder of day-wise JSON files (`json`) or a single `.csv` (`csv`), named `audit_<from>_<to>_<generated-at>` (generated-at to the second) so repeated exports never collide. Resolved to absolute internally. |
+| `--output-file <dir>` | no | **Deprecated** alias for `--output-path` (kept for backward compatibility; treated as a base directory, not a file). Prefer `--output-path` — using `--output-file` emits a deprecation warning. |
+| `--from-date <iso>` | **yes** | Start of time interval. Both bounds are required by Commander before any HTTP call. Interpreted as a **whole UTC day** — the server truncates any time component to the calendar day. |
+| `--to-date <iso>` | **yes** | End of time interval, **inclusive as a whole UTC day** (unlike `events`, where `--to-date` is instant-inclusive). `--from-date X --to-date X` exports the single day `X`; do **not** pass the next day to "capture the final day" — that exports an extra full day. |
+| `--file-format <json\|csv>` | no | Output shape. `json` (default) = a folder holding one `<YYYY-MM-DD>.json` file per UTC day. `csv` = every event merged into a single RFC 4180 CSV under a shared header. Invalid values fail before any HTTP call with `Invalid --file-format '<v>'. Use 'json' or 'csv'.` |
 | `--login-validity <minutes>` | no | Token-refresh hint. |
 | `--tenant-id <guid>` | no | **Tenant scope only.** Override the active tenant. |
 
 **Output `Code`:** `AuditOrgExport` / `AuditTenantExport`.
 
-**Output `Data`:**
+**Output `Data`:** `Format` echoes the chosen `--file-format`. `Path` is the **generated** output created under `--output-path` (the `audit_<from>_<to>_<generatedAt>` folder for `json`, or the `.csv` file for `csv`), and `GeneratedAt` is its ISO generation timestamp. The `json` path also reports `Files` (number of day-wise files written); the `csv` path reports `Events` (total rows, excluding the header).
 
 ```json
+// --file-format json (default) — Path is the generated folder under the base dir
 {
-  "Path": "C:\\absolute\\path\\to\\audit-jan.zip",
+  "Path": "C:\\absolute\\path\\to\\audit-exports\\audit_2026-01-01_2026-01-31_20260617T112630",
+  "Format": "json",
+  "Files": 27,
   "Bytes": 1841,
-  "Format": "zip",
   "Days": 31,
-  "NonEmptyDays": 27
+  "NonEmptyDays": 27,
+  "GeneratedAt": "2026-06-17T11:26:30.000Z"
+}
+
+// --file-format csv — Path is the generated .csv under the base dir
+{
+  "Path": "C:\\absolute\\path\\to\\audit-exports\\audit_2026-01-01_2026-01-31_20260617T112630.csv",
+  "Format": "csv",
+  "Bytes": 98765,
+  "Days": 31,
+  "NonEmptyDays": 27,
+  "Events": 1234,
+  "GeneratedAt": "2026-06-17T11:26:30.000Z"
 }
 ```
 
 **Implementation notes (worth knowing for diagnostic conversations):**
 
-- The CLI issues **one HTTP call per UTC day** inside `[from, to]` and aggregates the per-day responses into a single output ZIP. Mirrors the `audit-dowload-from-longterm-store.sh` pattern in the AuditService repo.
-- Per-day entries land at the **root of the output ZIP** named `<YYYY-MM-DD>.txt` (no folder prefix). Each `.txt` is a JSON array of events with PascalCase keys (`Id`, `CreatedOn`, `EventType`, …).
-- On any single-day HTTP failure, **no file is written** and the error message identifies which day failed. Earlier successful chunks are not preserved.
-- `Days` reports the total number of UTC days requested; `NonEmptyDays` reports how many actually had events. A long export with `NonEmptyDays: 0` means the window was entirely idle, not that the export failed.
+- Both formats share the same fetch: the CLI issues **one HTTP call per UTC day** inside `[from, to]` and aggregates the per-day responses. Mirrors the `audit-dowload-from-longterm-store.sh` pattern in the AuditService repo.
+- **JSON (default):** a uniquely-named `audit_<from>_<to>_<generated-at>` **folder** is created under `--output-path`, holding one file per UTC day named `<YYYY-MM-DD>.json` (nested-ZIP entries from the server are flattened to `<inner>_<outer>.json`; same-name collisions get an iso-day suffix). The server names the per-day payloads `.txt`; the CLI writes them with a `.json` extension since each is a JSON array of events with LTS-schema keys (`Identifier`, `DateCreatedUtc`, `Action`, …). Entry names are validated as safe basenames and confirmed to resolve inside the folder before any write (no path traversal / Zip-Slip).
+- **CSV:** the same per-day JSON arrays are parsed and merged into **one** RFC 4180 CSV (CRLF line endings, header row first). Columns follow the long-term-store field order — `OrganizationId, TenantId, ActorId, ActorEmail, ActorDetails, EventDetails, Status, Identifier, DateCreatedUtc, User, Action, Source, Category, ClientInformation` — with any extra server fields appended (union across events) so no data is dropped. `Status` is the numeric enum (`0`=Success, `1`=Failure); nested objects (e.g. `ClientInformation`) are JSON-stringified into the cell. String cells beginning with `= + - @` (or TAB/CR) are prefixed with a single quote to neutralize spreadsheet formula injection.
+- On any single-day HTTP failure (or, for CSV, a day whose payload is not valid JSON), **nothing is written** — for `json` the output folder isn't even created — and the error message identifies which day failed. Earlier successful chunks are not preserved (atomic export).
+- `Days` reports the total number of UTC days requested; `NonEmptyDays` reports how many actually had data. A long export with `NonEmptyDays: 0` means the window was entirely idle, not that the export failed. For `json`, `Files` counts the day-wise files written; for `csv`, `Events: 0` yields a header-only file.
+- **LTS lag**: the long-term store trails the live `events` endpoint (typically by up to ~24–48 h). Exporting a window that includes today or yesterday succeeds, but those trailing days may come back empty even though `events` shows data for them. If completeness of recent days matters, tell the user and either end the window ≥2 days in the past or re-run the export later.
 
 ---
 
@@ -187,7 +224,7 @@ These appear on every command (not just audit) — set at the program level by t
 
 | Flag | Description |
 |---|---|
-| `--output <table\|json\|yaml\|plain>` | Format of the success/failure envelope on stdout. Defaults to `json`. The ZIP body of `export` is unaffected — `--output` only controls the metadata envelope. |
+| `--output <table\|json\|yaml\|plain>` | Format of the success/failure envelope on stdout. Defaults to `json`. The exported files (the per-day JSON folder, or the CSV) are unaffected — `--output` only controls the metadata envelope, NOT `--file-format`. |
 | `--output-filter <jmespath>` | JMESPath query applied to the envelope before printing. Useful for `events`/`sources`. Less useful for `export` (envelope is small). |
 | `--log-level <debug\|info\|warn\|error>` | Logger threshold. Logs go to stderr. |
 | `--log-file <path>` | Redirect logs from stderr to a file. |

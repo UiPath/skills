@@ -1,0 +1,5 @@
+{
+  "Result":"Success","Code":"IsResourcesDescribe",
+  "Data":{"name":"ApplyGmailLabel","displayName":"Apply Label","elementKey":"uipath-google-gmail",
+    "availableOperations":[{"name":"Create","path":"/ApplyGmailLabel","method":"POST","curated":"Apply Label"}]}
+}

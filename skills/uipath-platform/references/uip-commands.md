@@ -5,15 +5,17 @@
 **Global flags:**
 - `--output json` — always use when calling programmatically
 - `--output-filter <expr>` — JMESPath filter for JSON output
+- `--profile <name>` — use a named auth profile from `~/.uipath/profiles/<name>/.auth`; `default` keeps the built-in unprofiled login
 - `--tenant <name>` — tenant override (defaults to authenticated tenant)
 - `--verbose` — enable debug logging
 
 **List command flags:**
 - `--limit <N>` / `--offset <N>` — pagination. Check `Pagination.HasMore` in output.
 - `--sort-by <field>` — sort results (e.g., `Name asc`, `Id desc`)
-- `--all-fields` — (Orchestrator tool only) return raw DTO instead of the
-  curated PascalCase projection. Resource tool returns full DTO by default
-  on every list/get and does not expose this flag.
+- `--all-fields` — return raw DTO instead of the curated PascalCase
+  projection. Native Orchestrator commands curate by default; the migrated
+  resource commands (assets, queues, buckets, etc.) return the full DTO by
+  default and do not expose this flag.
 
 ---
 
@@ -23,9 +25,17 @@
 |---|---|
 | `uip login` | Authenticate with UiPath Cloud |
 | `uip login status` | Show current login status |
+| `uip login which` | Show which `.auth` file backs the current login |
 | `uip login tenant list` | List available tenants |
 | `uip login tenant set <name>` | Set active tenant |
 | `uip logout` | End session and clear tokens |
+
+Named profiles:
+- Use `uip login --profile dev`, then pass `--profile dev` on each command that should use that login.
+- Profile credentials live at `~/.uipath/profiles/dev/.auth`; the built-in default stays at `~/.uipath/.auth`.
+- Missing profiles do not fall back to the default login or Robot credentials.
+- Valid profile names use letters, numbers, `.`, `_`, and `-`; `default` is reserved for the built-in login.
+- Do not combine `--profile <name>` with auth-command `--file <folder>`.
 
 ---
 
@@ -35,13 +45,13 @@ Manage folders, jobs, processes, machines, users, packages, and more. See [`uipa
 
 | Group | Key Commands | Workflow Guide |
 |---|---|---|
-| **Folders** | `list [--all]`, `get`, `create`, `edit`, `delete`, `move`, `runtimes` | [Setup Environment](orchestrator/setup-environment.md) |
+| **Folders** | `list [--all]`, `get`, `create`, `update`, `delete`, `move`, `runtimes` | [Setup Environment](orchestrator/setup-environment.md) |
 | **Jobs** | `list`, `get`, `start`, `stop`, `restart`, `resume`, `logs [--export]`, `traces`, `healing-data`, `history` | [Run Jobs](orchestrator/run-jobs.md) |
-| **Processes** | `list`, `get`, `resources`, `version-history`, `create`, `edit`, `update-version`, `rollback`, `delete` | [Run Jobs](orchestrator/run-jobs.md) |
+| **Processes** | `list`, `get`, `resources`, `version-history`, `create`, `update`, `update-version`, `rollback`, `delete` | [Run Jobs](orchestrator/run-jobs.md) |
 | **Packages** | `list`, `get`, `versions`, `entry-points`, `upload`, `download` | [Run Jobs](orchestrator/run-jobs.md) |
-| **Machines** | `list`, `get`, `create`, `edit`, `delete`, `assign`, `unassign` | [Setup Environment](orchestrator/setup-environment.md) |
-| **Users** | `list`, `list-in-folder`, `list-available`, `get`, `create`, `edit`, `delete`, `current`, `assign`, `unassign`, `assign-roles` | [Setup Environment](orchestrator/setup-environment.md) |
-| **Roles** | `list`, `permissions`, `get`, `create`, `edit`, `delete`, `users list`, `users set`, `user-roles list`, `user-permissions list`, `assign` | [Setup Environment](orchestrator/setup-environment.md) |
+| **Machines** | `list`, `get`, `create`, `update`, `delete`, `assign`, `unassign` | [Setup Environment](orchestrator/setup-environment.md) |
+| **Users** | `list`, `list-in-folder`, `list-available`, `get`, `create`, `update`, `delete`, `current`, `assign`, `unassign`, `assign-roles` | [Setup Environment](orchestrator/setup-environment.md) |
+| **Roles** | `list`, `permissions`, `get`, `create`, `update`, `delete`, `users list`, `users set`, `user-roles list`, `user-permissions list`, `assign` | [Setup Environment](orchestrator/setup-environment.md) |
 | **Sessions** | `attended list`, `unattended list`, `machines list <machine-key>`, `list-usernames`, `list-user-executors`, `toggle-debug-mode`, `delete-inactive`, `set-maintenance-mode` | [Manage Sessions](orchestrator/manage-sessions.md) |
 | **Settings** | `list`, `get`, `update`, `execution`, `timezones` | [Tenant Admin](orchestrator/tenant-admin.md) |
 | **Calendars** | `list`, `get`, `create`, `update`, `delete` | [Tenant Admin](orchestrator/tenant-admin.md) |
@@ -53,26 +63,26 @@ Manage folders, jobs, processes, machines, users, packages, and more. See [`uipa
 
 ---
 
-## Resource (`uip resource`)
+## Orchestrator resources (`uip or assets` / `queues` / `triggers` / …)
 
-Manage assets, queues, triggers, buckets, libraries, and webhooks. See [`uipath-resources`](resources/resources.md).
+Manage assets, queues, triggers, buckets, libraries, and webhooks — a subset of `uip or`. See [Orchestrator resources](orchestrator/resources.md).
 
 | Group | Key Commands | Workflow Guide |
 |---|---|---|
-| **Assets** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `share`, `unshare`, `get-asset-value` | [Manage Assets](resources/manage-assets.md) |
-| **Queues** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `get-stats`, `share`, `unshare` | [Process Queues](resources/process-queues.md) |
-| **Queue Items** | `list`, `get`, `add`, `bulk-add`, `update`, `set-progress`, `delete`, `delete-bulk`, `get-history`, `get-last-retry`, `has-video`, `set-review-status`, `set-reviewer`, `unset-reviewer`, `get-reviewers` | [Process Queues](resources/process-queues.md) |
-| **Buckets** | `list`, `get`, `create`, `update`, `delete`, `share`, `unshare`, `list-folders` | [Work with Storage](resources/work-with-storage.md) |
-| **Bucket Files** | `list`, `list-dirs`, `get`, `download`, `upload`, `delete`, `get-download-url`, `get-upload-url` | [Work with Storage](resources/work-with-storage.md) |
-| **Triggers** | `list`, `get`, `create`, `update [--enabled\|--disabled]`, `delete`, `history` | [Triggers & Webhooks](resources/triggers-and-webhooks.md) |
-| **Libraries** | `list`, `get`, `versions`, `upload`, `download`, `delete` | [Resources overview](resources/resources.md) |
-| **Webhooks** | `list`, `get`, `create`, `update`, `delete`, `ping`, `event-types` | [Triggers & Webhooks](resources/triggers-and-webhooks.md) |
+| **Assets** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `share`, `unshare`, `get-asset-value` | [Manage Assets](orchestrator/manage-assets.md) |
+| **Queues** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `get-stats`, `share`, `unshare` | [Process Queues](orchestrator/process-queues.md) |
+| **Queue Items** | `list`, `get`, `add`, `bulk-add`, `update`, `delete`, `delete-bulk`, `get-history`, `get-last-retry`, `has-video`, `set-review-status`, `set-reviewer`, `unset-reviewer`, `get-reviewers` | [Process Queues](orchestrator/process-queues.md) |
+| **Buckets** | `list`, `get`, `create`, `update`, `delete`, `share`, `unshare`, `list-folders` | [Work with Storage](orchestrator/work-with-storage.md) |
+| **Bucket Files** | `list`, `list-dirs`, `get`, `download`, `upload`, `delete`, `get-download-url`, `get-upload-url` | [Work with Storage](orchestrator/work-with-storage.md) |
+| **Triggers** | `list`, `get`, `create`, `update [--enabled\|--disabled]`, `delete`, `history` | [Triggers & Webhooks](orchestrator/triggers-and-webhooks.md) |
+| **Libraries** | `list`, `get`, `versions`, `upload`, `download`, `delete` | [Resources overview](orchestrator/resources.md) |
+| **Webhooks** | `list`, `get`, `create`, `update`, `delete`, `ping`, `event-types` | [Triggers & Webhooks](orchestrator/triggers-and-webhooks.md) |
 
 ---
 
 ## Solution (`uip solution`)
 
-`uip solution` (init/new, project add|remove|import, resource list|refresh|get|add|remove|edit, pack, publish, deploy run|status|list|activate|uninstall, deploy config get|set|link|unlink, upload, download, packages list|delete|download) is owned by [`uipath-solution`](/uipath:uipath-solution). Load that skill for any `.uipx` lifecycle work.
+`uip solution` (init/new, project add|remove|import, resource list|refresh|get|add|remove|edit, restore, pack, publish, deploy run|status|list|activate|uninstall, deploy config get|set|link|unlink, upload, download, packages list|delete|download) is owned by [`uipath-solution`](/uipath:uipath-solution). Load that skill for any `.uipx` lifecycle work.
 
 ---
 
@@ -97,7 +107,7 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 
 | Command | Description |
 |---|---|
-| `uip traces spans get [trace-id]` | Get spans by trace ID or `--job-key` |
+| `uip traces spans get <trace-id>` | Get spans by trace ID or `--job-key` |
 | `uip traces feedback create` | Add positive/negative feedback to a trace |
 | `uip traces feedback get <id>` | Fetch one feedback record |
 | `uip traces feedback list` | List feedback for a trace |
@@ -112,8 +122,7 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 | Group | Command | Description |
 |---|---|---|
 | **Integration Service** | `uip is --help` | See [`uipath-integration-service`](integration-service/integration-service.md) |
-| **Traces** | `uip traces spans get [trace-id]` | LLM execution trace observability (`--job-key` to scope) |
-| **Test Manager** | `uip tm --help` | Test projects, sets, cases, executions |
+| **Traces** | `uip traces spans get <trace-id>` | LLM execution trace observability (`--job-key` to scope) |
 | **RPA** | `uip rpa --help` | RPA workflow management |
 | **MCP** | `uip mcp serve` | Start Model Context Protocol server |
 | **Coded Agents** | `uip codedagent --help` | Python agent development |
@@ -124,4 +133,4 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 ## Naming gotchas
 
 - Resource sub-nouns are **plural and hyphenated where shown**: `buckets`, `queues`, `assets`, `libraries`, `queue-items`, `bucket-files`. Never singular, never `queueitems`/`bucketfiles`.
-- The Orchestrator group prefix is `or`, not `orchestrator` (`uip orchestrator` does not exist). <!-- uip-check-skip -->
+- The canonical Orchestrator group prefix is `or`; `uip orchestrator` also works as a long-form alias, but these docs use `or`. <!-- uip-check-skip -->

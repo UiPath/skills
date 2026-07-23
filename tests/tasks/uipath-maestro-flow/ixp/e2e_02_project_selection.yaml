@@ -13,8 +13,8 @@ description: >
   exactly the skill behaviour under test.
 
   Per-row strictness comes from a run_command that switches on the row dir
-  in $(pwd) (dataset-fanout cwd is <run>/artifacts/<task_id>/<row_id>[/<iter>]/,
-  see comment in activation.yaml) and asserts BOTH the chosen NodeType
+  in $(pwd) (dataset-fanout cwd is <run>/artifacts/<task_id>/<row_id>[/<iter>]/)
+  and asserts BOTH the chosen NodeType
   prefix AND the inputs.modelName match the published model for that row.
 
   Validate-only: no `uip maestro flow debug`. The expected NodeType prefixes
@@ -70,7 +70,7 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # Same `../..` cwd rationale as activation.yaml:107-112: dataset-fanout cwd
+  # `../..` cwd rationale: dataset-fanout cwd
   # is <run>/artifacts/<outer_task_id>/<row_id>[/<iter>]/, so artifacts written
   # by the agent live two levels up at most.
   - type: run_command
@@ -111,11 +111,11 @@ success_criteria:
       case "$(pwd)" in
         *aviation*)
           model='aviation-investigation-final-report-demo-a42b1d4d-ixp'
-          nt='uipath\.ixp\.aviation-investigation-final-report-demo-a42b1d4d-ixp\.shared-aviation-investigation-final-report-demo-a42b1d4d-ixp'
+          nt='uipath\.ixp\.aviation-investigation-final-report-demo-a42b1d4d-ixp\.'
           ;;
         *birth*)
           model='birth_certificates_oob-6252526a-ixp'
-          nt='uipath\.ixp\.birth-certificates-oob-6252526a-ixp\.shared-birth-certificates-oob-6252526a-ixp'
+          nt='uipath\.ixp\.birth-certificates-oob-6252526a-ixp\.'
           ;;
         *)
           echo "Unknown row in pwd: $(pwd)" >&2

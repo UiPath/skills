@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "DocsAIAsk",
+  "Data": {
+    "query_id": "7efa7981-3ca6-4a2c-a5a8-2ad54e7844dd",
+    "text": "`AttachMode = ByInstance` in the API (`NAppAttachMode.ByInstance`) means:\n\n- Further UIA APIs will search **only in the indicated application instance**, including all parent/child windows (alerts, popups, etc.).\n- Other instances of the same app/browser are **excluded**.  \n[Uipath Uiautomationnext Api Contracts Iuiautomationappservice Attach](https://docs-staging.uipath.com/activities/other/latest/ui-automation/uipath-uiautomationnext-api-contracts-iuiautomationappservice-attach)\n\nIf it \u201cattaches to the wrong page\u201d, typical causes (based on docs behavior):\n\n- The instance you attached to already has a different tab active.\n- Your later actions are not constrained to a specific tab element.\n\nRegarding navigation:\n\n- To change the page in the attached browser/tab, you should use a navigation activity such as **[Navigate Browser](https://docs-staging.uipath.com/activities/other/latest/ui-automation/n-navigate-browser)** inside **[Use Application/Browser](https://docs-staging.uipath.com/activities/other/latest/ui-automation/n-application-card)**.\n- `Navigate Browser` supports **Go Back / Go Forward / Refresh / Close Tab** (and **Go Home** in Windows\u2011Legacy).\n\nSo yes: if the attached instance is not already on the desired page, you need a navigation step (e.g. `Navigate Browser` or opening the correct URL in `Use Application/Browser`) to reach the correct page/tab.\n\n---\n",
+    "sources": [
+      "https://docs-staging.uipath.com/activities/other/latest/ui-automation/uipath-uiautomationnext-api-contracts-iuiautomationappservice-attach",
+      "https://docs-staging.uipath.com/activities/other/latest/ui-automation/n-application-card",
+      "https://docs-staging.uipath.com/activities/other/latest/ui-automation/n-navigate-browser"
+    ],
+    "disclaimers": [],
+    "followups": [
+      "How can I ensure Attach with ByInstance always targets a specific browser tab?",
+      "What is the difference between ByInstance, ByProcessName, and SingleWindow in NAppAttachMode?",
+      "How do I combine Use Application/Browser with Navigate Browser to control multiple tabs?"
+    ]
+  }
+}

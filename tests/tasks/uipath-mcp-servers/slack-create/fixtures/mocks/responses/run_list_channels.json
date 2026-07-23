@@ -1,0 +1,5 @@
+{"Result":"Success","Code":"ExecuteOperation","Data":{"items":[
+  {"id":"mock-channel-001","name":"general","is_private":false},
+  {"id":"mock-channel-002","name":"random","is_private":false},
+  {"id":"mock-channel-003","name":"team-alerts","is_private":false}
+]}}
