@@ -24,8 +24,8 @@ initial_prompt: |
   - A `bpmn:serviceTask` named "Run Customer Sync API Workflow".
   - The service task must use a `uipath:activity` shell with type
     `Orchestrator.ExecuteApiWorkflowAsync`.
-  - Map a request object input and map invocation/status/result outputs to
-    declared variables.
+  - Map a request object input and map invocation/status/result outputs directly
+    on that API workflow service task to declared variables.
   - Add a boundary error path to a failure end event and a success end event.
   - Include BPMN DI for visible elements.
 

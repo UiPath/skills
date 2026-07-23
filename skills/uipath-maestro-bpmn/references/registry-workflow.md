@@ -122,6 +122,14 @@ later nodes); `Orchestrator.ExecuteApiWorkflowAsync` **returns immediately**
 (process GUID), `FolderKey`/`FolderPath`, and the request/response schemas before
 the node is runnable — make the wait-versus-async choice explicit in the model.
 
+When the caller asks for API workflow invocation/status/result fields, map those
+fields as `uipath:output` rows on the API workflow `bpmn:serviceTask` itself
+using the discovered output names/types and `source` expressions, for example
+`source="=invocation"`, `source="=status"`, and `source="=result"` (or the exact
+schema fields returned by discovery). Do not add a downstream script task solely
+to split the API workflow service-task result into variables; that hides the
+requested service-task output contract from the model.
+
 ## Integration Service triggers — bind trigger properties via the CLI
 
 `Intsvc.TimerTrigger` and `Intsvc.EventTrigger` (and connector waits like
