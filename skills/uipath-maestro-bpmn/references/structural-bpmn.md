@@ -434,6 +434,11 @@ unsupported for generation until current tooling confirms them.
     preserve-only payload (its own element, not a wrapper for typed shells).
   - `uipath:caseManagement` is a versioned body-string element —
     `<uipath:caseManagement version="v1">…synthetic payload…</uipath:caseManagement>`.
+    If a prompt asks for case-management contract variants, preserve-only
+    case-management payloads, or case-plan/case-management wrappers, include an
+    actual lowercase `uipath:caseManagement` element with synthetic content. A
+    typed `Orchestrator.StartCaseMgmtProcess*` activity shell is not the same
+    payload and does not satisfy that preserve-only case-management shape.
   - `<uipath:scriptVersion value="v2" />` is legacy: author `v3` for new scripts,
     preserve `v2` where it already exists.
 

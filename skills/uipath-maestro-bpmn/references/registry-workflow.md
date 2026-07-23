@@ -32,6 +32,15 @@ extension types, always available), `Connectors` and `Processes` (only after
 `RequiresDiscovery` (`Yes` means you must resolve a concrete resource — process,
 queue, connection — before the node is runnable).
 
+In temp/smoke sandboxes, a CLI/tooling mismatch can produce valid JSON that is
+only a failure envelope (for example `"Result": "Failure"`) instead of registry
+content. For discovery-only tasks, keep that failed output in the transcript or
+`registry-evidence/cli-error.txt`, then replace the final raw evidence JSON with
+the matching entries from `validator/bpmn-spec.json`. The final saved evidence
+must literally contain the requested extension type strings, such as
+`Orchestrator.StartJob` and `Maestro.ReceiveMessageEvent`, not just the failure
+envelope.
+
 ## 2. Get the template for each chosen type
 
 ```bash
