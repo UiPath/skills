@@ -31,8 +31,6 @@ agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite"]
-  sdk_options:
-    max_thinking_tokens: 10000
 
 run_limits:
   task_timeout: 2400
