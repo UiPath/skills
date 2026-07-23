@@ -1,6 +1,6 @@
 ---
 name: uipath-api-workflow
-description: "UiPath API Workflow assistant — author, run, validate, package, publish, deploy, and troubleshoot JSON workflows for `uip api-workflow`. Covers logical/hierarchical structure (Sequence, Assign, JavaScript, If with #Wrapper/#Then/#Else, ForEach, DoWhile, Break, TryCatch, Wait, Response — nested patterns) AND HTTP / Integration Service connector activities (Gmail, Outlook, GitHub, Slack) authored via `uip api-workflow registry resolve`/`stub`. Operate: run locally, manage IS connections (`uip is connections`), pack/publish/deploy via `uip solution`, invoke published workflows via HTTP/schedule/event triggers. Diagnose: validate → run --no-auth loop, root-cause run/expression/connection faults, inspect job logs & traces. Triggers on UiPath API workflows, project type \"Api\", JSON files with `document.dsl`/`do[]`, those activity types, or fetching from a public/vendor API. For .flow Maestro→uipath-maestro-flow. For .xaml/coded RPA→uipath-rpa. For coded agents→uipath-agents. For Coded Apps→uipath-coded-apps."
+description: "UiPath API Workflow assistant — author, run, validate, package, publish, deploy, test, and troubleshoot JSON workflows for `uip api-workflow`. Covers structure (Sequence, Assign, JavaScript, If with #Wrapper/#Then/#Else, ForEach, DoWhile, Break, TryCatch, Wait, Response — nested) AND HTTP / Integration Service connector activities via `uip api-workflow registry resolve`/`stub`. Operate: run locally, manage IS connections (`uip is connections`), pack/publish/deploy via `uip solution`, invoke via HTTP/schedule/event triggers. Test/eval: run rows vs `expectedOutput`, exact-match, loop until pass. Diagnose: validate → run --no-auth loop, root-cause run/expression/connection faults; inspect logs & traces. Triggers on API workflows, project type \"Api\", JSON files with `document.dsl`/`do[]`, those activity types, `evals/`, \"test/run until pass\", or public/vendor API fetch. For .flow Maestro→uipath-maestro-flow. For .xaml/coded RPA→uipath-rpa. For coded agents→uipath-agents. For Coded Apps→uipath-coded-apps."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -21,6 +21,8 @@ Build, run, and publish UiPath API Workflows — JSON files conforming to the CN
 - User asks about **JavaScript expressions, `$context`, `$input`, `$workflow`, `WorkflowStart`, or the `export.as` pattern**
 - User asks how to **debug** a failing API workflow run — the local `validate` → `run --no-auth` loop, or a **post-publish cloud run** (job logs/traces). See [references/operating-published-workflows.md](references/operating-published-workflows.md)
 - User wants to **operate** a published workflow — invoke it (HTTP/schedule/Integration Service event trigger), start/list/stop its Orchestrator jobs, or **manage the Integration Service connections** it uses (`uip is connections list`/`ping`/`edit`). See [references/operating-published-workflows.md](references/operating-published-workflows.md)
+- **Any API-workflow authoring request** (create or edit) — near the start, proactively **offer the test-until-green loop** ("Want me to run this in a loop until tests pass?"), regardless of whether the user mentioned testing. This is a standard early step of the authoring flow — see Phase 0 and [references/testing-and-evals.md](references/testing-and-evals.md)
+- User explicitly wants to **test / evaluate** a workflow — define `(inputs, expectedOutput)` cases, run them, exact-match the output, or **"loop until the tests pass"** — or a project has an `evals/` folder / the user opened the designer's "Evaluations" panel. Follow [references/testing-and-evals.md](references/testing-and-evals.md)
 
 Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / coded RPA (→ `uipath-rpa`), coded agents (→ `uipath-agents`), Coded Web Apps (→ `uipath-coded-apps`).
 
@@ -103,7 +105,14 @@ Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / cod
 
 ### Phase 0: Discovery
 
-Before touching anything, understand what exists.
+Before touching anything, understand what exists — the workflow structure **and** the project's tests. This discovery ALWAYS includes checking the `evals/` folder: look for `evals/eval-sets/*.json` and, if present, read the eval set + evaluator (these are the tests the StudioWeb "Evaluations" panel and the test loop use — see [references/testing-and-evals.md](references/testing-and-evals.md)).
+
+**Two mandatory questions — ask BOTH immediately after this discovery and BEFORE writing/editing the workflow.** Do not skip them, do not defer them until after authoring, and do NOT merge or replace them with a vague "how do you want to verify it?" prompt:
+
+1. **Tests** — if an eval set exists, ask whether to update/add cases or use as-is; if none, ask whether to create some.
+2. **Loop mode** — ask whether to work test-driven (re-author + re-run the evals until every case passes) or author once and let the user verify manually.
+
+Ask both up front on the **first authoring prompt** (create OR edit) — proactively, without waiting for the user to mention testing. Exact question wording, the create/update branches, and the loop mechanics are in §3 of [references/testing-and-evals.md](references/testing-and-evals.md). If the user declines both, proceed with normal authoring and don't re-ask every turn; a later explicit "test this" / "run until it passes" re-enters the loop.
 
 For **edit** requests:
 1. Read the existing workflow file with `Read`
@@ -252,6 +261,7 @@ uip solution publish ./build/MyApiSolution.zip --tenant MyTenant --output json
 | [references/cli-reference.md](references/cli-reference.md) | All `uip` commands — `api-workflow init`, `run`, `build`, `pack`, `validate`, `solution init`, `solution pack`, `solution publish`, `login` |
 | [references/operating-published-workflows.md](references/operating-published-workflows.md) | **Operating + diagnosing a published workflow** — invoke via HTTP/schedule/event triggers, manage Integration Service connections (`uip is connections`), start/list/stop Orchestrator jobs (`uip or jobs`), read cloud-run logs/traces (`uip or jobs logs`, `uip traces spans get`). Delegates depth to `uipath-platform` / `uipath-troubleshoot` |
 | [references/troubleshooting.md](references/troubleshooting.md) | Failed runs, structure/expression/loop/nesting/response/validation pitfalls, packaging errors, publish errors, debugging strategy |
+| [references/testing-and-evals.md](references/testing-and-evals.md) | **Testing / evals** — the `evals/` file contract (eval-set + evaluator + last-run results, Unified layout shared with the StudioWeb "Evaluations" panel), running a test row via `uip api-workflow run … --no-auth --output json`, exact-match verdict semantics, and the **interactive test-until-green loop** (offer the loop → check `evals/` → create/update cases → run/fix/repeat with progress → interruptible background subagent) |
 
 ## Templates
 
@@ -278,6 +288,7 @@ The mistakes an agent makes most often (each maps to a Critical Rule above — s
 - **Do NOT** emit a lone `Workflow.json` with no project files, even for a quick local run. It runs under `uip api-workflow run` but is not a Studio Web project — can't be edited or shipped. Every workflow lives in an `init`-scaffolded project (`--skip-solution-registration` when no solution is needed). See rule 19a ("Which mode").
 - **Do NOT** wire a project into the solution with `uip solution project add/remove` — it errors on an already-registered name, and `remove`+`add` destroys the project `Id`. `init` registers it; for an already-built project, edit the `.uipx` `ProjectRelativePath` in place. See rule 19a.
 - **Do NOT** trust "it packed / published / ran" as proof a project opens in Studio Web — every runtime gate passes on the wrong shape. Scaffolding with `init` is what guarantees it (rule 19a).
+- **Do NOT** skip the two Phase-0 questions or replace them with a vague "how do you want to verify it?" prompt. On any authoring request you MUST ask, right after discovery and before writing the workflow: (1) if an eval set exists — update it or use as-is (if none — create some?); (2) loop mode — re-author until evals pass (TDD) or author once. See Phase 0 + [references/testing-and-evals.md](references/testing-and-evals.md) §3.
 
 ## Infinite Loop Prevention
 
