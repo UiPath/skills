@@ -1,0 +1,111 @@
+task_id: skill-ixp-integration-name-resolution
+description: >
+  Integration: name/title resolution on a live tenant. The agent must resolve
+  user-facing references to the ids the CLI needs — a document by FILENAME →
+  DocumentId via `documents list`, and a project by its TITLE → Name via
+  `projects list` — rather than passing the human label straight through. The
+  resolution step is the integration part; smokes pass the id in the prompt.
+tags: [uipath-ixp, integration, mode:operate]
+
+run_limits:
+  max_turns: 48
+  task_timeout: 1800
+  turn_timeout: 600
+
+sandbox:
+  # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
+  # ixp-tool, not the BYOS host's stale pre-migration plugin.
+  driver: docker
+  python: {}
+  mock_path_dirs: [mocks]
+  template_sources:
+    - type: template_dir
+      path: ../_shared/live_calls_template
+    - type: template_dir
+      path: ../_shared/fixtures
+
+initial_prompt: |
+  Use the tenant I'm already signed into (check I'm logged in; don't
+  re-authenticate). Set up an invoice project from the files in `./fixtures/` —
+  import the taxonomy and upload the three invoices — and give it a unique title
+  `codereval-integ-resolve-<random-suffix>` so concurrent runs don't collide.
+
+  Then:
+  - Delete the file `york_solutions_invoice.png`, then save the remaining document
+    list to `documents_after.json`.
+  - Rename that project to the same title with `-renamed` appended (i.e.
+    `codereval-integ-resolve-<random-suffix>-renamed`), then save the project's details to
+    `project_after.json`.
+
+  Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Listed documents to resolve the filename → DocumentId, then re-read to save the remaining list"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+documents\s+list)[^\r\n]*$){2}
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Deleted the named document by resolved id (with -y)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+documents\s+delete\b.*(-y|--yes))[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Listed projects to resolve Title → Name"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+list)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Renamed the project via update-title"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+update-title)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Did NOT pass the raw filename through as a document id to delete"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+documents\s+delete\s+\S+\s+york_solutions_invoice\.png)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json written for post-run cleanup"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # --- Outcome verification: resolution actually deleted the named doc + renamed the project ---
+  - type: file_contains
+    description: "york is gone from the list; the other two documents remain"
+    path: "documents_after.json"
+    includes: ["csi_tower_invoice.png", "hp_tax_invoice.png"]
+    excludes: ["york_solutions_invoice.png"]
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The project was renamed: title now carries the `-renamed` suffix"
+    path: "project_after.json"
+    includes: ["codereval-integ-resolve", "-renamed"]
+    weight: 2.0
+    pass_threshold: 1.0
+
+# Safety net: delete the project even if the agent's in-band cleanup never ran
+# (crash / MAX_TURNS before the final delete). Reads report.json; idempotent;
+# always exits 0 so it never fails the test.
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/cleanup_project.py"
+    timeout: 60
