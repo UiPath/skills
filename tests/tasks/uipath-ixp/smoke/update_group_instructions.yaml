@@ -27,26 +27,20 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent ran `groups update-prompts … --updates` on the project"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+groups\s+update-prompts\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--updates).*
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+groups\s+update-prompts\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--updates).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
   # calls.log records the expanded --updates argument, so verify the payload
   # on the same invocation that reached the CLI mock.
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent built the payload targeting \"Invoice Header\" with the new instructions"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+groups\s+update-prompts\b(?=.*Invoice Header)(?=.*Header section of the invoice).*
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+groups\s+update-prompts\b(?=.*Invoice Header)(?=.*Header section of the invoice).*)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0

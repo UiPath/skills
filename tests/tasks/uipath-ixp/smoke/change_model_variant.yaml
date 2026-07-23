@@ -35,13 +35,10 @@ success_criteria:
   # the only GPT variant (gpt_4o_2024_05_13) and "table-mini" is table_mini (not
   # the full `table`). Both must land on ONE configure-model call — a wrong
   # model (gemini_*) or wrong preprocessing (table/none) fails this lookahead.
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent set model gpt_4o_2024_05_13 AND preprocessing table_mini in one `configure-model` call"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+projects\s+configure-model\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--model\s+gpt_4o_2024_05_13\b)(?=.*--preprocessing\s+table_mini\b).*
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+configure-model\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--model\s+gpt_4o_2024_05_13\b)(?=.*--preprocessing\s+table_mini\b).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0

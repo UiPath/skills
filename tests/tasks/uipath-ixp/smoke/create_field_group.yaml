@@ -31,13 +31,10 @@ initial_prompt: |
 success_criteria:
   # calls.log records the expanded --fields payload, so verify every field
   # on the actual groups add invocation regardless of shell construction.
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent created the group with multiple fields in one `groups add … --fields` call (batch)"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+groups\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*Subscriber information)(?=.*--fields)(?=.*surname)(?=.*address)(?=.*bank account)(?=.*phone number).*
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+groups\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*Subscriber information)(?=.*--fields)(?=.*surname)(?=.*address)(?=.*bank account)(?=.*phone number).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0

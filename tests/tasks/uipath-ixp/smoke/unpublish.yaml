@@ -29,26 +29,21 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent unpublished version 26 via `projects unpublish <Name> --model-version 26`"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+projects\s+unpublish\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*(--model-version|-m)\s+26\b).*
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+unpublish\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*(--model-version|-m)\s+26\b).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
   # Anti-pattern guard: unpublish only removes the published status — it must
   # not delete the whole project.
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent did NOT delete the project (unpublish must not destroy the project)"
-    command: |
-      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
-      uip\s+ixp\s+projects\s+delete\b
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+delete\b)[^\r\n]*$
+    must_match: false
     weight: 1.0
     pass_threshold: 1.0

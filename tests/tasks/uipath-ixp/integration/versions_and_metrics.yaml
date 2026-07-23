@@ -54,36 +54,27 @@ initial_prompt: |
   Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Confirmed predictions to establish ground truth (so metrics exist)"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+labellings\s+confirm
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Improved a field's extraction instruction (the change that produces v2)"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*Total Amount)
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*Total Amount))[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Pulled metrics for each version"
-    command: |
-      python3 mocks/check_calls.py --min-count 2 <<'REGEX'
-      uip\s+ixp\s+projects\s+get-metrics
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+projects\s+get-metrics)[^\r\n]*$){2}
     weight: 1.0
     pass_threshold: 1.0
 

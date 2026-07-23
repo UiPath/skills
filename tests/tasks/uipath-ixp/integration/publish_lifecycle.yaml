@@ -50,58 +50,43 @@ initial_prompt: |
   Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Published with a tag (staging/live)"
-    command: |
-      python3 mocks/check_calls.py --min-count 2 <<'REGEX'
-      uip\s+ixp\s+projects\s+publish\b.*--tag\s+(live|staging)
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+projects\s+publish\b.*--tag\s+(live|staging))[^\r\n]*$){2}
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Removed the staging tag by name (untag --tag staging)"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+projects\s+untag\b.*--tag\s+["']?staging\b
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+untag\b.*--tag\s+["']?staging\b)[^\r\n]*$
     weight: 0.75
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Removed the live tag by name (untag --tag live)"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+projects\s+untag\b.*--tag\s+["']?live\b
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+untag\b.*--tag\s+["']?live\b)[^\r\n]*$
     weight: 0.75
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Unpublished a version"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+projects\s+unpublish\b.*--model-version
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+unpublish\b.*--model-version)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Re-read list-models after each step (one snapshot per transition)"
-    command: |
-      python3 mocks/check_calls.py --min-count 4 <<'REGEX'
-      uip\s+ixp\s+projects\s+list-models
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+projects\s+list-models)[^\r\n]*$){4}
     weight: 2.0
     pass_threshold: 1.0
 

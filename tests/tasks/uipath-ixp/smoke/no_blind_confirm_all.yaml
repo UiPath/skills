@@ -30,24 +30,19 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent confirmed per-document, passing a <document-id> each time"
-    command: |
-      python3 mocks/check_calls.py --min-count 3 <<'REGEX'
-      uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-00[123]\b
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-00[123]\b)[^\r\n]*$){3}
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent did NOT run the all-documents confirm (project only, no document-id)"
-    command: |
-      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
-      uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s*(--|$)
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s*(--|$))[^\r\n]*$
+    must_match: false
     weight: 3.0
     pass_threshold: 1.0

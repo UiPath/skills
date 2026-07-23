@@ -36,24 +36,18 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent invoked `fields update-prompts` with --updates on the project"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+fields\s+update-prompts\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--updates).*
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--updates).*)[^\r\n]*$
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Expanded --updates payload targets InvoiceNumber with the requested instruction"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*InvoiceNumber)(?=.*Extract the unique invoice identifier)(?=.*Purchase Order).*
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*InvoiceNumber)(?=.*Extract the unique invoice identifier)(?=.*Purchase Order).*)[^\r\n]*$
     weight: 2.5
     pass_threshold: 1.0

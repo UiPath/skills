@@ -26,13 +26,10 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent fetched version-scoped metrics via `get-metrics … --model-version 14`"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+projects\s+get-metrics\b(?=.*(--model-version|-m)\s+14\b).*
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-metrics\b(?=.*(--model-version|-m)\s+14\b).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0

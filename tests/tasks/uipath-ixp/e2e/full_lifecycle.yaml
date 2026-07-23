@@ -64,80 +64,59 @@ initial_prompt: |
     reading metrics.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent created an IXP project"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+projects\s+create
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+create)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent imported the bundled taxonomy fixture"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+projects\s+import-taxonomy
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+import-taxonomy)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent configured the model"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+projects\s+configure-model
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+configure-model)[^\r\n]*$
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent fetched predictions"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+labellings\s+get-predictions
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+get-predictions)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent confirmed labellings"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+labellings\s+confirm
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent fetched metrics at least twice (baseline + improved)"
-    command: |
-      python3 mocks/check_calls.py --min-count 2 <<'REGEX'
-      uip\s+ixp\s+projects\s+get-metrics
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+projects\s+get-metrics)[^\r\n]*$){2}
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent updated a field prompt"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+fields\s+update-prompts
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts)[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
@@ -173,14 +152,11 @@ success_criteria:
     weight: 5.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: Agent published the model
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+projects\s+publish
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+publish)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 

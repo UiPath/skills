@@ -40,58 +40,44 @@ initial_prompt: |
   Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Listed documents to resolve the filename → DocumentId, then re-read to save the remaining list"
-    command: |
-      python3 mocks/check_calls.py --min-count 2 <<'REGEX'
-      uip\s+ixp\s+documents\s+list
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+documents\s+list)[^\r\n]*$){2}
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Deleted the named document by resolved id (with -y)"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+documents\s+delete\b.*(-y|--yes)
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+documents\s+delete\b.*(-y|--yes))[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Listed projects to resolve Title → Name"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+projects\s+list
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+list)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Renamed the project via update-title"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+projects\s+update-title
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+update-title)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Did NOT pass the raw filename through as a document id to delete"
-    command: |
-      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
-      uip\s+ixp\s+documents\s+delete\s+\S+\s+york_solutions_invoice\.png
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+documents\s+delete\s+\S+\s+york_solutions_invoice\.png)[^\r\n]*$
+    must_match: false
     weight: 1.5
     pass_threshold: 1.0
 

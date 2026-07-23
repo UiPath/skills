@@ -32,24 +32,19 @@ success_criteria:
   # Primary: the field is added reusing the built-in "Monetary Quantity" type.
   # The skill teaches the six default types, so the agent uses it by name even
   # though the offline mock can't return the taxonomy.
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent added \"Freight Charge\" reusing the default \"Monetary Quantity\" type via `fields add`"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+fields\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["']?Invoice Header)(?=.*--field\s+["']?Freight Charge)(?=.*--type\s+["']?Monetary Quantity).*
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["']?Invoice Header)(?=.*--field\s+["']?Freight Charge)(?=.*--type\s+["']?Monetary Quantity).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent did NOT invent a redundant custom data type (Critical Rule 17 — reuse defaults)"
-    command: |
-      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
-      uip\s+ixp\s+data-types\s+add\b
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+data-types\s+add\b)[^\r\n]*$
+    must_match: false
     weight: 3.0
     pass_threshold: 1.0

@@ -28,13 +28,10 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent deleted the group via `groups delete … -y/--yes`"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+groups\s+delete\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--name\s+["']?name group)(?=.*(--yes\b|-y\b)).*
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+groups\s+delete\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--name\s+["']?name group)(?=.*(--yes\b|-y\b)).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0

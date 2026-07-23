@@ -29,26 +29,21 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent moved live to v16 via `projects publish <Name> --model-version 16 --tag live`"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+projects\s+publish\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*(--model-version|-m)\s+16\b)(?=.*--tag\s+["']?live\b).*
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+publish\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*(--model-version|-m)\s+16\b)(?=.*--tag\s+["']?live\b).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
   # The publish above already moves the tag; untagging the old version first
   # is unnecessary and wrong.
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent did NOT untag (moving a tag does not require untag first)"
-    command: |
-      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
-      uip\s+ixp\s+projects\s+untag\b
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+untag\b)[^\r\n]*$
+    must_match: false
     weight: 1.0
     pass_threshold: 1.0

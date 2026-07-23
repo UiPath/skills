@@ -54,69 +54,51 @@ initial_prompt: |
     missing, and save that response to `mark_missing_result.json`.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Built the Line Items field group by hand"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+groups\s+add\b(?=.*Line Items)(?=.*--fields)(?=.*Description)(?=.*Amount)(?=.*Tax)
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+groups\s+add\b(?=.*Line Items)(?=.*--fields)(?=.*Description)(?=.*Amount)(?=.*Tax))[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Fetched predictions to resolve occurrences and field ids before mutating"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+labellings\s+get-predictions
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+get-predictions)[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Confirmed the first occurrence via --group + --occurrence 0"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+labellings\s+confirm\b(?=.*--group)(?=.*--occurrence(?:\s+|=)0\b)
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--group)(?=.*--occurrence(?:\s+|=)0\b))[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Batched confirm with --updates carrying a corrections entry across occurrences"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+labellings\s+confirm\b(?=.*--group)(?=.*--updates)(?=.*corrections)(?=.*500\.00)(?=.*105\.42)
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--group)(?=.*--updates)(?=.*corrections)(?=.*500\.00)(?=.*105\.42))[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Rolled back with unconfirm"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+labellings\s+unconfirm
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+unconfirm)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Marked a genuinely-absent field missing"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+labellings\s+mark-missing\b(?=.*--fields)(?=.*Tax)
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+mark-missing\b(?=.*--fields)(?=.*Tax))[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 

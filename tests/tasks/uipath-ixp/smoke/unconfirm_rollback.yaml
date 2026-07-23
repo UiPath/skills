@@ -33,38 +33,30 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent invoked `uip ixp labellings unconfirm <project> <document>`"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+labellings\s+unconfirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+unconfirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Unconfirm call targeted field f-001 via --fields"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+labellings\s+unconfirm\b(?=.*--fields\s+[^|;&]*f-001).*
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+unconfirm\b(?=.*--fields\s+[^|;&]*f-001).*)[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
   # Anti-pattern: re-running `confirm` with a different --fields list
   # does NOT remove a prior annotation — the SDK preserves carry-forward
   # annotations. The agent must not reach for confirm to undo a confirm.
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent did NOT try to undo via labellings confirm"
-    command: |
-      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
-      uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?)[^\r\n]*$
+    must_match: false
     weight: 1.5
     pass_threshold: 1.0

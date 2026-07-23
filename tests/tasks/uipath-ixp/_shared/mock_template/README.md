@@ -16,8 +16,8 @@ invocation as one line in `mocks/calls.log`. Embedded newlines in arguments are
 normalized to spaces, so JSON loaded with command substitution stays on the same
 record. The seeded, non-hidden log is included in CI artifacts.
 
-Use `mocks/check_calls.py` from a `run_command` criterion to match readable
-regular expressions against the log. Negative guards must pair with a positive
+Use the native `file_matches_regex` criterion to match readable regular
+expressions against the log. Negative guards must pair with a positive
 logged invocation so a missing or misdirected log cannot pass vacuously.
 `mocks/curl` similarly prevents raw REST traffic.
 

@@ -26,24 +26,19 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent renamed field \"Amount\" to \"Total Amount\" via `fields rename` (right group)"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+fields\s+rename\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["']?Invoice Header)(?=.*--field\s+["']?Amount)(?=.*--new-name\s+["']?Total Amount).*
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+rename\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["']?Invoice Header)(?=.*--field\s+["']?Amount)(?=.*--new-name\s+["']?Total Amount).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent did NOT delete the field (rename must not destroy it)"
-    command: |
-      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
-      uip\s+ixp\s+fields\s+delete\b
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+delete\b)[^\r\n]*$
+    must_match: false
     weight: 1.0
     pass_threshold: 1.0

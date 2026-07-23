@@ -29,25 +29,20 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent removed the tag via `projects untag <Name> --tag live`"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+projects\s+untag\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--tag\s+live\b).*
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+untag\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--tag\s+live\b).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
   # Anti-pattern guard: removing a tag is NOT unpublishing or deleting.
-  - type: run_command
+  - type: file_matches_regex
     description: "Agent did NOT unpublish or delete (untag must not unpublish or destroy the version)"
-    command: |
-      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
-      uip\s+ixp\s+(projects\s+unpublish|projects\s+delete)\b
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+(projects\s+unpublish|projects\s+delete)\b)[^\r\n]*$
+    must_match: false
     weight: 1.0
     pass_threshold: 1.0

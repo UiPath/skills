@@ -51,91 +51,68 @@ initial_prompt: |
   Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
 success_criteria:
-  - type: run_command
+  - type: file_matches_regex
     description: "Did NOT import the fixture taxonomy — used auto-suggest at create time instead"
-    command: |
-      python3 mocks/check_calls.py --max-count 0 <<'REGEX'
-      uip\s+ixp\s+projects\s+import-taxonomy
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+import-taxonomy)[^\r\n]*$
+    must_match: false
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Created the 'Charges' group with the 'Discount' and 'Late Fee' fields"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+groups\s+add\b(?=.*Charges)(?=.*Discount)(?=.*Late Fee)
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+groups\s+add\b(?=.*Charges)(?=.*Discount)(?=.*Late Fee))[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Renamed group 'Charges' -> 'Adjustments'"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+groups\s+rename\b(?=.*Charges)(?=.*Adjustments)
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+groups\s+rename\b(?=.*Charges)(?=.*Adjustments))[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Changed 'Discount' to type Number with the confirmation flag"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+fields\s+change-type\b(?=.*Discount)(?=.*Number)(?=.*(--yes|-y))
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+change-type\b(?=.*Discount)(?=.*Number)(?=.*(--yes|-y)))[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Bulk-updated field prompts via update-prompts --updates"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*Discount)(?=.*Discount taken off the invoice total)(?=.*Penalty Fee)(?=.*Late penalty added to the invoice total)
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*Discount)(?=.*Discount taken off the invoice total)(?=.*Penalty Fee)(?=.*Late penalty added to the invoice total))[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Deleted the 'Surcharge' field with the confirmation flag"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+fields\s+delete\b(?=.*Surcharge)(?=.*(-y|--yes))
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+delete\b(?=.*Surcharge)(?=.*(-y|--yes)))[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Deleted the 'Adjustments' group with the confirmation flag"
-    command: |
-      python3 mocks/check_calls.py --min-count 1 <<'REGEX'
-      uip\s+ixp\s+groups\s+delete\b(?=.*Adjustments)(?=.*(--yes|-y))
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+groups\s+delete\b(?=.*Adjustments)(?=.*(--yes|-y)))[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_matches_regex
     description: "Read taxonomy back to verify edits (multiple get-taxonomy calls)"
-    command: |
-      python3 mocks/check_calls.py --min-count 3 <<'REGEX'
-      uip\s+ixp\s+projects\s+get-taxonomy
-      REGEX
-    timeout: 5
-    expected_exit_code: 0
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+projects\s+get-taxonomy)[^\r\n]*$){3}
     weight: 2.0
     pass_threshold: 1.0
 
