@@ -225,6 +225,6 @@ If the user asks to fix identified issues: apply corrections to `agent.json`, ru
 9. **Correctness validation uses `uip agent guardrails list` output** — `Parameters[].Type`, `Options`, `KeySource`, `Min`, `Max`, `Step` are the authoritative source for all parameter rules. Do not hardcode validator-specific knowledge.
 10. **The cache file is `.guardrails-catalog-cache.json`** in the working directory. Add it to `.gitignore` if one exists.
 11. **Do not create separate guardrails per scope** — combine multiple scopes into a single guardrail's `scopes` array.
-12. **All map-enum keys must exactly match the corresponding enum-list values** — no extra or missing keys. This is the most common correctness error.
+12. **All map-enum keys must exactly match the corresponding enum-list values** — no extra, no missing keys. Example: if `harmfulContentEntities: [Hate, SelfHarm]`, then `harmfulContentEntityThresholds` MUST have exactly the keys `Hate` and `SelfHarm` — adding `Sexual`, `Violence`, or any other key is a validation error even if those are valid entity names. This is the most common correctness error.
 13. **Read [guardrails.md](guardrails.md) before writing any JSON** — discriminator fields, PascalCase constraints, and parameter shapes are specified there and cannot be safely inferred.
 14. **Do NOT use TaskCreate, TaskUpdate, or other task-tracking tools for guardrail edits.** Edit `agent.json` directly — task management tools add bookkeeping turns without benefit and push runs over their turn budget.

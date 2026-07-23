@@ -45,13 +45,13 @@ else:
 ```
 
 - **CACHE_HIT**: read `.guardrails-catalog-cache.json` directly.
-- **CACHE_MISS**: fetch and save: `uip agent guardrails catalog --output json > .guardrails-catalog-cache.json`
+- **CACHE_MISS**: fetch and save: `timeout 30 uip agent guardrails catalog --output json > .guardrails-catalog-cache.json`
   (the CLI writes both success and error JSON to stdout — do not add `2>&1`).
 
 ### Guardrails List (NEVER cached — tenant-specific)
 
 ```bash
-uip agent guardrails list --output json
+timeout 30 uip agent guardrails list --output json
 ```
 
 Build a `{ validatorId: status }` lookup from the `Data` array (use only `Status == "Available"`).

@@ -376,6 +376,40 @@ uip solution publish ./dist/<SOLUTION_NAME>.1.0.0.zip --output json
 uip solution deploy run --name "<NAME>" --package-name "<SOLUTION_NAME>" --package-version "1.0.0" --output json
 ```
 
+## End-to-End Example — New Conversational Agent
+
+> **Conversational agents require explicit `--conversational` flag at init. Never skip solution init + agent init steps — always scaffold before editing `agent.json`.**
+
+### Step 1 — Check login
+
+```bash
+uip login status --output json
+```
+
+### Step 2 — Create solution and scaffold agent
+
+```bash
+uip solution init "<SOLUTION_NAME>" --output json
+uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --conversational --output json
+```
+
+Both commands run from the same working directory. `agent init --conversational` creates `agent.json` with `metadata.isConversational: true` and `settings.engine: "conversational-v1"`. Confirm via `Data.SolutionRegistration.Status: Registered` in the response.
+
+### Step 3 — Configure agent.json
+
+1. Set `settings.model` — discover with `uip agent model list --output json` (scaffold default is stale)
+2. Write system prompt in `messages[0].content` — leave `messages[1].content` **blank** (user input arrives at runtime)
+3. Guardrails: only `$guardrailType: "custom"` Tool-scoped deterministic rules. **Built-in validators (`builtInValidator`) are NOT supported on conversational agents** — see [capabilities/guardrails/guardrails-recommend.md](capabilities/guardrails/guardrails-recommend.md) Critical Rule 7.
+
+### Step 4 — Refresh + validate
+
+```bash
+uip agent refresh "<SOLUTION_NAME>/<AGENT_NAME>" --output json
+uip agent validate "<SOLUTION_NAME>/<AGENT_NAME>" --output json
+```
+
+---
+
 ## Versioning
 
 Solutions use semantic versioning: `MAJOR.MINOR.PATCH`

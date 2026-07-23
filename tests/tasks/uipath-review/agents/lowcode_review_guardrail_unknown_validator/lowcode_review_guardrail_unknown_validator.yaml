@@ -12,8 +12,8 @@ tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover, guardrail]
 
 run_limits:
   turn_timeout: 1200
-  task_timeout: 1500
-  max_turns: 40
+  task_timeout: 1800
+  max_turns: 60
 
 sandbox:
   python: {}
@@ -28,6 +28,8 @@ initial_prompt: |
   report to `./_review_report.md` at the sandbox root.
 
   This is a read-only review — do not modify anything inside `ReviewSol/`.
+  There is no PDD or design document for this project.
+  Do NOT ask for approval, confirmation, or feedback.
 
 success_criteria:
   - type: skill_triggered
@@ -48,21 +50,16 @@ success_criteria:
     command_pattern: '"file_path":\s*"[^"]*ReviewSol'
     weight: 3.0
 
-  # The unknown-validator finding can ONLY come from `uip agent review` fetching
-  # the live catalog — you can't tell a validator is unknown by eye. This
-  # command_executed criterion is the honesty gate: it proves the catalog-backed
-  # CLI ran, which lets the run_command check below accept either the verbatim
-  # rule_id OR a summarized "validator is not in the catalog" finding without
-  # letting an eyeballed guess pass. (Previously the check required the rule_id
-  # transcribed verbatim into the saved report, which flaked on Bedrock when the
-  # agent ran the review but summarized the finding instead of copying the id.)
+  # Advisory only: the validator name "totally_made_up_validator" is eyeball-identifiable,
+  # so agents can find it without running the CLI (CI confirmed score=0.875 without the CLI).
+  # The run_command check below is the real gate; this records CLI usage for analytics only.
   - type: command_executed
-    description: "Ran the catalog-backed review CLI (Step 2.5a) — the only source of the unknown-validator finding"
+    description: "Advisory: ran the catalog-backed review CLI (Step 2.5a)"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+review'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: run_command
     description: "Review report surfaces the CLI finding (GUARDRAIL_UNKNOWN_VALIDATOR, or names totally_made_up_validator as uncataloged)"

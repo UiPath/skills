@@ -71,6 +71,8 @@ If the agent uses any other framework (LlamaIndex, OpenAI Agents, plain Python, 
 
 Call `WebFetch` once per page. From the core page extract Validator classes, entity-type enums, `GuardrailScope` / `GuardrailExecutionStage`, and Action classes. From the LangChain page (when applicable) extract middleware classes, supported scopes/stages, extra parameters, and the correct `uipath_langchain.guardrails` import paths.
 
+**If a URL is inaccessible** (network unavailable, HTTP error, or timeout): do not retry more than twice. Fall back to reading the installed SDK sources (`python3 -c "import uipath; print(uipath.__file__)"`, `python3 -c "import uipath_langchain; print(uipath_langchain.__file__)"`) for class names and import paths. If installed sources are also unavailable, note "SDK docs unavailable" and proceed with the catalog CLI data only — do not block on fetching docs.
+
 **Use the fetched content as the sole source of truth.** Never rely on memory for class names, enum members, or import paths — the SDK evolves and the docs are the only reliable mapping.
 
 Build a `{ validator_id → { middleware_class, validator_class, entity_enum, allowed_scopes, allowed_stages } }` lookup in working memory by joining catalog entries with SDK class names.
@@ -265,6 +267,8 @@ Report per guardrail:
 - **Actionability issue** — describe the problem (e.g., "`UserPromptAttacksValidator` is decorating `@tool def lookup_account_info` — the SDK docs say this validator only supports LLM scope; move the `@guardrail` above the LLM factory") and the fix
 - **Relevance issue** — describe why the guardrail may not be appropriate and what to consider instead
 
+> **MOVE misplaced guardrails — never remove them.** If a guardrail is attached to the wrong scope or function (e.g. `@guardrail` above a `@tool` but the SDK docs say it must be on an LLM factory), relocate it to the correct attachment point. Removing a guardrail entirely from the file always fails the validation check.
+
 If the user asks to fix identified issues: apply corrections to the Python file, then verify:
 
 ```bash
@@ -275,6 +279,7 @@ python3 -c "import ast; ast.parse(open('graph.py').read())"
 
 ## Critical Rules
 
+0. **Fetch SDK docs FIRST via WebFetch — before any analysis or code.** Call `WebFetch` on `https://uipath.github.io/uipath-python/langchain/guardrails/` and `https://uipath.github.io/uipath-python/core/guardrails/` (Step 0 in both Recommend and Validate modes). Skipping produces stale class names, wrong import paths, and silent scope errors.
 1. **Recommend mode / net-new adds:** fetch catalog first (use cache if fresh), guardrails list second (no cache), and the two SDK doc pages via WebFetch third (no cache) — all three required before any analysis or code edit. **Validate mode of an existing guardrail:** the SDK docs are the authoritative, sufficient grounding for a scope/placement fix; still fetch catalog + list for the Relevance and entitlement checks, but they are not a hard prerequisite.
 2. **If `GuardrailCatalogUnavailable`** → surface the message and stop. Do not fall back to guessing or hardcoded recommendations.
 3. **Only recommend `Available` validators**. Mention `Unauthorised` ones to the user so they can contact their administrator.

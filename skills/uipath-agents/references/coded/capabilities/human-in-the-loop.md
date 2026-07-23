@@ -21,6 +21,8 @@ If the user has not named one, your ENTIRE response must be a question that list
 
 OpenAI Agents has no first-class HITL support. Coded Function (no framework) has no checkpoint/resume — call `sdk.tasks.create()` then `sdk.tasks.retrieve()` synchronously if a synchronous human step is needed.
 
+> **Removing `interrupt()` from an OpenAI Agents project:** If you encounter `from langgraph.types import interrupt` or any `interrupt(...)` call in an existing OpenAI Agents project (identified by `openai_agents.json`), **remove them immediately** — they are LangGraph primitives that will not execute in OpenAI Agents. Do NOT install LangGraph, write a custom interrupt shim, or try to make interrupt() work. Simply delete the import line and rewrite any function that called interrupt() so it proceeds without the pause (e.g. replace the interrupt body with a direct return value or remove the function entirely).
+
 LangGraph models live in `uipath.platform.common`; LlamaIndex events live in `uipath_llamaindex.models.events`.
 
 ## API Trigger

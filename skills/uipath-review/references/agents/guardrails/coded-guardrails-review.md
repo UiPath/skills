@@ -32,9 +32,13 @@ which guardrail fits which agent, or which Python class implements which validat
 
 ## Step 0 — Fetch Catalog, Available Validators, and SDK Docs
 
-Run this once when the coded agent's entry source wires guardrails (any `*UiPath…Middleware(...)` inside
-`create_agent(middleware=[...])` or any `@guardrail(...)` decorator) **or** the agent matches a catalog use case
-(so Recommend Mode can run). This is the read-only review counterpart of the guardrail recommend capability — it
+**Only run Step 0 when the coded agent's entry source wires guardrails** (any `*UiPath…Middleware(...)` inside
+`create_agent(middleware=[...])` or any `@guardrail(...)` decorator). If no guardrails are wired: **skip Step 0
+entirely** (skip Catalog fetch, Guardrails List fetch, and SDK Docs fetch). Skip Audit Mode. Skip Recommend Mode.
+Proceed directly to [Read the agent first](#read-the-agent-first) then emit only non-guardrail judgment rules from
+`agents-coded-rules.md`.
+
+When guardrails are wired, this is the read-only review counterpart of the guardrail recommend capability — it
 runs the same Step 0 fetches (specified in full below) but emits findings instead of writing code.
 
 ### Catalog (cacheable — 30-minute TTL)
@@ -51,13 +55,13 @@ else:
 ```
 
 - **CACHE_HIT**: read `.guardrails-catalog-cache.json` directly.
-- **CACHE_MISS**: fetch and save: `uip agent guardrails catalog --output json > .guardrails-catalog-cache.json`
+- **CACHE_MISS**: fetch and save: `timeout 30 uip agent guardrails catalog --output json > .guardrails-catalog-cache.json`
   (the CLI writes both success and error JSON to stdout — do not add `2>&1`).
 
 ### Guardrails List (NEVER cached — tenant-specific)
 
 ```bash
-uip agent guardrails list --output json
+timeout 30 uip agent guardrails list --output json
 ```
 
 Build a `{ validatorId: status }` lookup from the `Data` array (use only `Status == "Available"`).
@@ -65,22 +69,26 @@ Build a `{ validatorId: status }` lookup from the `Data` array (use only `Status
 ### SDK Docs (NEVER skipped — Python class names)
 
 Coded agents reference guardrails by **Python class name** (`UiPathPIIDetectionMiddleware`, `PIIValidator`), not by
-`validator_id`. Fetch the SDK doc pages via `WebFetch` to map the two:
+`validator_id`. Fetch the SDK doc pages via `curl` (bounded 30 s per URL — do NOT use `WebFetch` as the primary
+method; it can hang for minutes in restricted environments):
 
-- `https://uipath.github.io/uipath-python/core/guardrails/` — always (validators, entity enums, `GuardrailScope` /
-  `GuardrailExecutionStage`, action classes).
-- `https://uipath.github.io/uipath-python/langchain/guardrails/` — when the agent is LangChain/LangGraph
-  (`uipath-langchain` in `pyproject.toml` or `from langchain…` / `from langgraph…` imports): middleware classes,
-  their supported scopes/stages, and the `uipath_langchain.guardrails` import paths.
+```bash
+curl --max-time 30 -fsSL https://uipath.github.io/uipath-python/core/guardrails/
+# LangChain/LangGraph agents only (uipath-langchain in pyproject.toml or langchain/langgraph imports):
+curl --max-time 30 -fsSL https://uipath.github.io/uipath-python/langchain/guardrails/
+```
+
+- Core URL — always: validators, entity enums, `GuardrailScope` / `GuardrailExecutionStage`, action classes.
+- LangChain URL — LangChain/LangGraph agents only: middleware classes, supported scopes/stages, `uipath_langchain.guardrails` import paths.
 
 Build a `{ validator_id → { middleware_class, validator_class, entity_enum, allowed_scopes, allowed_stages,
 import_path } }` lookup by joining catalog entries with the SDK class names. Use the fetched content as the sole
 source of truth for class/enum/import names — never memory.
 
-**If `WebFetch` is unavailable or denied**, fall back in order; stop at the first source that yields the
+**If `curl` fails (non-zero exit or empty output)**, fall back in order; stop at the first source that yields the
 class/scope/enum names:
 
-1. `curl -fsSL <URL>` via Bash (same two URLs).
+1. `WebFetch` on the same two URLs.
 2. Read the installed SDK sources. Locate the packages
    (`python3 -c "import uipath; print(uipath.__file__)"`, same for `uipath_langchain`) and read the guardrail
    modules (`uipath/platform/guardrails/`, `uipath_langchain/guardrails/`) for middleware/validator/action classes,

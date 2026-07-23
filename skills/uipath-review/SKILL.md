@@ -1,6 +1,6 @@
 ---
 name: uipath-review
-description: "UiPath read-only reviewer — audit structure, quality, best practices for RPA (.xaml/.cs), agents (.py/agent.json), flows (.flow), BPMN (.bpmn), coded apps, solutions (.uipx). Does NOT edit files. For building/editing→domain skills."
+description: "UiPath read-only review/audit: quality, health, deploy-readiness, or state assessment on any UiPath artifact — agents (.py/agent.json), RPA (.xaml/.cs), flows (.flow), BPMN (.bpmn), coded apps, solutions (.uipx), multi-project repos. Finds and reports: best practices, Workflow Analyzer/get-errors/analyze output, security, performance, dead code, unused variables, architecture, transaction granularity, naming conventions, tool design; walks through/explains inherited or unknown automations. Also: long-running orchestration (Suspend/Resume, persistence), sanity checks, requirements/spec compliance, improvement suggestions, review checklists, quality assessments (is it good?), what can be improved. Never edits reviewed files. For building/editing→domain skills."
 allowed-tools: Bash, Read, Glob, Grep, WebFetch, AskUserQuestion
 user-invocable: true
 ---
@@ -20,8 +20,8 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 
 ## Critical Rules
 
-1. **NEVER modify any files.** This skill is read-only. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-maestro-bpmn, uipath-api-workflow, uipath-coded-apps, uipath-platform, uipath-solution).
-2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa validate` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `validate` catches structural / analyzer issues, `build` catches compile-time issues `validate` misses (unknown member names, invalid enum values, JIT failures). Run `uip agent validate` on agents, `uip maestro flow validate` on flows, `uip maestro bpmn validate` on BPMN processes, `uip api-workflow validate` on API workflows. Report every Error, Warning, and Info result from every command. A review without both `validate` AND `build` (for RPA) is incomplete and may ship broken member references.
+1. **NEVER modify any files being reviewed.** This skill is read-only for the artifacts under review — it produces findings, never edits. **The Write and Edit tools are forbidden on any file inside the reviewed project directory, even if the fix is obvious or the review CLI suggested it.** Writing the review report to a path the user specified (e.g., `_review_report.md`) is the only allowed write. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-maestro-bpmn, uipath-api-workflow, uipath-coded-apps, uipath-platform, uipath-solution).
+2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `timeout 30 uip rpa validate "<ENTRY_POINT>" --output json` on every entry point AND `timeout 30 uip rpa build "<PROJECT_DIR>"` — `validate` catches structural / analyzer issues, `build` catches compile-time issues `validate` misses (unknown member names, invalid enum values, JIT failures). If either exits non-zero or times out (e.g., Windows-only CLI on Linux CI), record under Rules Skipped as 'CLI unavailable' and proceed with manual file review — do not retry. Run `uip agent validate` on agents, `uip maestro flow validate` on flows, `uip maestro bpmn validate` on BPMN processes, `uip api-workflow validate` on API workflows. Report every Error, Warning, and Info result from every command. A review without both `validate` AND `build` (for RPA) is incomplete and may ship broken member references.
 3. **ALWAYS discover and classify before reviewing.** For solutions: classify every project before reviewing any individual one. For single projects: identify the project type and find the enclosing project directory before reviewing individual files.
 4. **Report severity for every finding.** Use: **Critical** (blocks deployment), **Warning** (should fix), **Info** (improvement opportunity).
 5. **Understand business context first.** Before evaluating optimization, ask or infer what the solution is trying to accomplish. A queue-based architecture is not "better" if the use case processes 5 items/day.
@@ -247,15 +247,19 @@ After Step 2 validation and before manual checklist review, produce rule-ID-leve
 
 #### 2.5a — Run the review CLI first (deterministic findings)
 
+**This step is mandatory — always run the CLI. Do not skip to Step 2.5b preemptively.**
+
 Run the review command for the agent type, once, capturing JSON:
 
 | Agent type | Command |
 |---|---|
-| Low-code (`agent.json`) | `uip agent review "<PROJECT_DIR>" --output json` |
-| Coded (`main.py` + framework config) | `uip codedagent review "<PROJECT_DIR>" --output json` |
+| Low-code (`agent.json`) | `timeout -k 15 300 uip agent review "<PROJECT_DIR>" --output json` |
+| Coded (`main.py` + framework config) | `timeout -k 15 300 uip codedagent review "<PROJECT_DIR>" --output json` |
 | Agent-builder coded layout (`agent.json` + `main.py`) | run **both** commands |
 
 The CLI runs every deterministic static check — structural/schema, placeholder cross-refs, eval counts/diversity, secret & import regex, framework symbol existence, eval-run analysis, packaging/git hygiene — and returns them in rule format. Parse `Data.Issues[]`; each issue is `{RuleId, Category, Severity, Description, File, SuggestedFix}`. Carry each into the report **verbatim** — do not re-derive, rename, or re-rank. These rule IDs are authoritative as emitted by the CLI; they are **not** listed in the skill catalog.
+
+> **If the CLI exits non-zero or is killed by the `timeout` wrapper (exit code 124)** — and only after running it once — proceed to Step 2.5b via source-file inspection. Do **NOT** retry the CLI. Record "Review CLI unavailable: [exit code/timeout]" under Rules Skipped (Critical Rule 11). The judgment catalog and direct source-file analysis cover most review findings independently of CLI output.
 
 > **Guardrail configuration is CLI-only — never eyeball it.** Whether a guardrail is well-formed (real validator, allowed scope, required/typed/legal parameters, valid custom-rule shape) is decided **only** by `uip agent review` — the `GUARDRAIL_*` and `GUARDRAIL_CUSTOM_*` rule IDs come from this command, never from reading `agent.json` by eye and never from the judgment catalog. So whenever the task involves checking / validating / diagnosing / fixing a guardrail, running the review CLI in this step is **mandatory** (use `--checks guardrails` if you only need the guardrail pass), and every `GUARDRAIL_*` finding it returns **must** appear verbatim in the report's Rule Findings — do not replace it with a hand-written description of the problem. (The judgment catalog's `LC_GUARDRAIL_*` rules are the complement: they audit only guardrails the CLI found format-valid and recommend missing ones at Info — see Step 2.5b and [`references/agents/guardrails/guardrails-review.md`](references/agents/guardrails/guardrails-review.md).)
 
@@ -483,7 +487,7 @@ Full rubric, agent-principle scoring, edge cases (no-PDD / CLI-unavailable / no-
 
 ### Step 5 — Produce the Review Report
 
-Output a structured report in chat (do NOT create a file):
+Output a structured report in chat. When the prompt specifies a report path (e.g., `_review_report.md`), write the report to that path immediately after completing Step 4 — do not defer or continue gathering findings after Step 4 is done. Do NOT create unsolicited files:
 
 **Report rules — do not violate:**
 
@@ -652,7 +656,7 @@ This maps the letter to the verdict word only. The agent grade is `min(G_det, G_
 
 ## Anti-Patterns — What NOT to Do
 
-1. **Do not modify files.** This is a review skill, not a builder. Identify issues, recommend fixes, and tell the user which skill to use.
+1. **Do not modify any files being reviewed.** This is a review skill, not a builder. Identify issues, recommend fixes, and tell the user which skill to use. Writing the review report to a user-specified path is allowed — do not confuse report output with modifying project artifacts.
 2. **Do not review without running automated validation first.** Manual review alone misses structural issues that CLI tools catch instantly.
 3. **Do not skip solution-level discovery.** Reviewing a single project without understanding the solution context leads to wrong optimization recommendations (e.g., suggesting queues when the solution already has a dispatcher/performer pattern).
 4. **Do not report validation errors as manual findings.** Reference the validation output — do not re-describe what the CLI already reported.

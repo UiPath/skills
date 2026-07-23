@@ -319,7 +319,7 @@ If the task needs LLM reasoning, infer the framework from the user's prompt when
 
 1. **LangGraph** (recommended — best integrated with the UiPath ecosystem) — StateGraph with conditional routing, tool use, interrupts. Best for complex LLM agents.
 2. **LlamaIndex** — Workflow with events and RAG support. Most complete LangGraph alternative.
-3. **OpenAI Agents** — Lightweight agent with tools and handoffs. Best for simple LLM agents; lacks HITL, process invocation, and state persistence.
+3. **OpenAI Agents** — Lightweight agent with tools and handoffs. Best for simple LLM agents; lacks HITL, process invocation, and state persistence. **PLATFORM INPUT CONSTRAINT: `uip codedagent run` always requires a `messages` field in the input JSON — there is NO way to remove it.** If the user needs a clean named-field schema at the platform level (e.g. `{"address": "..."}` with no `messages`), OpenAI Agents cannot satisfy that contract → redirect to LangGraph. (This constraint is about platform invocation only — it does NOT affect context types, `Agent[TContext]` generics, or agent logic.)
 
 **Inference hints:** mentions of tools/tool calling, multi-step, or orchestration → LangGraph. Simple handoffs or lightweight LLM → OpenAI Agents. No LLM needed → not an agent — use [`uipath-functions`](/uipath:uipath-functions). Summarize / research / synthesize over PDF or TXT (incl. bucket files, attachments) → not a framework choice — see [capabilities/deeprag/planning.md](capabilities/deeprag/planning.md). Per-row CSV extraction → see [capabilities/batch-transform/planning.md](capabilities/batch-transform/planning.md). When in doubt, ask.
 
