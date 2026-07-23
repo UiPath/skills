@@ -36,7 +36,7 @@ ID, exact poll window or webhook delivery evidence, and downstream execution sta
    uip login status --output json
    uip is connectors builder inspect --output json
    uip is connectors builder validate --output json
-   uip is connectors event-operations <connector-key> --output json
+   uip is connectors event-operations <CONNECTOR_KEY> --output json
    ```
 
    Before interpreting the tenant-backed list, confirm the login status names the

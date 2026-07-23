@@ -6,6 +6,9 @@ confidence: medium
 
 ## Context
 
+Use after the [Connector Builder router](connector-builder.md) identifies an
+import or authoring fault.
+
 Use when OpenAPI import fails or returns `5xx`, an import appears to do nothing, Activity
 Designer spins or times out, a resource cannot be saved, or local connector validation reports
 structural/linkage errors.

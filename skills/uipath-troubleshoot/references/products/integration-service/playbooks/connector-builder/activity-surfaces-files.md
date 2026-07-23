@@ -65,7 +65,7 @@ A normal custom activity spans both definitions:
 ```text
 app/element/element.json resource/method
         ↕ standardResourceName and method path/reference
-app/element/standard-resources/<resource>.json
+app/element/standard-resources/<RESOURCE>.json
         ↕ Periodic activity generation
 UiPath.IntegrationService.Activities in the consumer project
 ```

@@ -57,7 +57,7 @@ The connector resolves the Salesforce instance host and API version during
 connection provisioning. Record both from the affected connection; a source default
 or newer connection does not prove what an existing connection uses.
 
-#### Common exact branches
+### Common Exact Branches
 
 #### App blocked / `OAUTH_APPROVAL_ERROR_GENERIC`
 
@@ -236,8 +236,8 @@ Udon converts the UiPath file into Base64 JSON:
 
 ```json
 {
-  "Title": "<original filename>",
-  "VersionData": "<base64>"
+  "Title": "<ORIGINAL_FILENAME>",
+  "VersionData": "<BASE64>"
 }
 ```
 
@@ -247,7 +247,7 @@ Consequences:
 - it is subject to Udon's configured Base64 conversion limit;
 - the JSON response/request path can hit the Integration Service 8 MB limit;
 - a missing file emits `Required file upload items are empty`;
-- a too-large file emits `The given file exceeds the size limit of <n> MB`.
+- a too-large file emits `The given file exceeds the size limit of <LIMIT_MB> MB`.
 
 Do not manually Base64-encode an `IResource`; that produces a double-transformation.
 
@@ -299,7 +299,7 @@ Current supported public trigger families are polling-based:
 The static object triggers poll every five minutes using:
 
 ```text
-LastModifiedDate > <last poll time>
+LastModifiedDate > <LAST_POLL_TIME>
 ```
 
 Identity is `Id`; created/updated fields are `CreatedDate` and `LastModifiedDate` in

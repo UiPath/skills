@@ -63,10 +63,10 @@ Example shapes:
 
 ```text
 REST API endpoint:
-https://<host>/ccx/api/v1/<tenant>
+https://<HOST>/ccx/api/v1/<TENANT>
 
 Token URL:
-https://<host>/ccx/oauth2/<tenant>/token
+https://<HOST>/ccx/oauth2/<TENANT>/token
 ```
 
 The Workday API client must:
@@ -86,7 +86,7 @@ This is the documented symptom of a redirect URI mismatch. Compare scheme, host,
 path, region, and trailing slash. The current Automation Cloud shape is:
 
 ```text
-https://<UiPath base URL>/provisioning_/callback
+https://<UIPATH_BASE_URL>/provisioning_/callback
 ```
 
 Do not troubleshoot tenant permissions until Workday returns an authorization code.
@@ -97,7 +97,7 @@ The connector derives:
 
 - tenant name from the final path segment of `apiEndpoint`;
 - host from the endpoint URL;
-- API base as `<scheme>://<hostname>/ccx/api`;
+- API base as `<SCHEME>://<HOSTNAME>/ccx/api`;
 - refresh URL from the configured token URL.
 
 Therefore an endpoint with an extra trailing slash, query string, wrong final path
@@ -111,7 +111,7 @@ Capture all three configured URLs and the derived host/tenant/base URL.
 During provisioning the connector calls:
 
 ```text
-/absenceManagement/v1/<tenant>/workers/me
+/absenceManagement/v1/<TENANT>/workers/me
 ```
 
 If Workday returns an error, the post-hook currently converts it to HTTP `200` with
@@ -174,7 +174,7 @@ For generated object list operations, Udon constructs WQL with selected fields a
 optional WHERE, then sends pagination as URL parameters:
 
 ```text
-limit=<pageSize>
+limit=<PAGE_SIZE>
 offset=(pageNumber - 1) * pageSize
 ```
 
@@ -270,8 +270,8 @@ Workday REST exposes two polling events:
 
 | Event | Query rule | Identity |
 |---|---|---|
-| Worker Hired | WQL `hireDate = <current GMT date>` | `worker.id` |
-| Worker Terminated | WQL `terminationDate = <current GMT date>` | `worker.id` |
+| Worker Hired | WQL `hireDate = <CURRENT_GMT_DATE>` | `worker.id` |
+| Worker Terminated | WQL `terminationDate = <CURRENT_GMT_DATE>` | `worker.id` |
 
 Both poll every five minutes. These are **date-equality** queries, not generic
 LastModifiedDate polling.

@@ -12,8 +12,8 @@ Do not route by display name. Similar display names can represent different
 protocols and runtime contracts, as with Workday SOAP and Workday REST.
 
 This playbook is for a workflow, agent, API workflow, app, or Maestro process that
-consumes connector activities. Its purpose is to turn the failed execution into a
-grounded root cause, the owning persona, and the smallest safe unblock. Connector
+consumes connector activities. It turns the failed execution into a grounded root
+cause, the owning persona, and the smallest safe unblock. Connector
 implementation detail is supporting evidence, not the diagnosis by itself.
 
 ## Context

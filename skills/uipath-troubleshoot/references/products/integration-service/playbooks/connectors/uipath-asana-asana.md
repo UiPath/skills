@@ -165,7 +165,7 @@ List/search responses use the Asana envelope:
 ```text
 body.data                 -> current records
 body.next_page.offset     -> next cursor
-offset=<cursor>           -> next request
+offset=<CURSOR>           -> next request
 ```
 
 The connector uses cursor pagination with a safe provider maximum of 100.
@@ -204,7 +204,7 @@ This is a five-minute poller on:
 
 ```text
 /projects/{projectId}/tasks
-  ?completed_since=<last poll in GMT>
+  ?completed_since=<LAST_POLL_GMT>
   &opt_fields=name,resource_type,resource_subtype,modified_at,created_at,completed
 ```
 
@@ -227,8 +227,8 @@ This is a five-minute poller on:
 ```text
 /status_updates
   ?opt_fields=status_type,modified_at
-  &created_since=<last poll in GMT>
-  &parent=<project GID>
+  &created_since=<LAST_POLL_GMT>
+  &parent=<PROJECT_GID>
 ```
 
 Contract:

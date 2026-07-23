@@ -42,7 +42,7 @@ Context precondition.
 | Symptom | Most likely branch | First decisive check |
 |---|---|---|
 | Connection creation says `No Jira sites found` | OAuth accessible-resources lookup | Confirm the Atlassian account has Jira Cloud site access and granted the expected site |
-| Connection creation says `Jira site <url> not found` | Exact site URL mismatch | Normalize the configured URL and compare it with the URL returned by Atlassian |
+| Connection creation says `Jira site <URL> not found` | Exact site URL mismatch | Normalize the configured URL and compare it with the URL returned by Atlassian |
 | `The token was globally revoked. Please re-authenticate.` | Atlassian grant revoked | Reauthenticate the connection; do not treat this as a Jira project permission issue |
 | `401` or `403` during an activity | Scope, Jira product access, or Jira object permission | Compare provider response, granted scopes, and the connected user's Jira permissions |
 | `No API found at that URL for the given token and credentials` | Udon route/method resolution | Confirm connector path and HTTP method before changing credentials |
@@ -80,8 +80,8 @@ construct the activity package.
 
 | UI option | Required customer input | Runtime base URL | Use and gotchas |
 |---|---|---|---|
-| **Basic authentication** | Jira account email/username, API token, and Jira site URL | `<site.url>/rest/api/2` | The password field is an Atlassian API token, not the Atlassian password. The provisioning hook adds `https://` if absent, but does not remove a trailing slash. Enter `https://tenant.atlassian.net` with no trailing `/`. |
-| **OAuth 2.0** | Jira site URL, consented Atlassian user, and requested scopes | `https://api.atlassian.com/ex/jira/<cloudId>/rest/api/2` | Atlassian must return the configured site from `accessible-resources`. Select the same Jira site during consent that was entered in the connection form. |
+| **Basic authentication** | Jira account email/username, API token, and Jira site URL | `<SITE_URL>/rest/api/2` | The password field is an Atlassian API token, not the Atlassian password. The provisioning hook adds `https://` if absent, but does not remove a trailing slash. Enter `https://tenant.atlassian.net` with no trailing `/`. |
+| **OAuth 2.0** | Jira site URL, consented Atlassian user, and requested scopes | `https://api.atlassian.com/ex/jira/<CLOUD_ID>/rest/api/2` | Atlassian must return the configured site from `accessible-resources`. Select the same Jira site during consent that was entered in the connection form. |
 | **Bring your own OAuth 2.0 app (BYOA)** | Jira site URL, OAuth client ID/secret, consented user, and scopes | Same cloud-ID route as OAuth 2.0 | The Atlassian app must be configured for 3LO and authorized for every requested scope. A successful token does not prove the site or Jira permissions are correct. |
 
 OAuth and BYOA use:
@@ -104,7 +104,7 @@ while the connected Atlassian user lacks Jira product access, Browse Projects,
 issue-security visibility, transition permission, comment permission, or attachment
 permission.
 
-#### Exact connection errors
+### Exact Connection Errors
 
 #### `No Jira sites found`
 
@@ -119,10 +119,10 @@ Unblock:
 4. For BYOA, confirm the OAuth app has the required Jira scopes and the consent was
    granted again after scope changes.
 
-#### `Jira site <siteUrl> not found`
+#### `Jira site <SITE_URL> not found`
 
 The hook compares the returned site URL with
-`https://<configured-subdomain>.atlassian.net` exactly.
+`https://<CONFIGURED_SUBDOMAIN>.atlassian.net` exactly.
 
 Unblock:
 
@@ -375,7 +375,7 @@ enable an unsupported production path.
 | Exact error | Meaning | Fix |
 |---|---|---|
 | `Invalid configuration key event.user.account.timezone in event configuration` | Connection provisioning did not store Jira timezone | Ping/reauthenticate; inspect `/myself` and connection config |
-| `Parameter key <name> is required to create the trigger` | Required Project or Issue Type value was absent | Re-select literal lookup values; capture key/ID rather than display text |
+| `Parameter key <NAME> is required to create the trigger` | Required Project or Issue Type value was absent | Re-select literal lookup values; capture key/ID rather than display text |
 
 #### Trigger does not fire
 

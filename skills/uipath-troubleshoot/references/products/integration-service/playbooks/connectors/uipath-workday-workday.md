@@ -58,7 +58,7 @@ Required inputs are:
 The connector builds:
 
 ```text
-https://<workday.hostname>/ccx/service/<workday.tenant>
+https://<WORKDAY_HOSTNAME>/ccx/service/<WORKDAY_TENANT>
 ```
 
 It also carries a SOAP service version, defaulting to `v39.2`. Record the version

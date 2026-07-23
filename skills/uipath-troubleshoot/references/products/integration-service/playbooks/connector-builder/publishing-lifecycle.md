@@ -6,6 +6,9 @@ confidence: medium
 
 ## Context
 
+Use after the [Connector Builder router](connector-builder.md) identifies a
+publishing or lifecycle fault.
+
 Use when local changes are absent after publishing, publish fails or remains incomplete,
 the connector is not visible to consumers, an equal-version publish is rejected, a development
 to production promotion breaks connector references, or ownership/version identity is unclear.

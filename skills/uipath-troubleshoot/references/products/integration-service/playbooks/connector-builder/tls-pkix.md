@@ -6,6 +6,9 @@ confidence: medium
 
 ## Context
 
+Use after the [Connector Builder router](connector-builder.md) identifies a TLS
+or PKIX fault in a custom connector endpoint.
+
 Signature: connection provisioning or an operation fails with
 `javax.net.ssl.SSLHandshakeException`, `PKIX path building failed`,
 `unable to find valid certification path`, hostname verification, protocol, or cipher errors.

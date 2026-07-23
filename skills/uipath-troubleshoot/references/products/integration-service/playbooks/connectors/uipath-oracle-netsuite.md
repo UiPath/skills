@@ -185,7 +185,7 @@ Correct sequence:
 Exact design-time message on failure:
 
 ```text
-Could not generate custom fields schema. Provider message: <error>.
+Could not generate custom fields schema. Provider message: <ERROR>.
 Please validate Query field input and try again
 ```
 
@@ -278,7 +278,7 @@ NetSuite exposes polling-based Created/Updated events for many record types. The
 common contract is:
 
 ```text
-lastModifiedDate > <last poll date>
+lastModifiedDate > <LAST_POLL_DATE>
 ```
 
 with:

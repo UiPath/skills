@@ -53,7 +53,7 @@ Context precondition.
 The connector constructs API base URL as:
 
 ```text
-https://<site>/api/now
+https://<SITE>/api/now
 ```
 
 Use the full canonical Site URL on the current connection screen, for example
@@ -100,7 +100,7 @@ incident use cases, metadata access plus read/write on `incident` is required.
    and authenticate as the intended integration user.
 
 The connector uses subdomain as OAuth connection identity, and
-`<username>-<subdomain>` for Basic/password-grant identities.
+`<USERNAME>-<SUBDOMAIN>` for Basic/password-grant identities.
 
 ### Metadata and Permissions
 
@@ -206,7 +206,7 @@ inside a JSON payload before calling ServiceNow. This matters:
 Exact runtime errors include:
 
 - `Required file upload items are empty`
-- `The given file exceeds the size limit of <n> MB`
+- `The given file exceeds the size limit of <LIMIT_MB> MB`
 - `Please provide valid request body`
 
 The generic legacy path posts to `ecc_queue`, then searches `sys_attachment` by
@@ -284,8 +284,8 @@ Both use:
 The effective filter is structurally:
 
 ```text
-sys_updated_on > <last poll>
-AND sys_updated_on < <now minus 5 seconds>
+sys_updated_on > <LAST_POLL>
+AND sys_updated_on < <NOW_MINUS_5S>
 ```
 
 The five-second upper bound prevents racing records that are still being committed.

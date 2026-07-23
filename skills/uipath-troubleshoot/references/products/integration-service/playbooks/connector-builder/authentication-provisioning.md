@@ -191,7 +191,7 @@ not as a reason to retry indefinitely.
 Verify the provider wants:
 
 ```text
-Authorization: Basic base64(<username>:<password>)
+Authorization: Basic base64(<USERNAME>:<PASSWORD>)
 ```
 
 “Password” may be an API token and “username” may be an email, account ID, or
@@ -202,9 +202,9 @@ literal provider value. Follow the provider contract; never infer from labels.
 Capture the emitted **shape**, not the secret:
 
 ```text
-Header: X-API-Key: <redacted>
-Header: Authorization: Bearer <redacted>
-Query:  api_key=<redacted>
+Header: X-API-Key: <REDACTED>
+Header: Authorization: Bearer <REDACTED>
+Query:  api_key=<REDACTED>
 ```
 
 Check name, header versus query location, scheme/prefix, whitespace, and whether the

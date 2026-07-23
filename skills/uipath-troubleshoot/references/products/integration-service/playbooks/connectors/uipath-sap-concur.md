@@ -206,7 +206,7 @@ Additional distinctions:
 Report Created and Report Updated use a five-minute poll:
 
 ```text
-/reports?where=LastModifiedDate>='<last poll in GMT>'
+/reports?where=LastModifiedDate>='<LAST_POLL_GMT>'
 ```
 
 Contract:
