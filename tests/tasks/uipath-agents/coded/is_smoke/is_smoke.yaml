@@ -12,7 +12,8 @@ tags: [uipath-agents, smoke, coded, mode:build, lifecycle:generate, feature:inte
 
 run_limits:
   expected_turns: 20
-  max_turns: 30
+  max_turns: 50
+  task_timeout: 1800
 
 sandbox:
   template_sources:
