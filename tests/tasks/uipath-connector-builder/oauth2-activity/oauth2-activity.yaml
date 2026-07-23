@@ -4,7 +4,7 @@ description: >
   with a typed field schema, and validate. Guards the recurring "shipped a
   fieldless activity" gap by asserting the standard-resource carries real fields,
   and that OAuth2 landed in element.json — not just that validate ran.
-tags: [uipath-connector-builder, e2e, 'mode:build']
+tags: [uipath-connector-builder, e2e, 'mode:build', 'lifecycle:generate']
 
 run_limits: {max_turns: 80}
 
@@ -64,6 +64,19 @@ success_criteria:
     command_pattern: 'uip\s+is\s+connectors\s+builder\s+validate'
     min_count: 1
     weight: 1.0
+    pass_threshold: 1.0
+
+  # Outcome check (not just that validate ran): re-run validate at grade time and
+  # require a fully clean report. The prompt demands 0 errors AND 0 warnings, but
+  # the command only exits non-zero on errors (valid = errors.length === 0) — a
+  # warnings-only connector still exits 0 — so we grep the summary for the clean
+  # "0 error(s), 0 warning(s)" line to enforce both.
+  - type: run_command
+    description: "validate re-run reports a clean connector (0 errors and 0 warnings)"
+    command: "uip is connectors builder validate --connector-dir periodic-design-acme-acmewidgets | grep -q '0 error(s), 0 warning(s)'"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: file_contains
