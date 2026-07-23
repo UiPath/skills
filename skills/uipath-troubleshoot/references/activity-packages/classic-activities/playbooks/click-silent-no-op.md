@@ -14,7 +14,7 @@ Distinct from the classic exception paths:
 - **`"Only one of the {0} and {1} options can be set"`** (both `SimulateClick` and `SendWindowMessages` set) → [ui-activity-configuration-error.md](./ui-activity-configuration-error.md).
 - **Nothing threw** → **this playbook**. Route here via `summary.md` (top level) § No-signature routing ("Job/run Successful but the action had no effect").
 
-Classic Click, unlike the modern `NClick`, has **no Verify Execution feature** — there is nothing on the activity to assert the outcome, so a missed classic click is silent *by design*. (For the modern `NClick` silent no-op see the **ui-automation** package.)
+Classic Click, unlike the modern `NClick`, has **no Verify Execution feature** — there is nothing on the activity to assert the outcome, so a missed classic click is silent *by design*. (For the modern `NClick` silent no-op see [ui-automation/click-silent-no-op.md](../../ui-automation/playbooks/click-silent-no-op.md).)
 
 Applies to the classic input activities whose driver posts an event without asserting the outcome: `Click`, `Type Into`, `Send Hotkey`.
 
