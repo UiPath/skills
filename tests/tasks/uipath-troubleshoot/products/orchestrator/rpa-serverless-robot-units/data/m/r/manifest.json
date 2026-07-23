@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the rpa-serverless-robot-units scenario. The agent chains folders list -> jobs list --state Faulted -> jobs get -> jobs logs -> jobs history. Discriminating evidence: the job is RuntimeType Serverless with history Pending->Faulted (never Running) and the explicit message 'Your tenant's assigned Robot Units have been exceeded' — a tenant-scope licensing/quota limit, not an executor/session/credential fault. machines list is empty (serverless jobs do not bind a listed machine template). Specific rules precede generic ones (first-match-wins).",
+  "rules": [
+    { "match": "or folders list", "file": "folders.json" },
+    { "match": "or jobs list --folder-key f3a30003-0000-4000-8000-000000000003 --state Faulted", "file": "jobs-faulted.json" },
+    { "match": "or jobs list --folder-key f3a30003-0000-4000-8000-000000000003", "file": "jobs-faulted.json" },
+    { "match": "or jobs list --state Faulted", "file": "jobs-faulted.json" },
+    { "match": "or jobs list", "file": "jobs-faulted.json" },
+    { "match": "or jobs get c3930001-3333-4333-8333-333333333333", "file": "job-get.json" },
+    { "match": "or jobs logs c3930001-3333-4333-8333-333333333333 --level Error", "file": "job-logs.json" },
+    { "match": "or jobs logs c3930001-3333-4333-8333-333333333333", "file": "job-logs.json" },
+    { "match": "or jobs history c3930001-3333-4333-8333-333333333333", "file": "job-history.json" },
+    { "match": "or machines list --all-fields", "file": "machines.json" },
+    { "match": "or machines list", "file": "machines.json" },
+    { "match": "docsai ask", "passthrough": true }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any unmatched uip command returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-19T10:15:07.980Z",
+      "Message": "Another interactive job is using the machine's console. Only one interactive job can use the console at a time."
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "MachineList",
+  "Data": [
+    {
+      "name": "WS-CLIENT-07",
+      "description": "Windows 11 client workstation, dedicated unattended host.",
+      "type": "Template",
+      "key": "beef1001-2222-4333-8444-555566667701",
+      "id": 1990701
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

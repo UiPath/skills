@@ -1,0 +1,45 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "b2820001-2222-4222-8222-222222222222",
+      "State": "Faulted",
+      "ProcessName": "ClaimsIntake",
+      "ReleaseName": "ClaimsIntake",
+      "StartTime": "2026-07-19T10:15:07.200Z",
+      "EndTime": "2026-07-19T10:15:08.050Z",
+      "CreationTime": "2026-07-19T10:15:06.600Z",
+      "HostMachineName": "HD-BOT-POOL",
+      "Type": "Unattended",
+      "Source": "Queue",
+      "Priority": null
+    },
+    {
+      "Key": "b2820002-3333-4333-8333-333333333333",
+      "State": "Running",
+      "ProcessName": "ClaimsIntake",
+      "ReleaseName": "ClaimsIntake",
+      "StartTime": "2026-07-19T10:15:05.900Z",
+      "EndTime": null,
+      "CreationTime": "2026-07-19T10:15:05.400Z",
+      "HostMachineName": "HD-BOT-POOL",
+      "Type": "Unattended",
+      "Source": "Queue",
+      "Priority": null
+    },
+    {
+      "Key": "b2820003-4444-4444-8444-444444444444",
+      "State": "Successful",
+      "ProcessName": "ClaimsIntake",
+      "ReleaseName": "ClaimsIntake",
+      "StartTime": "2026-07-19T09:55:02.100Z",
+      "EndTime": "2026-07-19T09:58:41.700Z",
+      "CreationTime": "2026-07-19T09:55:01.600Z",
+      "HostMachineName": "HD-BOT-POOL",
+      "Type": "Unattended",
+      "Source": "Queue",
+      "Priority": null
+    }
+  ]
+}

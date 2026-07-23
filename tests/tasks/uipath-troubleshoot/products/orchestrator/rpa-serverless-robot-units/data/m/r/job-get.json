@@ -1,0 +1,29 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "c3930001-3333-4333-8333-333333333333",
+    "StartTime": "2026-07-19T14:22:11.000Z",
+    "EndTime": "2026-07-19T14:22:11.300Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "SpecificPriorityValue": 50,
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "Info": "Automation cannot be started. Your tenant's assigned Robot Units have been exceeded. Allocate more Robot Units to your tenant to continue.",
+    "CreationTime": "2026-07-19T14:22:10.700Z",
+    "ReleaseName": "InvoiceParse",
+    "Type": "Unattended",
+    "OutputArguments": "{}",
+    "HostMachineName": null,
+    "RuntimeType": "Serverless",
+    "RequiresUserInteraction": false,
+    "FolderKey": "f3a30003-0000-4000-8000-000000000003",
+    "ProcessType": "Process",
+    "LastModificationTime": "2026-07-19T14:22:11.300Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "c3930001333343338333333333333333",
+    "Id": 671550303
+  }
+}
