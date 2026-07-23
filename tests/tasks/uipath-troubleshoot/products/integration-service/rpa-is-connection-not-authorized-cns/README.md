@@ -11,6 +11,15 @@ Fixtures are hand-authored from the production error signature (Connection
 Service traces `StatusCode: BadRequest, ErrorCode: "CNS1008"`); shapes mirror
 the sibling `rpa-is-*-dap` scenarios.
 
+## Playbook coverage
+
+This replay covers the connector-key router and the Salesforce-specific
+authentication branch in
+`playbooks/connectors/uipath-salesforce-sfdc.md`. The mocked connection exposes
+the exact `uipath-salesforce-sfdc` key, and the evidence distinguishes a revoked
+or expired Salesforce OAuth grant from app approval, API permission, folder
+access, connection state, and workflow-input causes.
+
 ## How this test reproduces it
 
 | Layer | Simulation |
@@ -22,4 +31,7 @@ the sibling `rpa-is-*-dap` scenarios.
 ## Success criteria
 
 - `skill_triggered` — the uipath-troubleshoot skill actually ran
-- `llm_judge` vs [RESOLUTION.md](./RESOLUTION.md) — root cause is the expired/revoked OAuth grant; fix is re-authenticating the existing connection (not recreating it, not a permissions change)
+- `llm_judge` vs [RESOLUTION.md](./RESOLUTION.md) — the diagnosis quotes the
+  Salesforce cause contract, identifies the expired/revoked OAuth grant, and
+  reauthorizes the existing connection without recreating it or changing
+  unrelated permissions

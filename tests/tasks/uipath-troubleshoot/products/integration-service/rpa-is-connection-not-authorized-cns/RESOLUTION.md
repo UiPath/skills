@@ -1,6 +1,11 @@
 # Final Resolution
 
 ## Root Cause
+
+Confirmed Salesforce playbook cause:
+
+> The Salesforce token was revoked or refresh policy, audience, environment, instance, or Run As identity is wrong.
+
 The `LeadImport` job faults because the **"Salesforce - CRM" Integration
 Service connection (`5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4`) is no longer in an authorized state**: the
 provider rejected the token refresh with `invalid_grant` ("expired
@@ -10,6 +15,13 @@ activity surfaces as `DAP-GE-3000`. The OAuth grant behind the connection
 expired or was revoked (typically a password change, admin session
 revocation, or provider-side token-lifetime policy) — which is why the job
 ran fine for weeks and then failed with no workflow change.
+
+The exact connector key is `uipath-salesforce-sfdc`, so the diagnosis must use
+the Salesforce authentication branch after the common Connection Service
+signal. `CNS1008`, `invalid_grant`, the failed connection state, and prior
+successful runs isolate the revoked/expired grant branch; they do not prove an
+audience, environment, instance, Run As, app-approval, API-permission, or
+workflow-input defect.
 
 ## Evidence the root cause is correct
 - Job log error: *"Connection [5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4] is not in an authorized state.
@@ -26,8 +38,12 @@ ran fine for weeks and then failed with no workflow change.
 1. Have the connection owner (`crm.admin@acmecorp.test`) **re-authenticate**
    the "Salesforce - CRM" connection: Integration Service → Connections →
    reconnect, or `uip is connections edit 5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4`.
-2. Confirm the connection returns to **Enabled** (ping succeeds).
-3. Re-run the `LeadImport` job.
+2. If Salesforce rejects the new authorization, have a Salesforce admin check
+   the connected/external app and refresh-token policy for this principal;
+   do not broaden API/object permissions because the failure occurs during
+   token refresh before an object operation.
+3. Confirm the connection returns to **Enabled** (ping succeeds).
+4. Re-run the `LeadImport` job.
 
 **Explicitly wrong fixes:** recreating/deleting the connection (unnecessary —
 re-auth restores it and preserves bindings), granting folder permissions

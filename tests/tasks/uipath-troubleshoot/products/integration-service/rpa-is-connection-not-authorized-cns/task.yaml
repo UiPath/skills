@@ -1,9 +1,11 @@
 task_id: skill-troubleshoot-rpa-is-connection-not-authorized-cns
 description: >
-  Replay of a recurring production Connection Service failure signature
-  (CNS1008). The agent runs the uipath-troubleshoot skill against a uip CLI
-  mock whose responses reproduce the production evidence trail. Success =
-  the agent reaches the same root cause and fix as RESOLUTION.md.
+  Salesforce-specific faithful replay of a recurring production Connection
+  Service failure signature (CNS1008). The exact connector key is
+  uipath-salesforce-sfdc. The agent runs the uipath-troubleshoot skill against
+  a uip CLI mock whose responses reproduce the production evidence trail and
+  must use the Salesforce OAuth-grant branch. Success = the agent reaches the
+  same root cause and fix as RESOLUTION.md.
 tags: [uipath-troubleshoot, integration-service, rpa, e2e, mode:diagnose]
 
 agent:
