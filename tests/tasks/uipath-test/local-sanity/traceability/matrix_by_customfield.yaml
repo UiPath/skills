@@ -1,0 +1,45 @@
+task_id: skill-test-matrix-by-customfield
+description: >
+  P&E GA-validation scenario 11.2 (traceability).
+  Aggregated HEALTH requirements/cases for a matrix (read). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:diagnose, lifecycle:discover, feature:traceability]
+
+skip: true
+
+run_limits:
+  expected_turns: 16
+  max_turns: 50
+
+initial_prompt: |
+  In Test Manager, I need a traceability matrix mapping requirements to test cases, but only for the HEALTH project cases
+  whose Sprint field is 'Sprint-12'. Write it out as markdown and save the file as traceability.md.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Aggregated HEALTH requirements/cases for a matrix (read)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output\s+json)uip\s+tm\s+(?:requirements?|testcases?)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Traceability matrix written to disk as markdown"
+    command: |
+      ls traceability.md >/dev/null 2>&1
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

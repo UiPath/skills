@@ -1,0 +1,35 @@
+task_id: skill-test-filter-testsets-by-value
+description: >
+  P&E GA-validation scenario 10.6 (custom fields).
+  Filtered HEALTH cases by the Environment custom-field value. Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:discover, feature:customfield-value-list]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  Need to know which cases in the HEALTH project are pinned to the Staging environment. Can you pull them up in Test Manager?
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Filtered HEALTH cases by the Environment custom-field value"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output\s+json)uip\s+tm\s+(?:testcases?\s+list|customfield\s+value\s+list)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

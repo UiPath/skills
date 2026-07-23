@@ -1,0 +1,35 @@
+task_id: skill-test-pass-fail-breakdown
+description: >
+  P&E GA-validation scenario 6.3 (test execution).
+  Read per-case pass/fail breakdown (executions list-filtered/get-stats). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:discover, feature:executions-list]
+
+skip: true
+
+run_limits:
+  expected_turns: 16
+  max_turns: 50
+
+initial_prompt: |
+  Break down the 'Healthcare Compliance Suite - 20260513.2035' run in the HEALTH project in Test Manager for me — how many passed, failed, blocked?
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Read per-case pass/fail breakdown (executions list-filtered/get-stats)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--output\s+json)uip\s+tm\s+executions\s+(?:list-filtered|get-stats|list)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

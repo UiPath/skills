@@ -1,0 +1,27 @@
+task_id: skill-test-valid-token
+description: >
+  P&E GA-validation scenario 14.1 (authentication and permissions).
+  Confirmed login via the CLI (uip login status / auth login). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:login-status]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  Quick check before I jump into Test Manager: am I logged in, and as who?
+
+success_criteria:
+  - type: command_executed
+    description: "Confirmed login via the CLI (uip login status / auth login)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(?:login\s+status|auth\s+login|login)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir
