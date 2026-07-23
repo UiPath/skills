@@ -128,6 +128,10 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    treat an `Orchestrator.StartCaseMgmtProcess*` typed activity shell as a
    substitute for that payload when the user asks to preserve case-management
    contract variants.
+   When asked to preserve a generic unsupported `uipath:Activity`, write the
+   actual capitalized element `<uipath:Activity version="v1">...</uipath:Activity>`.
+   Do not write `<uipath:activity><uipath:type value="uipath:Activity" ... />`;
+   that is a lowercase typed shell, not the preserve-only generic payload.
    When writing public-safe placeholders into XML attribute values, XML-escape
    angle brackets: use `&lt;TENANT_URL&gt;`, `&lt;FOLDER_KEY&gt;`, and
    `&lt;CONNECTION_NAME&gt;` in attributes. Raw `<PLACEHOLDER>` text is only safe

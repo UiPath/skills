@@ -431,7 +431,13 @@ unsupported for generation until current tooling confirms them.
     `Maestro.CaseRulesEvaluator`). Do **not** substitute the capital-`A`
     `<uipath:Activity>` element for a typed shell.
   - The capital-`A` `<uipath:Activity>` element is a **separate** generic
-    preserve-only payload (its own element, not a wrapper for typed shells).
+    preserve-only payload (its own element, not a wrapper for typed shells). If
+    a prompt asks for a generic unsupported `uipath:Activity`, preserve that
+    exact capitalized tag, for example:
+    `<uipath:Activity version="v1"><uipath:type value="uipath:Activity" version="v1" /></uipath:Activity>`.
+    Do not encode it as lowercase `<uipath:activity>` with
+    `<uipath:type value="uipath:Activity" />`; that misses the preserve-only
+    payload shape.
   - `uipath:caseManagement` is a versioned body-string element —
     `<uipath:caseManagement version="v1">…synthetic payload…</uipath:caseManagement>`.
     If a prompt asks for case-management contract variants, preserve-only
