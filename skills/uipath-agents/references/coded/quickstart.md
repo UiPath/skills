@@ -319,7 +319,7 @@ If the task needs LLM reasoning, infer the framework from the user's prompt when
 
 1. **LangGraph** (recommended — best integrated with the UiPath ecosystem) — StateGraph with conditional routing, tool use, interrupts. Best for complex LLM agents.
 2. **LlamaIndex** — Workflow with events and RAG support. Most complete LangGraph alternative.
-3. **OpenAI Agents** — Lightweight agent with tools and handoffs. Best for simple LLM agents; lacks HITL, process invocation, and state persistence.
+3. **OpenAI Agents** — Lightweight agent with tools and handoffs. Best for simple LLM agents; lacks HITL, process invocation, and state persistence. **INPUT CONSTRAINT: always requires a `messages` field — there is NO way to remove it.** If the user needs a strict named-field input schema with no `messages` (e.g. a single `address` field), OpenAI Agents cannot express that contract → redirect to LangGraph.
 
 **Inference hints:** mentions of tools/tool calling, multi-step, or orchestration → LangGraph. Simple handoffs or lightweight LLM → OpenAI Agents. No LLM needed → not an agent — use [`uipath-functions`](/uipath:uipath-functions). Summarize / research / synthesize over PDF or TXT (incl. bucket files, attachments) → not a framework choice — see [capabilities/deeprag/planning.md](capabilities/deeprag/planning.md). Per-row CSV extraction → see [capabilities/batch-transform/planning.md](capabilities/batch-transform/planning.md). When in doubt, ask.
 
