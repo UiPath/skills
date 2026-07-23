@@ -168,10 +168,10 @@ success_criteria:
     path: "InvoiceReviewCase/InvoiceReviewCase/caseplan.json"
     assertions:
       - operator: regex
-        expression: "nodes[].data.tasks[][].type"
+        expression: "join(',', nodes[].data.tasks[][].type)"
         expected: "\\baction\\b"
       - operator: regex
-        expression: "nodes[].data.tasks[][].type"
+        expression: "join(',', nodes[].data.tasks[][].type)"
         expected: "\\bprocess\\b"
     weight: 1.5
     pass_threshold: 1.0
