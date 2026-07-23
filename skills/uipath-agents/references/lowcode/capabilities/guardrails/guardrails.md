@@ -246,6 +246,11 @@ Prefer `type: 3` (UserEmail) when adding manually — it requires no GUID or ass
 
 #### Adding an escalation guardrail — step-by-step
 
+**Scaffolding gate (MANDATORY):** when the request includes creating a solution
+or agent, run both `uip solution init` and `uip agent init` before app discovery.
+An incompatible or missing escalation app rejects only the guardrail; it does
+not cancel the requested local solution and agent scaffolding.
+
 **Step 0 — Discover available validators (MANDATORY — do not skip even when validator type is already known):**
 
 ```bash
