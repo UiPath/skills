@@ -295,6 +295,13 @@ app before deciding whether it is compatible. The `resources list` row is not
 an action schema and cannot replace this command. Do not write or reject the
 guardrail until the returned action schema has been checked.
 
+If Step 1 returns no exact-name row and therefore no key, the command attempt
+is still mandatory: execute
+`uip solution resources get "<requested app name>" --output json` exactly once
+and treat its failure as `GET_ERROR`. A missing catalog row is not permission to
+skip `resources get`; this terminal lookup is required before rejecting the
+requested escalation app.
+
 A guardrail escalation app must expose a specific action-schema contract. If verification fails, stop and report to the user: `<APP_NAME> does not have the required action schema configuration for tool guardrails.` (replace `<APP_NAME>` with the app's `Name` from Step 1). Do NOT write the guardrail.
 
 `uip solution resources get` returns the app's action schema in one CLI-native call — no auth handling, no Apps API endpoints. Pipe its output into a verifier that confirms every required argument name. The CLI handles authentication, so Claude never touches the auth file or the token.
