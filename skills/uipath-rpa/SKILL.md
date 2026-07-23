@@ -54,6 +54,16 @@ Before creating or modifying anything, determine which project to work with. See
 
 **Quick check:** Find `project.json` to establish `{projectRoot}`. That's it — no Studio Desktop check needed for the standard loop. `uip rpa` auto-launches a headless Studio (UiPath.Studio.Helm NuGet) on first call. Studio Desktop is required only for `files diff`, `focus-activity`, and regenerating coded UI automation's `ObjectRepository.cs` (the `Descriptors.*` class — see Rule 7 and [environment-setup.md](references/environment-setup.md)).
 
+## Authoring Surface Gate
+
+Resolve whether the RPA project must remain **editable in Studio Web** before choosing coded vs. XAML. Merely carrying or deploying an RPA project inside a Studio Web Solution is not the same requirement; apply this gate when the user expects the project's workflow and test files to open and remain editable in the browser.
+
+- **Studio Web editability required** → for a new project, use **Portable + XAML only**. Author workflows, helper logic, and test cases as `.xaml` with supported activities and expressions. Do not add coded workflows, coded test cases, or Coded Source Files (`.cs`).
+- **Studio Web editability + explicit coded request** → surface the incompatible constraints and ask the user to choose: keep Studio Web editability and use XAML, or use coded artifacts and author them in Studio Desktop. Do not silently choose one.
+- **Existing Windows project or existing coded artifacts** → do not claim the project will remain browser-editable, and do not change `targetFramework` in place. Surface the conflict and offer a separate/new Portable XAML project if browser editing is required.
+
+This gate overrides the mode-selection heuristics below, including the usual coded recommendation for unit-testable business logic. See [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) for the full decision flow.
+
 ## Project Type Detection
 
 After establishing `PROJECT_DIR`, **first check `project.json` for `targetFramework`**:
@@ -83,8 +93,8 @@ For modern projects, determine whether this is a **coded** or **XAML** project:
 | Complex data transforms, HTTP, parsing | **Coded** | C# is more natural than nested XAML activities |
 | Tempted to call a PowerShell script | **Coded** | Prefer a coded workflow. If PS is genuinely needed (admin cmdlets, existing `.ps1`), use the `InvokePowerShell<T>` activity — never `Invoke Process` + `powershell.exe`. See [powershell-interop-guide.md](references/powershell-interop-guide.md) |
 | Custom data models / DTOs | **Coded Source File** | XAML cannot define types — plain `.cs`, no `CodedWorkflow` base |
-| Unit tests with assertions | **Coded Test Case** | `[TestCase]` with Arrange/Act/Assert |
-| User explicitly requests coded/XAML | **User's choice** | Never second-guess explicit preference |
+| Unit tests with assertions | **Coded Test Case** for Studio Desktop; **XAML Test Case** when Studio Web editability is required | `[TestCase]` with Arrange/Act/Assert in coded mode; Testing activities in XAML |
+| User explicitly requests coded/XAML | **User's choice when compatible with the authoring surface** | Surface a conflict instead of creating artifacts the requested editor cannot edit |
 
 ### UI Automation Boundaries
 
@@ -187,7 +197,9 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 
 ### Destination Preflight (Both Modes)
 
-**Studio Web destination → Solution-wrapped deliverable, not a bare project.** Studio Web ingests Solutions only; a bare project folder is invisible in both SW workspace tabs. Treat these phrases as SW signals in the request: "Studio Web", "SW", "upload to web", "browser editor", "cloud workspace edit". On match, build the RPA project normally per the rest of this skill, then hand off to `uipath-solution` to wrap and ship it: `uip solution init <NAME>` → `uip solution projects import "<PROJECT_DIR>" --solutionFile <SOLUTION>.uipx` → `uip solution upload "<SOLUTION_DIR>"`. The final deliverable is the Solution, not the bare project folder. Local execution (`uip rpa run`) and the Orchestrator package flow (`uip rpa pack` → `uip or packages upload` — there is no `uip rpa publish`) are fine with a bare project — only an SW destination changes the deliverable shape.
+**Studio Web destination → Solution-wrapped deliverable, not a bare project.** Studio Web ingests Solutions only; a bare project folder is invisible in both SW workspace tabs. Treat these phrases as SW destination signals in the request: "Studio Web", "SW", "upload to web", "browser editor", "cloud workspace edit". On match, build the RPA project normally per the rest of this skill, then hand off to `uipath-solution` to wrap and ship it: `uip solution init <NAME>` → `uip solution projects import "<PROJECT_DIR>" --solutionFile <SOLUTION>.uipx` → `uip solution upload "<SOLUTION_DIR>"`. The final deliverable is the Solution, not the bare project folder.
+
+Solution delivery and browser editability are separate constraints. If the user requires browser editing, the project must already satisfy the Authoring Surface Gate before it is wrapped. If the project only needs to be carried or deployed inside a Studio Web Solution, do not rewrite its authoring mode solely because of the Solution destination. Local execution (`uip rpa run`) and the Orchestrator package flow (`uip rpa pack` → `uip or packages upload` — there is no `uip rpa publish`) are fine with a bare project — only an SW destination changes the deliverable shape.
 
 ### Execution Discipline (Both Modes)
 
