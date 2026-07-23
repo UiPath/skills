@@ -44,6 +44,22 @@ The transform runtime turns the path string into a lookup such as `vars.orders.o
 
 For static data, store the array in a workflow variable `defaultValue` or emit it from an upstream static-data/script node, then point `collection` at that variable or node output. Filtering, mapping, and grouping still belong in transform nodes.
 
+## Output Shape — a transform's output is a bare array
+
+`$vars.<transformNode>.output` **is the transformed collection itself — a bare array**. Not wrapped: no `.items`, no `.body`, no `.response`.
+
+- filter → array of surviving elements
+- map → array of mapped elements
+- group-by → array of group objects (`{<groupByField>, <alias>, …}`)
+
+**Chaining transforms (filter → group-by, etc.):** point the next `collection` at the bare output — `$vars.filterActive.output`, **NOT** `$vars.filterActive.output.items`. The `.items` / `.body.items` in the `collection` examples below is the shape of an **HTTP body** or a **variable**, never a transform's own output. `.output.items` on a transform resolves to `undefined` → empty collection → empty output, silently (no fault).
+
+```json
+"collection": "$vars.filterHighViewDays.output"
+```
+
+Read a field of an element (in a Script node) as `$vars.groupByNode.output[0].totalViews`.
+
 ---
 
 ## Generic Transform (`core.action.transform`)
@@ -272,3 +288,4 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 | Collection is null/empty | `collection` was wrapped in `=js:` or set to an inline array literal instead of a plain variable path | Use a path such as `"$vars.loadCatalog.output.catalog"` or `"$vars.catalog"`; keep static arrays in a variable default or upstream node |
 | Map output missing fields | `keepOriginalFields: false` and field not in mappings | Add the field to mappings or set `keepOriginalFields: true` |
 | GroupBy produces empty groups | No items match the group field | Check `groupByField` matches actual field names in the data |
+| Chained transform gets empty input though upstream produced rows | Downstream `collection` used `$vars.<transform>.output.items` — a transform's output is a bare array, so `.items` is `undefined` | Use `$vars.<transform>.output` (no `.items`) — see [Output Shape](#output-shape--a-transforms-output-is-a-bare-array) |
