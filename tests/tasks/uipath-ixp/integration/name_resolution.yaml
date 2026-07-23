@@ -33,10 +33,9 @@ initial_prompt: |
   Then:
   - Delete the file `york_solutions_invoice.png`, then save the remaining document
     list to `documents_after.json`.
-  - Starting from the project's current title, resolve its Name with
-    `projects list`, then rename it to the same title with `-renamed` appended
-    (i.e. `codereval-integ-resolve-<random-suffix>-renamed`) and save the
-    project's details to `project_after.json`.
+  - Rename that project to the same title with `-renamed` appended (i.e.
+    `codereval-integ-resolve-<random-suffix>-renamed`), then save the project's details to
+    `project_after.json`.
 
   Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
