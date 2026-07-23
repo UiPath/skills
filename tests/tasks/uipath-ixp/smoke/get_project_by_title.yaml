@@ -1,0 +1,54 @@
+task_id: skill-ixp-get-project-by-title-smoke
+description: >
+  Smoke: agent receives only a project Title, discovers its CLI Name, and gets
+  that project without passing the human-facing title to a Name argument.
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_ambiguous}
+
+initial_prompt: |
+  Get the details of the IXP project titled "subscriptions" and save them to
+  `project.json`.
+
+  Do not prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Listed projects to find the requested title"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^ixp\s+projects\s+list(?:\s|$)[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Got the project using the Name resolved from its title"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^ixp\s+projects\s+get\s+["']?subscriptions-4c1d9e2a-ixp["']?(?:\s|$)[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Did NOT pass the project Title to the Name argument"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^ixp\s+projects\s+get\s+["']?subscriptions["']?(?:\s|$)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Saved the resolved project's details"
+    path: "project.json"
+    includes: ["subscriptions-4c1d9e2a-ixp", "subscriptions"]
+    weight: 2.0
+    pass_threshold: 1.0

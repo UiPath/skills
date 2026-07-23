@@ -1,10 +1,8 @@
 task_id: skill-ixp-integration-name-resolution
 description: >
-  Integration: name/title resolution on a live tenant. The agent must resolve
-  user-facing references to the ids the CLI needs — a document by FILENAME →
-  DocumentId via `documents list`, and a project by its TITLE → Name via
-  `projects list` — rather than passing the human label straight through. The
-  resolution step is the integration part; smokes pass the id in the prompt.
+  Integration: document filename resolution and project rename on a live
+  tenant. The agent must resolve a document FILENAME to its DocumentId via
+  `documents list`, then rename the project using the Name returned by create.
 tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
@@ -23,32 +21,20 @@ sandbox:
     - type: template_dir
       path: ../_shared/fixtures
 
-pre_run:
-  - command: |
-      set -eu
-      title="codereval-integ-resolve-$(date +%s%N)"
-      mkdir -p invoice_docs
-      cp fixtures/*.png invoice_docs/
-      created="$(uip ixp projects create "$title" invoice_docs --skip-taxonomy --output json)"
-      name="$(printf '%s' "$created" | jq -r '(.Data // .data // .) | (.ProjectName // .project_name // empty)')"
-      test -n "$name"
-      uip ixp projects import-taxonomy "$name" fixtures/taxonomy.json --output json
-      jq -n --arg project_title "$title" '{project_title: $project_title}' > seed.json
-      : > mocks/calls.log
-    timeout: 600
-
 initial_prompt: |
   Use the tenant I'm already signed into (check I'm logged in; don't
-  re-authenticate). An invoice project with the taxonomy and three documents
-  from `./fixtures/` has already been created for this run. Its current
-  user-facing title is recorded in `seed.json`. Work only on that project;
-  other runs share this tenant.
+  re-authenticate). Set up an invoice project from the files in `./fixtures/` —
+  import the taxonomy and upload the three invoices — and give it a unique title
+  beginning with `codereval-integ-resolve-` so concurrent runs don't collide.
 
   Then:
   - Delete the file `york_solutions_invoice.png`, then save the remaining document
     list to `documents_after.json`.
-  - Append `-renamed` to the project's current title, then save the project's
-    details to `project_after.json`.
+  - Append `-renamed` to the project's title, then save the project's details to
+    `project_after.json`.
+
+  Right after the project is created, write `report.json` for cleanup:
+  {"project_name": "<the ProjectName from the create response>"}.
 
 success_criteria:
   - type: file_matches_regex
@@ -68,15 +54,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "Listed projects to resolve Title → Name"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+list)[^\r\n]*$
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_matches_regex
-    description: "Renamed the project via update-title"
+    description: "Renamed the project via update-title using its Name"
     path: "mocks/calls.log"
     pattern: >-
       (?m)^(?:uip\s+ixp\s+projects\s+update-title\s+\S+-ixp\s+\S+-renamed(?:\s|$))[^\r\n]*$
@@ -92,7 +70,12 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # --- Outcome verification: resolution actually deleted the named doc + renamed the project ---
+  - type: file_exists
+    description: "report.json written for post-run cleanup"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: file_contains
     description: "york is gone from the list; the other two documents remain"
     path: "documents_after.json"
@@ -108,16 +91,11 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-# Best-effort cleanup of the project created by pre_run.
+# Safety net: delete the project even if the agent's in-band cleanup never ran.
 post_run:
   - command: |
       set +e
-      title="$(jq -r '.project_title // empty' seed.json 2>/dev/null)"
-      test -n "$title" || exit 0
-      uip ixp projects list --output json |
-        jq -r --arg title "$title" '(.Data // .data // .) | (.Projects // .projects // [])[] | select((.Title // .title) == $title or (.Title // .title) == ($title + "-renamed")) | (.Name // .name)' |
-        while IFS= read -r name; do
-          test -z "$name" || uip ixp projects delete "$name" -y --output json >/dev/null 2>&1
-        done
+      name="$(jq -r '.project_name // empty' report.json 2>/dev/null)"
+      test -z "$name" || uip ixp projects delete "$name" -y --output json >/dev/null 2>&1
       exit 0
     timeout: 60
