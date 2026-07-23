@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-16T14:41:08.900Z",
+      "Message": "Invoke ValidatePayment: The values provided for the root activity's arguments did not satisfy the root activity's requirements: The following keys from the input dictionary do not map to arguments and must be removed: in_Amount.  Please note that argument names are case sensitive.\r\nParameter name: rootArgumentValues\r\nin Main.xaml\r\n    at InvokeWorkflowFile \"Invoke ValidatePayment\"\r\n    at Sequence \"Main\"\r\n    at DynamicActivity \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.ArgumentException\r\n   at System.Activities.WorkflowApplication.EnsureInitialized()"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-07-16T14:41:08.400Z",
+      "Message": "PaymentValidation execution started"
+    }
+  ]
+}
