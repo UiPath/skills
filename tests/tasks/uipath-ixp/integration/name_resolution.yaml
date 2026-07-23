@@ -16,7 +16,6 @@ sandbox:
   # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
   # ixp-tool, not the BYOS host's stale pre-migration plugin.
   driver: docker
-  python: {}
   mock_path_dirs: [mocks]
   template_sources:
     - type: template_dir
@@ -25,7 +24,17 @@ sandbox:
       path: ../_shared/fixtures
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/integration/name_resolution_fixture.py seed"
+  - command: |
+      set -eu
+      title="codereval-integ-resolve-$(date +%s%N)"
+      mkdir -p invoice_docs
+      cp fixtures/*.png invoice_docs/
+      created="$(uip ixp projects create "$title" invoice_docs --skip-taxonomy --output json)"
+      name="$(printf '%s' "$created" | jq -r '(.Data // .data // .) | (.ProjectName // .project_name // empty)')"
+      test -n "$name"
+      uip ixp projects import-taxonomy "$name" fixtures/taxonomy.json --output json
+      jq -n --arg project_title "$title" '{project_title: $project_title}' > seed.json
+      : > mocks/calls.log
     timeout: 600
 
 initial_prompt: |
@@ -101,5 +110,14 @@ success_criteria:
 
 # Best-effort cleanup of the project created by pre_run.
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/integration/name_resolution_fixture.py cleanup"
+  - command: |
+      set +e
+      title="$(jq -r '.project_title // empty' seed.json 2>/dev/null)"
+      test -n "$title" || exit 0
+      uip ixp projects list --output json |
+        jq -r --arg title "$title" '(.Data // .data // .) | (.Projects // .projects // [])[] | select((.Title // .title) == $title or (.Title // .title) == ($title + "-renamed")) | (.Name // .name)' |
+        while IFS= read -r name; do
+          test -z "$name" || uip ixp projects delete "$name" -y --output json >/dev/null 2>&1
+        done
+      exit 0
     timeout: 60
