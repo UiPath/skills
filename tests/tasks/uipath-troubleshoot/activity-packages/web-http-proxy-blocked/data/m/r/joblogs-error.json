@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-21T02:15:09.410Z",
+      "Message": "HTTP Request: The remote server returned an error: (407) Proxy Authentication Required.\r\nin Wf_PostPayment.xaml\r\n    at HttpClient \"HTTP Request\"\r\n    at Sequence \"Post Payment\"\r\n    at Wf_PostPayment \"Wf_PostPayment\"\r\n\r\n--- .NET stack trace ---\r\nSystem.Net.WebException\r\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}

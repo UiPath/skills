@@ -1,0 +1,40 @@
+{
+  "version": 2,
+  "_doc": "Mock dispatcher fixture set for this scenario; not investigation evidence. Provides a folder list and empty job lists (this process has no Orchestrator runs).",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "folders.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b\" --state Faulted --output json",
+      "file": "jobs-empty.json"
+    },
+    {
+      "match": "or jobs list --folder-key e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b --state Faulted --output json",
+      "file": "jobs-empty.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b\" --output json",
+      "file": "jobs-empty.json"
+    },
+    {
+      "match": "or jobs list --folder-key e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b --output json",
+      "file": "jobs-empty.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "jobs-empty.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands (no jobs exist for this process)."
+  }
+}
