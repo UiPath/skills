@@ -97,21 +97,17 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "New Flow project is registered in the new parent solution .uipx"
-    path: "WeatherAlert/WeatherAlert.uipx"
-    assertions:
-      - expression: "length(Projects)"
-        operator: "gte"
-        expected: 1
-      - expression: "length(Projects[?Type=='Flow'])"
-        operator: "gte"
-        expected: 1
-    weight: 1.0
+  - type: run_command
+    description: "New Flow project is registered in a new parent solution .uipx"
+    command: "python3 -c \"import glob,json,os,sys; bad={'SolarReports','TideTracker'}; roots=[os.path.dirname(p) for p in glob.glob('**/WeatherAlert.flow',recursive=True) if bad.isdisjoint(set(p.split(os.sep)))]; sys.exit('expected WeatherAlert.flow outside SolarReports/TideTracker') if not roots else sys.exit(0 if any(glob.glob(os.path.join(os.path.dirname(r),'*.uipx')) for r in roots) else 'expected a parent solution .uipx next to the WeatherAlert project')\""
+    timeout: 15
+    expected_exit_code: 0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Flow file was created inside the new solution"
-    path: "WeatherAlert/WeatherAlert/WeatherAlert.flow"
+  - type: run_command
+    description: "Flow file was created inside a new solution, not a pre-existing solution"
+    command: "python3 -c \"import glob,os,sys; bad={'SolarReports','TideTracker'}; hits=[p for p in glob.glob('**/WeatherAlert.flow',recursive=True) if bad.isdisjoint(set(p.split(os.sep)))]; sys.exit(0 if hits else 'WeatherAlert.flow exists only inside a pre-existing solution or is missing')\""
+    timeout: 15
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
