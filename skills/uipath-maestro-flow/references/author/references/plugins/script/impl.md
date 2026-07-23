@@ -39,6 +39,8 @@ See [Action Node Structure — Adding and editing procedures](../../../../shared
 5. **No `console.log`** — `console` is not available. Use `return { debug: value }` to inspect values.
 6. **No external calls** — use the HTTP node or a connector node for API calls.
 7. **30-second timeout** — long-running computations will be killed.
+8. **Be defensive about runtime payload shapes.** Connector, HTTP, transform, and loop outputs often differ by wrapper (`body`, `items`, `records`, `Records`, `value`, `data`) and some JSON bodies arrive as strings. Normalize before indexing, and guard missing optional paths instead of throwing unless the task explicitly wants a failure path. A script thrown error faults `flow debug`; a returned diagnostic object can still be routed or surfaced by an End node.
+9. **Loop current item is contextual.** Inside a `core.logic.loop`, read the current item from the loop node (`$vars.<loopId>.currentItem`) only in nodes that are wired inside that loop's body. If the loop body contains an HTTP / connector node, use `=js:` dynamic values in that node's `inputs.detail.*Parameters`; brace templates like `{$vars.loop.currentItem}` are not evaluated inside Integration Service activity inputs.
 
 ## Common patterns
 
@@ -68,6 +70,17 @@ if (error) {
   return { hasError: true, message: error.message };
 }
 return { hasError: false, data: $vars.httpCall.output.body };
+```
+
+### Normalize a connector / HTTP payload
+
+```javascript
+const raw = $vars.fetchRecords.output;
+const body = typeof raw?.body === "string" ? JSON.parse(raw.body) : (raw?.body ?? raw);
+const rows = Array.isArray(body)
+  ? body
+  : (body?.items ?? body?.records ?? body?.Records ?? body?.value ?? body?.data ?? []);
+return { rows, count: rows.length };
 ```
 
 ### Reading a file-typed variable
