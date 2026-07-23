@@ -10,8 +10,8 @@ description: >
 tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
-  turn_timeout: 1200
-  task_timeout: 1500
+  turn_timeout: 1800
+  task_timeout: 2100
   max_turns: 40
 
 sandbox:

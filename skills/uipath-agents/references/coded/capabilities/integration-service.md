@@ -19,6 +19,15 @@ Integration Service discovery — connector → connection → ping → describe
 
 Discovery is auth-gated (`uip login` + connection selection precede `describe`). **Coded consequence:** you can't author `body_fields` / `ActivityMetadata` without `describe` output, so for IS-using agents do auth + discovery *before* Build, not after.
 
+**Read `agent-workflow.md` FIRST — before any code or `bindings.json` edit, including when a fixture file provides the `describe` output.** Resolve the path and read it now:
+
+```bash
+# Step 0: locate agent-workflow.md and read it
+echo "$SKILLS_REPO_PATH/skills/uipath-platform/references/integration-service/agent-workflow.md"
+```
+
+Pass the echoed path to the Read tool. `$SKILLS_REPO_PATH` is set in the environment; if empty, run `find / -path '*/uipath-platform/references/integration-service/agent-workflow.md' -maxdepth 15 2>/dev/null | head -1`.
+
 Read these from the `uipath-platform` skill (`references/integration-service/`) — required even for tenant-free / shape-only authoring (you read them for the workflow, field-resolution, and error-recovery contract regardless of tenant; only the live `describe` step and `uip login` defer when no tenant is available).
 
 **`agent-workflow.md` is ALWAYS mandatory. Reading it does not excuse skipping `reference-resolution.md`** when the target activity carries reference or required fields — that second read is the contract for curated create/update calls, and skipping it is the #1 cause of rejections:
