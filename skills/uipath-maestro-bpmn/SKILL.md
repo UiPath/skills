@@ -81,16 +81,20 @@ For registry-evidence-only tasks, be command-first and time-boxed:
   message discovery, use `uip maestro bpmn registry list --limit -1 --output
   json`, `uip maestro bpmn registry get Orchestrator.StartJob --output json`,
   and `uip maestro bpmn registry get Maestro.ReceiveMessageEvent --output json`.
-- If `uip` is unavailable in a temp/smoke sandbox, do not search the repo for a
-  replacement CLI or inspect test fixtures. Still issue the required `list` and
-  `get` command forms once each with output redirected to their evidence files
-  (allowing failure with `|| true`), so the transcript shows the discovery loop:
+- If `uip` is unavailable in a temp/smoke sandbox, or if it writes a valid JSON
+  failure object such as `"Result": "Failure"` instead of registry content, do
+  not search the repo for a replacement CLI or inspect test fixtures. Still
+  issue the required `list` and `get` command forms once each with output
+  redirected to their evidence files (allowing failure with `|| true`), so the
+  transcript shows the discovery loop:
   `uip maestro bpmn registry list --limit -1 --output json` and
   `uip maestro bpmn registry get <type> --output json`. Record the failed CLI
-  attempts in `registry-evidence/cli-error.txt`, then overwrite the expected
-  `registry-evidence/*.json` files with valid JSON evidence from
+  attempts in `registry-evidence/cli-error.txt`, then overwrite any failure JSON
+  in the expected `registry-evidence/*.json` files with valid JSON evidence from
   `skills/uipath-maestro-bpmn/validator/bpmn-spec.json` containing the same
-  extension types and stop.
+  extension types and stop. The final evidence files must literally contain the
+  discovered type names, for example `Orchestrator.StartJob` and
+  `Maestro.ReceiveMessageEvent`.
 
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
@@ -118,11 +122,31 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    `<ProjectName>/project.uiproj`; do not create `*Solution/`, package files, or
    `.uipx` artifacts unless the user explicitly asks to package or operate the
    project.
+   When adding draft or preserve-only case-management variants, include a real
+   lowercase `<uipath:caseManagement version="v1">...</uipath:caseManagement>`
+   payload with synthetic content as a separate preserve-only extension. Do not
+   treat an `Orchestrator.StartCaseMgmtProcess*` typed activity shell as a
+   substitute for that payload when the user asks to preserve case-management
+   contract variants.
+   When asked to preserve a generic unsupported `uipath:Activity`, write the
+   actual capitalized element `<uipath:Activity version="v1">...</uipath:Activity>`.
+   Do not write `<uipath:activity><uipath:type value="uipath:Activity" ... />`;
+   that is a lowercase typed shell, not the preserve-only generic payload.
+   When writing public-safe placeholders into XML attribute values, XML-escape
+   angle brackets: use `&lt;TENANT_URL&gt;`, `&lt;FOLDER_KEY&gt;`, and
+   `&lt;CONNECTION_NAME&gt;` in attributes. Raw `<PLACEHOLDER>` text is only safe
+   in element text or CDATA; unescaped angle brackets inside attributes make the
+   BPMN not well-formed.
    When routing on an Actions.HITL user task's outcome, the sequence-flow
    conditions from the exclusive gateway must reference the exact variable bound
    by the HITL template's `<uipath:output ... var="...">` (for example
    `=vars.Var_HitlResult == "approve"`), not only a copied or derived script
    variable.
+   For Integration Service draft notes, name every CLI-owned blocker literally,
+   including the exact phrase `connection binding`, plus dynamic schemas,
+   generated outputs, `bindings_v2.json`, and package metadata. Avoid softer
+   wording such as "connection and process binding" because it hides the concrete
+   artifact the CLI must supply.
    If a local-only prompt asks for `operate.json`, `entry-points.json`,
    `bindings_v2.json`, or `package-descriptor.json`, follow the minimal local
    metadata shape in
