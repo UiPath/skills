@@ -10,7 +10,12 @@ Add guardrails to a Python coded agent (LangChain/LangGraph) in two styles: **mi
 
 ## Step 0 — Fetch Official Documentation
 
-**Do this FIRST — before reading any files, running any commands, or taking any other action.** Call `WebFetch` twice to retrieve current guardrail documentation:
+**Do this FIRST — before reading any files, running any commands, or taking any other action.** Fetch guardrail documentation for both URLs below using `curl` as the primary method (bounded 30 s per URL — do NOT use `WebFetch` as the primary method; it can hang for minutes in restricted environments):
+
+```bash
+curl --max-time 30 -fsSL https://uipath.github.io/uipath-python/langchain/guardrails/
+curl --max-time 30 -fsSL https://uipath.github.io/uipath-python/core/guardrails/
+```
 
 1. **`https://uipath.github.io/uipath-python/langchain/guardrails/`**
    Extract: middleware classes, their supported scopes, stage support, extra parameters, and correct import paths.
@@ -18,7 +23,9 @@ Add guardrails to a Python coded agent (LangChain/LangGraph) in two styles: **mi
 2. **`https://uipath.github.io/uipath-python/core/guardrails/`**
    Extract: built-in validator names, entity types per validator, available actions, execution stage constraints.
 
-**If either URL is inaccessible** (network unavailable, HTTP error, or timeout): note that SDK docs are unavailable, skip to the CLI-based tenant check below, and use the catalog CLI output + installed package introspection as fallback. Do not retry more than twice. Proceed — the CLI steps below cover guardrail availability and model discovery.
+**If `curl` fails (non-zero exit or empty output)**, fall back to `WebFetch` on the same two URLs.
+
+**If both curl and WebFetch fail** (network unavailable, HTTP error, or timeout): note that SDK docs are unavailable, skip to the CLI-based tenant check below, and use the catalog CLI output + installed package introspection as fallback. Do not retry more than twice. Proceed — the CLI steps below cover guardrail availability and model discovery.
 
 **Use the fetched content as the sole source of truth.** Never rely on memory for:
 - Which middleware classes exist
