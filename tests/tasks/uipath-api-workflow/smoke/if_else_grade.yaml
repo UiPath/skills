@@ -50,7 +50,7 @@ success_criteria:
 
   - type: run_command
     description: "Uses If wrapper pattern with #Then and #Else branches (rule 7)"
-    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "If_1#Wrapper" "$WF" && grep -q "If_1#Then" "$WF" && grep -q "If_1#Else" "$WF"'
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -qE "If_[A-Za-z0-9_]+#Wrapper" "$WF" && grep -qE "If_[A-Za-z0-9_]+#Then" "$WF" && grep -qE "If_[A-Za-z0-9_]+#Else" "$WF"'
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
