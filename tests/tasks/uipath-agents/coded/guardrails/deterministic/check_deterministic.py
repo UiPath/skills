@@ -1,79 +1,152 @@
 #!/usr/bin/env python3
-"""Check that a deterministic guardrail blocking 'secret' was correctly added to graph.py.
+"""Check that a callable deterministic guardrail blocks secret customer IDs."""
 
-Validates (middleware or decorator style both accepted):
-- Either UiPathDeterministicGuardrailMiddleware or CustomValidator is used
-- A lambda/rule that checks for the word "secret" in the input is present
-- BlockAction is used
-- The guardrail targets the lookup_account_info tool
-"""
+from __future__ import annotations
 
-import re
+import ast
 import sys
 from pathlib import Path
 
 GRAPH = Path("graph.py")
+TARGET_TOOL = "lookup_account_info"
 
 
-def read() -> str:
-    if not GRAPH.is_file():
-        sys.exit(f"FAIL: {GRAPH} not found in {Path.cwd()}")
-    return GRAPH.read_text()
-
-
-def check(condition: bool, msg: str) -> None:
+def check(condition: bool, message: str) -> None:
     if not condition:
-        sys.exit(f"FAIL: {msg}")
+        sys.exit(f"FAIL: {message}")
+
+
+def call_name(node: ast.AST | None) -> str | None:
+    if isinstance(node, ast.Call):
+        node = node.func
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        return node.attr
+    return None
+
+
+def keyword(call: ast.Call, name: str) -> ast.expr | None:
+    return next((item.value for item in call.keywords if item.arg == name), None)
+
+
+def mentions_secret(node: ast.AST) -> bool:
+    return any(
+        isinstance(item, ast.Constant)
+        and isinstance(item.value, str)
+        and "secret" in item.value.lower()
+        for item in ast.walk(node)
+    )
+
+
+def is_callable_rule(node: ast.expr, functions: dict[str, ast.AST]) -> bool:
+    if isinstance(node, ast.Lambda):
+        return mentions_secret(node)
+    if isinstance(node, ast.Name) and node.id in functions:
+        return mentions_secret(functions[node.id])
+    return False
+
+
+def list_contains_name(node: ast.expr | None, expected: str) -> bool:
+    if not isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+        return False
+    return any(call_name(item) == expected for item in node.elts)
+
+
+def create_agent_middleware_calls(tree: ast.AST) -> list[ast.Call]:
+    """Return calls actually spread into a create_agent middleware list."""
+    assignments: dict[str, ast.expr] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    assignments[target.id] = node.value
+
+    calls: list[ast.Call] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or call_name(node) != "create_agent":
+            continue
+        middleware = keyword(node, "middleware")
+        if isinstance(middleware, ast.Name):
+            middleware = assignments.get(middleware.id)
+        if not isinstance(middleware, (ast.List, ast.Tuple)):
+            continue
+        for item in middleware.elts:
+            if not isinstance(item, ast.Starred):
+                continue
+            value = item.value
+            if isinstance(value, ast.Name):
+                value = assignments.get(value.id)
+            if isinstance(value, ast.Call):
+                calls.append(value)
+    return calls
+
+
+def valid_middleware(tree: ast.AST, functions: dict[str, ast.AST]) -> bool:
+    for node in create_agent_middleware_calls(tree):
+        if call_name(node) != "UiPathDeterministicGuardrailMiddleware":
+            continue
+        rules = keyword(node, "rules")
+        if not isinstance(rules, (ast.List, ast.Tuple)) or not rules.elts:
+            continue
+        if not any(is_callable_rule(rule, functions) for rule in rules.elts):
+            continue
+        if not list_contains_name(keyword(node, "tools"), TARGET_TOOL):
+            continue
+        if call_name(keyword(node, "action")) != "BlockAction":
+            continue
+        return True
+    return False
+
+
+def valid_decorator(tree: ast.AST, functions: dict[str, ast.AST]) -> bool:
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if node.name != TARGET_TOOL:
+            continue
+        if not any(call_name(item) == "tool" for item in node.decorator_list):
+            continue
+        for decorator in node.decorator_list:
+            if not isinstance(decorator, ast.Call) or call_name(decorator) != "guardrail":
+                continue
+            validator = keyword(decorator, "validator")
+            if not isinstance(validator, ast.Call) or call_name(validator) != "CustomValidator":
+                continue
+            rule = keyword(validator, "rule")
+            if (
+                rule is not None
+                and is_callable_rule(rule, functions)
+                and call_name(keyword(decorator, "action")) == "BlockAction"
+            ):
+                return True
+    return False
 
 
 def main() -> None:
-    src = read()
+    check(GRAPH.is_file(), f"{GRAPH} not found in {Path.cwd()}")
+    source = GRAPH.read_text()
+    try:
+        tree = ast.parse(source)
+    except SyntaxError as exc:
+        sys.exit(f"FAIL: graph.py no longer parses as Python: {exc}")
 
-    # Accept either middleware or decorator style
-    has_middleware = "UiPathDeterministicGuardrailMiddleware" in src
-    has_decorator = "CustomValidator" in src
-
-    check(
-        has_middleware or has_decorator,
-        "Neither UiPathDeterministicGuardrailMiddleware nor CustomValidator found in graph.py "
-        "— deterministic guardrail not added",
-    )
-    if has_middleware:
-        print("OK: UiPathDeterministicGuardrailMiddleware used (middleware style)")
-    else:
-        print("OK: CustomValidator used (decorator style)")
-
-    # Rule must check for "secret" somewhere in the source
-    check(
-        "secret" in src.lower(),
-        "No reference to 'secret' found in graph.py — the blocking rule must check for this word",
-    )
-    print("OK: 'secret' keyword referenced in the rule")
-
-    # A lambda (or function) must be the rule
-    has_lambda = bool(re.search(r"lambda\s+\w+.*secret", src, re.IGNORECASE))
-    has_func_rule = bool(re.search(r"def\s+\w+.*\(.*\).*:\s*\n.*secret", src, re.IGNORECASE))
-    check(
-        has_lambda or has_func_rule,
-        "No lambda or function rule checking for 'secret' found — the rule must be a callable",
-    )
-    print("OK: lambda/function rule checking for 'secret' found")
+    functions = {
+        node.name: node
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    middleware = valid_middleware(tree, functions)
+    decorator = valid_decorator(tree, functions)
 
     check(
-        "BlockAction" in src,
-        "BlockAction not found — deterministic guardrail must use a block action",
+        middleware or decorator,
+        "No deterministic guardrail targets lookup_account_info with a callable "
+        "rule that checks for 'secret' and uses BlockAction",
     )
+    print(f"OK: callable deterministic rule used ({'middleware' if middleware else 'decorator'} style)")
     print("OK: BlockAction used")
-
-    # lookup_account_info should be referenced near the guardrail
-    check(
-        "lookup_account_info" in src,
-        "lookup_account_info not referenced after modification — Tool-scoped guardrail "
-        "should target this tool",
-    )
-    print("OK: lookup_account_info referenced (target tool)")
-
-    print("OK: Deterministic guardrail with 'secret' rule correctly added to graph.py")
+    print("OK: deterministic guardrail with callable 'secret' rule targets lookup_account_info")
 
 
 if __name__ == "__main__":

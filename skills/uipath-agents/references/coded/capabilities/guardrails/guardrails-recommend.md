@@ -208,6 +208,7 @@ Write the recommended guardrails into the Python file using the patterns from [g
    python3 -c "import ast; ast.parse(open('graph.py').read())"
    ```
 2. **Runtime wiring (mandatory)** — the guardrails are actually attached. A guardrail whose symbols were imported from the wrong module parses fine but **silently never fires**. Run the adapter-registration and `_GuardedLLM` / `_GuardedTool` wrap checks from [guardrails.md § Verify Guardrails Are Actually Wired](guardrails.md#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails). Do not report the guardrails as added until these pass.
+3. **Middleware structure** — inspect the parsed AST and confirm every UiPath middleware entry in `create_agent(middleware=[...])` is starred (`ast.Starred`). A bare middleware call is invalid even when syntax and imports pass.
 
 (Replace `graph.py` with the actual entrypoint file from Step 1.)
 
@@ -247,7 +248,7 @@ From the SDK docs and the catalog, look up the validator class referenced in the
 2. Confirm the in-code scope is permitted:
    - Middleware — every `GuardrailScope` in the `scopes=[...]` argument is in `allowed_scopes`.
    - Decorator — the function the `@guardrail` decorates matches the implied scope: `@tool` for Tool scope, LLM factory for LLM scope, agent factory for Agent scope.
-3. Confirm the stage is permitted. **Middleware takes no `stage=` argument** — the validator fixes its stage (e.g. `intellectual_property` POST, `user_prompt_attacks` PRE), so do not flag a missing stage. The stage check applies only to the **decorator** `stage=`: `GuardrailExecutionStage.PRE` only where catalog allows pre-execution; `POST` only where catalog allows post-execution.
+3. Confirm the stage is permitted by the fetched LangChain SDK table. PII, harmful-content, LLM-as-judge, and deterministic middleware accept explicit `stage=` values; user-prompt-attacks is PRE-only and intellectual-property is POST-only. For decorators, likewise require a `GuardrailExecutionStage` supported by the validator.
 4. For Tool-scoped middleware: `tools=[...]` must contain the actual `@tool` Python objects discovered in Step 1 — not strings, not undefined names.
 5. For decorator-style LLM/Agent scope: the decorated function must actually return a `UiPathChat(...)` / `create_agent(...)` — decorating an unrelated function silently no-ops.
 
@@ -265,11 +266,13 @@ Report per guardrail:
 - **Actionability issue** — describe the problem (e.g., "`UserPromptAttacksValidator` is decorating `@tool def lookup_account_info` — the SDK docs say this validator only supports LLM scope; move the `@guardrail` above the LLM factory") and the fix
 - **Relevance issue** — describe why the guardrail may not be appropriate and what to consider instead
 
-If the user asks to fix identified issues: apply corrections to the Python file, then verify:
+If the user asks to fix identified issues: **move the existing guardrail; do not remove it** unless the user explicitly asks for removal. A scope/placement fix preserves the validator and action, removes it only from the invalid target, and attaches it to the correct factory/tool target. Then verify:
 
 ```bash
 python3 -c "import ast; ast.parse(open('graph.py').read())"
 ```
+
+Re-read the final AST and confirm both invariants: the validator class is still referenced, and it decorates or wraps the correct target. For example, moving `UserPromptAttacksValidator` from an `@tool` to an LLM factory is incomplete if the validator disappears entirely.
 
 ---
 

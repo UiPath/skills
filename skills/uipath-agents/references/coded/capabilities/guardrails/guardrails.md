@@ -149,6 +149,8 @@ agent = create_agent(
 
 If `create_agent()` already has a `middleware=[...]` argument, add new entries to the existing list. If there is no `middleware` argument yet, add `middleware=[...]` as a new keyword argument.
 
+**Mechanical post-edit check:** every UiPath middleware constructor inside `middleware=[...]` must be the value of an `ast.Starred` node. A bare `UiPath...Middleware(...)` object is not registered by LangChain even though the file parses. Re-read the final list and confirm every entry is written as `*UiPath...Middleware(...)` before reporting completion.
+
 ### TOOL-scoped middleware
 
 When the fetched docs show a middleware supports TOOL scope, it requires passing `tools=[...]`:
@@ -176,9 +178,43 @@ Pass `scopes=[GuardrailScope.LLM]` or `[GuardrailScope.AGENT]`. No `tools=`.
 
 `scopes` is required on most middleware. Exceptions: LLM-only validators (`UiPathUserPromptAttacksMiddleware`, `UiPathPromptInjectionMiddleware`) make `scopes` optional — it defaults to LLM. Passing `scopes=[GuardrailScope.LLM]` and omitting it are equivalent; AGENT/TOOL are rejected.
 
-### Stage is fixed by the validator — no `stage=` on middleware
+### LLM as Judge middleware
 
-Middleware classes take **no `stage` argument**. Each validator's stage is fixed: input validators (`user_prompt_attacks`, `prompt_injection`, input PII) run PRE; `intellectual_property` runs POST (output-only). Adding `stage=GuardrailExecutionStage....` to a middleware call raises `TypeError`. Only the **decorator** (`@guardrail`) accepts `stage=`.
+Discover an allowed judge model before editing, then spread the middleware into the list:
+
+```bash
+uip agent guardrails llm-as-judge-models --output json
+```
+
+```python
+*UiPathLLMAsJudgeMiddleware(
+    name="Account-information policy",
+    scopes=[GuardrailScope.AGENT],
+    action=BlockAction(),
+    guardrail_text="Only provide factual account information; do not negotiate prices.",
+    model="<ModelId from llm-as-judge-models>",
+),
+```
+
+Do not substitute the agent's chat-model name from memory. The `model` value must be a `ModelId` returned by the command for this tenant.
+
+### Deterministic Tool middleware
+
+`rules` must contain callable functions. A rule returns `True` when the input violates policy; a keyword or class name by itself is not a rule.
+
+```python
+*UiPathDeterministicGuardrailMiddleware(
+    name="Block secret customer IDs",
+    tools=[lookup_account_info],
+    rules=[lambda data: "secret" in str(data.get("customer_id", "")).lower()],
+    action=BlockAction(),
+    stage=GuardrailExecutionStage.PRE,
+),
+```
+
+### Middleware stage support follows the SDK table
+
+Pass `stage=GuardrailExecutionStage.PRE`, `POST`, or `PRE_AND_POST` only when the fetched LangChain SDK table lists that stage for the middleware. PII, harmful-content, LLM-as-judge, and deterministic middleware accept an explicit stage. `UiPathUserPromptAttacksMiddleware` is PRE-only and `UiPathIntellectualPropertyMiddleware` is POST-only, so leave their fixed stage unchanged. Never infer stage support from another validator.
 
 ### Intellectual property (output-only) middleware
 
@@ -247,6 +283,24 @@ llm = create_llm()
 
 If the code assigns the LLM directly (e.g. `llm = UiPathChat(...)`), refactor it into a factory function first, then decorate.
 
+### Deterministic Tool decorator
+
+`CustomValidator` requires a callable `rule=`. Place the guardrail above the existing `@tool` and keep the tool implementation intact:
+
+```python
+@guardrail(
+    validator=CustomValidator(rule=lambda data: "secret" in str(data.get("customer_id", "")).lower()),
+    action=BlockAction(),
+    name="Block secret customer IDs",
+    stage=GuardrailExecutionStage.PRE,
+)
+@tool
+def lookup_account_info(customer_id: str) -> str:
+    ...
+```
+
+The callable's boolean result is the violation signal: `True` triggers the action.
+
 ### Agent scope — decorate the agent factory function
 
 Wrap `create_agent(...)` in a named factory function, then decorate it:
@@ -280,7 +334,7 @@ like `BlockAction`). Get the exact parameters / supported scopes / stages from t
 **The same `EscalateAction` works in both styles** — pass it as the `action`:
 
 ```python
-# Middleware (no stage= — fixed by the validator)
+# Middleware (PII supports an explicit stage; omitted here to use its SDK default)
 *UiPathPIIDetectionMiddleware(
     name="PII escalation",
     scopes=[GuardrailScope.AGENT],
@@ -347,7 +401,7 @@ On resume: **Approve** continues (with the reviewer's optional edit applied); **
 
 ## Verify Guardrails Are Actually Wired (mandatory after writing for LangChain ML guardrails)
 
-> **Skip this entire section for deterministic guardrails** (`UiPathDeterministicGuardrailMiddleware` / `CustomValidator`). They run inline with no adapter registration and no LLM wrapping. For deterministic guardrails, grep-verify the class name and rule keyword are present in the file — that is sufficient.
+> **Skip the adapter/wrapper checks in this section for deterministic guardrails** (`UiPathDeterministicGuardrailMiddleware` / `CustomValidator`). They run inline with no adapter registration and no LLM wrapping. Still parse the file and structurally verify that `rules=[...]` or `rule=` contains a callable; grep-only verification is not sufficient.
 
 **Syntactically valid ≠ active.** Because importing from the wrong module bypasses the framework adapter and makes guardrails silently no-op (see [Imports Pattern](#imports-pattern)), `ast.parse` passing tells you nothing about whether a single guardrail will ever fire. After writing, prove the wiring at runtime.
 
@@ -389,7 +443,7 @@ For non-LangChain frameworks, there is no published adapter yet, so the decorato
 6. **Respect scope and stage constraints from the docs** — each middleware class has specific allowed scopes and stages; never apply a guardrail at a scope or stage the docs say it doesn't support.
 7. **Only add imports you use** — merge new names into any existing `from uipath_langchain.guardrails import (...)` block (LangChain) or `from uipath.platform.guardrails import (...)` block (every other framework).
 8. **For LangChain / LangGraph agents, import guardrail symbols from `uipath_langchain.guardrails`, not `uipath.platform.guardrails`.** Both expose the same names, but only `uipath_langchain.guardrails` registers the LangChain adapter as an import side effect; without it the decorator/middleware never wraps the LLM/tool/agent and every guardrail silently no-ops with no error or log. For any other framework (LlamaIndex, OpenAI Agents, plain Python), import from `uipath.platform.guardrails` — no framework adapter is published yet. See [Imports Pattern](#imports-pattern).
-9. **Verify wiring at runtime after writing (LangChain only)** — confirm the LangChain adapter is registered (`len(_adapters) >= 1`) and the decorated object is wrapped (`type(llm).__name__ == "_GuardedLLM"`, or `_GuardedTool` for tools). `ast.parse` is not enough; a silently-unwrapped guardrail passes syntax but never fires. For frameworks without an adapter, this wrap-check does not apply — invoke the validator directly to confirm it runs. **For `UiPathDeterministicGuardrailMiddleware` / `CustomValidator`, skip both runtime checks — grep-verify the class name and rule keyword are present in the file instead.** See [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails).
+9. **Verify wiring at runtime after writing (LangChain only)** — confirm the LangChain adapter is registered (`len(_adapters) >= 1`) and the decorated object is wrapped (`type(llm).__name__ == "_GuardedLLM"`, or `_GuardedTool` for tools). `ast.parse` is not enough; a silently-unwrapped guardrail passes syntax but never fires. For frameworks without an adapter, this wrap-check does not apply — invoke the validator directly to confirm it runs. **For `UiPathDeterministicGuardrailMiddleware` / `CustomValidator`, skip the adapter/wrapper checks but AST-verify that `rules=[...]` / `rule=` contains a lambda or named function that implements the requested predicate; class-name/keyword grep is insufficient.** See [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails).
 10. **Entity/threshold values must match the docs exactly** — use enum member names, not raw strings; use only allowed threshold values.
 11. **Deterministic guardrails run locally** — no backend API call, no tenant availability check needed.
 12. **Do not duplicate existing guardrails** — read the agent code first and skip if the same guardrail is already configured.

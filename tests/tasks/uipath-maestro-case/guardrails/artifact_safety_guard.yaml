@@ -183,9 +183,9 @@ success_criteria:
   # --- Rule 13 guards: no interpreter/stream-editor/helper-script assembly of a skill artifact ---
   # crypto.randomUUID() UUID subprocess (no fs, no redirection) is NOT matched by either pattern.
   - type: command_not_executed
-    description: "Rule 13: no inline interpreter or stream-editor manipulation of a skill artifact (sed -i, perl -i, gawk in-place, jq on/into an artifact, python open(), node -e ...fs.*)"
+    description: "Rule 13: no inline interpreter or stream-editor manipulation of a skill artifact (sed -i, perl -i, gawk in-place, jq on/into an artifact, Python/Node file writes, or artifact reads)"
     tool_name: "Bash"
-    command_pattern: '(sed\s+-i|perl\s+-i|awk\b[^\n]*-i\s*inplace|jq\b[^\n]*([<>]|caseplan\.json|tasks\.md|bindings_v2\.json|entry-points\.json)|python[0-9]?\b[^\n]*open\s*\(|(node|nodejs)\s+(-e|--eval)\b[^\n]*fs\.)'
+    command_pattern: '(sed\s+-i|perl\s+-i|awk\b[^\n]*-i\s*inplace|jq\b[^\n]*([<>]|caseplan\.json|tasks\.md|bindings_v2\.json|entry-points\.json)|python[0-9]?\b[^\n]*(open\s*\([^\n]*(,\s*|mode\s*=\s*)["\x27]([wax]|[^"\x27]*\+)|\.(write_text|write_bytes)\s*\(|(shutil|os)\.(copy|copyfile|move|rename|replace|remove|unlink)\s*\(|open\s*\([^\n]*(caseplan\.json|tasks\.md|bindings_v2\.json|entry-points\.json))|(node|nodejs)\s+(-e|--eval)\b[^\n]*fs(\.promises)?\.(writeFile|appendFile|rename|copyFile|truncate|unlink|rm)(Sync)?\s*\(|(node|nodejs)\s+(-e|--eval)\b(?=[^\n]*(caseplan\.json|tasks\.md|bindings_v2\.json|entry-points\.json))[^\n]*fs\.(readFile|readFileSync)\s*\()'
     weight: 2.0
     pass_threshold: 1.0
 

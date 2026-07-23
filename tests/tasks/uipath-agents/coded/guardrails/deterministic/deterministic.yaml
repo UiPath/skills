@@ -10,6 +10,7 @@ tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  disallowed_tools: ["WebSearch"]
 
 sandbox:
   template_sources:
