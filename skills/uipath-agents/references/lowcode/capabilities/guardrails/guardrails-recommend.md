@@ -66,6 +66,27 @@ From `agent.json`, extract:
 
 Also read `resources/` to list all tool names (needed for Tool-scope recommendations).
 
+### Exact Named-Tool Deterministic Rules — before catalog ranking
+
+When the request gives both a named Tool and an exact mechanical predicate on
+its input or output (literal word/phrase, regex, number, boolean, or always),
+use the custom deterministic recipe below. This decision happens before
+built-in catalog candidate ranking:
+
+1. Read the Tool's `resource.json.name` and use that exact value as the only
+   entry in `selector.matchNames`.
+2. Set `$guardrailType: "custom"` and `selector.scopes: ["Tool"]`. This branch
+   does not use a `builtInValidator` or `validatorParameters`.
+3. For a literal word or phrase, use `$ruleType: "word"`,
+   `operator: "contains"`, and preserve the exact requested literal as `value`.
+   Use the matching custom rule type when the user explicitly requests a
+   regex, number, boolean, or always condition.
+4. Use a blocking action when the request says to prevent the Tool operation,
+   then build the complete object from [guardrails.md](guardrails.md).
+
+Broad semantic threats without an exact mechanical predicate continue through
+the built-in catalog ranking in Step 2.
+
 ### Step 2 — Catalog-Driven Recommendation Analysis
 
 For **each entry** in the catalog (`guardrails[]` array from the cached JSON):

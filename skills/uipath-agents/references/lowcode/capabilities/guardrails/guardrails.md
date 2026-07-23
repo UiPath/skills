@@ -16,6 +16,11 @@ Two types exist:
 
 This restriction is enforced as [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1.
 
+**Required completion gate:** after writing a conversational custom Tool
+guardrail, run `uip agent refresh "<AGENT_NAME>" --output json`, then execute
+`uip agent validate "<AGENT_NAME>" --output json`. Do not report the guardrail
+task complete before the validation command has been attempted.
+
 ## Guardrail Schema (Base Fields)
 
 Every guardrail object in the `guardrails` array shares these base fields:
@@ -283,6 +288,12 @@ Example entry:
 > **Important:** Do NOT use `--kind Process` with `Type: "webApp"` to find Action Center apps. Those entries are the code-behind processes — their `Key` values are process release GUIDs, not app deployment IDs. Using them as `app.id` will cause runtime resolution failures.
 
 **Step 2 — Verify the app exposes the guardrail action-schema contract** (do this **before** writing the guardrail JSON — an incompatible app must be rejected, not authored).
+
+**Required command gate:** execute
+`uip solution resources get "<Key from Step 1>" --output json` for the selected
+app before deciding whether it is compatible. The `resources list` row is not
+an action schema and cannot replace this command. Do not write or reject the
+guardrail until the returned action schema has been checked.
 
 A guardrail escalation app must expose a specific action-schema contract. If verification fails, stop and report to the user: `<APP_NAME> does not have the required action schema configuration for tool guardrails.` (replace `<APP_NAME>` with the app's `Name` from Step 1). Do NOT write the guardrail.
 
@@ -1113,4 +1124,3 @@ Confirm the guardrails appear in the validated output without errors. Refresh re
 - [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) — canonical low-code rules and guardrail anti-patterns (discriminators, scope casing, populating `guardrail.policies` on tool resources, UUID reuse)
 - [../../project-lifecycle.md](../../project-lifecycle.md) § `uip agent guardrails list` — CLI reference for validator discovery
 - [../../agent-definition.md](../../agent-definition.md) § Guardrails — root-level placement in `agent.json`
-
