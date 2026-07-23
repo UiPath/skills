@@ -1,0 +1,83 @@
+task_id: skill-ixp-conditional-unconfirm-smoke
+description: >
+  Smoke: conditional bulk unconfirm with semantic field selection. Five fields on
+  one document were confirmed earlier; the agent must roll back only the ones that
+  hold a person's name or phone number (First Name, Last Name, Phone Number) and
+  leave the rest confirmed. The discrimination is carried by two substring traps —
+  fields that share a keyword with the request but are not what it asks for:
+  "Company Name" contains "name" yet is not a person's name, and "Account Number"
+  shares "Number" with "Phone Number" yet is not a phone. Both must stay confirmed,
+  so an agent that keys on the bare substrings "name"/"number" fails while a
+  semantic one passes.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:execute]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
+initial_prompt: |
+  On project `crm_contacts-a7f3c1d2-ixp`, document `doc-contact-42`, these five
+  fields were all confirmed earlier:
+
+  - First Name — field id f-301
+  - Last Name — field id f-302
+  - Phone Number — field id f-303
+  - Account Number — field id f-304
+  - Company Name — field id f-305
+
+  For a data-privacy request, roll back the confirmations on the fields that
+  capture a person's name or phone number, so those go back to un-annotated.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in this
+    environment. Commands will fail with auth errors — that is expected. Run each
+    command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # Targets: the three name/phone fields must be unconfirmed. (Project + document
+  # are pinned for a precise match, not to test selection — there is only one of
+  # each.) Field ids are matched after --fields, so one combined
+  # `--fields f-301 f-302 f-303` call or three separate calls both satisfy these.
+  - type: command_executed
+    description: "Unconfirmed First Name (f-301)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+unconfirm\s+["'']?crm_contacts-a7f3c1d2-ixp["'']?\s+["'']?doc-contact-42["'']?[^|;&]*--fields[^|;&]*f-301'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Unconfirmed Last Name (f-302)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+unconfirm\s+["'']?crm_contacts-a7f3c1d2-ixp["'']?\s+["'']?doc-contact-42["'']?[^|;&]*--fields[^|;&]*f-302'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Unconfirmed Phone Number (f-303)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+unconfirm\s+["'']?crm_contacts-a7f3c1d2-ixp["'']?\s+["'']?doc-contact-42["'']?[^|;&]*--fields[^|;&]*f-303'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The crux: the two substring traps must stay confirmed — Account Number (f-304,
+  # "Number" but not a phone) and Company Name (f-305, "name" but not a person's
+  # name). Pattern is anchored to the `unconfirm` verb + the specific ids, so a
+  # mere mention in prose/comment can't false-match.
+  - type: command_not_executed
+    description: "Did NOT unconfirm Account Number (f-304) or Company Name (f-305)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+unconfirm\b[^|;&]*(f-304|f-305)'
+    weight: 3.0
+    pass_threshold: 1.0
