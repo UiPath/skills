@@ -35,12 +35,10 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # calls.log records the expanded --updates argument, so verify the payload
-  # on the same invocation that reached the CLI mock.
   - type: file_matches_regex
     description: "Agent built the payload targeting \"Invoice Header\" with the new instructions"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+groups\s+update-prompts\b(?=.*Invoice Header)(?=.*Header section of the invoice).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+groups\s+update-prompts\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--updates)(?=.*Invoice Header)(?=.*Header section of the invoice).*)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0

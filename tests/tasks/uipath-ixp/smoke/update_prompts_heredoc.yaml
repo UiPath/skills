@@ -48,6 +48,6 @@ success_criteria:
     description: "Expanded --updates payload targets InvoiceNumber with the requested instruction"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*InvoiceNumber)(?=.*Extract the unique invoice identifier)(?=.*Purchase Order).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--updates)(?=.*InvoiceNumber)(?=.*Extract the unique invoice identifier)(?=.*Purchase Order).*)[^\r\n]*$
     weight: 2.5
     pass_threshold: 1.0
