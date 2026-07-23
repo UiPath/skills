@@ -25,7 +25,7 @@ sandbox:
       path: ../_shared/fixtures
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/integration/seed_name_resolution.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/integration/name_resolution_fixture.py seed"
     timeout: 600
 
 initial_prompt: |
@@ -83,12 +83,6 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json written for post-run cleanup"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
   # --- Outcome verification: resolution actually deleted the named doc + renamed the project ---
   - type: file_contains
     description: "york is gone from the list; the other two documents remain"
@@ -105,9 +99,7 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-# Safety net: delete the project even if the agent's in-band cleanup never ran
-# (crash / MAX_TURNS before the final delete). Reads the report.json written by
-# pre_run; idempotent and always exits 0 so it never fails the test.
+# Best-effort cleanup of the project created by pre_run.
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/integration/cleanup_name_resolution.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/integration/name_resolution_fixture.py cleanup"
     timeout: 60
