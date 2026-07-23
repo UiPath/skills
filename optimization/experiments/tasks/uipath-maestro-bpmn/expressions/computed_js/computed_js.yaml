@@ -1,0 +1,68 @@
+task_id: skill-bpmn-expr-computed-js
+description: >
+  Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author a
+  computed inline-JavaScript expression with the exact case-sensitive `=js:`
+  prefix (no space after the colon) inside a json-typed mapping that still emits
+  valid JSON. Grades the `=js:` escape-hatch rules from
+  references/expression-authoring.md. Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 75
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project named "ComputedJsBpmn" with the main file
+  at `ComputedJsBpmn/ComputedJsBpmn.bpmn` for this process:
+  - Manual start with two integer variables (`Offset`, `RowsPerShard`).
+  - A serviceTask whose json-typed input builds a shard-bounds payload whose
+    `startRow` and `endRow` fields are COMPUTED from those variables — use the
+    inline-JavaScript `=js:` escape hatch for the arithmetic (for example
+    `=js:vars.Offset * vars.RowsPerShard`). The json body must remain valid JSON.
+  - A single end event.
+
+  Requirements:
+  - The computed prefix is exactly `=js:` — case-sensitive, no space after the
+    colon. Use it only for the computed fields; prefer plain `=vars.<id>` where no
+    computation is needed.
+  - Any field typed `json` must contain valid JSON.
+  - Discover the activity's `uipath:*` payload via the registry
+    (`uip maestro bpmn registry`) and author it from the served template; do not
+    hand-author registry-owned XML from prose.
+  - Use synthetic placeholder values only — no tenant URLs, folder keys,
+    connection IDs, release keys, or real names.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+  - Validate locally by parsing the BPMN and walking the skill's structural
+    checklist. Do NOT upload, publish, deploy, debug, run, or pack anything, and
+    do NOT pause for approval — build the complete local project in one pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "ComputedJsBpmn/ComputedJsBpmn.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN uses the exact =js: computed prefix"
+    path: "ComputedJsBpmn/ComputedJsBpmn.bpmn"
+    includes:
+      - "=js:"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Computed =js: expression present and all json-typed bodies parse as JSON"
+    command: "python3 $TASK_DIR/check_computed_js.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

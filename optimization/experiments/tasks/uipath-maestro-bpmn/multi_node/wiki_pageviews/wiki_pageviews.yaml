@@ -1,0 +1,92 @@
+task_id: skill-bpmn-e2e-wiki-pageviews
+description: >
+  Skill-guided e2e evaluation (ported from the Flow wiki_pageviews eval): agent
+  uses the uipath-maestro-bpmn skill to author a synthetic BPMN process that
+  fetches daily pageviews in a script task, routes an invalid-article failure
+  through an exclusive gateway to an "Article not found" end, and on the success
+  path keeps high-traffic days (filter) then totals them (aggregate) in two
+  distinct script tasks. Includes full package metadata. Authoring only,
+  public-safe, no cloud effects and no live HTTP connector — the fetch is a
+  local script task.
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", "node:transform"]
+
+run_limits:
+  expected_turns: 28
+  turn_timeout: 1200
+  max_turns: 90
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Create a new local Maestro BPMN Process Orchestration project named
+  WikiPageviews. The project must be fully synthetic and public-safe.
+
+  Model this process:
+  - Manual start accepts `article`, `date1`, `date2` variables and produces a
+    `total` result variable.
+  - A script task fetchPageviews produces a list of daily {date, views} records
+    for the range and sets a `valid` boolean (model the fetch locally in the
+    script — do NOT call a live HTTP endpoint or Integration Service connector).
+  - An exclusive gateway routes the invalid-article case (valid is false) to an
+    end event that returns the literal string "Article not found", and the valid
+    case (default) onward.
+  - On the valid path: a script task filterHighTraffic keeps only days whose
+    views exceed 500, then a distinct script task aggregateTotal sums the
+    surviving views into `total`.
+  - The valid path ends at its own end event.
+
+  Model filter and aggregate as two distinct sequential script tasks.
+
+  Include BPMN DI shapes/edges for all visible elements and create the package
+  metadata files expected by the skill:
+  project.uiproj, bindings_v2.json, entry-points.json, operate.json, and
+  package-descriptor.json.
+
+  Do NOT upload, publish, deploy, debug, run a process, ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and implementation.
+  Build the complete local project end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source file was created"
+    path: "WikiPageviews/WikiPageviews.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Package operate metadata was created"
+    path: "WikiPageviews/operate.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The invalid-article path returns the fixed error string"
+    path: "WikiPageviews/WikiPageviews.bpmn"
+    includes:
+      - "Article not found"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Generated BPMN project has a fetch script, an error-routing gateway, distinct filter and aggregate scripts, and package references"
+    command: "python3 $TASK_DIR/check_wiki_pageviews.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent kept the lifecycle local and avoided cloud-side operations"
+    weight: 2.0
+    pass_threshold: 0.7
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: >
+      Pass if the agent created only local project files and did not run or
+      request approval for BPMN debug, process run, upload, publish, deploy, or
+      any live HTTP call. Fail if tool calls or the final answer show any
+      cloud-side lifecycle mutation, live network fetch, or any request to
+      perform one.

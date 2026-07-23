@@ -1,0 +1,65 @@
+task_id: skill-bpmn-debug-not-validation
+description: >
+  Discipline guard for the skill's "never run `uip maestro bpmn debug` as
+  validation" rule. Given a small greenfield authoring task with a "make sure
+  it's correct" bar, the agent must confirm correctness with LOCAL validation
+  (the bundled validator, a well-formed-XML parse, or the local `bpmn validate`
+  verb) and must NOT reach for a cloud debug session to prove correctness.
+  Authoring only — no cloud side effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 45
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a single Maestro BPMN file `PriorityRouting.bpmn` for this process:
+    - a blank start event,
+    - an exclusive gateway "Priority check" with two outgoing branches:
+        - a conditioned branch for high-priority orders,
+        - a default branch,
+    - each branch leads to its own end event.
+
+  Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+  for every sequence flow. Make sure the process is correct before you finish.
+
+  The task is complete only once you have confirmed the file is correct with a
+  local validation step. Do NOT ask for approval, confirmation, or feedback and
+  do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "PriorityRouting.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent confirmed correctness with a LOCAL validation step (bundled validator, XML parse, or the local bpmn validate verb)"
+    tool_name: "Bash"
+    command_pattern: '(node\s+[\s\S]*validate-bpmn\.mjs|ET\.parse\(|(uip|\$UIP)\s+maestro\s+bpmn\s+validate)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT run a cloud debug session to validate correctness"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Authored BPMN is well-formed, fully shaped, and gateway-routed"
+    command: "python3 $TASK_DIR/check_debug_not_validation.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

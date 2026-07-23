@@ -1,0 +1,59 @@
+task_id: skill-bpmn-edit-update-node
+description: >
+  Brownfield edit: change one script task's logic (a threshold constant) in an
+  existing, valid Maestro BPMN without restructuring the process or touching any
+  sibling node, ids, or preserve-only payloads.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node"]
+
+run_limits:
+  expected_turns: 14
+  max_turns: 60
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  A valid Maestro BPMN file `RiskScoring.bpmn` is in the working directory. The
+  "Score Risk" (Task_Score) script task classifies an amount as "high" when it
+  exceeds a threshold of 500.
+
+  Update ONLY the "Score Risk" script so the threshold is 1000 instead of 500.
+  Do not restructure the process or change any other node.
+
+  Make a SURGICAL edit: the sibling "Format Message" task, all element ids, the
+  uipath:* extension payloads, uipath:migrationVersion, and the process
+  variables must round-trip untouched.
+
+  Validate the edited file locally before finishing. Do not upload, publish,
+  deploy, debug, run, or pack anything, and do not pause for approval — make the
+  edit end to end in one pass.
+
+success_criteria:
+  - type: file_exists
+    description: "The edited BPMN file is still present"
+    path: "RiskScoring.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Preserve-only payload round-tripped untouched"
+    path: "RiskScoring.bpmn"
+    includes:
+      - "preserve-only-do-not-touch"
+      - 'uipath:migrationVersion'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Score threshold updated to 1000, siblings untouched, file still structurally sound"
+    command: "python3 $TASK_DIR/check_update_node.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

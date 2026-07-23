@@ -1,0 +1,72 @@
+task_id: skill-bpmn-diagnose-job-traces
+description: >
+  Diagnose coverage for the uipath-maestro-bpmn skill: a job faulted with no
+  incident and no faulting element on the job summary. The agent follows the
+  diagnostic priority ladder — cheaper reads (job status / incidents) first —
+  and only then uses `job traces` as the last resort to recover the faulting
+  element and its timing. Read-only mocked CLI; no lifecycle mutations.
+tags: [uipath-maestro-bpmn, integration, "mode:diagnose", "lifecycle:discover"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+initial_prompt: |
+  A UiPath Maestro BPMN job faulted, but the job summary lists no faulting
+  element and no incident was recorded. Diagnose using the mocked `uip` CLI on
+  PATH. Public-safe identifiers:
+  - job key: job-triage-001
+  - instance id: inst-triage-001
+  - folder key: folder-public
+
+  Follow the diagnostic priority ladder: exhaust the cheaper reads first (job
+  status, then incidents). Only when those do not explain the fault, pull the
+  verbose traces as a last resort to recover the faulting element and its
+  timing.
+
+  Write your conclusion to diagnosis.md. Include these EXACT labeled lines:
+    FAULT_ELEMENT: <the faulting element id recovered from the traces>
+    FAULT_TIMING: <the element duration in milliseconds from the traces>
+  Then add a short prose note on why traces were needed only after the cheaper
+  reads were inconclusive.
+
+  Use `uip maestro bpmn ...` reads; do not read `mocks/`, `fixtures/`, or any
+  response JSON files directly. Do NOT retry, cancel, migrate, move a cursor,
+  debug, run, upload, publish, or deploy anything.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent first ran a cheaper read (job status or incidents)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(job\s+status\s+job-triage-001|instance\s+incidents\s+inst-triage-001)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pulled traces as the last-resort diagnostic"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+job\s+traces\s+job-triage-001'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Diagnosis names the trace-derived faulting element and timing"
+    path: "diagnosis.md"
+    includes:
+      - "FAULT_ELEMENT: ServiceTask_CallVendorApi"
+      - "30000"
+    weight: 3.0
+    pass_threshold: 1.0

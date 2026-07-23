@@ -1,0 +1,67 @@
+task_id: skill-bpmn-parallel-fork-join
+description: >
+  Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a
+  parallel gateway fork into two concurrent branches that a parallel gateway
+  synchronizes (join) before the end — the BPMN analogue of a Flow parallel-sync
+  merge. Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "shape:multi-node", "node:gateway", "feature:parallel-tasks"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 55
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a single Maestro BPMN file `ParallelSync.bpmn` in the working directory
+  that runs two branches concurrently and synchronizes them before finishing:
+
+      start -> forkGateway ==> branchA task ==> joinGateway -> end
+                          \=> branchB task =/
+
+  Requirements:
+  - A bpmn:parallelGateway fork (one incoming, two outgoing) splits into two
+    distinct branch tasks.
+  - A bpmn:parallelGateway join (two incoming, one outgoing) synchronizes both
+    branches before a single end event. Parallel flows carry no conditions.
+  - Author the structural BPMN per the skill's structural reference (mind the
+    SUPERFLUOUS_GATEWAY and FAKE_JOIN rules — join with a gateway, not by
+    pointing two flows at one activity); do not hand-author uipath:* XML from
+    prose.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+  - Validate the file locally before finishing (the bundled validator, or a
+    well-formed-XML parse).
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback, and do NOT pause between planning and
+  implementation. Build the complete file end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "ParallelSync.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN file has a diagram and a parallel gateway"
+    path: "ParallelSync.bpmn"
+    includes:
+      - "bpmndi:BPMNDiagram"
+      - "parallelGateway"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN forks into >=2 distinct parallel branches and synchronizes them at a join gateway, with full DI"
+    command: "python3 $TASK_DIR/check_fork_join.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

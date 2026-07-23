@@ -1,0 +1,76 @@
+task_id: skill-bpmn-subprocess
+description: >
+  Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to
+  encapsulate logic inside a container (an embedded bpmn:subProcess or a
+  bpmn:callActivity) — the BPMN analogue of a Flow Subflow. Authoring only — no
+  cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:subflow"]
+
+run_limits:
+  expected_turns: 22
+  max_turns: 60
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a single Maestro BPMN file `SubflowDemo.bpmn` in the working directory
+  that takes a string and reverses it, with the reversal logic encapsulated in a
+  container rather than sitting directly in the top-level process.
+
+  Requirements:
+  - Encapsulate the logic in an embedded bpmn:subProcess (with its own nested
+    start event, an inner activity such as a scriptTask, and a nested end event)
+    OR a bpmn:callActivity.
+  - The top-level flow is: start -> container -> end.
+  - Author the structural BPMN per the skill's structural reference; do not
+    hand-author uipath:* XML from prose. If you add a scriptTask, keep it
+    Jint-safe (no Node.js/browser APIs).
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every visible node
+    (including the container and its inner nodes) and a BPMNEdge for every
+    sequence flow.
+  - Validate the file locally before finishing (the bundled validator, or a
+    well-formed-XML parse).
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback, and do NOT pause between planning and
+  implementation. Build the complete file end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "SubflowDemo.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN file has a diagram"
+    path: "SubflowDemo.bpmn"
+    includes:
+      - "bpmndi:BPMNDiagram"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN encapsulates logic in a subProcess (nested start/activity/end) or callActivity, with a shape and resolvable flows"
+    command: "python3 $TASK_DIR/check_subprocess.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent kept the lifecycle local and avoided cloud-side operations"
+    weight: 2.0
+    pass_threshold: 0.7
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: >
+      Pass if the agent created only local files and did not run or request
+      approval for BPMN debug, process run, upload, publish, pack, or deploy
+      commands. Fail if tool calls or the final answer show any cloud-side
+      lifecycle mutation or any request to perform one.

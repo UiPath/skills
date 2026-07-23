@@ -21,7 +21,7 @@ The output path is `$2`.
 
 ## Step 1: Find codifiable procedures
 
-For each skill, read its SKILL.md and optional files to find out any deterministic, repeatable thing the SKILL.md makes the agent do. If no such procedure exists, the skill is not script-ify-able. Don't include the skill's own scripts as part of the codifiable procedures. If a skill has been fully scripted by itself, then the skill should be classified as None.
+For each skill, read its SKILL.md and optional files to find out any deterministic, repeatable thing the SKILL.md makes the agent do. If no such procedure exists, the skill is not script-ify-able. Don't include the skill's own scripts (CLI commands count as well) as part of the codifiable procedures. If a skill has been fully scripted by itself, then the skill should be classified as None.
 
 Some examples (not limited to these) of codifiable procedures are as follows:
 

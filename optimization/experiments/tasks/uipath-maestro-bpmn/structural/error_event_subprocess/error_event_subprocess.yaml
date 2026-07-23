@@ -1,0 +1,81 @@
+task_id: skill-bpmn-error-event-subprocess
+description: >
+  Structural error-handling eval: agent uses the uipath-maestro-bpmn skill to
+  author a process that throws a configured error END event and catches it in an
+  EVENT subprocess (triggeredByEvent="true") whose single interrupting error
+  start event handles it. Exercises the ERROR_END_EVENT_MISSING_EXCEPTION and
+  event-subprocess start-event rules. Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "node:subflow"]
+
+run_limits:
+  expected_turns: 22
+  max_turns: 80
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a single Maestro BPMN file `PaymentErrorHandling.bpmn` in the working
+  directory that models an error thrown by the main flow and handled by an event
+  subprocess:
+    - a manual start,
+    - a task that attempts a payment,
+    - an exclusive gateway that routes a failure to an error END event and the
+      normal case to a plain end event,
+    - the error end event must reference a declared bpmn:error that carries an
+      errorCode (an error end event with no configured exception is invalid),
+    - an EVENT subprocess (bpmn:subProcess with triggeredByEvent="true") whose
+      SINGLE start event is an INTERRUPTING error start event
+      (bpmn:errorEventDefinition) that catches that same error and runs a
+      handler task to a nested end event.
+
+  Requirements:
+  - Discover any UiPath extension node's type via the registry and author it from
+    the registry template — do not hand-author uipath:* XML from prose. Plain
+    structural BPMN (start/end events, tasks, gateway, subprocess, sequence
+    flows) comes from the skill's structural reference.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node (including the
+    event subprocess container and its nested nodes) and a BPMNEdge for every
+    sequence flow.
+  - Validate the file locally before finishing (the bundled validator, or a
+    well-formed-XML parse plus the structural checklist).
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback, and do NOT pause between planning and
+  implementation. Build the complete file end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "PaymentErrorHandling.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run any cloud-side Maestro BPMN lifecycle command"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(upload|publish|deploy|debug|run|pack)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN declares an error, an error event definition, and an event subprocess"
+    path: "PaymentErrorHandling.bpmn"
+    includes:
+      - "bpmndi:BPMNDiagram"
+      - "errorEventDefinition"
+      - 'triggeredByEvent="true"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Error end event with a configured code is caught by an interrupting error event subprocess, fully shaped"
+    command: "python3 $TASK_DIR/check_error_event_subprocess.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
