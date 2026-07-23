@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T15:40:03.730Z",
+      "Message": "[Transition Issue] Response status code does not indicate success: 400 (Bad Request). {\"errorMessages\":[],\"errors\":{\"resolution\":\"Field 'resolution' is required\"}}"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T15:40:03.810Z",
+      "Message": "UiPath.Jira.Activities.JiraException: Field 'resolution' is required\r\nin Main.xaml\r\n    at JiraApplicationScope \"Jira Scope\"\r\n    at TransitionIssue \"Transition Issue\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

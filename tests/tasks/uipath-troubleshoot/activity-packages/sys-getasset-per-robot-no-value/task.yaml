@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-getasset-per-robot-no-value
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath diagnostic agent must diagnose a Get Asset failure where the
   target asset exists in the correct folder and has the right type

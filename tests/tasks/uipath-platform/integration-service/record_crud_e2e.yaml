@@ -5,13 +5,12 @@ description: >
   create, get, partial update, full replace, then delete. Anchors the four
   currently-uncovered `uip is resources run` verbs (get, update, replace,
   delete) plus the already-covered create in one lifecycle walk.
-tags: [uipath-platform, e2e, mode:build, lifecycle:setup, integration-service, connector]
+tags: [uipath-platform, e2e, mode:build, lifecycle:setup, integration-service, connector, ipe]
 
 run_limits:
   expected_turns: 18
 
 sandbox:
-  driver: tempdir
   python: {}
   node: {}
 

@@ -1,9 +1,10 @@
 task_id: skill-troubleshoot-excel-rr-host-evidence
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Read Range failure
   (System.IO.IOException: ... used by another process) where the
   available `uip` CLI evidence does NOT determine which cause-branch
-  applies. The agent must match the activity-packages/excel-activities/playbooks/read-range-file-locked.md
+  applies. The agent must match the activity-packages/excel-activities/playbooks/workbook-file-locked.md
   playbook, recognize that the CLI evidence chain is exhausted (no
   concurrent siblings, no prior faulted runs, no overlapping triggers,
   clean workflow source), and surface a host-side investigation
@@ -13,7 +14,6 @@ description: >
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
@@ -23,7 +23,6 @@ run_limits:
   turn_timeout: 5400
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir

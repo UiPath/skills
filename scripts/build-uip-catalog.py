@@ -117,21 +117,42 @@ def strip_args(name):
     return ARG_SIG.sub("", name).strip().split("|", 1)[0].strip()
 
 
+def tool_dist_tag():
+    """
+    Derive the npm dist-tag to install tools under from the running CLI's own
+    prerelease tag, so tools always match the CLI's line:
+      1.199.0-dev.7923   -> "dev"     (GitHub Packages prerelease train)
+      1.198.0-preview.84 -> "preview" (npmjs prerelease train)
+      1.197.1            -> None      (stable; install the plain `latest`)
+    """
+    version = get_cli_version()
+    dash = version.find("-")
+    if dash == -1:
+        return None
+    return version[dash + 1:].split(".")[0] or None
+
+
 def install_all_tools():
     """
-    Install every plugin uip knows about via `uip tools list` and `uip tools
-    search`. Plugin groups (solution, maestro, tm, df, ...) only contribute
-    verbs to the catalog when installed.
+    Install every plugin uip knows about (discovered via `uip tools search`)
+    with npm, at the dist-tag matching the running CLI (see tool_dist_tag).
+    Plugin groups (solution, maestro, tm, df, ...) only contribute verbs to the
+    catalog when installed.
 
-    Tools must be installed from the SAME feed as the CLI. The nightly tracks
-    cli/main, so it installs the CLI and the tools from GitHub Packages under
-    the `@alpha` dist-tag (`npm config set @uipath:registry
-    https://npm.pkg.github.com/` + auth token, done by the workflow). Stable
-    public-npm tools install but fail to register their command tree against
-    an alpha CLI (e.g. the `rpa` group never loads), collapsing coverage.
-    Locally, install the CLI and tools from whichever feed you intend the
-    catalog to reflect — keep both on the same one.
+    Install with npm directly — NOT `uip tools install`. cli PR #2650 made `dev`
+    a publish dist-tag but NOT a release channel (channels are just
+    {stable, preview}), so on a `-dev` CLI `uip tools install` resolves to the
+    `stable` channel and can't find a matching `-dev` tool ("No compatible
+    version"). npm resolves `@dev`/`@preview` straight to the latest prerelease;
+    the CLI then discovers the plugin on disk under `$(npm root -g)/@uipath/*`.
+
+    Tools must come from the SAME feed as the CLI. The nightly tracks cli/main
+    and installs both from GitHub Packages under `@dev` (the workflow sets
+    `@uipath:registry=https://npm.pkg.github.com/` + auth). Locally, install the
+    CLI and tools from whichever feed you intend the catalog to reflect — keep
+    both on the same one.
     """
+    tag = tool_dist_tag()
     listed = run_uip(["tools", "list"]) or {}
     # `uip tools list` returns short names like "solution-tool".
     # `uip tools search` returns scoped names like "@uipath/solution-tool".
@@ -149,15 +170,15 @@ def install_all_tools():
         name = _ci(tool, "name") or ""
         if not name or short(name) in installed:
             continue
+        spec = f"{name}@{tag}" if tag else name
         attempted += 1
-        print(f"installing missing tool {name}", file=sys.stderr)
+        print(f"installing missing tool {spec}", file=sys.stderr)
         proc = subprocess.run(
-            ["uip", "tools", "install", name, "--output", "json"],
+            ["npm", "install", "-g", spec],
             capture_output=True, text=True, check=False,
         )
         if proc.returncode != 0:
-            # npm prints errors to stderr; stdout (JSON success channel) is
-            # usually empty on failure.
+            # npm prints errors to stderr; stdout is usually empty on failure.
             err = (proc.stderr or proc.stdout or "").strip()[:200]
             print(f"  failed: {err}", file=sys.stderr)
         else:
@@ -165,14 +186,14 @@ def install_all_tools():
 
     # Fail loud if we tried to install tools and every one failed. The plugins
     # contribute the bulk of the catalog; a silent all-fail collapses it to the
-    # ~31 base-CLI verbs (see #1203). Usual cause: the `@uipath` npm scope is
-    # mapped to GitHub Packages (CLI alpha feed) instead of public npm, where
-    # the tool packages live.
+    # ~31 base-CLI verbs (see #1203). Usual cause: the `@uipath` npm scope isn't
+    # pointed at the feed that carries the CLI's line (GitHub Packages for
+    # -dev/-alpha, npmjs for stable).
     if attempted and succeeded == 0:
         sys.exit(
             f"All {attempted} tool installs failed — refusing to build a "
-            "base-CLI-only catalog. Is the @uipath npm scope pointed at public "
-            "npm (https://registry.npmjs.org/)?"
+            "base-CLI-only catalog. Is the @uipath npm scope pointed at the "
+            "feed for this CLI line (GitHub Packages for -dev, npmjs for stable)?"
         )
 
 

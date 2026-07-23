@@ -5,7 +5,7 @@ description: >
   teaches the correct connection workflow (list, present options, ping) and
   that the agent knows the create/edit recovery paths without executing them
   (both require browser interaction).
-tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, integration-service, connector, feature:connections]
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, integration-service, connector, feature:connections, ipe]
 
 run_limits:
   expected_turns: 7

@@ -1,0 +1,33 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "8d2c5f91-4a06-4e73-9b18-3c7f0a2e6d45",
+    "StartTime": "2026-07-16T15:18:33.720Z",
+    "EndTime": "2026-07-16T15:18:34.560Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "Info": "Run approval routing job: Persistence is not supported in the current runtime. The workflow attempted to suspend (Run Job in Suspend mode), which requires persistence, but the process is not configured for persistence.\r\n\r\nin SubmitForApproval.xaml\r\n    at RunJob \"Run approval routing job\"\r\n    at Sequence \"SubmitForApproval\"\r\n    at InvokeWorkflowFile \"Invoke SubmitForApproval\"\r\n    at Sequence \"Main\"\r\n    at DynamicActivity \"Main\"\r\n\r\nSystem.NotSupportedException: This workflow instance requires persistence, which is not supported in the current runtime.\r\n   at System.Activities.WorkflowApplication.EnsurePersistenceProvider()\r\n   at UiPath.Core.Activities.RunJob.<ExecuteAsync>d__.MoveNext()",
+    "CreationTime": "2026-07-16T15:18:33.720Z",
+    "ReleaseName": "OrderApproval",
+    "Type": "Unattended",
+    "InputArguments": "{}",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 1500287,
+    "FolderKey": "e5f19c42-6a38-4b57-a274-9b2d3c0f8e71",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\svc_robot",
+    "OrchestratorUserIdentity": "original_email@test.com",
+    "LastModificationTime": "2026-07-16T15:18:34.560Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "8d2c5f914a064e739b183c7f0a2e6d45",
+    "Id": 66124315
+  }
+}

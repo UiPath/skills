@@ -1,15 +1,15 @@
 task_id: skill-troubleshoot-lookup-not-installed
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a classic Lookup Range failure
   caused by Microsoft Excel not being installed on the robot host: the
   Excel Application Scope cannot create the Excel.Application COM object and
   faults with REGDB_E_CLASSNOTREG (0x80040154). Success = agent matches the
-  lookup-range-excel-not-installed playbook AND recommends installing Excel
+  excel-not-installed failure-mode playbook AND recommends installing Excel
   OR migrating to the Workbook Read Range + Lookup Data Table path.
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

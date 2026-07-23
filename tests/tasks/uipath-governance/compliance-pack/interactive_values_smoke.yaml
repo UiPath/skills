@@ -12,6 +12,17 @@ tags: [uipath-governance, smoke, mode:build, lifecycle:setup, feature:compliance
 sandbox:
   python: {}
 
+# CI passes live tenant auth into every smoke sandbox, so the partial-apply
+# flow can REALLY create `iso-42001-2023-*-robot` AOps policies. Clean up before
+# and after.
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
+
 initial_prompt: |
   As part of our ISO 42001 work I want to restrict which URLs and applications
   our robots are allowed to automate — set up just that control for now, leave
@@ -28,9 +39,16 @@ initial_prompt: |
     (e.g. ./scripts/, ./compliance-session/), not to AppData or TEMP paths.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-governance skill"
+    skill_name: "uipath-governance"
+    expected_skill: "uipath-governance"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent called catalog get for Robot UIAutomation settings data"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get'
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

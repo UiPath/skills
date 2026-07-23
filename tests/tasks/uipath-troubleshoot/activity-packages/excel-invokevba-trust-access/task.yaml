@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-invokevba-trust-access
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose an Invoke VBA failure caused by
   Excel's "Trust access to the VBA project object model" Trust Center setting
@@ -8,7 +9,6 @@ description: >
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "bb02c3d4-e5f6-4071-9b02-000000000002",
+      "State": "Faulted",
+      "ProcessName": "PyBatchAggregate",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT",
+      "MachineKey": "",
+      "StartTime": "2026-06-11T10:15:02.110Z",
+      "EndTime": "2026-06-11T10:15:33.540Z",
+      "CreationTime": "2026-06-11T10:15:01.700Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

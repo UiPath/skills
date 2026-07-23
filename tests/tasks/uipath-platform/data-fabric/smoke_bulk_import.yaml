@@ -10,7 +10,7 @@ run_limits:
   max_turns: 30
 
 initial_prompt: |
-  We already have a Products list. Each row holds a ProductName, a
+  We already have a Products UiPath Data Fabric entity. Each row holds a ProductName, a
   UnitPrice, and an InStock flag.
 
   Could you load these three into it from a spreadsheet:

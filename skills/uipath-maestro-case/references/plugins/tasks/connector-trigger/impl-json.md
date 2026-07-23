@@ -98,7 +98,7 @@ For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** pe
 }
 ```
 
-Append the task to the target stage's `tasks[]` array. Default: own task set (one task per lane). **Exception:** if this task is a parallel member of a `runs-sequentially` group, push into the shared lane of that group (shared lane = parallel siblings inside the sequence, semantic).
+Append the task to the target stage's `data.tasks` structure in its planned order. Lane placement is structural/layout state; it does not express sequencing. Add `runs-sequentially` to the task's entry conditions when the frontend toggle is selected.
 
 ### Step 8 — Append root-level bindings
 

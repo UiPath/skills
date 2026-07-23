@@ -7,7 +7,6 @@ description: >
 tags: [uipath-troubleshoot, integration-service, rpa, e2e, faithful-replay, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
@@ -42,6 +41,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
+    include_dialog: true
     include_agent_output: true
     include_tool_calls: true
     prompt: |

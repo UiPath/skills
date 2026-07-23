@@ -7,7 +7,6 @@ description: >
 tags: [uipath-coded-apps, smoke, dashboard, mode:operate, lifecycle:setup]
 
 sandbox:
-  driver: tempdir
   node: {}
 
 pre_run:

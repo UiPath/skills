@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "LogList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 100,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-24T09:14:08.981Z",
+      "Message": "InvoiceNotifier execution error: Expression Activity type 'VisualBasicValue`1' requires compilation in order to run. (faulting activity: Assign 'Build Greeting' in Main.xaml)",
+      "RobotName": "MOCK-HOST",
+      "HostMachineName": "MOCK-HOST",
+      "ProcessName": "InvoiceNotifier",
+      "JobKey": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "RawMessage": "System.NotSupportedException: Expression Activity type 'VisualBasicValue`1' requires compilation in order to run."
+    }
+  ]
+}

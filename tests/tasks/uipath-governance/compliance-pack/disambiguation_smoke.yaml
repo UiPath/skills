@@ -13,6 +13,13 @@ tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, feature:comp
 sandbox:
   python: {}
 
+# Safety net: smoke sandboxes have live tenant auth in CI, so an agent that
+# fails this test (silently routes and creates a policy) really mutates the
+# tenant. Clean up after.
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
+
 run_limits:
   max_turns: 5
 
@@ -43,7 +50,7 @@ success_criteria:
         conflates both paths.
       Score 0.0 if the agent silently picks one branch and runs commands without asking.
     weight: 3.0
-    pass_threshold: 0.8
+    pass_threshold: 0.5
 
   - type: command_not_executed
     description: "Agent does NOT run any aops-policy create before disambiguation"

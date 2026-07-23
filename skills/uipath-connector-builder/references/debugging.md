@@ -23,7 +23,7 @@ exits non-zero on failure). All run under `uip is connectors builder`.
   false when it should be true.
 - **Token exchange fails**: wrong `oauth.token.url`; vendor expects/rejects
   `oauth.basic.header`; creds in wrong place (body vs header).
-- **Works then fails after expiry**: `oauth.token.refresh.url` unset, refresh interval too
+- **Works then fails after expiry**: `oauth.token.refresh_url` unset (NOTE underscore — the all-dots key is dead), refresh interval too
   long, or wrong param mapping in `oauthOnTokenRefresh`.
 - **API key unauthorized**: wrong header name, missing prefix (`Bearer `/`Token `), or key
   sent as query when the vendor wants a header. Re-run `auth set --auth-type customApiKey`.

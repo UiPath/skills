@@ -20,6 +20,8 @@ Checks (domain-agnostic):
      Interrupting flag, and any lane that returns to its origin
      (``return-to-origin`` exit) is marked ``Interrupting: Yes`` (you can only
      return to a stage you interrupted).
+  7. PO.Frontend name/SLA parity — stage/task/SLA/escalation names, uniqueness,
+     duration bounds, conditional expressions, recipients, and at-risk fields.
 
 Finds ``sdd.md`` under the current working directory.
 """
@@ -63,10 +65,154 @@ def _rule_token(cell: str) -> str | None:
     return m.group(1) if m else None
 
 
+def _sdd_frontend_issues(text: str, source: str = "sdd.md") -> list[str]:
+    """Mirror the deterministic stage/task/SLA checks performed by PO.Frontend."""
+    issues: list[str] = []
+    stage_names: list[str] = []
+    in_stage_sla = False
+    in_variable_sla = False
+
+    def check_duration(count_text: str, unit_text: str, line_no: int) -> None:
+        try:
+            count = float(count_text.strip())
+        except ValueError:
+            return
+        unit = unit_text.strip().lower()
+        if count <= 0:
+            issues.append(f"sla: count must be positive at {source}:{line_no}")
+        if unit == "min" and not 15 <= count <= 1000:
+            issues.append(f"sla: minute count must be between 15 and 1000 at {source}:{line_no}")
+
+    for line_no, line in enumerate(text.splitlines(), 1):
+        stripped = line.strip()
+        if stripped == "#### Stage SLA":
+            in_stage_sla = True
+            in_variable_sla = False
+        elif stripped == "### Variable SLA Rules":
+            in_variable_sla = True
+            in_stage_sla = False
+        elif stripped.startswith("#"):
+            in_stage_sla = False
+            in_variable_sla = False
+
+        case_sla = re.match(r"^\|\s*Case-Level SLA\s*\|\s*([0-9]+(?:\.[0-9]+)?)\s+([A-Za-z]+)", line, re.I)
+        if case_sla:
+            check_duration(case_sla.group(1), case_sla.group(2), line_no)
+
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if in_stage_sla and len(cells) >= 2 and re.fullmatch(r"\d+(?:\.\d+)?", cells[0]):
+            check_duration(cells[0], cells[1], line_no)
+        if in_variable_sla and len(cells) >= 3 and re.fullmatch(r"\d+(?:\.\d+)?", cells[1]):
+            check_duration(cells[1], cells[2], line_no)
+
+        stage = re.match(r"###\s+(Stage \d+|Exception Stage|Secondary Stage):\s*(.*)", line.strip())
+        if stage:
+            # The first colon belongs to the SDD heading grammar. Any later colon
+            # is part of the authored stage label and would make FE/SDD parsing
+            # ambiguous.
+            label = re.sub(r"\s*\([^)]*\)\s*$", "", stage.group(2)).strip()
+            if not label:
+                issues.append(f"naming: stage name is missing at {source}:{line_no}")
+            else:
+                stage_names.append(label)
+            if ":" in label:
+                issues.append(f"naming: stage name contains ':' at {source}:{line_no}: {label!r}")
+
+        task = re.match(r"#####\s+Task\s+[\d.]+:\s*(.+)", line.strip())
+        if task:
+            label = re.sub(r"\s*\([^)]*\)\s*$", "", task.group(1)).strip()
+            if ":" in label:
+                issues.append(f"naming: task name contains ':' at {source}:{line_no}: {label!r}")
+
+        # SDDs may expose an explicit SLA title, while Phase 1 carries the same
+        # value as tasks.md `display-name` on an SLA escalation T-entry.
+        sla_title = re.match(r"^\|\s*SLA Title\s*\|\s*([^|]*)\|", line, re.I)
+        if sla_title:
+            value = sla_title.group(1).strip()
+            if not value or value in {"—", "-"}:
+                issues.append(f"naming: SLA title is missing at {source}:{line_no}")
+            if ":" in value:
+                issues.append(f"naming: SLA title contains ':' at {source}:{line_no}")
+
+    duplicates = sorted({name for name in stage_names if stage_names.count(name) > 1})
+    for name in duplicates:
+        issues.append(f"naming: duplicate stage name {name!r} in {source}")
+    return issues
+
+
+def _colon_issues(text: str, source: str = "sdd.md") -> list[str]:
+    """Backward-compatible focused helper used by older checker unit tests."""
+    return [issue for issue in _sdd_frontend_issues(text, source) if "contains ':'" in issue]
+
+
+def _parse_value(value: str) -> str:
+    value = value.strip().strip('"\'')
+    return "" if value in {"", "—", "-"} else value
+
+
+def _tasks_frontend_issues(text: str, source: str) -> list[str]:
+    """Validate SLA T-entries using the same name/value invariants as FE."""
+    issues: list[str] = []
+    blocks = re.split(r"(?=^##\s+T\d+\b)", text, flags=re.M)
+    rule_names: dict[str, set[str]] = {}
+    escalation_names: dict[str, set[str]] = {}
+    for block in blocks:
+        header = re.match(r"##\s+T\d+[^\n]*", block)
+        if not header or not re.search(r"\bSLA\b|\bescalation\b", header.group(0), re.I):
+            continue
+        target_match = re.search(r"^\s*-\s*target:\s*[\"']?([^\"'\n]+)", block, re.M | re.I)
+        target = (target_match.group(1).strip() if target_match else "root")
+        is_escalation = bool(re.search(r"\bescalation\b", header.group(0), re.I))
+        display_match = re.search(r"^\s*-\s*display-name:\s*(.*?)\s*$", block, re.M | re.I)
+        display = _parse_value(display_match.group(1)) if display_match else ""
+        names = escalation_names if is_escalation else rule_names
+        names.setdefault(target, set())
+        if not display:
+            issues.append(f"naming: {'escalation' if is_escalation else 'SLA'} title is missing at {source}")
+        elif display in names[target]:
+            issues.append(f"naming: duplicate {'escalation' if is_escalation else 'SLA'} title {display!r} at {source}")
+        else:
+            names[target].add(display)
+        if ":" in display:
+            issues.append(f"naming: {'escalation' if is_escalation else 'SLA'} title contains ':' at {source}")
+
+        count_match = re.search(r"^\s*-\s*count:\s*([0-9]+(?:\.[0-9]+)?)\s*$", block, re.M | re.I)
+        unit_match = re.search(r"^\s*-\s*unit:\s*(\S+)\s*$", block, re.M | re.I)
+        if count_match:
+            count = float(count_match.group(1))
+            unit = unit_match.group(1).strip().lower() if unit_match else ""
+            if count <= 0:
+                issues.append(f"sla: count must be positive at {source}")
+            if unit == "min" and not 15 <= count <= 1000:
+                issues.append(f"sla: minute count must be between 15 and 1000 at {source}")
+
+        if re.search(r"conditional SLA rule", header.group(0), re.I):
+            condition = re.search(r"^\s*-\s*(?:condition|expression):\s*(.*?)\s*$", block, re.M | re.I)
+            if not condition or not _parse_value(condition.group(1)):
+                issues.append(f"sla: conditional rule requires an expression at {source}")
+
+        if is_escalation:
+            recipients = re.findall(r"^\s*-\s+(?:User|UserGroup):\s*.+$", block, re.M)
+            if not recipients:
+                issues.append(f"sla: escalation requires at least one recipient at {source}")
+            if re.search(r"^\s*-\s*trigger-type:\s*at-risk\s*$", block, re.M | re.I):
+                if not re.search(r"^\s*-\s*at-risk-percentage:\s*\S+", block, re.M | re.I):
+                    issues.append(f"sla: at-risk escalation requires at-risk-percentage at {source}")
+    return issues
+
+
 def main() -> None:
     path = _find_sdd()
     text = open(path, encoding="utf-8").read()
     issues: list[str] = []
+    issues.extend(_sdd_frontend_issues(text, path))
+
+    # When Phase 1 has already generated tasks.md next to the SDD, validate its
+    # SLA and escalation T-entries before JSON emission.
+    tasks_path = glob.glob("**/tasks/tasks.md", recursive=True)
+    for candidate in sorted(tasks_path):
+        tasks_text = open(candidate, encoding="utf-8").read()
+        issues.extend(_tasks_frontend_issues(tasks_text, candidate))
 
     # --- §Case Variables: | name | In/Out/Variable | type | srcTrig | srcFld | default | desc |
     declared: set[str] = set()
@@ -137,7 +283,7 @@ def main() -> None:
     et_idx: int | None = None
     for line in text.splitlines():
         s = line.strip()
-        m = re.match(r"###\s+(Stage \d+|Exception Stage|Secondary Stage):\s*(.+)", s)
+        m = re.match(r"###\s+(Stage \d+|Exception Stage|Secondary Stage):\s*(.*)", s)
         if m:
             cur_stage = re.sub(r"\(.*", "", m.group(2)).strip()
             has_entry.setdefault(cur_stage, False)

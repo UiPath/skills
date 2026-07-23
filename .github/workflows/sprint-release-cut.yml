@@ -2,20 +2,28 @@ name: Sprint Release Cut
 
 # Biweekly per-sprint release cut (skills side of the CLI↔skills lockstep,
 # PILOT-5518). Runs Sunday 06:00 UTC — 6 hours BEFORE the CLI's own cut
-# (12:00 UTC) — so the skills npm package is live first. Self-anchored and
-# self-driven: it does NOT read the CLI version (skills lead, never follow).
-# On each release Sunday it:
+# (12:00 UTC). Self-anchored and self-driven: it does NOT read the CLI
+# version (skills lead, never follow).
 #
-#   1. cuts release/v<minor> from main with package.json = M.N.0
-#      (sync-version.mjs resets plugin/marketplace/Codex to M.N.0 too)
-#   2. publishes @uipath/skills@M.N.0 to npm `latest` — creates the GitHub
-#      Release v<minor>.0 (durable record) and dispatches publish.yml on the
-#      tag (a GITHUB_TOKEN-created release can't trigger publish.yml itself)
-#   3. opens a PR against main with the same version bump
+# Model: `main` carries the line currently in development (M.N.0). On each
+# release Sunday it:
 #
-# No cross-repo secret is required — the target line is the current skills
-# minor + 1, gated to the CLI's 14-day cadence (anchor below). The cli-repo
-# side cuts itself, in lockstep, from the same anchor.
+#   1. cuts release/v<M.N> from main at the version ALREADY in main (M.N.0) —
+#      the release branch matches main's current version, it is NOT bumped
+#   2. publishes a DEV build (GitHub Packages) AND a PREVIEW (npmjs) by
+#      dispatching publish.yml twice on the release branch (channel=dev,
+#      channel=preview) and WAITING for both to succeed. The bot's own branch
+#      push can't trigger publish.yml (GITHUB_TOKEN recursion guard), so the
+#      dispatches are explicit. Stable (`latest`) is NOT published here —
+#      promote a line to stable MANUALLY (see docs/RELEASE.md)
+#   3. opens a PR bumping main to the NEXT line (M.(N+1).0), only after step 2
+#      succeeds; a maintainer merges it to advance main so development
+#      continues there while release/v<M.N> stabilizes. main is protected on a
+#      public repo, so the cut does NOT push to main or use a bypass credential
+#      (see docs/RELEASE.md § Automating the bump)
+#
+# No cross-repo secret is required, gated to the CLI's 14-day cadence (anchor
+# below). The cli-repo side cuts itself, in lockstep, from the same anchor.
 
 on:
   schedule:
@@ -23,7 +31,7 @@ on:
   workflow_dispatch:
     inputs:
       minor_override:
-        description: 'Target line as MAJOR.MINOR (e.g. 1.198) — skips the cadence gate and the auto-increment'
+        description: 'Line to cut as MAJOR.MINOR (e.g. 1.198) — skips the cadence gate; cuts exactly this line'
         required: false
         default: ''
       dry_run:
@@ -59,11 +67,13 @@ jobs:
         with:
           node-version: "22.x"
 
-      - name: Cadence gate and resolve target line
+      - name: Cadence gate and resolve lines
         id: target
         env:
           MINOR_OVERRIDE: ${{ github.event.inputs.minor_override }}
         run: |
+          # The line to cut is the version ALREADY in main (see header). main is
+          # advanced to the next line by the bump PR in the last step.
           CURRENT_LINE=$(jq -r '.version | split(".") | "\(.[0]).\(.[1])"' package.json)
           echo "current_line=$CURRENT_LINE" >> "$GITHUB_OUTPUT"
 
@@ -72,8 +82,8 @@ jobs:
               echo "::error::minor_override '$MINOR_OVERRIDE' is not MAJOR.MINOR."
               exit 1
             fi
-            TARGET_LINE="$MINOR_OVERRIDE"
-            echo "Manual override -> $TARGET_LINE (cadence gate skipped)."
+            CUT_LINE="$MINOR_OVERRIDE"
+            echo "Manual override -> cut $CUT_LINE (cadence gate skipped)."
           else
             # Biweekly cadence gate: act only on release Sundays (every 14 days
             # from the anchor). A manual run without an override also honors the
@@ -90,46 +100,22 @@ jobs:
               } >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
-            # Self-increment the minor — never read the CLI (we lead it).
-            MAJOR=$(echo "$CURRENT_LINE" | cut -d. -f1)
-            MINOR=$(echo "$CURRENT_LINE" | cut -d. -f2)
-            TARGET_LINE="$MAJOR.$((MINOR + 1))"
+            # Cut main's CURRENT line — no +1 (that off-by-one skipped a line).
+            CUT_LINE="$CURRENT_LINE"
           fi
 
-          echo "target_line=$TARGET_LINE" >> "$GITHUB_OUTPUT"
+          # The next line main advances to after the cut.
+          CUT_MAJOR=$(echo "$CUT_LINE" | cut -d. -f1)
+          CUT_MINOR=$(echo "$CUT_LINE" | cut -d. -f2)
+          NEXT_LINE="$CUT_MAJOR.$((CUT_MINOR + 1))"
 
-          # Never regress, never cut the same line twice.
-          if [ "$(printf '%s\n%s\n' "$CURRENT_LINE" "$TARGET_LINE" | sort -V | tail -1)" = "$CURRENT_LINE" ]; then
-            echo "proceed=false" >> "$GITHUB_OUTPUT"
-            {
-              echo "## Skipped: target not ahead of current"
-              echo ""
-              echo "Skills are on \`$CURRENT_LINE\`, target line is \`$TARGET_LINE\` — nothing to cut."
-            } >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
-
-            # Warn-only drift check (NO gate — skills lead, never follow). Skills
-            # cuts 6 h before the CLI on the same anchor, so at this moment the
-            # CLI's latest published minor should be exactly one behind our
-            # target. A gap in either direction means a skipped/extra cut has
-            # drifted the lines apart — surface it (it's otherwise silent, and
-            # `targetCli` would keep claiming a pairing that no longer holds).
-            # Reads public npm only — no token, no cross-repo coupling.
-            CLI_LATEST=$(npm view @uipath/cli version 2>/dev/null || echo "")
-            if [ -n "$CLI_LATEST" ]; then
-              CLI_MINOR=$(echo "$CLI_LATEST" | cut -d. -f1-2)
-              EXPECTED=$(echo "$CLI_MINOR" | awk -F. '{print $1"."$2+1}')
-              if [ "$TARGET_LINE" != "$EXPECTED" ]; then
-                echo "::warning::Skills target $TARGET_LINE is not CLI_latest+1 (CLI latest published is $CLI_LATEST, minor $CLI_MINOR) — the skills/CLI lines may have drifted. Realign with a minor_override dispatch (see docs/RELEASE.md)."
-                {
-                  echo "## ⚠️ Possible skills/CLI line drift"
-                  echo ""
-                  echo "Target is \`$TARGET_LINE\`; the CLI's latest npm release is \`$CLI_LATEST\` (minor \`$CLI_MINOR\`), so the expected target is \`$EXPECTED\`. If unexpected, realign with a \`minor_override\` dispatch — see docs/RELEASE.md. (Proceeding with the cut regardless — this is a warning, not a gate.)"
-                } >> "$GITHUB_STEP_SUMMARY"
-              fi
-            fi
-          fi
+          echo "cut_line=$CUT_LINE" >> "$GITHUB_OUTPUT"
+          echo "next_line=$NEXT_LINE" >> "$GITHUB_OUTPUT"
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
+          # No CLI-drift warning here: the cut publishes a PREVIEW and stable is
+          # promoted manually, so the preview line legitimately runs 1-2 minors
+          # ahead of the CLI's published stable during the RC window. Line
+          # alignment is a manual decision made at stable-promotion time.
 
       - name: Dry run — print plan
         if: steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run == 'true'
@@ -137,30 +123,27 @@ jobs:
           {
             echo "## Dry run — planned sprint cut"
             echo ""
-            echo "- current line: \`${{ steps.target.outputs.current_line }}\`"
-            echo "- target line: \`${{ steps.target.outputs.target_line }}\`"
-            echo "- would create: \`release/v${{ steps.target.outputs.target_line }}\` from \`main\` @ \`$(git rev-parse --short HEAD)\`"
-            echo "- would publish: \`@uipath/skills@${{ steps.target.outputs.target_line }}.0\` to npm \`latest\` (GitHub Release \`v${{ steps.target.outputs.target_line }}.0\` + dispatch publish.yml)"
-            echo "- would open PR: \`auto/sprint-cut-${{ steps.target.outputs.target_line }}\` -> \`main\`"
+            echo "- current line (main): \`${{ steps.target.outputs.current_line }}\`"
+            echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` — branch \`release/v${{ steps.target.outputs.cut_line }}\` @ \`$(git rev-parse --short HEAD)\` at version \`${{ steps.target.outputs.cut_line }}.0\`"
+            echo "- would publish (and WAIT for success): DEV \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0-dev.<run>\` to GitHub Packages AND PREVIEW \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0-preview.<run>\` to npmjs (dispatch publish.yml channel=dev + channel=preview) — stable stays MANUAL"
+            echo "- would open a bump PR: \`main\` -> \`${{ steps.target.outputs.next_line }}.0\` (only if both publishes succeeded; a maintainer merges it)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Cut release branch
         id: cutbranch
         if: steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
         run: |
-          LINE="${{ steps.target.outputs.target_line }}"
+          LINE="${{ steps.target.outputs.cut_line }}"
           BRANCH="release/v$LINE"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
-            # Branch already exists. If a prior run pushed it before failing on a
-            # later step, it already carries this line's cut (package.json ==
-            # $LINE.0) — resume idempotently rather than aborting (the later
-            # release/PR guards are only reachable if we don't fail here). If the
-            # version differs, it's a genuine conflict (double-cut / stale
-            # branch) — stop for a human.
+            # Branch already exists — a prior run cut it, or main's bump didn't
+            # land so a later cadence run re-targets the same line. It must
+            # already carry this line's version (package.json == $LINE.0) —
+            # resume idempotently. A different version is a genuine conflict.
             git fetch origin "$BRANCH"
             git checkout --detach FETCH_HEAD
             EXISTING_VERSION=$(node -p "require('./package.json').version")
@@ -168,63 +151,98 @@ jobs:
               echo "::error::$BRANCH already exists at version $EXISTING_VERSION (expected $LINE.0) — resolve manually."
               exit 1
             fi
-            echo "$BRANCH already cut at $LINE.0 — resuming (re-publishing if needed)."
+            echo "$BRANCH already cut at $LINE.0 — resuming."
           else
             git checkout -b "$BRANCH"
+            # main already carries $LINE.0 on the scheduled path, so this is
+            # usually a no-op; an override targeting a different line sets it
+            # here. Commit only if the version actually changed (no empty commit).
             npm version "$LINE.0" --no-git-tag-version --allow-same-version
             node scripts/sync-version.mjs
             git add package.json version-manifest.json .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json
-            git commit -m "chore(release): cut $LINE line"
+            if git diff --cached --quiet; then
+              echo "release branch matches main at $LINE.0 — no version commit needed."
+            else
+              git commit -m "chore(release): cut $LINE line"
+            fi
             git push origin "HEAD:$BRANCH"
           fi
 
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
-      - name: Publish stable to npm (ahead of the CLI)
+      - name: Publish dev + preview from the release branch (wait for success)
         id: publish
         if: steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LINE="${{ steps.target.outputs.target_line }}"
-          TAG="v$LINE.0"
+          set -euo pipefail
+          LINE="${{ steps.target.outputs.cut_line }}"
+          BRANCH="release/v$LINE"
 
-          # Create the GitHub Release as the durable record of the cut.
-          if gh release view "$TAG" > /dev/null 2>&1; then
-            echo "Release $TAG already exists — reusing it."
-          else
-            gh release create "$TAG" \
-              --target "${{ steps.cutbranch.outputs.sha }}" \
-              --title "$TAG" \
-              --notes "Automated sprint release cut for the \`$LINE\` line. Publishes \`@uipath/skills@$LINE.0\` to npm \`latest\` ahead of the CLI release. See docs/RELEASE.md."
-          fi
+          # The bot pushed $BRANCH with GITHUB_TOKEN, which GitHub's recursion
+          # guard stops from triggering publish.yml automatically — so dispatch
+          # each channel explicitly and BLOCK on its result. `gh workflow run`
+          # doesn't return the run id, so record the newest workflow_dispatch
+          # run for this branch, dispatch, then poll for the new run id and
+          # `gh run watch --exit-status` it (non-zero if the run failed). If a
+          # publish fails, this step fails and the next step (main bump, gated
+          # on success()) is skipped — main only advances on a clean publish.
+          #   - channel=dev     -> $LINE.0-dev.<run>     on GitHub Packages
+          #   - channel=preview -> $LINE.0-preview.<run> on npmjs (--provenance)
+          # Stable (`latest`) is intentionally NOT published — promote a line
+          # to stable manually when it is ready (see docs/RELEASE.md).
+          dispatch_and_wait() {
+            channel="$1"
+            before=$(gh run list --workflow publish.yml --branch "$BRANCH" \
+              --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')
+            echo "Dispatching publish.yml channel=$channel on $BRANCH..."
+            gh workflow run publish.yml --ref "$BRANCH" -f channel="$channel"
+            run_id=""
+            for _ in $(seq 1 40); do
+              sleep 6
+              latest=$(gh run list --workflow publish.yml --branch "$BRANCH" \
+                --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')
+              if [ "$latest" != "$before" ] && [ "$latest" != "0" ]; then
+                run_id="$latest"; break
+              fi
+            done
+            if [ -z "$run_id" ]; then
+              echo "::error::Timed out finding the dispatched publish.yml run for channel=$channel."
+              return 1
+            fi
+            echo "Watching publish.yml run $run_id (channel=$channel)..."
+            gh run watch "$run_id" --exit-status --interval 15
+          }
 
-          # A release created with the default GITHUB_TOKEN does NOT start other
-          # workflow runs (GitHub's recursion guard), so `release: published`
-          # will NOT trigger publish.yml. Dispatch it explicitly instead —
-          # workflow_dispatch IS triggerable by GITHUB_TOKEN. publish.yml's
-          # npmjs path checks out the given ref ($TAG = the exact cut state,
-          # package.json = $LINE.0) and publishes via OIDC trusted publishing.
-          # Guard on npm so a resumed/repeated run doesn't re-dispatch an
-          # already-published version (which would only fail noisily).
-          if npm view "@uipath/skills@$LINE.0" version > /dev/null 2>&1; then
-            echo "@uipath/skills@$LINE.0 already on npm — skipping publish dispatch."
-          else
-            gh workflow run publish.yml --ref "$TAG" -f target=npmjs
-            echo "Dispatched publish.yml (target=npmjs) at $TAG."
-          fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          dispatch_and_wait dev
+          dispatch_and_wait preview
+          echo "Both publishes ($LINE.0-dev / $LINE.0-preview) succeeded."
 
       - name: Open version-bump PR against main
-        id: mainpr
-        if: steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
+        id: mainbump
+        # `success()` so this runs ONLY when the publish step above succeeded —
+        # main advances only after a clean dev + preview publish.
+        if: success() && steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LINE="${{ steps.target.outputs.target_line }}"
-          PR_BRANCH="auto/sprint-cut-$LINE"
+          set -euo pipefail
+          CUT_LINE="${{ steps.target.outputs.cut_line }}"
+          NEXT_LINE="${{ steps.target.outputs.next_line }}"
+          PR_BRANCH="auto/sprint-bump-$NEXT_LINE"
 
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # main is protected (ruleset: PR + 1 approval + smoke-test checks) and
+          # this is a public repo, so we do NOT push to main and do NOT add a
+          # bypass credential. Open a PR; a maintainer approves + merges it to
+          # advance main. NOTE: a PR opened by the built-in GITHUB_TOKEN does
+          # not itself trigger the required check workflows, so a maintainer may
+          # need to re-run/reopen them before merge. Fully hands-off would
+          # require an App token (see docs/RELEASE.md § Automating the bump).
           EXISTING=$(gh pr list --state open --head "$PR_BRANCH" --json url --jq '.[0].url // empty')
           if [ -n "$EXISTING" ]; then
             echo "url=$EXISTING" >> "$GITHUB_OUTPUT"
@@ -232,15 +250,22 @@ jobs:
             exit 0
           fi
 
-          # The release branch HEAD already carries exactly the version bump
-          # commit on top of main — reuse it as the PR branch.
-          git push origin "release/v$LINE:refs/heads/$PR_BRANCH"
-          URL=$(gh pr create \
-            --head "$PR_BRANCH" \
-            --base main \
-            --title "chore(release): bump main to $LINE.0 (sprint cut)" \
-            --body "Automated sprint release cut: \`release/v$LINE\` was created and \`@uipath/skills@$LINE.0\` was published to npm \`latest\`. This PR applies the same version bump to \`main\` so \`version:check\` keeps the line consistent. See docs/RELEASE.md.")
+          git fetch origin main
+          git checkout -B "$PR_BRANCH" origin/main
+          npm version "$NEXT_LINE.0" --no-git-tag-version --allow-same-version
+          node scripts/sync-version.mjs
+          git add package.json version-manifest.json .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json
+          if git diff --cached --quiet; then
+            echo "main already at $NEXT_LINE.0 — no bump PR needed."
+            exit 0
+          fi
+          git commit -m "chore(release): bump main to $NEXT_LINE.0 after cutting $CUT_LINE"
+          git push origin "HEAD:$PR_BRANCH"
+          URL=$(gh pr create --head "$PR_BRANCH" --base main \
+            --title "chore(release): bump main to $NEXT_LINE.0 (sprint cut)" \
+            --body "Automated sprint cut: \`release/v$CUT_LINE\` was cut and its dev + preview builds published. Merge to advance \`main\` to \`$NEXT_LINE.0\` so development continues on the next line. Stable \`$CUT_LINE.0\` is promoted manually — see docs/RELEASE.md.")
           echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Opened bump PR: $URL — approve + merge to advance main to $NEXT_LINE.0."
 
       - name: Summary
         if: steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
@@ -248,8 +273,8 @@ jobs:
           {
             echo "## Sprint cut complete"
             echo ""
-            echo "- \`${{ steps.target.outputs.current_line }}\` → \`${{ steps.target.outputs.target_line }}\`"
-            echo "- \`release/v${{ steps.target.outputs.target_line }}\` @ \`${{ steps.cutbranch.outputs.short_sha }}\`"
-            echo "- published: \`@uipath/skills@${{ steps.target.outputs.target_line }}.0\` to npm \`latest\` (release \`${{ steps.publish.outputs.tag }}\`)"
-            echo "- main bump PR: ${{ steps.mainpr.outputs.url }}"
+            echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` (main was on this line)"
+            echo "- \`release/v${{ steps.target.outputs.cut_line }}\` @ \`${{ steps.cutbranch.outputs.short_sha }}\`"
+            echo "- published (waited for success): DEV (GitHub Packages) + PREVIEW (npmjs) of \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0\` (stable stays manual)"
+            echo "- bump PR opened (-> \`${{ steps.target.outputs.next_line }}.0\`): ${{ steps.mainbump.outputs.url }} — approve + merge to advance main"
           } >> "$GITHUB_STEP_SUMMARY"

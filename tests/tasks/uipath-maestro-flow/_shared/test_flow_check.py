@@ -6,12 +6,14 @@ real tenant run (as happened with the nested-output flattening bug).
 """
 
 import os
+import subprocess
 import sys
 
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import flow_check  # noqa: E402
 from flow_check import (  # noqa: E402
     assert_flow_has_any_node_type,
     assert_flow_has_api_node_targeting,
@@ -22,6 +24,7 @@ from flow_check import (  # noqa: E402
     assert_output_value,
     assert_outputs_contain,
     collect_outputs,
+    run_debug,
 )
 
 
@@ -613,3 +616,91 @@ def test_collect_outputs_pascalcase_matches_camelcase():
         }
     }
     assert sorted(map(str, collect_outputs(camel))) == sorted(map(str, collect_outputs(pascal)))
+
+
+# ── run_debug transient server-error retry ───────────────────────────────────
+
+
+_TRANSIENT_504 = (
+    '{\n  "Result": "Failure",\n'
+    '  "Message": "Failed during poll-instance-status: HTTP 504 on GET /api/v1/debug-instances/x/element-executions",\n'
+    '  "Context": {"HttpStatus": 504, "Stage": "poll-instance-status"},\n'
+    '  "ErrorCode": "server_error",\n  "Retry": "RetryLater"\n}'
+)
+_COMPLETED = (
+    '{\n  "Result": "Success",\n'
+    '  "Data": {"finalStatus": "Completed", "variables": {"globalVariables": '
+    '[{"name": "severity", "value": "Sev1"}]}}\n}'
+)
+
+
+def _cp(returncode, stdout="", stderr=""):
+    return subprocess.CompletedProcess(
+        args=["uip", "maestro", "flow", "debug"], returncode=returncode, stdout=stdout, stderr=stderr
+    )
+
+
+def _stub_debug(monkeypatch, results):
+    """Feed run_debug a queue of CompletedProcess results, stub sleep to be
+    instant, and stub project discovery so no real tree is needed."""
+    calls = {"n": 0}
+    queue = list(results)
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: "/tmp/proj")
+    monkeypatch.setattr(flow_check.time, "sleep", lambda *_: None)
+
+    def fake_run(cmd, **kwargs):
+        calls["n"] += 1
+        return queue.pop(0)
+
+    monkeypatch.setattr(flow_check.subprocess, "run", fake_run)
+    return calls
+
+
+def test_run_debug_retries_transient_504_then_completes(monkeypatch):
+    calls = _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504), _cp(0, _COMPLETED)])
+    payload = run_debug(inputs={"x": 1})
+    assert calls["n"] == 2
+    assert flow_check._get_ci(payload, "finalStatus") == "Completed"
+
+
+def test_run_debug_does_not_retry_real_fault(monkeypatch):
+    """A run that returns exit 0 but did not complete is a real flow fault —
+    fail immediately, no retry."""
+    faulted = '{\n  "Result": "Success",\n  "Data": {"finalStatus": "Faulted"}\n}'
+    calls = _stub_debug(monkeypatch, [_cp(0, faulted)])
+    with pytest.raises(SystemExit):
+        run_debug()
+    assert calls["n"] == 1
+
+
+def test_run_debug_does_not_retry_nontransient_error(monkeypatch):
+    """A non-5xx / non-RetryLater failure (e.g. bad input) is returned on the
+    first attempt."""
+    bad = '{\n  "Result": "Failure",\n  "ErrorCode": "invalid_argument",\n  "Retry": "RetryWillNotFix"\n}'
+    calls = _stub_debug(monkeypatch, [_cp(1, bad)])
+    with pytest.raises(SystemExit):
+        run_debug()
+    assert calls["n"] == 1
+
+
+def test_run_debug_exhausts_retries_on_persistent_504(monkeypatch):
+    calls = _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504)] * 3)
+    with pytest.raises(SystemExit):
+        run_debug(retries=3)
+    assert calls["n"] == 3
+
+
+@pytest.mark.parametrize(
+    "cp,expected",
+    [
+        (_cp(0, _COMPLETED), False),                                   # success: never transient
+        (_cp(1, _TRANSIENT_504), True),                                # RetryLater + server_error + 504
+        (_cp(1, '{"Retry": "RetryLater"}'), True),                     # marker alone
+        (_cp(1, '{"ErrorCode": "server_error"}'), True),               # marker alone
+        (_cp(1, '{"Context": {"HttpStatus": 503}}'), True),            # 5xx via HttpStatus
+        (_cp(1, '{"ErrorCode": "invalid_argument", "Retry": "RetryWillNotFix"}'), False),
+        (_cp(1, '{"Context": {"HttpStatus": 404}}'), False),           # 4xx is not transient
+    ],
+)
+def test_is_transient_debug_error(cp, expected):
+    assert flow_check._is_transient_debug_error(cp) is expected

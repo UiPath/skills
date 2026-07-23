@@ -2,7 +2,7 @@
 
 This file is a **thinking guide** for the agent: principles for how to listen, infer, ask, and resolve when no `sdd.md` is provided. Phase 0 produces an `sdd.md` that Phase 1 reads exactly as if a user wrote it.
 
-> **Authoritative for the interview path only.** Trigger detection, mode behavior, threshold handling, hard stop, resumption, output contract. **Content rules** (authority hierarchy, task-type override priority, render-required fields, variable lineage, review items, source ledger) live in [sdd-generation-rules.md](sdd-generation-rules.md). Phase 1 logic lives in [planning.md](planning.md). Phases 2–6 live in [phased-execution.md](phased-execution.md).
+> **Authoritative for the interview path only.** Trigger detection, mode behavior, hard stop, resumption, output contract. **Content rules** (authority hierarchy, task-type override priority, render-required fields, variable lineage, review items, source ledger) live in [sdd-generation-rules.md](sdd-generation-rules.md). Phase 1 logic lives in [planning.md](planning.md). Phases 2–6 live in [phased-execution.md](phased-execution.md).
 
 ## Goal
 
@@ -10,7 +10,7 @@ Produce a `sdd.md` shaped by [`assets/templates/sdd-template.md`](../assets/temp
 
 Phase 0 also writes:
 
-- `tasks/registry-resolved.json` — one entry per task (search query, all matches, selected, rationale, resolved I/O contract).
+- `tasks/registry-resolved.json` — one entry per task using Rule 9's required association and lookup keys, plus the resolved I/O contract when applicable.
 - `sdd.draft.md` — intermediate; deleted atomically at approval.
 - `sdd-viewer.html` — optional, written only if the user accepts the preview offer (§HTML preview).
 
@@ -28,6 +28,8 @@ Strict binary trigger. Look for an `.md` file at the resolved path whose basenam
 If the user prompt names no `.md` reference, default candidate is `./sdd.md`. Ask the user to confirm or supply a different path before assuming.
 
 ## Entry
+
+Phase 0 is the run's start. Present the greenfield flow overview once (prefixed with the interview line) before the entry prompt, so the dev knows the phases and decision points ahead. See [SKILL.md § Kickoff — set dev expectations](../SKILL.md#kickoff--set-dev-expectations-first).
 
 When Phase 0 runs from scratch, AskUserQuestion (3 options):
 
@@ -239,18 +241,11 @@ Classification of each reply:
 | "Do you support webhook callbacks to our LOS when origination closes?" | `off-topic` | Capability question; the closing event is mentioned as context, not proposed as the answer. |
 | "Historically we had files stay open for weeks. The 2023 audit was rough." | `off-topic` | History, no value proposed. |
 
-#### Threshold check
-
-After Sketch + Ask close out, count from `sdd.draft.md`:
-
-- Stages, Tasks total, Distinct integrations, Distinct personas, `case-management` tasks (child cases).
-- Secondary stages — counted but never triggers redirect.
-
-Breach any quantitative cap → §Soft redirect.
-
 ### Resolve
 
-For each task in `sdd.draft.md`, find the matching registry resource. Search the cache file under `~/.uip/case-resources/` by name keywords. Filename varies by component type — common cases:
+Before registry lookup, establish the concrete intended resource name for every `process`, `agent`, `rpa`, `api-workflow`, `action`, and `case-management` task. Write it to the task type's portable-name field: `Resolved Resource` for process/agent/rpa/api-workflow, the `Action App: <deploymentTitle>` value in `HITL Implementation` for action, and `Child Case` for case-management. Preserve a name the user supplied; if it is absent, ask rather than silently substituting the task's display name. These portable-name fields are NEVER `<UNRESOLVED>`.
+
+Find each matching registry resource using that intended name. Search the cache file under `~/.uip/case-resources/` by name keywords. Filename varies by component type — common cases:
 
 - `process-index.json`, `agent-index.json`, `api-index.json`, `processOrchestration-index.json`, `caseManagement-index.json` — `<type>-index.json` shape
 - `action-apps-index.json` — kebab + plural for HITL action apps
@@ -265,13 +260,13 @@ Run `uip maestro case registry pull` first if cache absent. See [registry-discov
 |---|---|---|
 | `execute-connector-activity` | connector `typeId` + operation (`typecache-activities-index.json`) | a registered IS **connection** (`connectionId`) for that connector |
 | `wait-for-connector` | connector-trigger `typeId` (`typecache-triggers-index.json`) | an IS connection for the inbound event |
-| `agent` | `agentId` (`agent-index.json`) | the agent is **deployed** |
+| `agent` | `agentId` (`agent-index.json`) | the agent is **deployed** — or built inline at the Phase 1 Rule 17 Create gate (in-solution sibling) |
 | `action` (human task / HITL) | `actionAppId` (`action-apps-index.json`) when a deployed Action App matches | else `<UNRESOLVED>` + Rule-8 placeholder — inline JSON-schema authoring is NOT supported by the action plugin |
 | `process` / `rpa` | `processOrchestrationId` (`process-index.json` / `processOrchestration-index.json`) | the process is **published** |
-| `api-workflow` | `apiWorkflowId` (`api-index.json`) | the API workflow is **deployed** |
+| `api-workflow` | `apiWorkflowId` (`api-index.json`) | the API workflow is **deployed** — or built inline at the Phase 1 Rule 17 Create gate (in-solution sibling) |
 | `case-management` | child case (`caseManagement-index.json`) | the child case is **published** |
 
-A *type* match with **no live instance** still ships `<UNRESOLVED>` + a `high` review item — never fabricate IDs (SKILL.md Rule 8). (A connector type can exist in the catalog while the tenant has zero connections — that is still `<UNRESOLVED>`.)
+A *type* match with **no live instance** still ships an unresolved identity + a `high` review item — never fabricate IDs (SKILL.md Rule 8). Preserve the type-specific portable name: `Resolved Resource` for process/agent/rpa/api-workflow, the Action App title for action, and `Child Case` for case-management. Write `<UNRESOLVED>` only to that type's resolution fields: `Resource Identity` + `Folder Path`, or `Action App ID` + `Deployment Folder`. (A connector type can exist in the catalog while the tenant has zero connections — its identity is still unresolved.)
 
 **Narrate the search before presenting matches.** Don't drop the AskUserQuestion cold:
 
@@ -283,7 +278,7 @@ Before per-task prompts, run all task searches in parallel, then bucket results:
 
 | Bucket | Definition |
 |---|---|
-| **A — single high-confidence** | Exactly 1 match **across all folders**, AND the match's name shares ≥ 1 token (case-insensitive, ≥ 3 chars) with the task's `Task Name` |
+| **A — single high-confidence** | Exactly 1 match **across all folders**, AND the match's name shares ≥ 1 token (case-insensitive, ≥ 3 chars) with the task's intended resource name |
 | **B — ambiguous** | Multiple matches (**including the same resource name present in ≥2 folders** — a cross-folder name never auto-confirms), OR single match with no token overlap |
 | **C — empty** | 0 matches across cache files |
 
@@ -304,14 +299,14 @@ Per-task AskUserQuestion (4 options max). **When candidate matches differ by fol
 |---|---|
 | `<top match — name · folder · version · type>` | Record selection (incl. chosen folder). |
 | `<second match — name · folder · version · type>` (if available) | Record selection (incl. chosen folder). |
-| `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. **For an `agent`,** Phase 1's Rule 17 gate additionally offers to build it inline as an in-solution sibling ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a no-match agent need not stay manual. |
+| `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Retain the task type's concrete portable name and leave only its identity/folder fields unresolved. Phase 1 emits a placeholder task per Rule 8. **For an `agent` or `api-workflow`,** Phase 1's Rule 17 gate additionally offers to build it inline as an in-solution sibling ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a no-match resource of these kinds need not stay manual. Action Apps and child cases remain placeholder-only. |
 | `Something else` | Free-text re-search keyword, retry. |
 
-**Empty registry match** across bucket C → AskUserQuestion `Force pull and re-resolve` / `Skip and use placeholders` — plus, when ≥1 still-empty is an `agent` AND the CLI supports `registry --local`, `Create the missing agent(s) inline` (build as in-solution siblings; see [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — per Rule 17, applied per batch, not per task. When the user picks `Skip and use placeholders`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
+**Empty registry match** across bucket C → AskUserQuestion `Force pull and re-resolve` / `Use placeholders for all` — plus, when ≥1 still-empty is an `agent` or `api-workflow` AND the CLI supports `registry --local`, `Create missing resources inline` (build as in-solution siblings; see [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — per Rule 17, applied per batch, not per task. When the user picks `Use placeholders for all`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
 
 #### Schema discovery — pull each resolved task's I/O contract
 
-Identity is not the whole contract. The SDD's task Inputs / Outputs `Field` cells MUST match the resource's real argument / field names verbatim (see [sdd-generation-rules.md § Task content rules](sdd-generation-rules.md#task-content-rules)), and a connector's *required* inputs stay invisible until its schema is read. For every task resolved to a **live instance** (skip `<UNRESOLVED>` — no identity, no schema), pull its contract and use it to fill the `Field` cells from the real names and to back-solve required inputs against the *actual* list, not the user's recollection.
+Identity is not the whole contract. The SDD's task Inputs / Outputs `Field` cells MUST match the resource's real argument / field names verbatim (see [sdd-generation-rules.md § Task content rules](sdd-generation-rules.md#task-content-rules)), and a connector's *required* inputs stay invisible until its schema is read. For every task resolved to a **live instance** (skip tasks whose identity is `<UNRESOLVED>` — no identity, no schema), pull its contract and use it to fill the `Field` cells from the real names and to back-solve required inputs against the *actual* list, not the user's recollection.
 
 Run in parallel after the picks land — `--output json`, connectors via `spec`, runnables via `tasks describe`:
 
@@ -334,9 +329,9 @@ Map each answer to a variable, a literal, or an upstream task's output (§Ask �
 
 **Cost.** One CLI call per resolved task, run in parallel and resolved-only. The trade is a longer Resolve for far fewer Phase 3 / 4 binding failures — wrong `Field` names and unmapped required inputs that otherwise surface only after Rule 2 locks the file.
 
-After all picks and schema discovery, write `tasks/registry-resolved.json` (Rule 9 shape — including each resolved task's fetched I/O contract). The persisted contract MUST record, per resolved task, each declared **input name + `required` flag** and the full **declared output-field list** — Phase 3 io-binding Check 5 re-verifies required-input coverage and output-field fidelity against this without re-fetching ([io-binding/impl-json.md § Check 5](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)). Update `sdd.draft.md` with concrete resource names and the real Inputs / Outputs `Field` names. Any unresolved task carries a paired `review_items[]` entry in the same JSON.
+After all picks and schema discovery, write `tasks/registry-resolved.json` (Rule 9 shape — including each resolved task's fetched I/O contract). The persisted contract MUST record, per resolved task, each declared **input name + `required` flag** and the full **declared output-field list** — Phase 3 io-binding Check 5 re-verifies required-input coverage and output-field fidelity against this without re-fetching ([io-binding/impl-json.md § Check 5](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)). Update `sdd.draft.md`: a resolved task uses the selected entry's canonical type-specific name, exact folder, and identity; an unresolved task retains its requested portable name and uses `<UNRESOLVED>` only for its identity/folder fields. Also update the matching Section 4 roll-up row when that resource family has one. Any unresolved task carries a paired `review_items[]` entry in the same JSON when the file is written.
 
-> **Phase 1 handoff.** Phase 1 reads `tasks/registry-resolved.json` and skips re-search for resolved entries. It still extends the file with any resolutions Phase 0 deferred. No artifact replay; sdd.md is the contract.
+> **Phase 1 handoff.** `sdd.md` is the authoritative handoff; `tasks/registry-resolved.json` is an optional cache/audit artifact. Phase 1 reuses an entry only after its type, searched cache, canonical name, exact folder, and identity match the current SDD per [planning.md § Phase 0 carryover](planning.md#step-2--locate-and-parse-the-design-document). A missing, unresolved, or mismatched field makes the entry stale and triggers discovery from the SDD's type-specific portable name (`Resolved Resource`, Action App title, or `Child Case`).
 
 ### Approve
 
@@ -359,7 +354,6 @@ Tasks:   N
 Integrations: N
 Personas:     N
 Child cases:  N
-Threshold status: WITHIN | EXCEEDED (<which>)
 Review items:    high=N  medium=N  low=N
 Auto-confirmed:  N registry matches (single-match high-confidence)
 
@@ -413,8 +407,6 @@ Structural checks before re-approve:
 
 Validation fail → list specific issues, AskUserQuestion `Re-edit` / `Restart` / `Abort`.
 
-Threshold breach on edit → §Soft redirect (user can override or switch).
-
 ## HTML preview
 
 Optional. Offered at Approve. The viewer is a self-contained HTML file the user opens locally — no server, no internet.
@@ -451,42 +443,6 @@ Re-show the Approve prompt. The viewer is a review aid, not a checkpoint — it 
 
 If the user edits `sdd.md` after a preview is generated, the existing `sdd-viewer.html` is stale. Either regenerate it (re-pick `Generate HTML preview` at Approve) or leave it — Phase 1 ignores the file either way.
 
-## Thresholds
-
-Hard quantitative caps. Breach triggers §Soft redirect (not hard refuse).
-
-| Threshold | Cap |
-|---|---|
-| Stages | > 7 |
-| Tasks total | > 14 |
-| Distinct integrations | > 3 |
-| Distinct personas | > 3 |
-| Child cases (`case-management` tasks) | ≥ 1 |
-
-**Secondary stages are NOT a threshold.** They may appear freely.
-
-## Soft redirect
-
-AskUserQuestion (2 options):
-
-| Option | Effect |
-|---|---|
-| `Continue with warning header` | Proceed. Set warning header in generated `sdd.md` (§Warning header). |
-| `Abort` | Exit. No file changes beyond what already exists. Preserve `sdd.draft.md` so the user can resume after manually trimming scope. |
-
-### Warning header
-
-When user overrode, prepend immediately under the H1 in `sdd.md`:
-
-```markdown
-> **⚠️ Generated lightweight; complexity exceeded thresholds.**
-> Counts at generation time: <stages> stages, <tasks> tasks, <integrations> integrations,
-> <personas> personas, <child-cases> child cases.
-> Review carefully before approving. Consider splitting into smaller cases or trimming scope.
-```
-
-Phase 1 ignores it (blockquote, not a structural field). The HTML viewer surfaces it as a banner.
-
 ## Resumption
 
 When `sdd.draft.md` is present at trigger time, AskUserQuestion (4 options):
@@ -520,8 +476,7 @@ If the user asks how something works, explain in their language (cases, stages, 
 | User says "skip" / "I don't know" on optional field | Write `—` in the draft. |
 | User says "skip" on required field | Write `<UNRESOLVED: <agent's question>>` in the draft. Phase 1 + post-build loop will revisit. |
 | 3 stuck replies in single Ask (per-field counter, reset on `answered` — see §Ask Stuck detector for classification) | Trigger §Soft redirect. |
-| Registry pull fails (CLI error, no auth) | Skip Resolve. All tasks marked `<UNRESOLVED>`. Phase 1 emits placeholders. Inform user. |
-| User edits `sdd.md` to add stages exceeding threshold | Edit validation fires §Soft redirect. |
+| Registry pull fails (CLI error, no auth) | Skip live resolution. For process/agent/rpa/api-workflow, keep a concrete intended `Resolved Resource`; for action, keep the Action App title; for case-management, keep `Child Case`. Mark only the type-specific identity/folder fields `<UNRESOLVED>` and pair the unresolved identity with a `high` review item. Phase 1 retries discovery and emits placeholders only for identities that remain unresolved. Inform user. |
 | `sdd.md` already exists at path when interview begins | Should not happen — trigger detection exits Phase 0 first. If race, abort with error. Never overwrite. |
 | HTML preview generation fails (template missing, write error) | Inform user, fall back to text summary only. Approve gate is unaffected. |
 
@@ -529,8 +484,8 @@ If the user asks how something works, explain in their language (cases, stages, 
 
 After Approve:
 
-- `sdd.md` — always present. May include warning header, `<UNRESOLVED>` markers, or `—` placeholders.
-- `tasks/registry-resolved.json` — **present only if Resolve ran successfully.** Absent when Resolve was skipped (registry pull failed, no auth, or the cache was unreachable — see Failure modes). Phase 1 ([planning.md § Step 3](planning.md)) handles both cases: if the file exists, it reads carry-over picks and skips re-search for resolved entries; if absent, it runs full discovery from scratch. Either way, format matches Phase 1's artifact shape (Rule 9) when written.
+- `sdd.md` — always present. May include `<UNRESOLVED>` markers or `—` placeholders, but every process/agent/rpa/api-workflow task has a concrete `Resolved Resource`, every action has a concrete Action App title, and every case-management task has a concrete `Child Case` name.
+- `tasks/registry-resolved.json` — **present only if Resolve ran successfully.** Absent when Resolve was skipped (registry pull failed, no auth, or the cache was unreachable — see Failure modes). Phase 1 ([planning.md § Step 2](planning.md#step-2--locate-and-parse-the-design-document)) validates every carry-over entry against the current SDD before reuse; stale or mismatched entries are re-resolved from the type-specific portable name and replaced. If the file is absent, Phase 1 runs full discovery and writes a fresh file. Either way, format matches Rule 9 when written.
 - `sdd-viewer.html` — present only if user generated the preview. Phase 1 ignores it.
 - `sdd.draft.md` — deleted (atomic rename at Approve).
 
@@ -539,13 +494,11 @@ Phase 1 ([planning.md](planning.md) Step 2) reads `sdd.md` exactly as a user-pro
 ## Anti-patterns
 
 - **Do NOT overwrite an existing `sdd.md`.** Strict binary trigger; presence = trust-as-written.
-- **Do NOT suggest or invoke any other skill on threshold breach or stuck detection.** Phase 0 stays self-contained — surface the warning header, give the user `Continue` / `Abort`, never push a redirect.
+- **Do NOT suggest or invoke any other skill automatically during the interview.** Keep the interview self-contained; the user may explicitly invoke another skill when needed.
 - **Do NOT persist Listen output as a transcript.** Inferences live in the draft (the sketch), not in a separate file.
 - **Do NOT use `sed`/`awk`/`python`/`node` to mutate `sdd.draft.md`, `sdd.md`, `tasks/registry-resolved.json`, or `sdd-viewer.html`.** Read + Write/Edit only (Rule 13).
 - **Do NOT bundle questions in Ask.** One per message. Bundles re-introduce the form-feel Phase 0 is reframed to avoid.
 - **Do NOT silently auto-pick a registry match in Resolve.** AskUserQuestion every task; never infer (Rule 2 spirit).
-- **Do NOT proceed past the threshold check when counts already exceed thresholds.** Force soft-redirect prompt before continuing.
-- **Do NOT skip the warning header when user overrode threshold.** Future agents reading the file must see the override flag.
 - **Do NOT treat the HTML preview as a checkpoint.** It's a review aid. Approve is the only gate.
 - **Do NOT narrate filenames or schema mechanics in user-visible output.** See §Forbidden vocabulary.
 - **Do NOT ask for permission to read user-provided docs.** If the user named them, read them.

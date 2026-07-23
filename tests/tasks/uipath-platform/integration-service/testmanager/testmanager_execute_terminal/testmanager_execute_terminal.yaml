@@ -15,12 +15,12 @@ description: >
 tags: [uipath-platform, integration, integration-service, test-manager, resources, execute]
 
 sandbox:
-  driver: tempdir
   python: {}
   node: {}
 
 run_limits:
   expected_turns: 18
+  max_turns: 35
   task_timeout: 1800
 
 initial_prompt: |

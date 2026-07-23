@@ -335,8 +335,6 @@ jobs:
       # feed; its UiPath deps resolve from the ml-packages feed (both as extra
       # indexes). No source checkout.
       - name: Install coder-eval
-        env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
 
       # Pull the pinned agent image from GHCR (never built from source); the
@@ -346,11 +344,12 @@ jobs:
           echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }}
 
-      # Build custom smoke image extending coder-eval-agent with @uipath/cli
-      # and @uipath/admin-tool from GitHub Packages @alpha.
-      # Every merge to `cli/main` publishes a `-alpha.<date>.<run>` prerelease;
-      # smoke tracks this so changes in task YAMLs/skills are tested against main,
-      # not stale `latest` from public npm (which lags by days).
+      # Build custom smoke image extending coder-eval-agent with @uipath/cli and
+      # every whitelisted tool plugin from GitHub Packages @dev (see
+      # tests/docker/Dockerfile). Every push to `cli/main` publishes a
+      # `-dev.<run>` prerelease under the `dev` dist-tag (cli PR #2650 renamed the
+      # old `alpha` tag → `dev` on 2026-06-26), so smoke tracks main — not stale
+      # `latest` from public npm (which lags by ~2 weeks).
       - name: Build skills smoke Docker image
         run: |
           docker build \
@@ -360,79 +359,39 @@ jobs:
             -f tests/docker/Dockerfile \
             .
 
-      # Pre-auth uip via the CLI's documented env-var bypass so non-RPA
-      # smoke tasks (orchestrator / integration-service / data-fabric / ...)
-      # have a logged-in CLI without the agent ever calling `uip login`.
-      # See smoke-rpa-skills.yml for the chain rationale; this Linux job
-      # doesn't go through Helm, but the same UIPATH_CLI_* env vars
-      # satisfy the JS CLI's general auth state too.
-      - name: Mint UiPath service-account token + enable env-auth
+      # Authenticate as the existing Alpha bot user. Agent guardrail discovery
+      # is served by agentsruntime_ and requires user-only scopes such as
+      # StudioWebBackend; an External App client_credentials token can report a
+      # valid login while still receiving 401 from the guardrail endpoints.
+      #
+      # Reuse the same ROPC helper as the nightly workflow. It writes the
+      # standard ~/.uipath/.auth file that the smoke experiment mounts into
+      # every Docker sandbox.
+      - name: Mint UiPath Alpha bot token (ROPC)
         env:
-          UIPATH_CLIENT_ID:     ${{ secrets.UIPATH_CLIENT_ID }}
-          UIPATH_CLIENT_SECRET: ${{ secrets.UIPATH_CLIENT_SECRET }}
+          UIPATH_URL:               https://alpha.uipath.com
+          UIPATH_ORGANIZATION_NAME: ${{ secrets.UIPATH_ORG_NAME }}
+          UIPATH_ORGANIZATION_ID:   ${{ secrets.UIPATH_ORG_ID }}
+          UIPATH_TENANT_NAME:       ${{ secrets.UIPATH_TENANT_NAME }}
+          UIPATH_TENANT_ID:         ${{ secrets.UIPATH_TENANT_ID }}
+          CLIENT_ID:                ${{ secrets.UIPATH_ROPC_CLIENT_ID }}
+          CLIENT_SECRET:            ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
+          CE_USERNAME:              ${{ secrets.UIPATH_BOT_USERNAME }}
+          CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
         run: |
           set -euo pipefail
-          TOKEN=$(curl -fsS -X POST \
-            "https://alpha.uipath.com/identity_/connect/token" \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "grant_type=client_credentials" \
-            -d "client_id=$UIPATH_CLIENT_ID" \
-            -d "client_secret=$UIPATH_CLIENT_SECRET" \
-            -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read TM.Projects TM.TestCases TM.TestSets TM.TestExecutions TM.Requirements TM.ObjectLabels TM.Attachments TM.CustomFieldValues TM.CustomFieldDefinitions" \
-            | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
-          echo "::add-mask::$TOKEN"
-          TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}"
-          TENANT_ID="${{ secrets.UIPATH_TENANT_ID }}"
-          run_uip_with_tenant() {
-            local tenant_name="$1"
-            shift
-            docker run --rm \
-              -e UIPATH_CLI_ENABLE_ENV_AUTH=true \
-              -e UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
-              -e UIPATH_CLI_ORGANIZATION_NAME="${{ secrets.UIPATH_ORG_NAME }}" \
-              -e UIPATH_CLI_ORGANIZATION_ID="${{ secrets.UIPATH_ORG_ID }}" \
-              -e UIPATH_CLI_TENANT_NAME="$tenant_name" \
-              -e UIPATH_CLI_TENANT_ID="$TENANT_ID" \
-              --entrypoint /bin/sh \
-              skills-image:latest -lc 'uip "$@"' -- "$@"
-          }
-          if [ -n "$TENANT_ID" ]; then
-            TENANT_NAME_FOR_LIST="${TENANT_NAME:-$TENANT_ID}"
-            TENANTS_JSON=$(run_uip_with_tenant "$TENANT_NAME_FOR_LIST" login tenant list --output json)
-            RESOLVED_TENANT_NAME=$(TENANTS_JSON="$TENANTS_JSON" TENANT_ID="$TENANT_ID" python - <<'PY'
-          import json
-          import os
+          bash .github/scripts/refresh-auth.sh
 
-          data = json.loads(os.environ["TENANTS_JSON"])
-          tenant_id = os.environ["TENANT_ID"]
-          for tenant in data.get("Data", []):
-              if tenant.get("TenantId") == tenant_id:
-                  print(tenant.get("TenantName", ""))
-                  break
-          PY
-          )
-            if [ -n "$RESOLVED_TENANT_NAME" ]; then
-              TENANT_NAME="$RESOLVED_TENANT_NAME"
-            fi
-          fi
-          if [ -z "$TENANT_NAME" ] || [ "$TENANT_NAME" = "UIPATH_TENANT_NAME" ]; then
-            echo "::error::Unable to resolve UIPATH_CLI_TENANT_NAME from UIPATH_TENANT_NAME/UIPATH_TENANT_ID"
-            exit 1
-          fi
-          echo "::add-mask::$TENANT_NAME"
-          {
-            echo "UIPATH_CLI_ENABLE_ENV_AUTH=true"
-            echo "UIPATH_CLI_AUTH_TOKEN=$TOKEN"
-            echo "UIPATH_CLI_ORGANIZATION_NAME=${{ secrets.UIPATH_ORG_NAME }}"
-            echo "UIPATH_CLI_ORGANIZATION_ID=${{ secrets.UIPATH_ORG_ID }}"
-            echo "UIPATH_CLI_TENANT_NAME=$TENANT_NAME"
-            echo "UIPATH_CLI_TENANT_ID=$TENANT_ID"
-            echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
-            echo "CODED_APPS_TEST_PROJECT_ID=${{ secrets.CODED_APPS_TEST_PROJECT_ID }}"
-            echo "CODED_APPS_TEST_SOLUTION_ID=${{ secrets.CODED_APPS_TEST_SOLUTION_ID }}"
-          } >> "$GITHUB_ENV"
-          mkdir ~/.uipath
-          run_uip_with_tenant "$TENANT_NAME" login status --output json
+          # Fail once at setup, with a direct error, rather than letting every
+          # guardrail task discover an unusable auth context independently.
+          docker run --rm \
+            -v "$HOME/.uipath:/.uipath:rw" \
+            --entrypoint /bin/sh \
+            skills-image:latest -lc '
+              set -eu
+              uip login status --output json
+              uip agent guardrails list --output json
+            '
 
       - name: Run smoke tests
         env:
@@ -514,8 +473,6 @@ jobs:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
-          CODED_APPS_TEST_PROJECT_ID: ${{ secrets.CODED_APPS_TEST_PROJECT_ID }}
-          CODED_APPS_TEST_SOLUTION_ID: ${{ secrets.CODED_APPS_TEST_SOLUTION_ID }}
         run: |
           python - <<'PY'
           import os
@@ -526,8 +483,6 @@ jobs:
               "AWS_BEARER_TOKEN_BEDROCK",
               "ANTHROPIC_API_KEY",
               "TRACES_SMOKE_PROCESS_KEY",
-              "CODED_APPS_TEST_PROJECT_ID",
-              "CODED_APPS_TEST_SOLUTION_ID",
           )
           values = [os.environ[name] for name in names if len(os.environ.get(name, "")) >= 8]
           if not values:
@@ -692,8 +647,6 @@ jobs:
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). `coder-eval plan` validates schemas on the runner -- no image.
       - name: Install coder-eval
-        env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
 
       - name: Validate every task YAML against the pinned coder_eval schema

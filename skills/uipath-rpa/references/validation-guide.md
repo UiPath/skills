@@ -2,23 +2,22 @@
 
 Fix-one-thing discipline, the validation iteration loop, smoke test procedure, and RPA-specific fix procedures.
 
-## Pre-generation: List Analyzer Rules
+## On demand: List Analyzer Rules
 
-Before creating or editing any workflow file (`.cs` with `[Workflow]`/`[TestCase]`, or `.xaml`), list the enabled Workflow Analyzer rules so generated code satisfies them on the first attempt instead of round-tripping through `validate` fixes:
+`validate` and `build` already enforce the project's enabled Workflow Analyzer rules — violations come back with the rule ID, severity, and recommendation, so the normal authoring loop needs **no** rule pre-fetch. Do NOT run `analyzer-rules list` as an authoring prerequisite: the unscoped call enumerates every rule across every package and can take a minute or more, and most of its output never affects the code you write.
+
+Run it **only on demand**:
+
+1. The **user asks** about the project's best-practice / analyzer rules ("what rules does this project enforce?", "list the analyzer rules", "why is UI-REL-001 firing?").
+2. **Repeated violations of the same rule family** across `validate`/`build` iterations — reading the full rule set (scoped, see below) lets you author against it instead of fixing violations one by one.
 
 ```bash
-uip rpa analyzer-rules list --project-dir "<PROJECT_DIR>" --output json
+uip rpa analyzer-rules list --project-dir "<PROJECT_DIR>" --scope "<Activity|Workflow|Coded Workflow|Project>" --output json
 ```
 
-Apply every rule whose `severity` is `error` or `warning` during authoring. `info` rules are advisory.
+Prefer a `--scope` matching what you're authoring — scoped calls return in seconds; unscoped can take a minute+. Apply `error` and `warning` rules; `info` rules are advisory. If you do consult the rules and then add or update a NuGet package, the package-shipped (`MA-*`) rules may have changed with the dependency set.
 
-**When to run:**
-1. Once at the start of every task that will generate or edit a workflow file.
-2. Re-run after adding or updating a NuGet package — package-shipped rules (`MA-*`) change with the dependency set.
-
-**When NOT to run:**
-1. Pure read-only / Q&A tasks that do not produce or modify workflow files.
-2. Edits that only touch non-workflow files (`project.json`, docs, plain `.cs` source files without workflow attributes).
+For coded (`.cs`) workflow files, the four built-in `Coded Workflow`-scope rules (ST-NMG-017, ST-DBP-010, ST-REL-001, ST-USG-017) are all Error severity and enforced by `analyze`, `build`, and `pack` — triggers and fixes: [coded/coding-guidelines.md § Coded Workflow Analyzer Rules](coded/coding-guidelines.md#coded-workflow-analyzer-rules).
 
 Rule prefixes and full schema: [cli-reference.md § analyzer-rules list](cli-reference.md).
 
@@ -51,7 +50,7 @@ PHASE 2 — build-clean (per-project, once per edit session):
     3. EXIT to Smoke Test
 ```
 
-**Why both phases.** `validate` is static analysis: catches structural XAML, missing references, analyzer rules, schema violations. `build` is the compiler: catches **unknown member names** (e.g. `NGetText.Value` when the property is `Text`), **invalid enum values** (e.g. `Operator="StartsWith"` when the enum has no such member), **member resolution / CacheMetadata failures**, and attribute-form C# expression JIT failures. `validate` returns "no diagnostics found" for these; `build` flags them at compile time. Per-file `validate` plus one end-of-session `build` covers both error classes — trusting only `validate` ships broken workflows.
+**Why both phases.** `validate` is static analysis: catches structural XAML, missing references, analyzer rules, schema violations. `build` is the compiler: catches **unknown member names** (e.g. `NGetText.Value` when the output member is `TextString` (or legacy `Text`)), **invalid enum values** (e.g. `Operator="StartsWith"` when the enum has no such member), **member resolution / CacheMetadata failures**, and attribute-form C# expression JIT failures. `validate` returns "no diagnostics found" for these; `build` flags them at compile time. Per-file `validate` plus one end-of-session `build` covers both error classes — trusting only `validate` ships broken workflows.
 
 **Target the specific file:** `validate --file-path` validates only the file you changed (faster than whole-project). `build` is project-scoped (no `--file-path`); when it errors, the output names the offending file — re-run `validate --file-path` on it as part of Phase 2's fix loop.
 
@@ -81,7 +80,7 @@ uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 
 | Error class | Example | Why `validate` misses it |
 |-------------|---------|----------------------------|
-| Unknown member name | `<uix:NGetText Value="[x]" />` (correct: `Text`) | `validate` does not resolve property names against activity assemblies |
+| Unknown member name | `<uix:NGetText Value="[x]" />` (correct: `TextString`) | `validate` does not resolve property names against activity assemblies |
 | Invalid enum value | `Operator="StartsWith"` on `VerifyExpressionWithOperator` (enum has no such member) | Enum membership is checked at CacheMetadata / compile time, not static parse |
 | CacheMetadata / member resolution | Required-extension misses, type-mismatch on `InArgument<T>` | Surfaces only when the runtime instantiates the activity |
 | Attribute-form C# expressions | `Value="x + y"` in `expressionLanguage: CSharp` projects | JIT compiler needs the expression in element form — see [xaml/csharp-expression-pitfalls.md](xaml/csharp-expression-pitfalls.md) |

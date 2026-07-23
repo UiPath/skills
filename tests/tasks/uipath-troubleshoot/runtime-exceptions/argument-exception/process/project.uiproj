@@ -1,0 +1,6 @@
+{
+  "Name": "ScheduleParser",
+  "ProjectType": "Process",
+  "Description": "Blank Process",
+  "MainFile": "Main.xaml"
+}

@@ -15,6 +15,12 @@ run_limits:
   turn_timeout: 900
   task_timeout: 900
 
+# Persistent Studio Web fixture (codereval/DefaultTenant, alpha):
+#   project "test-webapp"  02c993ea-e366-4ee5-b389-e12166e6dc2a  (inlined in the prompt below)
+#   solution               c05e7fad-1eb1-420d-02cc-08ded767500a
+# The CLI derives the solution from the project ID at runtime; the solution ID
+# is recorded here only for fixture maintenance — recreating a deleted fixture
+# project requires creating it inside this solution.
 initial_prompt: |
   Run a Studio Web push / pull roundtrip against the currently-active
   UiPath tenant.
@@ -31,12 +37,11 @@ initial_prompt: |
 
   1. `uip login status --output json` — verify login, do NOT re-login.
 
-  2. Write `.env` at the sandbox root with the project ID from the
-     `CODED_APPS_TEST_PROJECT_ID` env var (this makes push non-interactive):
+  2. Write `.env` at the sandbox root with the persistent test-fixture
+     project ID (this makes push non-interactive):
      ```
-     echo "UIPATH_PROJECT_ID=$CODED_APPS_TEST_PROJECT_ID" > .env
+     echo "UIPATH_PROJECT_ID=02c993ea-e366-4ee5-b389-e12166e6dc2a" > .env
      ```
-     If `$CODED_APPS_TEST_PROJECT_ID` is empty, STOP — do not retry.
 
   3. Write these two files at the sandbox root exactly as shown:
 

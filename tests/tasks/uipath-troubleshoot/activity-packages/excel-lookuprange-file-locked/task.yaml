@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-lookup-file-locked
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a classic Lookup Range failure
   caused by the workbook being held open by another process on the robot
@@ -6,13 +7,12 @@ description: >
   at open with System.IO.IOException ("The process cannot access the file ...
   because it is being used by another process"). The most likely unattended
   cause is an orphaned EXCEL.EXE from a prior undisposed run. Success = agent
-  matches the lookup-range-file-locked playbook AND recommends forcing a clean
+  matches the workbook-file-locked playbook AND recommends forcing a clean
   release (kill stray EXCEL.EXE + clean scope dispose) or serializing access,
   without fabricating host actions.
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:

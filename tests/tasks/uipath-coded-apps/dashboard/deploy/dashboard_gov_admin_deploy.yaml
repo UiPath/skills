@@ -1,8 +1,8 @@
 task_id: uipath-coded-apps-dashboard-gov-admin-deploy
 description: >
-  Governance-target deploy path (deploy impl.md Step 0/1): state.json
+  Governance-mode deploy path (deploy impl.md Steps 2/5): state.json
   widgets are governance/runtime-compliance metrics (policy-denials,
-  rule-compliance), so the agent must infer the GOVERNANCE deploy target
+  rule-compliance), so the agent must infer the GOVERNANCE deploy mode
   and provision the AdminDashboards folder via the skill's
   setup-admin-folder.mjs script — NOT ask the user to pick a folder and
   NOT hand-create the folder with `uip or folders create` (the script
@@ -11,7 +11,7 @@ description: >
   Credential-free: commands fail with auth errors in CI — this checks
   the command sequence and the governance-branch decision, not a live
   deploy. Closes the last Workflow-Step gap (governance deploy) and the
-  governance-target deploy component.
+  governance-mode deploy component.
 tags: [uipath-coded-apps, integration, dashboard, mode:operate, lifecycle:setup]
 
 # 516s single-turn locally (agent reads deploy impl.md + runs the provisioning
@@ -23,7 +23,6 @@ run_limits:
   task_timeout: 1500
 
 sandbox:
-  driver: tempdir
   node: {}
 
 pre_run:
@@ -36,7 +35,7 @@ pre_run:
         "env": "alpha", "org": "testorg", "tenant": "testTenant",
         "cloudUrl": "https://alpha.uipath.com",
         "widgets": ["policy-denials", "rule-compliance"],
-        "deployment": { "systemName": null, "folderKey": null, "appUrl": null, "lastDeployedAt": null }
+        "deployment": { "systemName": null, "folderKey": null, "folderName": null, "appUrl": null, "pinnedToGovernance": false, "lastDeployedAt": null }
       }
       EOF
     timeout: 15
@@ -60,11 +59,11 @@ initial_prompt: |
 
 success_criteria:
   # THE GOVERNANCE BRANCH — widgets are governance metrics (policy-denials,
-  # rule-compliance per the Step 0 inference list), so the agent must
+  # rule-compliance per the Step 2 inference list), so the agent must
   # provision AdminDashboards via the skill's script. Script fails on auth
   # in CI; we grade that it was invoked with the AdminDashboards argument.
   - type: command_executed
-    description: "Agent ran setup-admin-folder.mjs with the AdminDashboards target (deploy impl.md Step 1 — governance provisioning goes through the script)"
+    description: "Agent ran setup-admin-folder.mjs with the AdminDashboards target (deploy impl.md Step 5 — governance provisioning goes through the script)"
     tool_name: "Bash"
     command_pattern: 'setup-admin-folder\.mjs.*AdminDashboards'
     min_count: 1
@@ -77,7 +76,7 @@ success_criteria:
   - type: command_executed
     description: "Agent did NOT hand-create the AdminDashboards folder with `uip or folders create` (the provisioning script owns creation + role union)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+folders\s+create'
+    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+create'
     min_count: 0
     max_count: 0
     weight: 2.0
@@ -103,7 +102,7 @@ success_criteria:
     pass_threshold: 1.0
 
   # Fresh deploy (systemName null) at semver 1.0.0 — no bump on first publish
-  # (Step 3: fresh deploy uses app.semver as-is; bump is upgrade-only).
+  # (Step 1: fresh deploy uses app.semver as-is; bump is upgrade-only).
   - type: command_executed
     description: "Pack used the state.json semver as-is (1.0.0 — fresh deploy, no bump)"
     tool_name: "Bash"

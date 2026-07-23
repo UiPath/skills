@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay: a UiPath.PDF.Activities ReadPDFText activity faults at argument validation with System.IO.FileNotFoundException 'Could not find file \"<path>\"' because the input PDF path does not exist on the robot host. The agent must read the missing-file signature as the cause (the input path), not blame the PDF content, OCR, or a workflow-logic bug. Signature captured verbatim from a local UiPath.PDF.Activities 4.3.0 run; workflow name and path scrubbed/neutralized. First-match-wins.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "0c745290f5.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e --state Faulted",
+      "file": "94f4dd3dba.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+      "file": "94f4dd3dba.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "94f4dd3dba.json"
+    },
+    {
+      "match": "or jobs get 7a3e9f12-4c8b-4d6e-9a1f-2b3c4d5e6f70",
+      "file": "7288879bf0.json"
+    },
+    {
+      "match": "or jobs logs 7a3e9f12-4c8b-4d6e-9a1f-2b3c4d5e6f70 --level Error",
+      "file": "25e85eab3d.json"
+    },
+    {
+      "match": "or jobs logs 7a3e9f12-4c8b-4d6e-9a1f-2b3c4d5e6f70",
+      "file": "25e85eab3d.json"
+    },
+    {
+      "match": "or jobs traces 7a3e9f12-4c8b-4d6e-9a1f-2b3c4d5e6f70",
+      "file": "2d930e2440.json"
+    },
+    {
+      "match": "traces spans get --job-key 7a3e9f12-4c8b-4d6e-9a1f-2b3c4d5e6f70",
+      "file": "56a91ad33d.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get 7a3e9f12-4c8b-4d6e-9a1f-2b3c4d5e6f70",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the FileNotFoundException 'Could not find file' signature from the Info / Error log."
+    }
+  ]
+}

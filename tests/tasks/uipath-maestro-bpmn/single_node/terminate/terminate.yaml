@@ -1,0 +1,75 @@
+task_id: skill-bpmn-terminate
+description: >
+  Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a
+  process where one branch ends in a terminate end event (a hard stop of the
+  whole instance) while a parallel branch ends normally. Authoring only — no
+  cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:terminate"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 55
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a single Maestro BPMN file `TerminateParallel.bpmn` in the working
+  directory that forks into two branches from a parallel gateway:
+    - Branch A reaches a terminate end event that stops the whole instance.
+    - Branch B runs a task and then reaches a normal (non-terminate) end event.
+
+  Requirements:
+  - The terminate end event carries a bare bpmn:terminateEventDefinition.
+    Terminate is valid only on end events — do not attach it to any other node.
+  - Both branches fan out from a fork gateway.
+  - Author the structural BPMN and the terminate payload per the skill's
+    structural reference; do not hand-author uipath:* XML from prose.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+  - Validate the file locally before finishing (the bundled validator, or a
+    well-formed-XML parse).
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback, and do NOT pause between planning and
+  implementation. Build the complete file end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "TerminateParallel.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN file has a diagram and a terminate event definition"
+    path: "TerminateParallel.bpmn"
+    includes:
+      - "bpmndi:BPMNDiagram"
+      - "terminateEventDefinition"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN has a terminate end event on one branch, a normal end on another, a fork, full DI, resolvable flows"
+    command: "python3 $TASK_DIR/check_terminate.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent kept the lifecycle local and avoided cloud-side operations"
+    weight: 2.0
+    pass_threshold: 0.7
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: >
+      Pass if the agent created only local files and did not run or request
+      approval for BPMN debug, process run, upload, publish, pack, or deploy
+      commands. Fail if tool calls or the final answer show any cloud-side
+      lifecycle mutation or any request to perform one.

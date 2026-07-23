@@ -22,7 +22,7 @@ A new scenario needs four sources. Three are mandatory; the fourth is optional.
 
 | Input | Required | Source |
 |-------|----------|--------|
-| `--investigation <dir>` | yes | The `.local/investigations/` directory written by the troubleshooting skill: `state.json`, `hypotheses.json`, `evidence/`, `raw/`, `depth-check.json`. |
+| `--investigation <dir>` | yes | The `.local/investigations/` directory written by the troubleshooting skill: `raw/` (verbatim CLI responses — the backfill source) and `notes.md` (investigation log). |
 | `--project <dir>` | no | The UiPath project source that was failing. Snapshotted into the new scenario's `process/`. Omit when the troubleshooting is purely CLI-driven (no project source available). |
 | `--transcript <path>` | yes | A `.jsonl` file or a directory. Directory mode walks `*.jsonl` recursively and treats files under `subagents/` as sub-agent transcripts (their `uip` calls count, their final text is ignored). Source of truth for `uip` calls + presenter output. |
 | `--resolution <file>` | no | Pre-written `RESOLUTION.md`. If omitted, the generator extracts the presenter's final assistant message from the transcript. |
@@ -116,6 +116,7 @@ tests/tasks/uipath-troubleshoot/
 ├── products/
 │   ├── orchestrator/            <scenario>/ …
 │   ├── integration-service/     <scenario>/ …
+│   ├── agents/                  <scenario>/ …
 │   └── maestro/                 <scenario>/ …
 ├── runtime-exceptions/          <scenario>/ …
 └── cross-system/                <scenario>/ …   # root cause spans ≥2 systems
@@ -128,6 +129,7 @@ tests/tasks/uipath-troubleshoot/
 | An activity package (Word, Excel, Python, Mail/Outlook, O365, GSuite, Web, CV, System, UI Automation, Classic, Database) | `activity-packages` | `word-` `excel-` `py-` `mail-` `o365-` `gsuite-` `web-` `cv-` `sys-` `uia-` `classic-` `db-` |
 | Orchestrator-only (job/robot/queue/licensing/logon state, no single activity) | `products/orchestrator` | — |
 | Integration Service connectors / connections | `products/integration-service` | — |
+| Agents runtime, agent definitions, agent capabilities | `products/agents` | — |
 | Maestro / BPMN instances | `products/maestro` | — |
 | Generic .NET workflow exception (null-ref, argument-null) not tied to a package | `runtime-exceptions` | — |
 | Root cause genuinely spans ≥2 systems (e.g. an Excel activity failing on an IS connection) | `cross-system` | — |
@@ -156,7 +158,9 @@ tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
 
 ## Mock dispatch precedence
 
-The shared `m/uip` dispatcher walks the manifest's `rules` array (first match wins). Each rule has one of:
+The shared `m/uip` dispatcher walks the manifest's `rules` array (first match wins). Matching is token-aware (order-independent, quotes stripped, `--flag=value` split, `--output <v>` ignored) with a substring fallback — see the module docstring in `_shared/mock_template/m/uip`. Authoring consequences: list specific rules before generic ones (a rule with fewer tokens matches a superset of invocations), and prefer dropping volatile flags (e.g. `-f` vs `--folder-key`) from match strings when the remaining tokens are unique. Shadow audit: for rules i < j in one manifest, if tokens(match_i) ⊆ tokens(match_j) and they serve different files/exit codes, rule j is unreachable for its canonical invocation.
+
+Each rule has one of:
 
 - `file: <path>` — return the canned response under `r/<file>`.
 - `passthrough: true` — proxy to the real `uip` CLI installed on the host. Use this for open-ended commands like `docsai ask` whose query strings vary between runs. Responses are cached to the sandbox's `r/_cache/<key>.json` for in-run reuse; the cache is **not** persisted to the source — every run hits the live CLI on its first call for each unique query.
@@ -207,7 +211,7 @@ Must include `uipath-troubleshoot` AND at least one product/domain tag from this
 | `api-workflow` | API workflow artifacts |
 | `orchestrator` | Orchestrator control-plane failures — job/robot lifecycle (pending, faulted, killed, foreground-slot), logon/credentials, queues, licensing, machine state — diagnosed via `uip or`. Not tied to a single activity package. Add `rpa` too when an RPA process's execution is directly involved (e.g. foreground-slot, job-killed). |
 
-**Tag ↔ group agreement.** The domain tag MUST match the [group folder](#scenario-grouping): every `activity-packages/*` scenario carries `rpa`; `products/orchestrator` → `orchestrator`; `products/integration-service` → `integration-service`; `products/maestro` → `maestro`. `--group` adds the matching tag automatically.
+**Tag ↔ group agreement.** The domain tag MUST match the [group folder](#scenario-grouping): every `activity-packages/*` scenario carries `rpa`; `products/orchestrator` → `orchestrator`; `products/integration-service` → `integration-service`; `products/agents` → `agents`; `products/maestro` → `maestro`. `--group` adds the matching tag automatically.
 
 **Multiple tags are encouraged.** A scenario that touches more than one domain carries a tag for each — this is required for `cross-system/` scenarios (e.g. an Excel activity faulting on an IS connection gets `rpa` AND `integration-service`). Add the extra tags by hand after generation; `--group` only seeds the primary one.
 
@@ -249,8 +253,8 @@ Every scenario MUST include exactly TWO criteria, and ONLY these two:
 
 **Do NOT add any other criterion type.** Specifically forbidden across the whole troubleshoot suite:
 
-- ❌ `file_exists` — testing whether `.local/investigations/state.json` (or any internal file) was written grades bookkeeping, not the deliverable. `skill_triggered` already verifies the skill ran.
-- ❌ `file_contains` — grading the shape of `state.json` / `hypotheses.json` punishes correct skill behavior (multiple playbooks legitimately match; hypotheses legitimately stay `pending` after early-stop).
+- ❌ `file_exists` — testing whether `.local/investigations/notes.md` (or any internal file) was written grades bookkeeping, not the deliverable. `skill_triggered` already verifies the skill ran.
+- ❌ `file_contains` — grading the shape of `notes.md` / `raw/` punishes correct skill behavior (multiple playbooks legitimately match; the fast path legitimately skips branches its evidence already rejects).
 - ❌ `command_executed` — encodes one investigation path; an agent reaching the right answer via a different (still valid) CLI route gets false-failed.
 
 Concrete failure mode this rule prevents: an agent that reaches the correct root cause via `jobs logs` (skipping `jobs get`) is graded FAILURE solely because a `command_executed` rule required `jobs get d5fed611`. The conclusion was right; the path was different. Brittle.
@@ -290,15 +294,15 @@ Every `llm_judge` criterion across all troubleshoot tasks uses the **same** prom
 - `include_reference: true` — passes `RESOLUTION.md` (the file named under `reference:` at the task root)
 - `include_agent_output: true` — passes the agent's final user-facing response
 
-That is **all** the context the judge gets. The contract: agent's final answer vs. RESOLUTION.md → score. Tool calls are deliberately excluded — the judge grades the presented diagnosis, not how it was reached.
+That is **all** the context the judge gets. The contract: agent's diagnosis (wherever it appears in the dialog) vs. RESOLUTION.md → score. Tool calls are deliberately excluded — the judge grades the presented diagnosis, not how it was reached.
 
 **Forbidden on `llm_judge`:**
 
-- ❌ `files:` array (passing `state.json`, `hypotheses.json`, or any internal artifact). The judge grades presentation, not bookkeeping.
+- ❌ `files:` array (passing `notes.md`, `raw/` contents, or any internal artifact). The judge grades presentation, not bookkeeping.
 - ❌ Custom prompt language per task — no `DIMENSION A / DIMENSION B`, no `SCORING RUBRIC` clauses citing specific playbook names, no "Evidence sources" enumerations referencing `matched_playbooks` / `is_root_cause` / etc.
 - ❌ Per-task hedging notes ("Be substance-focused", "multiple playbooks may match", etc.). The lean rubric already encodes this.
 
-**Why:** the skill's internal state (`state.json`, `hypotheses.json`) is bookkeeping for the next conversation, not a deliverable. Multiple playbooks may legitimately appear in `matched_playbooks`; hypotheses legitimately stay `pending` after early-stop (see SKILL.md "When to stop testing"). Grading on internal-state shape punishes correct skill behavior. What the agent **presents** is the contract.
+**Why:** the skill's internal state (`notes.md`, `raw/`) is bookkeeping for the investigation, not a deliverable. Multiple playbooks may legitimately match a signal; the fast path legitimately stops at the first branch its evidence confirms (see SKILL.md § Verification checklist). Grading on internal-state shape punishes correct skill behavior. What the agent **presents** is the contract.
 
 **Where task-specific guidance lives:** `RESOLUTION.md`. If the judge needs to know that a specific fix must name "AlterIfDisabled = True" or that "Test Heals pool" is wrong — that goes in `RESOLUTION.md` as the authoritative root cause + fix. The judge reads it via `include_reference` and grades against it.
 

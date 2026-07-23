@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-excel-rr-nre-namedrange
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Read Range failure where
   the workflow references a named range (Range="MyDataRange") in the
@@ -6,7 +7,7 @@ description: >
   enumeration succeeds, but the named-range lookup fails with
   NullReferenceException because the named range in the workbook
   has a #REF! refers-to (points at a deleted sheet or cell). Agent
-  must match the activity-packages/excel-activities/playbooks/read-range-null-reference.md
+  must match the activity-packages/excel-activities/playbooks/null-reference-from-activity.md
   playbook, identify the broken-named-range branch from the workflow
   source + the job-log Trace entry showing the named range resolved
   to a broken reference, and recommend fixing the named range in
@@ -15,7 +16,6 @@ description: >
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
@@ -25,7 +25,6 @@ run_limits:
   turn_timeout: 5400
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir

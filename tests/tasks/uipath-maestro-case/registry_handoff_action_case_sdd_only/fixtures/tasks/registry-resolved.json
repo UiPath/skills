@@ -1,0 +1,78 @@
+[
+  {
+    "stage": "Review and Follow-up",
+    "task": "Resolved App Review",
+    "taskType": "action",
+    "cacheFile": "action-apps-index.json",
+    "searchQuery": "SimpleApprovalApp",
+    "matches": [
+      {
+        "id": "d5102769-8bac-4afc-a727-77745c53181e",
+        "deploymentTitle": "SimpleApprovalApp",
+        "deploymentFolder": {
+          "fullyQualifiedName": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106"
+        }
+      }
+    ],
+    "selected": {
+      "id": "d5102769-8bac-4afc-a727-77745c53181e",
+      "deploymentTitle": "SimpleApprovalApp",
+      "deploymentFolder": {
+        "fullyQualifiedName": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106"
+      }
+    },
+    "rationale": "Stale selection from an earlier SDD revision."
+  },
+  {
+    "stage": "Review and Follow-up",
+    "task": "Review Request",
+    "taskType": "action",
+    "cacheFile": "action-apps-index.json",
+    "searchQuery": "LegacyReviewApp",
+    "matches": [
+      {
+        "id": "stale-action-id",
+        "deploymentTitle": "LegacyReviewApp",
+        "deploymentFolder": {
+          "fullyQualifiedName": "Shared/Legacy"
+        }
+      }
+    ],
+    "selected": {
+      "id": "stale-action-id",
+      "deploymentTitle": "LegacyReviewApp",
+      "deploymentFolder": {
+        "fullyQualifiedName": "Shared/Legacy"
+      }
+    },
+    "rationale": "Stale selection from an earlier SDD revision."
+  },
+  {
+    "stage": "Review and Follow-up",
+    "task": "Launch Follow-up",
+    "taskType": "case-management",
+    "cacheFile": "caseManagement-index.json",
+    "searchQuery": "LegacyFollowUpCase",
+    "matches": [
+      {
+        "entityKey": "stale-child-case-id",
+        "name": "LegacyFollowUpCase",
+        "folders": [
+          {
+            "fullyQualifiedName": "Shared/Legacy"
+          }
+        ]
+      }
+    ],
+    "selected": {
+      "entityKey": "stale-child-case-id",
+      "name": "LegacyFollowUpCase",
+      "folders": [
+        {
+          "fullyQualifiedName": "Shared/Legacy"
+        }
+      ]
+    },
+    "rationale": "Stale selection from an earlier SDD revision."
+  }
+]

@@ -62,6 +62,8 @@
 # Guardrails tests (folder-level ownership)
 /tests/tasks/uipath-agents/lowcode/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-agents/coded/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
+# Guardrails in lowcode/conversational (more specific than /lowcode/conversational/ above — wins via last-match)
+/tests/tasks/uipath-agents/lowcode/conversational/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
 # Functions skill (Python Coded Functions — Phase 1; JS HTTP/background Phase 2/3)
 /skills/uipath-functions/ @AlexBizon @UiPath/team-coded-agents
@@ -77,9 +79,9 @@
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
 
 # Flow skill
-/skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+/skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
 # Flow test tasks (general) — more specific subfolder rules below override this
-/tests/tasks/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+/tests/tasks/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
 
 # Context grounding team — flow plugins (Summarize/Batch Transform) + tasks
 /skills/uipath-maestro-flow/references/author/references/plugins/summarize/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
@@ -87,8 +89,8 @@
 /tests/tasks/uipath-maestro-flow/context-grounding/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
 
 # Maestro BPMN skill
-/skills/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
-/tests/tasks/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+/skills/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
+/tests/tasks/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
 # API Workflow skill
 /skills/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
 /tests/tasks/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
@@ -98,8 +100,9 @@
 /tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
 
 # Case Management skill
-/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @jundayin
-/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @jundayin
+/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @jundayin
+/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @jundayin
+/tests/tasks/uipath-maestro-case/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
 # Coded Apps skill
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
@@ -111,8 +114,8 @@
 
 # Flow skill — plugin guides (away team owned)
 # Add your team here when contributing a new plugin category
-/skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
-/skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
+/skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden @DevMomo
+/skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden @DevMomo
 /skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/ @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
 /tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh
 
@@ -122,6 +125,7 @@
 
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
+/skills/uipath-review/references/agents/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
 
 # Legacy RPA — merged into uipath-rpa
@@ -132,6 +136,8 @@
 /tests/tasks/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /tests/tasks/activation/uipath-troubleshoot.jsonl @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /skills/uipath-troubleshoot/references/products/agents/ @UiPath/llmops-team @andreibalas-uipath
+# Assistant desktop diagnostics domain (diagnostic archives — combined.log / Robot.log)
+/skills/uipath-troubleshoot/references/products/assistant/ @vasyop @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 
 # Governance skill
 /skills/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath
@@ -151,9 +157,8 @@
 /tests/tasks/uipath-admin/ @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath @uipathswapnil @ashleyetheridge @yadvender-uipath @CalinMPopa @chandhanshanth
 
 # IXP skill
-/skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
-/skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
-/tests/tasks/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
+/skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath @alexandrujircan
+/tests/tasks/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath @alexandrujircan
 # MCP skill (UiPath AgentHub MCP server registration + tool authoring)
 /skills/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents
 /tests/tasks/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents

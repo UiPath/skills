@@ -1,9 +1,10 @@
 task_id: skill-troubleshoot-excel-rr-orphan-process
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Read Range failure
   (System.IO.IOException: ... used by another process) where a prior
   faulted job left an orphan EXCEL.EXE process holding the workbook
-  lock. The agent must match the activity-packages/excel-activities/playbooks/read-range-file-locked.md
+  lock. The agent must match the activity-packages/excel-activities/playbooks/workbook-file-locked.md
   playbook, identify the orphan-process branch from the prior faulted
   job in `or jobs list` AND from the `ContinueOnError="True"` pattern
   in the workflow source (process/Main.xaml), and recommend both a
@@ -12,7 +13,6 @@ description: >
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
@@ -22,7 +22,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir

@@ -14,7 +14,7 @@ run_limits:
 
 
 initial_prompt: |
-  We have an Expense list (its ID is `exp-ent-001`). Each expense
+  We have an Expense UiPath Data Fabric entity (its ID is `exp-ent-001`). Each expense
   holds:
     - amount — dollars
     - description — text

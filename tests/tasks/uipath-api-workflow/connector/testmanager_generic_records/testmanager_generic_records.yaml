@@ -16,7 +16,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a UiPath API Workflow that uses the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
+  Build a UiPath API Workflow — in a project named `TMRecords` (its workflow file will be `TMRecords/Workflow.json`) — that uses the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
 
   - Insert a record
   - Get a record
@@ -30,11 +30,10 @@ initial_prompt: |
   Do NOT pause between planning and implementation.
 
 success_criteria:
-  - type: command_executed
+  - type: skill_triggered
     description: "Agent loaded the uipath-api-workflow skill"
-    tool_name: "Skill"
-    command_pattern: "uipath-api-workflow"
-    min_count: 1
+    skill_name: "uipath-api-workflow"
+    expected_skill: "uipath-api-workflow"
     weight: 1.0
     pass_threshold: 1.0
 
@@ -70,16 +69,18 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Workflow.json was created"
-    path: "Workflow.json"
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_check
+  - type: run_command
     description: "Workflow uses the testmanager IntSvc connector"
-    path: "Workflow.json"
-    includes: ["uipath-uipath-testmanager", "UiPath.IntSvc"]
-    excludes: ["<REPLACE_WITH_"]
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "uipath-uipath-testmanager" "$WF" && grep -q "UiPath.IntSvc" "$WF" && ! grep -q "<REPLACE_WITH_" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

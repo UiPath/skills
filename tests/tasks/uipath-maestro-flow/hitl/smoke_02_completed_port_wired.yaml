@@ -45,7 +45,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow validate passes"
-    command: "uip maestro flow validate PurchaseApproval/PurchaseApproval/PurchaseApproval.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

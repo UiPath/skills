@@ -12,6 +12,12 @@ permissions:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    env:
+      # Turn off the CLI's startup version-sync: on a `-dev` CLI it would try to
+      # re-align tools through the release-channel path (which can't resolve
+      # `-dev` tool builds) while the catalog build runs `uip` commands, risking
+      # a corrupted/collapsed catalog.
+      UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -44,35 +50,36 @@ jobs:
         with:
           python-version: '3.13'
 
-      # Install from GitHub Packages under the `alpha` dist-tag so the
-      # catalog tracks `cli/main`. Every merge to `cli/main` runs
-      # cli/.github/workflows/ci.yml, which publishes a `-alpha.<date>.<run>`
-      # prerelease to https://npm.pkg.github.com/ under dist-tag `alpha`.
+      # Install from GitHub Packages under the `dev` dist-tag so the
+      # catalog tracks `cli/main`. Every push to `cli/main` runs
+      # cli/.github/workflows/ci.yml, which publishes a `-dev.<run>`
+      # prerelease to https://npm.pkg.github.com/ under dist-tag `dev`.
+      # (cli PR #2650 renamed the old `alpha` tag → `dev` on 2026-06-26.)
       # Public npm only carries the cut-release `latest` line which lags
       # `main` by ~2 weeks, so refreshing against `@latest` would mean the
       # gate is always auditing skills against a CLI surface that's two
       # weeks behind what developers actually run. Same pattern as
       # smoke-skills.yml.
-      - name: Install uip CLI (GitHub Packages @alpha)
+      - name: Install uip CLI (GitHub Packages @dev)
         if: steps.check.outputs.exists != 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           npm config set @uipath:registry https://npm.pkg.github.com/
           npm config set //npm.pkg.github.com/:_authToken "$NODE_AUTH_TOKEN"
-          npm install -g @uipath/cli@alpha
+          npm install -g @uipath/cli@dev
           uip --version
 
       - name: Rebuild catalog
         if: steps.check.outputs.exists != 'true'
         run: |
-          # Install tools from GitHub Packages @alpha — the scope the install
+          # Install tools from GitHub Packages @dev — the scope the install
           # step already configured. Do NOT reset to public npm: the tool
-          # plugins must version-match the alpha CLI to register their full
+          # plugins must version-match the dev CLI to register their full
           # command tree. Stable (public-npm) tools install but fail to load
-          # reliably against the alpha CLI (e.g. the `rpa` group never appears;
-          # diagnostics confirmed the alpha `rpa-tool` does). Catalog tracks
-          # cli/main, so its tools must come from the same @alpha feed.
+          # reliably against the dev CLI (e.g. the `rpa` group never appears;
+          # diagnostics confirmed the dev `rpa-tool` does). Catalog tracks
+          # cli/main, so its tools must come from the same @dev feed.
           # Guards: fail the build (no PR opened) if tool installs all fail or
           # the verb count collapses vs the committed snapshot.
           # --min-verbs 1000 is a deliberate hard tripwire — it caught the

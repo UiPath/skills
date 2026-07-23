@@ -1,0 +1,82 @@
+task_id: skill-review-rpa-e2e-reframework-process
+description: >
+  End-to-end review of a multi-workflow REFramework performer (Main →
+  System1_Login → Process). The project carries a realistic spread of defects
+  across workflows and severities: a hardcoded SAP password (Critical) and a
+  brittle idx-only selector (Warning) in System1_Login.xaml; a swallowed
+  System.Exception with no Rethrow (Critical) and a Write Line instead of Log
+  Message (Info) in Process.xaml. The reviewer
+  must discover and read every workflow, then produce a comprehensive report
+  that classifies findings by severity and catches issues in more than one
+  file. Graded on breadth + severity discipline, not a single defect.
+
+  Platform note: `uip rpa validate/build/analyze` require Windows and may not
+  run on Linux CI — those CLI checks are advisory. The review is produced by
+  reading the workflows, which is platform-independent.
+tags: [uipath-review, e2e, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1800
+  task_timeout: 2400
+  max_turns: 60
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  A UiPath REFramework project exists at `RefxFull` in the current directory.
+  Perform a full quality review: discover and read every workflow in the
+  project (Main.xaml and the workflows it invokes), then produce a structured
+  review report with Critical / Warning / Info findings covering the whole
+  project.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `RefxFull/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `RefxFull/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside RefxFull/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*RefxFull'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside RefxFull/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*RefxFull'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Advisory: uip rpa validate/build/analyze ran (Critical Rule 2) — recorded, not gating"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+(validate|build|analyze)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Comprehensive report: catches multiple cross-workflow defects with severity classification"
+    command: "python3 $TASK_DIR/check_e2e_reframework_process.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

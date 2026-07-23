@@ -46,19 +46,25 @@ on:
       cli_version:
         description: '@uipath/cli version.'
         type: string
-        default: alpha
+        default: dev
       agent:
-        description: 'Agent (codex = gpt-5.4).'
+        description: 'Agent to run.'
         type: choice
         options:
           - claude
           - codex
+          - antigravity
         default: claude
+      # Overrides the model for ANY agent. Blank keeps the per-agent default:
+      # claude → experiment YAML's sonnet (override e.g. opus / haiku),
+      # codex → gpt-5.4, antigravity → gemini-3.1-pro-preview.
+      agent_model:
+        description: 'Model override (blank = default).'
+        type: string
+        default: ''
 
-concurrency:
-  group: run-coder-eval-${{ github.ref }}
-  cancel-in-progress: false
-
+# No concurrency group: this is a manual, on-demand workflow — allow any number
+# of runs (e.g. the same task across claude / codex / antigravity) at once.
 jobs:
   partition:
     runs-on: ubuntu-latest
@@ -168,14 +174,21 @@ jobs:
       - uses: astral-sh/setup-uv@v4
 
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
-      # deps). No source checkout.
-      # codex is NOT installed on the host here: under the docker driver the
-      # agent runs inside skills-image, so the codex SDK belongs in that image
-      # (separate TODO), not on the host CLI.
+      # deps). The Linux docker driver still imports the selected agent class on
+      # the host before dispatching work, so agent-specific extras must be
+      # installed here as well as in the container image.
       - name: Install coder-eval
         env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
-        run: uv pip install --system "coder-eval==${{ needs.partition.outputs.coder_eval_version }}"
+          CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
+          AGENT: ${{ inputs.agent }}
+        run: |
+          if [ "$AGENT" = "codex" ]; then
+            uv pip install --system "coder-eval[codex]==${CE_VERSION}"
+          elif [ "$AGENT" = "antigravity" ]; then
+            uv pip install --system "coder-eval[antigravity]==${CE_VERSION}"
+          else
+            uv pip install --system "coder-eval==${CE_VERSION}"
+          fi
 
       # Pull the agent image from GHCR (never built from source); the skills
       # image extends it below. Tag defaults to the wheel version but can be
@@ -229,14 +242,14 @@ jobs:
           TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
           E2E_PROCESS_KEY:          ${{ secrets.E2E_PROCESS_KEY }}
           E2E_LONG_PROCESS_KEY:     ${{ secrets.E2E_LONG_PROCESS_KEY }}
-          CODED_APPS_TEST_PROJECT_ID:  ${{ secrets.CODED_APPS_TEST_PROJECT_ID }}
-          CODED_APPS_TEST_SOLUTION_ID: ${{ secrets.CODED_APPS_TEST_SOLUTION_ID }}
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
           TASK_COUNT:               ${{ needs.partition.outputs.linux_count }}
           TASK_PARALLELISM:         ${{ inputs.parallelism }}
           AGENT:                    ${{ inputs.agent }}
+          AGENT_MODEL:              ${{ inputs.agent_model }}
           CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
           CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
+          GEMINI_API_KEY:           ${{ secrets.GEMINI_API_KEY }}
         working-directory: tests
         id: eval
         run: |
@@ -244,11 +257,18 @@ jobs:
           # `parallelism` input default (4) only applies on workflow_dispatch.
           j="${TASK_PARALLELISM:-4}"
           # Agent selection. claude (default) takes the experiment YAML's
-          # claude-code/sonnet config; codex overrides to gpt-5.4 and authenticates
-          # via CODEX_API_KEY/CODEX_BASE_URL. Driver is unchanged (docker here).
+          # claude-code/sonnet config; codex overrides to gpt-5.4 (auth via
+          # CODEX_API_KEY/CODEX_BASE_URL); antigravity overrides to
+          # gemini-3.1-pro-preview (auth via GEMINI_API_KEY; SDK baked into the
+          # agent image). AGENT_MODEL overrides the model for any agent (e.g.
+          # opus / haiku for claude). Driver is unchanged (docker here).
           agent_flags=""
           if [ "$AGENT" = "codex" ]; then
-            agent_flags="--type codex --model gpt-5.4"
+            agent_flags="--type codex --model ${AGENT_MODEL:-gpt-5.4}"
+          elif [ "$AGENT" = "antigravity" ]; then
+            agent_flags="--type antigravity --model ${AGENT_MODEL:-gemini-3.1-pro-preview}"
+          elif [ -n "$AGENT_MODEL" ]; then
+            agent_flags="--model $AGENT_MODEL"
           fi
           echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml $agent_flags -j $j ($TASK_COUNT task files)"
           coder-eval run $TASK_GLOBS \
@@ -345,7 +365,6 @@ jobs:
       - name: Install coder-eval
         shell: bash
         env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
           CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
           AGENT: ${{ inputs.agent }}
         run: |
@@ -358,6 +377,11 @@ jobs:
           if [ "$AGENT" = "codex" ]; then
             uv pip install --system --prerelease=allow --index-strategy unsafe-best-match \
               "openai-codex==0.1.0b3"
+          elif [ "$AGENT" = "antigravity" ]; then
+            # Tempdir driver runs the agent on the host, so the antigravity SDK
+            # (google-antigravity, via the [antigravity] extra) must be installed
+            # here — mirrors the docker path baking it into the agent image.
+            uv pip install --system "coder-eval[antigravity]==${CE_VERSION}"
           fi
 
       - name: Configure NuGet feed for Helm packages
@@ -370,15 +394,12 @@ jobs:
             --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
             --store-password-in-clear-text
 
-      # Two-feed install: `@uipath/cli` comes from the internal GitHub
-      # Packages feed (so the `cli_version` input — e.g. `alpha`, pinned
-      # prereleases — resolves the same way as the Linux Docker build).
-      # `@uipath/rpa-tool` + `@uipath/rpa-legacy-tool` come from public npm
-      # because the internal feed carries a divergent `1.0.0-alpha.*`
-      # rpa-tool line under the same scope; pulling those from the public
-      # feed (with the `^0.9` pin) keeps Helm on the known-good 0.9.x
-      # line. See smoke-rpa-skills.yml for the full rationale.
-      - name: Install uip CLI + RPA tools (GH Packages cli, public-npm tools)
+      # Single-feed install: `@uipath/cli` AND the RPA tool plugins come from the
+      # internal GitHub Packages feed on the same prerelease train (default `dev`),
+      # so the Helm/RPA host matches the Linux Docker image. A public-npm STABLE
+      # rpa-tool fails to load against a `-dev` CLI (the `rpa` group never
+      # registers), so both must ride the same train. See smoke-rpa-skills.yml.
+      - name: Install uip CLI + RPA tools (GH Packages @dev)
         shell: bash
         env:
           CLI_VERSION:    ${{ inputs.cli_version }}
@@ -389,26 +410,42 @@ jobs:
           cd "$install_dir"
           npm config get registry
 
-          # Step 1: install the CLI from GH Packages. Use a scratch
-          # NPM_CONFIG_USERCONFIG so the @uipath→npm.pkg.github.com mapping
-          # and auth token don't leak into other steps. Mirrors the
-          # tests/docker/Dockerfile config (line 14-17).
+          # Install the CLI at CLI_VERSION and the RPA tool plugins at the dist-tag
+          # DERIVED from it, all from the SAME GitHub Packages feed. Use a scratch
+          # NPM_CONFIG_USERCONFIG so the @uipath→npm.pkg.github.com mapping and
+          # auth token don't leak into other steps. Mirrors tests/docker/Dockerfile.
+          #
+          # RPA from the @dev train (not public-npm stable): under `dev`, rpa-tool
+          # ships a matching 1.199.x-dev build (cli PR #2650 aligned it), so it
+          # version-matches the dev CLI. A public-npm STABLE rpa-tool fails to load
+          # against a -dev CLI — the `rpa` group never appears. Raw npm, not `uip
+          # tools install`: `dev` is a publish dist-tag, not a release channel, so
+          # `uip tools install` resolves to `stable` and can't find a `-dev` tool.
+          # npm resolves the tag directly; the CLI discovers the plugin on disk
+          # under $(npm root -g)/@uipath/*.
+          #
+          # Pin contract: CLI_VERSION may be a dist-tag (`dev`) or an exact CLI pin
+          # (`1.199.0-dev.<run>`). rpa-tool/rpa-legacy-tool publish on their own
+          # date-stamped pipelines, so an exact CLI pin has no matching rpa build —
+          # install the tools at the TRAIN's tag instead. A pin freezes the CLI
+          # shell; the tools always ride the train's tag.
+          case "$CLI_VERSION" in
+            *-*)    TOOL_TAG="${CLI_VERSION#*-}"; TOOL_TAG="${TOOL_TAG%%.*}" ;;
+            [0-9]*) TOOL_TAG="latest" ;;
+            *)      TOOL_TAG="$CLI_VERSION" ;;
+          esac
+          echo "CLI_VERSION=$CLI_VERSION -> RPA tool dist-tag @$TOOL_TAG"
           tmp_npmrc="$(mktemp)"
           cat > "$tmp_npmrc" <<EOF
           @uipath:registry=https://npm.pkg.github.com/
           //npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}
           EOF
-          NPM_CONFIG_USERCONFIG="$tmp_npmrc" npm install -g "@uipath/cli@${CLI_VERSION}"
+          NPM_CONFIG_USERCONFIG="$tmp_npmrc" npm install -g \
+            "@uipath/cli@${CLI_VERSION}" \
+            "@uipath/rpa-tool@${TOOL_TAG}" \
+            "@uipath/rpa-legacy-tool@${TOOL_TAG}"
           rm -f "$tmp_npmrc"
           uip --version
-
-          # Step 2: install the RPA tools from public npm. CLI-flag scope
-          # override beats any lingering global config, so this stays on
-          # the public registry regardless of runner image defaults.
-          npm install -g \
-            --@uipath:registry=https://registry.npmjs.org/ \
-            "@uipath/rpa-tool@>=0.9" \
-            @uipath/rpa-legacy-tool@latest
           echo "--- Installed @uipath/* packages ---"
           npm ls -g --depth=0 2>/dev/null | grep '@uipath/' || true
           echo "--- uip tools list ---"
@@ -482,8 +519,10 @@ jobs:
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
           AGENT:                    ${{ inputs.agent }}
+          AGENT_MODEL:              ${{ inputs.agent_model }}
           CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
           CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
+          GEMINI_API_KEY:           ${{ secrets.GEMINI_API_KEY }}
           # Redirect the temp root off the default %TEMP%. On the GH-hosted
           # Windows runner %TEMP% resolves to its 8.3 short form
           # (C:\Users\RUNNER~1\AppData\Local\Temp). coder-eval creates each
@@ -503,11 +542,17 @@ jobs:
           # Create the tilde-free temp root pinned via TMP/TEMP above.
           mkdir -p /c/cetmp
           # Agent selection. claude (default) takes the experiment YAML config;
-          # codex overrides to gpt-5.4 (auth via CODEX_API_KEY/CODEX_BASE_URL).
-          # Driver is unchanged (tempdir here).
+          # codex overrides to gpt-5.4 (auth via CODEX_API_KEY/CODEX_BASE_URL);
+          # antigravity overrides to gemini-3.1-pro-preview (auth via
+          # GEMINI_API_KEY). AGENT_MODEL overrides the model for any agent (e.g.
+          # opus / haiku for claude). Driver is unchanged (tempdir here).
           agent_flags=""
           if [ "$AGENT" = "codex" ]; then
-            agent_flags="--type codex --model gpt-5.4"
+            agent_flags="--type codex --model ${AGENT_MODEL:-gpt-5.4}"
+          elif [ "$AGENT" = "antigravity" ]; then
+            agent_flags="--type antigravity --model ${AGENT_MODEL:-gemini-3.1-pro-preview}"
+          elif [ -n "$AGENT_MODEL" ]; then
+            agent_flags="--model $AGENT_MODEL"
           fi
           overall_exit=0
           for task in $TASK_GLOBS; do

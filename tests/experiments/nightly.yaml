@@ -28,15 +28,14 @@ defaults:
         - E2E_LONG_PROCESS_KEY
         - CODEX_API_KEY
         - CODEX_BASE_URL
-        - CODED_APPS_TEST_PROJECT_ID
-        - CODED_APPS_TEST_SOLUTION_ID
       extra_mounts:
         - ~/.uipath:/.uipath:rw
 
   agent:
-    type: claude-code
+    # type omitted on purpose — the runner selects the harness via --type (codex/antigravity);
+    # coder-eval's baseline default experiment supplies claude-code otherwise.
     permission_mode: acceptEdits
-    model: claude-sonnet-4-6
+    model: claude-sonnet-5
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     system_prompt: |
       You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.

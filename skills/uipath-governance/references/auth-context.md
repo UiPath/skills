@@ -27,7 +27,7 @@ UIPATH_ACCESS_TOKEN=$(grep      '^UIPATH_ACCESS_TOKEN='       "$AUTH_FILE" | cut
 
 | Key | Example | Used by |
 |---|---|---|
-| `UIPATH_URL` | `https://alpha.uipath.com` | principals-lookup (URL construction) |
+| `UIPATH_URL` | `https://cloud.uipath.com` | principals-lookup (URL construction) |
 | `UIPATH_ORGANIZATION_NAME` | `procodeapps` | principals-lookup (URL path segment) |
 | `UIPATH_ORGANIZATION_ID` | `3aa10965-a82d-4d9e-8366-0eff8e87bf7a` | principals-lookup (Directory Search GUID) |
 | `UIPATH_TENANT_NAME` | `DefaultTenant` | display / audit records |

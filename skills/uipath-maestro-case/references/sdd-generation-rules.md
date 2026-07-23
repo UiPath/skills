@@ -12,7 +12,7 @@ Reason the case shape from the process the user describes — **do not reach for
 
 **Secondary stage** (a `case-management:Stage` node carrying `data.stageType: "secondary"` — the `case-management:ExceptionStage` node type is removed at v22) — work that is **not a fixed step on the line**: it can fire at many points and only under a condition. Errors, escalations, rejections, rework loops, cancellations. Three rules define it, all CLI-enforced:
 
-- **No edges** — reached and exited purely by conditions, never wired by an edge. (True of every stage now that edges are retired; the legacy `CASE_MGMT_SECONDARY_STAGE_EDGES` validator that flagged secondary-stage edges is moot.) It is detached from any flow graph.
+- **No edges** — reached and exited purely by conditions, never wired by an edge (true of every stage — edges retired). It is detached from any flow graph.
 - **Entered by its own condition**, never by an edge — but the entry shape depends on the lane's trigger:
   - **(a) Mid-stage interrupt** — user-launched (`user-selected-stage`, paired with a `wait-for-user` exit) or external (`wait-for-connector`). Fires *while the origin is still active* and genuinely interrupts it.
   - **(b) Decision/signal divert** — the **origin** stage carries a **gated diverting exit** (`Marks Stage Complete: No`, `IF` on the decision/signal, `exitToStageId` → this lane), and this lane's `selected-stage-exited(origin) + IF` entry **matches** it. Fires when the origin *exits* — a divert-and-return, NOT a true mid-stage interrupt. A variable-driven mid-stage interrupt is not expressible without a connector, so a decision- or signal-gated lane MUST use shape (b). See [§ Logical integrity step 5](#logical-integrity--stage-graph).
@@ -42,8 +42,10 @@ The case, each stage, and each task move through a lifecycle gated by **rules** 
 How to reason with these:
 
 - **`required-*` vs `selected-*`.** `required-tasks-completed` / `required-stages-completed` = "all items flagged required are done" (the `isRequired` flow). `selected-tasks-completed` / `selected-stage-completed` / `selected-stage-exited` = "these *specific named* items." Pairing rule (Key Rule 4): `Marks Complete: Yes` pairs only with `required-*`; `selected-*` is for `No` (routing / early exit / alternate disposition). A `Yes` + `selected-*` pair is a schema error.
-- **Secondary stage** uses **stage-entry + stage-exit rules only, never edges** (true of every stage now — edges are retired). Its entry rule is typically *interrupting* (`isInterrupting: true`); its exit uses `return-to-origin` to rejoin the flow it left. **For a decision/signal-routed lane, the routing lives on the *origin* stage:** a gated diverting exit (`Marks Stage Complete: No`, `IF` on the decision/signal, `exitToStageId` → the lane), with the origin's completion exit gated by the inverse `IF` so the two paths are mutually exclusive — see [§ Logical integrity step 5](#logical-integrity--stage-graph).
-- **First task in a stage** must carry `current-stage-entered` (emit it explicitly). `wait-for-connector` makes a gate pause for an inbound connector callback — its `conditionExpression` gates on **case state** only (no `event` payload; in-rule extract-then-gate is unsupported at runtime — gate a downstream condition instead); `adhoc` lets a *task* fire manually from the case app (task-entry only — never a stage-entry rule); `runs-sequentially` chains tasks in a lane.
+- **Secondary stage** uses **stage-entry + stage-exit rules only, never edges** (true of every stage — edges retired). Its entry rule is typically *interrupting* (`isInterrupting: true`); its exit uses `return-to-origin` to rejoin the flow it left. **For a decision/signal-routed lane, the routing lives on the *origin* stage:** a gated diverting exit (`Marks Stage Complete: No`, `IF` on the decision/signal, `exitToStageId` → the lane), with the origin's completion exit gated by the inverse `IF` so the two paths are mutually exclusive — see [§ Logical integrity step 5](#logical-integrity--stage-graph).
+- **First event-driven task in a stage** must carry `current-stage-entered` (emit it explicitly). A sequential chain is the exception: the first sequential task carries only `runs-sequentially`, which the frontend interprets as current-stage-entered; later sequential tasks carry only `runs-sequentially`, which the frontend interprets as the preceding task completing. `wait-for-connector` makes a gate pause for an inbound connector callback — its `conditionExpression` gates on **case state** only (no `event` payload; in-rule extract-then-gate is unsupported at runtime — gate a downstream condition instead); `adhoc` lets a *task* fire manually from the case app (task-entry only — never a stage-entry rule).
+
+**Frontend task-mode mapping.** The UI's `sequential`, `event-triggered`, and `manually-triggered` choices are not interchangeable: sequential means the task-only `runs-sequentially` rule; event-triggered means an explicit event/condition rule (use `wait-for-connector` for an external connector callback); manually-triggered means an `adhoc`-only task with `isRequired: false`. Do not infer one mode from `data.tasks` lanes, and do not add a second entry rule that changes the selected mode.
 - **`user-selected-stage`** (stage entry) starts a stage on demand by a user rather than by flow. The CLI validator requires it to pair with a `wait-for-user` stage exit elsewhere: a `wait-for-user` exit with no `user-selected-stage` entry — or a `user-selected-stage` entry with no `wait-for-user` exit — fails `validate`.
 
 Exact cell formats live in [§ Stage content rules](#stage-content-rules) and [§ Task content rules](#task-content-rules) — this table is the conceptual map of *which rule belongs where*.
@@ -126,7 +128,7 @@ The `type` says **how the work gets done**, not what it's about. Read the verb +
 | `execute-connector-activity` | one **operation on an Integration Service connector** (e.g. Salesforce create record, send email) | Is this a single connector operation against a SaaS system? |
 | `wait-for-connector` | the case **pauses until an external system calls back** (webhook, inbound message, event) | Is the case waiting for an external system to respond? |
 | `wait-for-timer` | the case **pauses for a duration or until a datetime** | Is the case just waiting on time? |
-| `case-management` | the step **launches / coordinates a child case** | Does this spin up a sub-case? (any child case trips the Phase 0 threshold → soft-redirect) |
+| `case-management` | the step **launches / coordinates a child case** | Does this spin up a sub-case? |
 
 **Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. "Approve / review / decide" verbs are ambiguous between `action` (human) and `agent` (AI) — these are Always-Ask ([phase-0-interview.md § When to Ask vs Default](phase-0-interview.md#when-to-ask-vs-default)); never guess. A compliance trigger phrase forces `action` regardless of the pick above (see below).
 
@@ -192,6 +194,20 @@ Defines what `sdd.md` Section 1 (Case Definition) must contain.
 | SLA Type | conditional | `time-based` (single unconditional duration) / `condition-based` (one or more conditionExpression-keyed overrides + a default time-based row) | Default `time-based` when Case SLA set with no per-condition overrides. The FE persists `condition-based` whenever ≥ 1 `slaRules[]` entry carries a non-empty `conditionExpression` (see PO.Frontend `CaseManagementSlaProperties.tsx:27-30`). `condition-based` requires populating the §Variable SLA Rules table; `time-based` omits it. |
 | Case App | optional | `Enabled` / `Disabled` — whether the in-product Case App UI is on (`metadata.caseAppEnabled`). | Default `Disabled`; record in source ledger. |
 | Task-output passing | optional | `Direct` / `Shared` — `metadata.caseDirectlyPassTaskOutputs`. `Direct` passes a task's outputs straight to downstream tasks (default). | Default `Direct`. |
+
+**PO.Frontend validation parity.** Before Approve, apply the same name and SLA checks that the Case App applies:
+
+| Surface | Required checks |
+|---|---|
+| Stage label | Non-empty; unique across stages; no `:`. A non-Case-Manager stage also cannot reuse the reserved default Case Manager stage label when a Case Manager stage exists. |
+| Task display name | No `:` for materialized tasks. |
+| SLA rule title (`displayName`) | Non-empty; unique within the root or stage target; no `:`. |
+| Escalation title (`displayName`) | Non-empty; unique across escalations on the target; no `:`. |
+| SLA duration | `count > 0`; when `unit: min`, `15 ≤ count ≤ 1000`. Supported units are `min`, `h`, `d`, `w`, and `m`. |
+| Conditional SLA | Every non-default SLA rule has a non-empty expression/condition. |
+| Escalation payload | Every escalation has at least one recipient; an `at-risk` escalation has an `atRiskPercentage` value. |
+
+These are blocking authoring errors, not optional style warnings. Preserve the user's wording when repairing a name, but ask for a replacement when uniqueness or a reserved delimiter is violated; never silently suffix or truncate it.
 
 ### 1.2 Case-level SLA escalation
 
@@ -442,21 +458,23 @@ Defines per-task detail blocks. Every task opens with an **Entry Condition** blo
 
 | Rule | When to use |
 |---|---|
-| `current-stage-entered` | First task in stage, or any ungated task (including connector tasks) that should start when its stage is entered (REQUIRED for the first task; emit explicitly, never imply). When a task has multiple entry rows, render this one first. |
-| `selected-tasks-completed("<Task>")` | Sibling-gated task (e.g., after upstream task in same stage). Multiple tasks comma-separated inside the parens. |
+| `current-stage-entered` | First event-driven task in stage, or any ungated task (including connector tasks) that should start when its stage is entered. A first task in a sequential chain uses `runs-sequentially` instead. When a task has multiple entry rows, render this one first. |
+| `selected-tasks-completed("<Task>")` | Explicit sibling gate, fan-in, branch convergence, or conditional handoff where this task should start only after named sibling task(s) complete. Multiple tasks comma-separated inside the parens. Do not use it merely to express the next step in a simple top-to-bottom task list; use `runs-sequentially` for that UI mode. |
 | `wait-for-connector` | Async connector callback. Pair with `conditionExpression` to gate on **case state** (`vars.X`); the event payload is not accessible (no `event` namespace). **In-rule extract-then-gate (extract + same-rule `=js:vars.caseVar` gate) does NOT work at runtime** — case-backend evaluates the gate before the extract populates the case var. To condition on payload content: extract `response.field -> caseVar` on the connector rule and place the case-state gate on a DOWNSTREAM stage-entry / task-entry condition. |
 | `adhoc` | Manual fire from the case app. Optional gating expression. |
-| `runs-sequentially` | Tasks in a lane that should run top-to-bottom in declaration order. |
+| `runs-sequentially` | Tasks that should run top-to-bottom in their stage declaration order. The frontend toggle writes this as the task's only entry rule; it is not represented by a lane. |
 
 Multiple entry conditions render as multiple rows (DNF outer-OR). When `current-stage-entered` is among them, render it first.
+
+**Sequential normalization rule.** When a contiguous set of tasks in one stage is described as a plain ordered workflow with no branch condition, fan-in, alternate trigger, or manually launched task between them, author **each task in that run** with exactly one `runs-sequentially` Entry Condition row. This includes the first task: do not write `current-stage-entered` for the first item and `selected-tasks-completed("<previous>")` for later items. That explicit chain is valid backend logic, but Studio Web classifies it as condition/event-driven rather than Sequential. Break the run at tasks that are `adhoc`, `wait-for-connector` entry-triggered by an external event, condition-gated, or intentionally dependent on non-immediate sibling task(s).
 
 ### `action` task — required cells
 
 | Cell | Value |
 |---|---|
-| HITL Implementation | `Action App: <deploymentTitle>`. The deployed app MUST exist in `action-apps-index.json` — inline JSON-Schema authoring is NOT supported by the action plugin (an unresolved app falls back to a Rule-8 placeholder). Never paraphrase, never `—`. |
-| Action App ID | Concrete deployment id from `action-apps-index.json` |
-| Deployment Folder | `deploymentFolder.fullyQualifiedName` |
+| HITL Implementation | `Action App: <deploymentTitle>`, where `<deploymentTitle>` is the concrete intended app name. Use the selected registry entry's canonical title when resolved; otherwise retain the user-requested title. NEVER `<UNRESOLVED>`, never paraphrase, never `—`. |
+| Action App ID | Concrete deployment id from `action-apps-index.json`, or `<UNRESOLVED>` when no live app was selected |
+| Deployment Folder | `deploymentFolder.fullyQualifiedName`, or `<UNRESOLVED>` when Action App ID is unresolved |
 | Recipient | Typed prefix (see table below). NEVER a bare string. |
 | Priority | `Low` / `Medium` / `High` / `Critical` |
 | Task Title | One-line user-visible question/instruction (REQUIRED — Action Center displays it) |
@@ -467,7 +485,7 @@ Multiple entry conditions render as multiple rows (DNF outer-OR). When `current-
 | Output Schema | Table: `Field | Type | Binding` (arrow form `-> =vars.<id>`) |
 | Buttons | Table only when `is_decision: Yes`: `Button | Maps To | Behavior` |
 
-**HITL Implementation:** the action plugin requires a deployed Action App from `action-apps-index.json` (Action App ID + Deployment Folder). When no matching deployed app exists, the task falls back to a Rule-8 placeholder — the SDD should either use a deployed app, or use a different task type (`process` / `agent` / `api-workflow`) that doesn't require HITL.
+**HITL Implementation:** the Action App title is the portable Phase 0 → Phase 1 lookup name. Establish it before registry lookup and preserve it when the app is unresolved so a different machine can retry discovery without `tasks/registry-resolved.json`. The action plugin still requires a deployed Action App from `action-apps-index.json` to build a resolved task; when no matching app exists, keep the title, set Action App ID + Deployment Folder to `<UNRESOLVED>`, emit a `high` review item, and fall back to a Rule-8 placeholder. Action Apps are not created inline.
 
 **Input/Output Schema fidelity.** The Input Schema and Output Schema `Field` cells MUST be a subset of the resolved app's actual schema (from `uip maestro case tasks describe --type action --id <actionAppId>`, fetched at Resolve and persisted in `tasks/registry-resolved.json`). Never author a field the deployed app does not expose — it cannot bind (the io-binding plugin has no `data.inputs[]` slot to write into). A field the user described but the app lacks → Ask (deploy a task-specific app / drop the field / placeholder), never silently author it. **Code-switched app (sanctioned — do NOT flag):** reusing ONE deployed app across many `action` tasks is correct and expected when each task carries a **distinct `actionType`** dispatch value and its declared fields are a **subset of the app's schema**. This is the normalized human-decision-app pattern — a single app whose code-behind switches on `actionType` and renders the right form; a full case routes every human decision through it (the working aged-invoice case uses one app across all 7 of its action tasks). It is the generic-substitute anti-pattern ONLY when tasks reuse the app **without** a distinct `actionType`, or declare a field the app does not expose (won't bind) — see §Architect's lens `rev_substitute_app` and §Finalization step 16.
 
@@ -527,29 +545,31 @@ No `<UNRESOLVED>` on Duration / Until — timer cannot fire without it. Block Ap
 
 | Cell | Value |
 |---|---|
-| Child Case Display Name | Display name of the child case to launch |
+| Child Case | Concrete intended child-case resource `name`. Use the selected registry entry's canonical name when resolved; otherwise retain the user-requested name. NEVER `<UNRESOLVED>`. |
+| Folder Path | Exact selected `folders[0].fullyQualifiedName`, or `<UNRESOLVED>` when Resource Identity is unresolved |
+| Resource Identity | Selected `entityKey` from `caseManagement-index.json`, or `<UNRESOLVED>` when no live child case was selected |
 | Child Case Identifier | Identifier prefix of the child case |
 | Data Passed (parent → child) | Table: `Parent Variable | Child Variable` |
 | Wait for Completion | `Yes` / `No` |
 | Data Returned (child → parent) | Table: `Child Variable | Parent Variable` — render only when `Wait for Completion: Yes` |
 
-Every `case-management` task triggers the §Soft redirect during Phase 0 threshold check (child cases ≥ 1 is a threshold breach per [phase-0-interview.md § Thresholds](phase-0-interview.md#thresholds)).
+`Child Case` is the portable Phase 0 → Phase 1 lookup name. Establish it before registry lookup and preserve it when unresolved; never substitute the parent task's display name. A missing live child case yields unresolved identity/folder fields + a `high` review item and remains placeholder-only.
 
 ### `process` / `agent` / `rpa` / `api-workflow` task — required cells
 
-These four runnable types share a single render block. The SDD surfaces the binding contract **plus the resolved resource identity** — name + folder are REQUIRED so the document is replicable standalone (a reader must know *which* deployed resource the task invokes, not just its I/O contract).
+These four runnable types share a single render block. The SDD surfaces both portable resource intent and resolution state. `Resolved Resource` is always a concrete intended name; `Resource Identity` alone says whether Resolve selected a live resource. This keeps the document usable when Phase 0 and Phase 1 run on different machines and `tasks/registry-resolved.json` is not transferred.
 
 | Cell | Required? | Value |
 |---|---|---|
-| Resolved Resource | yes | The deployed resource `name` (the `name`-binding default) — e.g. `AgedInvoiceMockIntegrationApi`, `InvoiceTriageAgent`. `<UNRESOLVED>` only when Resolve was skipped / returned 0 matches (pair with a `high` review item). |
-| Folder Path | yes | Resolved `folders[0].fullyQualifiedName` (the `folderPath`-binding default). Never a parent path — the exact resource folder, or the job faults at runtime. |
-| Resource Identity | recommended | Resolved id (+version): `apiWorkflowId` / `agentId` / `processOrchestrationId`. Carried here for standalone replicability AND in `tasks/registry-resolved.json`. `<UNRESOLVED>` when not resolved. |
+| Resolved Resource | yes | A concrete intended resource `name` (the `name`-binding default) — e.g. `AgedInvoiceMockIntegrationApi`, `InvoiceTriageAgent`. Use the selected registry entry's canonical name when resolved; otherwise retain the user-requested name. NEVER write `<UNRESOLVED>` in this cell. |
+| Folder Path | yes | Resolved `folders[0].fullyQualifiedName` (the `folderPath`-binding default), or `<UNRESOLVED>` when `Resource Identity` is unresolved. A concrete value must be the exact resource folder, never a parent path. |
+| Resource Identity | yes | The resolution-status cell. Write the resolved id (+version): `apiWorkflowId` / `agentId` / `processOrchestrationId`, or `<UNRESOLVED>` when no live resource was selected. Also carry it in `tasks/registry-resolved.json` when that optional cache exists. |
 | Binding Sub-Type | yes | `resourceSubType` on the bindings: `Api` (api-workflow) / `Agent` (agent) / `ProcessOrchestration` (process) / `—` (rpa). Omitting it makes Studio Web report the resource as not found. |
 | Dispatch / Operation | conditional | When the resource is a shared façade dispatched by a parameter (e.g. one mock-integration api selected by `requestSource`, one code-switched action app), name the selector + value (`requestSource = "RegisterCaseShell"`). `—` for single-purpose resources. Also appears as an Inputs row (literal binding). |
 | Inputs | yes | Table: `Field | Type | Binding` — `Field` MUST match the runnable's declared In argument name verbatim; `Binding` per §Binding cell |
 | Outputs | yes | Table: `Field | Binding / Value` — `Field` MUST match the runnable's declared Out argument name verbatim for `->` rows (or `—` for `=` rows); see §Outputs cell operators |
 
-**Where the rest of the metadata lives.** Deep per-type runtime metadata that does NOT affect replication of the case plan (agent system prompt, RPA package version, api-workflow endpoint URL, process release tag) stays out of the SDD body — it is resolved during §Resolve in [phase-0-interview.md](phase-0-interview.md#resolve) and persisted in `tasks/registry-resolved.json` under the task's resolution entry (per SKILL.md Rule 9 shape). The SDD carries the resource **name + folder + id + sub-type** (above); Phase 1 reads the deeper metadata from `registry-resolved.json` when emitting `caseplan.json`. Mapping:
+**Where the rest of the metadata lives.** Deep per-type runtime metadata that does NOT affect replication of the case plan (agent system prompt, RPA package version, api-workflow endpoint URL, process release tag) stays out of the SDD body — it is resolved during §Resolve in [phase-0-interview.md](phase-0-interview.md#resolve) and persisted in `tasks/registry-resolved.json` under the task's resolution entry (per SKILL.md Rule 9 shape). The SDD carries the resource **name + folder + id + sub-type** (above). Phase 1 may reuse deeper metadata only after the cached type/name/folder/identity matches the current SDD per [planning.md § Phase 0 carryover](planning.md#step-2--locate-and-parse-the-design-document); otherwise it re-runs discovery from the SDD and replaces the stale entry. Mapping:
 
 | Task type | Registry source | Identity field in `registry-resolved.json` |
 |---|---|---|
@@ -624,11 +644,11 @@ When a task resolves to a **live** resource (`process` / `agent` / `rpa` / `api-
 
 **xref carve-out — an upstream-output-fed input is *defined*, NOT a case variable.** When a required input is satisfied by an upstream task's output — whole-value `<- "Stage"."Task".out` (resolves to `=vars.<outputId>`) or in-expression `vars.$xref('Stage','Task','out')` — it counts as covered: do **NOT** raise a "missing variable" finding for it. The emitting task self-declares the output and is its own producer; declare a §1.5 row for it only per the [§ 1.5 declare-vs-xref test](#15-case-variables) (rename / custom `Default` / `Type` / `Description` / case-level state read in ≥ 2 places). See also [§ Variable lineage closure → Task-output direct reference](#variable-lineage-closure).
 
-Enforced at the Approve gate (§Variable lineage closure audit checklist + §Finalization step 19) and re-verified at build (Phase 3 io-binding Check 5, [`io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)). A task left `<UNRESOLVED>` (no resolved contract) is skipped by this rule — it has no declared I/O to check against.
+Enforced at the Approve gate (§Variable lineage closure audit checklist + §Finalization step 19) and re-verified at build (Phase 3 io-binding Check 5, [`io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)). A task whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` has no resolved contract and is skipped by this rule. Its type-specific portable name remains concrete.
 
 ## Integrations content rules (Section 4)
 
-Section 4 is the **de-duplicated resource roll-up** — one subsection per resource family, so the case's full integration/resource footprint is replicable from the SDD alone (it mirrors the per-task `Resolved Resource` / `Folder Path` cells in Section 2). Render only the families whose task type appears; render `> None.` for an absent family when its absence is meaningful (e.g. "no IS connectors — all system calls go through an API workflow").
+Section 4 is the **de-duplicated resource roll-up** — one subsection per rendered resource family, so the case's integration/resource footprint is replicable from the SDD alone. An unresolved row keeps its concrete intended resource name and writes `<UNRESOLVED>` only for folder and identity. Render only the families whose task type appears; render `> None.` for an absent family when its absence is meaningful (e.g. "no IS connectors — all system calls go through an API workflow").
 
 | Subsection | Render when the case has… | Required columns |
 |---|---|---|
@@ -636,7 +656,7 @@ Section 4 is the **de-duplicated resource roll-up** — one subsection per resou
 | API Workflows | `api-workflow` tasks | Workflow, Folder, Resource ID (+version), Inputs → Outputs, Used By Tasks |
 | Agents | first-class `agent` tasks | Agent, Folder, Resource ID (+version), Inputs → Outputs (or "shared agent contract"), Used By Tasks |
 | Processes & RPA | `process` / `rpa` tasks | Resource, Type, Folder, Resource ID (+version), Used By Tasks |
-| Child Cases | `case-management` tasks | Child Case, Identifier Prefix, Wait for Completion, Used By Tasks |
+| Child Cases | `case-management` tasks | Child Case, Folder, Resource ID, Identifier Prefix, Wait for Completion, Used By Tasks |
 | External Agents | externally-hosted agents modeled as `api-workflow` / `execute-connector-activity` | Agent, Service Type, Endpoint, Used By Tasks |
 
 **De-dup rule.** One row per **distinct** resource, not per task. When a façade resource backs many tasks (one mock-integration API selected by `requestSource`, one code-switched action app by `actionType`), list the distinct selector values next to the task names in `Used By Tasks` (e.g. `Start case (requestSource=StartAgedInvoiceCase), Register shell (requestSource=RegisterCaseShell)`). Action apps render in their per-task Action blocks (Section 2), not as a Section 4 subsection — they are HITL surfaces, not system integrations — but the same de-dup + `actionType`-selector discipline applies there.
@@ -705,7 +725,7 @@ Pattern X1 is preferred unless an actual connector emits the close event. When t
 6. **Stage-order closure.** For each consumer of `vars.<caseVar>`, identify producers (trigger-extraction, task Outputs row `->` or `=`). At least one producer's stage index ≤ consumer's stage index AND (same stage) task index < consumer's task index. If no producer exists, the §1.5 row MUST satisfy the `Category: In` or non-empty `Default` escape.
 7. **`->` row payload path present.** Every Outputs `-> {caseVar}` row has a non-empty `Field` cell (the runtime path). Every `=` row has `Field` exactly `—`.
 8. **Forbidden body vocabulary.** No occurrence in any narrative cell of: `Pattern C`, `bridge`, `companion`, `inputOutputs[]`, `=jsonString:` (outside connector `Operation Configuration` cells), `groupOperator`, `essentialConfiguration` (as prose), `savedFilterTrees`, `dispatcher`, `Phase 2 validator`, `Phase 3 dispatcher`, `Q10 II`, `Finding #N`, `io-binding`, `aliased into / from / back into`, `reassign`, `originalVar`, `auto-mint`. These are skill-internal terms — see [sdd-template.md § Output Rules](../assets/templates/sdd-template.md).
-9. **Resolved-resource I/O completeness** (§Resolved-resource I/O completeness). For each task resolved to a live resource (contract present in `tasks/registry-resolved.json`): every **required** declared input has a non-empty `Binding` row OR `<UNRESOLVED>` + a paired `high` review item; every Outputs `-> caseVar` row's `Field` exists verbatim in the resolved output contract. An upstream-output-fed input (whole-value `<-` or `vars.$xref(...)`) satisfies coverage with NO §1.5 row — do not flag it as a missing variable. Skip tasks left `<UNRESOLVED>` (no contract).
+9. **Resolved-resource I/O completeness** (§Resolved-resource I/O completeness). For each task resolved to a live resource (contract present in `tasks/registry-resolved.json`): every **required** declared input has a non-empty `Binding` row OR `<UNRESOLVED>` + a paired `high` review item; every Outputs `-> caseVar` row's `Field` exists verbatim in the resolved output contract. An upstream-output-fed input (whole-value `<-` or `vars.$xref(...)`) satisfies coverage with NO §1.5 row — do not flag it as a missing variable. Skip tasks whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` (no contract).
 
 Any failure → Phase 0 cannot Approve. Surface in edit-validation errors. AskUserQuestion `Re-edit` / `Restart` / `Abort`.
 
@@ -858,8 +878,8 @@ Before Approve atomic-renames `sdd.draft.md` → `sdd.md`, Phase 0 runs these ch
 15. **Decision-routing closure.** For every `action` task with `is_decision: Yes`, each button's `Maps To` variable+value MUST be consumed by ≥ 1 downstream rule (stage-entry `IF`, task-entry `IF`, stage-exit, or case-exit) OR the button's Behavior MUST declare it terminal (no routing claim). When a button's Behavior names a destination stage / lane ("route to / send to / via the X lane") and no entry condition keys off that variable+value, the branch is dead → **blocking error**. Pair with §Logical integrity step 5 (lane reachability). A fully-orphaned decision variable (produced by a button, read by nothing) on an `is_decision: Yes` task is blocking; the `medium` `rev_orphan_decision` variant in §Architect's lens applies only when the variable IS read but not for branching.
 16. **Action-app schema fidelity.** For every `action` task whose HITL Implementation resolves to a concrete deployed app, every declared Input Schema and Output Schema `Field` MUST exist in that app's schema (from `tasks describe`, persisted in `tasks/registry-resolved.json` at Resolve). A declared field absent from the app → `high` review item (`rev_action_schema_<task>`); it cannot bind. One app bound to ≥ 2 tasks trips `rev_substitute_app` (§Architect's lens) **only** when the tasks lack distinct `actionType` dispatch values or declare fields outside the app schema; a code-switched app (distinct `actionType` per task, fields ⊆ app schema) is the sanctioned normalized-action-app pattern and does NOT trip it.
 17. **Required-task presence.** Every primary stage whose completion exit uses `required-tasks-completed` MUST contain ≥ 1 task with `Required: Yes`. A `required-tasks-completed` exit over a stage where no task is required is vacuous — the runtime resolves it without gating on real work (and the CLI flags it as `CASE_MGMT_..._NO_REQUIRED_TASK` at `validate`). Catch it at the Approve gate: zero `Required: Yes` tasks in such a stage → blocking error (offer `Re-edit` to mark the stage's terminal/primary task required). Tasks default to `Required: Yes` unless the SDD says otherwise, so this fires only when the author explicitly cleared every task's Required flag.
-18. **Resolved-resource presence (standalone replicability).** Every `process` / `agent` / `rpa` / `api-workflow` task has a concrete `Resolved Resource` + `Folder Path` (or `<UNRESOLVED>` + a paired `high` review item); every `action` task has `Action App ID` + `Deployment Folder`; every connector task has `Connection ID` + `Activity Type ID`. The SDD must name *which* deployed resource each task binds — a reader/coding-agent cannot replicate the case from I/O contracts alone. Missing identity with no review item → blocking error.
-19. **Resolved-resource I/O completeness** (§Resolved-resource I/O completeness; audit-checklist item 9). For every task resolved to a live resource (contract in `tasks/registry-resolved.json`): every **required** declared input is bound (any §Binding cell form, incl. an upstream-output ref — which needs NO §1.5 row) OR `<UNRESOLVED>` + a paired `high` review item (`rev_unbound_input_<task>_<field>`); every Outputs `-> caseVar` row's `Field` exists verbatim in the resolved output contract (a phantom field → `high` `rev_phantom_output_<task>_<field>`). Unbound required input with no review item → blocking error. Step 16 is the `action`-app instance of the output-fidelity direction; this step extends both directions to all runnable/connector types. Tasks left `<UNRESOLVED>` (no contract) are skipped.
+18. **Resolved-resource presence (standalone replicability).** Every process/agent/rpa/api-workflow task has a concrete `Resolved Resource`; every action has a concrete Action App title in `HITL Implementation`; every case-management task has a concrete `Child Case`. These portable names are never `<UNRESOLVED>`. Each task also has its required type-specific identity + folder pair (`Resource Identity` + `Folder Path`, or `Action App ID` + `Deployment Folder`): a concrete identity requires the exact concrete folder; an unresolved identity permits an unresolved folder and requires a paired `high` review item. Every connector task has `Connection ID` + `Activity Type ID`. Missing portable intent, or unresolved identity with no review item, is a blocking error.
+19. **Resolved-resource I/O completeness** (§Resolved-resource I/O completeness; audit-checklist item 9). For every task resolved to a live resource (contract in `tasks/registry-resolved.json`): every **required** declared input is bound (any §Binding cell form, incl. an upstream-output ref — which needs NO §1.5 row) OR `<UNRESOLVED>` + a paired `high` review item (`rev_unbound_input_<task>_<field>`); every Outputs `-> caseVar` row's `Field` exists verbatim in the resolved output contract (a phantom field → `high` `rev_phantom_output_<task>_<field>`). Unbound required input with no review item → blocking error. Step 16 is the `action`-app instance of the output-fidelity direction; this step extends both directions to all runnable/connector types. Tasks whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` (no contract) are skipped.
 
 On pass: atomic rename `sdd.draft.md` → `sdd.md`, print Approve summary (with Inferred / defaulted block + Caller obligation block when applicable + review-items count), run Approve AskUserQuestion.
 

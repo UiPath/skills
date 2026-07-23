@@ -1,5 +1,7 @@
 # Platform Availability Guide
 
+> **Cloud is not uniform.** The ✅ Cloud column assumes standard Automation Cloud. Variants — Public Sector / GovCloud, Dedicated, Test Cloud, region-specific instances — plus per-tenant service enablement and license entitlements can block products inside that column. For any cloud variant or unverified entitlement, confirm the product is actually enabled on the tenant; unverifiable → `[SME REVIEW]` per product.
+
 Product × delivery-model availability matrix. Consulted by the [Constraint Gate](product-selection-guide.md#constraint-gate) before any product is recommended. The most expensive SDD defect is an architecture the customer's platform cannot run.
 
 > **As of:** 2026-06 · latest Automation Suite = **2.2510** (the 2025.10 LTS line; versioning is `[Major].[YYMM].[Patch]`), current patch **2.2510.2** (2026-04).
@@ -22,7 +24,8 @@ Product × delivery-model availability matrix. Consulted by the [Constraint Gate
 |---|---|---|---|---|
 | RPA (Studio, Robot, Orchestrator) | ✅ | ✅ since first AS (2021.10) | No serverless/cloud robots on AS — capacity via Automation Suite Robots or provisioned unattended robots | — |
 | Solutions (`.uipx` deploy) | ✅ | ✅ since **2.2510** | Older AS cannot ingest `.uipx` — the planner's terminal artifact degrades to per-package Orchestrator deploys | Per-package publish via Orchestrator (route deploy tasks to `uipath-platform` instead of `uipath-solution`) |
-| Maestro (.flow / BPMN orchestration) | ✅ | ✅ since **2.2510.2** — EKS/AKS + OpenShift profiles only | Requires Temporal-as-a-Service (auto-enabled); Optimize dashboard cloud-only | Orchestrator queues + dispatcher/performer state machine; Action Center approvals for human gates |
+| Maestro Flow (.flow orchestration) | ✅ | ✅ since **2.2510.2** — EKS/AKS + OpenShift profiles only | Requires Temporal-as-a-Service (auto-enabled); Optimize dashboard cloud-only | Orchestrator queues + dispatcher/performer state machine; Action Center approvals for human gates |
+| Maestro BPMN (.bpmn orchestration) | ✅ | ✅ since **2.2510.2** — EKS/AKS + OpenShift profiles only | Requires Temporal-as-a-Service (auto-enabled); Optimize dashboard cloud-only | Orchestrator queues + dispatcher/performer state machine; Action Center approvals for human gates |
 | Agents / Agent Builder | ✅ | ✅ since **2.2510.2** | Requires AI Trust Layer toggle + ≥1 LLM connection (cloud-hosted or self-hosted model); coded agents via Orchestrator 2.2510 | Deterministic RPA + rule-based decisioning; HITL escalation for judgment steps |
 | Coded Apps (TypeScript web apps) | ✅ (some geo limits) | ❌ **Not available** — cloud only | "Automation Suite and Dedicated deployments are not supported at this time" | **None** — no on-prem app equivalent in this toolchain. Flag the app touchpoint as `[SME REVIEW]`; do not substitute a product the planner cannot build. |
 | API Workflows | ✅ | ✅ since **2.2510** | Maestro integration needs 2.2510.2+ | RPA Process invoked via Orchestrator API / queue |
@@ -36,7 +39,7 @@ Product × delivery-model availability matrix. Consulted by the [Constraint Gate
 
 ## Standalone (MSI Orchestrator) Note
 
-Standalone delivery is Orchestrator + Studio/Robot (+ standalone Test Manager) only. **No** Apps, Integration Service, Studio Web, Data Service, API Workflows, Maestro, Agents, Solutions. ⚠ Verify before relying on any product beyond core RPA + Orchestrator. Default architecture: RPA projects + Orchestrator queues/assets/triggers, deployed as individual packages via `uipath-platform`.
+Standalone delivery is Orchestrator + Studio/Robot (+ standalone Test Manager) only. **No** Apps, Integration Service, Studio Web, Data Service, API Workflows, Maestro (Flow and BPMN), Agents, Solutions. ⚠ Verify before relying on any product beyond core RPA + Orchestrator. Default architecture: RPA projects + Orchestrator queues/assets/triggers, deployed as individual packages via `uipath-platform`.
 
 ## Maintenance
 

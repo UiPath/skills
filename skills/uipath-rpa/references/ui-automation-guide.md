@@ -33,7 +33,7 @@ When the source is a Test Manager test case, a PDD, or any written list of "Clic
 2. **Group by screen state.** Sort steps into screen batches — every step before an action that advances the UI (submit, navigate, dialog confirm) belongs to the current screen; the next batch starts after the advance.
 3. **Build the checklist** — three columns per row: `manual step → element name → screen`. Lock the count before opening the app. If the user later adds requirements, capture deltas, do not re-inventory the whole thing.
 4. **Capture screen by screen.** Pre-flight Window Baseline (above) → run `uia-configure-target` for the current screen's batch → register each element in the Object Repository before advancing → use the UIA interact CLI to advance → repeat. The "Complete-then-advance" rule from [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md) is mandatory; never advance with elements still un-registered.
-5. **Then code.** With every checklist row registered in the Object Repository, write the `.cs` / `.xaml` workflow that calls them in step order. Authoring-phase prerequisites (analyzer rules, project context discovery) run NOW, not earlier.
+5. **Then code.** With every checklist row registered in the Object Repository, write the `.cs` / `.xaml` workflow that calls them in step order. Authoring-phase prerequisites (project context discovery) run NOW, not earlier.
 
 > Coverage check: after capture, every checklist row must have a matching `Descriptors.<App>.<Screen>.<Element>` path (coded) or Object Repository reference (XAML). Rows without a match indicate a missed capture or an obsolete manual step — reconcile before writing code.
 
@@ -76,7 +76,7 @@ A `Log("LoginWorkflow: type username")` stub:
 
 A real `<uix:NTypeInto>` activity with placeholder selector + `TODO Indicate` marker:
 
-- Build/validate may surface "selector incomplete" warnings — useful, since they tell the developer what is left to do.
+- Build/validate surface the unconfigured targets ("Target or Input UI Element must be set" — hard errors in current packages) — useful, since they tell the developer what is left to do. A stub-mode deliverable therefore does NOT reach a clean `build`; its acceptance bar is that the ONLY remaining validate/build errors are the expected unconfigured-target ones.
 - The activity is wired into the workflow's control flow, package dependencies, scope, and Object Repository registration plumbing. The developer's only remaining work is **Indicate**.
 - The TODO marker is visible in Studio's designer pane and grep-able in the file.
 - The cost of "what does this stub actually need from the developer?" drops from "read this carefully and infer" to "click Indicate on the marked activities."
@@ -199,13 +199,14 @@ When a procedure exists specifically to check something against ground truth, do
 
 ## Common UIA Pitfalls
 
-- **SelectItem on web dropdowns** — use `SelectItem` for native HTML `<select>` elements (deterministic). It fails on custom dropdown widgets (div/`<ul>`/ARIA hierarchies that only *look* like a `<select>`) — there, click to open and click the option, or use `TypeInto`. Detail: [uia-elements-interaction-guide.md § Web Controls](uia-elements-interaction-guide.md).
+- **Choosing SelectItem vs click-to-open for dropdowns/lists** — whether `SelectItem` drives a control is independent of its UI stack, tag, or role (native `<select>`, WinForms/WPF combo, Java/SAP list, ARIA combobox — all candidates). Don't guess from the selector — query the control's `items` attribute via the interact CLI: if it lists options → `SelectItem` drives it (pass one of them), no option-element capture needed; if empty/absent → fall back to click-to-open + click-option (or `TypeInto`). Procedure and syntax: [uia-elements-interaction-guide.md § Dropdowns, lists, and comboboxes](uia-elements-interaction-guide.md).
 - **ScreenPlay overuse** — UITask/ScreenPlay is non-deterministic and slow. Always try proper selectors first.
 - **Wrong Object Repository references** — never copy references from examples or other projects. Always use `uia-configure-target` to generate them for the current application state.
 - **Using `InjectJsScript` instead of standard activities** — do NOT use `InjectJsScript` when standard UI activities (GetText, Click, TypeInto, ExtractTableData, etc.) with configured targets would work. `InjectJsScript` is a last resort — it's hard to debug, fragile to page changes, and bypasses the Object Repository.
 - **Hallucinated keyboard shortcuts instead of UIA targets** — do NOT send keyboard shortcuts (`Ctrl+S`, `Alt+F4`, `Tab` navigation, menu mnemonics, etc.) as a substitute for clicking or typing into a real UI element. `Click` and `TypeInto` against configured targets are deterministic, survive layout changes, and are observable in logs; guessed shortcuts depend on focus, locale, and version. Reserve keyboard shortcuts for genuinely hotkey-only operations (commands with no clickable surface) and confirm the shortcut exists in the live app — never infer from OS convention or muscle memory.
 - **Chaining keystrokes in one `NKeyboardShortcuts` after one navigates away faults on a stale node.** The activity resolves its `Target` **once**; if the first shortcut destroys/replaces that element (a navigation key that changes the view), a second shortcut chained in the same activity (multi-shortcut `Shortcuts` string or `DelayBetweenShortcuts`) hits the stale node and throws `InvalidNodeException: "The UI element is invalid..."`. Example: Explorer `Alt+Up` (go to parent, auto-selecting the current folder) + `Alt+Enter` (open Properties) in one activity targeting "Items View" — `Alt+Up` navigates, then `Alt+Enter` faults on the destroyed node. **Fix:** use **separate** `NKeyboardShortcuts` activities so the follow-up **re-resolves** its target against the new screen, plus a small `DelayBefore` to let it settle.
-- **Unnecessary `Delay` activities before UIA actions** — UIA activities (`NClick`, `NTypeInto`, `NSelectItem`, `NGoToUrl`, etc.) have embedded target-finding resilience: they retry the selector lookup for a configurable timeout before failing. A `Delay` placed in front of a UIA activity to "let the UI settle" is almost always redundant and inflates workflow runtime without changing correctness. Include `Delay` only when ALL of: the wait is NOT for a UI element that a following UIA activity will target; a concrete non-retry reason exists (post-action animation with no UIA anchor, fixed-duration business pause, background job the UI doesn't reflect); and the caller can state in one sentence why the next UIA activity's built-in retry is insufficient. A button that is present but **disabled** during async validation/load/refresh is a separate case retry does not cover — use the activity's `DelayBefore`/`DelayAfter` *properties* (not a `Delay` activity): [uia-elements-interaction-guide.md § Web Controls](uia-elements-interaction-guide.md).
+- **An interaction faults though the selector still resolves** — the interaction may have changed the element (e.g. click-before-typing, or a click that expands a popup, remounts the target so the next action hits a detached node and throws `UI element is invalid`). Debug + fix: [uia-elements-interaction-guide.md § Debugging a failed interaction with an element](uia-elements-interaction-guide.md).
+- **Unnecessary `Delay` activities before UIA actions** — UIA activities (`NClick`, `NTypeInto`, `NSelectItem`, `NGoToUrl`, etc.) have embedded target-finding resilience: they retry the selector lookup for a configurable timeout before failing. A `Delay` placed in front of a UIA activity to "let the UI settle" is almost always redundant and inflates workflow runtime without changing correctness. Include `Delay` only when ALL of: the wait is NOT for a UI element that a following UIA activity will target; a concrete non-retry reason exists (post-action animation with no UIA anchor, fixed-duration business pause, background job the UI doesn't reflect); and the caller can state in one sentence why the next UIA activity's built-in retry is insufficient. A button that is present but **disabled** during async validation/load/refresh is a separate case retry does not cover — use the activity's `DelayBefore`/`DelayAfter` *properties* (not a `Delay` activity): [uia-elements-interaction-guide.md § Buttons disabled during async operations](uia-elements-interaction-guide.md).
 - **`Cannot send input ... outside of screen bounds` on hover-revealed elements** — pop-up menu items, autocomplete entries, and dropdown rows that only appear after a hover/click frequently fail under the default input method. Switch the affected activity (or its UIA interact CLI counterpart) to a simulated input method. Available input-method values: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
 - **`HealingAgentBehavior` enum split between card and child activities.** `NApplicationCard` (Use Application/Browser) accepts `NHealingAgentBehavior` — values `Job`, `Disabled`, `RecommendationOnly`. Child activities (`NClick`, `NTypeInto`, `NCheckState`, etc.) accept `NChildHealingAgentBehavior`, which adds `SameAsCard`. Putting `SameAsCard` on the card itself fails with `Failed to create a 'HealingAgentBehavior' from the text 'SameAsCard'`. When introducing a new card (e.g., a nested card for a sign-in subprocess), set its `HealingAgentBehavior` to `Job`/`Disabled`/`RecommendationOnly` — never copy the value from a child activity. Confirm via `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/activities/common/NHealingAgentBehavior.md` and `NChildHealingAgentBehavior.md`.
 
@@ -213,15 +214,15 @@ When a procedure exists specifically to check something against ground truth, do
 
 ## Control-Specific Interaction Patterns
 
-> **MANDATORY — read and apply before authoring.** Before writing any `TypeInto`, `SelectItem`, or `Click` (XAML `NTypeInto` / `NSelectItem` / `NClick`, or coded `uiAutomation.*`) against a captured target, classify the control. If **any** target is a date / time input, a dropdown, or a button that can be disabled during async work, you MUST read [uia-elements-interaction-guide.md](uia-elements-interaction-guide.md) IN FULL and apply it **before** authoring that activity — the same bar as target capture ([§ Configuring Targets](#configuring-targets-object-repository)). The correct technique is type-specific and documented there: a date field must be typed in its **displayed** format (not ISO) via a key-event method, dropdowns split into native (`SelectItem`) vs. custom (click-to-open), and async-disabled buttons need `DelayBefore`. Apply the documented method up front — do not guess a value (e.g. ISO into a date field) and iterate against the running app.
+> **MANDATORY — read and apply before authoring.** Before writing any `TypeInto`, `SelectItem`, or `Click` (XAML `NTypeInto` / `NSelectItem` / `NClick`, or coded `uiAutomation.*`) against a captured target, classify the control. If **any** target is a date / time input, a dropdown, or a button that can be disabled during async work, you MUST read [uia-elements-interaction-guide.md](uia-elements-interaction-guide.md) IN FULL and apply it **before** authoring that activity — the same bar as target capture ([§ Configuring Targets](#configuring-targets-object-repository)). The correct technique is type-specific and documented there: a date field must be typed in its **displayed** format (not ISO) via a key-event method, for dropdowns/lists you decide by querying the control's `items` attribute (via the interact CLI) rather than by tag/role — items listed → `SelectItem`, none → click-to-open, and async-disabled buttons need `DelayBefore`. Apply the documented method up front — do not guess a value (e.g. ISO into a date field) and iterate against the running app.
 
 After a target is captured, these control types need type-specific handling to drive correctly:
 
 - **Date / formatted date-time inputs** — type the field's **displayed** format (e.g. en-US `MM/DD/YYYY`), not the ISO `value`.
-- **Dropdowns** — native HTML `<select>` → `SelectItem`; custom widgets → click-to-open + click option / `TypeInto`.
+- **Dropdowns / lists / comboboxes** — query the control's `items` attribute (via the interact CLI); items listed → `SelectItem`, none → click-to-open + click option (or `TypeInto`). Independent of tag / role / UI technology.
 - **Buttons disabled during async ops** — present but `disabled` during validation/load/refresh; use the activity's `DelayBefore`/`DelayAfter` properties (not a `Delay` activity).
 
-Patterns are organized by UI technology (currently web controls, `webctrl`): [uia-elements-interaction-guide.md](uia-elements-interaction-guide.md).
+Patterns there cover web-specific controls (date inputs) plus cross-technology ones (dropdowns/lists, async-disabled buttons): [uia-elements-interaction-guide.md](uia-elements-interaction-guide.md).
 
 ---
 
@@ -274,7 +275,7 @@ Install the UI Library as a package dependency; its descriptors appear under **U
 
 ## Running UI Automation Workflows
 
-**Always use `uip rpa debug start`** (not `uip rpa run`) when running workflows with UI automation. A debug session pauses on error instead of tearing down the application, leaving the UI state available for inspection.
+**Always use `uip rpa debug start`** (not `uip rpa run`) when running workflows with UI automation. A debug session pauses on error instead of tearing down the application, leaving the UI state available for inspection. The command returns as soon as that happens — `DebugState: "Suspended"` with the exception and locals in `DebugDetails` — so act on the response instead of waiting for the run to end (see [debugging.md § The stable-state debug loop](debugging.md#the-stable-state-debug-loop-headless)).
 
 **Every debug run** must follow this procedure to prevent stale windows from accumulating or being reused in a dirty state:
 
@@ -292,6 +293,16 @@ Install the UI Library as a package dependency; its descriptors appear under **U
 5. **Diff before vs after.** Any window present now that was NOT in the baseline was opened by the workflow. Close each such window via the `uip rpa uia interact` CLI (see `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md` for the close subcommand and its flags).
 
 Skipping steps 4-5 causes the next run's open-if-not-open behavior to reuse a stale window in whatever state it was left in, or -- if the selector doesn't match -- to spawn a duplicate instance.
+
+### Advanced Debugging — Profiling
+
+For advanced debugging, add `--profiling` to collect insightful per-activity execution data, timings, and before- and after-execution screenshots:
+
+```bash
+uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --profiling
+```
+
+Use the before-execution screenshot to confirm the application/element started in the correct state, and the after-execution one to validate the expected outcome. Each screenshot's filename is recorded in the run's `.uistat` file; the image sits in the `Screenshots` folder in the same directory as that `.uistat` file. See [debugging.md § Profiling Workflow Performance](debugging.md#profiling-workflow-performance) for details.
 
 ### Runtime Selector Failure Recovery
 
@@ -497,7 +508,7 @@ Example — copy a value from App A and paste it into App B. Outer card → App 
                 <uix:NApplicationCard.Body>
                     <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
                         <!-- ScopeIdentifier = App A card's ScopeGuid → reads from App A (outer) -->
-                        <uix:NGetText DisplayName="Get value from App A" Text="[out_Value]"
+                        <uix:NGetText DisplayName="Get value from App A" TextString="[out_Value]"
                                       ScopeIdentifier="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
                                       sap2010:WorkflowViewState.IdRef="NGetText_1" Version="V5" />
                         <!-- ScopeIdentifier = App B card's ScopeGuid → pastes into App B (inner) -->
