@@ -564,8 +564,21 @@ def main() -> None:
     hidden_cases = cases()
     if len(hidden_cases) != 10:
         fail("grader bug: expected exactly ten hidden cases")
+    failures: list[str] = []
     for case in hidden_cases:
-        verify_case(case)
+        try:
+            verify_case(case)
+        except SystemExit as exc:
+            failures.append(f"{case['name']}: {exc}")
+        except subprocess.TimeoutExpired as exc:
+            failures.append(
+                f"{case['name']}: command timed out after {exc.timeout} seconds"
+            )
+    if failures:
+        fail(
+            f"{len(failures)}/{len(hidden_cases)} hidden cases failed:\n- "
+            + "\n- ".join(failures)
+        )
 
 
 if __name__ == "__main__":
