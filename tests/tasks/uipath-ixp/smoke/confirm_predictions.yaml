@@ -71,16 +71,12 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # At least one confirm-with-fields call must NOT include f-004 (wrong-field
-  # prediction must be skipped per Rule #8). The calls.log regex filters
-  # f-004-bearing calls.log entries, so a single confirm that includes f-004 yields 0
-  # matches and fails. Weakness: if the agent issues multiple confirms, a
-  # clean one masks a dirty one.
   - type: file_matches_regex
-    description: "Confirm-with-fields call excludes f-004 (wrong-field prediction must be skipped)"
+    description: "Agent did NOT confirm f-004 (wrong-field prediction must be skipped)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?![^\r\n]*(?:f-004))(?=[^\r\n]*(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?\s+.*--fields))[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?\s+.*--fields\s+\S*f-004(?:,|\s|$))[^\r\n]*$
+    must_match: false
     weight: 2.0
     pass_threshold: 1.0
 

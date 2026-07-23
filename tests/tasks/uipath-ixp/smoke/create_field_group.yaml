@@ -29,8 +29,6 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # calls.log records the expanded --fields payload, so verify every field
-  # on the actual groups add invocation regardless of shell construction.
   - type: file_matches_regex
     description: "Agent created the group with multiple fields in one `groups add … --fields` call (batch)"
     path: "mocks/calls.log"
