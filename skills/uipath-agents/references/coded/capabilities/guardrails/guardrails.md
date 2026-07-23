@@ -330,13 +330,7 @@ Unlike Block/Log, escalation needs a **deployed Action App** in the tenant, refe
    `ToolInputs`, `ToolOutputs`; outputs `ReviewedInputs`, `ReviewedOutputs`, `Reason`; outcomes `Approve`,
    `Reject`. If tenant/API access is unavailable in a local smoke task, author the structural code only when the
    user supplied the exact app name/folder, and report that the deployed app schema was not verified.
-4. Sync the project's **`bindings.json`** with the code using
-   [../../lifecycle/bindings-reference.md](../../lifecycle/bindings-reference.md). Coded-agent bindings are derived
-   from resource-bearing code and must not be hand-authored ad hoc. The result must include a `resource: "app"`
-   entry so Studio/deploy can resolve and override the Action App (locally the literals are used). Canonical
-   examples: `samples/joke-agent/` (middleware) and `samples/joke-agent-decorator/` (decorator) in the
-   uipath-langchain repo — each ships a `bindings.json` with the escalation app and the literal
-   `app_name`/`app_folder_path` in code.
+4. Add an `app` resource entry to **`bindings.json`** for the Action App. Scan the Python source for `EscalateAction(app_name="<NAME>", app_folder_path="<FOLDER>")` and build the entry following [../../lifecycle/bindings-reference.md](../../lifecycle/bindings-reference.md) § App. Use the literal `app_name` and `app_folder_path` values extracted from code. If `uip solution resources list` is unavailable (offline/smoke test), construct the entry directly from those code values — do not leave `resources` empty. The entry must have `key: "<app_name>.<app_folder_path>"`, `ActivityName: "create_async"`, and `DisplayLabel: "<app_name>"` so Studio/deploy can resolve and override the Action App.
 
 ### Escalation Action UX
 
