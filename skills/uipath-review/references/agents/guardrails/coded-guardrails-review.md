@@ -32,9 +32,13 @@ which guardrail fits which agent, or which Python class implements which validat
 
 ## Step 0 — Fetch Catalog, Available Validators, and SDK Docs
 
-Run this once when the coded agent's entry source wires guardrails (any `*UiPath…Middleware(...)` inside
-`create_agent(middleware=[...])` or any `@guardrail(...)` decorator) **or** the agent matches a catalog use case
-(so Recommend Mode can run). This is the read-only review counterpart of the guardrail recommend capability — it
+**Only run Step 0 when the coded agent's entry source wires guardrails** (any `*UiPath…Middleware(...)` inside
+`create_agent(middleware=[...])` or any `@guardrail(...)` decorator). If no guardrails are wired: **skip Step 0
+entirely** (skip Catalog fetch, Guardrails List fetch, and SDK Docs fetch). Skip Audit Mode. Skip Recommend Mode.
+Proceed directly to [Read the agent first](#read-the-agent-first) then emit only non-guardrail judgment rules from
+`agents-coded-rules.md`.
+
+When guardrails are wired, this is the read-only review counterpart of the guardrail recommend capability — it
 runs the same Step 0 fetches (specified in full below) but emits findings instead of writing code.
 
 ### Catalog (cacheable — 30-minute TTL)

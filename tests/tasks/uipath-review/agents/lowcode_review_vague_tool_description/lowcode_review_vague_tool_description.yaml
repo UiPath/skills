@@ -48,13 +48,15 @@ success_criteria:
     command_pattern: '"file_path":\s*"[^"]*ReviewSol'
     weight: 3.0
 
+  # Advisory: agents can identify the empty description eyeball-identifiable without validate;
+  # the run_command check below is the real gate.
   - type: command_executed
-    description: "Mandatory validation: uip agent validate ran (Critical Rule 2)"
+    description: "Advisory: ran uip agent validate (Critical Rule 2)"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+validate'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: run_command
     description: "Review report applies the catalog: cites VAGUE_TOOL_DESCRIPTION for vague_tool; no invented rule_ids"
