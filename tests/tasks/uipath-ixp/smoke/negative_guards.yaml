@@ -84,14 +84,13 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # calls.log cannot observe a local variable name. Require the prediction
-  # lookup to execute instead; together with the confirmation criterion
-  # below, this proves Task 3 completed without the readonly-UID failure.
-  - type: file_matches_regex
-    description: "Task 3: fetched predictions for doc-def-456 before confirming"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+get-predictions\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-def-456).*)[^\r\n]*$
+  # Task 3: `UID` is a readonly shell variable in bash — assigning it
+  # (`UID=…`) errors out. Critical Rule #6: never name a variable `UID`;
+  # the agent must reuse the id another way (DOC_ID, a literal, etc.).
+  - type: command_not_executed
+    description: "Task 3: did NOT assign the readonly UID shell variable (Critical Rule #6)"
+    tool_name: "Bash"
+    command_pattern: '\bUID='
     weight: 3.0
     pass_threshold: 1.0
 
