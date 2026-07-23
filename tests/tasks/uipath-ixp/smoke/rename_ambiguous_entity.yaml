@@ -57,9 +57,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Discovery actually happened: agent listed projects AND read the taxonomy before asking (a blind generic question can't know the collision)"
+    description: "Discovery resolved the project Title to its Name before reading the taxonomy"
     path: "mocks/calls.log"
-    includes: ["ixp projects list", "ixp projects get-taxonomy"]
+    includes: ["ixp projects list", "ixp projects get-taxonomy subscriptions-4c1d9e2a-ixp"]
     weight: 1.5
     pass_threshold: 1.0
 
