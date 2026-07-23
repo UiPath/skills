@@ -1,0 +1,64 @@
+task_id: skill-test-execution-rerun-failed-integration
+description: >
+  Integration test: after a regression run finishes with failures, a QA
+  engineer triages the result and re-runs only what failed — exercising the
+  execution operate/diagnose verbs no existing task covers
+  (`executions get-stats`, `executions retry`). The agent
+  discovers the most recent finished execution for a test set in the existing
+  CLAIM project (`executions list --test-set-id`), pulls its aggregated pass/
+  fail statistics (`executions get-stats`), and retries only the failed test
+  cases of that execution (`executions retry`). The flaky-analysis task only
+  READS executions and assertions; this task drives the re-execution surface.
+  The prompt carries no skill-load hint — the get-stats/retry verbs, the
+  distinction between re-running an existing execution and starting a new one,
+  and `--output json` are all left to the skill.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:test-case]
+
+run_limits:
+  expected_turns: 24
+  # The agent may inspect several finished executions (get-stats on each) before
+  # picking the one with failures to retry; 35 turns was too tight and left no
+  # room to reach `retry`. 55 covers the discovery + act loop.
+  max_turns: 55
+  # Discover execution → get-stats → retry against the live tenant; give the
+  # turn headroom over the experiment default under TM latency.
+  turn_timeout: 1200
+  task_timeout: 1500
+
+initial_prompt: |
+  Our "UAT Smoke Suite" in the CLAIM project (Test Manager) had a regression run
+  finish recently and a few cases failed. Can you pull up that latest finished
+  run, show me the pass/fail breakdown, and then kick off a retry of just the
+  failed cases so we can tell whether they were real failures or flakes? Don't
+  start a fresh run of the whole suite — only retry what actually failed in that
+  run. No need to check back with me.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # NOTE: `executions list --test-set-id` is the discovery step for this test but
+  # is NOT asserted here — it is owned by flaky_tests_analysis.yaml and
+  # report_generation.yaml. This task owns ONLY the act-on-results verbs
+  # (get-stats / retry) so no command is graded twice.
+
+  - type: command_executed
+    description: "Agent pulled aggregated statistics for the execution (`executions get-stats --execution-id`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+executions?\s+get-stats\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retried only the failed cases of that execution (`executions retry --execution-id`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+executions?\s+retry\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0

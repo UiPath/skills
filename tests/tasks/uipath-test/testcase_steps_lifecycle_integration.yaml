@@ -1,0 +1,150 @@
+task_id: skill-test-testcase-steps-lifecycle-integration
+description: >
+  Integration test: full manual-test-step lifecycle with the new
+  `uip tm testcases steps` command family (TMHUB-32134), in one realistic
+  authoring-then-refine session. The agent self-seeds a uniquely-named test case
+  in the existing CLAIM project, adds steps the way a human does — a couple one
+  at a time via flag mode (`steps add --description`), then the rest in one shot
+  via the repeatable JSON form (`steps add --step '<json>'`) — reads them back
+  (`steps list`, `steps get --step-id`), then applies review edits: fixes a
+  step's expected result (`steps update`), reorders one (`steps move
+  --target-position`), removes one (`steps delete --yes`), and finally deletes
+  the seeded case for cleanup. Covers every `testcases steps` verb plus both add
+  modes in a single file. The prompt carries no skill-load hint — skill
+  activation, the `--test-case-id` vs `--step-id` flag shapes, the 0-based
+  `--target-position`, that `delete` needs `--yes`, and `--output json`
+  (Critical Rule #3) are all left to the skill.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:test-case]
+
+run_limits:
+  expected_turns: 28
+  # ~11 live TM calls (create -> 2 flag adds -> 1 JSON batch add -> list -> get
+  # -> update -> move -> delete step -> list -> delete case). Under Test Manager
+  # latency a single turn can exceed the experiment default; give headroom.
+  max_turns: 70
+  turn_timeout: 1500
+  task_timeout: 1800
+
+post_run:
+  - command: |
+      if [ -f testcase-key.txt ]; then
+        KEY=$(tr -d '[:space:]' < testcase-key.txt)
+        if [ -n "$KEY" ]; then
+          uip tm testcases delete --project-key CLAIM --test-case-key "$KEY" --yes --output json || true
+        fi
+      fi
+    timeout: 60
+
+initial_prompt: |
+  I'm building out the manual steps for a test case in Test Manager (project
+  CLAIM) and then tidying them up after a review — walk it through end to end.
+  First create a new manual test case with a clear, unique name.
+
+  Add these one at a time as I give them to you:
+    - "Open the payments screen" — the tester should see the payments form.
+    - "Enter valid card details" — the form should accept them.
+
+  Now add these last two in one shot:
+    - "Submit the payment" — expect a confirmation banner.
+    - "Check the receipt" — the receipt should show the amount paid.
+
+  List the steps back so I can eyeball the order, and pull up the full detail of
+  the first one to confirm it saved.
+
+  Now the review tweaks:
+    - The "Check the receipt" expected result should read "Receipt shows amount,
+      date, and payment method" — fix that step.
+    - Move "Enter valid card details" so it runs right after "Open the payments
+      screen".
+    - We're dropping "Submit the payment" from this case — remove that step.
+
+  List the steps once more so I can confirm the final order. Drop the test case
+  key into testcase-key.txt so we can find it, and delete the case when you're
+  done so we don't leave junk behind. Just run it through — no need to check in.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the seed test case (`testcases create --project-key CLAIM`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+create\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Add mode 1 — one at a time via flag mode (`--description`, no `--step`).
+  - type: command_executed
+    description: "Agent added a step individually via flag mode (`steps add ... --description`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--test-case-id\s+\S)(?=[\s\S]*--description\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+steps\s+add\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Add mode 2 — the remaining steps in one shot via the JSON form (`--step`).
+  # Disjoint from the flag-mode pattern (that requires --description, this
+  # requires --step), so both add modes must genuinely be exercised.
+  - type: command_executed
+    description: "Agent batch-added the remaining steps in one shot via the JSON form (`steps add --step '<json>'`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--test-case-id\s+\S)(?=[\s\S]*--step\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+steps\s+add\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed the steps (`steps list --test-case-id` + --output json)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--test-case-id\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+(steps\s+list|list-steps)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched a single step by UUID (`steps get --step-id`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--step-id\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+steps\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent corrected a step's expected result (`steps update --step-id`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--step-id\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+steps\s+update\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent reordered a step to a 0-based position (`steps move --step-id --target-position`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--step-id\s+\S)(?=[\s\S]*--target-position\s+\d)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+steps\s+move\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent removed the obsolete step with --yes (`steps delete --step-id --yes`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--step-id\s+\S)(?=[\s\S]*(--yes|-y)\b)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+steps\s+delete\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Cleanup is graded: the agent deletes the seeded CASE itself so a passing run
+  # never leaves junk in the shared CLAIM tenant (project-scoped + --yes + JSON).
+  - type: command_executed
+    description: "Agent deleted the seeded test case for cleanup (`testcases delete --test-case-key ... --yes --output json`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--test-case-key\s+\S)(?=[\s\S]*(--yes|-y)\b)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+delete\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

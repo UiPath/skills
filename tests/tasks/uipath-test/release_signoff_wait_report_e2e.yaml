@@ -1,0 +1,66 @@
+task_id: skill-test-release-signoff-wait-report-e2e
+description: >
+  E2E test: a release manager kicks off a test set, blocks on it to completion,
+  and pulls the sign-off summary — exercising the run → wait → report loop whose
+  middle and end (`uip tm wait`, `uip tm report get`) no existing task covers.
+  The agent starts a run of a test set in the existing CLAIM project
+  (`testsets run`), blocks on that execution with `uip tm wait --execution-id`
+  using a BOUNDED `--timeout` so the call returns within the agent turn budget
+  rather than hanging on a long/stuck run, then fetches the summary report for
+  that execution (`uip tm report get --execution-id`) to render a go/no-go call.
+  Asserts the run start (`testsets run`) plus the new surface — the bounded
+  synchronous wait and the summary-report verb. The skill — not
+  the prompt — must teach the `wait --timeout` flag, that `report get`
+  summarizes an execution, and `--output json`.
+tags: [uipath-test, e2e, mode:operate, lifecycle:setup, feature:test-case]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 40
+  # A bounded `wait --timeout` plus report fetch can run several minutes under
+  # tenant latency; give the turn headroom over the experiment default
+  # (task_timeout > turn_timeout so the task budget doesn't fire first).
+  turn_timeout: 1500
+  task_timeout: 1800
+
+initial_prompt: |
+  I need a quick go/no-go on our UAT Smoke Suite in the CLAIM project (Test
+  Manager) before we cut the release. Can you kick off a run of that suite and
+  wait for it to actually finish — but don't sit there forever, put a sensible
+  cap on how long you wait. Once it comes back, pull the summary report for that
+  run and just tell me straight whether we're clear to ship based on the
+  pass/fail outcome (and if it hasn't wrapped up by the time your wait is up,
+  say so). Run it straight through, no need to loop back to me.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started the named suite run (`testsets run --test-set-key ... --output json`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--test-set-key\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+testsets?\s+run\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent blocked on the execution with a bounded wait (`uip tm wait --execution-id ... --timeout`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--timeout\s+\d)(?=[\s\S]*--output\s+json)uip\s+tm\s+wait\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the summary report for the execution (`report get --execution-id` + --output json)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+report\s+get\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
