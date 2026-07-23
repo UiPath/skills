@@ -1,7 +1,7 @@
 task_id: skill-troubleshoot-uia-napplicationcard-view-generation
 description: >
   Faithful replay of a UiPath troubleshooting investigation. The agent runs
-  the uipath-troubleshoot skill against a project in the working directory and
+  the uipath-troubleshoot skill against a project and
   a uip CLI mock. Success = the agent reaches the same root cause as
   RESOLUTION.md.
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
@@ -38,9 +38,8 @@ initial_prompt: |
     Could not generate view for NApplicationCard
     Object reference not set to an instance of an object.
 
-  It opened fine last week. Nothing about my automation changed. The project
-  source is in the current working directory. What's going on and how do I get
-  it opening again?
+  It opened fine last week. Nothing about my automation changed. Can you
+  investigate why?
 
 success_criteria:
   - type: skill_triggered
@@ -83,7 +82,8 @@ simulation:
   constraints:
     - "If the agent asks whether to expand investigation scope, always answer Yes — pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
-    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "If the agent asks where the project source / XAML is, answer with the current working directory: respond exactly `.` (a single dot)."
+    - "Never invent or provide new factual data beyond your initial report — you don't know any other details. EXCEPTION: the project source path is a real fact about your setup and may be shared (`.`)."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6
