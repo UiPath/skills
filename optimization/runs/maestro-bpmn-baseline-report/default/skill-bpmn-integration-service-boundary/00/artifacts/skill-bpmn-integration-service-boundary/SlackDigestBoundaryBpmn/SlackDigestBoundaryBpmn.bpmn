@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_SlackDigest"
+    targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)"
+    exporterVersion="1.0">
+
+  <bpmn:process id="Process_SlackDigest" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_DigestContent" name="DigestContent" type="string" />
+        <uipath:inputOutput id="Var_DigestSubject" name="DigestSubject" type="string" />
+        <uipath:inputOutput id="Var_SlackResult"   name="SlackResult"   type="object" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding
+            id="Binding_SlackConnection"
+            resource="Connection"
+            propertyAttribute="ConnectionId"
+            default="" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="StartEvent_Manual" name="Manual Start">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="DigestSubject" type="string" var="Var_DigestSubject" />
+        </uipath:mapping>
+        <uipath:entryPointId value="EntryPoint_ManualStart" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToPrepare</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:scriptTask id="Task_PrepareDigest" name="Prepare Digest" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"subject":"=vars.Var_DigestSubject"}]]></uipath:input>
+          <uipath:output name="digestContent" type="string" var="Var_DigestContent" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToPrepare</bpmn:incoming>
+      <bpmn:outgoing>Flow_PrepareToSlack</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var header = "Digest: " + subject;
+var body   = "Automated digest prepared for distribution.";
+return { response: header + "\n" + body };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:sendTask id="Task_SendSlack" name="Send Slack Digest">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.ActivityExecution" version="v1" />
+          <uipath:context>
+            <uipath:input name="activity"     value="" />
+            <uipath:input name="connectorKey" value="" />
+            <uipath:input name="connection"   value="=bindings.Binding_SlackConnection" />
+            <uipath:input name="folderKey"    value="" />
+            <uipath:input name="method"       value="" />
+            <uipath:input name="path"         value="" />
+          </uipath:context>
+          <uipath:input name="body" type="json" target="body"><![CDATA[{"text":"=vars.Var_DigestContent"}]]></uipath:input>
+          <uipath:output name="result" type="custom" source="." var="Var_SlackResult" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_PrepareToSlack</bpmn:incoming>
+      <bpmn:outgoing>Flow_SlackToEnd</bpmn:outgoing>
+    </bpmn:sendTask>
+
+    <bpmn:endEvent id="EndEvent_Done" name="Done">
+      <bpmn:incoming>Flow_SlackToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_StartToPrepare" sourceRef="StartEvent_Manual"  targetRef="Task_PrepareDigest" />
+    <bpmn:sequenceFlow id="Flow_PrepareToSlack" sourceRef="Task_PrepareDigest" targetRef="Task_SendSlack" />
+    <bpmn:sequenceFlow id="Flow_SlackToEnd"     sourceRef="Task_SendSlack"     targetRef="EndEvent_Done" />
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_SlackDigest">
+    <bpmndi:BPMNPlane id="Plane_SlackDigest" bpmnElement="Process_SlackDigest">
+
+      <bpmndi:BPMNShape id="S_StartEvent_Manual" bpmnElement="StartEvent_Manual">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_PrepareDigest" bpmnElement="Task_PrepareDigest">
+        <dc:Bounds x="260" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_SendSlack" bpmnElement="Task_SendSlack">
+        <dc:Bounds x="420" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_EndEvent_Done" bpmnElement="EndEvent_Done">
+        <dc:Bounds x="580" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_StartToPrepare" bpmnElement="Flow_StartToPrepare">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="260" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_PrepareToSlack" bpmnElement="Flow_PrepareToSlack">
+        <di:waypoint x="360" y="118" />
+        <di:waypoint x="420" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_SlackToEnd" bpmnElement="Flow_SlackToEnd">
+        <di:waypoint x="520" y="118" />
+        <di:waypoint x="580" y="118" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

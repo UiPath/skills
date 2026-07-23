@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:error id="Error_SyncFailed" name="CustomerSyncFailed" errorCode="CUSTOMER_SYNC_FAILED" />
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_CustomerId" name="customerId" type="string" />
+        <uipath:inputOutput id="Var_RequestedBy" name="requestedBy" type="string" />
+        <uipath:inputOutput id="Var_SyncRequest" name="syncRequest" type="object" />
+        <uipath:inputOutput id="Var_InvocationId" name="invocationId" type="string" />
+        <uipath:inputOutput id="Var_SyncStatus" name="syncStatus" type="string" />
+        <uipath:inputOutput id="Var_SyncResult" name="syncResult" type="object" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_1" name="Customer Sync Request">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="e3a7c2d1-84bf-4f2a-9c6e-17a3d85f1b09" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="customerId" type="string" source="=vars.Var_CustomerId" var="Var_CustomerId" custom="true" />
+          <uipath:output name="requestedBy" type="string" source="=vars.Var_RequestedBy" var="Var_RequestedBy" custom="true" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Start_to_Sync</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:serviceTask id="Task_RunCustomerSync" name="Run Customer Sync API Workflow">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey" value="" />
+            <uipath:input name="folderId" value="" />
+            <uipath:input name="folderPath" value="" />
+            <uipath:input name="name" value="CustomerSyncWorkflow" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"customerId":"=vars.Var_CustomerId","requestedBy":"=vars.Var_RequestedBy"}]]></uipath:input>
+          <uipath:output name="invocationId" type="string" source="=invocationId" var="Var_InvocationId" />
+          <uipath:output name="syncStatus" type="string" source="=syncStatus" var="Var_SyncStatus" />
+          <uipath:output name="syncResult" type="object" source="=syncResult" var="Var_SyncResult" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_to_Sync</bpmn:incoming>
+      <bpmn:outgoing>Flow_Sync_to_Success</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:boundaryEvent id="Boundary_SyncError" name="Sync Failed" attachedToRef="Task_RunCustomerSync" cancelActivity="true">
+      <bpmn:outgoing>Flow_Error_to_Failure</bpmn:outgoing>
+      <bpmn:errorEventDefinition errorRef="Error_SyncFailed" />
+    </bpmn:boundaryEvent>
+
+    <bpmn:endEvent id="End_Success" name="Sync Completed">
+      <bpmn:incoming>Flow_Sync_to_Success</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="End_Failure" name="Sync Failed">
+      <bpmn:incoming>Flow_Error_to_Failure</bpmn:incoming>
+      <bpmn:errorEventDefinition errorRef="Error_SyncFailed" />
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_Start_to_Sync" sourceRef="Start_1" targetRef="Task_RunCustomerSync" />
+    <bpmn:sequenceFlow id="Flow_Sync_to_Success" sourceRef="Task_RunCustomerSync" targetRef="End_Success" />
+    <bpmn:sequenceFlow id="Flow_Error_to_Failure" sourceRef="Boundary_SyncError" targetRef="End_Failure" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_RunCustomerSync" bpmnElement="Task_RunCustomerSync">
+        <dc:Bounds x="260" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Boundary_SyncError" bpmnElement="Boundary_SyncError">
+        <dc:Bounds x="322" y="240" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Success" bpmnElement="End_Success">
+        <dc:Bounds x="432" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Failure" bpmnElement="End_Failure">
+        <dc:Bounds x="432" y="320" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Start_to_Sync" bpmnElement="Flow_Start_to_Sync">
+        <di:waypoint x="196" y="218" />
+        <di:waypoint x="260" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Sync_to_Success" bpmnElement="Flow_Sync_to_Success">
+        <di:waypoint x="360" y="218" />
+        <di:waypoint x="432" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Error_to_Failure" bpmnElement="Flow_Error_to_Failure">
+        <di:waypoint x="340" y="276" />
+        <di:waypoint x="340" y="338" />
+        <di:waypoint x="432" y="338" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

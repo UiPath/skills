@@ -1,0 +1,5 @@
+23:35:49 [INFO   ] [default/skill-bpmn-author-validate/00] orchestrator: API routing: aws_bedrock
+23:37:29 [INFO   ] [default/skill-bpmn-author-validate/00] orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+23:37:29 [INFO   ] [default/skill-bpmn-author-validate/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+23:37:29 [INFO   ] [default/skill-bpmn-author-validate/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-author-validate
+23:37:29 [INFO   ] [default/skill-bpmn-author-validate/00] orchestrator: Task finished: status=SUCCESS duration=101.4s score=1.000 iterations=1

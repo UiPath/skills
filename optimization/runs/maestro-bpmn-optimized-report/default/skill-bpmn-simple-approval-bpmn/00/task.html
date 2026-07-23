@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-simple-approval-bpmn · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-simple-approval-bpmn</h1>
+    <div class="subtitle">Authoring eval: agent composes a model-authored simple approval BPMN that combines StartAgentJob, an exclusive gateway, CreateQueueItem, a script task, declared root variables, numeric migration metadata, and BPMN DI. Mirrors the manual smoke &quot;simple approval&quot; scenario.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">7m 25s</span>
+    <span class="badge neutral">$0.8905</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-20T23:32:27</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">7m 25s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">35</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">23</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(3/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>file_exists</td>
+  <td>BPMN source was created</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">File &#x27;ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn&#x27; exists</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>file_exists</td>
+  <td>Project metadata was created</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">File &#x27;ExpenseApprovalBpmn/project.uiproj&#x27; exists</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Simple approval BPMN combines StartAgentJob, gateway, CreateQueueItem, script, variables, migration, and DI</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_simple_approval_bpmn.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_simple_approval_bpmn.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn contains the documented simple approval BPMN shape
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">35 assistant turns</span>
+      <span class="badge neutral">in 4398 · out 30706 · cache 960595</span>
+      <span class="badge neutral">7m 23s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-simple-approval-bpmn
+
+Create a local BPMN project named &quot;ExpenseApprovalBpmn&quot; for this process:
+- Manual start with input variable `expenseId` and `amount`, and output
+  variable `decision`.
+- Service task that calls `Orchestrator.StartAgentJob` to triage the expense
+  via a synthetic placeholder agent reference.
+- Exclusive gateway routes high-amount requests (`amount &gt;= 1000`) to a
+  `bpmn:sendTask` that creates a queue item via `Orchestrator.CreateQueueItem`,
+  and routes the default branch to a `bpmn:scriptTask` that auto-approves the
+  request and writes to the `decision` output variable.
+- Both branches converge on a single end event.
+
+Requirements:
+- Use synthetic placeholder resource names only. Do not include tenant URLs,
+  folder keys, connection IDs, real queue names, real agent identifiers, or
+  user names.
+- Declare root `uipath:variables version=&quot;v1&quot;` entries for `expenseId`,
+  `amount`, and `decision` with documented types.
+- Include a numeric `uipath:migrationVersion` element (for example `version`
+  `11` or `11.5`) on the process.
+- Use `bpmn:scriptTask` with `scriptFormat=&quot;JavaScript&quot;`, include
+  `uipath:scriptVersion`, prefer `v3`, and keep the script compatible with
+  the Jint runtime (no Node.js, browser, filesystem, or network APIs).
+- Include BPMN DI shapes for every visible node and BPMN DI edges with
+  waypoints for every sequence flow.
+- Do not upload, publish, deploy, debug, or run the process.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now I&#x27;ll pull the registry and get templates for the three extension types I need, all in parallel.
+[ASSISTANT] Now I have all templates. I know exactly what to build. Let me plan and write the BPMN directly:
+
+**Nodes:** StartEvent → Task_Triage (StartAgentJob) → Gw_Amount (XOR split, default=Flow_Default) → upper: Task_QueueItem (CreateQueueItem) → Gw_Join (XOR merge); lower: Task_AutoApprove (ScriptTask) → Gw_Join → EndEvent_1
+
+**Key rules from templates:**
+- StartAgentJob template uses wrong `type=` attribute form — fix to child-element per Rule 6, add `bpmn:extensionElements`
+- CreateQueueItem template is already correct child-element form
+- ScriptTask: `bpmn:ScriptTask`, `scriptFormat=&quot;JavaScript&quot;`, `uipath:scriptVersion value=&quot;v3&quot;` sibling to `uipath:mapping`
+- Condition: `=vars.Var_Amount &gt;= 1000`; default flow has no condition
+[ASSISTANT] I have everything I need. Let me also check the StartAgentJob template — it uses a wrong `type=` attribute form (not child-element form), so I need to fix that per Rule 6. Now I&#x27;ll write the BPMN file directly:
+[ASSISTANT] Now validate:
+[ASSISTANT] VALID (exit 0). Warnings are all non-blocking. Now scaffold the package metadata files:
+[ASSISTANT] All checks pass. Here&#x27;s a summary of what was built:
+
+---
+
+## ExpenseApprovalBpmn — created ✅
+
+**Location:** `ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn`  
+**Validator result:** `VALID` (exit 0) — all 19 PO.Frontend rules passed; 1 non-blocking warning about the placeholder queue binding (expected for synthetic resources).  
+**Metadata drift:** 4/4 checks passed.
+
+---
+
+### Process structure
+
+```
+StartEvent_Manual
+  → Task_Triage           (bpmn:serviceTask · Orchestrator.StartAgentJob)
+  → Gw_AmountCheck        (exclusiveGateway · default = Flow_Default)
+      ├─[amount &gt;= 1000]→ Task_QueueItem    (bpmn:sendTask · Orchestrator.CreateQueueItem)
+      │                       → Gw_Join
+      └─[default]──────────→ Task_AutoApprove (bpmn:scriptTask · BPMN.ScriptTask v3)
+                                  → Gw_Join
+                                      → EndEvent_1
+```
+
+### Key authoring decisions
+
+| Requirement | Implementation |
+|---|---|
+| `uipath:migrationVersion` | `version=&quot;11.5&quot;` on `bpmn:process` |
+| Root variables | `uipath:variables version=&quot;v1&quot;` — `Var_ExpenseId` (string), `Var_Amount` (number), `Var_Decision` (string) |
+| `StartAgentJob` | `bpmn:serviceTask` with `uipath:activity` child-element type (Rule 6 — not `type=` attribute); synthetic bindings `Binding_AgentName` / `Binding_AgentFolder` |
+| High-amount branch | `bpmn:sendTask` `Orchestrator.CreateQueueItem`; condition `=vars.Var_Amount &gt;= 1000` on `Flow_HighAmount`; default on `Gw_AmountCheck` |
+| Auto-approve branch | `bpmn:scriptTask scriptFormat=&quot;JavaScript&quot;` + `uipath:scriptVersion value=&quot;v3&quot;`; Jint-safe script (`return { response: &quot;approved&quot; }`); output mapped via `source=&quot;=result.response&quot;` → `Var_Decision` |
+| XOR join | Explicit `Gw_Join` merges both branches — avoids `FAKE_JOIN` violation |
+| Diagram | Full `bpmndi:BPMNDiagram` with `BPMNShape` for every node and `BPMNEdge` with waypoints for every flow |
+| Public safety | All resource names are synthetic placeholders; no tenant URLs, folder keys, GUIDs, or real identifiers |
+[RESULT - SUCCESS] All checks pass. Here&#x27;s a summary of what was built:
+
+---
+
+## ExpenseApprovalBpmn — created ✅
+
+**Location:** `ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn`  
+**Validator result:** `VALID` (exit 0) — all 19 PO.Frontend rules passed; 1 non-blocking warning about the placeholder queue binding (expected for synthetic resources).  
+**Metadata drift:** 4/4 checks passed.
+
+---
+
+### Process structure
+
+```
+StartEvent_Manual
+  → Task_Triage           (bpmn:serviceTask · Orchestrator.StartAgentJob)
+  → Gw_AmountCheck        (exclusiveGateway · default = Flow_Default)
+      ├─[amount &gt;= 1000]→ Task_QueueItem    (bpmn:sendTask · Orchestrator.CreateQueueItem)
+      │                       → Gw_Join
+      └─[default]──────────→ Ta</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (23)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-bpmn&quot;,
+  &quot;args&quot;: &quot;Create a local BPMN project named \&quot;ExpenseApprovalBpmn\&quot; for this process:\n- Manual start with input variable `expenseId` and `amount`, and output variable `decision`.\n- Service task that calls `Orchestrator.StartAgentJob` to triage the expense via a synthetic placeholder agent reference.\n- Exclusive gateway routes high-amount requests (`amount &gt;= 1000`) to a `bpmn:sendTask` that creates a queue it… (992 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">443ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Structural BPMN (what the registry does not emit)
+2	
+3	The registry&#x27;s `xmlTemplate`s give you the `uipath:*` payload for each node
+4	(see [registry-workflow.md](registry-workflow.md)). They do **not** give you the
+5	structural BPMN that holds those nodes together. This file is the ground truth
+6	for everything you author by hand around the templates.
+7	
+8	Two sources define the contract:
+9	
+10	- the registry spec `bpmn-spec.json` — enumerates which BPMN element types and
+11	  event definitions exist, via its `bpmnElements` section;
+12	- the Studio Web canvas serializer
+13	  (`PO.Frontend/src/services/serialization/`) — defines how that XML must be
+14	  shaped to import and round-trip.
+15	
+16	Where the registry stops, the canvas serializer is authoritative. Each
+17	gap below is labelled **REGISTRY GAP** — the registry exposes no template for
+18	it, so author it from this reference.
+19	
+20	## The document scaffold (REGISTRY GAP)
+21	
+22	The registry emits no `&lt;bpmn:definitions&gt;` / `&lt;bpmn:process&gt;` root and no
+23	namespace declarations. Author this shell yourself. The canvas import detector
+24	(`exporter.ts`) requires: a root `&lt;…:definitions&gt;` carrying a BPMN-spec
+25	namespace, at 
+
+… (truncated, 27299 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/registry-workflow.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Registry workflow
+2	
+3	Every `uipath:*` payload in a Maestro `.bpmn` comes from the registry — never
+4	from prose, never hand-written. This file is the loop for turning user intent
+5	into registry-backed XML.
+6	
+7	## 1. Sync and discover
+8	
+9	```bash
+10	uip maestro bpmn registry pull            # sync + cache (login for connectors/processes)
+11	uip maestro bpmn registry list --limit -1 --output json   # all extension types
+12	uip maestro bpmn registry search &lt;keyword&gt; --output json  # find a type by intent
+13	uip is connections list --all-folders --output json   # live IS connections (all folders)
+14	```
+15	
+16	Map the user&#x27;s intent to an extension type from the list. Confirm the choice
+17	with the user (and the specific connection / process / queue) before authoring.
+18	**Never fabricate an identifier** — see [cli-conventions.md](cli-conventions.md).
+19	
+20	**Connection discovery must be exhaustive.** Always pass `--all-folders` to
+21	`uip is connections list` — connections live in many folders and a folder-scoped
+22	listing silently misses them. An empty or unmatched result from a missing
+23	`--all-folders`, or from a connector key guessed from a brand name rather than
+24	fou
+
+… (truncated, 10064 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.46s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; uip maestro bpmn registry pull 2&gt;&amp;1 | tail -3&quot;,
+  &quot;description&quot;: &quot;Pull registry cache&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>    &quot;Message&quot;: &quot;Synced fresh registry. Only built-in (OOTB) extension types synced. Run &#x27;uip login&#x27; to discover connectors and processes.&quot;
+  }
+}
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-simple-approval-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.97s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; uip maestro bpmn registry get Orchestrator.StartAgentJob --output json 2&gt;/dev/null &gt; /tmp/tpl_agentjob.json &amp;&amp; uip maestro bpmn registry get Orchestrator.CreateQueueItem --output json 2&gt;/dev/null &gt; /tmp/tpl_queueitem.json &amp;&amp; uip maestro bpmn registry get BPMN.ScriptTask --output json 2&gt;/dev/null &gt; /tmp/tpl_scripttask.json &amp;&amp; echo… (7 more chars)&quot;,
+  &quot;description&quot;: &quot;Get registry templates for all three node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-simple-approval-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">134ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nfor f,k in [(&#x27;/tmp/tpl_agentjob.json&#x27;,&#x27;agentjob&#x27;),(&#x27;/tmp/tpl_queueitem.json&#x27;,&#x27;queue&#x27;),(&#x27;/tmp/tpl_scripttask.json&#x27;,&#x27;script&#x27;)]:\n    d=json.load(open(f))\n    tpl=d[&#x27;Data&#x27;][&#x27;ExtensionType&#x27;][&#x27;xmlTemplate&#x27;]\n    print(f&#x27;=== {k} ===&#x27;)\n    print(tpl)\n    print()\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Print xmlTemplates for all three types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 5, in &lt;module&gt;
+    tpl=d[&#x27;Data&#x27;][&#x27;ExtensionType&#x27;][&#x27;xmlTemplate&#x27;]
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+KeyError: &#x27;xmlTemplate&#x27;</pre>
+    <h4>Error</h4><pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 5, in &lt;module&gt;
+    tpl=d[&#x27;Data&#x27;][&#x27;ExtensionType&#x27;][&#x27;xmlTemplate&#x27;]
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+KeyError: &#x27;xmlTemplate&#x27;</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">101ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nfor f in [&#x27;/tmp/tpl_agentjob.json&#x27;,&#x27;/tmp/tpl_queueitem.json&#x27;,&#x27;/tmp/tpl_scripttask.json&#x27;]:\n    d=json.load(open(f))\n    print(f&#x27;=== {f} keys ===&#x27;)\n    def show(obj,depth=0):\n        if isinstance(obj,dict):\n            for k,v in list(obj.items())[:10]:\n                print(&#x27; &#x27;*depth+str(k)+&#x27;: &#x27;+(str(v)[:80] if not isinstance(v,(dict,list)) else &#x27;&#x27;))\n                if isi… (150 more chars)&quot;,
+  &quot;description&quot;: &quot;Inspect template JSON structure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== /tmp/tpl_agentjob.json keys ===
+Result: Success
+Code: RegistryGetSuccess
+Data: 
+  ExtensionType: 
+    ExtensionType: Orchestrator.StartAgentJob
+    Label: Start and wait for agent
+    BpmnElement: bpmn:ServiceTask
+    Placements: 
+      Activity: 
+        Type: bpmn:ServiceTask
+    ExtensionTag: uipath:activity
+    ContextFields: 
+    InputPattern: mergedBody
+    InputName: JobArguments
+    InputTarget: bodyField
+    OutputSource: None
+
+=== /tmp/tpl_queueitem.json keys ===
+Result: Success
+Code: RegistryGetSuccess
+Data: 
+  ExtensionType: 
+    ExtensionType: Orchestrator.CreateQueueItem
+    Label: Create queue item
+    BpmnElement: bpmn:SendTask
+    Placements: 
+      Activity: 
+        Type: bpmn:SendTask
+    ExtensionTag: uipath:activity
+    ContextFields: 
+    InputPattern: mergedBody
+    InputName: ItemData
+    InputTarget: body
+    OutputSource: None
+
+=== /tmp/tpl_scripttask.json keys ===
+Result: Success
+Code: RegistryGetSuccess
+Data: 
+  ExtensionType: 
+    ExtensionType: BPMN.ScriptTask
+    Label: Execute script
+    BpmnElement: bpmn:ScriptTask
+    Placements: 
+    ExtensionTag: uipath:mapping
+    ContextFields: 
+    InputPattern: scriptArgs
+    InputName: args
+    InputTar
+
+… (truncated, 37 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">119ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nfor f,k in [(&#x27;/tmp/tpl_agentjob.json&#x27;,&#x27;agentjob&#x27;),(&#x27;/tmp/tpl_queueitem.json&#x27;,&#x27;queue&#x27;),(&#x27;/tmp/tpl_scripttask.json&#x27;,&#x27;script&#x27;)]:\n    d=json.load(open(f))\n    et=d[&#x27;Data&#x27;][&#x27;ExtensionType&#x27;]\n    print(f&#x27;=== {k} ===&#x27;)\n    print(json.dumps(et, indent=2))\n    print()\n\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Print full ExtensionType objects&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== agentjob ===
+{
+  &quot;ExtensionType&quot;: &quot;Orchestrator.StartAgentJob&quot;,
+  &quot;Label&quot;: &quot;Start and wait for agent&quot;,
+  &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+  &quot;Placements&quot;: {
+    &quot;Activity&quot;: {
+      &quot;Type&quot;: &quot;bpmn:ServiceTask&quot;
+    }
+  },
+  &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+  &quot;ContextFields&quot;: [
+    {
+      &quot;Name&quot;: &quot;name&quot;,
+      &quot;DisplayName&quot;: &quot;Agent&quot;,
+      &quot;Type&quot;: &quot;string&quot;,
+      &quot;Required&quot;: true,
+      &quot;Hidden&quot;: true,
+      &quot;IsPrimaryKey&quot;: false,
+      &quot;Binding&quot;: true,
+      &quot;DefaultValue&quot;: null,
+      &quot;BindingInfo&quot;: {
+        &quot;Resource&quot;: &quot;process&quot;,
+        &quot;ResourceKeyPattern&quot;: &quot;${metadata.key}&quot;,
+        &quot;PropertyAttribute&quot;: &quot;name&quot;
+      }
+    },
+    {
+      &quot;Name&quot;: &quot;folderPath&quot;,
+      &quot;Type&quot;: &quot;string&quot;,
+      &quot;Required&quot;: true,
+      &quot;Hidden&quot;: true,
+      &quot;IsPrimaryKey&quot;: false,
+      &quot;Binding&quot;: true,
+      &quot;DefaultValue&quot;: null,
+      &quot;BindingInfo&quot;: {
+        &quot;Resource&quot;: &quot;process&quot;,
+        &quot;ResourceKeyPattern&quot;: &quot;${metadata.key}&quot;,
+        &quot;PropertyAttribute&quot;: &quot;folderPath&quot;
+      }
+    }
+  ],
+  &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+  &quot;InputName&quot;: &quot;JobArguments&quot;,
+  &quot;InputTarget&quot;: &quot;bodyField&quot;,
+  &quot;OutputSource&quot;: null,
+  &quot;OutputType&quot;: &quot;Orchestrator.RunJob&quot;,
+  &quot;OutputName&quot;: &quot;Process response&quot;,
+  &quot;UseRelativeSo
+
+… (truncated, 4647 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">35ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p /work/output/artifacts/skill-bpmn-simple-approval-bpmn/ExpenseApprovalBpmn &amp;&amp; echo \&quot;ok\&quot;&quot;,
+  &quot;description&quot;: &quot;Create project directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>ok</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">970ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/expression-authoring.md&quot;,
+  &quot;limit&quot;: 60
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Expression Authoring
+2	
+3	Use this reference whenever pass 2 writes Maestro runtime expressions in BPMN
+4	XML. Pass 1 may use business-readable placeholder conditions; pass 2 replaces
+5	them with expressions only after the variables and scopes exist.
+6	
+7	## Stored expression shape
+8	
+9	- Use a leading `=` where Maestro expects expression content.
+10	- Treat values without `=` as literals.
+11	- Read BPMN variables through `vars.&lt;variableId&gt;`, for example
+12	  `=vars.Var_RequestId`.
+13	- Do not use bare variable names such as `=requestId` in generated runtime XML.
+14	- Context bindings use `=bindings.&lt;bindingId&gt;`.
+15	- Current element outputs use `result` only in output mappings for that
+16	  element. Script task return values are exposed under `result.response`; use
+17	  `source=&quot;=result.response&quot;` for scalar returns or
+18	  `source=&quot;=result.response.&lt;field&gt;&quot;` for object fields.
+19	- Multi-instance task bodies read the current item from `iterator.item`.
+20	- Multi-instance subprocess bodies read the current item from
+21	  `iterator[0].item`. Use `iterator[1].item` (and so on) inside nested
+22	  multi-instance subprocesses: the index counts nesting depth from outermost
+23	  (`[0
+
+… (truncated, 1942 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">31ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;head -40 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/README.md&quot;,
+  &quot;description&quot;: &quot;Check validator README for element name expectations&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Maestro BPMN Validator (bundled, offline)
+
+A dependency-light, offline semantic validator for UiPath Maestro BPMN XML. It
+parses the BPMN with `bpmn-moddle` using the UiPath extension descriptor (the
+same `getModdle()` + `fromXML()` pattern as PO.Frontend), reconstructs the
+PO.Frontend `Node[] / Edge[] / CanvasState` model from the parse tree, and runs
+**all 19** PO.Frontend validation rules plus the variable-validation checks
+(`VARIABLE_DOES_NOT_EXIST`, including element-local `result.X`, and the
+flow-order `VARIABLE_NOT_SET` warning) and an optional connection-liveness ping.
+
+&gt; **Authoring scope:** everything under `test/fixtures/` is validator test data,
+&gt; not authoring material. **Do not read the fixtures to infer the BPMN pattern**
+&gt; — it is the top reason authoring runs out of time. Author from the complete
+&gt; minimal file in
+&gt; [../references/structural-bpmn.md](../references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-fixtures)
+&gt; instead. This README documents the validator and its test suite; run the
+&gt; validator (below) as your check, and leave the corpus to CI.
+
+## Usage
+
+```bash
+npm install
+node validate-bpmn.mjs &lt;bpmn-file&gt; [resources]
+```
+
+- Pr
+
+… (truncated, 925 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-simple-approval-bpmn/ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn&quot;,
+  &quot;content&quot;: &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&lt;bpmn:definitions\n    xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot;\n    xmlns:bpmndi=\&quot;http://www.omg.org/spec/BPMN/20100524/DI\&quot;\n    xmlns:dc=\&quot;http://www.omg.org/spec/DD/20100524/DC\&quot;\n    xmlns:di=\&quot;http://www.omg.org/spec/DD/20100524/DI\&quot;\n    xmlns:xsi=\&quot;http://www.w3.org/2001/XMLSchema-instance\&quot;\n    xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot;\n    id=… (9981 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-simple-approval-bpmn/ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">457ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator &amp;&amp; npm install --silent 2&gt;/dev/null; node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-simple-approval-bpmn/ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate the BPMN against all PO.Frontend rules&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+node:internal/modules/package_json_reader:314
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package &#x27;bpmn-moddle&#x27; imported from /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+  code: &#x27;ERR_MODULE_NOT_FOUND&#x27;
+}
+
+Node.js v22.23.1</pre>
+    <h4>Error</h4><pre>Exit code 1
+node:internal/modules/package_json_reader:314
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package &#x27;bpmn-moddle&#x27; imported from /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+  code: &#x27;ERR_MODULE_NOT_FOUND&#x27;
+}
+
+Node.js v22.23.1</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">263ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator &amp;&amp; npm install 2&gt;&amp;1 | tail -5&quot;,
+  &quot;description&quot;: &quot;Install validator dependencies&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>npm error errno -2
+npm error enoent ENOENT: no such file or directory, mkdir &#x27;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules&#x27;
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+npm error A complete log of this run can be found in: /home/azureuser/.npm/_logs/2026-07-20T23_38_43_684Z-debug-0.log
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-simple-approval-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/ 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check validator directory contents&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>README.md
+bpmn-spec.json
+model.mjs
+package.json
+rules.mjs
+samples
+test
+uipath-moddle.v1.json
+validate-bpmn.mjs</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">91ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator &amp;&amp; cat package.json | python3 -c \&quot;import sys,json; d=json.load(sys.stdin); print(json.dumps(d.get(&#x27;dependencies&#x27;,{}), indent=2))\&quot;&quot;,
+  &quot;description&quot;: &quot;Check validator package dependencies&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;bpmn-moddle&quot;: &quot;^9.0.2&quot;,
+  &quot;luxon&quot;: &quot;^3.4.4&quot;,
+  &quot;sax&quot;: &quot;^1.6.0&quot;
+}
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-simple-approval-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">277ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator &amp;&amp; npm install --prefer-offline 2&gt;&amp;1 | tail -5 &amp;&amp; echo \&quot;installed\&quot;&quot;,
+  &quot;description&quot;: &quot;Install with prefer-offline to use cached packages&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>npm error errno -2
+npm error enoent ENOENT: no such file or directory, mkdir &#x27;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules&#x27;
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+npm error A complete log of this run can be found in: /home/azureuser/.npm/_logs/2026-07-20T23_38_49_833Z-debug-0.log
+installed
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-simple-approval-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/ &amp;&amp; stat /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/ 2&gt;&amp;1 | head -5&quot;,
+  &quot;description&quot;: &quot;Check validator directory permissions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 232
+drwxrwxr-x 4 1000 1000  4096 Jul 17 18:46 .
+drwxrwxr-x 5 1000 1000  4096 Jul 20 23:00 ..
+-rw-rw-r-- 1 1000 1000 14435 Jul 17 18:46 README.md
+-rw-rw-r-- 1 1000 1000 99114 Jul 17 18:46 bpmn-spec.json
+-rw-rw-r-- 1 1000 1000 16339 Jul 17 18:46 model.mjs
+-rw-rw-r-- 1 1000 1000   499 Jul 17 18:46 package.json
+-rw-rw-r-- 1 1000 1000 56927 Jul 17 18:46 rules.mjs
+drwxrwxr-x 2 1000 1000  4096 Jul 17 18:46 samples
+drwxrwxr-x 3 1000 1000  4096 Jul 17 18:46 test
+-rw-rw-r-- 1 1000 1000 14048 Jul 17 18:46 uipath-moddle.v1.json
+-rw-rw-r-- 1 1000 1000  6270 Jul 17 18:46 validate-bpmn.mjs
+  File: /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/
+  Size: 4096      	Blocks: 8          IO Block: 4096   directory
+Device: 259,1	Inode: 2697936     Links: 4
+Access: (0775/drwxrwxr-x)  Uid: ( 1000/ UNKNOWN)   Gid: ( 1000/ UNKNOWN)
+Access: 2026-07-20 16:18:36.181997912 +0000</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">456ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p /tmp/maestro-validator &amp;&amp; cp -r /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/* /tmp/maestro-validator/ &amp;&amp; cd /tmp/maestro-validator &amp;&amp; npm install 2&gt;&amp;1 | tail -5 &amp;&amp; echo \&quot;ok\&quot;&quot;,
+  &quot;description&quot;: &quot;Copy validator to writable temp dir and install&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added 7 packages, and audited 8 packages in 373ms
+
+found 0 vulnerabilities
+ok
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-simple-approval-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">88ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /tmp/maestro-validator &amp;&amp; node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-simple-approval-bpmn/ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate BPMN with installed validator&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>PARSE WARNING: unparsable content &lt;uipath:entryPointId&gt; detected
+	line: 40
+	column: 10
+	nested error: unrecognized element &lt;uipath:entryPointId&gt;
+PARSE WARNING: unknown attribute &lt;var&gt;
+PARSE WARNING: unknown attribute &lt;var&gt;
+WARNINGS:
+  [WARNING] MISSING_RESOURCE: Service task &#x27;Create Review Queue Item&#x27; has no bound resource. (element: Task_QueueItem)
+VALID
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-simple-approval-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.46s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;pip install defusedxml -q 2&gt;&amp;1 | tail -2 &amp;&amp; python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/scripts/scaffold_metadata.py \\\n  --bpmn /work/output/artifacts/skill-bpmn-simple-approval-bpmn/ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn \\\n  --out-dir /work/output/artifacts/skill-bpmn-simple-approval-bpmn/ExpenseApprovalBpmn/ 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Scaffold project metadata files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>WARNING: Running pip as the &#x27;root&#x27; user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+  wrote project.uiproj
+  wrote operate.json
+  wrote entry-points.json
+  wrote bindings_v2.json
+  wrote package-descriptor.json
+Scaffolded 5 files for ExpenseApprovalBpmn (0 entry point(s))</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">148ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/scripts/check_metadata_drift.py \\\n  --bpmn /work/output/artifacts/skill-bpmn-simple-approval-bpmn/ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn \\\n  --project-dir /work/output/artifacts/skill-bpmn-simple-approval-bpmn/ExpenseApprovalBpmn/ 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check metadata drift&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>OK: 4 checks passed, no drift detected</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -1 /work/output/artifacts/skill-bpmn-simple-approval-bpmn/ExpenseApprovalBpmn/&quot;,
+  &quot;description&quot;: &quot;List generated project files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>ExpenseApprovalBpmn.bpmn
+bindings_v2.json
+entry-points.json
+operate.json
+package-descriptor.json
+project.uiproj</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">23</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">21 (91%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">2</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">591ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>18</td></tr><tr><td class='mono'>Read</td><td>3</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>5.97s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr><tr><td class='mono'>Bash</td><td>2.46s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr><tr><td class='mono'>Bash</td><td>1.46s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;pip install defusedxml -q 2&gt;&amp;1 | tail...</td></tr><tr><td class='mono'>Read</td><td>970ms</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/tmp...</td></tr><tr><td class='mono'>Bash</td><td>457ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">7m 25s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">35</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">7m 23s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">4,398</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">30,706</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">34,269</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">960,595</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">1,029,968</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.8905</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>90</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.197.0-alpha.20260626.7673</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;agent-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;functions-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;gov-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;insights-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;solution-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.197.0&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.4</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.46.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-20T23:39:52</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

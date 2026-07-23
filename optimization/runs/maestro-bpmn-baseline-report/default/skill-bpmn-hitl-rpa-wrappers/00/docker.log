@@ -1,0 +1,6 @@
+23:08:43 [INFO   ] [default/skill-bpmn-hitl-rpa-wrappers/00] orchestrator: API routing: aws_bedrock
+23:13:18 [INFO   ] [default/skill-bpmn-hitl-rpa-wrappers/00] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+23:13:18 [WARNING] [default/skill-bpmn-hitl-rpa-wrappers/00] orchestrator: Visible turns (29) exceeded expected_turns (14) at iteration 1 for task skill-bpmn-hitl-rpa-wrappers. Run continues — max_turns remains the hard cap.
+23:13:18 [INFO   ] [default/skill-bpmn-hitl-rpa-wrappers/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+23:13:18 [INFO   ] [default/skill-bpmn-hitl-rpa-wrappers/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-hitl-rpa-wrappers
+23:13:18 [INFO   ] [default/skill-bpmn-hitl-rpa-wrappers/00] orchestrator: Task finished: status=SUCCESS duration=276.7s score=1.000 iterations=1

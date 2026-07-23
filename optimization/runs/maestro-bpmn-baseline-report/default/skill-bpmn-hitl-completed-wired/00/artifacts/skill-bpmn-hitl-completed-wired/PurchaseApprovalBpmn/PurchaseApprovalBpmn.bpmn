@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_PurchaseAmount" name="PurchaseAmount" type="number" />
+        <uipath:inputOutput id="Var_Vendor" name="Vendor" type="string" />
+        <uipath:inputOutput id="Var_ApprovalResult" name="ApprovalResult" type="object" />
+        <uipath:inputOutput id="Var_RecordStatus" name="RecordStatus" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Manual start event -->
+    <bpmn:startEvent id="StartEvent_1" name="Purchase Request Submitted">
+      <bpmn:outgoing>Flow_Start_To_HITL</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- HITL approval - Actions.HITL on bpmn:UserTask -->
+    <bpmn:userTask id="Task_HITL_Approval" name="Approve Purchase Request">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="appId" value="purchase-approval-app-placeholder" />
+            <uipath:input name="appVersion" value="1" />
+            <uipath:input name="actions" value="Approve,Reject" />
+            <uipath:input name="key" value="shared-actions-folder-placeholder" />
+            <uipath:input name="taskTitle" value="Review Purchase Request" />
+          </uipath:context>
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{"purchaseAmount":"=vars.Var_PurchaseAmount","vendor":"=vars.Var_Vendor"}]]></uipath:input>
+          <uipath:output name="Process response" type="Actions.HITL" var="Var_ApprovalResult" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_To_HITL</bpmn:incoming>
+      <bpmn:outgoing>Flow_HITL_To_Record</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- Record approval outcome - BPMN.ScriptTask -->
+    <bpmn:scriptTask id="Task_RecordApproval" name="Record Approval Outcome" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"approvalResult":"=vars.Var_ApprovalResult","purchaseAmount":"=vars.Var_PurchaseAmount","vendor":"=vars.Var_Vendor"}]]></uipath:input>
+          <uipath:output name="recordStatus" type="string" var="Var_RecordStatus" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_HITL_To_Record</bpmn:incoming>
+      <bpmn:outgoing>Flow_Record_To_End</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var outcome = approvalResult && approvalResult.action ? approvalResult.action : "unknown";
+var status = "Recorded: vendor=" + vendor + ", amount=" + purchaseAmount + ", outcome=" + outcome;
+return { response: status };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- End event -->
+    <bpmn:endEvent id="EndEvent_1" name="Purchase Request Completed">
+      <bpmn:incoming>Flow_Record_To_End</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_Start_To_HITL" sourceRef="StartEvent_1" targetRef="Task_HITL_Approval" />
+    <bpmn:sequenceFlow id="Flow_HITL_To_Record" sourceRef="Task_HITL_Approval" targetRef="Task_RecordApproval" />
+    <bpmn:sequenceFlow id="Flow_Record_To_End" sourceRef="Task_RecordApproval" targetRef="EndEvent_1" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Start event: 36x36 -->
+      <bpmndi:BPMNShape id="S_StartEvent_1" bpmnElement="StartEvent_1">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- HITL user task: 100x80 -->
+      <bpmndi:BPMNShape id="S_Task_HITL_Approval" bpmnElement="Task_HITL_Approval">
+        <dc:Bounds x="260" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- Record approval script task: 100x80 -->
+      <bpmndi:BPMNShape id="S_Task_RecordApproval" bpmnElement="Task_RecordApproval">
+        <dc:Bounds x="430" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- End event: 36x36 -->
+      <bpmndi:BPMNShape id="S_EndEvent_1" bpmnElement="EndEvent_1">
+        <dc:Bounds x="602" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Start_To_HITL" bpmnElement="Flow_Start_To_HITL">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="260" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_HITL_To_Record" bpmnElement="Flow_HITL_To_Record">
+        <di:waypoint x="360" y="118" />
+        <di:waypoint x="430" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Record_To_End" bpmnElement="Flow_Record_To_End">
+        <di:waypoint x="530" y="118" />
+        <di:waypoint x="602" y="118" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

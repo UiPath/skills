@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:input id="Var_InvoiceId" name="invoiceId" type="string" elementId="Start_Manual" />
+        <uipath:input id="Var_Amount" name="amount" type="number" elementId="Start_Manual" />
+        <uipath:inputOutput id="Var_Risk" name="risk" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Manual start event: accepts invoiceId and amount variables -->
+    <bpmn:startEvent id="Start_Manual" name="Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="Entry_ManualStart" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToClassify</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Script task: classifyInvoice sets risk variable -->
+    <bpmn:scriptTask id="Task_ClassifyInvoice" name="classifyInvoice" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:output name="risk" type="string" var="Var_Risk" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToClassify</bpmn:incoming>
+      <bpmn:outgoing>Flow_ClassifyToGateway</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: amount > 1000 ? "high" : "low" };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- Exclusive gateway: routeByRisk; default path goes to auto-approved -->
+    <bpmn:exclusiveGateway id="Gw_RouteByRisk" name="routeByRisk" default="Flow_LowRisk">
+      <bpmn:incoming>Flow_ClassifyToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_HighRisk</bpmn:outgoing>
+      <bpmn:outgoing>Flow_LowRisk</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- User task: Review invoice (high-risk path) -->
+    <bpmn:userTask id="Task_ReviewInvoice" name="Review invoice">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="appId" value="" />
+            <uipath:input name="appVersion" value="" />
+            <uipath:input name="actions" value="" />
+            <uipath:input name="key" value="" />
+            <uipath:input name="taskTitle" value="Review invoice" />
+          </uipath:context>
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{"invoiceId":"=vars.Var_InvoiceId","amount":"=vars.Var_Amount","risk":"=vars.Var_Risk"}]]></uipath:input>
+          <uipath:output name="Process response" type="Actions.HITL" var="" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_HighRisk</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReviewToEnd</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- End event: auto-approved (low-risk default path) -->
+    <bpmn:endEvent id="End_AutoApproved" name="auto-approved">
+      <bpmn:incoming>Flow_LowRisk</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- End event: reviewed (high-risk path, after human review) -->
+    <bpmn:endEvent id="End_Reviewed" name="reviewed">
+      <bpmn:incoming>Flow_ReviewToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToClassify" sourceRef="Start_Manual" targetRef="Task_ClassifyInvoice" />
+    <bpmn:sequenceFlow id="Flow_ClassifyToGateway" sourceRef="Task_ClassifyInvoice" targetRef="Gw_RouteByRisk" />
+    <bpmn:sequenceFlow id="Flow_HighRisk" sourceRef="Gw_RouteByRisk" targetRef="Task_ReviewInvoice">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Risk == "high"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_LowRisk" sourceRef="Gw_RouteByRisk" targetRef="End_AutoApproved" />
+    <bpmn:sequenceFlow id="Flow_ReviewToEnd" sourceRef="Task_ReviewInvoice" targetRef="End_Reviewed" />
+  </bpmn:process>
+
+  <!-- BPMN DI: shapes and edges for all visible elements -->
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Shapes -->
+      <bpmndi:BPMNShape id="S_Start_Manual" bpmnElement="Start_Manual">
+        <dc:Bounds x="160" y="212" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_ClassifyInvoice" bpmnElement="Task_ClassifyInvoice">
+        <dc:Bounds x="250" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Gw_RouteByRisk" bpmnElement="Gw_RouteByRisk">
+        <dc:Bounds x="415" y="205" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_ReviewInvoice" bpmnElement="Task_ReviewInvoice">
+        <dc:Bounds x="530" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_AutoApproved" bpmnElement="End_AutoApproved">
+        <dc:Bounds x="700" y="212" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_Reviewed" bpmnElement="End_Reviewed">
+        <dc:Bounds x="700" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_StartToClassify" bpmnElement="Flow_StartToClassify">
+        <di:waypoint x="196" y="230" />
+        <di:waypoint x="250" y="230" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ClassifyToGateway" bpmnElement="Flow_ClassifyToGateway">
+        <di:waypoint x="350" y="230" />
+        <di:waypoint x="415" y="230" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_HighRisk" bpmnElement="Flow_HighRisk">
+        <di:waypoint x="440" y="205" />
+        <di:waypoint x="440" y="140" />
+        <di:waypoint x="530" y="140" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_LowRisk" bpmnElement="Flow_LowRisk">
+        <di:waypoint x="465" y="230" />
+        <di:waypoint x="700" y="230" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ReviewToEnd" bpmnElement="Flow_ReviewToEnd">
+        <di:waypoint x="630" y="140" />
+        <di:waypoint x="700" y="140" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

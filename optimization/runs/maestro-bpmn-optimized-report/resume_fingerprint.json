@@ -1,0 +1,17 @@
+{
+  "agent_type": null,
+  "backend": "bedrock",
+  "bedrock_model": "anthropic.claude-sonnet-4-6",
+  "exclude_tags": null,
+  "experiment_id": "skill-tests-smoke",
+  "include_skipped": false,
+  "include_tags": null,
+  "max_parallel": 16,
+  "max_rows": null,
+  "overrides": {},
+  "preservation_mode": null,
+  "repeats": null,
+  "run_dir": "runs/maestro-bpmn-optimized-report-1",
+  "sample_per_stratum": null,
+  "verbose": false
+}

@@ -1,0 +1,1229 @@
+{
+  "experiment_id": "skill-tests-smoke",
+  "description": "Linux PR-gate smoke tests — docker isolation, fast turn budget",
+  "variant_ids": [
+    "default"
+  ],
+  "task_summaries": [
+    {
+      "task_id": "skill-bpmn-script-jint-guidance",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-script-jint-guidance",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 143.20825672149658,
+          "total_tokens": 856328,
+          "iteration_count": 1,
+          "total_assistant_turns": 32,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-transform-group-by",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-transform-group-by",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 171.64833784103394,
+          "total_tokens": 531431,
+          "iteration_count": 1,
+          "total_assistant_turns": 22,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-operate-diagnose-minimal-fault-triage",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-operate-diagnose-minimal-fault-triage",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 75.66581439971924,
+          "total_tokens": 541485,
+          "iteration_count": 1,
+          "total_assistant_turns": 23,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-loop-multiply",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-loop-multiply",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 310.14127349853516,
+          "total_tokens": 1085052,
+          "iteration_count": 1,
+          "total_assistant_turns": 43,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-hitl-rpa-wrappers",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-hitl-rpa-wrappers",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 276.68910360336304,
+          "total_tokens": 1097626,
+          "iteration_count": 1,
+          "total_assistant_turns": 42,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-edit-update-node",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-edit-update-node",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 47.756083726882935,
+          "total_tokens": 273791,
+          "iteration_count": 1,
+          "total_assistant_turns": 16,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-edit-add-node",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-edit-add-node",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 102.2520124912262,
+          "total_tokens": 678835,
+          "iteration_count": 1,
+          "total_assistant_turns": 28,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-gateway-sequence-flows",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-gateway-sequence-flows",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 255.12544465065002,
+          "total_tokens": 751090,
+          "iteration_count": 1,
+          "total_assistant_turns": 27,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-e2e-customer-escalation",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-e2e-customer-escalation",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 289.32393884658813,
+          "total_tokens": 1197637,
+          "iteration_count": 1,
+          "total_assistant_turns": 46,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-reading-list",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-reading-list",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 400.30996537208557,
+          "total_tokens": 938777,
+          "iteration_count": 1,
+          "total_assistant_turns": 39,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-message-catch",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-message-catch",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 240.70223140716553,
+          "total_tokens": 1551490,
+          "iteration_count": 1,
+          "total_assistant_turns": 51,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-feet-inches",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-feet-inches",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 498.4149332046509,
+          "total_tokens": 1252631,
+          "iteration_count": 1,
+          "total_assistant_turns": 49,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-edit-move-node",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-edit-move-node",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 59.30994153022766,
+          "total_tokens": 316672,
+          "iteration_count": 1,
+          "total_assistant_turns": 18,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-hitl-completed-wired",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-hitl-completed-wired",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 227.00229454040527,
+          "total_tokens": 719894,
+          "iteration_count": 1,
+          "total_assistant_turns": 25,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-script-jint-lifecycle",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-script-jint-lifecycle",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 266.3648359775543,
+          "total_tokens": 1309472,
+          "iteration_count": 1,
+          "total_assistant_turns": 39,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-e2e-wiki-pageviews",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-e2e-wiki-pageviews",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 656.6755061149597,
+          "total_tokens": 1180635,
+          "iteration_count": 1,
+          "total_assistant_turns": 42,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-transform-map",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-transform-map",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 205.655864238739,
+          "total_tokens": 564864,
+          "iteration_count": 1,
+          "total_assistant_turns": 23,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-agent-job",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-agent-job",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 381.6648383140564,
+          "total_tokens": 838200,
+          "iteration_count": 1,
+          "total_assistant_turns": 33,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-subprocess",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-subprocess",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 182.16129088401794,
+          "total_tokens": 480926,
+          "iteration_count": 1,
+          "total_assistant_turns": 20,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-edit-add-output",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-edit-add-output",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 55.8177695274353,
+          "total_tokens": 508997,
+          "iteration_count": 1,
+          "total_assistant_turns": 23,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-hitl-multi-outcome-routing",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-hitl-multi-outcome-routing",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 748.9020574092865,
+          "total_tokens": 1352414,
+          "iteration_count": 1,
+          "total_assistant_turns": 54,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-smoke-registry-discovery",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-smoke-registry-discovery",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 45.99071455001831,
+          "total_tokens": 239415,
+          "iteration_count": 1,
+          "total_assistant_turns": 15,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-hitl-schema-design",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-hitl-schema-design",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 492.49826192855835,
+          "total_tokens": 937433,
+          "iteration_count": 1,
+          "total_assistant_turns": 36,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-integration-service-boundary",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-integration-service-boundary",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 465.0405397415161,
+          "total_tokens": 1236765,
+          "iteration_count": 1,
+          "total_assistant_turns": 48,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-timer",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-timer",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 74.41182899475098,
+          "total_tokens": 195033,
+          "iteration_count": 1,
+          "total_assistant_turns": 11,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-calculator",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-calculator",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 438.9729070663452,
+          "total_tokens": 1475156,
+          "iteration_count": 1,
+          "total_assistant_turns": 48,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-event-trigger-start",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-event-trigger-start",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 179.0652208328247,
+          "total_tokens": 527146,
+          "iteration_count": 1,
+          "total_assistant_turns": 26,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-business-rule-task",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-business-rule-task",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 286.83479475975037,
+          "total_tokens": 1483416,
+          "iteration_count": 1,
+          "total_assistant_turns": 51,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-author-validate",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-author-validate",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 158.33089900016785,
+          "total_tokens": 899174,
+          "iteration_count": 1,
+          "total_assistant_turns": 32,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-edit-remove-node",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-edit-remove-node",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 102.34619569778442,
+          "total_tokens": 937007,
+          "iteration_count": 1,
+          "total_assistant_turns": 44,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-simple-approval-bpmn",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-simple-approval-bpmn",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 743.1780354976654,
+          "total_tokens": 1056780,
+          "iteration_count": 1,
+          "total_assistant_turns": 42,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-e2e-invoice-exception-triage",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-e2e-invoice-exception-triage",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 237.74089550971985,
+          "total_tokens": 2014951,
+          "iteration_count": 1,
+          "total_assistant_turns": 60,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-edit-group-to-subflow",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-edit-group-to-subflow",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 538.9993743896484,
+          "total_tokens": 945480,
+          "iteration_count": 1,
+          "total_assistant_turns": 33,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-switch",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-switch",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 94.11838364601135,
+          "total_tokens": 238401,
+          "iteration_count": 1,
+          "total_assistant_turns": 12,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-http-weather",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-http-weather",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 195.76585412025452,
+          "total_tokens": 1077366,
+          "iteration_count": 1,
+          "total_assistant_turns": 43,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-registry-discovery",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-registry-discovery",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 151.79552626609802,
+          "total_tokens": 911760,
+          "iteration_count": 1,
+          "total_assistant_turns": 41,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-api-workflow-task",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-api-workflow-task",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 383.6198320388794,
+          "total_tokens": 1690174,
+          "iteration_count": 1,
+          "total_assistant_turns": 64,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-hitl-brownfield-insert",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-hitl-brownfield-insert",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 139.90285444259644,
+          "total_tokens": 841892,
+          "iteration_count": 1,
+          "total_assistant_turns": 34,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-hitl-result-downstream",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-hitl-result-downstream",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 457.9817337989807,
+          "total_tokens": 1176194,
+          "iteration_count": 1,
+          "total_assistant_turns": 45,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-rpa-job",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-rpa-job",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 147.99794125556946,
+          "total_tokens": 474907,
+          "iteration_count": 1,
+          "total_assistant_turns": 22,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-multi-city-weather",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-multi-city-weather",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 420.9419801235199,
+          "total_tokens": 1017539,
+          "iteration_count": 1,
+          "total_assistant_turns": 38,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-hitl-boolean-decision",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-hitl-boolean-decision",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 763.7245616912842,
+          "total_tokens": 1263232,
+          "iteration_count": 1,
+          "total_assistant_turns": 53,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-terminate",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-terminate",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 160.74224662780762,
+          "total_tokens": 513886,
+          "iteration_count": 1,
+          "total_assistant_turns": 22,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-transform-filter",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-transform-filter",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 130.59630918502808,
+          "total_tokens": 427209,
+          "iteration_count": 1,
+          "total_assistant_turns": 19,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-parallel-fork-join",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-parallel-fork-join",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 133.52785515785217,
+          "total_tokens": 631489,
+          "iteration_count": 1,
+          "total_assistant_turns": 25,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-timer-start",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-timer-start",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 324.78316044807434,
+          "total_tokens": 1131249,
+          "iteration_count": 1,
+          "total_assistant_turns": 42,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-dice-roller",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-dice-roller",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 191.08044719696045,
+          "total_tokens": 934312,
+          "iteration_count": 1,
+          "total_assistant_turns": 36,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-bpmn-contract-variant-wrappers",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-bpmn-contract-variant-wrappers",
+          "weighted_score": 0.0,
+          "final_status": "TIMEOUT",
+          "duration_seconds": 901.2947459220886,
+          "total_tokens": null,
+          "iteration_count": 1,
+          "total_assistant_turns": null,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    }
+  ],
+  "variant_aggregates": {
+    "default": {
+      "variant_id": "default",
+      "tasks_run": 48,
+      "tasks_succeeded": 47,
+      "tasks_failed": 1,
+      "tasks_error": 0,
+      "average_score": 0.9791666666666666,
+      "average_duration": 290.7515602956216,
+      "total_tokens": 42305613,
+      "replicate_count": 1,
+      "tasks_token_budget_exceeded": 0,
+      "tasks_cost_budget_exceeded": 0
+    }
+  },
+  "total_duration_seconds": 903.518802,
+  "per_replicate_scores": {
+    "default": {
+      "skill-bpmn-script-jint-guidance": [
+        1.0
+      ],
+      "skill-bpmn-transform-group-by": [
+        1.0
+      ],
+      "skill-bpmn-operate-diagnose-minimal-fault-triage": [
+        1.0
+      ],
+      "skill-bpmn-loop-multiply": [
+        1.0
+      ],
+      "skill-bpmn-hitl-rpa-wrappers": [
+        1.0
+      ],
+      "skill-bpmn-edit-update-node": [
+        1.0
+      ],
+      "skill-bpmn-edit-add-node": [
+        1.0
+      ],
+      "skill-bpmn-gateway-sequence-flows": [
+        1.0
+      ],
+      "skill-bpmn-e2e-customer-escalation": [
+        1.0
+      ],
+      "skill-bpmn-reading-list": [
+        1.0
+      ],
+      "skill-bpmn-message-catch": [
+        1.0
+      ],
+      "skill-bpmn-feet-inches": [
+        1.0
+      ],
+      "skill-bpmn-edit-move-node": [
+        1.0
+      ],
+      "skill-bpmn-hitl-completed-wired": [
+        1.0
+      ],
+      "skill-bpmn-script-jint-lifecycle": [
+        1.0
+      ],
+      "skill-bpmn-e2e-wiki-pageviews": [
+        1.0
+      ],
+      "skill-bpmn-transform-map": [
+        1.0
+      ],
+      "skill-bpmn-agent-job": [
+        1.0
+      ],
+      "skill-bpmn-subprocess": [
+        1.0
+      ],
+      "skill-bpmn-edit-add-output": [
+        1.0
+      ],
+      "skill-bpmn-hitl-multi-outcome-routing": [
+        1.0
+      ],
+      "skill-bpmn-smoke-registry-discovery": [
+        1.0
+      ],
+      "skill-bpmn-hitl-schema-design": [
+        1.0
+      ],
+      "skill-bpmn-integration-service-boundary": [
+        1.0
+      ],
+      "skill-bpmn-timer": [
+        1.0
+      ],
+      "skill-bpmn-calculator": [
+        1.0
+      ],
+      "skill-bpmn-event-trigger-start": [
+        1.0
+      ],
+      "skill-bpmn-business-rule-task": [
+        1.0
+      ],
+      "skill-bpmn-author-validate": [
+        1.0
+      ],
+      "skill-bpmn-edit-remove-node": [
+        1.0
+      ],
+      "skill-bpmn-simple-approval-bpmn": [
+        1.0
+      ],
+      "skill-bpmn-e2e-invoice-exception-triage": [
+        1.0
+      ],
+      "skill-bpmn-edit-group-to-subflow": [
+        1.0
+      ],
+      "skill-bpmn-switch": [
+        1.0
+      ],
+      "skill-bpmn-http-weather": [
+        1.0
+      ],
+      "skill-bpmn-registry-discovery": [
+        1.0
+      ],
+      "skill-bpmn-api-workflow-task": [
+        1.0
+      ],
+      "skill-bpmn-hitl-brownfield-insert": [
+        1.0
+      ],
+      "skill-bpmn-hitl-result-downstream": [
+        1.0
+      ],
+      "skill-bpmn-rpa-job": [
+        1.0
+      ],
+      "skill-bpmn-multi-city-weather": [
+        1.0
+      ],
+      "skill-bpmn-hitl-boolean-decision": [
+        1.0
+      ],
+      "skill-bpmn-terminate": [
+        1.0
+      ],
+      "skill-bpmn-transform-filter": [
+        1.0
+      ],
+      "skill-bpmn-parallel-fork-join": [
+        1.0
+      ],
+      "skill-bpmn-timer-start": [
+        1.0
+      ],
+      "skill-bpmn-dice-roller": [
+        1.0
+      ],
+      "skill-bpmn-contract-variant-wrappers": [
+        0.0
+      ]
+    }
+  }
+}

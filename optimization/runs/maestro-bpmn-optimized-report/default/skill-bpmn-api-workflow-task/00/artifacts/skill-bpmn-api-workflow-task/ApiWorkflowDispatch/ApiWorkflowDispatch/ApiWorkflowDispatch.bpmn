@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:error id="Error_SyncFailed" name="SyncFailed" errorCode="SYNC_FAILED" />
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <!-- Input variables scoped to the start event -->
+        <uipath:inputOutput id="Var_CustomerId" name="customerId" type="string" elementId="Start_1" />
+        <uipath:inputOutput id="Var_RequestedBy" name="requestedBy" type="string" elementId="Start_1" />
+        <!-- Process-wide variables for the API workflow call -->
+        <uipath:inputOutput id="Var_SyncRequest" name="syncRequest" type="object" />
+        <uipath:inputOutput id="Var_InvocationResult" name="invocationResult" type="object" />
+        <uipath:inputOutput id="Var_InvocationStatus" name="invocationStatus" type="string" />
+        <uipath:inputOutput id="Var_InvocationId" name="invocationId" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Start event: manual trigger with customerId and requestedBy inputs -->
+    <bpmn:startEvent id="Start_1" name="Customer Sync Request">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="EP_CustomerSyncRequest" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToTask</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Service task: runs the API workflow via Orchestrator.ExecuteApiWorkflowAsync -->
+    <bpmn:serviceTask id="Task_RunApiWorkflow" name="Run Customer Sync API Workflow">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey" value="" />
+            <uipath:input name="folderId" value="" />
+            <uipath:input name="folderPath" value="" />
+            <uipath:input name="name" value="" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"customerId":"=vars.Var_CustomerId","requestedBy":"=vars.Var_RequestedBy","request":"=vars.Var_SyncRequest"}]]></uipath:input>
+          <uipath:output name="invocationResult" type="object" var="Var_InvocationResult" source="=result.response" />
+          <uipath:output name="invocationStatus" type="string" var="Var_InvocationStatus" source="=result.State" />
+          <uipath:output name="invocationId" type="string" var="Var_InvocationId" source="=result.Id" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_TaskToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Boundary error event: interrupting, catches any sync failure -->
+    <bpmn:boundaryEvent id="Boundary_SyncError" attachedToRef="Task_RunApiWorkflow" cancelActivity="true">
+      <bpmn:errorEventDefinition errorRef="Error_SyncFailed" />
+      <bpmn:outgoing>Flow_BoundaryToFailEnd</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+
+    <!-- Success end event -->
+    <bpmn:endEvent id="End_Success" name="Sync Dispatched">
+      <bpmn:incoming>Flow_TaskToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Failure end event -->
+    <bpmn:endEvent id="End_Failure" name="Sync Failed">
+      <bpmn:errorEventDefinition errorRef="Error_SyncFailed" />
+      <bpmn:incoming>Flow_BoundaryToFailEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToTask" sourceRef="Start_1" targetRef="Task_RunApiWorkflow" />
+    <bpmn:sequenceFlow id="Flow_TaskToEnd" sourceRef="Task_RunApiWorkflow" targetRef="End_Success" />
+    <bpmn:sequenceFlow id="Flow_BoundaryToFailEnd" sourceRef="Boundary_SyncError" targetRef="End_Failure" />
+  </bpmn:process>
+
+  <!-- BPMN DI placeholder; will be replaced by generate_diagram.py -->
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <!-- Start: center (178,100) -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <!-- Service task: x=260,y=60 width=100 height=80; center (310,100) -->
+      <bpmndi:BPMNShape id="S_Task_RunApiWorkflow" bpmnElement="Task_RunApiWorkflow">
+        <dc:Bounds x="260" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <!-- Boundary error event: sits on bottom edge of task, center (310,158) -->
+      <bpmndi:BPMNShape id="S_Boundary_SyncError" bpmnElement="Boundary_SyncError">
+        <dc:Bounds x="292" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <!-- Success end event: center (438,100) -->
+      <bpmndi:BPMNShape id="S_End_Success" bpmnElement="End_Success">
+        <dc:Bounds x="420" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <!-- Failure end event: center (438,220) below success end -->
+      <bpmndi:BPMNShape id="S_End_Failure" bpmnElement="End_Failure">
+        <dc:Bounds x="420" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <!-- Flow_StartToTask -->
+      <bpmndi:BPMNEdge id="E_Flow_StartToTask" bpmnElement="Flow_StartToTask">
+        <di:waypoint x="196" y="100" />
+        <di:waypoint x="260" y="100" />
+      </bpmndi:BPMNEdge>
+      <!-- Flow_TaskToEnd (success path) -->
+      <bpmndi:BPMNEdge id="E_Flow_TaskToEnd" bpmnElement="Flow_TaskToEnd">
+        <di:waypoint x="360" y="100" />
+        <di:waypoint x="420" y="100" />
+      </bpmndi:BPMNEdge>
+      <!-- Flow_BoundaryToFailEnd (error path, routes down then right) -->
+      <bpmndi:BPMNEdge id="E_Flow_BoundaryToFailEnd" bpmnElement="Flow_BoundaryToFailEnd">
+        <di:waypoint x="310" y="158" />
+        <di:waypoint x="310" y="220" />
+        <di:waypoint x="420" y="220" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

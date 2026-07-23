@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Experiment skill-tests-smoke</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Experiment: skill-tests-smoke</h1>
+    <div class="subtitle">Linux PR-gate smoke tests — docker isolation, fast turn budget</div>
+  </div>
+  <div class="badges">
+    <span class="badge neutral">1 variants</span>
+    <span class="badge neutral">5m 49s</span>
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<h2>Variants</h2>
+<div class="card" style="padding:0">
+<table>
+  <thead><tr><th>Variant</th><th style="width:100px">Avg Score</th><th style="width:120px">Pass Ratio</th></tr></thead>
+  <tbody>
+<tr>
+  <td><a href="default/variant.html">default</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">0.98</span></td>
+  <td>47/48</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h2>Aggregate Metrics</h2>
+<div class="card" style="padding:0">
+  <table>
+    <thead><tr><th>Metric</th><th>default</th></tr></thead>
+    <tbody><tr><td>Tasks Run</td><td>48</td></tr><tr><td>Succeeded</td><td>47</td></tr><tr><td>Failed</td><td>1</td></tr><tr><td>Errors</td><td>0</td></tr><tr><td>Success Rate</td><td>97.9%</td></tr><tr><td>Score</td><td>0.983 ± 0.120</td></tr><tr><td>Duration (s)</td><td>206.2 ± 134.0</td></tr><tr><td>Assistant Turns</td><td>29.7 ± 11.7</td></tr><tr><td>Tokens</td><td>763,089 ± 454,931</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Win Rates</h2>
+<div class="card">
+  <ul><li><strong>default</strong>: 48/48 tasks (100%)</li></ul>
+</div>
+
+<h2>Per-Task Comparison</h2>
+<div class="card" style="padding:0">
+  <table>
+    <thead><tr><th>Task</th><th>default</th><th>Best</th><th>Spread</th></tr></thead>
+    <tbody><tr><td class='mono'>skill-bpmn-calculator</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-transform-map</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-hitl-completed-wired</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-hitl-boolean-decision</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-feet-inches</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-transform-group-by</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-simple-approval-bpmn</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-edit-update-node</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-subprocess</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-api-workflow-task</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-transform-filter</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-e2e-invoice-exception-triage</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-timer</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-hitl-brownfield-insert</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-hitl-multi-outcome-routing</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-switch</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-message-catch</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-contract-variant-wrappers</td><td>0.167 (-)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-author-validate</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-terminate</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-hitl-rpa-wrappers</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-dice-roller</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-smoke-registry-discovery</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-registry-discovery</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-edit-remove-node</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-edit-add-output</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-e2e-customer-escalation</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-business-rule-task</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-hitl-result-downstream</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-event-trigger-start</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-parallel-fork-join</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-script-jint-guidance</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-script-jint-lifecycle</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-rpa-job</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-edit-add-node</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-multi-city-weather</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-agent-job</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-gateway-sequence-flows</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-e2e-wiki-pageviews</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-loop-multiply</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-operate-diagnose-minimal-fault-triage</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-http-weather</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-timer-start</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-edit-group-to-subflow</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-edit-move-node</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-reading-list</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-hitl-schema-design</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-bpmn-integration-service-boundary</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-21T01:52:09</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

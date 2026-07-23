@@ -1,0 +1,42 @@
+{
+  "entryPoints": [
+    {
+      "id": "EP_WikiPageviews",
+      "filePath": "/content/WikiPageviews.bpmn#Start_1",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "article": {
+            "type": "string"
+          },
+          "date1": {
+            "type": "string"
+          },
+          "date2": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "array"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "filtered": {
+            "type": "array"
+          },
+          "total": {
+            "type": "number"
+          },
+          "result": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

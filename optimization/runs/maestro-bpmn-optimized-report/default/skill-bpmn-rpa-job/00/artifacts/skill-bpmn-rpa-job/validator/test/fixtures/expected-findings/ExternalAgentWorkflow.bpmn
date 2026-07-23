@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="sample-diagram" targetNamespace="http://bpmn.io/schema/bpmn" exporter="UiPath Studio Web (https://uipath.com)" exporterVersion="0c66af93">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1"/>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="65acb40c-cd1d-4d8c-b336-9d22192e8e50"/>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>edge___Event_start-Activity_5oRmDa</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Activity_5oRmDa" name="Start and Wait for External Agent">
+      <bpmn:incoming>edge___Event_start-Activity_5oRmDa</bpmn:incoming>
+      <bpmn:outgoing>edge___Activity_5oRmDa-Event_uRXtCv</bpmn:outgoing>
+        <bpmn:extensionElements>
+              <uipath:activity version="v1">
+                <uipath:type value="[extensionType]" version="v1"/>
+		            <uipath:context>
+        		            <uipath:input name="connectorKey" type="string"
+                      value="uipath-crewai-crewai"/>
+        		            <uipath:input name="connection" type="string"
+                      value="717ede25-7494-44d5-9d65-5dab660653f5"/>
+                    <uipath:input name="folderKey" type="string"
+                      value="717ede25-7494-44d5-9d65-5dab660653f6"/>
+                    <uipath:input name="folderPath" type="string"
+                      value="Shared"/>
+                    <uipath:input name="objectName" type="string"
+                      value="INVOKE_CREWAI_COMPLETION"/>
+                    <uipath:input name="eventMode" type="string"
+                      value="webhook"/>
+                    <uipath:input name="operation" type="string"
+                      value="WaitForCrewaiAgent"/>
+                    <uipath:input name="path" type="string"
+                      value="invoke-crewai-agent"/>
+		            </uipath:context>
+		            <uipath:input name="agent" type="string" value="researcher" target="query"/>
+		            <uipath:input name="body" type="json" target="body">
+                  <![CDATA[
+                    {
+                      "description": "Conduct a thorough research ",
+                      "expected_output": "\"A list with 10 bullet points about \" vars.v42119920.topic"
+                    }
+                  ]]>
+		            </uipath:input>
+		            <uipath:output name="response"
+			            type="jsonSchema"
+			            source="=result"
+			            var="vf57f5770" />
+              </uipath:activity>
+          </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="Event_J6RdaW" attachedToRef="Activity_5oRmDa">
+      <bpmn:errorEventDefinition/>
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="Event_uRXtCv">
+      <bpmn:incoming>edge___Activity_5oRmDa-Event_uRXtCv</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="edge___Event_start-Activity_5oRmDa" sourceRef="Event_start" targetRef="Activity_5oRmDa"/>
+    <bpmn:sequenceFlow id="edge___Activity_5oRmDa-Event_uRXtCv" sourceRef="Activity_5oRmDa" targetRef="Event_uRXtCv"/>
+  </bpmn:process>
+</bpmn:definitions>

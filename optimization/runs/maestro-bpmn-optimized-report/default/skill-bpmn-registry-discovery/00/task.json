@@ -1,0 +1,1129 @@
+{
+  "task_id": "skill-bpmn-registry-discovery",
+  "task_description": "Registry discovery eval: agent uses the Maestro BPMN registry surface to discover documented agent, queue, and connector wrapper types and to save public-safe CLI evidence for the skill's supported-element map without inventing private resource metadata. Requires the `uip` CLI on PATH.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-20T23:32:30.775801",
+  "completed_at": "2026-07-20T23:33:53.039800",
+  "duration_seconds": 82.26402235031128,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_exists",
+      "description": "Registry discovery evidence directory was created",
+      "score": 1.0,
+      "details": "File 'registry-evidence' exists",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent ran a Maestro BPMN registry list call",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+list/)\nExamples: ['uip maestro bpmn registry list --limit -1 --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent ran a Maestro BPMN registry search call",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+search/)\nExamples: ['uip maestro bpmn registry search agent --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evi']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent ran a Maestro BPMN registry get call",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+get/)\nExamples: ['uip maestro bpmn registry get Orchestrator.StartAgentJob --output json > /work/output/artifacts/skill-bpmn-registry-disc']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "run_command",
+      "description": "Registry evidence covers documented agent, queue, and connector wrapper types",
+      "score": 1.0,
+      "details": "Command: python3 $TASK_DIR/check_registry_discovery.py\nExit code: 0 (expected: 0)\nStdout:\nOK: registry-evidence covers agent/queue/connector wrappers across 9 files\n\nStderr: (empty)",
+      "error": null,
+      "pass_threshold": 1.0
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-bpmn-registry-discovery\n\nUse the installed `uip` CLI's Maestro BPMN registry surface to discover the\ndocumented wrapper surface for agent, queue, and connector resource types.\nSave evidence locally without uploading, publishing, deploying, debugging, or\nrunning anything.\n\nRequirements:\n- Save outputs under a local `registry-evidence/` directory you create.\n- Capture raw JSON evidence for the overall registry catalog, a filtered\n  lookup for at least one documented agent or queue wrapper type, and the\n  detailed registry record for at least one documented wrapper type.\n- Use `--output json` for parsed CLI calls and write only the raw JSON output\n  files into `registry-evidence/`.\n- Do not invent connection IDs, folder keys, tenant URLs, real connector\n  keys, or release keys.\n- Do not upload, publish, deploy, debug, or run anything.\n",
+      "agent_output": "[ASSISTANT] Now capture filtered lookups for agent and queue wrapper types, and detailed records for one of each:\n[ASSISTANT] All 9 JSON evidence files captured successfully. Here's a summary of what was saved under `registry-evidence/`:\n\n---\n\n## Registry Evidence — Summary\n\n**Directory:** `/work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/`\n\n| File | CLI call | Purpose |\n|---|---|---|\n| `registry-catalog.json` | `registry list --limit -1 --output json` | Full OOTB registry catalog (30 extension types) |\n| `search-agent.json` | `registry search agent --output json` | Filtered lookup for agent wrapper types |\n| `search-queue.json` | `registry search queue --output json` | Filtered lookup for queue wrapper types |\n| `search-connector.json` | `registry search connector --output json` | Filtered lookup for connector wrapper types |\n| `get-StartAgentJob.json` | `registry get Orchestrator.StartAgentJob --output json` | Detailed record for the low-code Agent Builder wrapper |\n| `get-A2A.AgentExecution.json` | `registry get A2A.AgentExecution --output json` | Detailed record for the external A2A agent wrapper |\n| `get-CreateQueueItem.json` | `registry get Orchestrator.CreateQueueItem --output json` | Detailed record for the queue send wrapper |\n| `get-CreateAndWaitForQueueItem.json` | `registry get Orchestrator.CreateAndWaitForQueueItem --output json` | Detailed record for the queue wait wrapper |\n| `get-Intsvc.ActivityExecution.json` | `registry get Intsvc.ActivityExecution --output json` | Detailed record for the Integration Service connector wrapper |\n\nAll calls returned `Result: Success`. The registry was synced fresh (30 OOTB extension types, no login required). Nothing was uploaded, published, deployed, or run, and no IDs were invented.\n[RESULT - SUCCESS] All 9 JSON evidence files captured successfully. Here's a summary of what was saved under `registry-evidence/`:\n\n---\n\n## Registry Evidence — Summary\n\n**Directory:** `/work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/`\n\n| File | CLI call | Purpose |\n|---|---|---|\n| `registry-catalog.json` | `registry list --limit -1 --output json` | Full OOTB registry catalog (30 extension types) |\n| `search-agent.json` | `registry search agent --output json` | Filtered lookup for agent wrapper types |\n| `search-queue.json` | `registry search queue --output json` | Filtered lookup for queue wrapper types |\n| `search-connector.json` | `registry search connector --output json` | Filtered lookup for connector wrapper types |\n| `get-StartAgentJob.json` | `registry get Orchestrator.StartAgentJob --output json` | Detailed record for the low-code Agent Builder wrapper |\n| `get-A2A.AgentExecution.json` | `registry get A2A.AgentExecution --output json` | Detailed record for the external A2A agent wrapper |\n| `get-CreateQueueItem.json` | `registry get Orchestrator.CreateQueueItem --output json` | Detailed record for the queue send wrapper |\n| `get-CreateAndWaitForQueueItem.json` | `registry get Orchestrator.CreateAndWaitForQueueItem --output json` | Detailed record for the queue wait wrapper |\n| `get-Intsvc.ActivityExecution.json` | `registry get Intsvc.ActivityExecution --output json` | Detailed record for the Integration Service connector wrapper |\n\nAll calls returned `Result: Success`. The registry was synced fresh (30 OOTB extension types, no login required). Nothing was uploaded, published, deployed, or run, and no IDs were invented.",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_01Ca5tkZz4HwecnbsgSP37M2",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-20T23:32:37.270888",
+          "duration_ms": 11.355809983797371,
+          "generation_completed_at": "2026-07-20T23:32:37.270888",
+          "execution_started_at": "2026-07-20T23:32:37.271132",
+          "execution_completed_at": "2026-07-20T23:32:37.282488",
+          "parameters": {
+            "skill": "tmp:uipath-maestro-bpmn",
+            "args": "Discover the documented wrapper surface for agent, queue, and connector resource types using the `uip` CLI's Maestro BPMN registry. Save raw JSON evidence files under registry-evidence/ in /work/output/artifacts/skill-bpmn-registry-discovery. Use --output json for all CLI calls. Do not upload, publish, deploy, debug, or run anything. Do not invent connection IDs, folder keys, tenant URLs, real connector keys, or release keys."
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: tmp:uipath-maestro-bpmn",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 10
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01L52XxeVKK1rNGu3gjC7Ej2",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-07-20T23:32:40.485960",
+          "duration_ms": 8.81893199402839,
+          "generation_completed_at": "2026-07-20T23:32:40.485960",
+          "execution_started_at": "2026-07-20T23:32:40.486029",
+          "execution_completed_at": "2026-07-20T23:32:40.494848",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/registry-workflow.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Registry workflow\n2\t\n3\tEvery `uipath:*` payload in a Maestro `.bpmn` comes from the registry — never\n4\tfrom prose, never hand-written. This file is the loop for turning user intent\n5\tinto registry-backed XML.\n6\t\n7\t## 1. Sync and discover\n8\t\n9\t```bash\n10\tuip maestro bpmn registry pull            # sync + cache (login for connectors/processes)\n11\tuip maestro bpmn registry list --limit -1 --output json   # all extension types\n12\tuip maestro bpmn registry search <keyword> --output json  # find a type by intent\n13\tuip is connections list --all-folders --output json   # live IS connections (all folders)\n14\t```\n15\t\n16\tMap the user's intent to an extension type from the list. Confirm the choice\n17\twith the user (and the specific connection / process / queue) before authoring.\n18\t**Never fabricate an identifier** — see [cli-conventions.md](cli-conventions.md).\n19\t\n20\t**Connection discovery must be exhaustive.** Always pass `--all-folders` to\n21\t`uip is connections list` — connections live in many folders and a folder-scoped\n22\tlisting silently misses them. An empty or unmatched result from a missing\n23\t`--all-folders`, or from a connector key guessed from a brand name rather than\n24\tfound via `registry search`, is a **false negative** — never conclude \"no\n25\tconnection exists\" or ask the user to create one until you have searched the\n26\tregistry for the real connector key and listed across all folders.\n27\t\n28\t`registry list` returns three buckets in `Data`: `ExtensionTypes` (the OOTB\n29\textension types, always available), `Connectors` and `Processes` (only after\n30\t`uip login`). Each extension-type row carries `ExtensionType`, `Label`,\n31\t`BpmnElement` (the host BPMN element), `ExtensionTag`, and\n32\t`RequiresDiscovery` (`Yes` means you must resolve a concrete resource — process,\n33\tqueue, connection — before the node is runnable).\n34\t\n35\t## 2. Get the template for each chosen type\n36\t\n37\t```bash\n38\tuip maestro bpmn registry get <extensionType> --output json\n39\t```\n40\t\n41\t`Data.ExtensionType` contains everything needed to author the node:\n42\t\n43\t| Field | Use |\n44\t| --- | --- |\n45\t| `xmlTemplate` | The literal node XML with `{placeholder}` slots. **Author from this; fill placeholders only.** |\n46\t| `bpmnElement` | The host BPMN element the template uses (e.g. `bpmn:ServiceTask`). |\n47\t| `extensionTag` | `uipath:activity`, `uipath:event`, or `uipath:mapping`. |\n48\t| `contextFields[]` | The `uipath:context` inputs; each may carry its own `bindingInfo`. |\n49\t| `bindingInfo` | How the node binds to a resource (see §4). |\n50\t| `inputPattern` / `inputName` / `inputTarget` | How the request body input is shaped. |\n51\t| `requiresDiscovery` / `isDynamic` | Whether a concrete resource must be resolved first. |\n52\t\n53\tThe placeholders you fill are the obvious ones: `{id}`, `{name}`,\n54\t`{incomingEdge}`, `{outgoingEdge}`, `{varId}` (the output variable id), plus the\n55\tper-context-field placeholders (`{releaseKey}`, `{queueName}`, `{appId}`, …) and\n56\tthe body CDATA. Leave the structural placeholders (`{incomingEdge}` /\n57\t`{outgoingEdge}`) wired to the sequence-flow ids you create in\n58\t[structural-bpmn.md](structural-bpmn.md).\n59\t\n60\t## 3. Connector (`Intsvc.*`) enrichment\n61\t\n62\tFor connector types (`requiresDiscovery: Yes`, e.g.\n63\t`Intsvc.ActivityExecution`, `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`),\n64\tresolve a live connection and object, then enrich:\n65\t\n66\t```bash\n67\tuip is connections list --all-folders --output json   # pick a connection id + its connector (search all folders)\n68\tuip maestro bpmn registry get Intsvc.ActivityExecution \\\n69\t    --connection-id <id> --object-name <object> --output json\n70\t```\n71\t\n72\tThe response adds an `ISEnrichment` block with the live field metadata. Write\n73\tthe activity's `body` input (`target=\"body\"`) and `context` (`connectorKey`,\n74\t`objectName`) from that enrichment — do not hand-author connector schemas. The\n75\tconnection is referenced through a connection binding, `=bindings.<bindingId>`\n76\t(see §4).\n77\t\n78\t## 4. Bindings — from `bindingInfo`, never invented\n79\t\n80\tA node that targets a cloud resource carries a binding. The `bindingInfo` on the\n81\textension type tells you the binding shape; the concrete value comes from\n82\tdiscovery or the user.\n83\t\n84\t- **Resource bindings** (`bindingInfo.resource` = `process` / `queue` /\n85\t  `businessRule`): the context field named by `bindingInfo.contextField`\n86\t  (e.g. `releaseKey`, `queueName`) holds the resource key\n87\t  (`bindingInfo.propertyAttribute`, usually `Key`). Resolve the real key with\n88\t  `registry search` / discovered `Processes` / `Queues`; never guess a GUID.\n89\t- **Connection bindings** (`Intsvc.*`): the context references a connection via\n90\t  `=bindings.<bindingId>`, and a `<uipath:binding>` of `resource=\"Connection\"`\n91\t  with `propertyAttribute=\"ConnectionId\"` in the process-level\n92\t  `<uipath:bindings>` holds the live connection id from `uip is connections list`.\n93\t\n94\tDeclare all bindings in a single process-level `<uipath:bindings version=\"v1\">`\n95\tblock. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`,\n96\tand a `default` value (the resolved key/id).\n97\t\n98\t## Agent wrapper selection — pick by `processType`, not the label\n99\t\n100\tWhen a node invokes an agent, choose the wrapper by the resource's\n101\t**`processType`** (from `uip or processes list --all-fields`), not its display\n102\tlabel:\n103\t\n104\t- Coded Python agents publish as `processType: \"Function\"` — use the\n105\t  `Orchestrator.StartJob` process contract, **not** `StartAgentJob`.\n106\t- Agent Builder (low-code) publishes as `processType: \"Agent\"` →\n107\t  `Orchestrator.StartAgentJob`.\n108\t- External A2A agent addressed by URL / skillId → `A2A.AgentExecution`.\n109\t- Integration Service external agent → `Intsvc.*AgentExecution`.\n110\t\n111\tGotcha: `A2A.AgentExecution` renders as an external A2A node and **disables the\n112\tAction dropdown** in Studio Web. Do not use it for a folder-deployed agent — the\n113\tcanvas treats the task as misconfigured. Use `StartAgentJob`/`StartJob` for\n114\tfolder-deployed resources.\n115\t\n116\t## API workflow — wait vs fire-and-forget\n117\t\n118\tPick the wrapper by whether downstream needs the invocation result:\n119\t`Orchestrator.ExecuteApiWorkflow` **waits** for completion (result available to\n120\tlater nodes); `Orchestrator.ExecuteApiWorkflowAsync` **returns immediately**\n121\t(fire-and-forget). Both are `bpmn:serviceTask` activities. Resolve `ReleaseKey`\n122\t(process GUID), `FolderKey`/`FolderPath`, and the request/response schemas before\n123\tthe node is runnable — make the wait-versus-async choice explicit in the model.\n124\t\n125\t## Integration Service triggers — bind trigger properties via the CLI\n126\t\n127\t`Intsvc.TimerTrigger` and `Intsvc.EventTrigger` (and connector waits like\n128\t`Intsvc.WaitForEvent`) need their **trigger properties** enriched/bound through\n129\tthe CLI — the same enrichment path as `Intsvc.*` activities (§3). A hand-authored\n130\ttrigger shell stays **draft** until the CLI supplies the concrete trigger\n131\tproperties, connection binding, and schemas.\n132\t\n133\t## Connectionless vs connector HTTP\n134\t\n135\t- **Connector activity** (`Intsvc.ActivityExecution` / a connector-authenticated\n136\t  operation): use when the call goes through a tenant connection, a dynamic\n137\t  connector schema, or a connector object operation. Keep the node **draft**\n138\t  until enriched. The CLI-owned enrichment blockers — the ones that must be\n139\t  resolved before upload or run, and that boundary notes should name explicitly\n140\t  — are **connection binding**, **dynamic schemas**, generated **package\n141\t  metadata** (`bindings_v2.json`, `entry-points.json`, `operate.json`,\n142\t  `package-descriptor.json`). Do not hand-author any of these (§3).\n143\t- **Connectionless / manual HTTP** (`Intsvc.HttpExecution`, or\n144\t  `Intsvc.UnifiedHttpRequest` when current tooling exposes the unified shape):\n145\t  use when the workflow itself owns the URL, method, payload, and response\n146\t  parsing (no connection). Author `mode=\"manual\"`, `method`, `url`, `headers`,\n147\t  `parameters`, `body` directly from the registry template.\n148\t\n149\tStatus vocabulary for an IS node in a summary: **executable** (activity, inputs,\n150\toutput variable, and downstream mappings present, runtime-verified if a run was\n151\tdone), **draft** (BPMN shape/intent present but enrichment missing), **mock**\n152\t(returns fixed sample data instead of calling out), **blocked** (a required URL,\n153\tauth, schema, or enrichment decision is missing).\n154\t\n155\t## 5. Assemble\n156\t\n157\t1. Build the document scaffold and process (see\n158\t   [structural-bpmn.md](structural-bpmn.md)).\n159\t2. Declare root variables (`BPMN.Variables` template) and the\n160\t   `<uipath:bindings>` block.\n161\t3. For each node, paste its `registry get` `xmlTemplate`, fill placeholders, and\n162\t   wire `{incomingEdge}`/`{outgoingEdge}` to your sequence flows.\n163\t4. Author the structural BPMN the registry does not emit: sequence flows,\n164\t   gateway conditions/defaults, event definitions, boundary events,\n165\t   subprocess/call-activity containers, multi-instance markers.\n166\t5. Generate the `bpmndi:BPMNDiagram` (shape per node, edge per flow).\n167\t6. Validate (see [structural-bpmn.md#validation](structural-bpmn.md#validation)).\n168\t\n169\t## OOTB extension types (29, login-free)\n170\t\n171\tThese are the built-in types `registry pull` returns without login. Discover the\n172\texact template for any of them with `registry get <type>`.\n173\t\n174\t| Extension type | Host element | Tag |\n175\t| --- | --- | --- |\n176\t| `Actions.HITL` | `bpmn:UserTask` | activity |\n177\t| `Orchestrator.StartJob` | `bpmn:ServiceTask` | activity |\n178\t| `Orchestrator.StartAgentJob` | `bpmn:ServiceTask` | activity |\n179\t| `Orchestrator.BusinessRules` | `bpmn:BusinessRuleTask` | activity |\n180\t| `Orchestrator.ExecuteApiWorkflowAsync` | `bpmn:ServiceTask` | activity |\n181\t| `Orchestrator.CreateQueueItem` | `bpmn:SendTask` | activity |\n182\t| `Orchestrator.CreateAndWaitForQueueItem` | `bpmn:ServiceTask` | activity |\n183\t| `Orchestrator.StartAgenticProcess[Async]` | `bpmn:CallActivity` | activity |\n184\t| `Orchestrator.StartCaseMgmtProcess[Async]` | `bpmn:CallActivity` | activity |\n185\t| `Intsvc.ActivityExecution` | `bpmn:SendTask` | event/activity |\n186\t| `Intsvc.HttpExecution` / `Intsvc.UnifiedHttpRequest` | `bpmn:SendTask` | activity |\n187\t| `Intsvc.WaitForEvent` | `bpmn:ReceiveTask` | event |\n188\t| `Intsvc.EventTrigger` | `bpmn:StartEvent` | event |\n189\t| `Intsvc.TimerTrigger` | `bpmn:StartEvent` | activity |\n190\t| `Intsvc.{Async,SyncAgent,AsyncAgent,SyncWorkflow,AsyncWorkflow}Execution` | `bpmn:ServiceTask` | activity |\n191\t| `A2A.AgentExecution` | `bpmn:ServiceTask` | activity |\n192\t| `BPMN.Variables` | `bpmn:Task` | mapping |\n193\t| `BPMN.ScriptTask` | `bpmn:ScriptTask` | mapping |\n194\t| `Maestro.ReceiveMessageEvent` | `bpmn:IntermediateCatchEvent` | event |\n195\t| `Maestro.SendMessageEvent` | `bpmn:IntermediateThrowEvent` | event |\n196\t| `Maestro.CaseRulesEvaluator` / `Maestro.CaseManagerGuardrails` | `bpmn:ServiceTask` | activity |\n197\t\n198\tThis table is a discovery aid, not a substitute for `registry get` — always pull\n199\tthe live template before authoring.\n200\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 2816
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_018F1tAu45MVTZHg1vh6JRos",
+          "assistant_turn_index": 5,
+          "timestamp": "2026-07-20T23:32:50.086049",
+          "duration_ms": 25493.55412297882,
+          "generation_completed_at": "2026-07-20T23:32:50.086049",
+          "execution_started_at": "2026-07-20T23:32:50.086144",
+          "execution_completed_at": "2026-07-20T23:33:15.579698",
+          "parameters": {
+            "command": "mkdir -p /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence && uip maestro bpmn registry pull 2>&1",
+            "description": "Create output dir and pull registry cache"
+          },
+          "result_status": "success",
+          "result_summary": "Checking for updates.\nUpdating UiPath CLI, tools, and skills to version 1.197.x.\nUpdate succeeded: 14 tool(s) updated.\nRe-running the requested command on the updated CLI.\n{\n  \"Result\": \"Success\",\n  \"Code\": \"RegistryPullSuccess\",\n  \"Data\": {\n    \"ExtensionTypeCount\": 30,\n    \"ConnectorCount\": 0,\n    \"ProcessCount\": 0,\n    \"ProcessCountsByType\": {\n      \"Process\": 0,\n      \"ProcessOrchestration\": 0,\n      \"Agent\": 0,\n      \"Flow\": 0,\n      \"Api\": 0,\n      \"Function\": 0,\n      \"CaseManagement\": 0,\n      \"BusinessRules\": 0\n    },\n    \"FromCache\": false,\n    \"CacheWritten\": true,\n    \"Message\": \"Synced fresh registry. Only built-in (OOTB) extension types synced. Run 'uip login' to discover connectors and processes.\"\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "RegistryPullSuccess",
+            "Data": {
+              "ExtensionTypeCount": 30,
+              "ConnectorCount": 0,
+              "ProcessCount": 0,
+              "ProcessCountsByType": {
+                "Process": 0,
+                "ProcessOrchestration": 0,
+                "Agent": 0,
+                "Flow": 0,
+                "Api": 0,
+                "Function": 0,
+                "CaseManagement": 0,
+                "BusinessRules": 0
+              },
+              "FromCache": false,
+              "CacheWritten": true,
+              "Message": "Synced fresh registry. Only built-in (OOTB) extension types synced. Run 'uip login' to discover connectors and processes."
+            }
+          },
+          "sequence_number": 2,
+          "result_tokens": 182
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01BxHq2gXqyJwm4UHiNjyhGi",
+          "assistant_turn_index": 6,
+          "timestamp": "2026-07-20T23:33:18.117404",
+          "duration_ms": 1971.1930009070784,
+          "generation_completed_at": "2026-07-20T23:33:18.117404",
+          "execution_started_at": "2026-07-20T23:33:18.117605",
+          "execution_completed_at": "2026-07-20T23:33:20.088798",
+          "parameters": {
+            "command": "uip maestro bpmn registry list --limit -1 --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/registry-catalog.json 2>&1 && echo \"done\"",
+            "description": "Capture full registry catalog as JSON"
+          },
+          "result_status": "success",
+          "result_summary": "done",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 3,
+          "result_tokens": 1
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01L5PMT4vsX9jiWBzanzfBoD",
+          "assistant_turn_index": 8,
+          "timestamp": "2026-07-20T23:33:23.419267",
+          "duration_ms": 5850.938395014964,
+          "generation_completed_at": "2026-07-20T23:33:23.419267",
+          "execution_started_at": "2026-07-20T23:33:23.419314",
+          "execution_completed_at": "2026-07-20T23:33:29.270252",
+          "parameters": {
+            "command": "uip maestro bpmn registry search agent --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/search-agent.json 2>&1 && uip maestro bpmn registry search queue --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/search-queue.json 2>&1 && uip maestro bpmn registry search connector --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/search-connector.json 2>&1 && echo \"done\"",
+            "description": "Search registry for agent, queue, and connector types"
+          },
+          "result_status": "success",
+          "result_summary": "done",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 4,
+          "result_tokens": 1
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01YKRsanxGbs7GvxUfbVVPDD",
+          "assistant_turn_index": 9,
+          "timestamp": "2026-07-20T23:33:33.031374",
+          "duration_ms": 9954.051070963033,
+          "generation_completed_at": "2026-07-20T23:33:33.031374",
+          "execution_started_at": "2026-07-20T23:33:33.031602",
+          "execution_completed_at": "2026-07-20T23:33:42.985653",
+          "parameters": {
+            "command": "uip maestro bpmn registry get Orchestrator.StartAgentJob --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-StartAgentJob.json 2>&1 && uip maestro bpmn registry get Orchestrator.CreateQueueItem --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-CreateQueueItem.json 2>&1 && uip maestro bpmn registry get Orchestrator.CreateAndWaitForQueueItem --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-CreateAndWaitForQueueItem.json 2>&1 && uip maestro bpmn registry get Intsvc.ActivityExecution --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-Intsvc.ActivityExecution.json 2>&1 && uip maestro bpmn registry get A2A.AgentExecution --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-A2A.AgentExecution.json 2>&1 && echo \"done\"",
+            "description": "Get detailed registry records for agent, queue, and connector types"
+          },
+          "result_status": "success",
+          "result_summary": "done",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 5,
+          "result_tokens": 1
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_0195mFV3Wo4fprCPgQuUuCj2",
+          "assistant_turn_index": 10,
+          "timestamp": "2026-07-20T23:33:45.748583",
+          "duration_ms": 723.7564750248566,
+          "generation_completed_at": "2026-07-20T23:33:45.748583",
+          "execution_started_at": "2026-07-20T23:33:45.748820",
+          "execution_completed_at": "2026-07-20T23:33:46.472576",
+          "parameters": {
+            "command": "ls -la /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/ && for f in /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/*.json; do echo \"=== $f ===\"; python3 -c \"import json,sys; d=json.load(open('$f')); print('Result:', d.get('Result','?'), '| Code:', d.get('Code','?'))\"; done",
+            "description": "List files and verify all captures succeeded"
+          },
+          "result_status": "success",
+          "result_summary": "total 52\ndrwxr-xr-x 2 root root 4096 Jul 20 23:33 .\ndrwxr-xr-x 4 root root 4096 Jul 20 23:32 ..\n-rw-r--r-- 1 root root 2823 Jul 20 23:33 get-A2A.AgentExecution.json\n-rw-r--r-- 1 root root 2835 Jul 20 23:33 get-CreateAndWaitForQueueItem.json\n-rw-r--r-- 1 root root 2726 Jul 20 23:33 get-CreateQueueItem.json\n-rw-r--r-- 1 root root 4070 Jul 20 23:33 get-Intsvc.ActivityExecution.json\n-rw-r--r-- 1 root root 2551 Jul 20 23:33 get-StartAgentJob.json\n-rw-r--r-- 1 root root 9774 Jul 20 23:33 registry-catalog.json\n-rw-r--r-- 1 root root 2610 Jul 20 23:33 search-agent.json\n-rw-r--r-- 1 root root 2955 Jul 20 23:33 search-connector.json\n-rw-r--r-- 1 root root  991 Jul 20 23:33 search-queue.json\n=== /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-A2A.AgentExecution.json ===\nResult: Success | Code: RegistryGetSuccess\n=== /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-CreateAndWaitForQueueItem.json ===\nResult: Success | Code: RegistryGetSuccess\n=== /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-CreateQueueItem.json ===\nResult: Success | Code: RegistryGetSuccess\n=== /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-Intsvc.ActivityExecution.json ===\nResult: Success | Code: RegistryGetSuccess\n=== /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-StartAgentJob.json ===\nResult: Success | Code: RegistryGetSuccess\n=== /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/registry-catalog.json ===\nResult: Success | Code: RegistryListSuccess\n=== /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/search-agent.json ===\nResult: Success | Code: RegistrySearchSuccess\n=== /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/search-connector.json ===\nResult: Success | Code: RegistrySearchSuccess\n=== /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/search-queue.json ===\nResult: Success | Code: RegistrySearchSuccess",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 6,
+          "result_tokens": 506
+        }
+      ],
+      "timestamp": "2026-07-20T23:33:52.926093",
+      "duration_seconds": 80.62200603308156,
+      "token_usage": {
+        "uncached_input_tokens": 519,
+        "output_tokens": 2336,
+        "cache_creation_input_tokens": 11983,
+        "cache_read_input_tokens": 211523,
+        "total_cost_usd": 0.14499015,
+        "input_tokens": 224025
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 12,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:32:32.303382",
+          "completed_at": "2026-07-20T23:32:35.379021",
+          "generation_duration_ms": 3075.6659600883722,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants me to use the `uip` CLI's Maestro BPMN registry surface to discover documented wrapper surface for agent, queue, and connector resource types. I need to save evidence locally in a `registry-evidence/` directory.\n\nLet me start by invoking the uipath-maestro-bpmn skill to understand the CLI capabilities, and then explore the registry commands.",
+              "signature": "ErEECmcIDxABGAIqQNEFFQFZT1lCPn8R8mURxNw5312jRV8RF82qdv2oozZ9IsYhiKuUgVrbVbdvNIHhQxBjzXcqTGx5LaT9pl722JIyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgzJW4zIDKeXCqHa+FgaDJIQWHRdzdwZSIBqwCIwJRkTbE42jBCAmTq8tAnb88gEovdgHgK3qAR2lwSpqiDxsC2zO2DxhqfehWtL4U6gKvcCK+y2kXLyxhP+inYepbq42TntaVwRtu5ieg6dlrhJ1ivTDTZX4Zhg8HrfmOKn5GMbeVdpOECsM2PyyjXXhSL5fj1PoyGiFWMOHOo+flT5o99fglD4CCWzFz54RYnjBlkyB3E/TU33jgoyJbm2Up+2gp3Ul01V91VArlEMIGuHVRyVhNCWW87y0NP42p09y8RYa1PnSGKHU40FrmastcUP2b8tJ+53fuTcj8lNsHhN+Wzs6ucLN5qAAR2YY2DKQJwAdlqCf3wsPU7WDJdJJpiLZyPkwvcKmkM1qafZ2pnt5V8mgahw86K5se1QbNK3kOy+4GnSs1rV4S7dGlzCCBx9wchePWSdMoNlWM4yE5VWaVqwBNoPMQdenBn2mA45+jfCIB4jJnozSfPloWacCdFlfzJcA1q0LGmGFHZ6SG4CDfGaIAolfdfcAWDfC8gaHA0aZHVWnnzHc9+Z0C3ZVEK/9le3OEDOsw3NJbGAKePTPJSwfe2fjbKxGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 121,
+          "cache_creation_tokens": 1720,
+          "cache_read_tokens": 18954,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01SwYkTK5txhoe25TGKLc448",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:32:35.379021",
+          "completed_at": "2026-07-20T23:32:37.270888",
+          "generation_duration_ms": 1891.868726001121,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Ca5tkZz4HwecnbsgSP37M2",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Ca5tkZz4HwecnbsgSP37M2"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 162,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01SwYkTK5txhoe25TGKLc448",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:32:37.296135",
+          "completed_at": "2026-07-20T23:32:39.611552",
+          "generation_duration_ms": 2315.4201889410615,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me read the registry-workflow reference to understand how to use the registry CLI commands, then plan the discovery steps.",
+              "signature": "EskCCmcIDxABGAIqQKF5ftSeYqijBEAz6FYdOinds/NQLIVWn72ULeC49F1NAgq9rK9zRKNGuvBplSeUkXai2glEyahT/FuvgcA1EegyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgzm12PKLJObEYyN1cAaDFzAR+ZepBEHH7MieiIwGMGY3WPgBL8GXTB0qsqLcq4JLP2kDlvzxuHAMgkulIFP1oCniqDNCu+bhjbxw3JeKo8BUh8LkTy4pBjmTUvc8HGEeJl4f5enRd2B+9q10X90q7z2Y6HbGQhBsMP30s5cBrp6Wq0jps7F/tDi6kdgxEwqQffMVAoolkxaxuoku1j4v2vlJYJdT/pfopn/QTnw+aJpXLtKHfUz0xCPG4iVRSNyZ8zrL7xB5Vd4ysIQaqbJ/C7r8bjZ6YFcknIVExjmMw8YAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 3,
+          "output_tokens": 65,
+          "cache_creation_tokens": 4396,
+          "cache_read_tokens": 20674,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_017NPabm8zPtwhV4uo7PXX36",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:32:39.611552",
+          "completed_at": "2026-07-20T23:32:40.485960",
+          "generation_duration_ms": 874.4071050314233,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01L52XxeVKK1rNGu3gjC7Ej2",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01L52XxeVKK1rNGu3gjC7Ej2"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 59,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_017NPabm8zPtwhV4uo7PXX36",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:32:40.494802",
+          "completed_at": "2026-07-20T23:32:50.075327",
+          "generation_duration_ms": 9580.523601034656,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have a clear picture of the registry workflow. Let me plan the full sequence of operations:\n\n1. First, I need to create the `registry-evidence/` directory under `/work/output/artifacts/skill-bpmn-registry-discovery`\n2. Pull the registry cache: `uip maestro bpmn registry pull`\n3. Get the full catalog: `uip maestro bpmn registry list --limit -1 --output json` → save as `registry-catalog.json`\n4. Search for agent wrapper types: `uip maestro bpmn registry search agent --output json` → save as `registry-search-agent.json`\n5. Search for queue wrapper types: `uip maestro bpmn registry search queue --output json` → save as `registry-search-queue.json`\n6. Retrieve detailed records for specific wrapper types like `Orchestrator.StartAgentJob` and `Orchestrator.CreateQueueItem` to capture their full JSON definitions\n\n.\n\nI should organize this into three execution phases: first create the directory and pull the registry, then run the list and search commands in parallel, and finally fetch the detailed records for individual wrapper types.",
+              "signature": "EvwMCmcIDxABGAIqQOZO3B+3R6vlmW5ygmIaeYjxVrdUCxH3F04PdG5VLW1EEeC7zY0ENcndyrLdY5qIeqYtMbMHcJ7IV/CUnr3zKkYyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxICwcQCDzEOPKOX9IaDCIT8pz887HZKrJdByIwEOmNbBcQFvRZzGnhVwMQxMrkE3+0yp0a3ryqXzO/F+HL1fA3ZprrLAsHV9PVV8/uKsILS+PY3nT3QRrHFF15xSejDx7E/lFOfEv58vu9ab5r0KC6bL16eUI489SV1UD0FS2V8Re3CUgvTKUD9a2nXGlk3HLNbaKWzwacofv4SwXha53QPvgT+aRmnPHf50/gNCBLx8RnNdiGDytzSXFfeHpibLYFqmxrL4Qp+2Vy95rMVw+rEhC2NU3su2ZLOqEvotYTRLxtiD9MSrtTgilSBsVGrA6NYR3BNH73e4y35Eos31SUufW1CTvNOgYKPdv9oOhOZZ48oUDV9GJ6RnTmS3u3N3LCXRZIxwn1SRVKG68GVegaP+GHufwb/yBNI9FHl2AFVY75017aDGG6CccnTxyg1+BfIhXgFPpgqOwb2TejAZYBDS1knd7bVN0AxC5Rztd+P+ruibHa5qdt6ZdJzZtMbH3DgTUvv4nGKluum10xOWFjhoutIo4a1Lb9ws5EXvOwdl52CuhlQ3Bbc++ugUGPSrvS3MY+PtjXya0IuZjJ8R6ziqr6JIM+XLyCpOPwzIwI3G1KH0NnbZ/XTQYjX0exkMAueFvukHU9buKUIXmolvbHGdeSkBqV9xGN2SdY3sXMO9AbJ1+/3OrCl3bH7YuLDVYvYDxlDyKVSNfBt8o79KIWJWmudQPwbui4NU4it9hFeWKAAAwljyuNg+XKlc/xTcTaUZ74b22U3+rnL+HCYu/CXKNJPEjbP+acAbzBvBMstz4mDTUVokDw3JSVEzL8qAq20e50EsjkixqMGZO4irWTgjn1tMZX//6QB23PbebpiNu58kemBcwlNj8riEIwokSitsN/765KAMNbHzR7BmjBksjUOjkmrJFwC1nrGBj6dRiPihi1cyTER31ZBO2oLUqdgLENgjSPmRu41AJaABeTp4uu1zhylFhs8n020MNu2HKdcgllMwKZvrHupssrQE0Bb/OGKVbqjBde28yQTjVqyQ67PnANctrTNcwRtdw/tbiuT6Od+phjpuO1IjMi8aSPepSz/ommpPWlsydp7G3RcgU0o5j0njrg7JkRr1b+vhJSCxLkXzJc4IEJghjbKLkTQ78s6xtBLTkIcd0QAFgJRX0QnpMOG9v6XkteINneykVWdZLjWX+3YqlHLEjQBavnwS2KLMz8KOLAPtLP0Rv58w3Fp4x0kTITRVgUQx+cnuB0APAP3wOwTQ57ZqwrcSbTberyFR+ufwEP/vjwCngul0z+f+zotywr8F8wSnS6aZ8Qp7+L3HP1FCYs8Yx7LsoZr1+/n3CkRsaT4hhAakMQQg3dKgIlCMFtxNSSRTY0JtrmYw5goynvHsHfQKB8iFjvdDTKz5iUe2uTZ5XLX73F4Jz1d8+N0gExDi24YttYlti4R8MIW5+4sHLejnVvvL7EMHThdIlgreUmSl9kfwCJm/i9x7zX28ZFJn0rSjEOdpLtckb7uFJTrNVWnwdBpQOvIpUrQZtGZXDsS4Z6Ql6cBQAzoio7aMKK0WFltVqC4ZlUiC7/IaNN5v+DtRkm6aY0F347Li/DqTUnKnBBz6X+h1rwAO7lderXGYa3l1lKyQpQ7JjhwCE7+f8RNTtQ8ItXWuV6MZ0XKKA0xiAWIPT8zUfuits5+iNXa1IPUbuEeJwtqNvawyOzjNXOvdUKyZ353pBzc1qId1K8KGwbnolXWZKoDuYBf/o7HNMyJK2J3wsM3l/h9p1nLWz0L1ehcknjT7oafsgVVG6RBKvksLcXxIkrGPbUO3A1XrHCOSBXbTQJXi0+tpBI0XGAPXgyA/+VG9o+AZKCuOKQWwT0q6wAq26J4n9mIbeM6Uv6NgLhIhJMipcJDjuvsdBZiVnVqY7ePGK0WiisjAQ7k2ryTx7QXvGT704PxvkeIg5HT3Fzpx8OFYU+pS6yjgr53IQGSpNDHsrO6BkjxikjByI9UDc5Xz/2XKqkBGLuq42OnjJsxNMuyEBUYXH45AAcsQvcngpN0pufodqAvoOTiJflqej1yBgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 436,
+          "cache_creation_tokens": 3726,
+          "cache_read_tokens": 25070,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_014ZYjQQcYtHjx2aD9LGibYc",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:32:50.075327",
+          "completed_at": "2026-07-20T23:32:50.086049",
+          "generation_duration_ms": 10.723434970714152,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_018F1tAu45MVTZHg1vh6JRos",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_018F1tAu45MVTZHg1vh6JRos"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 82,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_014ZYjQQcYtHjx2aD9LGibYc",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:33:15.579616",
+          "completed_at": "2026-07-20T23:33:18.117404",
+          "generation_duration_ms": 2537.7875060075894,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01BxHq2gXqyJwm4UHiNjyhGi",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01BxHq2gXqyJwm4UHiNjyhGi"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 128,
+          "cache_creation_tokens": 381,
+          "cache_read_tokens": 28796,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01We2VThfvzL6QwSF9iiXuCn",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:33:20.088760",
+          "completed_at": "2026-07-20T23:33:21.844911",
+          "generation_duration_ms": 1756.1520989984274,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now capture filtered lookups for agent and queue wrapper types, and detailed records for one of each:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 36,
+          "cache_creation_tokens": 141,
+          "cache_read_tokens": 29177,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01DB5rxo6NQvKRzxgKV33bAF",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:33:21.844911",
+          "completed_at": "2026-07-20T23:33:23.419267",
+          "generation_duration_ms": 1574.3557839887217,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01L5PMT4vsX9jiWBzanzfBoD",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01L5PMT4vsX9jiWBzanzfBoD"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 204,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01DB5rxo6NQvKRzxgKV33bAF",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:33:29.270224",
+          "completed_at": "2026-07-20T23:33:33.031374",
+          "generation_duration_ms": 3761.1505649983883,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01YKRsanxGbs7GvxUfbVVPDD",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01YKRsanxGbs7GvxUfbVVPDD"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 379,
+          "cache_creation_tokens": 253,
+          "cache_read_tokens": 29318,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01QAhUjz2FUzRkV14Kt7Mw9s",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:33:42.985622",
+          "completed_at": "2026-07-20T23:33:45.748583",
+          "generation_duration_ms": 2762.9613449098542,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_0195mFV3Wo4fprCPgQuUuCj2",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_0195mFV3Wo4fprCPgQuUuCj2"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 184,
+          "cache_creation_tokens": 392,
+          "cache_read_tokens": 29571,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_015rjoxYphzyHSCzLPHu3qHn",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:33:46.472544",
+          "completed_at": "2026-07-20T23:33:52.892112",
+          "generation_duration_ms": 6419.567730044946,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "All 9 JSON evidence files captured successfully. Here's a summary of what was saved under `registry-evidence/`:\n\n---\n\n## Registry Evidence — Summary\n\n**Directory:** `/work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/`\n\n| File | CLI call | Purpose |\n|---|---|---|\n| `registry-catalog.json` | `registry list --limit -1 --output json` | Full OOTB registry catalog (30 extension types) |\n| `search-agent.json` | `registry search agent --output json` | Filtered lookup for agent wrapper types |\n| `search-queue.json` | `registry search queue --output json` | Filtered lookup for queue wrapper types |\n| `search-connector.json` | `registry search connector --output json` | Filtered lookup for connector wrapper types |\n| `get-StartAgentJob.json` | `registry get Orchestrator.StartAgentJob --output json` | Detailed record for the low-code Agent Builder wrapper |\n| `get-A2A.AgentExecution.json` | `registry get A2A.AgentExecution --output json` | Detailed record for the external A2A agent wrapper |\n| `get-CreateQueueItem.json` | `registry get Orchestrator.CreateQueueItem --output json` | Detailed record for the queue send wrapper |\n| `get-CreateAndWaitForQueueItem.json` | `registry get Orchestrator.CreateAndWaitForQueueItem --output json` | Detailed record for the queue wait wrapper |\n| `get-Intsvc.ActivityExecution.json` | `registry get Intsvc.ActivityExecution --output json` | Detailed record for the Integration Service connector wrapper |\n\nAll calls returned `Result: Success`. The registry was synced fresh (30 OOTB extension types, no login required). Nothing was uploaded, published, deployed, or run, and no IDs were invented.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 454,
+          "cache_creation_tokens": 974,
+          "cache_read_tokens": 29963,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Dq3uzVifjptisZ1X9kWbmh",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "reconciliation",
+          "input_tokens": 508,
+          "output_tokens": 26,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "note": "Tokens the agent billed but never surfaced as a generation (fixed prompt overhead + sub-agent input/cache the stream doesn't bubble up). Booked here so the transcript reconciles to the turn total."
+        }
+      ],
+      "num_turns": 9,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "All 9 JSON evidence files captured successfully. Here's a summary of what was saved under `registry-evidence/`:\n\n---\n\n## Registry Evidence — Summary\n\n**Directory:** `/work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/`\n\n| File | CLI call | Purpose |\n|---|---|---|\n| `registry-catalog.json` | `registry list --limit -1 --output json` | Full OOTB registry catalog (30 extension types) |\n| `search-agent.json` | `registry search agent --output json` | Filtered lookup for agent wrapper types |\n| `search-queue.json` | `registry search queue --output json` | Filtered lookup for queue wrapper types |\n| `search-connector.json` | `registry search connector --output json` | Filtered lookup for connector wrapper types |\n| `get-StartAgentJob.json` | `registry get Orchestrator.StartAgentJob --output json` | Detailed record for the low-code Agent Builder wrapper |\n| `get-A2A.AgentExecution.json` | `registry get A2A.AgentExecution --output json` | Detailed record for the external A2A agent wrapper |\n| `get-CreateQueueItem.json` | `registry get Orchestrator.CreateQueueItem --output json` | Detailed record for the queue send wrapper |\n| `get-CreateAndWaitForQueueItem.json` | `registry get Orchestrator.CreateAndWaitForQueueItem --output json` | Detailed record for the queue wait wrapper |\n| `get-Intsvc.ActivityExecution.json` | `registry get Intsvc.ActivityExecution --output json` | Detailed record for the Integration Service connector wrapper |\n\nAll calls returned `Result: Success`. The registry was synced fresh (30 OOTB extension types, no login required). Nothing was uploaded, published, deployed, or run, and no IDs were invented."
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.197.0-alpha.20260626.7673",
+    "tool_plugins": {
+      "agent-tool": "1.197.0-alpha.20260626.7673",
+      "agenthub-tool": "1.197.0-alpha.20260626.7673",
+      "codedagent-tool": "1.197.0-alpha.20260626.7673",
+      "data-fabric-tool": "1.197.0-alpha.20260626.7673",
+      "functions-tool": "1.197.0-alpha.20260626.7673",
+      "gov-tool": "1.197.0-alpha.20260626.7673",
+      "insights-tool": "1.197.0-alpha.20260626.7673",
+      "integrationservice-tool": "1.197.0-alpha.20260626.7673",
+      "ixp-tool": "1.197.0-alpha.20260626.7673",
+      "maestro-tool": "1.197.0-alpha.20260626.7673",
+      "orchestrator-tool": "1.197.0-alpha.20260626.7673",
+      "solution-tool": "1.197.0-alpha.20260626.7673",
+      "tasks-tool": "1.197.0-alpha.20260626.7673",
+      "test-manager-tool": "1.197.0-alpha.20260626.7673"
+    },
+    "coder_eval": "0.8.4",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.46.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 60,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-bpmn-registry-discovery",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-bpmn-registry-discovery",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-bpmn-registry-discovery",
+      "description": "Registry discovery eval: agent uses the Maestro BPMN registry surface to discover documented agent, queue, and connector wrapper types and to save public-safe CLI evidence for the skill's supported-element map without inventing private resource metadata. Requires the `uip` CLI on PATH.\n",
+      "initial_prompt": "Use the installed `uip` CLI's Maestro BPMN registry surface to discover the\ndocumented wrapper surface for agent, queue, and connector resource types.\nSave evidence locally without uploading, publishing, deploying, debugging, or\nrunning anything.\n\nRequirements:\n- Save outputs under a local `registry-evidence/` directory you create.\n- Capture raw JSON evidence for the overall registry catalog, a filtered\n  lookup for at least one documented agent or queue wrapper type, and the\n  detailed registry record for at least one documented wrapper type.\n- Use `--output json` for parsed CLI calls and write only the raw JSON output\n  files into `registry-evidence/`.\n- Do not invent connection IDs, folder keys, tenant URLs, real connector\n  keys, or release keys.\n- Do not upload, publish, deploy, debug, or run anything.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-bpmn",
+        "integration",
+        "lifecycle:inspect",
+        "connector",
+        "feature:connections",
+        "resource"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": null,
+        "mock_path_dirs": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "file_exists",
+          "description": "Registry discovery evidence directory was created",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "registry-evidence"
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent ran a Maestro BPMN registry list call",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+list",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent ran a Maestro BPMN registry search call",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+search",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent ran a Maestro BPMN registry get call",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+get",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "run_command",
+          "description": "Registry evidence covers documented agent, queue, and connector wrapper types",
+          "weight": 4.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "command": "python3 $TASK_DIR/check_registry_discovery.py",
+          "timeout": 30,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        }
+      ],
+      "run_limits": {
+        "max_turns": 60,
+        "expected_turns": 28,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-bpmn-registry-discovery\ndescription: >\n  Registry discovery eval: agent uses the Maestro BPMN registry surface to\n  discover documented agent, queue, and connector wrapper types and to save\n  public-safe CLI evidence for the skill's supported-element map without\n  inventing private resource metadata. Requires the `uip` CLI on PATH.\ntags: [uipath-maestro-bpmn, integration, \"lifecycle:inspect\", connector, \"feature:connections\", resource]\n\nrun_limits:\n  expected_turns: 28\n  max_turns: 60\ninitial_prompt: |\n  Use the installed `uip` CLI's Maestro BPMN registry surface to discover the\n  documented wrapper surface for agent, queue, and connector resource types.\n  Save evidence locally without uploading, publishing, deploying, debugging, or\n  running anything.\n\n  Requirements:\n  - Save outputs under a local `registry-evidence/` directory you create.\n  - Capture raw JSON evidence for the overall registry catalog, a filtered\n    lookup for at least one documented agent or queue wrapper type, and the\n    detailed registry record for at least one documented wrapper type.\n  - Use `--output json` for parsed CLI calls and write only the raw JSON output\n    files into `registry-evidence/`.\n  - Do not invent connection IDs, folder keys, tenant URLs, real connector\n    keys, or release keys.\n  - Do not upload, publish, deploy, debug, or run anything.\n\nsuccess_criteria:\n  - type: file_exists\n    description: \"Registry discovery evidence directory was created\"\n    path: \"registry-evidence\"\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent ran a Maestro BPMN registry list call\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+list'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent ran a Maestro BPMN registry search call\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+search'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent ran a Maestro BPMN registry get call\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+get'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: run_command\n    description: \"Registry evidence covers documented agent, queue, and connector wrapper types\"\n    command: \"python3 $TASK_DIR/check_registry_discovery.py\"\n    timeout: 30\n    expected_exit_code: 0\n    weight: 4.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/connector/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 60,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 28,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 1,
+        "source": "default",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 7,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Read": 1,
+      "Bash": 5
+    },
+    "total_command_time_ms": 44013.66780686658,
+    "avg_command_time_ms": 6287.666829552369,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 25493.55412297882,
+        "parameters": {
+          "command": "mkdir -p /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence && uip maestro bpmn registry pull 2>&1",
+          "description": "Create output dir and pull registry cache"
+        },
+        "tool_id": "toolu_bdrk_018F1tAu45MVTZHg1vh6JRos"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 9954.051070963033,
+        "parameters": {
+          "command": "uip maestro bpmn registry get Orchestrator.StartAgentJob --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-StartAgentJob.json 2>&1 && uip maestro bpmn registry get Orchestrator.CreateQueueItem --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-CreateQueueItem.json 2>&1 && uip maestro bpmn registry get Orchestrator.CreateAndWaitForQueueItem --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-CreateAndWaitForQueueItem.json 2>&1 && uip maestro bpmn registry get Intsvc.ActivityExecution --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-Intsvc.ActivityExecution.json 2>&1 && uip maestro bpmn registry get A2A.AgentExecution --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/get-A2A.AgentExecution.json 2>&1 && echo \"done\"",
+          "description": "Get detailed registry records for agent, queue, and connector types"
+        },
+        "tool_id": "toolu_bdrk_01YKRsanxGbs7GvxUfbVVPDD"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 5850.938395014964,
+        "parameters": {
+          "command": "uip maestro bpmn registry search agent --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/search-agent.json 2>&1 && uip maestro bpmn registry search queue --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/search-queue.json 2>&1 && uip maestro bpmn registry search connector --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/search-connector.json 2>&1 && echo \"done\"",
+          "description": "Search registry for agent, queue, and connector types"
+        },
+        "tool_id": "toolu_bdrk_01L5PMT4vsX9jiWBzanzfBoD"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 1971.1930009070784,
+        "parameters": {
+          "command": "uip maestro bpmn registry list --limit -1 --output json > /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/registry-catalog.json 2>&1 && echo \"done\"",
+          "description": "Capture full registry catalog as JSON"
+        },
+        "tool_id": "toolu_bdrk_01BxHq2gXqyJwm4UHiNjyhGi"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 723.7564750248566,
+        "parameters": {
+          "command": "ls -la /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/ && for f in /work/output/artifacts/skill-bpmn-registry-discovery/registry-evidence/*.json; do echo \"=== $f ===\"; python3 -c \"import json,sys; d=json.load(open('$f')); print('Result:', d.get('Result','?'), '| Code:', d.get('Code','?'))\"; done",
+          "description": "List files and verify all captures succeeded"
+        },
+        "tool_id": "toolu_bdrk_0195mFV3Wo4fprCPgQuUuCj2"
+      }
+    ],
+    "successful_commands": 7,
+    "failed_commands": 0,
+    "unknown_commands": 0,
+    "success_rate": 100.0,
+    "most_common_sequence": "Bash → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 519,
+    "output_tokens": 2336,
+    "cache_creation_input_tokens": 11983,
+    "cache_read_input_tokens": 211523,
+    "total_cost_usd": 0.14499015,
+    "input_tokens": 224025
+  },
+  "total_assistant_turns": 12,
+  "expected_commands": null,
+  "actual_commands": 7,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.003011465072631836,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <!-- Read-only inputs presented to the reviewer -->
+        <uipath:inputOutput id="Var_ExpenseAmount" name="ExpenseAmount" type="number" />
+        <uipath:inputOutput id="Var_RequesterName" name="RequesterName" type="string" />
+        <uipath:inputOutput id="Var_Category" name="Category" type="string" />
+        <!-- HITL output: bound to the Actions.HITL activity output -->
+        <uipath:inputOutput id="Var_HITLResult" name="HITLResult" type="object" />
+        <!-- Optional reviewer comments captured via HITLResult fields -->
+        <uipath:inputOutput id="Var_ApprovalDecision" name="ApprovalDecision" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Start event (manual / none trigger) -->
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_StartToHITL</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- HITL user task: reviewer sees expense details and fills in decision + comments -->
+    <bpmn:userTask id="Task_ExpenseReview" name="Expense Review">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="appId" value="expense-approval-app" />
+            <uipath:input name="appVersion" value="1" />
+            <uipath:input name="actions" value="approve,reject" />
+            <uipath:input name="key" value="expense-review-folder" />
+            <uipath:input name="taskTitle" value="Review Expense Request" />
+          </uipath:context>
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{
+  "expenseAmount": "=vars.Var_ExpenseAmount",
+  "requesterName": "=vars.Var_RequesterName",
+  "category": "=vars.Var_Category"
+}]]></uipath:input>
+          <uipath:output name="Process response" type="Actions.HITL" var="Var_HITLResult" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToHITL</bpmn:incoming>
+      <bpmn:outgoing>Flow_HITLToGateway</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- Exclusive gateway: branch on reviewer's decision captured in Var_HITLResult -->
+    <bpmn:exclusiveGateway id="Gw_Decision" name="Approved?" default="Flow_Rejected">
+      <bpmn:incoming>Flow_HITLToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Approved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Rejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- Approved branch: record approval task -->
+    <bpmn:task id="Task_RecordApproval" name="Record Approval">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="approvalDecision" type="string" var="Var_ApprovalDecision" source="=vars.Var_HITLResult.approvalDecision" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Approved</bpmn:incoming>
+      <bpmn:outgoing>Flow_ApprovalToEnd</bpmn:outgoing>
+    </bpmn:task>
+
+    <!-- End: approved path -->
+    <bpmn:endEvent id="End_Approved" name="Approved">
+      <bpmn:incoming>Flow_ApprovalToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- End: rejected / not approved path -->
+    <bpmn:endEvent id="End_Rejected" name="Rejected">
+      <bpmn:incoming>Flow_Rejected</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToHITL" sourceRef="Start_1" targetRef="Task_ExpenseReview" />
+    <bpmn:sequenceFlow id="Flow_HITLToGateway" sourceRef="Task_ExpenseReview" targetRef="Gw_Decision" />
+    <bpmn:sequenceFlow id="Flow_Approved" sourceRef="Gw_Decision" targetRef="Task_RecordApproval">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_HITLResult.approvalDecision == "approved"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Rejected" sourceRef="Gw_Decision" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="Flow_ApprovalToEnd" sourceRef="Task_RecordApproval" targetRef="End_Approved" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <!-- Start -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <!-- HITL user task -->
+      <bpmndi:BPMNShape id="S_Task_ExpenseReview" bpmnElement="Task_ExpenseReview">
+        <dc:Bounds x="250" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <!-- Exclusive gateway -->
+      <bpmndi:BPMNShape id="S_Gw_Decision" bpmnElement="Gw_Decision">
+        <dc:Bounds x="410" y="93" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <!-- Record Approval task -->
+      <bpmndi:BPMNShape id="S_Task_RecordApproval" bpmnElement="Task_RecordApproval">
+        <dc:Bounds x="520" y="40" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <!-- End Approved -->
+      <bpmndi:BPMNShape id="S_End_Approved" bpmnElement="End_Approved">
+        <dc:Bounds x="680" y="62" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <!-- End Rejected -->
+      <bpmndi:BPMNShape id="S_End_Rejected" bpmnElement="End_Rejected">
+        <dc:Bounds x="520" y="160" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_StartToHITL" bpmnElement="Flow_StartToHITL">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="250" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_HITLToGateway" bpmnElement="Flow_HITLToGateway">
+        <di:waypoint x="350" y="118" />
+        <di:waypoint x="410" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Approved" bpmnElement="Flow_Approved">
+        <di:waypoint x="435" y="93" />
+        <di:waypoint x="435" y="80" />
+        <di:waypoint x="520" y="80" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Rejected" bpmnElement="Flow_Rejected">
+        <di:waypoint x="435" y="143" />
+        <di:waypoint x="435" y="178" />
+        <di:waypoint x="520" y="178" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ApprovalToEnd" bpmnElement="Flow_ApprovalToEnd">
+        <di:waypoint x="620" y="80" />
+        <di:waypoint x="680" y="80" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

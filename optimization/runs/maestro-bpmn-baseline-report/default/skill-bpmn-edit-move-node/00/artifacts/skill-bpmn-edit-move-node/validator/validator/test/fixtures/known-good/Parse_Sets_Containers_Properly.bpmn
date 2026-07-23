@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="sample-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="UiPath Studio Web (https://uipath.com)" exporterVersion="43dd6ef2">
+    <bpmn:process id="Process_1" isExecutable="false">
+        <bpmn:extensionElements>
+            <uipath:variables version="v1">
+                <uipath:inputOutput id="vDXal4Qhm" name="taskAOutput" type="integer" elementId="Activity_O7K38W" custom="true" />
+            </uipath:variables>
+        </bpmn:extensionElements>
+        <bpmn:startEvent id="Event_start" name="Start event">
+            <bpmn:extensionElements>
+                <uipath:entryPointId value="3d9a2c9f-1b35-4ead-a87d-78fefac657d6" />
+            </bpmn:extensionElements>
+            <bpmn:outgoing>edge_Event_start-Activity_O7K38W</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:task id="Activity_O7K38W" name="TaskA">
+            <bpmn:extensionElements>
+                <uipath:mapping version="v1">
+                    <uipath:type value="BPMN.Variables" version="v1" />
+                    <uipath:output name="taskAOutput" type="integer" source="1" var="vDXal4Qhm" custom="true" />
+                </uipath:mapping>
+            </bpmn:extensionElements>
+            <bpmn:incoming>edge_Event_start-Activity_O7K38W</bpmn:incoming>
+            <bpmn:outgoing>edge_Activity_O7K38W-Event_ne79NF5UGban</bpmn:outgoing>
+        </bpmn:task>
+        <bpmn:endEvent id="Event_ne79NF" name="End event">
+            <bpmn:incoming>edge_Activity_35dWAT-Event_ne79NFOvCDHt</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:subProcess id="Activity_M8FPEr">
+            <bpmn:incoming>edge_Activity_O7K38W-Event_ne79NF5UGban</bpmn:incoming>
+            <bpmn:outgoing>edge_Activity_M8FPEr-Activity_35dWATr68pqb</bpmn:outgoing>
+            <bpmn:startEvent id="Event_AouFrp">
+                <bpmn:outgoing>edge_Event_AouFrp-Activity_M2alZF</bpmn:outgoing>
+            </bpmn:startEvent>
+            <bpmn:task id="Activity_M2alZF" name="TaskB">
+                <bpmn:incoming>edge_Event_AouFrp-Activity_M2alZF</bpmn:incoming>
+                <bpmn:outgoing>edge_Activity_M2alZF-Event_ZvsloB</bpmn:outgoing>
+            </bpmn:task>
+            <bpmn:endEvent id="Event_ZvsloB">
+                <bpmn:incoming>edge_Activity_M2alZF-Event_ZvsloB</bpmn:incoming>
+            </bpmn:endEvent>
+            <bpmn:sequenceFlow id="edge_Event_AouFrp-Activity_M2alZF" sourceRef="Event_AouFrp" targetRef="Activity_M2alZF" />
+            <bpmn:sequenceFlow id="edge_Activity_M2alZF-Event_ZvsloB" sourceRef="Activity_M2alZF" targetRef="Event_ZvsloB" />
+        </bpmn:subProcess>
+        <bpmn:task id="Activity_35dWAT" name="TaskC">
+            <bpmn:incoming>edge_Activity_M8FPEr-Activity_35dWATr68pqb</bpmn:incoming>
+            <bpmn:outgoing>edge_Activity_35dWAT-Event_ne79NFOvCDHt</bpmn:outgoing>
+        </bpmn:task>
+        <bpmn:sequenceFlow id="edge_Event_start-Activity_O7K38W" sourceRef="Event_start" targetRef="Activity_O7K38W" />
+        <bpmn:sequenceFlow id="edge_Activity_O7K38W-Event_ne79NF5UGban" sourceRef="Activity_O7K38W" targetRef="Activity_M8FPEr" />
+        <bpmn:sequenceFlow id="edge_Activity_M8FPEr-Activity_35dWATr68pqb" sourceRef="Activity_M8FPEr" targetRef="Activity_35dWAT" />
+        <bpmn:sequenceFlow id="edge_Activity_35dWAT-Event_ne79NFOvCDHt" sourceRef="Activity_35dWAT" targetRef="Event_ne79NF" />
+    </bpmn:process>
+    <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+        <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+            <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+                <dc:Bounds x="200" y="53" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="200" y="94" width="36" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="S_Activity_O7K38W" bpmnElement="Activity_O7K38W">
+                <dc:Bounds x="283" y="31" width="100" height="80" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="283" y="116" width="100" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="S_Event_ne79NF" bpmnElement="Event_ne79NF">
+                <dc:Bounds x="966" y="53" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="966" y="94" width="36" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="S_Activity_M8FPEr" bpmnElement="Activity_M8FPEr" isExpanded="true">
+                <dc:Bounds x="422.98125000000005" y="-4" width="372" height="150" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="422.98125000000005" y="151" width="372" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="S_Event_AouFrp" bpmnElement="Event_AouFrp">
+                <dc:Bounds x="467.98125000000005" y="53" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="467.98125000000005" y="94" width="36" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="S_Activity_M2alZF" bpmnElement="Activity_M2alZF">
+                <dc:Bounds x="557.98125" y="31" width="100" height="80" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="557.98125" y="116" width="100" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="S_Event_ZvsloB" bpmnElement="Event_ZvsloB">
+                <dc:Bounds x="708.98125" y="53" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="708.98125" y="94" width="36" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="S_Activity_35dWAT" bpmnElement="Activity_35dWAT">
+                <dc:Bounds x="832.98125" y="31" width="100" height="80" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="832.98125" y="116" width="100" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge id="BPMNEdge_edge_Event_start-Activity_O7K38W" bpmnElement="edge_Event_start-Activity_O7K38W">
+                <di:waypoint x="236" y="71" />
+                <di:waypoint x="283" y="71" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="BPMNEdge_edge_Activity_O7K38W-Event_ne79NF5UGban" bpmnElement="edge_Activity_O7K38W-Event_ne79NF5UGban">
+                <di:waypoint x="383" y="71" />
+                <di:waypoint x="423" y="71" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="BPMNEdge_edge_Event_AouFrp-Activity_M2alZF" bpmnElement="edge_Event_AouFrp-Activity_M2alZF">
+                <di:waypoint x="504" y="71" />
+                <di:waypoint x="558" y="71" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="BPMNEdge_edge_Activity_M2alZF-Event_ZvsloB" bpmnElement="edge_Activity_M2alZF-Event_ZvsloB">
+                <di:waypoint x="658" y="71" />
+                <di:waypoint x="709" y="71" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="BPMNEdge_edge_Activity_M8FPEr-Activity_35dWATr68pqb" bpmnElement="edge_Activity_M8FPEr-Activity_35dWATr68pqb">
+                <di:waypoint x="795" y="71" />
+                <di:waypoint x="833" y="71" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="BPMNEdge_edge_Activity_35dWAT-Event_ne79NFOvCDHt" bpmnElement="edge_Activity_35dWAT-Event_ne79NFOvCDHt">
+                <di:waypoint x="933" y="71" />
+                <di:waypoint x="966" y="71" />
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</bpmn:definitions>

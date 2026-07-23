@@ -1,0 +1,70 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Orchestrator.CreateQueueItem",
+      "Label": "Create queue item",
+      "BpmnElement": "bpmn:SendTask",
+      "Placements": {
+        "Activity": {
+          "Type": "bpmn:SendTask"
+        }
+      },
+      "ExtensionTag": "uipath:activity",
+      "ContextFields": [
+        {
+          "Name": "queueName",
+          "DisplayName": "Queue name",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null,
+          "BindingInfo": {
+            "Resource": "queue",
+            "ResourceKeyPattern": "${metadata.key}",
+            "PropertyAttribute": "Key"
+          }
+        },
+        {
+          "Name": "folderId",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        },
+        {
+          "Name": "folderPath",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        }
+      ],
+      "InputPattern": "mergedBody",
+      "InputName": "ItemData",
+      "InputTarget": "body",
+      "OutputSource": null,
+      "OutputType": "Orchestrator.CreateQueueItem",
+      "OutputName": "response",
+      "UseRelativeSource": true,
+      "BindingPattern": "queue",
+      "BindingInfo": {
+        "Resource": "queue",
+        "ResourceKeyPattern": "${metadata.key}",
+        "PropertyAttribute": "Key",
+        "ContextField": "queueName"
+      },
+      "RequiresDiscovery": true,
+      "IsDynamic": true,
+      "XmlTemplate": "<bpmn:SendTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.CreateQueueItem\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"queueName\" value=\"{queueName}\" />\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\n      </uipath:context>\n      <uipath:input name=\"ItemData\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"response\" type=\"Orchestrator.CreateQueueItem\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:SendTask>",
+      "DiscoveryNotes": "Uses getQueueDefinitions(serviceType, search) to list available queues"
+    }
+  }
+}

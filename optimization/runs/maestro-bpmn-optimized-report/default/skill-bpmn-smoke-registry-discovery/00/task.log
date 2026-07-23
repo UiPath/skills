@@ -1,0 +1,28 @@
+2026-07-20 23:32:09 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/home/azureuser/.npm-global/lib/node_modules/@uipath from `uip` at /home/azureuser/.npm-global/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:32:09 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-20 23:32:09 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-20 23:32:09 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-20 23:32:09 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/home/azureuser/.npm-global/lib/node_modules/@uipath from `uip` at /home/azureuser/.npm-global/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:32:10 [DEBUG] coder_eval.orchestrator: Sending prompt: I want to author a UiPath Maestro BPMN process that starts an RPA job and
+waits for an internal mess...
+2026-07-20 23:32:10 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-20 23:33:03 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 8a85e103-d67f-44f1-8ed6-b68dcf4ecff4
+2026-07-20 23:33:03 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-20 23:33:03 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/home/azureuser/.npm-global/lib/node_modules/@uipath from `uip` at /home/azureuser/.npm-global/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:33:03 [DEBUG] coder_eval.orchestrator: Agent response received (3166 chars)
+2026-07-20 23:33:03 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-20 23:33:03 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:33:03 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:33:03 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-20 23:33:03 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Raw registry evidence covers the RPA-job and receive-message types': python3 $TASK_DIR/check_registry_discovery.py
+2026-07-20 23:33:03 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_registry_discovery.py' exited with code 0
+2026-07-20 23:33:03 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: registry-evidence covers Orchestrator.StartJob, Maestro.ReceiveMessageEvent across 4 raw output files
+---
+2026-07-20 23:33:03 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-20 23:33:03 [INFO] coder_eval.orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+2026-07-20 23:33:03 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/home/azureuser/.npm-global/lib/node_modules/@uipath from `uip` at /home/azureuser/.npm-global/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-20 23:33:03 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-20 23:33:03 [INFO] coder_eval.orchestrator: Sandbox preserved to: runs/maestro-bpmn-optimized-report-1/default/skill-bpmn-smoke-registry-discovery/00/artifacts/skill-bpmn-smoke-registry-discovery
+2026-07-20 23:33:03 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=54.1s score=1.000 iterations=1

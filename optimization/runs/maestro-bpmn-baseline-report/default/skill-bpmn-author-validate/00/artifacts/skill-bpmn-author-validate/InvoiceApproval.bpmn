@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_InvoiceAmount" name="InvoiceAmount" type="number" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Blank start event -->
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_StartToGw</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Exclusive gateway: Amount check -->
+    <bpmn:exclusiveGateway id="Gw_AmountCheck" name="Amount check" default="Flow_Default">
+      <bpmn:incoming>Flow_StartToGw</bpmn:incoming>
+      <bpmn:outgoing>Flow_HighAmount</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Default</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- End event: conditioned branch (amount over threshold) -->
+    <bpmn:endEvent id="End_HighAmount" name="Amount Over Threshold">
+      <bpmn:incoming>Flow_HighAmount</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- End event: default branch -->
+    <bpmn:endEvent id="End_Default" name="Default">
+      <bpmn:incoming>Flow_Default</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToGw" sourceRef="Start_1" targetRef="Gw_AmountCheck" />
+
+    <bpmn:sequenceFlow id="Flow_HighAmount" sourceRef="Gw_AmountCheck" targetRef="End_HighAmount">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_InvoiceAmount > 1000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_Default" sourceRef="Gw_AmountCheck" targetRef="End_Default" />
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Shapes -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Gw_AmountCheck" bpmnElement="Gw_AmountCheck">
+        <dc:Bounds x="270" y="93" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_HighAmount" bpmnElement="End_HighAmount">
+        <dc:Bounds x="420" y="50" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_Default" bpmnElement="End_Default">
+        <dc:Bounds x="420" y="160" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_StartToGw" bpmnElement="Flow_StartToGw">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="270" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_HighAmount" bpmnElement="Flow_HighAmount">
+        <di:waypoint x="295" y="93" />
+        <di:waypoint x="295" y="68" />
+        <di:waypoint x="420" y="68" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Default" bpmnElement="Flow_Default">
+        <di:waypoint x="295" y="143" />
+        <di:waypoint x="295" y="178" />
+        <di:waypoint x="420" y="178" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

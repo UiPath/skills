@@ -1,0 +1,2242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-contract-variant-wrappers · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-contract-variant-wrappers</h1>
+    <div class="subtitle">XML contract eval: agent authors public-safe Maestro BPMN wrappers for documented Orchestrator, A2A, queue, business-rule, call-activity, message-event, case-management, wait-event, migration, and preserve-only extension variants.</div>
+  </div>
+  <div class="badges">
+    <span class="badge failure">FAILURE</span>
+    <span class="score-pill score-low">0.17</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">10m 47s</span>
+    <span class="badge neutral">$1.7535</span>
+    <span class="badge warning">expected_turns exceeded (52/20)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-21T00:15:19</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">10m 47s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">75</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">51</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(1/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>file_exists</td>
+  <td>BPMN source was created</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">File &#x27;ContractVariantsBpmn/ContractVariantsBpmn.bpmn&#x27; exists</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Contract variant wrappers use the documented BPMN element types</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_contract_variant_wrappers.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_contract_variant_wrappers.py
+Exit code: 1 (expected: 0)
+Stdout: (empty)
+Stderr:
+FAIL: missing bpmn:serviceTask with Orchestrator.StartAgentJob uipath:activity shell</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">75 assistant turns</span>
+      <span class="badge neutral">in 1478 · out 39753 · cache 2869931</span>
+      <span class="badge neutral">10m 46s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-contract-variant-wrappers
+
+Create a local BPMN project named &quot;ContractVariantsBpmn&quot;.
+Use synthetic placeholder resource names only. Do not include tenant URLs,
+folder keys, connection IDs, queue IDs, release keys, real process names, or
+real user names.
+
+The BPMN must include a public-safe process that manually starts, visits each
+wrapper below, and ends:
+- `bpmn:serviceTask` with `Orchestrator.StartAgentJob`.
+- `bpmn:serviceTask` with `A2A.AgentExecution`.
+- `bpmn:serviceTask` with `Orchestrator.ExecuteApiWorkflowAsync`.
+- `bpmn:businessRuleTask` with `Orchestrator.BusinessRules`.
+- `bpmn:sendTask` with `Orchestrator.CreateQueueItem`.
+- `bpmn:serviceTask` with `Orchestrator.CreateAndWaitForQueueItem`.
+- `bpmn:callActivity` with `Orchestrator.StartAgenticProcess`.
+- `bpmn:callActivity` with `Orchestrator.StartAgenticProcessAsync`.
+- `bpmn:callActivity` with `Orchestrator.StartCaseMgmtProcess`; if a
+  case-management payload is needed, mark it preserve-only and synthetic.
+- `bpmn:callActivity` with `Orchestrator.StartCaseMgmtProcessAsync`; keep it
+  synthetic and do not invent deployment identifiers.
+- `bpmn:receiveTask` with `Intsvc.WaitForEvent`; keep connector details
+  placeholder-safe and do not hand-author private connection metadata.
+- `bpmn:intermediateThrowEvent` with `Maestro.SendMessageEvent`; keep the
+  message name and payload synthetic.
+- `bpmn:serviceTask` with `Maestro.CasePlanScheduler`; mark it draft-only or
+  preserve-only and keep all payloads synthetic.
+- `bpmn:serviceTask` with `Maestro.CaseManagerGuardrails`; mark it
+  preserve-only and keep all payloads synthetic.
+- `bpmn:serviceTask` with `Maestro.CaseRulesEvaluator`; mark it preserve-only
+  and keep all payloads synthetic.
+- Preserve numeric `uipath:migrationVersion` values `5`, `11`, and `11.5`.
+- Preserve a legacy `uipath:scriptVersion` value `v2` on a script task while
+  still following the skill guidance that new scripts should</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Good. Now let me pull the registry and get all the required templates in parallel.
+[ASSISTANT] All needed types confirmed. Now get all templates in parallel:
+[ASSISTANT] The key is `XmlTemplate` (capital X). Let me get all templates properly:
+[ASSISTANT] Now I have all the templates. Let me create the project directory and write the BPMN file:
+[ASSISTANT] Now I have everything I need. Key observations from the templates:
+1. `Orchestrator.StartAgentJob` uses the OLD format: `&lt;uipath:activity type=&quot;...&quot; version=&quot;v1&quot;&gt;` (no `&lt;bpmn:extensionElements&gt;` wrapper, type as attribute)
+2. All others use the NEW format: `&lt;bpmn:extensionElements&gt;&lt;uipath:activity version=&quot;v1&quot;&gt;&lt;uipath:type value=&quot;...&quot; version=&quot;v1&quot; /&gt;&lt;/uipath:activity&gt;...&lt;/bpmn:extensionElements&gt;`
+3. `Maestro.CasePlanScheduler` is NOT in registry — must be a preserve-only typed shell
+4. `Intsvc.WaitForEvent` — needs placeholder-safe connector details (no connection ID)
+5. `Maestro.SendMessageEvent` uses `&lt;bpmn:messageEventDefinition /&gt;` (bare, no messageRef)
+[ASSISTANT] Now validate:
+[ASSISTANT] Three errors to fix:
+1. `A2A.AgentExecution` — `agentUrl` required in body
+2. `Intsvc.WaitForEvent` — `connectionId` required (binding)
+3. `Maestro.SendMessageEvent` — `Reference` must be non-empty
+[ASSISTANT] The validator is not seeing my edits. It&#x27;s parsing from the `body` JSON but looking at it differently. Let me check how the validator parses the A2A input and SendMessage input — the issue is the validator looks for these as separate `uipath:input` elements, not inside the CDATA JSON body.
+[ASSISTANT] The issue is that the validator uses `requiredFieldNames` from the static spec. It checks `bpmn-spec.json` for required fields that are absent. So `agentUrl` and `Reference` are listed as required in the spec. For `A2A.AgentExecution`, they go as separate `uipath:input` elements, not inside the CDATA JSON body. Let me check the model to understand the parsing:
+[ASSISTANT] Now I understand the issue completely. For `A2A.AgentExecution`, the validator checks for `agentUrl`, `skillId`, `input`, `authToken`, `agentName` as required fields in `uipath.inputs`. The template uses `inputPattern: &quot;mergedBody&quot;` which means all fields go into a single JSON body in one `uipath:input name=&quot;body&quot;` element. But the validator still checks them as individual `uipath:input` elements by name.
+
+For `Maestro.SendMessageEvent`, `Reference` needs to be a named `uipath:input` element.
+
+Let me check how the validator sees what&#x27;s inside the CDATA body vs separate inputs:
+[ASSISTANT] The model stores `body` for each input (the CDATA content), but it does NOT parse the JSON inside and project fields by name. Therefore, the only way to satisfy the required-field check is to add each required field as a named `uipath:input` element.
+
+For `A2A.AgentExecution` with `inputPattern: &quot;mergedBody&quot;`, the input fields are encoded as individual `uipath:input` elements matching each field name, then merged into the JSON body by the canvas serializer. For the BPMN XML, they should appear as separate named inputs.
+
+For `Maestro.SendMessageEvent` with `inputPattern: &quot;splitInputsItemData&quot;`, similarly `Reference` should be a separate `uipath:input` element.
+[ASSISTANT] `VALID` (exit 0). The two warnings (`MISSING_RESOURCE`) are expected — queue items can&#x27;t have real bound resources with synthetic placeholder IDs. The parse warning is about the `Task_StartAgentJob` node which uses the old template format (`&lt;uipath:activity type=&quot;...&quot; version=&quot;v1&quot;&gt;` as a direct child of `&lt;bpmn:serviceTask&gt;` without `&lt;bpmn:extensionElements&gt;`). Let me check that template format again and fix it to use extensionElements:
+
+Actually, looking at the warning: line 49 is `&lt;uipath:activity type=&quot;Orchestrator.StartAgentJob&quot; version=&quot;v1&quot;&gt;`. The template from the registry for `Orchestrator.StartAgentJob` uses the old format without `&lt;bpmn:extensionElements&gt;`, and the PARSE WARNING says &quot;unrecognized element `&lt;uipath:activity&gt;`&quot; — it&#x27;s placed as a</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (51)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">699ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Structural BPMN (what the registry does not emit)
+2	
+3	The registry&#x27;s `xmlTemplate`s give you the `uipath:*` payload for each node
+4	(see [registry-workflow.md](registry-workflow.md)). They do **not** give you the
+5	structural BPMN that holds those nodes together. This file is the ground truth
+6	for everything you author by hand around the templates.
+7	
+8	Two sources define the contract:
+9	
+10	- the registry spec `bpmn-spec.json` — enumerates which BPMN element types and
+11	  event definitions exist, via its `bpmnElements` section;
+12	- the Studio Web canvas serializer
+13	  (`PO.Frontend/src/services/serialization/`) — defines how that XML must be
+14	  shaped to import and round-trip.
+15	
+16	Where the registry stops, the canvas serializer is authoritative. Each
+17	gap below is labelled **REGISTRY GAP** — the registry exposes no template for
+18	it, so author it from this reference.
+19	
+20	## The document scaffold (REGISTRY GAP)
+21	
+22	The registry emits no `&lt;bpmn:definitions&gt;` / `&lt;bpmn:process&gt;` root and no
+23	namespace declarations. Author this shell yourself. The canvas import detector
+24	(`exporter.ts`) requires: a root `&lt;…:definitions&gt;` carrying a BPMN-spec
+25	namespace, at 
+
+… (truncated, 27299 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/public-safety.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Public Safety
+2	
+3	This skill is intended for a public skills repository. Keep all content, examples, fixtures, logs, and commits safe to publish.
+4	
+5	## Never include
+6	
+7	- Raw exported BPMN from customers, tenants, demos, or operator-supplied examples.
+8	- Tenant URLs, organization names, folder keys, connection IDs, release keys, queue IDs, process IDs, user IDs, or email addresses.
+9	- Private process names, business payloads, screenshots, exported package contents, or traces.
+10	- Local absolute paths from developer machines.
+11	- Temporary mission notes, task transcripts, or Rookery-only context.
+12	- Internal-only repository paths as runtime instructions for the skill user.
+13	
+14	## Use instead
+15	
+16	- Synthetic process names such as `InvoiceApproval`.
+17	- Synthetic element IDs such as `Task_ValidateRequest`.
+18	- Placeholder resource labels such as `&lt;PROCESS_NAME&gt;`, `&lt;FOLDER_KEY&gt;`, or `&lt;CONNECTION_NAME&gt;` when the user must provide a real value.
+19	- Short structural examples that demonstrate XML shape without private data.
+20	- Summaries of behavior rather than copied private XML.
+21	
+22	## Review checklist
+23	
+24	Before committing:
+25	
+26	- Search changed files fo
+
+… (truncated, 312 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.44s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; uip maestro bpmn registry pull 2&gt;&amp;1 | tail -5&quot;,
+  &quot;description&quot;: &quot;Pull BPMN registry (cached)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>    &quot;FromCache&quot;: false,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh registry. Only built-in (OOTB) extension types synced. Run &#x27;uip login&#x27; to discover connectors and processes.&quot;
+  }
+}
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.08s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; uip maestro bpmn registry list --output json 2&gt;/dev/null | python3 -c \&quot;import json,sys; data=json.load(sys.stdin); [print(item.get(&#x27;type&#x27;,&#x27;&#x27;)) for item in data.get(&#x27;items&#x27;, data) if isinstance(data,dict) else [print(item) for item in data]]\&quot; 2&gt;/dev/null || uip maestro bpmn registry list 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;List registry types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryListSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypes&quot;: [
+      {
+        &quot;ExtensionType&quot;: &quot;uipath:Activity&quot;,
+        &quot;Label&quot;: &quot;Canvas activity&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;none&quot;,
+        &quot;BindingPattern&quot;: &quot;none&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;No&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Actions.HITL&quot;,
+        &quot;Label&quot;: &quot;Create action app task&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:UserTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;none&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.StartJob&quot;,
+        &quot;Label&quot;: &quot;Start and wait for RPA workflow&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;process&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.StartAgentJob&quot;,
+        &quot;Label&quot;: &quot;Start and wait for agent&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;:
+
+… (truncated, 833 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.73s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; uip maestro bpmn registry list 2&gt;&amp;1 | grep -E \&quot;ExtensionType|BpmnElement\&quot; | head -80&quot;,
+  &quot;description&quot;: &quot;List all registry extension types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>    &quot;ExtensionTypes&quot;: [
+        &quot;ExtensionType&quot;: &quot;uipath:Activity&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionType&quot;: &quot;Actions.HITL&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:UserTask&quot;,
+        &quot;ExtensionType&quot;: &quot;Orchestrator.StartJob&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionType&quot;: &quot;Orchestrator.StartAgentJob&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionType&quot;: &quot;Orchestrator.BusinessRules&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:BusinessRuleTask&quot;,
+        &quot;ExtensionType&quot;: &quot;Intsvc.ActivityExecution&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:SendTask&quot;,
+        &quot;ExtensionType&quot;: &quot;Intsvc.HttpExecution&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:SendTask&quot;,
+        &quot;ExtensionType&quot;: &quot;Intsvc.UnifiedHttpRequest&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:SendTask&quot;,
+        &quot;ExtensionType&quot;: &quot;Intsvc.WaitForEvent&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ReceiveTask&quot;,
+        &quot;ExtensionType&quot;: &quot;Intsvc.EventTrigger&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:StartEvent&quot;,
+        &quot;ExtensionType&quot;: &quot;Intsvc.AsyncExecution&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionType&quot;: &quot;Intsvc.SyncAgentExecution&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionType&quot;: &quot;Intsvc.AsyncAgentExecution&quot;,
+        &quot;Bpm
+
+… (truncated, 1822 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27.65s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; for t in Orchestrator.StartAgentJob A2A.AgentExecution Orchestrator.ExecuteApiWorkflowAsync Orchestrator.BusinessRules Orchestrator.CreateQueueItem Orchestrator.CreateAndWaitForQueueItem Orchestrator.StartAgenticProcess Orchestrator.StartAgenticProcessAsync Orchestrator.StartCaseMgmtProcess Orchestrator.StartCaseMgmtProcessAsync … (405 more chars)&quot;,
+  &quot;description&quot;: &quot;Get all registry templates to file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /tmp/templates.txt&quot;,
+  &quot;description&quot;: &quot;Read all templates&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== Orchestrator.StartAgentJob ===
+NOT_FOUND
+=== A2A.AgentExecution ===
+NOT_FOUND
+=== Orchestrator.ExecuteApiWorkflowAsync ===
+NOT_FOUND
+=== Orchestrator.BusinessRules ===
+NOT_FOUND
+=== Orchestrator.CreateQueueItem ===
+NOT_FOUND
+=== Orchestrator.CreateAndWaitForQueueItem ===
+NOT_FOUND
+=== Orchestrator.StartAgenticProcess ===
+NOT_FOUND
+=== Orchestrator.StartAgenticProcessAsync ===
+NOT_FOUND
+=== Orchestrator.StartCaseMgmtProcess ===
+NOT_FOUND
+=== Orchestrator.StartCaseMgmtProcessAsync ===
+NOT_FOUND
+=== Intsvc.WaitForEvent ===
+NOT_FOUND
+=== Maestro.SendMessageEvent ===
+NOT_FOUND
+=== Maestro.CasePlanScheduler ===
+NOT_FOUND
+=== Maestro.CaseManagerGuardrails ===
+NOT_FOUND
+=== Maestro.CaseRulesEvaluator ===
+NOT_FOUND
+=== BPMN.ScriptTask ===
+NOT_FOUND</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.72s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; uip maestro bpmn registry get Orchestrator.StartAgentJob --output json 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Debug registry get raw output&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;Orchestrator.StartAgentJob&quot;,
+      &quot;Label&quot;: &quot;Start and wait for agent&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+      &quot;Placements&quot;: {
+        &quot;Activity&quot;: {
+          &quot;Type&quot;: &quot;bpmn:ServiceTask&quot;
+        }
+      },
+      &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+      &quot;ContextFields&quot;: [
+        {
+          &quot;Name&quot;: &quot;name&quot;,
+          &quot;DisplayName&quot;: &quot;Agent&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: true,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: true,
+          &quot;DefaultValue&quot;: null,
+          &quot;BindingInfo&quot;: {
+            &quot;Resource&quot;: &quot;process&quot;,
+            &quot;ResourceKeyPattern&quot;: &quot;${metadata.key}&quot;,
+            &quot;PropertyAttribute&quot;: &quot;name&quot;
+          }
+        },
+        {
+          &quot;Name&quot;: &quot;folderPath&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: true,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: true,
+          &quot;DefaultValue&quot;: null,
+          &quot;BindingInfo&quot;: {
+            &quot;Resource&quot;: &quot;process&quot;,
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.68s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; uip maestro bpmn registry get Orchestrator.StartAgentJob --output json 2&gt;&amp;1 | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); print(json.dumps(d.get(&#x27;Data&#x27;,{}), indent=2))\&quot; | grep -A5 \&quot;xmlTemplate\\|XmlTemplate\\|template\\|Template\&quot; | head -30&quot;,
+  &quot;description&quot;: &quot;Find template key in registry get response&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>    &quot;XmlTemplate&quot;: &quot;&lt;bpmn:ServiceTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;uipath:activity type=\&quot;Orchestrator.StartAgentJob\&quot; version=\&quot;v1\&quot;&gt;\n    &lt;uipath:context&gt;\n      &lt;uipath:input name=\&quot;name\&quot; value=\&quot;=bindings.{nameBindingId}\&quot; /&gt;\n      &lt;uipath:input name=\&quot;folderPath\&quot; value=\&quot;=bindings.{folderPathBindingId}\&quot; /&gt;\n    &lt;/uipath:context&gt;\n    &lt;uipath:input name=\&quot;JobArguments\&quot; type=\&quot;json\&quot; target=\&quot;bodyField\&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;\n    &lt;uipath:output name=\&quot;Process response\&quot; type=\&quot;Orchestrator.RunJob\&quot; var=\&quot;{varId}\&quot; /&gt;\n  &lt;/uipath:activity&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;\n&lt;/bpmn:ServiceTask&gt;&quot;,
+    &quot;DiscoveryNotes&quot;: &quot;Uses getSupportedOrchestratorTasks(&#x27;agent&#x27;, search) to list available agents&quot;
+  }
+}
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27.30s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; for t in Orchestrator.StartAgentJob A2A.AgentExecution Orchestrator.ExecuteApiWorkflowAsync Orchestrator.BusinessRules Orchestrator.CreateQueueItem Orchestrator.CreateAndWaitForQueueItem Orchestrator.StartAgenticProcess Orchestrator.StartAgenticProcessAsync Orchestrator.StartCaseMgmtProcess Orchestrator.StartCaseMgmtProcessAsync … (411 more chars)&quot;,
+  &quot;description&quot;: &quot;Get all templates with correct key&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.00s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; uip maestro bpmn registry get Orchestrator.StartAgentJob --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\ndata = d.get(&#x27;Data&#x27;,{})\nfor k,v in data.items():\n    print(k, &#x27;:&#x27;, repr(v)[:100])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect Data keys from registry get&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>ExtensionType : {&#x27;ExtensionType&#x27;: &#x27;Orchestrator.StartAgentJob&#x27;, &#x27;Label&#x27;: &#x27;Start and wait for agent&#x27;, &#x27;BpmnElement&#x27;:
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.78s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; uip maestro bpmn registry get Orchestrator.StartAgentJob --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\n# search recursively for XmlTemplate or xmlTemplate\ndef find(obj, depth=0):\n    if isinstance(obj, dict):\n        for k,v in obj.items():\n            if &#x27;template&#x27; in k.lower() or &#x27;xml&#x27; in k.lower():\n … (177 more chars)&quot;,
+  &quot;description&quot;: &quot;Find XmlTemplate anywhere in response&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>    XmlTemplate: &#x27;&lt;bpmn:ServiceTask id=&quot;{id}&quot; name=&quot;{name}&quot;&gt;\n  &lt;uipath:activity type=&quot;Orchestrator.StartAgentJob&quot; version=&quot;v1&quot;&gt;\n    &lt;uipath:context&gt;\n      &lt;uipath:input name=&quot;name&quot; value=&quot;=bindings.{nameBindingId}&quot; /&gt;\n&#x27;
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27.68s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; python3 -c \&quot;\nimport json, subprocess\ntypes = [&#x27;Orchestrator.StartAgentJob&#x27;,&#x27;A2A.AgentExecution&#x27;,&#x27;Orchestrator.ExecuteApiWorkflowAsync&#x27;,\n         &#x27;Orchestrator.BusinessRules&#x27;,&#x27;Orchestrator.CreateQueueItem&#x27;,&#x27;Orchestrator.CreateAndWaitForQueueItem&#x27;,\n         &#x27;Orchestrator.StartAgenticProcess&#x27;,&#x27;Orchestrator.StartAgenticProcessAsync&#x27;,… (946 more chars)&quot;,
+  &quot;description&quot;: &quot;Extract all XmlTemplates to JSON file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /tmp/templates_fixed.json&quot;,
+  &quot;description&quot;: &quot;Read all templates&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Orchestrator.StartAgentJob&quot;: &quot;&lt;bpmn:ServiceTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;uipath:activity type=\&quot;Orchestrator.StartAgentJob\&quot; version=\&quot;v1\&quot;&gt;\n    &lt;uipath:context&gt;\n      &lt;uipath:input name=\&quot;name\&quot; value=\&quot;=bindings.{nameBindingId}\&quot; /&gt;\n      &lt;uipath:input name=\&quot;folderPath\&quot; value=\&quot;=bindings.{folderPathBindingId}\&quot; /&gt;\n    &lt;/uipath:context&gt;\n    &lt;uipath:input name=\&quot;JobArguments\&quot; type=\&quot;json\&quot; target=\&quot;bodyField\&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;\n    &lt;uipath:output name=\&quot;Process response\&quot; type=\&quot;Orchestrator.RunJob\&quot; var=\&quot;{varId}\&quot; /&gt;\n  &lt;/uipath:activity&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;\n&lt;/bpmn:ServiceTask&gt;&quot;,
+  &quot;A2A.AgentExecution&quot;: &quot;&lt;bpmn:ServiceTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:activity version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;A2A.AgentExecution\&quot; version=\&quot;v1\&quot; /&gt;\n      &lt;uipath:input name=\&quot;body\&quot; type=\&quot;json\&quot; target=\&quot;body\&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;\n      &lt;uipath:output name=\&quot;a2aResponse\&quot; type=\&quot;A2A.AgentExecution\&quot; var=\&quot;{varId}\&quot; /&gt;\n    &lt;/uipath:activity&gt;\n  &lt;/bpmn:extensionElements&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bp
+
+… (truncated, 10957 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.83s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; uip maestro bpmn registry get \&quot;uipath:Activity\&quot; --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\ndef find_xml(obj):\n    if isinstance(obj, dict):\n        for k,v in obj.items():\n            if k == &#x27;XmlTemplate&#x27;: return v\n        for k,v in obj.items():\n            r = find_xml(v)\n            if r: return … (153 more chars)&quot;,
+  &quot;description&quot;: &quot;Get uipath:Activity (generic) template&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>None
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.74s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; uip maestro bpmn registry get \&quot;uipath:Activity\&quot; --output json 2&gt;&amp;1 | python3 -c \&quot;import json,sys; print(json.dumps(json.load(sys.stdin), indent=2))\&quot; | head -50&quot;,
+  &quot;description&quot;: &quot;Inspect uipath:Activity registry entry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;uipath:Activity&quot;,
+      &quot;Label&quot;: &quot;Canvas activity&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+      &quot;Placements&quot;: {
+        &quot;ServiceTask&quot;: {
+          &quot;Type&quot;: &quot;bpmn:ServiceTask&quot;
+        },
+        &quot;Task&quot;: {
+          &quot;Type&quot;: &quot;bpmn:Task&quot;
+        },
+        &quot;BoundaryEvent&quot;: {
+          &quot;Type&quot;: &quot;bpmn:BoundaryEvent&quot;
+        }
+      },
+      &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+      &quot;ContextFields&quot;: [],
+      &quot;InputPattern&quot;: &quot;none&quot;,
+      &quot;OutputSource&quot;: null,
+      &quot;OutputType&quot;: null,
+      &quot;BindingPattern&quot;: &quot;none&quot;,
+      &quot;RequiresDiscovery&quot;: false,
+      &quot;IsDynamic&quot;: true,
+      &quot;XmlTemplate&quot;: null,
+      &quot;OutputNotes&quot;: &quot;Studio Web canvas can emit custom output-only activity payloads for placeholder tasks and error boundary metadata.&quot;
+    }
+  }
+}
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">31ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p /work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn &amp;&amp; echo \&quot;created\&quot;&quot;,
+  &quot;description&quot;: &quot;Create project directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>created</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn&quot;,
+  &quot;content&quot;: &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&lt;bpmn:definitions\n    xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot;\n    xmlns:bpmndi=\&quot;http://www.omg.org/spec/BPMN/20100524/DI\&quot;\n    xmlns:dc=\&quot;http://www.omg.org/spec/DD/20100524/DC\&quot;\n    xmlns:di=\&quot;http://www.omg.org/spec/DD/20100524/DI\&quot;\n    xmlns:xsi=\&quot;http://www.w3.org/2001/XMLSchema-instance\&quot;\n    xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot;\n    id=… (27800 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">433ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator &amp;&amp; npm install --silent 2&gt;&amp;1 | tail -3 &amp;&amp; node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate the BPMN file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+node:internal/modules/package_json_reader:314
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package &#x27;bpmn-moddle&#x27; imported from /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+  code: &#x27;ERR_MODULE_NOT_FOUND&#x27;
+}
+
+Node.js v22.23.1</pre>
+    <h4>Error</h4><pre>Exit code 1
+node:internal/modules/package_json_reader:314
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package &#x27;bpmn-moddle&#x27; imported from /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+  code: &#x27;ERR_MODULE_NOT_FOUND&#x27;
+}
+
+Node.js v22.23.1</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">245ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator &amp;&amp; npm install 2&gt;&amp;1 | tail -5&quot;,
+  &quot;description&quot;: &quot;Full npm install for validator&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>npm error errno -2
+npm error enoent ENOENT: no such file or directory, mkdir &#x27;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules&#x27;
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+npm error A complete log of this run can be found in: /home/azureuser/.npm/_logs/2026-07-21T00_22_27_816Z-debug-0.log
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/&quot;,
+  &quot;description&quot;: &quot;Check validator directory contents&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>README.md
+bpmn-spec.json
+model.mjs
+package.json
+rules.mjs
+samples
+test
+uipath-moddle.v1.json
+validate-bpmn.mjs</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">248ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator &amp;&amp; npm install --legacy-peer-deps 2&gt;&amp;1 | tail -5&quot;,
+  &quot;description&quot;: &quot;Install validator dependencies with legacy peer deps&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>npm error errno -2
+npm error enoent ENOENT: no such file or directory, mkdir &#x27;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules&#x27;
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+npm error A complete log of this run can be found in: /home/azureuser/.npm/_logs/2026-07-21T00_22_32_247Z-debug-0.log
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/ &amp;&amp; cat /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/package.json&quot;,
+  &quot;description&quot;: &quot;Check validator directory permissions and package.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 232
+drwxrwxr-x 4 1000 1000  4096 Jul 17 18:46 .
+drwxrwxr-x 5 1000 1000  4096 Jul 20 23:00 ..
+-rw-rw-r-- 1 1000 1000 14435 Jul 17 18:46 README.md
+-rw-rw-r-- 1 1000 1000 99114 Jul 17 18:46 bpmn-spec.json
+-rw-rw-r-- 1 1000 1000 16339 Jul 17 18:46 model.mjs
+-rw-rw-r-- 1 1000 1000   499 Jul 17 18:46 package.json
+-rw-rw-r-- 1 1000 1000 56927 Jul 17 18:46 rules.mjs
+drwxrwxr-x 2 1000 1000  4096 Jul 17 18:46 samples
+drwxrwxr-x 3 1000 1000  4096 Jul 17 18:46 test
+-rw-rw-r-- 1 1000 1000 14048 Jul 17 18:46 uipath-moddle.v1.json
+-rw-rw-r-- 1 1000 1000  6270 Jul 17 18:46 validate-bpmn.mjs
+{
+  &quot;name&quot;: &quot;uipath-maestro-bpmn-validator&quot;,
+  &quot;private&quot;: true,
+  &quot;type&quot;: &quot;module&quot;,
+  &quot;description&quot;: &quot;Offline semantic validator for UiPath Maestro BPMN XML. Reconstructs the PO.Frontend Node/Edge/CanvasState model from the parsed BPMN and runs all 19 PO.Frontend validation rules.&quot;,
+  &quot;bin&quot;: {
+    &quot;validate-bpmn&quot;: &quot;./validate-bpmn.mjs&quot;
+  },
+  &quot;scripts&quot;: {
+    &quot;test&quot;: &quot;node test/run-tests.mjs&quot;
+  },
+  &quot;dependencies&quot;: {
+    &quot;bpmn-moddle&quot;: &quot;^9.0.2&quot;,
+    &quot;luxon&quot;: &quot;^3.4.4&quot;,
+    &quot;sax&quot;: &quot;^1.6.0&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">424ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p /tmp/validator-work &amp;&amp; cp -r /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/* /tmp/validator-work/ &amp;&amp; cd /tmp/validator-work &amp;&amp; npm install 2&gt;&amp;1 | tail -5&quot;,
+  &quot;description&quot;: &quot;Copy validator to writable temp dir and install&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added 7 packages, and audited 8 packages in 349ms
+
+found 0 vulnerabilities
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">92ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /tmp/validator-work &amp;&amp; node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate the BPMN file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+PARSE WARNING: unparsable content &lt;uipath:activity&gt; detected
+	line: 49
+	column: 6
+	nested error: unrecognized element &lt;uipath:activity&gt;
+WARNINGS:
+  [WARNING] MISSING_RESOURCE: Service task &#x27;Create Queue Item&#x27; has no bound resource. (element: Task_CreateQueueItem)
+  [WARNING] MISSING_RESOURCE: Service task &#x27;Create and Wait For Queue Item&#x27; has no bound resource. (element: Task_CreateWaitQueueItem)
+ERRORS:
+  [ERROR] EMPTY_REQUIRED_FIELD: The field &#x27;agentUrl&#x27; in node &#x27;A2A Agent Execution&#x27; is required but has no value. (element: Task_A2AAgent)
+  [ERROR] EMPTY_REQUIRED_FIELD: The field &#x27;connectionId&#x27; in node &#x27;Wait For Event&#x27; is required but has no value. (element: Task_WaitForEvent)
+  [ERROR] EMPTY_REQUIRED_FIELD: The field &#x27;Reference&#x27; in node &#x27;Send Message Event&#x27; is required but has no value. (element: Event_SendMessage)
+
+3 blocking error(s), 2 warning(s).</pre>
+    <h4>Error</h4><pre>Exit code 1
+PARSE WARNING: unparsable content &lt;uipath:activity&gt; detected
+	line: 49
+	column: 6
+	nested error: unrecognized element &lt;uipath:activity&gt;
+WARNINGS:
+  [WARNING] MISSING_RESOURCE: Service task &#x27;Create Queue Item&#x27; has no bound resource. (element: Task_CreateQueueItem)
+  [WARNING] MISSING_RESOURCE: Service task &#x27;Create and Wait For Queue Item&#x27; has no bound resource. (element: Task_CreateWaitQueueItem)
+ERRORS:
+  [ERROR] EMPTY_REQUIRED_FIELD: The field &#x27;agentUrl&#x27; in node &#x27;A2A Agent Execution&#x27; is required but has no value. (element: Task_A2AAgent)
+  [ERROR] EMPTY_REQUIRED_FIELD: The field &#x27;connectionId&#x27; in node &#x27;Wait For Event&#x27; is required but has no value. (element: Task_WaitForEvent)
+  [ERROR] EMPTY_REQUIRED_FIELD: The field &#x27;Reference&#x27; in node &#x27;Send Message Event&#x27; is required but has no value. (element: Event_SendMessage)
+
+3 blocking error(s), 2 warning(s).</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.74s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; uip maestro bpmn registry get A2A.AgentExecution --output json 2&gt;&amp;1 | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); print(json.dumps(d[&#x27;Data&#x27;][&#x27;ExtensionType&#x27;], indent=2))\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect A2A.AgentExecution registry fields&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;ExtensionType&quot;: &quot;A2A.AgentExecution&quot;,
+  &quot;Label&quot;: &quot;Start and wait for A2A agent&quot;,
+  &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+  &quot;Placements&quot;: {
+    &quot;Activity&quot;: {
+      &quot;Type&quot;: &quot;bpmn:ServiceTask&quot;
+    }
+  },
+  &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+  &quot;ContextFields&quot;: [],
+  &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+  &quot;InputName&quot;: &quot;body&quot;,
+  &quot;InputTarget&quot;: &quot;body&quot;,
+  &quot;OutputSource&quot;: null,
+  &quot;OutputType&quot;: &quot;A2A.AgentExecution&quot;,
+  &quot;OutputName&quot;: &quot;a2aResponse&quot;,
+  &quot;UseRelativeSource&quot;: true,
+  &quot;BindingPattern&quot;: &quot;none&quot;,
+  &quot;RequiresDiscovery&quot;: false,
+  &quot;IsDynamic&quot;: true,
+  &quot;XmlTemplate&quot;: &quot;&lt;bpmn:ServiceTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:activity version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;A2A.AgentExecution\&quot; version=\&quot;v1\&quot; /&gt;\n      &lt;uipath:input name=\&quot;body\&quot; type=\&quot;json\&quot; target=\&quot;body\&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;\n      &lt;uipath:output name=\&quot;a2aResponse\&quot; type=\&quot;A2A.AgentExecution\&quot; var=\&quot;{varId}\&quot; /&gt;\n    &lt;/uipath:activity&gt;\n  &lt;/bpmn:extensionElements&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;\n&lt;/bpmn:ServiceTask&gt;&quot;,
+  &quot;InputFieldNotes&quot;: &quot;Auto-initialized by A2AFPSFormControl on load. Version is set to v2. Outputs 
+
+… (truncated, 1365 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.71s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; uip maestro bpmn registry get Intsvc.WaitForEvent --output json 2&gt;&amp;1 | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); ext=d[&#x27;Data&#x27;][&#x27;ExtensionType&#x27;]; print(json.dumps({k:v for k,v in ext.items() if k not in [&#x27;XmlTemplate&#x27;]}, indent=2))\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect Intsvc.WaitForEvent required fields&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;ExtensionType&quot;: &quot;Intsvc.WaitForEvent&quot;,
+  &quot;Label&quot;: &quot;Wait for connector event&quot;,
+  &quot;BpmnElement&quot;: &quot;bpmn:ReceiveTask&quot;,
+  &quot;Placements&quot;: {
+    &quot;Activity&quot;: {
+      &quot;Type&quot;: &quot;bpmn:ReceiveTask&quot;
+    },
+    &quot;IntermediateEvent&quot;: {
+      &quot;Type&quot;: &quot;bpmn:IntermediateCatchEvent&quot;,
+      &quot;EventDefinition&quot;: {
+        &quot;Type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+      }
+    },
+    &quot;BoundaryEvent&quot;: {
+      &quot;Type&quot;: &quot;bpmn:BoundaryEvent&quot;,
+      &quot;EventDefinition&quot;: {
+        &quot;Type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+      }
+    }
+  },
+  &quot;ExtensionTag&quot;: &quot;uipath:event&quot;,
+  &quot;ContextFields&quot;: [],
+  &quot;InputPattern&quot;: &quot;separateInputs&quot;,
+  &quot;OutputSource&quot;: &quot;.&quot;,
+  &quot;OutputType&quot;: &quot;custom&quot;,
+  &quot;OutputName&quot;: &quot;result&quot;,
+  &quot;UseRelativeSource&quot;: false,
+  &quot;BindingPattern&quot;: &quot;connection&quot;,
+  &quot;RequiresDiscovery&quot;: true,
+  &quot;IsDynamic&quot;: false,
+  &quot;DiscoveryNotes&quot;: &quot;Uses getConnectorConnections(connectorKey) to list available connections&quot;,
+  &quot;InputNotes&quot;: &quot;isSplitInputs=false; inputs are defined in input.fields (not jsonBody). Sent as separate &lt;uipath:input&gt; elements.&quot;,
+  &quot;ContextFieldNotes&quot;: &quot;Context fields are empty in design schema; all field definitions are in inputFields below&quot;,
+  &quot;ExtensionTagNotes&quot;: &quot;In isEvents array, uses uipath:event&quot;,
+  
+
+… (truncated, 2712 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.71s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn &amp;&amp; uip maestro bpmn registry get Maestro.SendMessageEvent --output json 2&gt;&amp;1 | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); ext=d[&#x27;Data&#x27;][&#x27;ExtensionType&#x27;]; print(json.dumps({k:v for k,v in ext.items() if k not in [&#x27;XmlTemplate&#x27;]}, indent=2))\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect Maestro.SendMessageEvent required fields&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;ExtensionType&quot;: &quot;Maestro.SendMessageEvent&quot;,
+  &quot;Label&quot;: &quot;Send internal message&quot;,
+  &quot;BpmnElement&quot;: &quot;bpmn:IntermediateThrowEvent&quot;,
+  &quot;Placements&quot;: {
+    &quot;IntermediateEvent&quot;: {
+      &quot;Type&quot;: &quot;bpmn:IntermediateThrowEvent&quot;,
+      &quot;EventDefinition&quot;: {
+        &quot;Type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+      }
+    },
+    &quot;EndEvent&quot;: {
+      &quot;Type&quot;: &quot;bpmn:EndEvent&quot;,
+      &quot;EventDefinition&quot;: {
+        &quot;Type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+      }
+    }
+  },
+  &quot;ExtensionTag&quot;: &quot;uipath:event&quot;,
+  &quot;ContextFields&quot;: [
+    {
+      &quot;Name&quot;: &quot;name&quot;,
+      &quot;DisplayName&quot;: &quot;Message name&quot;,
+      &quot;Type&quot;: &quot;string&quot;,
+      &quot;Required&quot;: true,
+      &quot;Hidden&quot;: false,
+      &quot;IsPrimaryKey&quot;: false,
+      &quot;Binding&quot;: false,
+      &quot;DefaultValue&quot;: null
+    },
+    {
+      &quot;Name&quot;: &quot;_label&quot;,
+      &quot;Type&quot;: &quot;string&quot;,
+      &quot;Required&quot;: false,
+      &quot;Hidden&quot;: true,
+      &quot;IsPrimaryKey&quot;: false,
+      &quot;Binding&quot;: false,
+      &quot;DefaultValue&quot;: null
+    },
+    {
+      &quot;Name&quot;: &quot;inputSchema&quot;,
+      &quot;DisplayName&quot;: &quot;Input schema&quot;,
+      &quot;Type&quot;: &quot;jsonSchema&quot;,
+      &quot;Required&quot;: true,
+      &quot;Hidden&quot;: true,
+      &quot;IsPrimaryKey&quot;: false,
+      &quot;Binding&quot;: false,
+      &quot;DefaultValue&quot;: null
+    }
+  ],
+  &quot;InputPattern&quot;: &quot;splitInputsItemData&quot;,
+  &quot;I
+
+… (truncated, 1598 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn&quot;,
+  &quot;old_string&quot;: &quot;          &lt;uipath:input name=\&quot;body\&quot; type=\&quot;json\&quot; target=\&quot;body\&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;\n          &lt;uipath:output name=\&quot;a2aResponse\&quot; type=\&quot;A2A.AgentExecution\&quot; var=\&quot;Var_A2AResult\&quot; /&gt;&quot;,
+  &quot;new_string&quot;: &quot;          &lt;uipath:input name=\&quot;body\&quot; type=\&quot;json\&quot; target=\&quot;body\&quot;&gt;&lt;![CDATA[{\&quot;agentUrl\&quot;:\&quot;https://placeholder-agent.example/api\&quot;,\&quot;skillId\&quot;:\&quot;PLACEHOLDER_SKILL_ID\&quot;,\&quot;input\&quot;:\&quot;PLACEHOLDER_INPUT\&quot;,\&quot;authToken\&quot;:\&quot;PLACEHOLDER_AUTH_TOKEN\&quot;,\&quot;agentName\&quot;:\&quot;PLACEHOLDER_AGENT_NAME\&quot;}]]&gt;&lt;/uipath:input&gt;\n          &lt;uipath:output name=\&quot;a2aResponse\&quot; type=\&quot;A2A.AgentExecution\&quot; var=\&quot;Var_A2AResult\&quot; /&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn&quot;,
+  &quot;old_string&quot;: &quot;        &lt;uipath:event version=\&quot;v1\&quot;&gt;\n          &lt;uipath:type value=\&quot;Intsvc.WaitForEvent\&quot; version=\&quot;v1\&quot; /&gt;\n          &lt;uipath:output name=\&quot;result\&quot; type=\&quot;custom\&quot; source=\&quot;.\&quot; var=\&quot;Var_WaitEventResult\&quot; /&gt;\n        &lt;/uipath:event&gt;&quot;,
+  &quot;new_string&quot;: &quot;        &lt;uipath:event version=\&quot;v1\&quot;&gt;\n          &lt;uipath:type value=\&quot;Intsvc.WaitForEvent\&quot; version=\&quot;v1\&quot; /&gt;\n          &lt;uipath:input name=\&quot;connectionId\&quot;  value=\&quot;=bindings.Binding_WaitEventConnection\&quot; /&gt;\n          &lt;uipath:input name=\&quot;connectorKey\&quot;  value=\&quot;PLACEHOLDER_CONNECTOR_KEY\&quot; /&gt;\n          &lt;uipath:input name=\&quot;folderId\&quot;      value=\&quot;PLACEHOLDER_FOLDER_ID\&quot; /&gt;\n          &lt;uipath:input name=\&quot;folderPath\&quot;  … (396 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn&quot;,
+  &quot;old_string&quot;: &quot;          &lt;uipath:input name=\&quot;ItemData\&quot; type=\&quot;json\&quot; target=\&quot;body\&quot;&gt;&lt;![CDATA[{\&quot;Reference\&quot;:\&quot;synthetic-ref\&quot;,\&quot;SpecificContent\&quot;:{},\&quot;Error\&quot;:\&quot;\&quot;,\&quot;TimeToLive\&quot;:\&quot;\&quot;}]]&gt;&lt;/uipath:input&gt;&quot;,
+  &quot;new_string&quot;: &quot;          &lt;uipath:input name=\&quot;ItemData\&quot; type=\&quot;json\&quot; target=\&quot;body\&quot;&gt;&lt;![CDATA[{\&quot;Reference\&quot;:\&quot;synthetic-correlation-ref\&quot;,\&quot;SpecificContent\&quot;:{},\&quot;TimeToLive\&quot;:\&quot;\&quot;}]]&gt;&lt;/uipath:input&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">96ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /tmp/validator-work &amp;&amp; node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Re-validate after fixes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+PARSE WARNING: unparsable content &lt;uipath:activity&gt; detected
+	line: 49
+	column: 6
+	nested error: unrecognized element &lt;uipath:activity&gt;
+WARNINGS:
+  [WARNING] MISSING_RESOURCE: Service task &#x27;Create Queue Item&#x27; has no bound resource. (element: Task_CreateQueueItem)
+  [WARNING] MISSING_RESOURCE: Service task &#x27;Create and Wait For Queue Item&#x27; has no bound resource. (element: Task_CreateWaitQueueItem)
+ERRORS:
+  [ERROR] EMPTY_REQUIRED_FIELD: The field &#x27;agentUrl&#x27; in node &#x27;A2A Agent Execution&#x27; is required but has no value. (element: Task_A2AAgent)
+  [ERROR] EMPTY_REQUIRED_FIELD: The field &#x27;Reference&#x27; in node &#x27;Send Message Event&#x27; is required but has no value. (element: Event_SendMessage)
+
+2 blocking error(s), 2 warning(s).</pre>
+    <h4>Error</h4><pre>Exit code 1
+PARSE WARNING: unparsable content &lt;uipath:activity&gt; detected
+	line: 49
+	column: 6
+	nested error: unrecognized element &lt;uipath:activity&gt;
+WARNINGS:
+  [WARNING] MISSING_RESOURCE: Service task &#x27;Create Queue Item&#x27; has no bound resource. (element: Task_CreateQueueItem)
+  [WARNING] MISSING_RESOURCE: Service task &#x27;Create and Wait For Queue Item&#x27; has no bound resource. (element: Task_CreateWaitQueueItem)
+ERRORS:
+  [ERROR] EMPTY_REQUIRED_FIELD: The field &#x27;agentUrl&#x27; in node &#x27;A2A Agent Execution&#x27; is required but has no value. (element: Task_A2AAgent)
+  [ERROR] EMPTY_REQUIRED_FIELD: The field &#x27;Reference&#x27; in node &#x27;Send Message Event&#x27; is required but has no value. (element: Event_SendMessage)
+
+2 blocking error(s), 2 warning(s).</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;agentUrl\\|EMPTY_REQUIRED\\|Reference\\|SendMessage\\|A2A\&quot; /tmp/validator-work/rules.mjs | head -40&quot;,
+  &quot;description&quot;: &quot;Check how validator checks required fields&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>226:  &quot;bpmn:DataStoreReference&quot;,
+227:  &quot;bpmn:DataObjectReference&quot;,
+816:        code: &quot;EMPTY_REQUIRED_FIELD&quot;,
+1392:  &quot;EMPTY_REQUIRED_FIELD&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;800,840p&#x27; /tmp/validator-work/rules.mjs&quot;,
+  &quot;description&quot;: &quot;Read EMPTY_REQUIRED_FIELD rule&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>    const present = firstEmptyPresent(uipath.context) ?? firstEmptyPresent(uipath.inputs) ?? firstEmptyPresent(uipath.outputs);
+    if (present) badName = present.name;
+    else if (Array.isArray(uipath.requiredFieldNames)) {
+      // No present-but-empty required field; check for an entirely ABSENT one
+      // (treated by the frontend as present-with-empty, hence required+empty).
+      const presentNames = new Set();
+      for (const group of [uipath.context, uipath.inputs, uipath.outputs]) {
+        if (!Array.isArray(group)) continue;
+        for (const f of group) if (f.name) presentNames.add(f.name);
+      }
+      const absent = uipath.requiredFieldNames.find((name) =&gt; !presentNames.has(name));
+      if (absent) badName = absent;
+    }
+    if (badName !== undefined) {
+      const label = node.data?.label ?? node.id;
+      errors.push({
+        code: &quot;EMPTY_REQUIRED_FIELD&quot;,
+        message: `The field &#x27;${badName}&#x27; in node &#x27;${label}&#x27; is required but has no value.`,
+        severity: SEVERITY.ERROR,
+        elementId: node.id,
+      });
+    }
+  }
+  return errors;
+}
+
+// ===========================================================================
+// RULE 13: SequenceFlowPoolCrossin
+
+… (truncated, 656 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;770,805p&#x27; /tmp/validator-work/rules.mjs&quot;,
+  &quot;description&quot;: &quot;Read more of EMPTY_REQUIRED_FIELD rule context&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>//   if (field.required &amp;&amp; isNilOrEmpty(field.value)) → first error.
+//
+// On canvas, EVERY field a serviceType declares is present in the node data with
+// its `required` flag set; an unbound required field is present-with-empty-value
+// and the frontend fires on it. In exported BPMN an unbound required field is
+// simply ABSENT. To reach parity, we treat an absent required field exactly as
+// the frontend treats an unbound one: present with an empty value. The required-
+// field names come from the bundled registry (bpmn-spec.json) per serviceType
+// (model.mjs attaches them as `uipath.requiredFieldNames`).
+//
+// BOUNDARY: For dynamic IS-connector activity types whose required-ness is NOT
+// in the static spec — it only materializes after a `registry get` enrichment —
+// `requiredFieldNames` is undefined and absence cannot be judged offline, so we
+// stay conservative (only present-but-empty fires). The frontend needs the same
+// enrichment to know those fields are required, so this is shared, not a gap.
+export function validateRequiredFields(nodes) {
+  if (!nodes) return []; // frontend RequiredFieldsRule guards null inputs
+  const errors = [];
+  for (const node of nodes) {
+    
+
+… (truncated, 825 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;A2A\\|agentUrl\\|InputPattern\\|mergedBody\\|splitInputs\\|inputs\\|parseInput\&quot; /tmp/validator-work/model.mjs | head -40&quot;,
+  &quot;description&quot;: &quot;Check model parsing for A2A and merged body pattern&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>97:  uipath.inputs = (actEl.input ?? []).map(mapInput);
+125:    inputs: (varsEl.input ?? []).map(map),
+163:    for (const group of [uipath.context, uipath.inputs, uipath.outputs]) {
+389:  for (const v of rv?.inputs ?? []) add(v);
+395:      for (const v of nv?.inputs ?? []) add(v);</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;80,130p&#x27; /tmp/validator-work/model.mjs&quot;,
+  &quot;description&quot;: &quot;Read model input parsing logic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  const uipath = {};
+  uipath.serviceType = actEl.type?.value ?? actEl.type ?? undefined;
+  uipath.version = actEl.type?.version ?? actEl.version ?? &quot;v1&quot;;
+
+  const mapInput = (i) =&gt; ({ name: i.name, type: i.type, subType: i.subType, value: i.value, target: i.target, body: i.body });
+  const mapOutput = (o) =&gt; ({
+    name: o.name,
+    type: o.type,
+    subType: o.subType,
+    source: o.source,
+    var: o.var,
+    body: o.body,
+    custom: o.custom === &quot;true&quot; || o.custom === true,
+    target: o.target,
+  });
+
+  uipath.context = (actEl.context?.input ?? []).map(mapInput);
+  uipath.inputs = (actEl.input ?? []).map(mapInput);
+  uipath.outputs = (actEl.output ?? []).map(mapOutput);
+  return uipath;
+}
+
+function mapErrorMapping(emEl) {
+  return (emEl?.error ?? []).map((e) =&gt; ({
+    id: e.id,
+    errorRef: e.errorRef,
+    priority: e.priority,
+    condition: e.condition,
+    detail: e.detail,
+    retryable: e.retryable === &quot;true&quot; || e.retryable === true,
+  }));
+}
+
+function mapVariables(varsEl) {
+  if (!varsEl) return undefined;
+  const map = (v) =&gt; ({
+    id: v.id,
+    name: v.name,
+    type: v.type,
+    subType: v.subType,
+    canonicalId: v.canonicalId,
+    elementId: v.elementId,
+    def
+
+… (truncated, 183 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;requiredFieldNames\\|bpmn-spec\\|getSpec\\|requiredField\&quot; /tmp/validator-work/model.mjs | head -20&quot;,
+  &quot;description&quot;: &quot;Find where requiredFieldNames is populated&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>16:// Registry: required-field metadata (bpmn-spec.json). Bundled so RequiredFields
+17:// runs fully offline. Maps serviceType -&gt; Set&lt;requiredFieldName&gt;.
+19:let _requiredFieldIndex;
+21:  if (_requiredFieldIndex) return _requiredFieldIndex;
+24:    const spec = JSON.parse(readFileSync(join(__dirname, &quot;bpmn-spec.json&quot;), &quot;utf8&quot;));
+43:  _requiredFieldIndex = index;
+132:// `requiredFieldIndex` supplies, per serviceType, the registry&#x27;s required field
+136:function buildNodeUiPath(el, requiredFieldIndex) {
+161:  const requiredNames = st ? requiredFieldIndex.get(st) : undefined;
+167:    uipath.requiredFieldNames = [...requiredNames];
+203:function buildNode(el, parent, requiredFieldIndex) {
+213:  const uipath = buildNodeUiPath(el, requiredFieldIndex);
+262:function collectContainer(container, requiredFieldIndex, nodesOut, edgesOut, rootParentId) {
+269:    const node = buildNode(el, container, requiredFieldIndex);
+274:      collectContainer(el, requiredFieldIndex, nodesOut, edgesOut, rootParentId);
+289:  const requiredFieldIndex = loadRequiredFieldIndex();
+335:        collectContainer(proc, requiredFieldIndex, nodes, edges, p.id);
+356:      collectContainer(proc, requiredFieldIndex, nodes, edge
+
+… (truncated, 14 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">91ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nwith open(&#x27;/tmp/validator-work/bpmn-spec.json&#x27;) as f:\n    spec = json.load(f)\n# Find A2A.AgentExecution and Maestro.SendMessageEvent required fields\nfor st in [&#x27;A2A.AgentExecution&#x27;, &#x27;Maestro.SendMessageEvent&#x27;]:\n    found = None\n    def search(obj):\n        global found\n        if isinstance(obj, dict):\n            if obj.get(&#x27;serviceType&#x27;) == st or obj.get(&#x27;type&#x27;) == st or… (349 more chars)&quot;,
+  &quot;description&quot;: &quot;Search bpmn-spec.json for A2A and SendMessage required fields&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>A2A.AgentExecution : {
+  &quot;extensionType&quot;: &quot;A2A.AgentExecution&quot;,
+  &quot;label&quot;: &quot;Start and wait for A2A agent&quot;,
+  &quot;bpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+  &quot;placements&quot;: {
+    &quot;activity&quot;: {
+      &quot;type&quot;: &quot;bpmn:ServiceTask&quot;
+    }
+  },
+  &quot;extensionTag&quot;: &quot;uipath:activity&quot;,
+  &quot;contextFields&quot;: [],
+  &quot;inputPattern&quot;: &quot;mergedBody&quot;,
+  &quot;inputName&quot;: &quot;body&quot;,
+  &quot;inputTarget&quot;: &quot;body&quot;,
+  &quot;outputSource&quot;: null,
+  &quot;outputType&quot;: &quot;A2A.AgentExecution&quot;,
+  &quot;outputName&quot;: &quot;a2aResponse&quot;,
+  &quot;useRelativeSource&quot;: true,
+  &quot;bindingPattern&quot;: &quot;none&quot;,
+  &quot;requ
+
+Maestro.SendMessageEvent : {
+  &quot;extensionType&quot;: &quot;Maestro.SendMessageEvent&quot;,
+  &quot;label&quot;: &quot;Send internal message&quot;,
+  &quot;bpmnElement&quot;: &quot;bpmn:IntermediateThrowEvent&quot;,
+  &quot;placements&quot;: {
+    &quot;intermediateEvent&quot;: {
+      &quot;type&quot;: &quot;bpmn:IntermediateThrowEvent&quot;,
+      &quot;eventDefinition&quot;: {
+        &quot;type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+      }
+    },
+    &quot;endEvent&quot;: {
+      &quot;type&quot;: &quot;bpmn:EndEvent&quot;,
+      &quot;eventDefinition&quot;: {
+        &quot;type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+      }
+    }
+  },
+  &quot;extensionTag&quot;: &quot;uipath:event&quot;,
+  &quot;contextFiel</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">83ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nwith open(&#x27;/tmp/validator-work/bpmn-spec.json&#x27;) as f:\n    spec = json.load(f)\n\ndef find_by_type(obj, target):\n    results = []\n    def search(o, path=&#x27;&#x27;):\n        if isinstance(o, dict):\n            if o.get(&#x27;extensionType&#x27;) == target:\n                results.append(o)\n            for k,v in o.items():\n                search(v, path+&#x27;.&#x27;+k)\n        elif isinstance(o, list):… (440 more chars)&quot;,
+  &quot;description&quot;: &quot;Get required input fields from bpmn-spec for A2A and SendMessage&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>A2A.AgentExecution required fields: [&#x27;agentUrl&#x27;, &#x27;skillId&#x27;, &#x27;input&#x27;, &#x27;authToken&#x27;, &#x27;agentName&#x27;]
+Maestro.SendMessageEvent required fields: [&#x27;Reference&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;140,175p&#x27; /tmp/validator-work/model.mjs&quot;,
+  &quot;description&quot;: &quot;Read requiredFieldNames building logic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  // variables (e.g. a script writing `var=&quot;x&quot;`) are recovered.
+  const act = findExt(el, &quot;uipath:Activity&quot;) ?? findExt(el, &quot;uipath:Event&quot;) ?? findExt(el, &quot;uipath:Mapping&quot;);
+  const em = findExt(el, &quot;uipath:ErrorMapping&quot;);
+  const vars = findExt(el, &quot;uipath:Variables&quot;);
+  let uipath;
+  if (act) uipath = mapUiPathActivity(act);
+  if (em) {
+    uipath = uipath ?? {};
+    uipath.errorMapping = mapErrorMapping(em);
+  }
+  if (vars) {
+    uipath = uipath ?? {};
+    uipath.variables = mapVariables(vars);
+  }
+  // Mark required fields from the registry onto serialized fields by name match,
+  // and attach the full required-name set so RequiredFieldsRule can also detect
+  // required fields that are entirely ABSENT from the serialized data (frontend
+  // RequiredFieldsRule iterates every field in the node&#x27;s data and fires on
+  // `field.required &amp;&amp; isNilOrEmpty(field.value)` — an unbound required field is
+  // present-with-empty-value on canvas, which corresponds to absent-in-XML here).
+  const st = uipath?.serviceType;
+  const requiredNames = st ? requiredFieldIndex.get(st) : undefined;
+  if (requiredNames) {
+    for (const group of [uipath.context, uipath.inputs, uipath.outputs]) {
+      
+
+… (truncated, 289 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">43ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;19,50p&#x27; /tmp/validator-work/model.mjs&quot;,
+  &quot;description&quot;: &quot;Read requiredFieldIndex building&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>let _requiredFieldIndex;
+function loadRequiredFieldIndex() {
+  if (_requiredFieldIndex) return _requiredFieldIndex;
+  const index = new Map();
+  try {
+    const spec = JSON.parse(readFileSync(join(__dirname, &quot;bpmn-spec.json&quot;), &quot;utf8&quot;));
+    for (const [serviceType, def] of Object.entries(spec.extensionTypes ?? {})) {
+      const names = new Set();
+      for (const f of def.contextFields ?? []) {
+        // Only fields the user can actually populate. Hidden fields with a
+        // default are auto-filled by the designer and never empty in practice,
+        // so requiring them offline would false-positive; skip hidden+defaulted.
+        if (f.required &amp;&amp; !(f.hidden &amp;&amp; f.defaultValue !== null &amp;&amp; f.defaultValue !== undefined)) {
+          names.add(f.name);
+        }
+      }
+      for (const f of def.inputFields ?? []) {
+        if (f.required) names.add(f.name);
+      }
+      if (names.size) index.set(serviceType, names);
+    }
+  } catch {
+    // Registry not bundled: RequiredFields degrades to a no-op (documented).
+  }
+  _requiredFieldIndex = index;
+  return index;
+}
+
+// ---------------------------------------------------------------------------
+// moddle helpers
+// ---------------
+
+… (truncated, 117 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;mergedBody\\|splitInputs\\|body\\|CDATA\\|parseBody\\|parseJSON\&quot; /tmp/validator-work/model.mjs | head -20&quot;,
+  &quot;description&quot;: &quot;Check if model parses CDATA body JSON&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>65:      out.timeDuration = d.timeDuration.body ?? d.timeDuration;
+68:      out.timeCycle = d.timeCycle.body ?? d.timeCycle;
+71:      out.timeDate = d.timeDate.body ?? d.timeDate;
+84:  const mapInput = (i) =&gt; ({ name: i.name, type: i.type, subType: i.subType, value: i.value, target: i.target, body: i.body });
+91:    body: o.body,
+231:    // A FormalExpression moddle element carries its text in `.body`; an empty
+232:    // `&lt;conditionExpression/&gt;` element has no `.body` (undefined). Only a real
+233:    // string body is a condition — never fall back to the moddle object itself,
+236:    let body = el.conditionExpression.body ?? el.conditionExpression;
+237:    if (typeof body === &quot;string&quot;) {
+238:      if (body &amp;&amp; !body.startsWith(&quot;=&quot;)) body = `=${body}`;
+239:      data.conditionExpression = body;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn&quot;,
+  &quot;old_string&quot;: &quot;        &lt;uipath:activity version=\&quot;v1\&quot;&gt;\n          &lt;uipath:type value=\&quot;A2A.AgentExecution\&quot; version=\&quot;v1\&quot; /&gt;\n          &lt;uipath:input name=\&quot;body\&quot; type=\&quot;json\&quot; target=\&quot;body\&quot;&gt;&lt;![CDATA[{\&quot;agentUrl\&quot;:\&quot;https://placeholder-agent.example/api\&quot;,\&quot;skillId\&quot;:\&quot;PLACEHOLDER_SKILL_ID\&quot;,\&quot;input\&quot;:\&quot;PLACEHOLDER_INPUT\&quot;,\&quot;authToken\&quot;:\&quot;PLACEHOLDER_AUTH_TOKEN\&quot;,\&quot;agentName\&quot;:\&quot;PLACEHOLDER_AGENT_NAME\&quot;}]]&gt;&lt;/uipath:input&gt;\n          &lt;uipath:… (101 more chars)&quot;,
+  &quot;new_string&quot;: &quot;        &lt;uipath:activity version=\&quot;v1\&quot;&gt;\n          &lt;uipath:type value=\&quot;A2A.AgentExecution\&quot; version=\&quot;v1\&quot; /&gt;\n          &lt;uipath:input name=\&quot;agentUrl\&quot;   value=\&quot;https://placeholder-agent.example/api\&quot; /&gt;\n          &lt;uipath:input name=\&quot;skillId\&quot;    value=\&quot;PLACEHOLDER_SKILL_ID\&quot; /&gt;\n          &lt;uipath:input name=\&quot;input\&quot;      value=\&quot;PLACEHOLDER_INPUT\&quot; /&gt;\n          &lt;uipath:input name=\&quot;authToken\&quot;  value=\&quot;PLACEHOLDE… (304 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn&quot;,
+  &quot;old_string&quot;: &quot;          &lt;uipath:input name=\&quot;ItemData\&quot; type=\&quot;json\&quot; target=\&quot;body\&quot;&gt;&lt;![CDATA[{\&quot;Reference\&quot;:\&quot;synthetic-correlation-ref\&quot;,\&quot;SpecificContent\&quot;:{},\&quot;TimeToLive\&quot;:\&quot;\&quot;}]]&gt;&lt;/uipath:input&gt;\n          &lt;uipath:output name=\&quot;response\&quot; type=\&quot;Maestro.SendMessageEvent\&quot; var=\&quot;Var_SendMsgResult\&quot; /&gt;&quot;,
+  &quot;new_string&quot;: &quot;          &lt;uipath:input name=\&quot;Reference\&quot;       value=\&quot;synthetic-correlation-ref\&quot; /&gt;\n          &lt;uipath:input name=\&quot;SpecificContent\&quot; type=\&quot;json\&quot; value=\&quot;{}\&quot; /&gt;\n          &lt;uipath:input name=\&quot;TimeToLive\&quot;      value=\&quot;\&quot; /&gt;\n          &lt;uipath:input name=\&quot;ItemData\&quot; type=\&quot;json\&quot; target=\&quot;body\&quot;&gt;&lt;![CDATA[{\&quot;Reference\&quot;:\&quot;synthetic-correlation-ref\&quot;,\&quot;SpecificContent\&quot;:{},\&quot;TimeToLive\&quot;:\&quot;\&quot;}]]&gt;&lt;/uipath:input&gt;\n          &lt;u… (87 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">89ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /tmp/validator-work &amp;&amp; node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Re-validate after all fixes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>PARSE WARNING: unparsable content &lt;uipath:activity&gt; detected
+	line: 49
+	column: 6
+	nested error: unrecognized element &lt;uipath:activity&gt;
+WARNINGS:
+  [WARNING] MISSING_RESOURCE: Service task &#x27;Create Queue Item&#x27; has no bound resource. (element: Task_CreateQueueItem)
+  [WARNING] MISSING_RESOURCE: Service task &#x27;Create and Wait For Queue Item&#x27; has no bound resource. (element: Task_CreateWaitQueueItem)
+VALID
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn&quot;,
+  &quot;old_string&quot;: &quot;    &lt;!-- 1. bpmn:serviceTask - Orchestrator.StartAgentJob\n         Template uses legacy inline format: type as attribute on uipath:activity.\n         Preserved exactly as the registry emits it. --&gt;\n    &lt;bpmn:serviceTask id=\&quot;Task_StartAgentJob\&quot; name=\&quot;Start Agent Job\&quot;&gt;\n      &lt;uipath:activity type=\&quot;Orchestrator.StartAgentJob\&quot; version=\&quot;v1\&quot;&gt;\n        &lt;uipath:context&gt;\n          &lt;uipath:input name=\&quot;name\&quot; … (501 more chars)&quot;,
+  &quot;new_string&quot;: &quot;    &lt;!-- 1. bpmn:serviceTask - Orchestrator.StartAgentJob\n         Registry template uses legacy type-as-attribute format; wrapped in\n         extensionElements for well-formed XML serialization. --&gt;\n    &lt;bpmn:serviceTask id=\&quot;Task_StartAgentJob\&quot; name=\&quot;Start Agent Job\&quot;&gt;\n      &lt;bpmn:extensionElements&gt;\n        &lt;uipath:activity type=\&quot;Orchestrator.StartAgentJob\&quot; version=\&quot;v1\&quot;&gt;\n          &lt;uipath:context&gt;… (582 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">91ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /tmp/validator-work &amp;&amp; node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Final validation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>WARNINGS:
+  [WARNING] MISSING_RESOURCE: Service task &#x27;Create Queue Item&#x27; has no bound resource. (element: Task_CreateQueueItem)
+  [WARNING] MISSING_RESOURCE: Service task &#x27;Create and Wait For Queue Item&#x27; has no bound resource. (element: Task_CreateWaitQueueItem)
+VALID
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-contract-variant-wrappers</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">100ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport xml.etree.ElementTree as ET\ntree = ET.parse(&#x27;/work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/ContractVariantsBpmn.bpmn&#x27;)\nroot = tree.getroot()\nns = {&#x27;bpmn&#x27;:&#x27;http://www.omg.org/spec/BPMN/20100524/MODEL&#x27;,&#x27;uipath&#x27;:&#x27;http://uipath.org/schema/bpmn&#x27;,&#x27;bpmndi&#x27;:&#x27;http://www.omg.org/spec/BPMN/20100524/DI&#x27;}\n\nproc = root.find(&#x27;.//bpmn:process&#x27;, ns)\next = proc… (1565 more chars)&quot;,
+  &quot;description&quot;: &quot;Verify all required elements in the BPMN&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>migrationVersions: [&#x27;5&#x27;, &#x27;11&#x27;, &#x27;11.5&#x27;]
+  bpmn:serviceTask id=Task_StartAgentJob type=Orchestrator.StartAgentJob
+  bpmn:serviceTask id=Task_A2AAgent type=A2A.AgentExecution
+  bpmn:serviceTask id=Task_ApiWorkflow type=Orchestrator.ExecuteApiWorkflowAsync
+  bpmn:serviceTask id=Task_CreateWaitQueueItem type=Orchestrator.CreateAndWaitForQueueItem
+  bpmn:serviceTask id=Task_CasePlanScheduler type=Maestro.CasePlanScheduler
+  bpmn:serviceTask id=Task_CaseManagerGuardrails type=Maestro.CaseManagerGuardrails
+  bpmn:serviceTask id=Task_CaseRulesEvaluator type=Maestro.CaseRulesEvaluator
+  bpmn:businessRuleTask id=Task_BusinessRules type=Orchestrator.BusinessRules
+  bpmn:sendTask id=Task_CreateQueueItem type=Orchestrator.CreateQueueItem
+  bpmn:callActivity id=Task_StartAgenticProcess type=Orchestrator.StartAgenticProcess
+  bpmn:callActivity id=Task_StartAgenticProcessAsync type=Orchestrator.StartAgenticProcessAsync
+  bpmn:callActivity id=Task_StartCaseMgmtProcess type=Orchestrator.StartCaseMgmtProcess
+  bpmn:callActivity id=Task_StartCaseMgmtProcessAsync type=Orchestrator.StartCaseMgmtProcessAsync
+  bpmn:receiveTask id=Task_WaitForEvent type=Intsvc.WaitForEvent
+  bpmn:scriptTask id=Task_Script 
+
+… (truncated, 269 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -lh /work/output/artifacts/skill-bpmn-contract-variant-wrappers/ContractVariantsBpmn/&quot;,
+  &quot;description&quot;: &quot;List project files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 32K
+-rw-r--r-- 1 root root 29K Jul 21 00:25 ContractVariantsBpmn.bpmn</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">51</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">48 (94%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">3</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">2.13s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>41</td></tr><tr><td class='mono'>Edit</td><td>6</td></tr><tr><td class='mono'>Read</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>27.68s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr><tr><td class='mono'>Bash</td><td>27.65s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr><tr><td class='mono'>Bash</td><td>27.30s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr><tr><td class='mono'>Bash</td><td>3.08s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr><tr><td class='mono'>Bash</td><td>2.44s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">10m 47s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">75</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">10m 46s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">1,478</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">39,753</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">77,801</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">2,869,931</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">2,988,963</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.7535</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>90</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.197.0-alpha.20260626.7673</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;agent-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;functions-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;gov-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;insights-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;solution-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.197.0&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.4</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.46.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-21T00:26:06</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

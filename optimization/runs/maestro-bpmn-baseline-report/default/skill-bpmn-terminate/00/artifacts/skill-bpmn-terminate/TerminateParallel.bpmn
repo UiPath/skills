@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+    </bpmn:extensionElements>
+
+    <!-- Entry point -->
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Parallel fork gateway -->
+    <bpmn:parallelGateway id="GW_Fork" name="Fork">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_A</bpmn:outgoing>
+      <bpmn:outgoing>Flow_B</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <!-- Branch A: terminate end event - stops the whole instance -->
+    <bpmn:endEvent id="End_Terminate" name="Terminate Instance">
+      <bpmn:incoming>Flow_A</bpmn:incoming>
+      <bpmn:terminateEventDefinition id="TermDef_1" />
+    </bpmn:endEvent>
+
+    <!-- Branch B: task then normal end event -->
+    <bpmn:task id="Task_B" name="Branch B Work">
+      <bpmn:incoming>Flow_B</bpmn:incoming>
+      <bpmn:outgoing>Flow_B2</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:endEvent id="End_Normal" name="End">
+      <bpmn:incoming>Flow_B2</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_1"  sourceRef="Start_1" targetRef="GW_Fork" />
+    <bpmn:sequenceFlow id="Flow_A"  sourceRef="GW_Fork"  targetRef="End_Terminate" />
+    <bpmn:sequenceFlow id="Flow_B"  sourceRef="GW_Fork"  targetRef="Task_B" />
+    <bpmn:sequenceFlow id="Flow_B2" sourceRef="Task_B"   targetRef="End_Normal" />
+  </bpmn:process>
+
+  <!-- Diagram interchange: one BPMNShape per node, one BPMNEdge per flow -->
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Shapes -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="152" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_GW_Fork" bpmnElement="GW_Fork">
+        <dc:Bounds x="248" y="175" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- Branch A: terminate end event (top branch) -->
+      <bpmndi:BPMNShape id="S_End_Terminate" bpmnElement="End_Terminate">
+        <dc:Bounds x="400" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Branch B: task and normal end event (bottom branch) -->
+      <bpmndi:BPMNShape id="S_Task_B" bpmnElement="Task_B">
+        <dc:Bounds x="370" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_Normal" bpmnElement="End_Normal">
+        <dc:Bounds x="540" y="262" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="E_Flow_1" bpmnElement="Flow_1">
+        <di:waypoint x="188" y="200" />
+        <di:waypoint x="248" y="200" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_A" bpmnElement="Flow_A">
+        <di:waypoint x="273" y="175" />
+        <di:waypoint x="273" y="100" />
+        <di:waypoint x="400" y="100" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_B" bpmnElement="Flow_B">
+        <di:waypoint x="273" y="225" />
+        <di:waypoint x="273" y="280" />
+        <di:waypoint x="370" y="280" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_B2" bpmnElement="Flow_B2">
+        <di:waypoint x="470" y="280" />
+        <di:waypoint x="540" y="280" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="x-uipath-initial-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="UiPath Studio Web (https://uipath.com)" exporterVersion="34e3a3d5">
+  <bpmn:process id="Process_1" name="Agentic Case" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="ReturnFromSecondaryStageToStage" name="Return_From_Secondary_Stage_To_Stage" type="string" elementId="Activity_InitialVariablesNode" custom="true" />
+        <uipath:inputOutput id="stage1ReEntryCount" name="stage_1_ReEntryCount" type="integer" elementId="Activity_InitialVariablesNode" custom="true" />
+        <uipath:inputOutput id="stage1ReExitToStage" name="stage_1_ReExit_To_Stage" type="string" elementId="Activity_InitialVariablesNode" custom="true" />
+        <uipath:inputOutput id="stage1SubProcessTasksComplete" name="stage_1_SubProcess_Tasks_Complete" type="boolean" elementId="Activity_InitialVariablesNode" custom="true" />
+        <uipath:inputOutput id="loanObject" name="loanObject" type="json" elementId="stage_1-ttgupuwp0" custom="true" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="bfexuiQma" name="folderPath" type="string" default="solution_folder" resource="process" resourceKey="solution_folder.ProcessWithInputs" propertyAttribute="folderPath" />
+        <uipath:binding id="bcczqilgr" name="name" type="string" default="ProcessWithInputs" resource="process" resourceKey="solution_folder.ProcessWithInputs" propertyAttribute="name" />
+        <uipath:binding id="bSUUURIEo" name="folderPath" type="string" default="solution_folder" resource="process" resourceSubType="ProcessOrchestration" resourceKey="solution_folder.ProcessWithInputs" propertyAttribute="folderPath" />
+        <uipath:binding id="bgKwTteki" name="name" type="string" default="ProcessWithInputs" resource="process" resourceSubType="ProcessOrchestration" resourceKey="solution_folder.ProcessWithInputs" propertyAttribute="name" />
+      </uipath:bindings>
+      <uipath:caseManagement version="1.0"><![CDATA[{"root":{"id":"root","type":"case-management:root","name":"Agentic Case","caseIdentifierType":"constant","caseIdentifier":"CASE","caseAppEnabled":true,"version":"v10","data":{"diagramId":"default-diagram","planeId":"default-plane","uipath":{"bindings":[{"id":"bfexuiQma","name":"folderPath","type":"string","resource":"process","resourceKey":"solution_folder.ProcessWithInputs","default":"solution_folder","propertyAttribute":"folderPath"},{"id":"bcczqilgr","name":"name","type":"string","resource":"process","resourceKey":"solution_folder.ProcessWithInputs","default":"ProcessWithInputs","propertyAttribute":"name"},{"id":"bSUUURIEo","name":"folderPath","type":"string","resource":"process","resourceKey":"solution_folder.ProcessWithInputs","default":"solution_folder","propertyAttribute":"folderPath","resourceSubType":"ProcessOrchestration"},{"id":"bgKwTteki","name":"name","type":"string","resource":"process","resourceKey":"solution_folder.ProcessWithInputs","default":"ProcessWithInputs","propertyAttribute":"name","resourceSubType":"ProcessOrchestration"}],"variables":{"inputOutputs":[]}}}},"nodes":[{"id":"trigger_1","type":"case-management:Trigger","position":{"x":160,"y":198.5},"style":{"width":96,"height":96},"measured":{"width":96,"height":96},"data":{"parentElement":{"id":"root","type":"case-management:root"},"isInvalidDropTarget":false,"isPendingParent":false},"width":96,"height":96,"selected":false},{"id":"stage_1","type":"case-management:Stage","position":{"x":326,"y":200},"style":{"width":304},"measured":{"width":304,"height":127},"data":{"label":"Stage 1","parentElement":{"id":"root","type":"case-management:root"},"tasks":[[{"id":"ttgupuwp0","type":"process","data":{"name":"=bindings.bgKwTteki","folderPath":"=bindings.bSUUURIEo","inputs":[{"name":"InputProcess","displayName":"InputProcess","value":"=datafabric.LoanApplicationCase[\"qes:{\"filterGroup\": {\"logicalOperator\": 0, \"queryFilters\": [{\"fieldName\": \"CaseId\", \"operator\": \"=\", \"value\": \"HL-999\"}]}}\"]","type":"string","title":"InputProcess","required":false,"id":"v5Zz8SK1d","var":"v5Zz8SK1d","elementId":"stage_1-ttgupuwp0"}],"outputs":[{"name":"loanObject","displayName":"loanObject","type":"json","body":"","_jsonSchema":"","custom":true,"id":"loanObject","var":"loanObject","elementId":"stage_1-ttgupuwp0"}]},"elementId":"stage_1-ttgupuwp0","displayName":"Process"}]],"isInvalidDropTarget":false,"isPendingParent":false},"width":304,"selected":false}],"edges":[{"id":"edge_initial","source":"trigger_1","target":"stage_1","sourceHandle":"trigger_1____source____right","targetHandle":"stage_1____target____left","type":"case-management:TriggerEdge","style":{"strokeWidth":3},"zIndex":1001,"data":{"parentElement":{"id":"root","type":"case-management:root"},"isIntersecting":false}}]}]]></uipath:caseManagement>
+      <uipath:migrationVersion version="9" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="trigger_1">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="d153b809-41a2-425f-8e51-72a5746a65db" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>edge_trigger_1-Activity_InitialVariablesNode</bpmn:outgoing>
+      <bpmn:messageEventDefinition />
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_InitialVariablesNode" name="Set initial re-entry/re-exit variables">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="Return_From_Secondary_Stage_To_Stage" type="string" source="" var="ReturnFromSecondaryStageToStage" custom="true" />
+          <uipath:output name="stage_1_ReEntryCount" type="integer" source="-1" var="stage1ReEntryCount" custom="true" />
+          <uipath:output name="stage_1_ReExit_To_Stage" type="string" source="" var="stage1ReExitToStage" custom="true" />
+          <uipath:output name="stage_1_SubProcess_Tasks_Complete" type="boolean" source="false" var="stage1SubProcessTasksComplete" custom="true" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>edge_trigger_1-Activity_InitialVariablesNode</bpmn:incoming>
+      <bpmn:outgoing>edge_Activity_InitialVariablesNode-stage_1</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:subProcess id="stage_1" name="Stage 1">
+      <bpmn:extensionElements>
+        <uipath:caseManagement version="1.0"><![CDATA[{"id":"stage_1","type":"case-management:Stage","position":{"x":326,"y":200},"style":{"width":304},"measured":{"width":304,"height":127},"data":{"label":"Stage 1","parentElement":{"id":"root","type":"case-management:root"},"tasks":[[{"id":"ttgupuwp0","type":"process","data":{"name":"=bindings.bgKwTteki","folderPath":"=bindings.bSUUURIEo","inputs":[{"name":"InputProcess","displayName":"InputProcess","value":"=datafabric.LoanApplicationCase[\"qes:{\"filterGroup\": {\"logicalOperator\": 0, \"queryFilters\": [{\"fieldName\": \"CaseId\", \"operator\": \"=\", \"value\": \"HL-999\"}]}}\"]","type":"string","title":"InputProcess","required":false,"id":"v5Zz8SK1d","var":"v5Zz8SK1d","elementId":"stage_1-ttgupuwp0"}],"outputs":[{"name":"loanObject","displayName":"loanObject","type":"json","body":"","_jsonSchema":"","custom":true,"id":"loanObject","var":"loanObject","elementId":"stage_1-ttgupuwp0"}]},"elementId":"stage_1-ttgupuwp0","displayName":"Process"}]],"isInvalidDropTarget":false,"isPendingParent":false},"width":304,"selected":false}]]></uipath:caseManagement>
+      </bpmn:extensionElements>
+      <bpmn:incoming>edge_Activity_InitialVariablesNode-stage_1</bpmn:incoming>
+      <bpmn:outgoing>edge_stage_1-EndEvent_From_Gateway_From_stage_1</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_stage_1">
+        <bpmn:outgoing>edge_StartEvent_stage_1-Bump_Re_Entry_Count_stage_1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="Bump_Re_Entry_Count_stage_1" name="Increment re-entry count for stage stage_1">
+        <bpmn:extensionElements>
+          <uipath:mapping version="v1">
+            <uipath:type value="BPMN.Variables" version="v1" />
+            <uipath:output name="stage_1_ReEntryCount" type="integer" source="=js:parseInt(vars.stage1ReEntryCount, 10) + 1" var="stage1ReEntryCount" custom="true" />
+          </uipath:mapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>edge_StartEvent_stage_1-Bump_Re_Entry_Count_stage_1</bpmn:incoming>
+        <bpmn:outgoing>edge_Bump_Re_Entry_Count_stage_1-Reset_ReEntry_Variables_At_Start_stage_1</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="Reset_ReEntry_Variables_At_Start_stage_1" name="Reset variables for tasks running in stage stage_1 on re-entry">
+        <bpmn:extensionElements>
+          <uipath:activity version="v1" skipCondition="=js:parseInt(vars.stage1ReEntryCount, 10) == 0">
+            <uipath:type value="uipath:Activity" version="v1" />
+            <uipath:output name="stage_1_SubProcess_Tasks_Complete" type="boolean" source="false" var="stage1SubProcessTasksComplete" custom="true" />
+          </uipath:activity>
+        </bpmn:extensionElements>
+        <bpmn:incoming>edge_Bump_Re_Entry_Count_stage_1-Reset_ReEntry_Variables_At_Start_stage_1</bpmn:incoming>
+        <bpmn:outgoing>edge_Reset_ReEntry_Variables_At_Start_stage_1-ttgupuwp0</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:callActivity id="ttgupuwp0" name="Process">
+        <bpmn:extensionElements>
+          <uipath:tags>
+            <uipath:tag key="stageId">stage_1</uipath:tag>
+            <uipath:tag key="stageName">Stage 1</uipath:tag>
+          </uipath:tags>
+          <uipath:activity version="v1" skipCondition="=js:parseInt(vars.stage1ReEntryCount, 10) &#62; 0">
+            <uipath:type value="Orchestrator.StartAgenticProcess" version="v2" />
+            <uipath:context>
+              <uipath:input name="name" type="string" value="=bindings.bgKwTteki" />
+              <uipath:input name="folderPath" type="string" value="=bindings.bSUUURIEo" />
+              <uipath:input name="_label" type="string" value="Process" />
+              <uipath:inputSchema type="jsonSchema"><![CDATA[{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"InputProcess":{"type":"string"}},"required":[]}]]></uipath:inputSchema>
+            </uipath:context>
+             <uipath:output name="loanObject" type="json" source="{&#34;LoanAmount&#34;:123}" var="loanObject" custom="true"
+              action="update"
+              target="=datafabric.LoanApplicationCase[&quot;qes:{&quot;filterGroup&quot;: {&quot;logicalOperator&quot;: 0, &quot;queryFilters&quot;: [{&quot;fieldName&quot;: &quot;CaseId&quot;, &quot;operator&quot;: &quot;=&quot;, &quot;value&quot;: &quot;HL-999&quot;}]}}&quot;]"/>
+          </uipath:activity>
+        </bpmn:extensionElements>
+        <bpmn:incoming>edge_Reset_ReEntry_Variables_At_Start_stage_1-ttgupuwp0</bpmn:incoming>
+        <bpmn:outgoing>edge_ttgupuwp0-UpdateTasksComplete_stage_1</bpmn:outgoing>
+      </bpmn:callActivity>
+      <bpmn:task id="UpdateTasksComplete_stage_1" name="Update Variable for tasks complete in stage stage_1">
+        <bpmn:extensionElements>
+          <uipath:mapping version="v1">
+            <uipath:type value="BPMN.Variables" version="v1" />
+            <uipath:output name="stage_1_SubProcess_Tasks_Complete" type="boolean" source="true" var="stage1SubProcessTasksComplete" custom="true" />
+          </uipath:mapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>edge_ttgupuwp0-UpdateTasksComplete_stage_1</bpmn:incoming>
+        <bpmn:outgoing>edge_UpdateTasksComplete_stage_1-EndEvent_For_stage_1_SubProcess</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="EndEvent_For_stage_1_SubProcess">
+        <bpmn:incoming>edge_UpdateTasksComplete_stage_1-EndEvent_For_stage_1_SubProcess</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="edge_StartEvent_stage_1-Bump_Re_Entry_Count_stage_1" sourceRef="StartEvent_stage_1" targetRef="Bump_Re_Entry_Count_stage_1" />
+      <bpmn:sequenceFlow id="edge_Bump_Re_Entry_Count_stage_1-Reset_ReEntry_Variables_At_Start_stage_1" sourceRef="Bump_Re_Entry_Count_stage_1" targetRef="Reset_ReEntry_Variables_At_Start_stage_1" />
+      <bpmn:sequenceFlow id="edge_Reset_ReEntry_Variables_At_Start_stage_1-ttgupuwp0" sourceRef="Reset_ReEntry_Variables_At_Start_stage_1" targetRef="ttgupuwp0" />
+      <bpmn:sequenceFlow id="edge_ttgupuwp0-UpdateTasksComplete_stage_1" sourceRef="ttgupuwp0" targetRef="UpdateTasksComplete_stage_1" />
+      <bpmn:sequenceFlow id="edge_UpdateTasksComplete_stage_1-EndEvent_For_stage_1_SubProcess" sourceRef="UpdateTasksComplete_stage_1" targetRef="EndEvent_For_stage_1_SubProcess" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="EndEvent_From_Gateway_From_stage_1">
+      <bpmn:incoming>edge_stage_1-EndEvent_From_Gateway_From_stage_1</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="edge_trigger_1-Activity_InitialVariablesNode" sourceRef="trigger_1" targetRef="Activity_InitialVariablesNode" />
+    <bpmn:sequenceFlow id="edge_Activity_InitialVariablesNode-stage_1" sourceRef="Activity_InitialVariablesNode" targetRef="stage_1" />
+    <bpmn:sequenceFlow id="edge_stage_1-EndEvent_From_Gateway_From_stage_1" sourceRef="stage_1" targetRef="EndEvent_From_Gateway_From_stage_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="case-management">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_trigger_1" bpmnElement="trigger_1">
+        <dc:Bounds x="57" y="52" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="57" y="93" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Activity_InitialVariablesNode" bpmnElement="Activity_InitialVariablesNode">
+        <dc:Bounds x="175" y="30" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="175" y="115" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_stage_1" bpmnElement="stage_1" isExpanded="false">
+        <dc:Bounds x="325" y="30" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="325" y="115" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EndEvent_From_Gateway_From_stage_1" bpmnElement="EndEvent_From_Gateway_From_stage_1">
+        <dc:Bounds x="507" y="52" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="507" y="93" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_trigger_1-Activity_InitialVariablesNode" bpmnElement="edge_trigger_1-Activity_InitialVariablesNode">
+        <di:waypoint x="93" y="70" />
+        <di:waypoint x="175" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_Activity_InitialVariablesNode-stage_1" bpmnElement="edge_Activity_InitialVariablesNode-stage_1">
+        <di:waypoint x="275" y="70" />
+        <di:waypoint x="325" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_stage_1-EndEvent_From_Gateway_From_stage_1" bpmnElement="edge_stage_1-EndEvent_From_Gateway_From_stage_1">
+        <di:waypoint x="425" y="70" />
+        <di:waypoint x="507" y="70" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_stage_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_stage_1" bpmnElement="stage_1">
+      <bpmndi:BPMNShape id="S_StartEvent_stage_1" bpmnElement="StartEvent_stage_1">
+        <dc:Bounds x="57" y="52" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="57" y="93" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Bump_Re_Entry_Count_stage_1" bpmnElement="Bump_Re_Entry_Count_stage_1">
+        <dc:Bounds x="175" y="30" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="175" y="115" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Reset_ReEntry_Variables_At_Start_stage_1" bpmnElement="Reset_ReEntry_Variables_At_Start_stage_1">
+        <dc:Bounds x="325" y="30" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="325" y="115" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_ttgupuwp0" bpmnElement="ttgupuwp0">
+        <dc:Bounds x="475" y="30" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="475" y="115" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_UpdateTasksComplete_stage_1" bpmnElement="UpdateTasksComplete_stage_1">
+        <dc:Bounds x="625" y="30" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="625" y="115" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EndEvent_For_stage_1_SubProcess" bpmnElement="EndEvent_For_stage_1_SubProcess">
+        <dc:Bounds x="807" y="52" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="807" y="93" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_StartEvent_stage_1-Bump_Re_Entry_Count_stage_1" bpmnElement="edge_StartEvent_stage_1-Bump_Re_Entry_Count_stage_1">
+        <di:waypoint x="93" y="70" />
+        <di:waypoint x="175" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_Bump_Re_Entry_Count_stage_1-Reset_ReEntry_Variables_At_Start_stage_1" bpmnElement="edge_Bump_Re_Entry_Count_stage_1-Reset_ReEntry_Variables_At_Start_stage_1">
+        <di:waypoint x="275" y="70" />
+        <di:waypoint x="325" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_Reset_ReEntry_Variables_At_Start_stage_1-ttgupuwp0" bpmnElement="edge_Reset_ReEntry_Variables_At_Start_stage_1-ttgupuwp0">
+        <di:waypoint x="425" y="70" />
+        <di:waypoint x="475" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_ttgupuwp0-UpdateTasksComplete_stage_1" bpmnElement="edge_ttgupuwp0-UpdateTasksComplete_stage_1">
+        <di:waypoint x="575" y="70" />
+        <di:waypoint x="625" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_UpdateTasksComplete_stage_1-EndEvent_For_stage_1_SubProcess" bpmnElement="edge_UpdateTasksComplete_stage_1-EndEvent_For_stage_1_SubProcess">
+        <di:waypoint x="725" y="70" />
+        <di:waypoint x="807" y="70" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="x-uipath-initial-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="UiPath Studio Web (https://uipath.com)" exporterVersion="ef97daa7">
+  <bpmn:message id="sendMessage" name="message" />
+  <bpmn:process id="Process_1" name="Process" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="8" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="Start event">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="6c4331a4-1051-44cb-aaa2-d37620bfefb8" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>edge_Event_start-Activity_w2B9xD</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_w2B9xD">
+      <bpmn:incoming>edge_Event_start-Activity_w2B9xD</bpmn:incoming>
+      <bpmn:outgoing>edge_Activity_w2B9xD-Activity_YEhsyC</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:boundaryEvent id="Event_WAaIdu" name="MessageBoundaryEventInterrupting" attachedToRef="Activity_w2B9xD">
+      <bpmn:messageEventDefinition messageRef="sendMessage" />
+    </bpmn:boundaryEvent>
+    <bpmn:task id="Activity_YEhsyC">
+      <bpmn:incoming>edge_Activity_w2B9xD-Activity_YEhsyC</bpmn:incoming>
+      <bpmn:outgoing>edge_Activity_YEhsyC-Event_idoZph</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:boundaryEvent id="Event_RVnGUP" name="MessageBoundaryEventNonInterrupting" cancelActivity="false" attachedToRef="Activity_YEhsyC">
+      <bpmn:messageEventDefinition messageRef="sendMessage" />
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="Event_idoZph">
+      <bpmn:incoming>edge_Activity_YEhsyC-Event_idoZph</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="edge_Event_start-Activity_w2B9xD" sourceRef="Event_start" targetRef="Activity_w2B9xD" />
+    <bpmn:sequenceFlow id="edge_Activity_w2B9xD-Activity_YEhsyC" sourceRef="Activity_w2B9xD" targetRef="Activity_YEhsyC" />
+    <bpmn:sequenceFlow id="edge_Activity_YEhsyC-Event_idoZph" sourceRef="Activity_YEhsyC" targetRef="Event_idoZph" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="260" y="200" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="260" y="241" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Activity_w2B9xD" bpmnElement="Activity_w2B9xD">
+        <dc:Bounds x="344" y="178" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="344" y="263" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_WAaIdu" bpmnElement="Event_WAaIdu">
+        <dc:Bounds x="416" y="240" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="416" y="281" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Activity_YEhsyC" bpmnElement="Activity_YEhsyC">
+        <dc:Bounds x="492" y="178" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="492" y="263" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_RVnGUP" bpmnElement="Event_RVnGUP">
+        <dc:Bounds x="565" y="240" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="565" y="281" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_idoZph" bpmnElement="Event_idoZph">
+        <dc:Bounds x="640" y="200" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="640" y="241" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_Event_start-Activity_w2B9xD" bpmnElement="edge_Event_start-Activity_w2B9xD">
+        <di:waypoint x="296" y="218" />
+        <di:waypoint x="344" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_Activity_w2B9xD-Activity_YEhsyC" bpmnElement="edge_Activity_w2B9xD-Activity_YEhsyC">
+        <di:waypoint x="444" y="218" />
+        <di:waypoint x="492" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_Activity_YEhsyC-Event_idoZph" bpmnElement="edge_Activity_YEhsyC-Event_idoZph">
+        <di:waypoint x="592" y="218" />
+        <di:waypoint x="640" y="218" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

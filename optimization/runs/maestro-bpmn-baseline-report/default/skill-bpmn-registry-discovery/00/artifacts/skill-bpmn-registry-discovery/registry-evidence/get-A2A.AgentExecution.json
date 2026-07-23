@@ -1,0 +1,68 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "A2A.AgentExecution",
+      "Label": "Start and wait for A2A agent",
+      "BpmnElement": "bpmn:ServiceTask",
+      "Placements": {
+        "Activity": {
+          "Type": "bpmn:ServiceTask"
+        }
+      },
+      "ExtensionTag": "uipath:activity",
+      "ContextFields": [],
+      "InputPattern": "mergedBody",
+      "InputName": "body",
+      "InputTarget": "body",
+      "OutputSource": null,
+      "OutputType": "A2A.AgentExecution",
+      "OutputName": "a2aResponse",
+      "UseRelativeSource": true,
+      "BindingPattern": "none",
+      "RequiresDiscovery": false,
+      "IsDynamic": true,
+      "XmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"A2A.AgentExecution\" version=\"v1\" />\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"a2aResponse\" type=\"A2A.AgentExecution\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "InputFieldNotes": "Auto-initialized by A2AFPSFormControl on load. Version is set to v2. Outputs include a2aResponse (jsonSchema with A2A response schema, source=result) and Error (any, source=Error).",
+      "OutputNotes": "Output schema includes: isSuccess (boolean), response (string), sessionId (string), status (string), taskId (string), artifacts (array of {index, parts, metadata}). Also includes Error output (type=any, source=Error).",
+      "InputFields": [
+        {
+          "Name": "agentUrl",
+          "DisplayName": "Agent URL",
+          "Type": "string",
+          "Required": true,
+          "Description": "URL of the A2A agent endpoint"
+        },
+        {
+          "Name": "skillId",
+          "DisplayName": "Skill ID",
+          "Type": "string",
+          "Required": true,
+          "Description": "Identifier for the specific skill to invoke on the agent"
+        },
+        {
+          "Name": "input",
+          "DisplayName": "Input",
+          "Type": "string",
+          "Required": true,
+          "Description": "Input text/message to send to the A2A agent"
+        },
+        {
+          "Name": "authToken",
+          "DisplayName": "Auth Token",
+          "Type": "string",
+          "Required": true,
+          "Description": "Authentication token for the A2A agent"
+        },
+        {
+          "Name": "agentName",
+          "DisplayName": "Agent Name",
+          "Type": "string",
+          "Required": true,
+          "Description": "Display name of the A2A agent"
+        }
+      ]
+    }
+  }
+}

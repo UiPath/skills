@@ -1,0 +1,13 @@
+{
+  "variant_id": "default",
+  "tasks_run": 48,
+  "tasks_succeeded": 47,
+  "tasks_failed": 1,
+  "tasks_error": 0,
+  "average_score": 0.9791666666666666,
+  "average_duration": 290.7515602956216,
+  "total_tokens": 42305613,
+  "replicate_count": 1,
+  "tasks_token_budget_exceeded": 0,
+  "tasks_cost_budget_exceeded": 0
+}

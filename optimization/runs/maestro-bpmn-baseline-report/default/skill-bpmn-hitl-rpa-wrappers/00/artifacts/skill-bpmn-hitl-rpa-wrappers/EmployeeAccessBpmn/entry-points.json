@@ -1,0 +1,19 @@
+{
+  "entryPoints": [
+    {
+      "id": "ep-employee-access-manual-start-001",
+      "filePath": "/content/EmployeeAccessBpmn.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "EmployeeId": { "type": "string" },
+          "AccessRole":  { "type": "string" }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ]
+}

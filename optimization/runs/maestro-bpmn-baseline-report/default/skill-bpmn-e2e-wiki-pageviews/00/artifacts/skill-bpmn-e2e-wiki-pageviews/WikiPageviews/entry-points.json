@@ -1,0 +1,23 @@
+{
+  "entryPoints": [
+    {
+      "id": "Entry_ManualStart",
+      "filePath": "/content/WikiPageviews.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "article": { "type": "string" },
+          "date1": { "type": "string" },
+          "date2": { "type": "string" }
+        },
+        "required": ["article", "date1", "date2"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "total": { "type": "number" }
+        }
+      }
+    }
+  ]
+}

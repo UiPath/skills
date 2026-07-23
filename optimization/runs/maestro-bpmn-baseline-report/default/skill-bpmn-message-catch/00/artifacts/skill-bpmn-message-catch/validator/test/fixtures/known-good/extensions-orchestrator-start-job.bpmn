@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="sample-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="vYggW1RyK" name="BillAmountOutput" type="number" elementId="Activity_N5j9GC"/>
+        <uipath:inputOutput id="vws4IovBe" name="DepositMoneyOutput" type="number" elementId="Activity_N5j9GC"/>
+        <uipath:inputOutput id="vJVJcF7TX" name="ActivityIdOutput" type="string" elementId="Activity_N5j9GC"/>
+        <uipath:inputOutput id="vCyhzsxyv" name="ComplexOutput" type="string" elementId="Activity_N5j9GC"/>
+        <uipath:inputOutput id="vvlztoFqf" name="ComplexObjectOutput" type="string" elementId="Activity_N5j9GC"/>
+        <uipath:inputOutput id="vRqqsw6kd" name="ArrayOutput" type="string" elementId="Activity_N5j9GC"/>
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="biHpWnwBf" name="releaseKey" type="string" default="5AAE851E-B0DE-46B8-ABCE-CF83F6B5540D" resource="process" resourceKey="5AAE851E-B0DE-46B8-ABCE-CF83F6B5540D" propertyAttribute="Key"/>
+      </uipath:bindings>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="269a0bb2-5ca0-435c-8331-b5f3b1f26c4f"/>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>xy-edge___Event_start-Activity_N5j9GC</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_N5j9GC" name="OR DepositMoney">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartJob" version="v1"/>
+          <uipath:context>
+            <uipath:input name="releaseKey" type="string" value="=bindings.biHpWnwBf"/>
+            <uipath:input name="name" type="string" value="DepositMoney"/>
+            <uipath:input name="folderId" type="string" value="1543099"/>
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="BillAmountOutput" type="string" source="=BillAmountOutput"/>
+          <uipath:output name="DepositMoneyOutput" type="string" source="=DepositMoneyOutput"/>
+          <uipath:output name="ActivityIdOutput" type="string" source="=ActivityIdOutput"/>
+          <uipath:output name="ComplexOutput" type="string" source="=ComplexOutput"/>
+          <uipath:output name="ComplexObjectOutput" type="string" source="=ComplexObjectOutput"/>
+          <uipath:output name="ArrayOutput" type="string" source="=ArrayOutput"/>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>xy-edge___Event_start-Activity_N5j9GC</bpmn:incoming>
+      <bpmn:outgoing>xy-edge___Activity_N5j9GC-Event_gkTqbg</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="Event_gkTqbg">
+      <bpmn:incoming>xy-edge___Activity_N5j9GC-Event_gkTqbg</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="xy-edge___Event_start-Activity_N5j9GC" sourceRef="Event_start" targetRef="Activity_N5j9GC"/>
+    <bpmn:sequenceFlow id="xy-edge___Activity_N5j9GC-Event_gkTqbg" sourceRef="Activity_N5j9GC" targetRef="Event_gkTqbg"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="200" y="200" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="200" y="241" width="36" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Activity_N5j9GC" bpmnElement="Activity_N5j9GC">
+        <dc:Bounds x="336" y="178" width="100" height="80"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="336" y="263" width="100" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_gkTqbg" bpmnElement="Event_gkTqbg">
+        <dc:Bounds x="536" y="200" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="536" y="241" width="36" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_xy-edge___Event_start-Activity_N5j9GC" bpmnElement="xy-edge___Event_start-Activity_N5j9GC">
+        <di:waypoint x="236" y="218"/>
+        <di:waypoint x="336" y="218"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_xy-edge___Activity_N5j9GC-Event_gkTqbg" bpmnElement="xy-edge___Activity_N5j9GC-Event_gkTqbg">
+        <di:waypoint x="436" y="218"/>
+        <di:waypoint x="536" y="218"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

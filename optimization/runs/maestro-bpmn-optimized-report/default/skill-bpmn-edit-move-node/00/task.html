@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-edit-move-node · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-edit-move-node</h1>
+    <div class="subtitle">Brownfield edit: reorder two adjacent tasks in an existing, valid Maestro BPMN by rewiring the sequence flows (BPMN has no positional move — the edit is a pure rewiring), keeping both node payloads and the diagram consistent.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">1m 24s</span>
+    <span class="badge neutral">$0.3261</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-20T23:29:09</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">1m 24s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">22</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">14</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(3/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>file_exists</td>
+  <td>The edited BPMN file is still present</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">File &#x27;Onboarding.bpmn&#x27; exists</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>file_contains</td>
+  <td>Preserve-only payload round-tripped untouched</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Includes: 2/2 found; Score: 1.00</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Tasks reordered by rewiring flows, payloads preserved, file still structurally sound</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_move_node.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_move_node.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: nodes reordered, flows rewired, payloads preserved
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">22 assistant turns</span>
+      <span class="badge neutral">in 553 · out 5275 · cache 402235</span>
+      <span class="badge neutral">1m 20s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-edit-move-node
+
+Load and follow the uipath-maestro-bpmn skill.
+
+A valid Maestro BPMN file `Onboarding.bpmn` is in the working directory. Its
+flow is: &quot;Create Account&quot; (Task_Create) -&gt; &quot;Send Welcome&quot; (Task_Welcome).
+
+Reorder the process so &quot;Send Welcome&quot; runs BEFORE &quot;Create Account&quot;: the flow
+must become Start -&gt; Send Welcome -&gt; Create Account -&gt; end. Rewire the sequence
+flows and keep the diagram edges consistent with the new order.
+
+Make a SURGICAL edit: both tasks&#x27; names, uipath:* extension payloads, element
+ids, uipath:migrationVersion, and the process variables must round-trip
+untouched — only the wiring changes.
+
+Validate the edited file locally before finishing. Do not upload, publish,
+deploy, debug, run, or pack anything, and do not pause for approval — make the
+edit end to end in one pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] I have a full picture of the file. The plan:
+
+1. Swap `&lt;bpmn:incoming&gt;`/`&lt;bpmn:outgoing&gt;` refs inside each task
+2. Fix `sourceRef`/`targetRef` on the three sequence flows
+3. Swap the diagram shape x-positions for the two tasks (so Welcome sits in the first slot, Create in the second) — edge waypoints stay identical because the positional slots don&#x27;t move
+
+All edits are surgical — IDs, names, extension payloads, variables, `uipath:migrationVersion`, and `uipath:caseManagement` are untouched.
+[ASSISTANT] Now swap the diagram shape positions so &quot;Send Welcome&quot; (Task_Welcome) occupies the first slot (x=250) and &quot;Create Account&quot; (Task_Create) occupies the second slot (x=410):
+[ASSISTANT] Now validate:
+[ASSISTANT] The validator exits 0 with `VALID`. Let me confirm the final file looks exactly right:
+[ASSISTANT] The edit is complete and validated. Here&#x27;s a precise summary of every change made and what was preserved:
+
+---
+
+## Changes made (wiring only)
+
+### Sequence flow `sourceRef`/`targetRef` (lines 44–46)
+| Flow ID | Before | After |
+|---------|--------|-------|
+| `Flow_SC` | `Start_1 → Task_Create` | `Start_1 → Task_Welcome` |
+| `Flow_CW` | `Task_Create → Task_Welcome` | `Task_Welcome → Task_Create` |
+| `Flow_WE` | `Task_Welcome → End_1` | `Task_Create → End_1` |
+
+### Task `&lt;bpmn:incoming&gt;`/`&lt;bpmn:outgoing&gt;` refs
+| Task | Before | After |
+|------|--------|-------|
+| `Task_Welcome` | incoming `Flow_CW`, outgoing `Flow_WE` | incoming `Flow_SC`, outgoing `Flow_CW` |
+| `Task_Create` | incoming `Flow_SC`, outgoing `Flow_CW` | incoming `Flow_CW`, outgoing `Flow_WE` |
+
+### Diagram shape positions swapped
+| Shape | Before (x) | After (x) |
+|-------|-----------|----------|
+| `S_Task_Welcome` (`Task_Welcome`) | 410 | 250 |
+| `S_Task_Create` (`Task_Create`) | 250 | 410 |
+
+Edge waypoints (`E_Flow_SC`, `E_Flow_CW`, `E_Flow_WE`) are unchanged — they correctly connect the positional slots left-to-right at the same coordinates.
+
+---
+
+## Round-tripped untouched
+- Both tasks&#x27; `name`, `id`, `scriptFormat`, `&lt;bpmn:script&gt;` bodies
+- All `uipath:*` extension payloads (`uipath:scriptVersion`, `uipath:mapping`, `uipath:type`, `uipath:input`, `uipath:output`)
+- `uipath:migrationVersion version=&quot;11.5&quot;`
+- `uipath:caseManagement` opaque blob
+- `uipath:variables` (`Var_Email`, `Var_AccountId`)
+- All element IDs (`Flow_SC`, `Flow_CW`, `Flow_WE`, `Start_1`, `End_1`, shape/edge IDs)
+- `bpmndi:BPMNDiagram` shape/edge IDs and all other diagram attributes
+
+**Validator result: `VALID` (exit 0)**
+[RESULT - SUCCESS] The edit is complete and validated. Here&#x27;s a precise summary of every change made and what was preserved:
+
+---
+
+## Changes made (wiring only)
+
+### Sequence flow `sourceRef`/`targetRef` (lines 44–46)
+| Flow ID | Before | After |
+|---------|--------|-------|
+| `Flow_SC` | `Start_1 → Task_Create` | `Start_1 → Task_Welcome` |
+| `Flow_CW` | `Task_Create → Task_Welcome` | `Task_Welcome → Task_Create` |
+| `Flow_WE` | `Task_Welcome → End_1` | `Task_Create → End_1` |
+
+### Task `&lt;bpmn:incoming&gt;`/`&lt;bpmn:outgoing&gt;` refs
+| Task | Before | After |
+|------|--------|-------|
+| `Task_Welcome` | incoming `Flow_CW`, outgoing `Flow_WE` | incoming `Flow_SC`, outgoing `Flow_CW` |
+| `Task_Create` | incoming `Flow_SC`, outgoing `Flow_CW` | incoming `Flow_CW`, outgoing `Flow_WE` |
+
+### Diagram shape positions swapped
+| Shape | Before (x) | After (x) |
+|-------|-----------|----------|
+| `S_Task_Welcome` (`Task_Welcome`) | 410 | 250 |
+| `S_Task_Create` (`Task_Create`) | 250 | 410 |
+
+Edge waypoints (`E_Flow_SC`, `E_Flow_CW`, `E_Flow_WE`) are unchanged — they correctly connect the positional slots left-to-right at the same coordinates.
+
+---
+
+## Round-tripped untouched
+- Both tasks&#x27; `name`, `id`, `scriptFormat`, `&lt;bpmn:script&gt;` bodies
+- All `uipath:*` extension payloads (`uipath:scriptVersion`, `uipath:mapping`, `uipath:type`, `uipath:input`, `uipath:output`)
+- `uipath:migrationVersion version=&quot;11.5&quot;`
+- `uipath:caseManagement` opaque blob
+- `uipath:variables` (`Var_Email`, `</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (14)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath-maestro-bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-move-node/Onboarding.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+2	&lt;bpmn:definitions
+3	    xmlns:bpmn=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot;
+4	    xmlns:bpmndi=&quot;http://www.omg.org/spec/BPMN/20100524/DI&quot;
+5	    xmlns:dc=&quot;http://www.omg.org/spec/DD/20100524/DC&quot;
+6	    xmlns:di=&quot;http://www.omg.org/spec/DD/20100524/DI&quot;
+7	    xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot;
+8	    id=&quot;Definitions_Onboarding&quot; targetNamespace=&quot;http://bpmn.io/schema/bpmn&quot;
+9	    exporter=&quot;UiPath (https://bpmn.uipath.com)&quot; exporterVersion=&quot;1.0&quot;&gt;
+10	  &lt;bpmn:process id=&quot;Process_Onboarding&quot; isExecutable=&quot;true&quot;&gt;
+11	    &lt;bpmn:extensionElements&gt;
+12	      &lt;uipath:migrationVersion version=&quot;11.5&quot; /&gt;
+13	      &lt;uipath:caseManagement version=&quot;v1&quot;&gt;&lt;![CDATA[{&quot;owner&quot;:&quot;people-ops&quot;,&quot;opaque&quot;:&quot;preserve-only-do-not-touch&quot;}]]&gt;&lt;/uipath:caseManagement&gt;
+14	      &lt;uipath:variables version=&quot;v1&quot;&gt;
+15	        &lt;uipath:inputOutput id=&quot;Var_Email&quot; name=&quot;Email&quot; type=&quot;string&quot; /&gt;
+16	        &lt;uipath:inputOutput id=&quot;Var_AccountId&quot; name=&quot;AccountId&quot; type=&quot;string&quot; /&gt;
+17	      &lt;/uipath:variables&gt;
+18	    &lt;/bpmn:extensionElements&gt;
+19	    &lt;bpmn:startEvent id=&quot;Start_1&quot; name=&quot;Start&quot;&gt;&lt;bpmn:outgoing&gt;Flow_SC&lt;/bpmn:outgoing&gt;&lt;/bpmn:startEvent&gt;
+20	    &lt;bpmn:scriptTask id=&quot;Task_Create
+
+… (truncated, 2901 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-move-node/Onboarding.bpmn&quot;,
+  &quot;old_string&quot;: &quot;    &lt;bpmn:scriptTask id=\&quot;Task_Create\&quot; name=\&quot;Create Account\&quot; scriptFormat=\&quot;JavaScript\&quot;&gt;\n      &lt;bpmn:extensionElements&gt;\n        &lt;uipath:scriptVersion value=\&quot;v3\&quot; /&gt;\n        &lt;uipath:mapping version=\&quot;v1\&quot;&gt;\n          &lt;uipath:type value=\&quot;BPMN.ScriptTask\&quot; version=\&quot;v1\&quot; /&gt;\n          &lt;uipath:input name=\&quot;args\&quot;&gt;&lt;![CDATA[{\&quot;email\&quot;:\&quot;=vars.Var_Email\&quot;}]]&gt;&lt;/uipath:input&gt;\n          &lt;uipath:output name=\&quot;accountId\&quot; type… (904 more chars)&quot;,
+  &quot;new_string&quot;: &quot;    &lt;bpmn:scriptTask id=\&quot;Task_Create\&quot; name=\&quot;Create Account\&quot; scriptFormat=\&quot;JavaScript\&quot;&gt;\n      &lt;bpmn:extensionElements&gt;\n        &lt;uipath:scriptVersion value=\&quot;v3\&quot; /&gt;\n        &lt;uipath:mapping version=\&quot;v1\&quot;&gt;\n          &lt;uipath:type value=\&quot;BPMN.ScriptTask\&quot; version=\&quot;v1\&quot; /&gt;\n          &lt;uipath:input name=\&quot;args\&quot;&gt;&lt;![CDATA[{\&quot;email\&quot;:\&quot;=vars.Var_Email\&quot;}]]&gt;&lt;/uipath:input&gt;\n          &lt;uipath:output name=\&quot;accountId\&quot; type… (904 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-edit-move-node/Onboarding.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-move-node/Onboarding.bpmn&quot;,
+  &quot;old_string&quot;: &quot;    &lt;bpmn:sequenceFlow id=\&quot;Flow_SC\&quot; sourceRef=\&quot;Start_1\&quot; targetRef=\&quot;Task_Create\&quot; /&gt;\n    &lt;bpmn:sequenceFlow id=\&quot;Flow_CW\&quot; sourceRef=\&quot;Task_Create\&quot; targetRef=\&quot;Task_Welcome\&quot; /&gt;\n    &lt;bpmn:sequenceFlow id=\&quot;Flow_WE\&quot; sourceRef=\&quot;Task_Welcome\&quot; targetRef=\&quot;End_1\&quot; /&gt;&quot;,
+  &quot;new_string&quot;: &quot;    &lt;bpmn:sequenceFlow id=\&quot;Flow_SC\&quot; sourceRef=\&quot;Start_1\&quot; targetRef=\&quot;Task_Welcome\&quot; /&gt;\n    &lt;bpmn:sequenceFlow id=\&quot;Flow_CW\&quot; sourceRef=\&quot;Task_Welcome\&quot; targetRef=\&quot;Task_Create\&quot; /&gt;\n    &lt;bpmn:sequenceFlow id=\&quot;Flow_WE\&quot; sourceRef=\&quot;Task_Create\&quot; targetRef=\&quot;End_1\&quot; /&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-edit-move-node/Onboarding.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-move-node/Onboarding.bpmn&quot;,
+  &quot;old_string&quot;: &quot;      &lt;bpmndi:BPMNShape id=\&quot;S_Task_Create\&quot; bpmnElement=\&quot;Task_Create\&quot;&gt;&lt;dc:Bounds x=\&quot;250\&quot; y=\&quot;78\&quot; width=\&quot;100\&quot; height=\&quot;80\&quot; /&gt;&lt;/bpmndi:BPMNShape&gt;\n      &lt;bpmndi:BPMNShape id=\&quot;S_Task_Welcome\&quot; bpmnElement=\&quot;Task_Welcome\&quot;&gt;&lt;dc:Bounds x=\&quot;410\&quot; y=\&quot;78\&quot; width=\&quot;100\&quot; height=\&quot;80\&quot; /&gt;&lt;/bpmndi:BPMNShape&gt;&quot;,
+  &quot;new_string&quot;: &quot;      &lt;bpmndi:BPMNShape id=\&quot;S_Task_Welcome\&quot; bpmnElement=\&quot;Task_Welcome\&quot;&gt;&lt;dc:Bounds x=\&quot;250\&quot; y=\&quot;78\&quot; width=\&quot;100\&quot; height=\&quot;80\&quot; /&gt;&lt;/bpmndi:BPMNShape&gt;\n      &lt;bpmndi:BPMNShape id=\&quot;S_Task_Create\&quot; bpmnElement=\&quot;Task_Create\&quot;&gt;&lt;dc:Bounds x=\&quot;410\&quot; y=\&quot;78\&quot; width=\&quot;100\&quot; height=\&quot;80\&quot; /&gt;&lt;/bpmndi:BPMNShape&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-edit-move-node/Onboarding.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">536ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator &amp;&amp; npm install --silent 2&gt;/dev/null; node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-edit-move-node/Onboarding.bpmn&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+node:internal/modules/package_json_reader:314
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package &#x27;bpmn-moddle&#x27; imported from /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+  code: &#x27;ERR_MODULE_NOT_FOUND&#x27;
+}
+
+Node.js v22.23.1</pre>
+    <h4>Error</h4><pre>Exit code 1
+node:internal/modules/package_json_reader:314
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package &#x27;bpmn-moddle&#x27; imported from /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+  code: &#x27;ERR_MODULE_NOT_FOUND&#x27;
+}
+
+Node.js v22.23.1</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">301ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator &amp;&amp; npm install 2&gt;&amp;1 | tail -5; node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-edit-move-node/Onboarding.bpmn&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+npm error errno -2
+npm error enoent ENOENT: no such file or directory, mkdir &#x27;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules&#x27;
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+npm error A complete log of this run can be found in: /home/azureuser/.npm/_logs/2026-07-20T23_30_04_165Z-debug-0.log
+node:internal/modules/package_json_reader:314
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package &#x27;bpmn-moddle&#x27; imported from /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob
+
+… (truncated, 105 more chars)</pre>
+    <h4>Error</h4><pre>Exit code 1
+npm error errno -2
+npm error enoent ENOENT: no such file or directory, mkdir &#x27;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules&#x27;
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+npm error A complete log of this run can be found in: /home/azureuser/.npm/_logs/2026-07-20T23_30_04_165Z-debug-0.log
+node:internal/modules/package_json_reader:314
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package &#x27;bpmn-moddle&#x27; imported from /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+  code: &#x27;ERR_MODULE_NOT_FOUND&#x27;
+}
+
+Node.js v22.23.1</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>README.md
+bpmn-spec.json
+model.mjs
+package.json
+rules.mjs
+samples
+test
+uipath-moddle.v1.json
+validate-bpmn.mjs</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/package.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;name&quot;: &quot;uipath-maestro-bpmn-validator&quot;,
+  &quot;private&quot;: true,
+  &quot;type&quot;: &quot;module&quot;,
+  &quot;description&quot;: &quot;Offline semantic validator for UiPath Maestro BPMN XML. Reconstructs the PO.Frontend Node/Edge/CanvasState model from the parsed BPMN and runs all 19 PO.Frontend validation rules.&quot;,
+  &quot;bin&quot;: {
+    &quot;validate-bpmn&quot;: &quot;./validate-bpmn.mjs&quot;
+  },
+  &quot;scripts&quot;: {
+    &quot;test&quot;: &quot;node test/run-tests.mjs&quot;
+  },
+  &quot;dependencies&quot;: {
+    &quot;bpmn-moddle&quot;: &quot;^9.0.2&quot;,
+    &quot;luxon&quot;: &quot;^3.4.4&quot;,
+    &quot;sax&quot;: &quot;^1.6.0&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">259ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator &amp;&amp; npm install --prefer-offline 2&gt;&amp;1 | tail -3&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+npm error A complete log of this run can be found in: /home/azureuser/.npm/_logs/2026-07-20T23_30_12_513Z-debug-0.log
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-edit-move-node</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">435ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;npm install --prefix /tmp/bpmn-validator bpmn-moddle@9 luxon@3 sax@1 2&gt;&amp;1 | tail -3&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>added 7 packages in 369ms</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cp -r /tmp/bpmn-validator/node_modules /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/ &amp;&amp; node /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs /work/output/artifacts/skill-bpmn-edit-move-node/Onboarding.bpmn&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+cp: cannot create directory &#x27;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules&#x27;: Read-only file system</pre>
+    <h4>Error</h4><pre>Exit code 1
+cp: cannot create directory &#x27;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules&#x27;: Read-only file system</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">97ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cp -r /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator /tmp/bpmn-validator-run &amp;&amp; cp -r /tmp/bpmn-validator/node_modules /tmp/bpmn-validator-run/ &amp;&amp; node /tmp/bpmn-validator-run/validate-bpmn.mjs /work/output/artifacts/skill-bpmn-edit-move-node/Onboarding.bpmn&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>VALID</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-move-node/Onboarding.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+2	&lt;bpmn:definitions
+3	    xmlns:bpmn=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot;
+4	    xmlns:bpmndi=&quot;http://www.omg.org/spec/BPMN/20100524/DI&quot;
+5	    xmlns:dc=&quot;http://www.omg.org/spec/DD/20100524/DC&quot;
+6	    xmlns:di=&quot;http://www.omg.org/spec/DD/20100524/DI&quot;
+7	    xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot;
+8	    id=&quot;Definitions_Onboarding&quot; targetNamespace=&quot;http://bpmn.io/schema/bpmn&quot;
+9	    exporter=&quot;UiPath (https://bpmn.uipath.com)&quot; exporterVersion=&quot;1.0&quot;&gt;
+10	  &lt;bpmn:process id=&quot;Process_Onboarding&quot; isExecutable=&quot;true&quot;&gt;
+11	    &lt;bpmn:extensionElements&gt;
+12	      &lt;uipath:migrationVersion version=&quot;11.5&quot; /&gt;
+13	      &lt;uipath:caseManagement version=&quot;v1&quot;&gt;&lt;![CDATA[{&quot;owner&quot;:&quot;people-ops&quot;,&quot;opaque&quot;:&quot;preserve-only-do-not-touch&quot;}]]&gt;&lt;/uipath:caseManagement&gt;
+14	      &lt;uipath:variables version=&quot;v1&quot;&gt;
+15	        &lt;uipath:inputOutput id=&quot;Var_Email&quot; name=&quot;Email&quot; type=&quot;string&quot; /&gt;
+16	        &lt;uipath:inputOutput id=&quot;Var_AccountId&quot; name=&quot;AccountId&quot; type=&quot;string&quot; /&gt;
+17	      &lt;/uipath:variables&gt;
+18	    &lt;/bpmn:extensionElements&gt;
+19	    &lt;bpmn:startEvent id=&quot;Start_1&quot; name=&quot;Start&quot;&gt;&lt;bpmn:outgoing&gt;Flow_SC&lt;/bpmn:outgoing&gt;&lt;/bpmn:startEvent&gt;
+20	    &lt;bpmn:scriptTask id=&quot;Task_Create
+
+… (truncated, 2901 more chars)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">14</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">11 (79%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">3</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">126ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>8</td></tr><tr><td class='mono'>Edit</td><td>3</td></tr><tr><td class='mono'>Read</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>536ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr><tr><td class='mono'>Bash</td><td>435ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;npm install --prefix /tmp/bpmn-valida...</td></tr><tr><td class='mono'>Bash</td><td>301ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr><tr><td class='mono'>Bash</td><td>259ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr><tr><td class='mono'>Bash</td><td>97ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cp -r /home/azureuser/projects/skills...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">1m 24s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">22</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">1m 20s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">553</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">5,275</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">33,235</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">402,235</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">441,298</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.3261</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>70</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.197.0-alpha.20260626.7673</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;agent-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;functions-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;gov-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;insights-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;solution-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.197.0&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.4</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.46.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-20T23:30:33</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

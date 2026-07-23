@@ -1,0 +1,8 @@
+{
+  "name": "FeetInchesBpmn",
+  "description": "Feet/Inches unit conversion: f2i (feet to inches), i2f (inches to feet), y2f (yards to feet).",
+  "main": "FeetInchesBpmn.bpmn",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {},
+  "designOptions": {}
+}

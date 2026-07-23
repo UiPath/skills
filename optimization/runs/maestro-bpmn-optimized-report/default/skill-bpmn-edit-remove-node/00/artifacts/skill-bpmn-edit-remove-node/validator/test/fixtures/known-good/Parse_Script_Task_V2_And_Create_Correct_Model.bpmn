@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="sample-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="vvhW6RTnd" name="scriptResponse" type="jsonSchema" elementId="ScriptTask_1">
+          <![CDATA[
+            {
+              "type": "object",
+              "properties": {
+                "outputVar": {
+                  "type": "string"
+                }
+              }
+            }
+          ]]>
+        </uipath:inputOutput>
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:scriptTask id="ScriptTaskId" scriptFormat="JavaScript" name="ScriptTaskName">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v2"/>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="scriptResponse" type="jsonSchema" source="=result" var="vvhW6RTnd" custom="true"/>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:script><![CDATA[return null;]]></bpmn:script>
+    </bpmn:scriptTask>
+  </bpmn:process>
+</bpmn:definitions>

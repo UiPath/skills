@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="sample-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="06040a68-1da7-40d1-8082-74ccc6ba3f1a" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>flow_start_to_gw</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:eventBasedGateway id="Gateway_ebg">
+      <bpmn:incoming>flow_start_to_gw</bpmn:incoming>
+      <bpmn:outgoing>flow_gw_to_none</bpmn:outgoing>
+      <bpmn:outgoing>flow_gw_to_timer</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="Event_none" name="None catch (wins instantly)">
+      <bpmn:incoming>flow_gw_to_none</bpmn:incoming>
+      <bpmn:outgoing>flow_none_to_scriptA</bpmn:outgoing>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Event_timer" name="Timer catch (loses, cancelled)">
+      <bpmn:incoming>flow_gw_to_timer</bpmn:incoming>
+      <bpmn:outgoing>flow_timer_to_scriptB</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT60S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:scriptTask id="Activity_ScriptA" name="Script A" scriptFormat="JavaScript">
+      <bpmn:script>console.log('A')</bpmn:script>
+      <bpmn:incoming>flow_none_to_scriptA</bpmn:incoming>
+      <bpmn:outgoing>flow_scriptA_to_endA</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Activity_ScriptB" name="Script B" scriptFormat="JavaScript">
+      <bpmn:script>console.log('B')</bpmn:script>
+      <bpmn:incoming>flow_timer_to_scriptB</bpmn:incoming>
+      <bpmn:outgoing>flow_scriptB_to_endB</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="Event_endA">
+      <bpmn:incoming>flow_scriptA_to_endA</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="Event_endB">
+      <bpmn:incoming>flow_scriptB_to_endB</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_start_to_gw" sourceRef="Event_start" targetRef="Gateway_ebg" />
+    <bpmn:sequenceFlow id="flow_gw_to_none" sourceRef="Gateway_ebg" targetRef="Event_none" />
+    <bpmn:sequenceFlow id="flow_gw_to_timer" sourceRef="Gateway_ebg" targetRef="Event_timer" />
+    <bpmn:sequenceFlow id="flow_none_to_scriptA" sourceRef="Event_none" targetRef="Activity_ScriptA" />
+    <bpmn:sequenceFlow id="flow_timer_to_scriptB" sourceRef="Event_timer" targetRef="Activity_ScriptB" />
+    <bpmn:sequenceFlow id="flow_scriptA_to_endA" sourceRef="Activity_ScriptA" targetRef="Event_endA" />
+    <bpmn:sequenceFlow id="flow_scriptB_to_endB" sourceRef="Activity_ScriptB" targetRef="Event_endB" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1" />
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,715 @@
+{
+  "name": "UiPath",
+  "uri": "http://uipath.org/schema/bpmn",
+  "prefix": "uipath",
+  "xml": {
+    "tagAlias": "lowerCase"
+  },
+  "associations": [],
+  "types": [
+    {
+      "name": "Variables",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "input",
+          "type": "Variable",
+          "isMany": true,
+          "xml": {
+            "serialize": "input"
+          }
+        },
+        {
+          "name": "inputOutput",
+          "type": "Variable",
+          "isMany": true,
+          "xml": {
+            "serialize": "inputOutput"
+          }
+        },
+        {
+          "name": "output",
+          "type": "Variable",
+          "isMany": true,
+          "xml": {
+            "serialize": "output"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Variable",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "id",
+          "isAttr": true,
+          "isId": true,
+          "type": "String"
+        },
+        {
+          "name": "name",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "type",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "subType",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "elementId",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "canonicalId",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "default",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "body",
+          "type": "String",
+          "isBody": true
+        },
+        {
+          "name": "custom",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "internal",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "CaseVariables",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "inputOutput",
+          "type": "CaseVariable",
+          "isMany": true,
+          "xml": {
+            "serialize": "inputOutput"
+          }
+        }
+      ]
+    },
+    {
+      "name": "CaseVariable",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "id",
+          "isAttr": true,
+          "isId": true,
+          "type": "String"
+        },
+        {
+          "name": "name",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "type",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "subType",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "value",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "variableType",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "dynamic",
+          "isAttr": true,
+          "type": "Boolean"
+        }
+      ]
+    },
+    {
+      "name": "Binding",
+      "superClass": ["Variable"],
+      "properties": [
+        {
+          "name": "resource",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "resourceSubType",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "resourceKey",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "propertyAttribute",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "Bindings",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "binding",
+          "type": "Binding",
+          "isMany": true,
+          "xml": {
+            "name": "binding"
+          }
+        }
+      ]
+    },
+    {
+      "name": "EntryPointId",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "value",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "Event",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "type",
+          "type": "Type"
+        },
+        {
+          "name": "context",
+          "type": "Context"
+        },
+        {
+          "name": "input",
+          "type": "Input",
+          "isMany": true
+        },
+        {
+          "name": "output",
+          "type": "Output",
+          "isMany": true
+        },
+        {
+          "name": "skipCondition",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "Activity",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "type",
+          "type": "Type"
+        },
+        {
+          "name": "context",
+          "type": "Context"
+        },
+        {
+          "name": "input",
+          "type": "Input",
+          "isMany": true
+        },
+        {
+          "name": "output",
+          "type": "Output",
+          "isMany": true
+        },
+        {
+          "name": "skipCondition",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "Mapping",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "type",
+          "type": "Type"
+        },
+        {
+          "name": "context",
+          "type": "Context"
+        },
+        {
+          "name": "input",
+          "type": "Input",
+          "isMany": true
+        },
+        {
+          "name": "output",
+          "type": "Output",
+          "isMany": true
+        }
+      ]
+    },
+    {
+      "name": "ScriptVersion",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "value",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "MigrationVersion",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "IntsvcActivityConfig",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "Type",
+      "properties": [
+        {
+          "name": "value",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "Context",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "input",
+          "type": "Input",
+          "isMany": true
+        },
+        {
+          "name": "inputSchema",
+          "type": "InputSchema"
+        },
+        {
+          "name": "outputSchema",
+          "type": "OutputSchema"
+        }
+      ]
+    },
+    {
+      "name": "Input",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "name",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "type",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "subType",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "value",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "target",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "body",
+          "type": "String",
+          "isBody": true
+        },
+        {
+          "name": "options",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "Output",
+      "properties": [
+        {
+          "name": "name",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "type",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "subType",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "source",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "var",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "body",
+          "type": "String",
+          "isBody": true
+        },
+        {
+          "name": "custom",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "internal",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "target",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "action",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "options",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "originalVar",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "InputOutput",
+      "properties": [
+        {
+          "name": "name",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "type",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "subType",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "source",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "elementId",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "default",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "InputSchema",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "body",
+          "type": "String",
+          "isBody": true
+        }
+      ]
+    },
+    {
+      "name": "OutputSchema",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "body",
+          "type": "String",
+          "isBody": true
+        }
+      ]
+    },
+    {
+      "name": "LoopCharacteristics",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "inputCollection",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "inputElement",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "CaseManagement",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "value",
+          "type": "String",
+          "isBody": true
+        }
+      ]
+    },
+    {
+      "name": "Retry",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "maxRetryCount",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "retryBackoff",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "retryAllErrors",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "retryBackoffType",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "maxDuration",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "exponentialBase",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "ErrorMapping",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "error",
+          "type": "Error",
+          "isMany": true,
+          "xml": {
+            "name": "error"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "id",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "errorRef",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "priority",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "condition",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "detail",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "retryable",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "Tags",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "tags",
+          "type": "Tag",
+          "isMany": true,
+          "xml": {
+            "name": "tag"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tag",
+      "properties": [
+        {
+          "name": "key",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "value",
+          "type": "String",
+          "isBody": true
+        }
+      ]
+    },
+    {
+      "name": "IsTransactionRoot",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "value",
+          "type": "Boolean",
+          "isAttr": true
+        }
+      ]
+    }
+  ]
+}

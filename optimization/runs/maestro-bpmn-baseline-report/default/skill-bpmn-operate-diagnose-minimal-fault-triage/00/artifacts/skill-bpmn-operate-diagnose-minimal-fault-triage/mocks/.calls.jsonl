@@ -1,0 +1,23 @@
+{"ts": 1784588845.790975, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588851.0130694, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588859.1193433, "args": "maestro bpmn job status job-triage-001 --folder-key folder-public --output json", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588860.894411, "args": "maestro bpmn job status job-triage-001 --output json", "matched_rule": "maestro bpmn job status job-triage-001 --output json", "fixture": "job-status.json", "exit_code": 0}
+{"ts": 1784588861.0978038, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588862.8342016, "args": "maestro bpmn instance incidents inst-triage-001 -f folder-public --output json", "matched_rule": "maestro bpmn instance incidents inst-triage-001 -f folder-public --output json", "fixture": "instance-incidents.json", "exit_code": 0}
+{"ts": 1784588863.0159233, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588864.4408228, "args": "maestro bpmn incident get inc-triage-001 --folder-key folder-public --output json", "matched_rule": "maestro bpmn incident get inc-triage-001 --folder-key folder-public --output json", "fixture": "incident-get.json", "exit_code": 0}
+{"ts": 1784588864.6202714, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588867.0954394, "args": "maestro bpmn instance variables inst-triage-001 -f folder-public --output json", "matched_rule": "maestro bpmn instance variables inst-triage-001 -f folder-public --output json", "fixture": "instance-variables.json", "exit_code": 0}
+{"ts": 1784588867.281809, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588870.0849454, "args": "maestro bpmn instance variables inst-triage-001 -f folder-public --parent-element-id Task_InvokeLegacyRpa --output json", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588871.8704157, "args": "maestro bpmn instance asset inst-triage-001 -f folder-public --output json", "matched_rule": "maestro bpmn instance asset inst-triage-001 -f folder-public --output json", "fixture": "instance-asset.json", "exit_code": 0}
+{"ts": 1784588872.076273, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588873.5693927, "args": "maestro bpmn instance element-executions inst-triage-001 -f folder-public --output json", "matched_rule": "maestro bpmn instance element-executions inst-triage-001 -f folder-public --output json", "fixture": "element-executions.json", "exit_code": 0}
+{"ts": 1784588873.7594466, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588876.0591662, "args": "maestro bpmn instance cursors inst-triage-001 -f folder-public --output json", "matched_rule": "maestro bpmn instance cursors inst-triage-001 -f folder-public --output json", "fixture": "cursors.json", "exit_code": 0}
+{"ts": 1784588876.2606208, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588877.5664473, "args": "maestro bpmn incident summary --output json", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588879.4719765, "args": "maestro bpmn processes incidents process-invoice-triage --output json", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588911.3547099, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588911.3600392, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784588919.2983322, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}

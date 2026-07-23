@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="538c0e4" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.5.0" camunda:diagramRelationId="99e53a64-a5cb-44a1-ac1e-bccc311eca04">
+  <bpmn:process id="Process_1o1jtwi" name="New BPMN Diagram" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:properties>
+        <zeebe:property name="Money" value="100" />
+      </zeebe:properties>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_0n5qtzg</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_0dlgexh" name="Deposit Money">
+      <bpmn:extensionElements>
+        <uipath:task name="DepositMoney" type="UiPath.RunOrchestratorJob">
+          <uipath:ioMapping>
+            <uipath:input target="BillAmount" source="1000" />
+            <uipath:input target="ActivityId" source="" />
+            <uipath:input target="ComplexObject" source="" />
+            <uipath:input target="InputArray" source="" />
+            <uipath:output target="BillAmountOutput" />
+            <uipath:output target="DepositMoneyOutput" />
+            <uipath:output target="ActivityIdOutput" />
+            <uipath:output target="ComplexOutput" />
+            <uipath:output target="ComplexObjectOutput" />
+            <uipath:output target="ArrayOutput" />
+          </uipath:ioMapping>
+          <uipath:taskParameters>
+            <uipath:taskParameter name="releaseKey" value="5AAE851E-B0DE-46B8-ABCE-CF83F6B5540D" />
+          </uipath:taskParameters>
+        </uipath:task>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0n5qtzg</bpmn:incoming>
+      <bpmn:outgoing>Flow_0pfne6h</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_0pfne6h" name="" sourceRef="Activity_0dlgexh" targetRef="Activity_0kzc9w6" />
+    <bpmn:task id="Activity_0kzc9w6" name="Send purchase approval request">
+      <bpmn:extensionElements>
+        <uipath:task name="PurchaseOrderV2" type="UiPath.HumanInLoopTask">
+          <uipath:ioMapping>
+            <uipath:input target="Item" source="test1" />
+            <uipath:input target="Price" source="500" />
+            <uipath:input target="OrderCreatedBy" source="tester" />
+            <uipath:input target="ActivityId" source="" />
+            <uipath:output target="Country" />
+            <uipath:output target="Comments" />
+            <uipath:output target="ActivityIdOutput" />
+            <uipath:output target="Action" />
+          </uipath:ioMapping>
+          <uipath:taskParameters>
+            <uipath:taskParameter name="appId" value="ID0b5e45d4cfc4491297001b3235a454d2" />
+            <uipath:taskParameter name="appVersion" value="1" />
+            <uipath:taskParameter name="title" value="PurchaseOrderV2" />
+            <uipath:taskParameter name="actions" value="Approve,Reject" />
+            <uipath:taskParameter name="appDesignerUrl" value="https://alpha.uipath.com/popoc/apps_/default/edit/ID0b5e45d4cfc4491297001b3235a454d2?el=VB" />
+          </uipath:taskParameters>
+        </uipath:task>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0pfne6h</bpmn:incoming>
+      <bpmn:incoming>Flow_0z0vbae</bpmn:incoming>
+      <bpmn:outgoing>Flow_0h8delg</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="Event_00gf5dy">
+      <bpmn:incoming>Flow_1qmpv7x</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0h8delg" sourceRef="Activity_0kzc9w6" targetRef="Gateway_1or67hp" />
+    <bpmn:exclusiveGateway id="Gateway_1or67hp">
+      <bpmn:incoming>Flow_0h8delg</bpmn:incoming>
+      <bpmn:outgoing>Flow_17z6xqs</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1153i54</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_17z6xqs" name="Approved" sourceRef="Gateway_1or67hp" targetRef="Activity_19bfqsa">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">Action="approved"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:task id="Activity_19bfqsa" name="Send notification email">
+      <bpmn:extensionElements>
+        <uipath:task name="SendEmail" type="UiPath.RunOrchestratorJob">
+          <uipath:ioMapping>
+            <uipath:input target="DecisionInput" source="Action" />
+            <uipath:input target="ActivityId" source="" />
+            <uipath:output target="EmailSubject" />
+            <uipath:output target="ActivityIdOutput" />
+          </uipath:ioMapping>
+          <uipath:taskParameters>
+            <uipath:taskParameter name="releaseKey" value="CFE52CA0-F8F0-45D2-9303-B271F004599F" />
+          </uipath:taskParameters>
+        </uipath:task>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_17z6xqs</bpmn:incoming>
+      <bpmn:outgoing>Flow_1qmpv7x</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_1qmpv7x" sourceRef="Activity_19bfqsa" targetRef="Event_00gf5dy" />
+    <bpmn:sequenceFlow id="Flow_0n5qtzg" sourceRef="StartEvent_1" targetRef="Activity_0dlgexh" />
+    <bpmn:sequenceFlow id="Flow_1153i54" name="Denied" sourceRef="Gateway_1or67hp" targetRef="Event_0cc4q2f" />
+    <bpmn:intermediateCatchEvent id="Event_0cc4q2f">
+      <bpmn:incoming>Flow_1153i54</bpmn:incoming>
+      <bpmn:outgoing>Flow_0z0vbae</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_1orsb1n">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_0z0vbae" sourceRef="Event_0cc4q2f" targetRef="Activity_0kzc9w6" />
+    <bpmn:textAnnotation id="TextAnnotation_0mf0zgf">
+      <bpmn:text>Wait 30s</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0yy4uxz" associationDirection="None" sourceRef="Event_0cc4q2f" targetRef="TextAnnotation_0mf0zgf" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1o1jtwi">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="182" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="159" y="225" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0dlgexh_di" bpmnElement="Activity_0dlgexh">
+        <dc:Bounds x="330" y="160" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0kzc9w6_di" bpmnElement="Activity_0kzc9w6">
+        <dc:Bounds x="520" y="160" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1or67hp_di" bpmnElement="Gateway_1or67hp" isMarkerVisible="true">
+        <dc:Bounds x="735" y="175" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1r7y8qc_di" bpmnElement="Event_0cc4q2f">
+        <dc:Bounds x="742" y="372" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_19bfqsa_di" bpmnElement="Activity_19bfqsa">
+        <dc:Bounds x="910" y="160" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_00gf5dy_di" bpmnElement="Event_00gf5dy">
+        <dc:Bounds x="1122" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0yy4uxz_di" bpmnElement="Association_0yy4uxz">
+        <di:waypoint x="777" y="383" />
+        <di:waypoint x="811" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0pfne6h_di" bpmnElement="Flow_0pfne6h">
+        <di:waypoint x="430" y="200" />
+        <di:waypoint x="520" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0h8delg_di" bpmnElement="Flow_0h8delg">
+        <di:waypoint x="620" y="200" />
+        <di:waypoint x="735" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17z6xqs_di" bpmnElement="Flow_17z6xqs">
+        <di:waypoint x="785" y="200" />
+        <di:waypoint x="910" y="200" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="816" y="183" width="47" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1qmpv7x_di" bpmnElement="Flow_1qmpv7x">
+        <di:waypoint x="1010" y="200" />
+        <di:waypoint x="1122" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0n5qtzg_di" bpmnElement="Flow_0n5qtzg">
+        <di:waypoint x="218" y="200" />
+        <di:waypoint x="330" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1153i54_di" bpmnElement="Flow_1153i54">
+        <di:waypoint x="760" y="225" />
+        <di:waypoint x="760" y="372" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="742" y="296" width="35" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0z0vbae_di" bpmnElement="Flow_0z0vbae">
+        <di:waypoint x="742" y="390" />
+        <di:waypoint x="570" y="390" />
+        <di:waypoint x="570" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0mf0zgf_di" bpmnElement="TextAnnotation_0mf0zgf">
+        <dc:Bounds x="800" y="340" width="100" height="30" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

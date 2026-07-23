@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="sample-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="x" name="x" type="integer" elementId="Event_start" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="06040a68-1da7-40d1-8082-74ccc6ba3f1a" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>flow_start_to_xor</bpmn:outgoing>
+    </bpmn:startEvent>
+    <!-- XOR split: x>10 → PG fork, default → Task C -->
+    <bpmn:exclusiveGateway id="Gateway_xor" default="flow_xor_to_c">
+      <bpmn:incoming>flow_start_to_xor</bpmn:incoming>
+      <bpmn:outgoing>flow_xor_to_fork</bpmn:outgoing>
+      <bpmn:outgoing>flow_xor_to_c</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <!-- PG fork nested inside XOR branch: Task A + Task B in parallel -->
+    <bpmn:parallelGateway id="Gateway_fork">
+      <bpmn:incoming>flow_xor_to_fork</bpmn:incoming>
+      <bpmn:outgoing>flow_fork_to_a</bpmn:outgoing>
+      <bpmn:outgoing>flow_fork_to_b</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:scriptTask id="Activity_A" name="Task A" scriptFormat="JavaScript">
+      <bpmn:script>console.log('A')</bpmn:script>
+      <bpmn:incoming>flow_fork_to_a</bpmn:incoming>
+      <bpmn:outgoing>flow_a_to_join</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Activity_B" name="Task B" scriptFormat="JavaScript">
+      <bpmn:script>console.log('B')</bpmn:script>
+      <bpmn:incoming>flow_fork_to_b</bpmn:incoming>
+      <bpmn:outgoing>flow_b_to_join</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:parallelGateway id="Gateway_join">
+      <bpmn:incoming>flow_a_to_join</bpmn:incoming>
+      <bpmn:incoming>flow_b_to_join</bpmn:incoming>
+      <bpmn:outgoing>flow_join_to_end1</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:scriptTask id="Activity_C" name="Task C" scriptFormat="JavaScript">
+      <bpmn:script>console.log('C')</bpmn:script>
+      <bpmn:incoming>flow_xor_to_c</bpmn:incoming>
+      <bpmn:outgoing>flow_c_to_end2</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="Event_end1">
+      <bpmn:incoming>flow_join_to_end1</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="Event_end2">
+      <bpmn:incoming>flow_c_to_end2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_start_to_xor" sourceRef="Event_start" targetRef="Gateway_xor" />
+    <bpmn:sequenceFlow id="flow_xor_to_fork" sourceRef="Gateway_xor" targetRef="Gateway_fork">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=js:vars.x &gt; 10</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow_xor_to_c" sourceRef="Gateway_xor" targetRef="Activity_C" />
+    <bpmn:sequenceFlow id="flow_fork_to_a" sourceRef="Gateway_fork" targetRef="Activity_A" />
+    <bpmn:sequenceFlow id="flow_fork_to_b" sourceRef="Gateway_fork" targetRef="Activity_B" />
+    <bpmn:sequenceFlow id="flow_a_to_join" sourceRef="Activity_A" targetRef="Gateway_join" />
+    <bpmn:sequenceFlow id="flow_b_to_join" sourceRef="Activity_B" targetRef="Gateway_join" />
+    <bpmn:sequenceFlow id="flow_join_to_end1" sourceRef="Gateway_join" targetRef="Event_end1" />
+    <bpmn:sequenceFlow id="flow_c_to_end2" sourceRef="Activity_C" targetRef="Event_end2" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1" />
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

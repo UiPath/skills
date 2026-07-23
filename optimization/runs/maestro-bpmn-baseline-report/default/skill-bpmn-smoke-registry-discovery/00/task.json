@@ -1,0 +1,1656 @@
+{
+  "task_id": "skill-bpmn-smoke-registry-discovery",
+  "task_description": "Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to discover Maestro BPMN extension types via the registry CLI (pull, list/search, get) before authoring anything. Tests that the skill teaches the registry-driven discovery loop instead of hand-authoring uipath:* XML from prose.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-20T23:13:19.438333",
+  "completed_at": "2026-07-20T23:14:05.429028",
+  "duration_seconds": 45.99071455001831,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent pulled the registry",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/uip\\s+maestro\\s+bpmn\\s+registry\\s+pull/)\nExamples: ['uip maestro bpmn registry pull --output json 2>&1 | tee registry-evidence/pull.json']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent listed or searched registry extension types",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/uip\\s+maestro\\s+bpmn\\s+registry\\s+(list|search)/)\nExamples: ['uip maestro bpmn registry list --limit -1 --output json 2>&1 | tee registry-evidence/list.json']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent fetched a template with registry get",
+      "score": 1.0,
+      "details": "Matched 2/1 required commands (filters: tool_name=Bash, pattern=/uip\\s+maestro\\s+bpmn\\s+registry\\s+get/)\nExamples: ['uip maestro bpmn registry get Orchestrator.StartJob --output json 2>&1 | tee registry-evidence/get-Orchestrator.StartJob', 'uip maestro bpmn registry get Maestro.ReceiveMessageEvent --output json 2>&1 | tee registry-evidence/get-Maestro.Receive']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "run_command",
+      "description": "Raw registry evidence covers the RPA-job and receive-message types",
+      "score": 1.0,
+      "details": "Command: python3 $TASK_DIR/check_registry_discovery.py\nExit code: 0 (expected: 0)\nStdout:\nOK: registry-evidence covers Orchestrator.StartJob, Maestro.ReceiveMessageEvent across 4 raw output files\n\nStderr: (empty)",
+      "error": null,
+      "pass_threshold": 1.0
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /tmp/coder_eval_skill-bpmn-smoke-registry-discovery_w5xs5894\n\nI want to author a UiPath Maestro BPMN process that starts an RPA job and\nwaits for an internal message. Before authoring anything, load and follow the\nuipath-maestro-bpmn skill and use the registry to discover the right\nextension types and their templates.\n\nSave the raw JSON output of every registry command you run into a\n`registry-evidence/` directory (one file per command), for example:\n  - `uip maestro bpmn registry pull --output json > registry-evidence/pull.json`\n  - `uip maestro bpmn registry list --output json > registry-evidence/list.json`\n  - `uip maestro bpmn registry get <type> --output json > registry-evidence/get-<type>.json`\n\nDo not summarize or paraphrase the output — preserve the raw CLI JSON so the\nRPA-job and receive-message extension types and their templates are present in\nthe saved files.\n\nImportant:\n- The `uip` CLI is already available in the environment.\n- Use `--output json` on all uip commands.\n- Do not author the BPMN yet — just discover and save the raw evidence. Do not\n  upload, publish, deploy, debug, run, or pack anything.\n",
+      "agent_output": "[ASSISTANT] Now I'll follow the registry workflow. Let me create the evidence directory, then run the discovery commands in the right order.\n[ASSISTANT] The list confirms the two types I need: `Orchestrator.StartJob` (Start and wait for RPA workflow) and `Maestro.ReceiveMessageEvent` (Receive internal message). Now I'll fetch both templates in parallel.\n[ASSISTANT] All four registry commands have been run and their raw JSON output saved. Let me verify the files are in place:\n[ASSISTANT] All four registry evidence files are saved in `registry-evidence/`. Here's a summary of what was discovered and saved:\n\n---\n\n## Registry discovery complete\n\nFour files saved to `registry-evidence/`:\n\n| File | Command | Contents |\n|------|---------|---------|\n| `pull.json` | `uip maestro bpmn registry pull` | Confirms 30 OOTB extension types synced (login-free cache written) |\n| `list.json` | `uip maestro bpmn registry list --limit -1` | Full catalogue of all 30 extension types with `BpmnElement`, `ExtensionTag`, `RequiresDiscovery` |\n| `get-Orchestrator.StartJob.json` | `uip maestro bpmn registry get Orchestrator.StartJob` | Full template for **Start and wait for RPA workflow** |\n| `get-Maestro.ReceiveMessageEvent.json` | `uip maestro bpmn registry get Maestro.ReceiveMessageEvent` | Full template for **Receive internal message** |\n\n### Key findings from the templates\n\n**`Orchestrator.StartJob`** (RPA job):\n- Host element: `bpmn:ServiceTask`, tag: `uipath:activity`\n- `RequiresDiscovery: Yes` — needs a real `releaseKey` (process GUID), `folderId`/`folderPath`, and `name` bound at authoring time\n- Output type: `Orchestrator.RunJob`\n- `xmlTemplate` uses placeholders: `{id}`, `{name}`, `{releaseKey}`, `{folderId}`, `{folderPath}`, `{varId}`, `{incomingEdge}`, `{outgoingEdge}`\n\n**`Maestro.ReceiveMessageEvent`** (internal message wait):\n- Host element: `bpmn:IntermediateCatchEvent`, tag: `uipath:event`\n- `RequiresDiscovery: No` — no external connection needed\n- Requires a `name` context field (the message name for correlation) and a `Reference` input field (correlation reference)\n- Must include `<bpmn:messageEventDefinition />` as a child element\n- Output type: `Maestro.ReceiveMessageEvent`\n- `xmlTemplate` uses placeholders: `{id}`, `{name}`, `{_label}`, `{varId}`, `{incomingEdge}`, `{outgoingEdge}`\n\nWhen you're ready to author the BPMN, I'll need the real `releaseKey` (process GUID) and folder info for the RPA job, plus the message name for the receive event.\n[RESULT - SUCCESS] All four registry evidence files are saved in `registry-evidence/`. Here's a summary of what was discovered and saved:\n\n---\n\n## Registry discovery complete\n\nFour files saved to `registry-evidence/`:\n\n| File | Command | Contents |\n|------|---------|---------|\n| `pull.json` | `uip maestro bpmn registry pull` | Confirms 30 OOTB extension types synced (login-free cache written) |\n| `list.json` | `uip maestro bpmn registry list --limit -1` | Full catalogue of all 30 extension types with `BpmnElement`, `ExtensionTag`, `RequiresDiscovery` |\n| `get-Orchestrator.StartJob.json` | `uip maestro bpmn registry get Orchestrator.StartJob` | Full template for **Start and wait for RPA workflow** |\n| `get-Maestro.ReceiveMessageEvent.json` | `uip maestro bpmn registry get Maestro.ReceiveMessageEvent` | Full template for **Receive internal message** |\n\n### Key findings from the templates\n\n**`Orchestrator.StartJob`** (RPA job):\n- Host element: `bpmn:ServiceTask`, tag: `uipath:activity`\n- `RequiresDiscovery: Yes` — needs a real `releaseKey` (process GUID), `folderId`/`folderPath`, and `name` bound at authoring time\n- Output type: `Orchestrator.RunJob`\n- `xmlTemplate` uses placeholders: `{id}`, `{name}`, `{releaseKey}`, `{folderId}`, `{folderPath}`, `{varId}`, `{incomingEdge}`, `{outgoingEdge}`\n\n**`Maestro.ReceiveMessageEvent`** (internal message wait):\n- Host element: `bpmn:IntermediateCatchEvent`, tag: `uipath:event`\n- `RequiresDiscovery: No` — no external connection needed\n- Requires a `name` context field (the message name for correlation) and a `Reference` input field (correlation reference)\n- Must include `<bpmn:messageEventDefinition />` as a child element\n- Output type: `Maestro.ReceiveMessageEvent`\n- `xmlTemplate` uses placeholders: `{id}`, `{name}`, `{_label}`, `{varId}`, `{incomingEdge}`, `{outgoingEdge}`\n\nWhen you're ready to author the BPMN, I'll need the real `releaseKey` (process GUID) and folder info for the RPA job, plus the message name for the receive event.",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_01MDXULh8GzztPTeKPrqnFT3",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-20T23:13:23.032572",
+          "duration_ms": 33.140457002446055,
+          "generation_completed_at": "2026-07-20T23:13:23.032572",
+          "execution_started_at": "2026-07-20T23:13:23.032815",
+          "execution_completed_at": "2026-07-20T23:13:23.065955",
+          "parameters": {
+            "skill": "uipath:uipath-maestro-bpmn"
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: uipath:uipath-maestro-bpmn",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 11
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01Xj7nUSKFcip3SmGjCUVKcM",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-07-20T23:13:26.914084",
+          "duration_ms": 12.296380940824747,
+          "generation_completed_at": "2026-07-20T23:13:26.914084",
+          "execution_started_at": "2026-07-20T23:13:26.914136",
+          "execution_completed_at": "2026-07-20T23:13:26.926432",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/registry-workflow.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Registry workflow\n2\t\n3\tEvery `uipath:*` payload in a Maestro `.bpmn` comes from the registry — never\n4\tfrom prose, never hand-written. This file is the loop for turning user intent\n5\tinto registry-backed XML.\n6\t\n7\t## 1. Sync and discover\n8\t\n9\t```bash\n10\tuip maestro bpmn registry pull            # sync + cache (login for connectors/processes)\n11\tuip maestro bpmn registry list --limit -1 --output json   # all extension types\n12\tuip maestro bpmn registry search <keyword> --output json  # find a type by intent\n13\tuip is connections list --all-folders --output json   # live IS connections (all folders)\n14\t```\n15\t\n16\tMap the user's intent to an extension type from the list. Confirm the choice\n17\twith the user (and the specific connection / process / queue) before authoring.\n18\t**Never fabricate an identifier** — see [cli-conventions.md](cli-conventions.md).\n19\t\n20\t**Connection discovery must be exhaustive.** Always pass `--all-folders` to\n21\t`uip is connections list` — connections live in many folders and a folder-scoped\n22\tlisting silently misses them. An empty or unmatched result from a missing\n23\t`--all-folders`, or from a connector key guessed from a brand name rather than\n24\tfound via `registry search`, is a **false negative** — never conclude \"no\n25\tconnection exists\" or ask the user to create one until you have searched the\n26\tregistry for the real connector key and listed across all folders.\n27\t\n28\t`registry list` returns three buckets in `Data`: `ExtensionTypes` (the OOTB\n29\textension types, always available), `Connectors` and `Processes` (only after\n30\t`uip login`). Each extension-type row carries `ExtensionType`, `Label`,\n31\t`BpmnElement` (the host BPMN element), `ExtensionTag`, and\n32\t`RequiresDiscovery` (`Yes` means you must resolve a concrete resource — process,\n33\tqueue, connection — before the node is runnable).\n34\t\n35\t## 2. Get the template for each chosen type\n36\t\n37\t```bash\n38\tuip maestro bpmn registry get <extensionType> --output json\n39\t```\n40\t\n41\t`Data.ExtensionType` contains everything needed to author the node:\n42\t\n43\t| Field | Use |\n44\t| --- | --- |\n45\t| `xmlTemplate` | The literal node XML with `{placeholder}` slots. **Author from this; fill placeholders only.** |\n46\t| `bpmnElement` | The host BPMN element the template uses (e.g. `bpmn:ServiceTask`). |\n47\t| `extensionTag` | `uipath:activity`, `uipath:event`, or `uipath:mapping`. |\n48\t| `contextFields[]` | The `uipath:context` inputs; each may carry its own `bindingInfo`. |\n49\t| `bindingInfo` | How the node binds to a resource (see §4). |\n50\t| `inputPattern` / `inputName` / `inputTarget` | How the request body input is shaped. |\n51\t| `requiresDiscovery` / `isDynamic` | Whether a concrete resource must be resolved first. |\n52\t\n53\tThe placeholders you fill are the obvious ones: `{id}`, `{name}`,\n54\t`{incomingEdge}`, `{outgoingEdge}`, `{varId}` (the output variable id), plus the\n55\tper-context-field placeholders (`{releaseKey}`, `{queueName}`, `{appId}`, …) and\n56\tthe body CDATA. Leave the structural placeholders (`{incomingEdge}` /\n57\t`{outgoingEdge}`) wired to the sequence-flow ids you create in\n58\t[structural-bpmn.md](structural-bpmn.md).\n59\t\n60\t## 3. Connector (`Intsvc.*`) enrichment\n61\t\n62\tFor connector types (`requiresDiscovery: Yes`, e.g.\n63\t`Intsvc.ActivityExecution`, `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`),\n64\tresolve a live connection and object, then enrich:\n65\t\n66\t```bash\n67\tuip is connections list --all-folders --output json   # pick a connection id + its connector (search all folders)\n68\tuip maestro bpmn registry get Intsvc.ActivityExecution \\\n69\t    --connection-id <id> --object-name <object> --output json\n70\t```\n71\t\n72\tThe response adds an `ISEnrichment` block with the live field metadata. Write\n73\tthe activity's `body` input (`target=\"body\"`) and `context` (`connectorKey`,\n74\t`objectName`) from that enrichment — do not hand-author connector schemas. The\n75\tconnection is referenced through a connection binding, `=bindings.<bindingId>`\n76\t(see §4).\n77\t\n78\t## 4. Bindings — from `bindingInfo`, never invented\n79\t\n80\tA node that targets a cloud resource carries a binding. The `bindingInfo` on the\n81\textension type tells you the binding shape; the concrete value comes from\n82\tdiscovery or the user.\n83\t\n84\t- **Resource bindings** (`bindingInfo.resource` = `process` / `queue` /\n85\t  `businessRule`): the context field named by `bindingInfo.contextField`\n86\t  (e.g. `releaseKey`, `queueName`) holds the resource key\n87\t  (`bindingInfo.propertyAttribute`, usually `Key`). Resolve the real key with\n88\t  `registry search` / discovered `Processes` / `Queues`; never guess a GUID.\n89\t- **Connection bindings** (`Intsvc.*`): the context references a connection via\n90\t  `=bindings.<bindingId>`, and a `<uipath:binding>` of `resource=\"Connection\"`\n91\t  with `propertyAttribute=\"ConnectionId\"` in the process-level\n92\t  `<uipath:bindings>` holds the live connection id from `uip is connections list`.\n93\t\n94\tDeclare all bindings in a single process-level `<uipath:bindings version=\"v1\">`\n95\tblock. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`,\n96\tand a `default` value (the resolved key/id).\n97\t\n98\t## Agent wrapper selection — pick by `processType`, not the label\n99\t\n100\tWhen a node invokes an agent, choose the wrapper by the resource's\n101\t**`processType`** (from `uip or processes list --all-fields`), not its display\n102\tlabel:\n103\t\n104\t- Coded Python agents publish as `processType: \"Function\"` — use the\n105\t  `Orchestrator.StartJob` process contract, **not** `StartAgentJob`.\n106\t- Agent Builder (low-code) publishes as `processType: \"Agent\"` →\n107\t  `Orchestrator.StartAgentJob`.\n108\t- External A2A agent addressed by URL / skillId → `A2A.AgentExecution`.\n109\t- Integration Service external agent → `Intsvc.*AgentExecution`.\n110\t\n111\tGotcha: `A2A.AgentExecution` renders as an external A2A node and **disables the\n112\tAction dropdown** in Studio Web. Do not use it for a folder-deployed agent — the\n113\tcanvas treats the task as misconfigured. Use `StartAgentJob`/`StartJob` for\n114\tfolder-deployed resources.\n115\t\n116\t## API workflow — wait vs fire-and-forget\n117\t\n118\tPick the wrapper by whether downstream needs the invocation result:\n119\t`Orchestrator.ExecuteApiWorkflow` **waits** for completion (result available to\n120\tlater nodes); `Orchestrator.ExecuteApiWorkflowAsync` **returns immediately**\n121\t(fire-and-forget). Both are `bpmn:serviceTask` activities. Resolve `ReleaseKey`\n122\t(process GUID), `FolderKey`/`FolderPath`, and the request/response schemas before\n123\tthe node is runnable — make the wait-versus-async choice explicit in the model.\n124\t\n125\t## Integration Service triggers — bind trigger properties via the CLI\n126\t\n127\t`Intsvc.TimerTrigger` and `Intsvc.EventTrigger` (and connector waits like\n128\t`Intsvc.WaitForEvent`) need their **trigger properties** enriched/bound through\n129\tthe CLI — the same enrichment path as `Intsvc.*` activities (§3). A hand-authored\n130\ttrigger shell stays **draft** until the CLI supplies the concrete trigger\n131\tproperties, connection binding, and schemas.\n132\t\n133\t## Connectionless vs connector HTTP\n134\t\n135\t- **Connector activity** (`Intsvc.ActivityExecution` / a connector-authenticated\n136\t  operation): use when the call goes through a tenant connection, a dynamic\n137\t  connector schema, or a connector object operation. Keep the node **draft**\n138\t  until enriched. The CLI-owned enrichment blockers — the ones that must be\n139\t  resolved before upload or run, and that boundary notes should name explicitly\n140\t  — are **connection binding**, **dynamic schemas**, generated **package\n141\t  metadata** (`bindings_v2.json`, `entry-points.json`, `operate.json`,\n142\t  `package-descriptor.json`). Do not hand-author any of these (§3).\n143\t- **Connectionless / manual HTTP** (`Intsvc.HttpExecution`, or\n144\t  `Intsvc.UnifiedHttpRequest` when current tooling exposes the unified shape):\n145\t  use when the workflow itself owns the URL, method, payload, and response\n146\t  parsing (no connection). Author `mode=\"manual\"`, `method`, `url`, `headers`,\n147\t  `parameters`, `body` directly from the registry template.\n148\t\n149\tStatus vocabulary for an IS node in a summary: **executable** (activity, inputs,\n150\toutput variable, and downstream mappings present, runtime-verified if a run was\n151\tdone), **draft** (BPMN shape/intent present but enrichment missing), **mock**\n152\t(returns fixed sample data instead of calling out), **blocked** (a required URL,\n153\tauth, schema, or enrichment decision is missing).\n154\t\n155\t## 5. Assemble\n156\t\n157\t1. Build the document scaffold and process (see\n158\t   [structural-bpmn.md](structural-bpmn.md)).\n159\t2. Declare root variables (`BPMN.Variables` template) and the\n160\t   `<uipath:bindings>` block.\n161\t3. For each node, paste its `registry get` `xmlTemplate`, fill placeholders, and\n162\t   wire `{incomingEdge}`/`{outgoingEdge}` to your sequence flows.\n163\t4. Author the structural BPMN the registry does not emit: sequence flows,\n164\t   gateway conditions/defaults, event definitions, boundary events,\n165\t   subprocess/call-activity containers, multi-instance markers.\n166\t5. Generate the `bpmndi:BPMNDiagram` (shape per node, edge per flow).\n167\t6. Validate (see [structural-bpmn.md#validation](structural-bpmn.md#validation)).\n168\t\n169\t## OOTB extension types (29, login-free)\n170\t\n171\tThese are the built-in types `registry pull` returns without login. Discover the\n172\texact template for any of them with `registry get <type>`.\n173\t\n174\t| Extension type | Host element | Tag |\n175\t| --- | --- | --- |\n176\t| `Actions.HITL` | `bpmn:UserTask` | activity |\n177\t| `Orchestrator.StartJob` | `bpmn:ServiceTask` | activity |\n178\t| `Orchestrator.StartAgentJob` | `bpmn:ServiceTask` | activity |\n179\t| `Orchestrator.BusinessRules` | `bpmn:BusinessRuleTask` | activity |\n180\t| `Orchestrator.ExecuteApiWorkflowAsync` | `bpmn:ServiceTask` | activity |\n181\t| `Orchestrator.CreateQueueItem` | `bpmn:SendTask` | activity |\n182\t| `Orchestrator.CreateAndWaitForQueueItem` | `bpmn:ServiceTask` | activity |\n183\t| `Orchestrator.StartAgenticProcess[Async]` | `bpmn:CallActivity` | activity |\n184\t| `Orchestrator.StartCaseMgmtProcess[Async]` | `bpmn:CallActivity` | activity |\n185\t| `Intsvc.ActivityExecution` | `bpmn:SendTask` | event/activity |\n186\t| `Intsvc.HttpExecution` / `Intsvc.UnifiedHttpRequest` | `bpmn:SendTask` | activity |\n187\t| `Intsvc.WaitForEvent` | `bpmn:ReceiveTask` | event |\n188\t| `Intsvc.EventTrigger` | `bpmn:StartEvent` | event |\n189\t| `Intsvc.TimerTrigger` | `bpmn:StartEvent` | activity |\n190\t| `Intsvc.{Async,SyncAgent,AsyncAgent,SyncWorkflow,AsyncWorkflow}Execution` | `bpmn:ServiceTask` | activity |\n191\t| `A2A.AgentExecution` | `bpmn:ServiceTask` | activity |\n192\t| `BPMN.Variables` | `bpmn:Task` | mapping |\n193\t| `BPMN.ScriptTask` | `bpmn:ScriptTask` | mapping |\n194\t| `Maestro.ReceiveMessageEvent` | `bpmn:IntermediateCatchEvent` | event |\n195\t| `Maestro.SendMessageEvent` | `bpmn:IntermediateThrowEvent` | event |\n196\t| `Maestro.CaseRulesEvaluator` / `Maestro.CaseManagerGuardrails` | `bpmn:ServiceTask` | activity |\n197\t\n198\tThis table is a discovery aid, not a substitute for `registry get` — always pull\n199\tthe live template before authoring.\n200\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 2816
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01PQ5VpeZsMty9EXbssYYEM8",
+          "assistant_turn_index": 6,
+          "timestamp": "2026-07-20T23:13:33.412147",
+          "duration_ms": 63.37900704238564,
+          "generation_completed_at": "2026-07-20T23:13:33.412147",
+          "execution_started_at": "2026-07-20T23:13:33.412196",
+          "execution_completed_at": "2026-07-20T23:13:33.475575",
+          "parameters": {
+            "command": "mkdir -p /tmp/coder_eval_skill-bpmn-smoke-registry-discovery_w5xs5894/registry-evidence && echo \"Directory created\"",
+            "description": "Create registry-evidence directory"
+          },
+          "result_status": "success",
+          "result_summary": "Directory created",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 5
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01271khL1X2wyRwirEHkEdEu",
+          "assistant_turn_index": 7,
+          "timestamp": "2026-07-20T23:13:36.351274",
+          "duration_ms": 2147.6653220597655,
+          "generation_completed_at": "2026-07-20T23:13:36.351274",
+          "execution_started_at": "2026-07-20T23:13:36.351412",
+          "execution_completed_at": "2026-07-20T23:13:38.499077",
+          "parameters": {
+            "command": "uip maestro bpmn registry pull --output json 2>&1 | tee registry-evidence/pull.json",
+            "description": "Pull and cache the registry, save raw JSON output",
+            "timeout": 60000
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"RegistryPullSuccess\",\n  \"Data\": {\n    \"ExtensionTypeCount\": 30,\n    \"ConnectorCount\": 0,\n    \"ProcessCount\": 0,\n    \"ProcessCountsByType\": {\n      \"Process\": 0,\n      \"ProcessOrchestration\": 0,\n      \"Agent\": 0,\n      \"Flow\": 0,\n      \"Api\": 0,\n      \"Function\": 0,\n      \"CaseManagement\": 0,\n      \"BusinessRules\": 0\n    },\n    \"FromCache\": false,\n    \"CacheWritten\": true,\n    \"Message\": \"Synced fresh registry. Only built-in (OOTB) extension types synced. Run 'uip login' to discover connectors and processes.\"\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "RegistryPullSuccess",
+            "Data": {
+              "ExtensionTypeCount": 30,
+              "ConnectorCount": 0,
+              "ProcessCount": 0,
+              "ProcessCountsByType": {
+                "Process": 0,
+                "ProcessOrchestration": 0,
+                "Agent": 0,
+                "Flow": 0,
+                "Api": 0,
+                "Function": 0,
+                "CaseManagement": 0,
+                "BusinessRules": 0
+              },
+              "FromCache": false,
+              "CacheWritten": true,
+              "Message": "Synced fresh registry. Only built-in (OOTB) extension types synced. Run 'uip login' to discover connectors and processes."
+            }
+          },
+          "sequence_number": 3,
+          "result_tokens": 139
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_019Cd2cGEXxXEqzNnUvoEp6y",
+          "assistant_turn_index": 8,
+          "timestamp": "2026-07-20T23:13:40.301306",
+          "duration_ms": 2092.6616290817037,
+          "generation_completed_at": "2026-07-20T23:13:40.301306",
+          "execution_started_at": "2026-07-20T23:13:40.301513",
+          "execution_completed_at": "2026-07-20T23:13:42.394175",
+          "parameters": {
+            "command": "uip maestro bpmn registry list --limit -1 --output json 2>&1 | tee registry-evidence/list.json",
+            "description": "List all extension types, save raw JSON output",
+            "timeout": 60000
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"RegistryListSuccess\",\n  \"Data\": {\n    \"ExtensionTypes\": [\n      {\n        \"ExtensionType\": \"uipath:Activity\",\n        \"Label\": \"Canvas activity\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"none\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Actions.HITL\",\n        \"Label\": \"Create action app task\",\n        \"BpmnElement\": \"bpmn:UserTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.StartJob\",\n        \"Label\": \"Start and wait for RPA workflow\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.StartAgentJob\",\n        \"Label\": \"Start and wait for agent\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.BusinessRules\",\n        \"Label\": \"Execute business rule [Preview]\",\n        \"BpmnElement\": \"bpmn:BusinessRuleTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"businessRule\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.ActivityExecution\",\n        \"Label\": \"Execute connector activity\",\n        \"BpmnElement\": \"bpmn:SendTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.HttpExecution\",\n        \"Label\": \"Execute HTTP request (Legacy)\",\n        \"BpmnElement\": \"bpmn:SendTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"none\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.UnifiedHttpRequest\",\n        \"Label\": \"Execute HTTP request\",\n        \"BpmnElement\": \"bpmn:SendTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.WaitForEvent\",\n        \"Label\": \"Wait for connector event\",\n        \"BpmnElement\": \"bpmn:ReceiveTask\",\n        \"ExtensionTag\": \"uipath:event\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.EventTrigger\",\n        \"Label\": \"Wait for connector event (trigger)\",\n        \"BpmnElement\": \"bpmn:StartEvent\",\n        \"ExtensionTag\": \"uipath:event\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.AsyncExecution\",\n        \"Label\": \"Start and wait for external agent\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.SyncAgentExecution\",\n        \"Label\": \"Start and wait for external agent\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.AsyncAgentExecution\",\n        \"Label\": \"Start and wait for external agent\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.SyncWorkflowExecution\",\n        \"Label\": \"Start and wait for external workflow\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.AsyncWorkflowExecution\",\n        \"Label\": \"Start and wait for external workflow\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.ExecuteApiWorkflowAsync\",\n        \"Label\": \"Start and wait for API workflow [Preview]\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.CreateQueueItem\",\n        \"Label\": \"Create queue item\",\n        \"BpmnElement\": \"bpmn:SendTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"queue\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.CreateAndWaitForQueueItem\",\n        \"Label\": \"Create and wait for queue item\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"queue\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.StartAgenticProcess\",\n        \"Label\": \"Start and wait for agentic process\",\n        \"BpmnElement\": \"bpmn:CallActivity\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.StartAgenticProcessAsync\",\n        \"Label\": \"Start agentic process\",\n        \"BpmnElement\": \"bpmn:CallActivity\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.StartCaseMgmtProcess\",\n        \"Label\": \"Start and wait for case management\",\n        \"BpmnElement\": \"bpmn:CallActivity\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.StartCaseMgmtProcessAsync\",\n        \"Label\": \"Start case management\",\n        \"BpmnElement\": \"bpmn:CallActivity\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"A2A.AgentExecution\",\n        \"Label\": \"Start and wait for A2A agent\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"BPMN.Variables\",\n        \"Label\": \"BPMN Variables\",\n        \"BpmnElement\": \"bpmn:Task\",\n        \"ExtensionTag\": \"uipath:mapping\",\n        \"InputPattern\": \"none\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"BPMN.ScriptTask\",\n        \"Label\": \"Execute script\",\n        \"BpmnElement\": \"bpmn:ScriptTask\",\n        \"ExtensionTag\": \"uipath:mapping\",\n        \"InputPattern\": \"scriptArgs\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.TimerTrigger\",\n        \"Label\": \"Timer trigger\",\n        \"BpmnElement\": \"bpmn:StartEvent\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"none\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Maestro.ReceiveMessageEvent\",\n        \"Label\": \"Receive internal message\",\n        \"BpmnElement\": \"bpmn:IntermediateCatchEvent\",\n        \"ExtensionTag\": \"uipath:event\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Maestro.SendMessageEvent\",\n        \"Label\": \"Send internal message\",\n        \"BpmnElement\": \"bpmn:IntermediateThrowEvent\",\n        \"ExtensionTag\": \"uipath:event\",\n        \"InputPattern\": \"splitInputsItemData\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Maestro.CaseRulesEvaluator\",\n        \"Label\": \"Case rules evaluator\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Maestro.CaseManagerGuardrails\",\n        \"Label\": \"Case manager guardrails\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      }\n    ],\n    \"Connectors\": [],\n    \"Processes\": [],\n    \"ProcessesByType\": {\n      \"Process\": 0,\n      \"ProcessOrchestration\": 0,\n      \"Agent\": 0,\n      \"Flow\": 0,\n      \"Api\": 0,\n      \"Function\": 0,\n      \"CaseManagement\": 0,\n      \"BusinessRules\": 0\n    }\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "RegistryListSuccess",
+            "Data": {
+              "ExtensionTypes": [
+                {
+                  "ExtensionType": "uipath:Activity",
+                  "Label": "Canvas activity",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "none",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Actions.HITL",
+                  "Label": "Create action app task",
+                  "BpmnElement": "bpmn:UserTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.StartJob",
+                  "Label": "Start and wait for RPA workflow",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "process",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.StartAgentJob",
+                  "Label": "Start and wait for agent",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "process",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.BusinessRules",
+                  "Label": "Execute business rule [Preview]",
+                  "BpmnElement": "bpmn:BusinessRuleTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "businessRule",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.ActivityExecution",
+                  "Label": "Execute connector activity",
+                  "BpmnElement": "bpmn:SendTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.HttpExecution",
+                  "Label": "Execute HTTP request (Legacy)",
+                  "BpmnElement": "bpmn:SendTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "none",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Intsvc.UnifiedHttpRequest",
+                  "Label": "Execute HTTP request",
+                  "BpmnElement": "bpmn:SendTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Intsvc.WaitForEvent",
+                  "Label": "Wait for connector event",
+                  "BpmnElement": "bpmn:ReceiveTask",
+                  "ExtensionTag": "uipath:event",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.EventTrigger",
+                  "Label": "Wait for connector event (trigger)",
+                  "BpmnElement": "bpmn:StartEvent",
+                  "ExtensionTag": "uipath:event",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.AsyncExecution",
+                  "Label": "Start and wait for external agent",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.SyncAgentExecution",
+                  "Label": "Start and wait for external agent",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.AsyncAgentExecution",
+                  "Label": "Start and wait for external agent",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.SyncWorkflowExecution",
+                  "Label": "Start and wait for external workflow",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.AsyncWorkflowExecution",
+                  "Label": "Start and wait for external workflow",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.ExecuteApiWorkflowAsync",
+                  "Label": "Start and wait for API workflow [Preview]",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "process",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.CreateQueueItem",
+                  "Label": "Create queue item",
+                  "BpmnElement": "bpmn:SendTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "queue",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.CreateAndWaitForQueueItem",
+                  "Label": "Create and wait for queue item",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "queue",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.StartAgenticProcess",
+                  "Label": "Start and wait for agentic process",
+                  "BpmnElement": "bpmn:CallActivity",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "process",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.StartAgenticProcessAsync",
+                  "Label": "Start agentic process",
+                  "BpmnElement": "bpmn:CallActivity",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "process",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.StartCaseMgmtProcess",
+                  "Label": "Start and wait for case management",
+                  "BpmnElement": "bpmn:CallActivity",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "process",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.StartCaseMgmtProcessAsync",
+                  "Label": "Start case management",
+                  "BpmnElement": "bpmn:CallActivity",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "process",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "A2A.AgentExecution",
+                  "Label": "Start and wait for A2A agent",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "BPMN.Variables",
+                  "Label": "BPMN Variables",
+                  "BpmnElement": "bpmn:Task",
+                  "ExtensionTag": "uipath:mapping",
+                  "InputPattern": "none",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "BPMN.ScriptTask",
+                  "Label": "Execute script",
+                  "BpmnElement": "bpmn:ScriptTask",
+                  "ExtensionTag": "uipath:mapping",
+                  "InputPattern": "scriptArgs",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Intsvc.TimerTrigger",
+                  "Label": "Timer trigger",
+                  "BpmnElement": "bpmn:StartEvent",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "none",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Maestro.ReceiveMessageEvent",
+                  "Label": "Receive internal message",
+                  "BpmnElement": "bpmn:IntermediateCatchEvent",
+                  "ExtensionTag": "uipath:event",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Maestro.SendMessageEvent",
+                  "Label": "Send internal message",
+                  "BpmnElement": "bpmn:IntermediateThrowEvent",
+                  "ExtensionTag": "uipath:event",
+                  "InputPattern": "splitInputsItemData",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Maestro.CaseRulesEvaluator",
+                  "Label": "Case rules evaluator",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Maestro.CaseManagerGuardrails",
+                  "Label": "Case manager guardrails",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                }
+              ],
+              "Connectors": [],
+              "Processes": [],
+              "ProcessesByType": {
+                "Process": 0,
+                "ProcessOrchestration": 0,
+                "Agent": 0,
+                "Flow": 0,
+                "Api": 0,
+                "Function": 0,
+                "CaseManagement": 0,
+                "BusinessRules": 0
+              }
+            }
+          },
+          "sequence_number": 4,
+          "result_tokens": 2444
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_0177w3NGxRSgJEHsDr1oczJU",
+          "assistant_turn_index": 10,
+          "timestamp": "2026-07-20T23:13:46.539032",
+          "duration_ms": 2923.215916962363,
+          "generation_completed_at": "2026-07-20T23:13:46.539032",
+          "execution_started_at": "2026-07-20T23:13:46.539134",
+          "execution_completed_at": "2026-07-20T23:13:49.462350",
+          "parameters": {
+            "command": "uip maestro bpmn registry get Orchestrator.StartJob --output json 2>&1 | tee registry-evidence/get-Orchestrator.StartJob.json",
+            "description": "Get template for Orchestrator.StartJob, save raw JSON",
+            "timeout": 60000
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"RegistryGetSuccess\",\n  \"Data\": {\n    \"ExtensionType\": {\n      \"ExtensionType\": \"Orchestrator.StartJob\",\n      \"Label\": \"Start and wait for RPA workflow\",\n      \"BpmnElement\": \"bpmn:ServiceTask\",\n      \"Placements\": {\n        \"Activity\": {\n          \"Type\": \"bpmn:ServiceTask\"\n        }\n      },\n      \"ExtensionTag\": \"uipath:activity\",\n      \"ContextFields\": [\n        {\n          \"Name\": \"releaseKey\",\n          \"DisplayName\": \"Process\",\n          \"Type\": \"string\",\n          \"Required\": false,\n          \"Hidden\": true,\n          \"IsPrimaryKey\": false,\n          \"Binding\": false,\n          \"DefaultValue\": null,\n          \"BindingInfo\": {\n            \"Resource\": \"process\",\n            \"ResourceKeyPattern\": \"${metadata.key}\",\n            \"PropertyAttribute\": \"Key\"\n          }\n        },\n        {\n          \"Name\": \"folderId\",\n          \"Type\": \"string\",\n          \"Required\": false,\n          \"Hidden\": true,\n          \"IsPrimaryKey\": false,\n          \"Binding\": false,\n          \"DefaultValue\": null\n        },\n        {\n          \"Name\": \"folderPath\",\n          \"Type\": \"string\",\n          \"Required\": false,\n          \"Hidden\": true,\n          \"IsPrimaryKey\": false,\n          \"Binding\": false,\n          \"DefaultValue\": null\n        },\n        {\n          \"Name\": \"name\",\n          \"Type\": \"string\",\n          \"Required\": false,\n          \"Hidden\": true,\n          \"IsPrimaryKey\": false,\n          \"Binding\": false,\n          \"DefaultValue\": null\n        }\n      ],\n      \"InputPattern\": \"mergedBody\",\n      \"InputName\": \"JobArguments\",\n      \"InputTarget\": \"bodyField\",\n      \"OutputSource\": null,\n      \"OutputType\": \"Orchestrator.RunJob\",\n      \"OutputName\": \"Process response\",\n      \"UseRelativeSource\": true,\n      \"BindingPattern\": \"process\",\n      \"BindingInfo\": {\n        \"Resource\": \"process\",\n        \"ResourceKeyPattern\": \"${metadata.key}\",\n        \"PropertyAttribute\": \"Key\",\n        \"ContextField\": \"releaseKey\"\n      },\n      \"RequiresDiscovery\": true,\n      \"IsDynamic\": true,\n      \"XmlTemplate\": \"<bpmn:ServiceTask id=\\\"{id}\\\" name=\\\"{name}\\\">\\n  <bpmn:extensionElements>\\n    <uipath:activity version=\\\"v1\\\">\\n      <uipath:type value=\\\"Orchestrator.StartJob\\\" version=\\\"v1\\\" />\\n      <uipath:context>\\n        <uipath:input name=\\\"releaseKey\\\" value=\\\"{releaseKey}\\\" />\\n        <uipath:input name=\\\"folderId\\\" value=\\\"{folderId}\\\" />\\n        <uipath:input name=\\\"folderPath\\\" value=\\\"{folderPath}\\\" />\\n        <uipath:input name=\\\"name\\\" value=\\\"{name}\\\" />\\n      </uipath:context>\\n      <uipath:input name=\\\"JobArguments\\\" type=\\\"json\\\" target=\\\"bodyField\\\"><![CDATA[{}]]></uipath:input>\\n      <uipath:output name=\\\"Process response\\\" type=\\\"Orchestrator.RunJob\\\" var=\\\"{varId}\\\" />\\n    </uipath:activity>\\n  </bpmn:extensionElements>\\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\\n</bpmn:ServiceTask>\",\n      \"DiscoveryNotes\": \"Uses getSupportedOrchestratorTasks('process', search) to list available processes\"\n    }\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "RegistryGetSuccess",
+            "Data": {
+              "ExtensionType": {
+                "ExtensionType": "Orchestrator.StartJob",
+                "Label": "Start and wait for RPA workflow",
+                "BpmnElement": "bpmn:ServiceTask",
+                "Placements": {
+                  "Activity": {
+                    "Type": "bpmn:ServiceTask"
+                  }
+                },
+                "ExtensionTag": "uipath:activity",
+                "ContextFields": [
+                  {
+                    "Name": "releaseKey",
+                    "DisplayName": "Process",
+                    "Type": "string",
+                    "Required": false,
+                    "Hidden": true,
+                    "IsPrimaryKey": false,
+                    "Binding": false,
+                    "DefaultValue": null,
+                    "BindingInfo": {
+                      "Resource": "process",
+                      "ResourceKeyPattern": "${metadata.key}",
+                      "PropertyAttribute": "Key"
+                    }
+                  },
+                  {
+                    "Name": "folderId",
+                    "Type": "string",
+                    "Required": false,
+                    "Hidden": true,
+                    "IsPrimaryKey": false,
+                    "Binding": false,
+                    "DefaultValue": null
+                  },
+                  {
+                    "Name": "folderPath",
+                    "Type": "string",
+                    "Required": false,
+                    "Hidden": true,
+                    "IsPrimaryKey": false,
+                    "Binding": false,
+                    "DefaultValue": null
+                  },
+                  {
+                    "Name": "name",
+                    "Type": "string",
+                    "Required": false,
+                    "Hidden": true,
+                    "IsPrimaryKey": false,
+                    "Binding": false,
+                    "DefaultValue": null
+                  }
+                ],
+                "InputPattern": "mergedBody",
+                "InputName": "JobArguments",
+                "InputTarget": "bodyField",
+                "OutputSource": null,
+                "OutputType": "Orchestrator.RunJob",
+                "OutputName": "Process response",
+                "UseRelativeSource": true,
+                "BindingPattern": "process",
+                "BindingInfo": {
+                  "Resource": "process",
+                  "ResourceKeyPattern": "${metadata.key}",
+                  "PropertyAttribute": "Key",
+                  "ContextField": "releaseKey"
+                },
+                "RequiresDiscovery": true,
+                "IsDynamic": true,
+                "XmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.StartJob\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+                "DiscoveryNotes": "Uses getSupportedOrchestratorTasks('process', search) to list available processes"
+              }
+            }
+          },
+          "sequence_number": 5,
+          "result_tokens": 763
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_012vLHaSxh148anniQ5H5QvZ",
+          "assistant_turn_index": 11,
+          "timestamp": "2026-07-20T23:13:47.405990",
+          "duration_ms": 4321.003198041581,
+          "generation_completed_at": "2026-07-20T23:13:47.405990",
+          "execution_started_at": "2026-07-20T23:13:47.406082",
+          "execution_completed_at": "2026-07-20T23:13:51.727085",
+          "parameters": {
+            "command": "uip maestro bpmn registry get Maestro.ReceiveMessageEvent --output json 2>&1 | tee registry-evidence/get-Maestro.ReceiveMessageEvent.json",
+            "description": "Get template for Maestro.ReceiveMessageEvent, save raw JSON",
+            "timeout": 60000
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"RegistryGetSuccess\",\n  \"Data\": {\n    \"ExtensionType\": {\n      \"ExtensionType\": \"Maestro.ReceiveMessageEvent\",\n      \"Label\": \"Receive internal message\",\n      \"BpmnElement\": \"bpmn:IntermediateCatchEvent\",\n      \"Placements\": {\n        \"StartEvent\": {\n          \"Type\": \"bpmn:StartEvent\",\n          \"EventDefinition\": {\n            \"Type\": \"bpmn:MessageEventDefinition\"\n          }\n        },\n        \"IntermediateEvent\": {\n          \"Type\": \"bpmn:IntermediateCatchEvent\",\n          \"EventDefinition\": {\n            \"Type\": \"bpmn:MessageEventDefinition\"\n          }\n        },\n        \"BoundaryEvent\": {\n          \"Type\": \"bpmn:BoundaryEvent\",\n          \"EventDefinition\": {\n            \"Type\": \"bpmn:MessageEventDefinition\"\n          }\n        }\n      },\n      \"ExtensionTag\": \"uipath:event\",\n      \"ContextFields\": [\n        {\n          \"Name\": \"name\",\n          \"DisplayName\": \"Message name\",\n          \"Type\": \"string\",\n          \"Required\": true,\n          \"Hidden\": false,\n          \"IsPrimaryKey\": false,\n          \"Binding\": false,\n          \"DefaultValue\": null\n        },\n        {\n          \"Name\": \"_label\",\n          \"Type\": \"string\",\n          \"Required\": false,\n          \"Hidden\": true,\n          \"IsPrimaryKey\": false,\n          \"Binding\": false,\n          \"DefaultValue\": null\n        }\n      ],\n      \"InputPattern\": \"separateInputs\",\n      \"InputName\": \"ItemData\",\n      \"InputTarget\": \"body\",\n      \"OutputSource\": null,\n      \"OutputType\": \"Maestro.ReceiveMessageEvent\",\n      \"OutputName\": \"response\",\n      \"UseRelativeSource\": true,\n      \"BindingPattern\": \"none\",\n      \"RequiresDiscovery\": false,\n      \"IsDynamic\": false,\n      \"XmlTemplate\": \"<bpmn:IntermediateCatchEvent id=\\\"{id}\\\" name=\\\"{name}\\\">\\n  <bpmn:extensionElements>\\n    <uipath:event version=\\\"v1\\\">\\n      <uipath:type value=\\\"Maestro.ReceiveMessageEvent\\\" version=\\\"v1\\\" />\\n      <uipath:context>\\n        <uipath:input name=\\\"name\\\" value=\\\"{name}\\\" />\\n        <uipath:input name=\\\"_label\\\" value=\\\"{_label}\\\" />\\n      </uipath:context>\\n      <uipath:input name=\\\"ItemData\\\" type=\\\"json\\\" target=\\\"body\\\"><![CDATA[{}]]></uipath:input>\\n      <uipath:output name=\\\"response\\\" type=\\\"Maestro.ReceiveMessageEvent\\\" var=\\\"{varId}\\\" />\\n    </uipath:event>\\n  </bpmn:extensionElements>\\n  <bpmn:messageEventDefinition />\\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\\n</bpmn:IntermediateCatchEvent>\",\n      \"InputNotes\": \"isSplitInputs=true in design schema but NOT in isSplitInputsEvents code array, so inputs are NOT merged into ItemData for this type. They remain separate.\",\n      \"ExtensionTagNotes\": \"In isEvents array, uses uipath:event\",\n      \"InputFields\": [\n        {\n          \"Name\": \"Reference\",\n          \"DisplayName\": \"Reference\",\n          \"Type\": \"string\",\n          \"Required\": true,\n          \"Hidden\": false,\n          \"IsPrimaryKey\": false,\n          \"Binding\": false,\n          \"DefaultValue\": null,\n          \"Target\": \"bodyField\",\n          \"Description\": \"Correlation reference to match this receive event to its sender\"\n        }\n      ]\n    }\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "RegistryGetSuccess",
+            "Data": {
+              "ExtensionType": {
+                "ExtensionType": "Maestro.ReceiveMessageEvent",
+                "Label": "Receive internal message",
+                "BpmnElement": "bpmn:IntermediateCatchEvent",
+                "Placements": {
+                  "StartEvent": {
+                    "Type": "bpmn:StartEvent",
+                    "EventDefinition": {
+                      "Type": "bpmn:MessageEventDefinition"
+                    }
+                  },
+                  "IntermediateEvent": {
+                    "Type": "bpmn:IntermediateCatchEvent",
+                    "EventDefinition": {
+                      "Type": "bpmn:MessageEventDefinition"
+                    }
+                  },
+                  "BoundaryEvent": {
+                    "Type": "bpmn:BoundaryEvent",
+                    "EventDefinition": {
+                      "Type": "bpmn:MessageEventDefinition"
+                    }
+                  }
+                },
+                "ExtensionTag": "uipath:event",
+                "ContextFields": [
+                  {
+                    "Name": "name",
+                    "DisplayName": "Message name",
+                    "Type": "string",
+                    "Required": true,
+                    "Hidden": false,
+                    "IsPrimaryKey": false,
+                    "Binding": false,
+                    "DefaultValue": null
+                  },
+                  {
+                    "Name": "_label",
+                    "Type": "string",
+                    "Required": false,
+                    "Hidden": true,
+                    "IsPrimaryKey": false,
+                    "Binding": false,
+                    "DefaultValue": null
+                  }
+                ],
+                "InputPattern": "separateInputs",
+                "InputName": "ItemData",
+                "InputTarget": "body",
+                "OutputSource": null,
+                "OutputType": "Maestro.ReceiveMessageEvent",
+                "OutputName": "response",
+                "UseRelativeSource": true,
+                "BindingPattern": "none",
+                "RequiresDiscovery": false,
+                "IsDynamic": false,
+                "XmlTemplate": "<bpmn:IntermediateCatchEvent id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:event version=\"v1\">\n      <uipath:type value=\"Maestro.ReceiveMessageEvent\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"name\" value=\"{name}\" />\n        <uipath:input name=\"_label\" value=\"{_label}\" />\n      </uipath:context>\n      <uipath:input name=\"ItemData\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"response\" type=\"Maestro.ReceiveMessageEvent\" var=\"{varId}\" />\n    </uipath:event>\n  </bpmn:extensionElements>\n  <bpmn:messageEventDefinition />\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:IntermediateCatchEvent>",
+                "InputNotes": "isSplitInputs=true in design schema but NOT in isSplitInputsEvents code array, so inputs are NOT merged into ItemData for this type. They remain separate.",
+                "ExtensionTagNotes": "In isEvents array, uses uipath:event",
+                "InputFields": [
+                  {
+                    "Name": "Reference",
+                    "DisplayName": "Reference",
+                    "Type": "string",
+                    "Required": true,
+                    "Hidden": false,
+                    "IsPrimaryKey": false,
+                    "Binding": false,
+                    "DefaultValue": null,
+                    "Target": "bodyField",
+                    "Description": "Correlation reference to match this receive event to its sender"
+                  }
+                ]
+              }
+            }
+          },
+          "sequence_number": 6,
+          "result_tokens": 790
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01CZG96vKvUi5mZYDnz9n8bE",
+          "assistant_turn_index": 13,
+          "timestamp": "2026-07-20T23:13:54.945651",
+          "duration_ms": 27.306182077154517,
+          "generation_completed_at": "2026-07-20T23:13:54.945651",
+          "execution_started_at": "2026-07-20T23:13:54.945718",
+          "execution_completed_at": "2026-07-20T23:13:54.973024",
+          "parameters": {
+            "command": "ls -lh /tmp/coder_eval_skill-bpmn-smoke-registry-discovery_w5xs5894/registry-evidence/",
+            "description": "List saved registry evidence files"
+          },
+          "result_status": "success",
+          "result_summary": "total 24K\n-rw-rw-r-- 1 azureuser azureuser 3.1K Jul 20 23:13 get-Maestro.ReceiveMessageEvent.json\n-rw-rw-r-- 1 azureuser azureuser 3.0K Jul 20 23:13 get-Orchestrator.StartJob.json\n-rw-rw-r-- 1 azureuser azureuser 9.6K Jul 20 23:13 list.json\n-rw-rw-r-- 1 azureuser azureuser  556 Jul 20 23:13 pull.json",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 7,
+          "result_tokens": 76
+        }
+      ],
+      "timestamp": "2026-07-20T23:14:05.392302",
+      "duration_seconds": 45.36782832304016,
+      "token_usage": {
+        "uncached_input_tokens": 10,
+        "output_tokens": 1976,
+        "cache_creation_input_tokens": 16415,
+        "cache_read_input_tokens": 221014,
+        "total_cost_usd": 0.15753045,
+        "input_tokens": 237439
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 15,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:20.024197",
+          "completed_at": "2026-07-20T23:13:22.610966",
+          "generation_duration_ms": 2586.787570035085,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants me to load the UiPath Maestro BPMN skill and use it to discover extension types from the registry. Let me invoke the skill first.",
+              "signature": "EtsCCmcIDxABGAIqQILzYdx+XcjGe4pOPIa0flVx0IO/37DXYa4st7nGLA50hpMD7wOpV+935SfMB1KesbifnTO0tbD6bffEGsxOjX4yEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgwgWhB6UcJMPb1Bc5saDM/9TR3onokktX3S4SIw1OMDSoMR8klnSUd6H849L2P3rw6hNBioFOS64L86sbc9TOjeaYRlRK4HkOPyohK+KqEBTqGyHSFitaGtAiqdZUjLPXhM+PBreuDlvU9SbjTjH5waMpwQEU64MD/45TdJ4/X5rBHdslPIgtANr2Gfys9JRSLqZTzgS8LabfkewleMcQeFWvhO7DZu7L1iTS7oLa3WwatsDn3jzCjm8nbi7BViM/F9T+97rQjwO8m40BbWjBZp/1TWwP+GwoGMnDshcpS5I31BU9zMVhGKeLdeKhXOIgwYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 89,
+          "cache_creation_tokens": 3057,
+          "cache_read_tokens": 19032,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PJkdhf9VYa4z1tcU6taFaK",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:22.610966",
+          "completed_at": "2026-07-20T23:13:23.032572",
+          "generation_duration_ms": 421.6058549936861,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01MDXULh8GzztPTeKPrqnFT3",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01MDXULh8GzztPTeKPrqnFT3"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 27,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PJkdhf9VYa4z1tcU6taFaK",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:23.067428",
+          "completed_at": "2026-07-20T23:13:26.152064",
+          "generation_duration_ms": 3084.6357910195366,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants me to discover the right extension types for starting an RPA job and waiting for an internal message using the UiPath Maestro BPMN registry. I need to:\n\n1. First read the registry-workflow reference to understand the workflow\n2. Run registry commands to discover extension types\n3. Save the raw JSON output to `registry-evidence/` directory\n\nLet me start by reading the registry-workflow reference and then run the registry commands.",
+              "signature": "EosFCmcIDxABGAIqQG+P+L3GTXuZv4lDs9QbnJUIXM4HogyqG75w3vmYU6jwIKQFbCE3OYUBgIJ+d/T2FMZLf5sm5LxVfOwieyKBgNgyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgyYLnEOFiFE1m5cj1YaDJg9WM9tqYsJhDpEBCIwf88vAphSU80ZD0tCH5aOF+BMFzkRX9mU5jwudIJmVvNvrXxQrvDrWc9T2fAvSC3BKtED9F9kczaULcGFD9brBrIM34XeiSiFnmeT/SgYlCyR6tWYSkt9WydI0ZKCsgj8OUJ6+oJoe0hf59ZSUfqCSYaM07P03hdPwNXKtFiWBfEbcUrqqglPNKuqxhh5tKa80/1RmOAMOl9Y6i1KeT9RbqfsZkc5nVOMIttWQucS2nHhMwMLIlvixycUDUI+3TlX2KSof0k32vZoEVVzT4bRt9LdJKAEHIlQrKfk+SNHAkGS0nu+d0wl0l+/X66+38uf0ppeyCjRQic4nUv6CO8cVcWYtIt8RhYCwI8g7gLpoVQ/GLxLD4hduY8ODi6I2yIDgpqd891G7mpjDWP/9LWS0P16yAlqwinBtsacxF/k5JDLM3SZoTVijOMgO7RF84jtshcChXy04gn23zjDqiHJejboTliqghPmuh/GBue8A0hnTZVkXLwIL0XhVMkKySZTV7UEkKTPdhIVyghiclyMkkh7aIuNO3tk3zTa/L9Df9bmIuSJLJCH6bGAAEIQt59QtP1V58LQtl2t4ONK9+UkceTjVeHIhhqgsy+D3wioptZdRO7QyBWVz6kJz9sHTaXsw4eEGC7snbgi3O5kMPcdH9a2eScDRBMk9RW4oNxgJ0phMU2EGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 157,
+          "cache_creation_tokens": 2999,
+          "cache_read_tokens": 22089,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01EYaQYJM2gnxTCo1EMM8yWL",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:26.152064",
+          "completed_at": "2026-07-20T23:13:26.914084",
+          "generation_duration_ms": 762.0199989760295,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Xj7nUSKFcip3SmGjCUVKcM",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Xj7nUSKFcip3SmGjCUVKcM"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 39,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01EYaQYJM2gnxTCo1EMM8yWL",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:26.926396",
+          "completed_at": "2026-07-20T23:13:30.850296",
+          "generation_duration_ms": 3923.899541958235,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have a good understanding of the registry workflow. Let me proceed with the registry discovery steps:\n\n1. First, run `uip maestro bpmn registry pull` to sync and cache\n2. Then `uip maestro bpmn registry list --limit -1 --output json`\n3. Then `uip maestro bpmn registry get Orchestrator.StartJob --output json` for RPA job\n4. Then `uip maestro bpmn registry get Maestro.ReceiveMessageEvent --output json` for receive message\n\nLet me create the `registry-evidence/` directory and run these commands, saving each output.",
+              "signature": "EtYFCmcIDxABGAIqQAlKZR/fgib8GFTsSLntpS9aB6u5RmJlQHW9Uo5Ha7HPYoyVHbyeuFGGl5VRrm4f0XEpDMVSo4TuYtXRk7i845AyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgw4FbpVQYj+EJIX3aIaDLGorvxFBd2EFwrq/CIwzByL2hje+009u24tWE1LZWWmaRtCuUZvUrkJwPkLW2XFBB8lYg3ghNsxlj3Xy2EUKpwEN/4h9XtjXKtSmo91wLfmk4DtSC/SucG2LBQk8McBu+K4uUtDdHA65XJ0qPlycX/V5fhIpja6iA2fBfYuLqgEJfbql26qY6YCOqDtE9FHHmaCo4NmkmHJ43DrG5dxk92j2iXxEY4D0lZDq+UISGGOBsWAM7jAKEcvKTCWwkCEfutWFcAn2IvIC/k/A24dmajYN3zB/cDoz5xp4zYNUyZvUHLWoAN7PKABDCgY47gyFyKCFj+ByLTZaXMIIW5rcv1f41lqau1AphXwL8DbQI47J8Z6nwGCyn3OfpZrgIoFc2UQZjER9G5Tbh+5TXWexvq416E27vhIoSdnUry9fZuM8pceFHHxsNQVwoCtHJyOHSzNfr3zQyS+xSYH29f7kDczy+a129UAM3KIqwGHdvfzdKEFmDa6mXlosxQcPikUFpIVr8GRHvpkzvvQ0xgmJR0EO0Nvicn7FKjhwBlPUL+Mvjh39qstXaUA1x7CXk3vsrYSEBP60J5KRtASLLQxc0n8Ax2Uka3vbyglRpaYVXdpfUyl0MSJEnvgtSFlr7xR8QbtYZX2Q8XlTtOskGgPedLyFXE6jXFRNwoxJZarkayle6PMyzoBGnPMq58piwH4nkJwlNp87/ZutIxU39VFEP7su7UllAk+qRFF4DCSX+NRi5mMwKj60tUrHIV/M4fqky0si1pxHeV8jpEEm8wUNdlOz9rXnlpevevXK/5yGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 183,
+          "cache_creation_tokens": 3723,
+          "cache_read_tokens": 25088,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01T5viTGwXG8ApKf7fJvgqz4",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:30.850296",
+          "completed_at": "2026-07-20T23:13:31.729307",
+          "generation_duration_ms": 879.0097950259224,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I'll follow the registry workflow. Let me create the evidence directory, then run the discovery commands in the right order.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 45,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01T5viTGwXG8ApKf7fJvgqz4",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:31.729307",
+          "completed_at": "2026-07-20T23:13:33.412147",
+          "generation_duration_ms": 1682.8414730262011,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01PQ5VpeZsMty9EXbssYYEM8",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01PQ5VpeZsMty9EXbssYYEM8"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 66,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01T5viTGwXG8ApKf7fJvgqz4",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:33.475543",
+          "completed_at": "2026-07-20T23:13:36.351274",
+          "generation_duration_ms": 2875.731033971533,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01271khL1X2wyRwirEHkEdEu",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01271khL1X2wyRwirEHkEdEu"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 150,
+          "cache_creation_tokens": 150,
+          "cache_read_tokens": 28811,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Uxj7EgvCHwJHW79n4hTsZ2",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:38.499014",
+          "completed_at": "2026-07-20T23:13:40.301306",
+          "generation_duration_ms": 1802.2923059761524,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_019Cd2cGEXxXEqzNnUvoEp6y",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_019Cd2cGEXxXEqzNnUvoEp6y"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 126,
+          "cache_creation_tokens": 339,
+          "cache_read_tokens": 28961,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01N85opLgXmrPDafxDX7Y9tR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:42.394060",
+          "completed_at": "2026-07-20T23:13:44.922721",
+          "generation_duration_ms": 2528.6613289499655,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The list confirms the two types I need: `Orchestrator.StartJob` (Start and wait for RPA workflow) and `Maestro.ReceiveMessageEvent` (Receive internal message). Now I'll fetch both templates in parallel.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 95,
+          "cache_creation_tokens": 3385,
+          "cache_read_tokens": 29300,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_012zmLmVn16gQvpkLbVqEsmh",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:44.922721",
+          "completed_at": "2026-07-20T23:13:46.539032",
+          "generation_duration_ms": 1616.3111610803753,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_0177w3NGxRSgJEHsDr1oczJU",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_0177w3NGxRSgJEHsDr1oczJU"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 109,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_012zmLmVn16gQvpkLbVqEsmh",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:46.539032",
+          "completed_at": "2026-07-20T23:13:47.405990",
+          "generation_duration_ms": 866.9574859086424,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_012vLHaSxh148anniQ5H5QvZ",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_012vLHaSxh148anniQ5H5QvZ"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 118,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_012zmLmVn16gQvpkLbVqEsmh",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:51.727011",
+          "completed_at": "2026-07-20T23:13:53.381562",
+          "generation_duration_ms": 1654.5499729691073,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "All four registry commands have been run and their raw JSON output saved. Let me verify the files are in place:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 54,
+          "cache_creation_tokens": 2363,
+          "cache_read_tokens": 32685,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01CB2y8Tj1H6oHa837kByKAr",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:53.381562",
+          "completed_at": "2026-07-20T23:13:54.945651",
+          "generation_duration_ms": 1564.0895750839263,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01CZG96vKvUi5mZYDnz9n8bE",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01CZG96vKvUi5mZYDnz9n8bE"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 76,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01CB2y8Tj1H6oHa837kByKAr",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:13:54.972992",
+          "completed_at": "2026-07-20T23:14:05.308875",
+          "generation_duration_ms": 10335.88258700911,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "All four registry evidence files are saved in `registry-evidence/`. Here's a summary of what was discovered and saved:\n\n---\n\n## Registry discovery complete\n\nFour files saved to `registry-evidence/`:\n\n| File | Command | Contents |\n|------|---------|---------|\n| `pull.json` | `uip maestro bpmn registry pull` | Confirms 30 OOTB extension types synced (login-free cache written) |\n| `list.json` | `uip maestro bpmn registry list --limit -1` | Full catalogue of all 30 extension types with `BpmnElement`, `ExtensionTag`, `RequiresDiscovery` |\n| `get-Orchestrator.StartJob.json` | `uip maestro bpmn registry get Orchestrator.StartJob` | Full template for **Start and wait for RPA workflow** |\n| `get-Maestro.ReceiveMessageEvent.json` | `uip maestro bpmn registry get Maestro.ReceiveMessageEvent` | Full template for **Receive internal message** |\n\n### Key findings from the templates\n\n**`Orchestrator.StartJob`** (RPA job):\n- Host element: `bpmn:ServiceTask`, tag: `uipath:activity`\n- `RequiresDiscovery: Yes` — needs a real `releaseKey` (process GUID), `folderId`/`folderPath`, and `name` bound at authoring time\n- Output type: `Orchestrator.RunJob`\n- `xmlTemplate` uses placeholders: `{id}`, `{name}`, `{releaseKey}`, `{folderId}`, `{folderPath}`, `{varId}`, `{incomingEdge}`, `{outgoingEdge}`\n\n**`Maestro.ReceiveMessageEvent`** (internal message wait):\n- Host element: `bpmn:IntermediateCatchEvent`, tag: `uipath:event`\n- `RequiresDiscovery: No` — no external connection needed\n- Requires a `name` context field (the message name for correlation) and a `Reference` input field (correlation reference)\n- Must include `<bpmn:messageEventDefinition />` as a child element\n- Output type: `Maestro.ReceiveMessageEvent`\n- `xmlTemplate` uses placeholders: `{id}`, `{name}`, `{_label}`, `{varId}`, `{incomingEdge}`, `{outgoingEdge}`\n\nWhen you're ready to author the BPMN, I'll need the real `releaseKey` (process GUID) and folder info for the RPA job, plus the message name for the receive event.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 642,
+          "cache_creation_tokens": 399,
+          "cache_read_tokens": 35048,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01XPJupGmG3cqGqtWEHiji9E",
+          "parent_tool_use_id": null
+        }
+      ],
+      "num_turns": 10,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "All four registry evidence files are saved in `registry-evidence/`. Here's a summary of what was discovered and saved:\n\n---\n\n## Registry discovery complete\n\nFour files saved to `registry-evidence/`:\n\n| File | Command | Contents |\n|------|---------|---------|\n| `pull.json` | `uip maestro bpmn registry pull` | Confirms 30 OOTB extension types synced (login-free cache written) |\n| `list.json` | `uip maestro bpmn registry list --limit -1` | Full catalogue of all 30 extension types with `BpmnElement`, `ExtensionTag`, `RequiresDiscovery` |\n| `get-Orchestrator.StartJob.json` | `uip maestro bpmn registry get Orchestrator.StartJob` | Full template for **Start and wait for RPA workflow** |\n| `get-Maestro.ReceiveMessageEvent.json` | `uip maestro bpmn registry get Maestro.ReceiveMessageEvent` | Full template for **Receive internal message** |\n\n### Key findings from the templates\n\n**`Orchestrator.StartJob`** (RPA job):\n- Host element: `bpmn:ServiceTask`, tag: `uipath:activity`\n- `RequiresDiscovery: Yes` — needs a real `releaseKey` (process GUID), `folderId`/`folderPath`, and `name` bound at authoring time\n- Output type: `Orchestrator.RunJob`\n- `xmlTemplate` uses placeholders: `{id}`, `{name}`, `{releaseKey}`, `{folderId}`, `{folderPath}`, `{varId}`, `{incomingEdge}`, `{outgoingEdge}`\n\n**`Maestro.ReceiveMessageEvent`** (internal message wait):\n- Host element: `bpmn:IntermediateCatchEvent`, tag: `uipath:event`\n- `RequiresDiscovery: No` — no external connection needed\n- Requires a `name` context field (the message name for correlation) and a `Reference` input field (correlation reference)\n- Must include `<bpmn:messageEventDefinition />` as a child element\n- Output type: `Maestro.ReceiveMessageEvent`\n- `xmlTemplate` uses placeholders: `{id}`, `{name}`, `{_label}`, `{varId}`, `{incomingEdge}`, `{outgoingEdge}`\n\nWhen you're ready to author the BPMN, I'll need the real `releaseKey` (process GUID) and folder info for the RPA job, plus the message name for the receive event."
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "252722a",
+    "skills_git_commit": "0fc8174d",
+    "cli_version": "1.199.0-dev.7923",
+    "tool_plugins": {
+      "agent-tool": "1.199.0-dev.7923",
+      "agenthub-tool": "1.199.0-dev.7923",
+      "codedagent-tool": "1.199.0-dev.7923",
+      "data-fabric-tool": "1.199.0-dev.7923",
+      "functions-tool": "1.199.0-dev.7923",
+      "gov-tool": "1.199.0-dev.7923",
+      "insights-tool": "1.199.0-dev.7923",
+      "integrationservice-tool": "1.199.0-dev.7923",
+      "ixp-tool": "1.199.0-dev.7923",
+      "maestro-tool": "1.199.0-dev.7924",
+      "orchestrator-tool": "1.199.0-dev.7923",
+      "solution-tool": "1.199.0-dev.7923",
+      "tasks-tool": "1.199.0-dev.7923",
+      "test-manager-tool": "1.199.0-dev.7923"
+    },
+    "coder_eval": "0.8.4",
+    "claude_code_cli": "2.1.216 (Claude Code)",
+    "uv": "uv 0.11.21 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "Not Installed",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 40,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/tmp/coder_eval_skill-bpmn-smoke-registry-discovery_w5xs5894",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/home/azureuser/projects/skills/tmp/coder_eval/.venv/bin:/home/azureuser/.local/bin:/home/azureuser/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/azureuser/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/azureuser/.vscode-server/cli/servers/Stable-93cfdd489c3b228840d0f86ec77c3636277c93ea/server/bin/remote-cli:/home/azureuser/.local/bin:/home/azureuser/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "PLUGIN_TOOLS_DIR": "/home/azureuser/.npm-global/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "runs/maestro-bpmn-baseline-report-1/default/skill-bpmn-smoke-registry-discovery/00/artifacts/skill-bpmn-smoke-registry-discovery",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-bpmn-smoke-registry-discovery",
+      "description": "Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to discover Maestro BPMN extension types via the registry CLI (pull, list/search, get) before authoring anything. Tests that the skill teaches the registry-driven discovery loop instead of hand-authoring uipath:* XML from prose.\n",
+      "initial_prompt": "I want to author a UiPath Maestro BPMN process that starts an RPA job and\nwaits for an internal message. Before authoring anything, load and follow the\nuipath-maestro-bpmn skill and use the registry to discover the right\nextension types and their templates.\n\nSave the raw JSON output of every registry command you run into a\n`registry-evidence/` directory (one file per command), for example:\n  - `uip maestro bpmn registry pull --output json > registry-evidence/pull.json`\n  - `uip maestro bpmn registry list --output json > registry-evidence/list.json`\n  - `uip maestro bpmn registry get <type> --output json > registry-evidence/get-<type>.json`\n\nDo not summarize or paraphrase the output — preserve the raw CLI JSON so the\nRPA-job and receive-message extension types and their templates are present in\nthe saved files.\n\nImportant:\n- The `uip` CLI is already available in the environment.\n- Use `--output json` on all uip commands.\n- Do not author the BPMN yet — just discover and save the raw evidence. Do not\n  upload, publish, deploy, debug, run, or pack anything.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-bpmn",
+        "smoke",
+        "mode:build"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": null,
+        "mock_path_dirs": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "command_executed",
+          "description": "Agent pulled the registry",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "uip\\s+maestro\\s+bpmn\\s+registry\\s+pull",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent listed or searched registry extension types",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "uip\\s+maestro\\s+bpmn\\s+registry\\s+(list|search)",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent fetched a template with registry get",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "uip\\s+maestro\\s+bpmn\\s+registry\\s+get",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "run_command",
+          "description": "Raw registry evidence covers the RPA-job and receive-message types",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "command": "python3 $TASK_DIR/check_registry_discovery.py",
+          "timeout": 30,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        }
+      ],
+      "run_limits": {
+        "max_turns": 40,
+        "expected_turns": null,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-bpmn-smoke-registry-discovery\ndescription: >\n  Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to discover\n  Maestro BPMN extension types via the registry CLI (pull, list/search, get)\n  before authoring anything. Tests that the skill teaches the registry-driven\n  discovery loop instead of hand-authoring uipath:* XML from prose.\ntags: [uipath-maestro-bpmn, smoke, \"mode:build\"]\n\nsandbox:\n  driver: tempdir\n  python: {}\n\ninitial_prompt: |\n  I want to author a UiPath Maestro BPMN process that starts an RPA job and\n  waits for an internal message. Before authoring anything, load and follow the\n  uipath-maestro-bpmn skill and use the registry to discover the right\n  extension types and their templates.\n\n  Save the raw JSON output of every registry command you run into a\n  `registry-evidence/` directory (one file per command), for example:\n    - `uip maestro bpmn registry pull --output json > registry-evidence/pull.json`\n    - `uip maestro bpmn registry list --output json > registry-evidence/list.json`\n    - `uip maestro bpmn registry get <type> --output json > registry-evidence/get-<type>.json`\n\n  Do not summarize or paraphrase the output — preserve the raw CLI JSON so the\n  RPA-job and receive-message extension types and their templates are present in\n  the saved files.\n\n  Important:\n  - The `uip` CLI is already available in the environment.\n  - Use `--output json` on all uip commands.\n  - Do not author the BPMN yet — just discover and save the raw evidence. Do not\n    upload, publish, deploy, debug, run, or pack anything.\n\nsuccess_criteria:\n  - type: command_executed\n    description: \"Agent pulled the registry\"\n    tool_name: \"Bash\"\n    command_pattern: 'uip\\s+maestro\\s+bpmn\\s+registry\\s+pull'\n    min_count: 1\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent listed or searched registry extension types\"\n    tool_name: \"Bash\"\n    command_pattern: 'uip\\s+maestro\\s+bpmn\\s+registry\\s+(list|search)'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent fetched a template with registry get\"\n    tool_name: \"Bash\"\n    command_pattern: 'uip\\s+maestro\\s+bpmn\\s+registry\\s+get'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: run_command\n    description: \"Raw registry evidence covers the RPA-job and receive-message types\"\n    command: \"python3 $TASK_DIR/check_registry_discovery.py\"\n    timeout: 30\n    expected_exit_code: 0\n    weight: 3.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/smoke/registry_discovery.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 40,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "tempdir",
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.python": {
+        "value": {},
+        "source": "task",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 1,
+        "source": "default",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 8,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Read": 1,
+      "Bash": 6
+    },
+    "total_command_time_ms": 11620.668093208224,
+    "avg_command_time_ms": 1452.583511651028,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 4321.003198041581,
+        "parameters": {
+          "command": "uip maestro bpmn registry get Maestro.ReceiveMessageEvent --output json 2>&1 | tee registry-evidence/get-Maestro.ReceiveMessageEvent.json",
+          "description": "Get template for Maestro.ReceiveMessageEvent, save raw JSON",
+          "timeout": 60000
+        },
+        "tool_id": "toolu_bdrk_012vLHaSxh148anniQ5H5QvZ"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 2923.215916962363,
+        "parameters": {
+          "command": "uip maestro bpmn registry get Orchestrator.StartJob --output json 2>&1 | tee registry-evidence/get-Orchestrator.StartJob.json",
+          "description": "Get template for Orchestrator.StartJob, save raw JSON",
+          "timeout": 60000
+        },
+        "tool_id": "toolu_bdrk_0177w3NGxRSgJEHsDr1oczJU"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 2147.6653220597655,
+        "parameters": {
+          "command": "uip maestro bpmn registry pull --output json 2>&1 | tee registry-evidence/pull.json",
+          "description": "Pull and cache the registry, save raw JSON output",
+          "timeout": 60000
+        },
+        "tool_id": "toolu_bdrk_01271khL1X2wyRwirEHkEdEu"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 2092.6616290817037,
+        "parameters": {
+          "command": "uip maestro bpmn registry list --limit -1 --output json 2>&1 | tee registry-evidence/list.json",
+          "description": "List all extension types, save raw JSON output",
+          "timeout": 60000
+        },
+        "tool_id": "toolu_bdrk_019Cd2cGEXxXEqzNnUvoEp6y"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 63.37900704238564,
+        "parameters": {
+          "command": "mkdir -p /tmp/coder_eval_skill-bpmn-smoke-registry-discovery_w5xs5894/registry-evidence && echo \"Directory created\"",
+          "description": "Create registry-evidence directory"
+        },
+        "tool_id": "toolu_bdrk_01PQ5VpeZsMty9EXbssYYEM8"
+      }
+    ],
+    "successful_commands": 8,
+    "failed_commands": 0,
+    "unknown_commands": 0,
+    "success_rate": 100.0,
+    "most_common_sequence": "Bash → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 10,
+    "output_tokens": 1976,
+    "cache_creation_input_tokens": 16415,
+    "cache_read_input_tokens": 221014,
+    "total_cost_usd": 0.15753045,
+    "input_tokens": 237439
+  },
+  "total_assistant_turns": 15,
+  "expected_commands": null,
+  "actual_commands": 8,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.005637407302856445,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

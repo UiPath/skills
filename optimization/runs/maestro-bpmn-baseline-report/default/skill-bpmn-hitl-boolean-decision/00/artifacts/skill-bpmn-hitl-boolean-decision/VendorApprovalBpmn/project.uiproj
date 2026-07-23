@@ -1,0 +1,11 @@
+{
+  "name": "VendorApprovalBpmn",
+  "description": "Vendor onboarding with HITL compliance review and boolean approval decision",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false
+  },
+  "targetFramework": "Portable",
+  "projectType": "ProcessOrchestration",
+  "entryPoints": []
+}

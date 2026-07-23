@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_ApprovalResult" name="ApprovalResult" type="object" />
+        <uipath:inputOutput id="Var_ProvisioningResult" name="ProvisioningResult" type="object" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Manual start event -->
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="ep_StartEvent_1" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- HITL approval: bpmn:userTask with Actions.HITL activity shell (registry template) -->
+    <bpmn:userTask id="Task_Approval" name="Approve Access Request">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="appId" value="access-request-app" />
+            <uipath:input name="appVersion" value="1" />
+            <uipath:input name="actions" value="Approve,Reject" />
+            <uipath:input name="key" value="access-approval-folder" />
+            <uipath:input name="taskTitle" value="Review employee access request" />
+          </uipath:context>
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Actions.HITL" var="Var_ApprovalResult" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- RPA provisioning: bpmn:serviceTask with Orchestrator.StartJob activity shell (registry template) -->
+    <bpmn:serviceTask id="Task_Provisioning" name="Provision System Access">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartJob" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey" value="provision-system-access-process" />
+            <uipath:input name="folderId" value="" />
+            <uipath:input name="folderPath" value="Shared" />
+            <uipath:input name="name" value="ProvisionSystemAccessJob" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_ProvisioningResult" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- End event -->
+    <bpmn:endEvent id="EndEvent_1" name="End">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_Approval" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Approval" targetRef="Task_Provisioning" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_Provisioning" targetRef="EndEvent_1" />
+
+  </bpmn:process>
+
+  <!--
+    BPMNDiagram: left-to-right linear layout
+      StartEvent_1 (36x36)  x=160, y=100
+      Task_Approval (100x80) x=260, y=78
+      Task_Provisioning (100x80) x=430, y=78
+      EndEvent_1 (36x36) x=600, y=100
+  -->
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <bpmndi:BPMNShape id="S_StartEvent_1" bpmnElement="StartEvent_1">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_Approval" bpmnElement="Task_Approval">
+        <dc:Bounds x="260" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_Provisioning" bpmnElement="Task_Provisioning">
+        <dc:Bounds x="430" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_EndEvent_1" bpmnElement="EndEvent_1">
+        <dc:Bounds x="600" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_1" bpmnElement="Flow_1">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="260" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_2" bpmnElement="Flow_2">
+        <di:waypoint x="360" y="118" />
+        <di:waypoint x="430" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_3" bpmnElement="Flow_3">
+        <di:waypoint x="530" y="118" />
+        <di:waypoint x="600" y="118" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

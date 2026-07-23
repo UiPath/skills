@@ -1,0 +1,23 @@
+{
+  "entryPoints": [
+    {
+      "id": "ep_InvoiceTriageStart",
+      "filePath": "/content/InvoiceTriageBpmn.bpmn#Start_ManualInvoice",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "invoiceId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ]
+}

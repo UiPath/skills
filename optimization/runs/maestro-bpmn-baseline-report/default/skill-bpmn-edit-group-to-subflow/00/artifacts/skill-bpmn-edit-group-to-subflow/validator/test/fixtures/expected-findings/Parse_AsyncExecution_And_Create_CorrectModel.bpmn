@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" >
+    <bpmn:process id="Process_1">
+
+        <bpmn:extensionElements>
+            <uipath:variables>
+              <uipath:inputOutput
+                id="vf57f5770"
+                elementId="Activity_b0ea8ed9"
+                name="Response"
+                type="json"
+                default="" />
+            </uipath:variables>
+            <uipath:bindings>
+              <uipath:binding
+                id="bda315f50"
+                name="Connection"
+                type="string"
+                default="fa9e0590-a6bb-11ef-b0e6-df3b66e154f8" />
+            </uipath:bindings>
+          </bpmn:extensionElements>
+
+        <bpmn:startEvent id="Start_1" name="Begin">
+            <bpmn:outgoing>Flow_1</bpmn:outgoing>
+        </bpmn:startEvent>
+
+        <bpmn:serviceTask name="Research task" id="Activity_b0ea8ed9">
+            <bpmn:incoming>Flow_1</bpmn:incoming>
+            <bpmn:outgoing>Flow_2</bpmn:outgoing>
+            <bpmn:extensionElements>
+                <uipath:activity version="v1">
+                    <uipath:type value="[extensionType]" version="v1"/>
+                    <uipath:context>
+                        <uipath:input name="connectorKey" type="string"
+                                      value="uipath-crewai-crewai"/>
+                        <uipath:input name="connectionId" type="string"
+                                      value="=bindings.bda315f50"/>
+                        <!-- should be binded -->
+                        <uipath:input name="folderKey" type="string"
+                                      value="717ede25-7494-44d5-9d65-5dab660653f6"/>
+                        <uipath:input name="folderPath" type="string"
+                                      value="Shared"/>
+                        <uipath:input name="objectName" type="string"
+                                      value="INVOKE_CREWAI_COMPLETION"/>
+                        <uipath:input name="operation" type="string"
+                                      value="WaitForCrewaiAgent"/>
+                        <!-- not sure if this is needed -->
+                        <uipath:input name="path" type="string"
+                                      value="invoke-crewai-agent"/>
+                    </uipath:context>
+                    <uipath:input name="agent" type="string" value="researcher" target="query"/>
+                    <uipath:input name="body" type="json" target="body">
+                        <![CDATA[
+                            {
+                              "description": "Conduct a thorough research ",
+                              "expected_output": "\"A list with 10 bullet points about \" vars.v42119920.topic"
+                            }
+                          ]]>
+                    </uipath:input>
+                    <uipath:output name="response"
+                                   type="jsonSchema"
+                                   source="=result"
+                                   var="vf57f5770" />
+                </uipath:activity>
+            </bpmn:extensionElements>
+        </bpmn:serviceTask>
+
+        <bpmn:endEvent id="End_1" name="Finish">
+            <bpmn:incoming>Flow_2</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Activity_b0ea8ed9" />
+        <bpmn:sequenceFlow id="Flow_2" sourceRef="Activity_b0ea8ed9" targetRef="End_1" />
+    </bpmn:process>
+</bpmn:definitions>

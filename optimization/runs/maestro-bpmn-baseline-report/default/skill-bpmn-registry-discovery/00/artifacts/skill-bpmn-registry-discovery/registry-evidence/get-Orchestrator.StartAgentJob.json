@@ -1,0 +1,66 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Orchestrator.StartAgentJob",
+      "Label": "Start and wait for agent",
+      "BpmnElement": "bpmn:ServiceTask",
+      "Placements": {
+        "Activity": {
+          "Type": "bpmn:ServiceTask"
+        }
+      },
+      "ExtensionTag": "uipath:activity",
+      "ContextFields": [
+        {
+          "Name": "name",
+          "DisplayName": "Agent",
+          "Type": "string",
+          "Required": true,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": true,
+          "DefaultValue": null,
+          "BindingInfo": {
+            "Resource": "process",
+            "ResourceKeyPattern": "${metadata.key}",
+            "PropertyAttribute": "name"
+          }
+        },
+        {
+          "Name": "folderPath",
+          "Type": "string",
+          "Required": true,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": true,
+          "DefaultValue": null,
+          "BindingInfo": {
+            "Resource": "process",
+            "ResourceKeyPattern": "${metadata.key}",
+            "PropertyAttribute": "folderPath"
+          }
+        }
+      ],
+      "InputPattern": "mergedBody",
+      "InputName": "JobArguments",
+      "InputTarget": "bodyField",
+      "OutputSource": null,
+      "OutputType": "Orchestrator.RunJob",
+      "OutputName": "Process response",
+      "UseRelativeSource": true,
+      "BindingPattern": "process",
+      "BindingInfo": {
+        "Resource": "process",
+        "ResourceKeyPattern": "${metadata.key}",
+        "PropertyAttribute": "name",
+        "ContextField": "name"
+      },
+      "RequiresDiscovery": true,
+      "IsDynamic": true,
+      "XmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <uipath:activity type=\"Orchestrator.StartAgentJob\" version=\"v1\">\n    <uipath:context>\n      <uipath:input name=\"name\" value=\"=bindings.{nameBindingId}\" />\n      <uipath:input name=\"folderPath\" value=\"=bindings.{folderPathBindingId}\" />\n    </uipath:context>\n    <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n    <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n  </uipath:activity>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "DiscoveryNotes": "Uses getSupportedOrchestratorTasks('agent', search) to list available agents"
+    }
+  }
+}

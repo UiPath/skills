@@ -1,0 +1,6 @@
+{
+  "ProjectType": "ProcessOrchestration",
+  "Name": "LeaveRequestBpmn",
+  "Description": "Leave request review process with HITL manager approval and three-way gateway routing.",
+  "MainFile": "LeaveRequestBpmn.bpmn"
+}

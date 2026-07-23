@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="sample-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="06040a68-1da7-40d1-8082-74ccc6ba3f1a" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>flow_start_to_fork</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:inclusiveGateway id="Gateway_fork">
+      <bpmn:incoming>flow_start_to_fork</bpmn:incoming>
+      <bpmn:outgoing>flow_fork_to_a</bpmn:outgoing>
+      <bpmn:outgoing>flow_fork_to_xor</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+    <bpmn:scriptTask id="Activity_A" name="Task A" scriptFormat="JavaScript">
+      <bpmn:script>console.log('A')</bpmn:script>
+      <bpmn:incoming>flow_fork_to_a</bpmn:incoming>
+      <bpmn:outgoing>flow_a_to_join</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:exclusiveGateway id="Gateway_xor" name="XOR" default="flow_xor_away">
+      <bpmn:incoming>flow_fork_to_xor</bpmn:incoming>
+      <bpmn:outgoing>flow_xor_to_join</bpmn:outgoing>
+      <bpmn:outgoing>flow_xor_away</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:scriptTask id="Activity_Away" name="Task Away" scriptFormat="JavaScript">
+      <bpmn:script>console.log('Away')</bpmn:script>
+      <bpmn:incoming>flow_xor_away</bpmn:incoming>
+      <bpmn:outgoing>flow_away_to_end</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:inclusiveGateway id="Gateway_join">
+      <bpmn:incoming>flow_a_to_join</bpmn:incoming>
+      <bpmn:incoming>flow_xor_to_join</bpmn:incoming>
+      <bpmn:outgoing>flow_join_to_d</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+    <bpmn:scriptTask id="Activity_D" name="Task D" scriptFormat="JavaScript">
+      <bpmn:script>console.log('D')</bpmn:script>
+      <bpmn:incoming>flow_join_to_d</bpmn:incoming>
+      <bpmn:outgoing>flow_d_to_end</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="Event_end_main">
+      <bpmn:incoming>flow_d_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="Event_end_away">
+      <bpmn:incoming>flow_away_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_start_to_fork" sourceRef="Event_start" targetRef="Gateway_fork" />
+    <bpmn:sequenceFlow id="flow_fork_to_a" sourceRef="Gateway_fork" targetRef="Activity_A" />
+    <bpmn:sequenceFlow id="flow_fork_to_xor" sourceRef="Gateway_fork" targetRef="Gateway_xor" />
+    <bpmn:sequenceFlow id="flow_a_to_join" sourceRef="Activity_A" targetRef="Gateway_join" />
+    <bpmn:sequenceFlow id="flow_xor_to_join" sourceRef="Gateway_xor" targetRef="Gateway_join" />
+    <bpmn:sequenceFlow id="flow_xor_away" sourceRef="Gateway_xor" targetRef="Activity_Away" />
+    <bpmn:sequenceFlow id="flow_away_to_end" sourceRef="Activity_Away" targetRef="Event_end_away" />
+    <bpmn:sequenceFlow id="flow_join_to_d" sourceRef="Gateway_join" targetRef="Activity_D" />
+    <bpmn:sequenceFlow id="flow_d_to_end" sourceRef="Activity_D" targetRef="Event_end_main" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1" />
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

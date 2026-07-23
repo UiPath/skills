@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="sample-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="06040a68-1da7-40d1-8082-74ccc6ba3f1a" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>flow_start_to_writer</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Activity_Writer" name="Writer (writes x=42)" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="x" type="integer" source="=this.result" var="x" custom="true" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:script>return 42;</bpmn:script>
+      <bpmn:incoming>flow_start_to_writer</bpmn:incoming>
+      <bpmn:outgoing>flow_writer_to_gw</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:exclusiveGateway id="Gateway_1" name="XOR" default="flow_gw_to_default">
+      <bpmn:incoming>flow_writer_to_gw</bpmn:incoming>
+      <bpmn:outgoing>flow_gw_to_taken</bpmn:outgoing>
+      <bpmn:outgoing>flow_gw_to_default</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:scriptTask id="Activity_Taken" name="Taken branch" scriptFormat="JavaScript">
+      <bpmn:script>return 'TAKEN';</bpmn:script>
+      <bpmn:incoming>flow_gw_to_taken</bpmn:incoming>
+      <bpmn:outgoing>flow_taken_to_end</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Activity_NotTaken" name="Default branch (not taken)" scriptFormat="JavaScript">
+      <bpmn:script>return 'NOT_TAKEN';</bpmn:script>
+      <bpmn:incoming>flow_gw_to_default</bpmn:incoming>
+      <bpmn:outgoing>flow_default_to_end</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="Event_end">
+      <bpmn:incoming>flow_taken_to_end</bpmn:incoming>
+      <bpmn:incoming>flow_default_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_start_to_writer" sourceRef="Event_start" targetRef="Activity_Writer" />
+    <bpmn:sequenceFlow id="flow_writer_to_gw" sourceRef="Activity_Writer" targetRef="Gateway_1" />
+    <bpmn:sequenceFlow id="flow_gw_to_taken" sourceRef="Gateway_1" targetRef="Activity_Taken">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=js:vars.x &gt; 10</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow_gw_to_default" sourceRef="Gateway_1" targetRef="Activity_NotTaken" />
+    <bpmn:sequenceFlow id="flow_taken_to_end" sourceRef="Activity_Taken" targetRef="Event_end" />
+    <bpmn:sequenceFlow id="flow_default_to_end" sourceRef="Activity_NotTaken" targetRef="Event_end" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1" />
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

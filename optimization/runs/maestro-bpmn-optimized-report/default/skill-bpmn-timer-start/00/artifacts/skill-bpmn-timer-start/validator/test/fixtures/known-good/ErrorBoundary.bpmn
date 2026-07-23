@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="sample-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="UiPath Studio Web (https://uipath.com)" exporterVersion="d83b309b">
+  <bpmn:error id="Error_MyFault" name="MyError" errorCode="MyFault" />
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="06040a68-1da7-40d1-8082-74ccc6ba3f1a" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>flow_start_host</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Activity_Host" name="Host" scriptFormat="JavaScript">
+      <bpmn:script>HOST</bpmn:script>
+      <bpmn:incoming>flow_start_host</bpmn:incoming>
+      <bpmn:outgoing>flow_host_end</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:boundaryEvent id="Boundary_error" name="CatchMyFault" attachedToRef="Activity_Host">
+      <bpmn:outgoing>flow_boundary_bscript</bpmn:outgoing>
+      <bpmn:errorEventDefinition errorRef="Error_MyFault" />
+    </bpmn:boundaryEvent>
+    <bpmn:scriptTask id="Activity_BoundaryScript" name="BoundaryScript" scriptFormat="JavaScript">
+      <bpmn:script>BOUNDARY</bpmn:script>
+      <bpmn:incoming>flow_boundary_bscript</bpmn:incoming>
+      <bpmn:outgoing>flow_bscript_bend</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="Event_end_host">
+      <bpmn:incoming>flow_host_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="Event_end_boundary">
+      <bpmn:incoming>flow_bscript_bend</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_start_host" sourceRef="Event_start" targetRef="Activity_Host" />
+    <bpmn:sequenceFlow id="flow_host_end" sourceRef="Activity_Host" targetRef="Event_end_host" />
+    <bpmn:sequenceFlow id="flow_boundary_bscript" sourceRef="Boundary_error" targetRef="Activity_BoundaryScript" />
+    <bpmn:sequenceFlow id="flow_bscript_bend" sourceRef="Activity_BoundaryScript" targetRef="Event_end_boundary" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="160" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Activity_Host" bpmnElement="Activity_Host">
+        <dc:Bounds x="260" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Boundary_error" bpmnElement="Boundary_error">
+        <dc:Bounds x="322" y="240" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Activity_BoundaryScript" bpmnElement="Activity_BoundaryScript">
+        <dc:Bounds x="420" y="320" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_end_host" bpmnElement="Event_end_host">
+        <dc:Bounds x="460" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_end_boundary" bpmnElement="Event_end_boundary">
+        <dc:Bounds x="580" y="342" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_flow_start_host" bpmnElement="flow_start_host">
+        <di:waypoint x="196" y="218" />
+        <di:waypoint x="260" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_flow_host_end" bpmnElement="flow_host_end">
+        <di:waypoint x="360" y="218" />
+        <di:waypoint x="460" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_flow_boundary_bscript" bpmnElement="flow_boundary_bscript">
+        <di:waypoint x="340" y="276" />
+        <di:waypoint x="340" y="360" />
+        <di:waypoint x="420" y="360" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_flow_bscript_bend" bpmnElement="flow_bscript_bend">
+        <di:waypoint x="520" y="360" />
+        <di:waypoint x="580" y="360" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

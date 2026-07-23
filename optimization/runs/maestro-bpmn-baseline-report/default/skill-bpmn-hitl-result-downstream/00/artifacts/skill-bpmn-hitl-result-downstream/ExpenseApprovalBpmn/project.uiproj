@@ -1,0 +1,9 @@
+{
+  "name": "ExpenseApprovalBpmn",
+  "description": "Expense approval process with HITL reviewer task and decision gateway",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": true
+  },
+  "projectType": "ProcessOrchestration"
+}

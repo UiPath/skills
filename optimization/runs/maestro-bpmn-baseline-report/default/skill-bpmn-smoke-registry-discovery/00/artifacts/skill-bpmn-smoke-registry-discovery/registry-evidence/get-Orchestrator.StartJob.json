@@ -1,0 +1,79 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Orchestrator.StartJob",
+      "Label": "Start and wait for RPA workflow",
+      "BpmnElement": "bpmn:ServiceTask",
+      "Placements": {
+        "Activity": {
+          "Type": "bpmn:ServiceTask"
+        }
+      },
+      "ExtensionTag": "uipath:activity",
+      "ContextFields": [
+        {
+          "Name": "releaseKey",
+          "DisplayName": "Process",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null,
+          "BindingInfo": {
+            "Resource": "process",
+            "ResourceKeyPattern": "${metadata.key}",
+            "PropertyAttribute": "Key"
+          }
+        },
+        {
+          "Name": "folderId",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        },
+        {
+          "Name": "folderPath",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        },
+        {
+          "Name": "name",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        }
+      ],
+      "InputPattern": "mergedBody",
+      "InputName": "JobArguments",
+      "InputTarget": "bodyField",
+      "OutputSource": null,
+      "OutputType": "Orchestrator.RunJob",
+      "OutputName": "Process response",
+      "UseRelativeSource": true,
+      "BindingPattern": "process",
+      "BindingInfo": {
+        "Resource": "process",
+        "ResourceKeyPattern": "${metadata.key}",
+        "PropertyAttribute": "Key",
+        "ContextField": "releaseKey"
+      },
+      "RequiresDiscovery": true,
+      "IsDynamic": true,
+      "XmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.StartJob\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "DiscoveryNotes": "Uses getSupportedOrchestratorTasks('process', search) to list available processes"
+    }
+  }
+}

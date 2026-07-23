@@ -1,0 +1,7 @@
+00:15:20 [INFO   ] [default/skill-bpmn-contract-variant-wrappers/00] orchestrator: API routing: aws_bedrock
+00:26:06 [INFO   ] [default/skill-bpmn-contract-variant-wrappers/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_contract_variant_wrappers.py
+00:26:06 [INFO   ] [default/skill-bpmn-contract-variant-wrappers/00] orchestrator: Success criteria: 1/2 passed, weighted score: 0.167
+00:26:06 [WARNING] [default/skill-bpmn-contract-variant-wrappers/00] orchestrator: Visible turns (52) exceeded expected_turns (20) at iteration 1 for task skill-bpmn-contract-variant-wrappers. Run continues — max_turns remains the hard cap.
+00:26:06 [INFO   ] [default/skill-bpmn-contract-variant-wrappers/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+00:26:06 [INFO   ] [default/skill-bpmn-contract-variant-wrappers/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-contract-variant-wrappers
+00:26:06 [INFO   ] [default/skill-bpmn-contract-variant-wrappers/00] orchestrator: Task finished: status=FAILURE duration=647.0s score=0.167 iterations=1

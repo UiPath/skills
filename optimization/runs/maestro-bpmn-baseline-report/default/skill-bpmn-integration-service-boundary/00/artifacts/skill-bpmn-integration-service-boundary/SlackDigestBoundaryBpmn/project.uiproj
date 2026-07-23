@@ -1,0 +1,12 @@
+{
+  "name": "SlackDigestBoundaryBpmn",
+  "description": "Draft process: manual start, prepare digest, send Slack digest via Integration Service (IS boundary), end.",
+  "projectVersion": "1.0.0",
+  "processVersion": "1.0.0",
+  "main": "SlackDigestBoundaryBpmn.bpmn",
+  "projectType": "ProcessOrchestration",
+  "studio": {
+    "processType": "Maestro"
+  },
+  "dependencies": {}
+}

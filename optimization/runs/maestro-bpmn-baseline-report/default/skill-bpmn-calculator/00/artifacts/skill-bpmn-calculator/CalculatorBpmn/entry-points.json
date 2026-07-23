@@ -1,0 +1,22 @@
+{
+  "entryPoints": [
+    {
+      "id": "entry-calculator-manual-start",
+      "filePath": "/content/CalculatorBpmn.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operandA": { "type": "number" },
+          "operandB": { "type": "number" },
+          "operator": { "type": "string" }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": { "type": "number" }
+        }
+      }
+    }
+  ]
+}

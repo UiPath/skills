@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:startEvent id="Event_start" name="Start">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:subProcess id="SubProcess_1" name="Complex SubProcess">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+
+      <bpmn:startEvent id="SubProcess_Start" name="Sub Start">
+        <bpmn:outgoing>Flow_Sub_1</bpmn:outgoing>
+      </bpmn:startEvent>
+
+      <bpmn:task id="Task_1" name="Task One">
+        <bpmn:incoming>Flow_Sub_1</bpmn:incoming>
+        <bpmn:outgoing>Flow_Sub_2</bpmn:outgoing>
+      </bpmn:task>
+
+      <bpmn:exclusiveGateway id="Gateway_1" name="Decision">
+        <bpmn:incoming>Flow_Sub_2</bpmn:incoming>
+        <bpmn:outgoing>Flow_Sub_3</bpmn:outgoing>
+        <bpmn:outgoing>Flow_Sub_4</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+
+      <bpmn:task id="Task_2" name="Task Two">
+        <bpmn:incoming>Flow_Sub_3</bpmn:incoming>
+        <bpmn:outgoing>Flow_Sub_5</bpmn:outgoing>
+      </bpmn:task>
+
+      <bpmn:intermediateCatchEvent id="Timer_1" name="Wait 5s">
+        <bpmn:incoming>Flow_Sub_4</bpmn:incoming>
+        <bpmn:outgoing>Flow_Sub_6</bpmn:outgoing>
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT5S</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:intermediateCatchEvent>
+
+      <bpmn:task id="Task_3" name="Task Three">
+        <bpmn:incoming>Flow_Sub_6</bpmn:incoming>
+        <bpmn:outgoing>Flow_Sub_7</bpmn:outgoing>
+      </bpmn:task>
+
+      <bpmn:parallelGateway id="Gateway_2" name="Merge">
+        <bpmn:incoming>Flow_Sub_5</bpmn:incoming>
+        <bpmn:incoming>Flow_Sub_7</bpmn:incoming>
+        <bpmn:outgoing>Flow_Sub_8</bpmn:outgoing>
+      </bpmn:parallelGateway>
+
+      <bpmn:endEvent id="SubProcess_End" name="Sub End">
+        <bpmn:incoming>Flow_Sub_8</bpmn:incoming>
+      </bpmn:endEvent>
+
+      <bpmn:sequenceFlow id="Flow_Sub_1" sourceRef="SubProcess_Start" targetRef="Task_1"/>
+      <bpmn:sequenceFlow id="Flow_Sub_2" sourceRef="Task_1" targetRef="Gateway_1"/>
+      <bpmn:sequenceFlow id="Flow_Sub_3" sourceRef="Gateway_1" targetRef="Task_2"/>
+      <bpmn:sequenceFlow id="Flow_Sub_4" sourceRef="Gateway_1" targetRef="Timer_1"/>
+      <bpmn:sequenceFlow id="Flow_Sub_5" sourceRef="Task_2" targetRef="Gateway_2"/>
+      <bpmn:sequenceFlow id="Flow_Sub_6" sourceRef="Timer_1" targetRef="Task_3"/>
+      <bpmn:sequenceFlow id="Flow_Sub_7" sourceRef="Task_3" targetRef="Gateway_2"/>
+      <bpmn:sequenceFlow id="Flow_Sub_8" sourceRef="Gateway_2" targetRef="SubProcess_End"/>
+    </bpmn:subProcess>
+
+    <bpmn:endEvent id="Event_end" name="End">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Event_start" targetRef="SubProcess_1"/>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="SubProcess_1" targetRef="Event_end"/>
+  </bpmn:process>
+</bpmn:definitions>
