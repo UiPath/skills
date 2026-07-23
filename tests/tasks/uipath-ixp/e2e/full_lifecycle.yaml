@@ -145,7 +145,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Agent published the model"
+    description: "Improve-workflow artifacts are genuine: metrics well-formed & coherent, ModelVersion not backwards, agent targeted a real field (F1 direction not graded)"
     command: "python3 $TASK_DIR/check_full_lifecycle.py"
     timeout: 30
     expected_exit_code: 0
@@ -153,7 +153,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: Agent published the model
+    description: "Agent published the model"
     path: "mocks/calls.log"
     pattern: >-
       (?m)^(?:uip\s+ixp\s+projects\s+publish)[^\r\n]*$
