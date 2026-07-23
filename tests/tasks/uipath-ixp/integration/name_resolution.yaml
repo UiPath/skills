@@ -1,10 +1,10 @@
 task_id: skill-ixp-integration-name-resolution
 description: >
-  Integration: name/title resolution on a live tenant. The agent must resolve
-  user-facing references to the ids the CLI needs — a document by FILENAME →
-  DocumentId via `documents list`, and a project by its TITLE → Name via
-  `projects list` — rather than passing the human label straight through. The
-  resolution step is the integration part; smokes pass the id in the prompt.
+  Integration: identifier resolution on a live tenant. The agent must resolve
+  a document FILENAME → DocumentId via `documents list` and retain the project
+  Name returned by `projects create` for later CLI calls, rather than passing
+  the human Title as the project argument. The resolution step is the
+  integration part; smokes pass ids directly in the prompt.
 tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
@@ -57,10 +57,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "Listed projects to resolve Title → Name"
+    description: "Did NOT pass the project Title as the update-title project argument"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+list)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+projects\s+update-title\s+(?!\S+-ixp(?:\s|$))\S+)[^\r\n]*$
+    must_match: false
     weight: 1.5
     pass_threshold: 1.0
 
@@ -68,7 +69,7 @@ success_criteria:
     description: "Renamed the project via update-title"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+update-title)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+projects\s+update-title\s+\S+-ixp\s+\S+-renamed(?:\s|$))[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 

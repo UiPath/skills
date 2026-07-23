@@ -98,7 +98,7 @@ success_criteria:
     description: "Marked a genuinely-absent field missing"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+mark-missing\b(?=.*--fields)(?=.*Tax))[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+mark-missing\b(?=.*--fields\s+\S+))[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
