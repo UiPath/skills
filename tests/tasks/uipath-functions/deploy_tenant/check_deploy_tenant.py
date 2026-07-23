@@ -90,7 +90,7 @@ def check_pack_artifacts() -> None:
     uipath_dir = ROOT / ".uipath"
     if not uipath_dir.is_dir():
         sys.exit(
-            f"FAIL: {uipath_dir} does not exist — `uip functions pack` "
+            f"FAIL: {uipath_dir} does not exist — `uip function pack` "
             "did not produce a package directory."
         )
     nupkgs = sorted(uipath_dir.glob("*.nupkg"))

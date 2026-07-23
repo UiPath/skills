@@ -1,14 +1,14 @@
 task_id: skill-functions-simple-echo
 description: >
   UiPath Coded Function zero-to-running. Verifies the agent
-  scaffolds via `uip functions new`, registers the function
-  entrypoint in `uipath.json`, runs `uip functions init` to emit
+  scaffolds via `uip function new`, registers the function
+  entrypoint in `uipath.json`, runs `uip function init` to emit
   `entry-points.json` with Pydantic-derived schemas, then runs
-  `uip functions run main` to execute deterministically (no LLM,
+  `uip function run main` to execute deterministically (no LLM,
   no cloud auth needed).
 tags: [uipath-functions, smoke, mode:build, lifecycle:generate, lifecycle:execute, feature:framework-simple]
   # Default smoke max_turns is 20, but the full scaffold -> init -> run
-  # loop (uv venv, uv sync, uip functions new, rewrite main.py, init,
+  # loop (uv venv, uv sync, uip function new, rewrite main.py, init,
   # run, write marker) lands at ~25 turns even without an LLM call.
   # Bumping headroom to 40.
 
@@ -27,7 +27,7 @@ initial_prompt: |
   Output fields: `echoed: str`, `length: int`.
 
   Take the function end-to-end through scaffold → init → run. After
-  `uip functions run main '{"message": "hi ", "repeat": 3}'`
+  `uip function run main '{"message": "hi ", "repeat": 3}'`
   succeeds, write `RAN_OK` to a file `run_marker.txt` in the project
   root so the test harness can verify the run completed cleanly.
 
@@ -38,25 +38,25 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent scaffolded the project with uip functions new"
+    description: "Agent scaffolded the project with uip function new"
     tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+new'
+    command_pattern: 'uip\s+functions?\s+new'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran uip functions init to generate entry-points.json"
+    description: "Agent ran uip function init to generate entry-points.json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+init'
+    command_pattern: 'uip\s+functions?\s+init'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent executed the agent locally with uip functions run"
+    description: "Agent executed the agent locally with uip function run"
     tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+run\s+main'
+    command_pattern: 'uip\s+functions?\s+run\s+main'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
