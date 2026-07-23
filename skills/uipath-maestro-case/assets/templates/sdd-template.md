@@ -52,6 +52,7 @@ build the case in the Case Designer without guessing.
    - `Marks Stage Complete: Yes` → WHEN MUST be `required-tasks-completed` (typical) or `wait-for-connector` (stage completes when the bound connector event arrives). **NEVER** `required-stages-completed` or `selected-tasks-completed(...)`.
    - `Marks Stage Complete: No` (routing / divergent exits) → WHEN may be `selected-tasks-completed("TaskA")`, `wait-for-connector`, etc.
    - Same stage may carry one completion exit (`Yes` + `required-tasks-completed` / `wait-for-connector`) plus zero or more routing exits (`No` + `selected-tasks-completed` / `wait-for-connector`).
+   - `return-to-origin` is a completion exit: use `Marks Stage Complete: Yes` with `required-tasks-completed` (or `wait-for-connector`). Never pair it with `No` + `selected-tasks-completed`.
 
    *Case exit (preferred pattern: one row, `Yes` + `required-stages-completed`):*
    - `Marks Case Complete: Yes` → WHEN MUST be `required-stages-completed` or `wait-for-connector`. **NEVER** `selected-stage-completed(...)` / `selected-stage-exited(...)`.
@@ -338,6 +339,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > **WHEN ↔ Marks Stage Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-tasks-completed` (or `required-stages-completed`); `No` row MAY use `selected-tasks-completed(...)`. Mixing is invalid.
 > Completion (`Yes`) and routing (`No`) rows share this one table. **Regular stage-to-stage routing is expressed by the destination stages' Entry Conditions** (`selected-stage-completed("This Stage")` / `selected-stage-exited("This Stage")`) — one stage can fan out to N stages, each declaring it as their entry trigger. `return-to-origin` returns to the origin stage automatically.
+> **Canonical return shape:** `return-to-origin` requires `required-tasks-completed` (or `wait-for-connector`) + `Marks Stage Complete: Yes`. It is not a `No` + `selected-tasks-completed` routing row.
 > **Exception carve-out:** to route this stage INTO a decision/signal-routed exception lane, add a gated divert row here — `Marks Stage Complete: No`, `selected-tasks-completed("<decider>")`, `IF =js:(<signal> === <exception-value>)`, `exit-only`, with `exitToStageId` → the secondary stage — AND gate this stage's `Yes` completion row with the inverse `IF`. The lane returns via `return-to-origin`. Omitting the divert row → dual-fire or deadlock. See sdd-generation-rules § Logical integrity step 5.
 
 | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |

@@ -415,7 +415,7 @@
 
 | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
 |------|-----|-----------|---------------------|--------------|
-| selected-tasks-completed("SLA warning timer") | — | return-to-origin | No | Return After Escalation |
+| required-tasks-completed | — | return-to-origin | Yes | Return After Escalation |
 
 #### Stage SLA
 
@@ -469,7 +469,7 @@
 
 | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
 |------|-----|-----------|---------------------|--------------|
-| selected-tasks-completed("Create incident record") | — | return-to-origin | No | Return After Incident |
+| required-tasks-completed | — | return-to-origin | Yes | Return After Incident |
 
 #### Stage SLA
 

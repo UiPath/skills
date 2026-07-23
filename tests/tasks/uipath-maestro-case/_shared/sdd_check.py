@@ -16,10 +16,11 @@ Checks (domain-agnostic):
      legal **for its gate**, with the correct Marks-Complete pairing.
   5. Conditions present — each stage section has Entry + Exit conditions, and the
      case can close (a ``required-stages-completed`` case-completion row exists).
-  6. Interrupting semantics — every exception (secondary) stage declares an
-     Interrupting flag, and any lane that returns to its origin
-     (``return-to-origin`` exit) is marked ``Interrupting: Yes`` (you can only
-     return to a stage you interrupted).
+  6. Return-lane semantics — every ``return-to-origin`` exit uses
+     ``required-tasks-completed`` or ``wait-for-connector`` with
+     ``Marks Stage Complete: Yes``, and every exception (secondary) stage that
+     returns declares ``Interrupting: Yes`` (you can only return to a stage you
+     interrupted).
   7. PO.Frontend name/SLA parity — stage/task/SLA/escalation names, uniqueness,
      duration bounds, conditional expressions, recipients, and at-risk fields.
 
@@ -49,6 +50,7 @@ CASE_COMPLETION = {"required-stages-completed", "wait-for-connector"}    # Marks
 CASE_EXIT = {"selected-stage-completed", "selected-stage-exited",
              "wait-for-connector"}                                       # Marks: No
 EXIT_TYPES = {"exit-only", "wait-for-user", "return-to-origin"}
+RETURN_TO_ORIGIN_COMPLETION = {"required-tasks-completed", "wait-for-connector"}
 KNOWN_RULES = STAGE_ENTRY | STAGE_COMPLETION | STAGE_EXIT | TASK_ENTRY | CASE_COMPLETION | CASE_EXIT
 
 
@@ -63,6 +65,18 @@ def _rule_token(cell: str) -> str | None:
     """Leading rule keyword from a WHEN cell (``case-entered``, ``adhoc``, …)."""
     m = re.match(r"`?\s*([a-z][a-z]+(?:-[a-z]+)*)", cell.strip())
     return m.group(1) if m else None
+
+
+def _return_to_origin_pairing_issue(
+    rule: str, marks_complete: bool, where: str
+) -> str | None:
+    """Return an error unless a return lane uses a supported completing trigger."""
+    if marks_complete and rule in RETURN_TO_ORIGIN_COMPLETION:
+        return None
+    return (
+        "rule: return-to-origin requires 'required-tasks-completed' or "
+        f"'wait-for-connector' with Marks=Yes ({where})"
+    )
 
 
 def _sdd_frontend_issues(text: str, source: str = "sdd.md") -> list[str]:
@@ -364,6 +378,10 @@ def main() -> None:
                         exit_types.setdefault(cur_stage, set()).add(et)
                     if et and et not in EXIT_TYPES:
                         issues.append(f"rule: invalid exit-type {et!r} at {where}")
+                    if et == "return-to-origin":
+                        pairing_issue = _return_to_origin_pairing_issue(rule, yes, where)
+                        if pairing_issue:
+                            issues.append(pairing_issue)
 
     missing = sorted(
         st for st in has_entry
