@@ -32,6 +32,9 @@ initial_prompt: |
   Create a UiPath Flow project named "AcrUserList" with a manual trigger.
   The process must call ServiceNow to list all records in the Acr User
   object, then surface the returned records as a flow output variable.
+  The ServiceNow API object name for Acr User is exactly `acr_user`; configure
+  the generic list activity with `objectName: "acr_user"` (do not use
+  `curated_sys_user` or any other user table).
 
   Bind it to the tenant's ServiceNow connection. Then run the flow with
   `uip maestro flow debug` to confirm the connector call completes.

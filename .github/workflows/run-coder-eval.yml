@@ -237,7 +237,11 @@ jobs:
           API_BACKEND:              bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ secrets.AWS_REGION }}
-          BEDROCK_MODEL:            ${{ secrets.BEDROCK_MODEL }}
+          # The simulator/reviewer path reads BEDROCK_MODEL directly. Keep this
+          # pinned to a currently valid Bedrock model instead of the repo secret,
+          # which may lag provider availability and turn simulated tasks into
+          # infra failures even when the requested agent is Codex.
+          BEDROCK_MODEL:            us.anthropic.claude-sonnet-4-6
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
           E2E_PROCESS_KEY:          ${{ secrets.E2E_PROCESS_KEY }}
@@ -515,7 +519,9 @@ jobs:
           API_BACKEND:              bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ secrets.AWS_REGION }}
-          BEDROCK_MODEL:            ${{ secrets.BEDROCK_MODEL }}
+          # Keep simulator/reviewer traffic on a valid Bedrock model; see the
+          # Linux job note above.
+          BEDROCK_MODEL:            us.anthropic.claude-sonnet-4-6
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
           AGENT:                    ${{ inputs.agent }}

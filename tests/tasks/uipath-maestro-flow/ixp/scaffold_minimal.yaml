@@ -14,6 +14,9 @@ initial_prompt: |
   Create a new Maestro Flow project called "Smoke" with a manual trigger, an
   extract node, and a script node that just logs "ok". Wire the extracted
   handle to the script and validate the flow.
+  The checker expects the canonical solution/project layout exactly at
+  `Smoke/Smoke/Smoke.flow`, so create a solution named `Smoke` first and
+  initialize the Flow project inside it. Do not also create `SmokeSolution`.
 
   Document is in the storage bucket named: InvoiceBucket
   Model used: Invoice Model

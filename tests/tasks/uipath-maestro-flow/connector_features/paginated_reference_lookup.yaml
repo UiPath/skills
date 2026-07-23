@@ -29,6 +29,11 @@ initial_prompt: |
   to the channel named `simple` using Slack's "Send Message to Channel"
   activity.
   For Slack, use the connection name `is-sandboxes`.
+  The checker expects the canonical solution/project layout exactly at
+  `SlackPaginationTest/SlackPaginationTest/SlackPaginationTest.flow`, so create
+  a solution named `SlackPaginationTest` first and initialize the Flow project
+  inside it. Do not use the CLI auto-created `SlackPaginationTestSolution`
+  layout.
 
 success_criteria:
   - type: command_executed

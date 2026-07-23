@@ -14,6 +14,10 @@ tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, n
 initial_prompt: |
   Build a UiPath Flow project named "InvoiceRouter" that processes vendor
   invoices:
+  The checker expects the canonical solution/project layout exactly at
+  `InvoiceRouter/InvoiceRouter/InvoiceRouter.flow`, so create a solution named
+  `InvoiceRouter` first and initialize the Flow project inside it. Do not use
+  the CLI auto-created `InvoiceRouterSolution` layout.
 
   1. Manual trigger.
   2. IxP extraction node — extracts at least vendor name and total amount

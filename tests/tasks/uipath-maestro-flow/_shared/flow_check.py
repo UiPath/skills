@@ -589,6 +589,13 @@ def _find_project(pattern: str) -> str:
             f'candidates exist but none declare ProjectType="Flow":\n  - {joined}'
         )
     if len(flow_projects) > 1:
+        canonical = [
+            p for p in flow_projects
+            if os.path.basename(os.path.dirname(os.path.dirname(p)))
+            == os.path.basename(os.path.dirname(p))
+        ]
+        if len(canonical) == 1:
+            return os.path.dirname(canonical[0])
         joined = "\n  - ".join(flow_projects)
         _fail(
             f"Multiple Flow projects match {pattern!r} — refusing to guess:\n  - {joined}"
