@@ -31,12 +31,13 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  When I publish this project it fails, and running it throws:
+  When this process runs on the robot it faults at an Invoke Workflow File
+  activity, throwing:
 
     System.IO.FileNotFoundException: Cannot find the file 'EmailHelper.xaml'.
 
-  It runs fine on my own machine in Studio. Can you investigate why it breaks
-  on publish/run?
+  It runs fine when I debug it in Studio on my machine. Can you investigate
+  why?
 
 success_criteria:
   - type: skill_triggered

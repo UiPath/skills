@@ -31,12 +31,12 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  Validation fails on my Main workflow with:
+  I opened my process in Studio and the Invoke Workflow File activity that
+  calls ArchiveInvoice is flagged as broken:
 
     Value for a required activity argument was not supplied.
 
-  It points at the Invoke Workflow File activity. It used to validate fine.
-  Can you investigate why?
+  I did set up its arguments, and it used to be fine. Can you investigate why?
 
 success_criteria:
   - type: skill_triggered
