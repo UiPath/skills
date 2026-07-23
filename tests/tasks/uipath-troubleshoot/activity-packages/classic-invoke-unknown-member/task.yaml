@@ -36,8 +36,7 @@ initial_prompt: |
 
     Cannot set unknown member 'UiPath.Core.Activities.InvokeWorkflowFile.ArgumentsVariable'.
 
-  The failing project source is in the current working directory. Why is this
-  happening and how do I fix it?
+  Can you investigate why this is happening?
 
 success_criteria:
   - type: skill_triggered

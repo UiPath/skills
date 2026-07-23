@@ -35,9 +35,8 @@ initial_prompt: |
 
     Value for a required activity argument was not supplied.
 
-  It points at the Invoke Workflow File activity. It used to validate fine. The
-  project source is in the current working directory. What's wrong and how do I
-  fix it?
+  It points at the Invoke Workflow File activity. It used to validate fine.
+  Can you investigate why?
 
 success_criteria:
   - type: skill_triggered

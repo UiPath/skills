@@ -32,8 +32,7 @@ reference:
 
 initial_prompt: |
   My last job from folder Shared faulted on an Invoke Workflow File activity.
-  It used to run fine. The failing project source is in the current working
-  directory. What's the root cause and how do I fix it?
+  It used to run fine. Can you investigate why?
 
 success_criteria:
   - type: skill_triggered

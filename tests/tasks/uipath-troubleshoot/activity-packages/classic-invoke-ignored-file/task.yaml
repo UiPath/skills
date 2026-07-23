@@ -32,9 +32,8 @@ reference:
 
 initial_prompt: |
   My process runs fine in Studio on my machine, but the last job from folder
-  Shared faulted on the robot at an Invoke Workflow File. The failing project
-  source is in the current working directory. What's the root cause and how do
-  I fix it?
+  Shared faulted on the robot at an Invoke Workflow File. Can you investigate
+  why?
 
 success_criteria:
   - type: skill_triggered

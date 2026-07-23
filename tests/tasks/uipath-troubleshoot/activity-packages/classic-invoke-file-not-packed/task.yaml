@@ -35,9 +35,8 @@ initial_prompt: |
 
     System.IO.FileNotFoundException: Cannot find the file 'EmailHelper.xaml'.
 
-  It runs fine on my own machine in Studio. The project source is in the
-  current working directory. Why does it break on publish/run and how do I
-  fix it?
+  It runs fine on my own machine in Studio. Can you investigate why it breaks
+  on publish/run?
 
 success_criteria:
   - type: skill_triggered

@@ -32,8 +32,7 @@ reference:
 
 initial_prompt: |
   My last job from folder Shared faulted. It runs an Invoke Workflow File and
-  the error points there, but I can't tell why. The failing project source is
-  in the current working directory. What's the root cause and how do I fix it?
+  the error points there, but I can't tell why. Can you investigate?
 
 success_criteria:
   - type: skill_triggered

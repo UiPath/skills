@@ -36,9 +36,8 @@ initial_prompt: |
     Invoked workflows are missing.
     Cache Mechanism Error (Error code: 7)
 
-  The workflows it says are missing are still right there in the project. The
-  project source is in the current working directory. What's going on and how
-  do I get it building again?
+  The workflows it says are missing are still right there in the project.
+  Can you investigate why?
 
 success_criteria:
   - type: skill_triggered
