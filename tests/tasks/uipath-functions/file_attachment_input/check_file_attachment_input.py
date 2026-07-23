@@ -13,7 +13,7 @@ MUST produce, per the uipath-functions skill ("File attachment inputs"):
      construction (lazy init).
   4. `attachment-agent/entry-points.json` carries
      `x-uipath-resource-kind: JobAttachment` somewhere in the input
-     schema — the load-bearing artifact proving `uip functions init`
+     schema — the load-bearing artifact proving `uip function init`
      understood the `Attachment` type so Studio Web / Orchestrator render
      a file picker for that field.
 
@@ -59,7 +59,7 @@ def check_pyproject() -> None:
         sys.exit("FAIL: pyproject.toml has no [project] section")
     if "authors" not in text:
         sys.exit(
-            "FAIL: pyproject.toml has no `authors` entry — `uip functions "
+            "FAIL: pyproject.toml has no `authors` entry — `uip function "
             "pack` will reject the package."
         )
     print("OK: pyproject.toml has [project], `authors`, and no [build-system]")
@@ -94,7 +94,7 @@ def check_entry_points() -> None:
     if "JobAttachment" not in raw:
         sys.exit(
             "FAIL: entry-points.json does not contain "
-            "`x-uipath-resource-kind: JobAttachment` — `uip functions init` "
+            "`x-uipath-resource-kind: JobAttachment` — `uip function init` "
             "did not emit the job-attachment schema."
         )
     print(

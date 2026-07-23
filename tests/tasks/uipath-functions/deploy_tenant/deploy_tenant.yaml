@@ -1,6 +1,6 @@
 task_id: skill-functions-deploy-tenant
 description: >
-  Coded Function packaging with `packOptions`. Exercises `uip functions
+  Coded Function packaging with `packOptions`. Exercises `uip function
   pack` and forces the agent to keep a non-source directory (`data/`)
   out of the package via `packOptions.directoriesExcluded` in
   `uipath.json` — the documented knob for controlling package contents.
@@ -28,15 +28,15 @@ success_criteria:
   - type: command_executed
     description: "Agent scaffolded the project"
     tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+new'
+    command_pattern: 'uip\s+functions?\s+new'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran uip functions init"
+    description: "Agent ran uip function init"
     tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+init'
+    command_pattern: 'uip\s+functions?\s+init'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -44,7 +44,7 @@ success_criteria:
   - type: command_executed
     description: "Agent packed the project to a .nupkg"
     tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+pack\b'
+    command_pattern: 'uip\s+functions?\s+pack\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

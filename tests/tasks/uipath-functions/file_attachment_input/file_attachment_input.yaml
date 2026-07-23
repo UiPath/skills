@@ -2,7 +2,7 @@ task_id: skill-functions-file-attachment-input
 description: >
   Coded Function that accepts a file attachment as input. Verifies the agent
   uses `from uipath.platform.attachments import Attachment` on the `Input`
-  model and runs `uip functions init` so `entry-points.json` emits the
+  model and runs `uip function init` so `entry-points.json` emits the
   `x-uipath-resource-kind: JobAttachment` schema that Studio Web and
   Orchestrator use to render a file picker at runtime.
 tags: [uipath-functions, smoke, mode:build, lifecycle:generate, feature:framework-simple]
@@ -14,23 +14,23 @@ initial_prompt: |
   Build a UiPath Coded Function named `attachment-agent` that accepts a file
   attachment as input and outputs its name and content.
 
-  Not complete until `uip functions init` has generated `entry-points.json`
+  Not complete until `uip function init` has generated `entry-points.json`
   carrying the `x-uipath-resource-kind: JobAttachment` schema for the
   attachment field.
 
 success_criteria:
   - type: command_executed
-    description: "Agent scaffolded the project with uip functions new"
+    description: "Agent scaffolded the project with uip function new"
     tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+new'
+    command_pattern: 'uip\s+functions?\s+new'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran uip functions init to generate entry-points.json"
+    description: "Agent ran uip function init to generate entry-points.json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+init'
+    command_pattern: 'uip\s+functions?\s+init'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

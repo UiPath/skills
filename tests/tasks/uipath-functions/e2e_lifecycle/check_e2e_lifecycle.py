@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Python Coded Function (uip functions CLI) — project-shape check.
+"""Python Coded Function (uip function CLI) — project-shape check.
 
-Verifies that the agent used the updated `uip functions` CLI, chose the Python
+Verifies that the agent used the updated `uip function` CLI, chose the Python
 Coded Function pattern for a naturally-phrased validation request, and produced
 a project that satisfies all structural invariants.
 
@@ -21,9 +21,9 @@ Checks performed:
      as a Coded Function (`determine_project_type()` reads the entrypoint type
      from uipath.json, not pyproject).
   4. `invoice-validator/entry-points.json` has at least one entrypoint whose
-     schema mentions `invoice_number` and `is_valid` — proves `uip functions init`
+     schema mentions `invoice_number` and `is_valid` — proves `uip function init`
      ran after the schema models were written.
-  5. `invoice-validator/run_marker.txt` exists — proves `uip functions run`
+  5. `invoice-validator/run_marker.txt` exists — proves `uip function run`
      completed successfully.
 
 Exits 0 on PASS, `sys.exit("FAIL: ...")` on the first violation.
@@ -41,7 +41,7 @@ from pathlib import Path
 def find_project_root(default_subdir: str) -> Path:
     """Resolve the on-disk project root for a Coded Function test.
 
-    Functions are scaffolded with `uip functions new <NAME>`, which produces
+    Functions are scaffolded with `uip function new <NAME>`, which produces
     a `<NAME>/` subdir. Some agents `cd` in and work flat; others stay at the
     sandbox root. This helper handles both by looking for `pyproject.toml`.
     """
@@ -155,7 +155,7 @@ def check_uipath_json() -> None:
     if not functions:
         sys.exit(
             "FAIL: uipath.json has no `functions` key — the entrypoint is not "
-            "registered. `uip functions init` may not have run."
+            "registered. `uip function init` may not have run."
         )
     # Any key is valid (not required to be "main"); value must be file:function
     entrypoint = next(iter(functions.values()), "")
@@ -173,14 +173,14 @@ def check_entry_points() -> None:
     if not entrypoints:
         sys.exit(
             "FAIL: entry-points.json has no entryPoints — "
-            "`uip functions init` (Python-only) did not run successfully."
+            "`uip function init` (Python-only) did not run successfully."
         )
     raw = json.dumps(entrypoints)
     for field in ("invoice_number", "is_valid"):
         if field not in raw:
             sys.exit(
                 f"FAIL: entry-points.json schemas do not mention `{field}`. "
-                f"Either `uip functions init` ran before the schema models "
+                f"Either `uip function init` ran before the schema models "
                 f"were written, or the models did not declare the expected fields. "
                 f"Got: {raw}"
             )
@@ -201,7 +201,7 @@ def main() -> None:
     if not marker.is_file() and not sandbox_marker.is_file():
         sys.exit(
             f"FAIL: run_marker.txt not found in {ROOT} or {ROOT.parent} — "
-            "`uip functions run` likely never completed."
+            "`uip function run` likely never completed."
         )
     print("OK: run_marker.txt exists (run completed cleanly)")
 

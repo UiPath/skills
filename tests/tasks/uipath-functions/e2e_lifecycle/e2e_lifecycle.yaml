@@ -1,12 +1,12 @@
 task_id: skill-functions-python-e2e-lifecycle
 description: >
-  Python Coded Function e2e lifecycle via the `uip functions` CLI. A naturally-phrased
+  Python Coded Function e2e lifecycle via the `uip function` CLI. A naturally-phrased
   validation request — no mention of LLM, AI, or frameworks — must be recognised as
   a Python Coded Function and routed to the `uipath-functions` skill. Verifies the
-  agent passes `-l py` to `uip functions new`, runs `uip functions init`, produces
+  agent passes `-l py` to `uip function new`, runs `uip function init`, produces
   a correct typed I/O schema (pydantic/dataclass), includes SDK tracing, registers
   the entrypoint in `uipath.json`'s `functions` map, contains no LLM imports, and
-  runs the function locally with `uip functions run`.
+  runs the function locally with `uip function run`.
 tags: [uipath-functions, e2e, mode:build, lifecycle:generate]
 
 run_limits:
@@ -36,25 +36,25 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent scaffolded a Python Functions project with uip functions new -l py"
+    description: "Agent scaffolded a Python Functions project with uip function new -l py"
     tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+new\s+.*(-l\s+(py|python)|--language\s+(py|python))'
+    command_pattern: 'uip\s+functions?\s+new\s+.*(-l\s+(py|python)|--language\s+(py|python))'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran uip functions init to generate entry-points.json (Python-only command)"
+    description: "Agent ran uip function init to generate entry-points.json (Python-only command)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+init'
+    command_pattern: 'uip\s+functions?\s+init'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran the function locally with uip functions run"
+    description: "Agent ran the function locally with uip function run"
     tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+run'
+    command_pattern: 'uip\s+functions?\s+run'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

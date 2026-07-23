@@ -2,7 +2,7 @@ task_id: skill-functions-diagnose-deploy-failure
 description: >
   Diagnose-mode coverage for the Coded Function publish lifecycle. The
   Troubleshooting guidance documents `Project authors cannot be empty`
-  as the canonical pyproject hygiene rejection on `uip functions
+  as the canonical pyproject hygiene rejection on `uip function
   publish`. This seeds a Coded Function project whose `pyproject.toml`
   is missing the `authors` entry and expects the skill to (1) diagnose
   the rejection from the error wording, (2) add a valid
@@ -17,7 +17,7 @@ pre_run:
 initial_prompt: |
   I have a UiPath Coded Function at `daily-digest/`.
   Shipping it to the personal workspace with
-  `uip functions publish --my-workspace` fails with:
+  `uip function publish --my-workspace` fails with:
 
       Project authors cannot be empty
 
@@ -29,9 +29,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent ran uip functions init to refresh entry-points.json"
+    description: "Agent ran uip function init to refresh entry-points.json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+init'
+    command_pattern: 'uip\s+functions?\s+init'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -39,7 +39,7 @@ success_criteria:
   - type: command_executed
     description: "Agent published to personal workspace after fixing pyproject"
     tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+publish\b'
+    command_pattern: 'uip\s+functions?\s+publish\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
