@@ -1,0 +1,83 @@
+task_id: skill-agent-context-attachments
+description: >
+  Build a low-code agent with an attachments context resource
+  ($resourceType "context", contextType "attachments") for processing files
+  uploaded at runtime. Verifies the agent authors the runtime-only context
+  shape correctly (lowercase contextType, attachments object, settings) and
+  that validate accepts it with no solution-level binding emitted (attachments
+  are runtime-only). Closes the gap where only the "index" context variant
+  was tested.
+tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code, context-grounding]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 60
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath low-code autonomous agent "DocReviewAgent" in a solution
+  named "AttachSol". The caller uploads one or more documents at runtime and
+  asks a `question` (string); the agent reads the uploaded files and returns
+  an `answer` (string). There is no pre-built knowledge index — the files are
+  provided fresh with each run.
+
+  Wire the uploaded files in as the agent's context.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: file_exists
+    description: "DocReviewAgent/agent.json was created"
+    path: "AttachSol/DocReviewAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Attachments context resource shape + lowercase contextType"
+    command: "python3 $TASK_DIR/check_context_attachments.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
