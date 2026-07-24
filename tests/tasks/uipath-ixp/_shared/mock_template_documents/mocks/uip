@@ -1,0 +1,34 @@
+#!/bin/sh
+# Discovery-mode `uip` mock for the delete-document-by-filename smoke. Overlays
+# the base mock_template (list it SECOND in template_sources so this file wins).
+#
+# Serves canned JSON for the read verb so the agent can DISCOVER the fixture
+# itself: `documents list` returns three invoices whose Filenames are
+# human-facing but whose DocumentIds are opaque, so deleting york by name
+# REQUIRES a list lookup to resolve Filename -> DocumentId. `documents delete`
+# returns success (grading catches it via calls.log); anything else fails
+# offline like the base mock.
+#
+# Response shape follows the skill's cli-reference: {Result, Data} envelope;
+# documents list Data is { Documents: [{DocumentId, AttachmentRef, Filename}],
+# Total, Offset, Limit }.
+#
+# Logging contract mirrors mock_template_ambiguous: append $* (NO "uip" prefix),
+# so tasks grade `ixp documents ...` lines.
+printf '%s\n' "$*" >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+case "$1 $2 $3" in
+"ixp documents list")
+cat <<'EOF'
+{"Result":"Success","Data":{"Documents":[{"DocumentId":"d41f8a90-2b6c-4e13-9a7f-1c8e5b30a2d6.9f1a","AttachmentRef":"c1a7e9d3-8b2f-4e60-9a15-7d3c6f0b4e28","Filename":"york_solutions_invoice.png"},{"DocumentId":"a72e3c15-8d40-4b9e-bf21-6c0d7e2a5b83.4c2b","AttachmentRef":"e4b8d2f1-6a09-4c73-b5e2-1f8a3d9c0b67","Filename":"hp_tax_invoice.png"},{"DocumentId":"b83f4d26-1a5e-4c70-8e93-2d1f6a4b9c05.7e6d","AttachmentRef":"9d0c3b71-4f28-4a15-8e63-1b7a2c9d0e54","Filename":"csi_tower_invoice.png"}],"Total":3,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp documents delete")
+echo '{"Result":"Success","Data":{"Status":"ok"}}'
+exit 0
+;;
+esac
+
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1

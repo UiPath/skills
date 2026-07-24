@@ -1,0 +1,50 @@
+task_id: skill-ixp-delete-document-by-filename-smoke
+description: >
+  Smoke: agent receives a document FILENAME, discovers its DocumentId via
+  `documents list`, and deletes by that resolved id — never passing the
+  human-facing filename to the id argument. The overlaid uip mock serves canned
+  `documents list` JSON so the Filename → DocumentId resolution runs offline
+  (companion to get_project_by_title, which resolves a project Title → Name the
+  same way).
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_documents}
+
+initial_prompt: |
+  In the IXP project my_invoices-f1afa9ef-ixp, delete the document named
+  york_solutions_invoice.png.
+
+  Do not prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Listed documents to resolve the filename → DocumentId"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^ixp\s+documents\s+list\b(?=.*my_invoices-f1afa9ef-ixp).*[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Deleted the document by the DocumentId resolved from its filename (with -y)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^ixp\s+documents\s+delete\b(?=.*d41f8a90-2b6c-4e13-9a7f-1c8e5b30a2d6\.9f1a)(?=.*(--yes\b|-y\b)).*[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Did NOT pass the raw filename through as the document id"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^ixp\s+documents\s+delete\s+\S+\s+["']?york_solutions_invoice\.png["']?(?:\s|$)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
