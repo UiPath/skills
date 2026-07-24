@@ -4,7 +4,7 @@ description: >
   the HD Automations folder faulted at start on the high-density host
   HD-BOT-POOL. Grades skill_triggered + llm_judge against RESOLUTION.md.
 
-tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
+tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

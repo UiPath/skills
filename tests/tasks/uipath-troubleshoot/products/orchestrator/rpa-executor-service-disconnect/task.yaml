@@ -4,7 +4,7 @@ description: >
   the Batch Ops folder faulted mid-run on host BATCH-BOT-02 while other runs
   succeed. Grades skill_triggered + llm_judge against RESOLUTION.md.
 
-tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
+tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
