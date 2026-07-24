@@ -42,9 +42,6 @@ initial_prompt: |
   sender." The folder is "RPA Production". The SMTP login works fine — it
   only fails when it tries to send. Why, and how do I fix it?
 
-  The project source for the failing process is in the current working
-  directory.
-
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
