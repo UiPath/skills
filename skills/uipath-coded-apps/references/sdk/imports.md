@@ -24,20 +24,21 @@ Rules:
 
 ## When a capability is missing from the installed types
 
-A subpath, service class, method, or enum member you need is not in the installed `.d.ts`. It may require a newer SDK. Resolve the version to upgrade to from **`release-metadata.json`** — a map the SDK ships of public capabilities → the version each was introduced in:
+A subpath, service class, or method you need is not in the installed `.d.ts`. It may require a newer SDK. Resolve the version to upgrade to from **`release-metadata.json`** — a map the SDK ships of every public capability → the version each was introduced in:
 
 - Installed copy: `node_modules/@uipath/uipath-typescript/release-metadata.json` (matches the installed version).
 - Latest copy: `https://unpkg.com/@uipath/uipath-typescript@latest/release-metadata.json` (needed to see capabilities newer than what is installed).
 
-Find the service by `name` in the `services` array (its methods in that service's `methods` array; enum members in the matching `enums[].values`). A method with no entry **inherits its service's `since`**. Then:
+Find the service by `name` in the `services` array, then the method by `name` in that service's `methods`. **Every public service and method is listed**, so absence from the file means it does not exist — there is no inheritance to apply. Then:
 
 1. **Present in the installed `.d.ts`** → use it (you are not in this flow).
-2. **Absent locally, in the latest metadata with `since` = `V`** → tell the user: *"`<capability>` requires `@uipath/uipath-typescript` ≥ `V`; installed is `<version>` — upgrade to use it."*
-3. **`since: null`** → baseline (shipped in every tracked version); absence locally means the install predates tracking or is corrupt — advise reinstall / upgrade to latest.
-4. **Absent from the latest metadata entirely** → the capability does not exist in the SDK. Do not fabricate it; route to the correct skill or tell the user it is unavailable.
-5. **Cannot fetch the latest copy (offline / no network)** → read the installed `release-metadata.json`; if it also lacks the capability, tell the user it is not in their installed SDK and may need a newer version — point them to the changelog or `npm view @uipath/uipath-typescript`.
+2. **In the file with a `since` version `V`** (and no `deleted`), absent locally → tell the user: *"`<capability>` requires `@uipath/uipath-typescript` ≥ `V`; installed is `<version>` — upgrade to use it."*
+3. **`since: null`** → baseline (shipped before tracking; present in every tracked version); absence locally means the install is older than tracking or corrupt — advise reinstall / upgrade to latest.
+4. **Entry has `deleted` = `D`** → the capability was removed in `D`. Tell the user it is gone as of `D` and to use `replacedBy` if present; do not try to call it. (No entry sets `deleted` today.)
+5. **Absent from the latest file entirely** → the capability does not exist in the SDK. Do not fabricate it; route to the correct skill or tell the user it is unavailable.
+6. **Cannot fetch the latest copy (offline / no network)** → read the installed `release-metadata.json`; if it also lacks the capability, tell the user it is not in their installed SDK and may need a newer version — point them to the changelog or `npm view @uipath/uipath-typescript`.
 
-Name the exact `since` when metadata has it; never silently build a lesser version or guess a number.
+Name the exact `since` when the file has it; never silently build a lesser version or guess a number.
 
 ## Version history (frozen)
 
