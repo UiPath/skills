@@ -8,12 +8,13 @@ user-invocable: true
 
 # UiPath Ontology Authoring — SDD to Deployed Ontology
 
-Scope: SDD → silent login check → folder selection → entity matching + creation → domain definition (4 phases) → invoke `uipath-ontology-modeler` (generates {name}.ofn + {name}-constraints.ttl + {name}-mapping.yarrrml.yml + validates) → create ontology → push.
+Scope: SDD → silent login check → folder selection → entity matching + creation → domain definition (4 phases) → create ontology stub → invoke `uipath-ontology-modeler` (generates artifacts following canonical pattern files: `owl-patterns.md`, `shacl-patterns.md`, `mapping-yarrrml.md`, `functions-patterns.md`, `action-table-contract.md`) → upload mapping as deploy trigger.
 
 **Separation of Concerns** — enforce this throughout: facts go in `{name}.ofn`, rules go in USAGE POLICY blocks (mapping + functions), bindings go in `{name}-mapping.yarrrml.yml`. Never let domain facts drift into USAGE POLICY, and never let query routing rules drift into `rdfs:comment`. See the modeler's SoC table for the full breakdown.
 
-> **Functions (SPARQL reads):** if the SDD describes query operations, the modeler generates `{name}-functions.ttl` (all in one file). See `references/functions-actions.md`.
-> **Actions (SQL writes):** if the SDD describes write operations, the modeler generates one `{name}-{actionName}.ttl` per action. See `references/functions-actions.md`.
+> **Functions (SPARQL reads):** if the SDD describes query operations, the modeler generates one `.ttl` per functional area following `functions-patterns.md`.
+> **Actions (SQL writes):** if the SDD describes write operations, the modeler generates one `{name}-{actionName}.ttl` per action following `action-table-contract.md`.
+
 
 ---
 
@@ -31,6 +32,14 @@ Ask the user for all of the following **in one message**:
 
 Read the SDD immediately (Read tool for file paths). Extract only the **class names** from it — just enough to drive entity matching in Phase 2. Do not build the full domain model yet.
 
+While reading the SDD, also scan for:
+
+**Query operations (functions — zero or more files):** natural-language questions the SDD says the system or an AI agent should answer (e.g. "how many X in state Y", "list X with their Y", dashboards, summaries, counts). If found, record the described operations and identify natural groupings by functional area (querying, analytics, validation, etc.). The modeler generates one `.ttl` file per functional area following `functions-patterns.md` — there is no limit on the number of function files.
+
+**Write operations (actions — zero or more files, one per action):** mutations the SDD describes (e.g. "update status", "create record", "delete entry"). For each, record: action name, target entity, SQL operation (UPDATE / INSERT / DELETE), fields affected, identifier field, and input parameters. The modeler generates one `{name}-{actionName}.ttl` per action following `action-table-contract.md` — there is no limit on the number of action files.
+
+If neither is present in the SDD, note that explicitly — no functions or action files will be generated.
+
 ### IRI derivation — compute once, use everywhere
 
 As soon as the ontology name is confirmed, derive the IRI:
@@ -39,7 +48,7 @@ As soon as the ontology name is confirmed, derive the IRI:
 ONTOLOGY_IRI = https://ontology.uipath.com/{name}#
 ```
 
-`{name}` is the exact slug — verbatim, no transformation. Show it to the user and confirm before generating any files. This value must be **identical** in all three artifact files (`{name}.ofn`, `{name}-constraints.ttl`, `{name}-mapping.yarrrml.yml`). It is immutable — renaming the ontology later does not change the IRI.
+`{name}` is the exact slug — verbatim, no transformation. Show it to the user and confirm before generating any files. This value must be **identical** in all artifact files (`{name}.ofn`, `{name}-constraints.ttl`, `{name}-mapping.yarrrml.yml`, functions, and actions). It is immutable — renaming the ontology later does not change the IRI.
 
 ---
 
@@ -51,8 +60,8 @@ Run silently — do not interrupt the author if already logged in.
 uip login status --output json
 ```
 
-- If `Data.Status === "Logged in"` → continue to Phase 1 without any message.
-- If `Data.Status !== "Logged in"` or wrong tenant → prompt the author:
+- If `loggedIn: true` → continue to Phase 1 without any message.
+- If `loggedIn: false` or wrong tenant → prompt the author:
 
 ```bash
 uip login                          # interactive login
@@ -311,21 +320,26 @@ Update any Phase 5 annotation that differs from what the actual data shows. Reco
 
 The modeler skips its own Steps 1 and 2 — it uses the confirmed domain model from Phases 3–4 directly (the ontology was already created at the end of Phase 2). It generates each artifact through a build → preview → check → confirm → write → **backend validate → upsert** flow. Each artifact is upserted to the backend immediately after it passes Gate 5, except `{name}-mapping.yarrrml.yml` which is held (uploading it triggers deploy). The modeler returns once all artifacts are confirmed, validated, and uploaded — only the mapping remains.
 
-The modeler generates:
-- `{name}.ofn`, `{name}-constraints.ttl`, `{name}-mapping.yarrrml.yml` — always
-- `{name}-functions.ttl` — if the SDD describes query operations an AI agent should answer
-- `{name}-{actionName}.ttl` (one per action) — if the SDD describes write/update operations
+The modeler generates each artifact following its canonical pattern file:
 
-All five gates summary:
+| Artifact | Pattern file | Count | Uploaded when |
+|---|---|---|---|
+| `{name}.ofn` | `owl-patterns.md` | 1 (always) | Tier 1 (first — schema is context for all others) |
+| `{name}-constraints.ttl` | `shacl-patterns.md` | 1 (always) | Tier 2 (parallel with functions + actions) |
+| `{name}-[area-]functions.ttl` | `functions-patterns.md` | 0 or more — one per functional area | Tier 2 (each file uploaded in parallel) |
+| `{name}-{actionName}.ttl` | `action-table-contract.md` | 0 or more — one per write action | Tier 2 (each file uploaded in parallel) |
+| `{name}-mapping.yarrrml.yml` | `mapping-yarrrml.md` | 1 (always) | Held — uploaded by authoring's Step 3 as deploy trigger |
+
+All six gates the modeler runs:
 
 | Gate | Run by | Checks | Pass condition |
 |---|---|---|---|
-| 1 — QL blacklist | Modeler step 3c | No forbidden OWL 2 QL constructs | Zero hits |
-| 2 — Naming | Modeler step 3c | No `has{Prop}` DataProperty names | Zero hits |
-| 3 — Cross-file | Modeler step 5c | Every `ont:` term in mapping/rules declared in schema | All found |
-| 4 — Annotation | Modeler step 3c | Every declared class and property has `rdfs:label` and `rdfs:comment` | All covered |
-| 5 — Backend validate + upsert | Modeler Step 8 — all artifacts validated in parallel; upserted in tiers (schema first, others simultaneous, mapping held) | Backend syntactic parse → tiered upsert on valid (mapping held) | `Data.valid: true` + `ArtifactUpserted` each |
-| 6 — Semantic consistency | Modeler Step 9 (per-artifact, parallel); Step 10 (cross-artifact) | LLM judge: domain completeness, constraint coverage, column alignment, USAGE POLICY coherence | All checks `✓` |
+| G1 — QL blacklist | Modeler Step 3c | No forbidden OWL 2 QL constructs in `{name}.ofn` | Zero hits |
+| G2 — Naming | Modeler Step 3c | No `has{Prop}` DataProperty names | Zero hits |
+| G3 — Cross-file | Modeler Step 5c | Every `ont:` term in mapping + constraints declared in schema | All found |
+| G4 — Annotation | Modeler Step 3c | Every declared class and property has `rdfs:label` and `rdfs:comment` | All covered |
+| G5 — Backend validate + tiered upsert | Modeler Step 8 | All artifacts validated in parallel; upserted in tiers (schema first, then constraints/functions/actions simultaneously, mapping held) | `Data.valid: true` + `ArtifactUpserted` each |
+| G6 — Semantic consistency | Modeler Steps 9–10 | LLM judge: domain completeness, constraint coverage, column alignment, USAGE POLICY coherence | All checks `✓` |
 
 **Do not proceed to Step 3 until the modeler confirms all artifacts validated and uploaded (except mapping):**
 ```
@@ -369,13 +383,13 @@ uip ont get {name}
 
 ## Artifact reference
 
-| File | `--type` | Media type | Required for deploy |
-|---|---|---|---|
-| `{name}.ofn` | `schema` | `text/owl-functional` | Yes |
-| `{name}-constraints.ttl` | `constraints` | `text/turtle` | Yes |
-| `{name}-functions.ttl` | `functions` | `text/turtle` | Optional — generated when SDD describes query operations; freely add/removable without breaking a deployed ontology |
-| `{name}-{actionName}.ttl` | `actions` | `text/turtle` | Optional, one file per action — generated when SDD describes write operations; freely add/removable |
-| `{name}-mapping.yarrrml.yml` | `mapping` | `application/yaml` | Yes — upload last, triggers `DRAFT → DEPLOYED` |
+| File | `--type` | Media type | Pattern file | Count | Required for deploy |
+|---|---|---|---|---|---|
+| `{name}.ofn` | `schema` | `text/owl-functional` | `owl-patterns.md` | 1 | Yes |
+| `{name}-constraints.ttl` | `constraints` | `text/turtle` | `shacl-patterns.md` | 1 | Yes |
+| `{name}-[area-]functions.ttl` | `functions` | `text/turtle` | `functions-patterns.md` | 0 or more — one per functional area | No — freely add/removable without breaking a deployed ontology |
+| `{name}-{actionName}.ttl` | `actions` | `text/turtle` | `action-table-contract.md` | 0 or more — one per write action | No — freely add/removable |
+| `{name}-mapping.yarrrml.yml` | `mapping` | `application/yaml` | `mapping-yarrrml.md` | 1 | Yes — upload last, triggers `DRAFT → DEPLOYED` |
 
 ---
 

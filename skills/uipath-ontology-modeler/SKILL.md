@@ -1,7 +1,7 @@
 ---
 name: uipath-ontology-modeler
 description: "Use when the user describes a domain in a prompt and wants to generate ontology artifact files ({name}.ofn, {name}-constraints.ttl, {name}-mapping.yarrrml.yml, {name}-functions.ttl, actions). No SDD required — a plain description of classes, fields, and relationships is enough. Also invoked by uipath-ontology-authoring as the artifact-generation step."
-when_to_use: "User describes a domain in plain language ('I have Orders, Customers, Products…') and wants to generate OWL schema, SHACL constraints, or YARRRML mapping. Also use for: regenerating a single artifact, modeling a domain without an SDD, or when the authoring skill passes a confirmed domain model and CLASS_MAP."
+when_to_use: "User describes a domain in plain language ('I have Orders, Customers, Products…') with no SDD or document. Also use for: regenerating a single artifact, or when the authoring skill passes a confirmed domain model and CLASS_MAP. If the user has an SDD file or document, use uipath-ontology-authoring instead — it reads the SDD then calls this skill."
 allowed-tools: Bash, Read, Write, Edit
 user-invocable: true
 ---
@@ -423,7 +423,32 @@ Construct the full file content in memory. Use `entityId` and `folderId` from `C
 - One `mappings:` block per class:
   - `sources:` — `access: datafabric`, `table: {EntityName}`, `entityId: {uuid}`, `folderId: {uuid}`, `referenceFormulation: rr:SQL2008`
   - `s:` — subject template: `ont:{ClassName}/$(primaryKeyColumn)`
-  - `po:` — type triple `a: ont:{ClassName}`, then one pair per data property (`ont:{ClassName}.{propName}: $({columnName})`), then object property joins via `condition: function: equal`
+  - `po:` — in this order:
+    1. Type triple: `[a, ont:{ClassName}]`
+    2. One pair per data property: `[ont:{ClassName}.{propName}, $({columnName})]` (with xsd type as third element for non-string types)
+    3. **Object property relationship triples — mandatory for every FK relationship declared in `{name}.ofn`.**
+
+**Object property relationship triples (always required):**
+
+For every ObjectProperty declared in `{name}.ofn` where the child class holds a FK column pointing to the parent class, add a relationship binding block in the **child** class `po:` section — after all data property pairs:
+
+```yaml
+- p: ont:{objectPropertyName}
+  o:
+    mapping: {ParentClassName}
+    condition:
+      function: equal
+      parameters:
+        - - str1
+          - $({FKColumn})       # FK column in the child entity
+        - - str2
+          - $({PKColumn})       # PK column in the parent entity (usually Id)
+```
+
+- `ont:{objectPropertyName}` must exactly match the ObjectProperty IRI declared in `{name}.ofn` (e.g. `ont:email_forInvoiceClaim`)
+- `mapping:` must reference the parent class mapping key (e.g. `InvoiceClaim`)
+- This block must appear for **every** ObjectProperty whose domain is this class — no FK relationship may be left as a plain data property binding only
+- A class with N FK columns pointing to N parent classes needs N relationship binding blocks
 
 Every `ont:` term used in the mapping must be declared in `{name}.ofn`. Column names are case-sensitive — use the exact field name as it appears in the Data Fabric entity.
 
@@ -466,6 +491,9 @@ Every `$(columnName)` must correspond to a field that exists in the Data Fabric 
 **Check 3 — All classes mapped:**
 Every class in the confirmed domain model has a mapping block. No class left unmapped.
 
+**Check 4 — Object property relationship binding completeness:**
+Every ObjectProperty declared in `{name}.ofn` must have a corresponding `p: / o: mapping: / condition:` block in the child class mapping. For each `Declaration(ObjectProperty(:…))` in `{name}.ofn`, verify a `p: ont:{objectPropertyName}` entry exists in the correct class `po:` section. A FK stored as a plain data property binding only (no relationship block) is a gap — flag it and add the missing block.
+
 Report:
 
 ```
@@ -473,6 +501,7 @@ Mapping consistency checks:
   ✓ Term coverage — all ont: predicates declared in {name}.ofn
   ✓ Column names — all $(…) fields match entity schema
   ✓ Class coverage — all {N} classes have a mapping block
+  ✓ Relationship bindings — all {N} ObjectProperties have a p:/o:/condition: block in the child class mapping
 ```
 
 Fix any issues in the draft before proceeding.
@@ -581,25 +610,29 @@ On revision request, update the draft and return to step 6b.
 
 ---
 
-## Step 7 — Generate action files (skip if SDD has no write operations)
+## Step 7 — Generate action files (skip if SDD/PDD has no write operations)
 
-If the SDD does not describe write/update operations, skip this step. One file per action — the file name IS the action's identity. Generate one action at a time through the full build → preview → check → confirm → write cycle.
+If the SDD/PDD does not describe write/update operations, skip this step. One file per action — the file name IS the action's identity. Generate one action at a time through the full build → preview → check → confirm → write cycle.
+
+If the PDD has a **Write Operations (Actions)** section with the structured action table format (see [action-table-contract.md](action-table-contract.md)), read each action row directly — no interpretation needed. The 7 fields (Name, Entity, Operation, Description, Target Fields, Identifier, Inputs) map 1:1 to TTL constructs.
 
 ---
 
 ### 7a — Build one action
 
-For each write operation from the SDD:
+For each write operation from the SDD/PDD:
 
-- **Name** — `ont:{camelCaseActionName}` (verb phrase: `updatePrescriptionStatus`, `createPatientRecord`)
+- **Name** — `ont:{camelCaseActionName}` (verb phrase: `updatePrescriptionStatus`, `createPatientRecord`). When PDD has a `Name` field, use it directly; otherwise derive from the operation description.
 - **File name** — `{name}-{actionName}.ttl` (e.g. for ontology `clinic` and action `updatePrescriptionStatus` → `clinic-updatePrescriptionStatus.ttl`)
-- **Label** — short human phrase
-- **Comment** — what it changes, what params it takes, whether it modifies one row or many
+- **Label** — short human phrase (from PDD action title when available)
+- **Comment** — what it changes, what params it takes, whether it modifies one row or many. This is what AI agents read to select the right action — be specific, not generic. Source from PDD `Description` field when available, but ensure it answers all three questions.
 - **SQL** — on `ont:statements ( "..." )` (plural, always a list even for a single statement)
-  - `{{EntityName}}` — entity (table) reference, resolved by runtime from mapping
-  - `{{EntityName.fieldName}}` — column reference, must match `{ClassName}.{propName}` naming from {name}.ofn
-  - `:paramName` — bound parameter, must match `ont:paramName` in the parameter block
-- **Parameters** — `fno:expects` + `ont:param.*` block per parameter
+  - `{{EntityName}}` — the ontology class this action writes to. Must match a `Declaration(Class(:...))` in schema.ofn. Never use real table names.
+  - `{{EntityName.fieldName}}` — the property being read or written in the SQL. Must match a `Declaration(DataProperty(:...))` in schema.ofn. The runtime resolves these to physical columns via the mapping.
+  - `WHERE {{Entity.identifier}} = :id` — how the target row is identified. Typically the entity's primary key field.
+  - `:paramName` — bound parameter from the caller. Must match `ont:paramName` in the parameter block exactly.
+- **Parameters** — `fno:expects` + `ont:param.*` block per parameter (from PDD `Inputs` field)
+- **Output** — `fno:returns` with `rowsAffected` output is **mandatory**. Use `ont:paramName` (not `ont:returnName`) on the output node — the parser uses the same method for inputs and outputs.
 
 ---
 
@@ -668,12 +701,12 @@ uip ont artifact validate {name} {name}-mapping.yarrrml.yml \
   --file {workdir}/{name}-mapping.yarrrml.yml --output json
 
 # If functions were generated:
-uip ont artifact validate {name} {name}-functions.ttl \
+uip ont artifacts validate {name} {name}-functions.ttl \
   --type functions --media-type text/turtle \
   --file {workdir}/{name}-functions.ttl --output json
 
 # If actions were generated (one call per action file):
-uip ont artifact validate {name} {name}-{actionName}.ttl \
+uip ont artifacts validate {name} {name}-{actionName}.ttl \
   --type actions --media-type text/turtle \
   --file {workdir}/{name}-{actionName}.ttl --output json
 ```
@@ -718,7 +751,7 @@ After 3 failed attempts: "Auto-fix exhausted 3 attempts. Please fix `{filename}`
 
 **Tiered upsert after all files pass:**
 
-Schema must be upserted before other artifacts — the backend uses the live schema as context when processing constraints and functions.
+Backend validation of constraints, functions, and actions requires the schema to be live — it resolves `ont:` terms against the uploaded schema. Schema must be upserted (Tier 1) before Tier 2 validate calls return meaningful results.
 
 ```bash
 # Tier 1 — schema first (wait for ArtifactUpserted before proceeding)
@@ -756,6 +789,10 @@ G5 upsert complete:
   ✓ {name}-{actionName}.ttl — uploaded  (if generated)
   ⏸ {name}-mapping.yarrrml.yml — validated, held
 ```
+
+**If upsert fails partway through (partial upload):**
+
+Run `uip ont artifact list {name} --output json` to see which artifacts are already live. For each artifact already showing in the list, skip its upsert command. Re-run only the upsert commands for the remaining artifacts, then continue to Step 9.
 
 ---
 

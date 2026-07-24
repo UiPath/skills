@@ -70,6 +70,14 @@ mappings:
 Column name must match the Data Fabric entity field name exactly (case-sensitive).
 
 **Object property** (join → ontology object property):
+
+`ont:{objectProperty}` must exactly match an `ObjectProperty` IRI declared in `schema.ofn` — look it up before writing the `p:` line.
+
+`{TargetClassName}` must be the exact key of another mapping block in this file — if the block is absent or misspelled, YARRRML silently produces no join triples.
+
+`str1` resolves from the **current mapping's** source rows; `str2` from the **target `mapping:`** source rows — they always reference different entity tables, even when `$(columnName)` is identical in both.
+
+**Case A — FK and PK share the same column name** (most common):
 ```yaml
 - p: ont:{objectProperty}
   o:
@@ -78,11 +86,24 @@ Column name must match the Data Fabric entity field name exactly (case-sensitive
       function: equal
       parameters:
         - - str1
-          - $({foreignKeyColumnOnThisEntity})
+          - $({sharedColumnName})
         - - str2
-          - $({primaryKeyColumnOnTargetEntity})
+          - $({sharedColumnName})
 ```
-The `condition` is a join predicate: str1 is from the current entity's row, str2 is from the target entity's row via the named `mapping:`.
+
+**Case B — FK and PK have different names** (e.g. casing mismatch or renamed column):
+```yaml
+- p: ont:{objectProperty}
+  o:
+    mapping: {TargetClassName}
+    condition:
+      function: equal
+      parameters:
+        - - str1
+          - $({foreignKeyColumn})
+        - - str2
+          - $({primaryKeyColumn})
+```
 
 ---
 
@@ -324,7 +345,10 @@ A federated entity maps exactly like a native entity — same `access: datafabri
 
 - **Wrong column name** — column names in `$()` must match Data Fabric field names exactly (case-sensitive). Run `uip df entities get {entityId} --output json` and read `Fields[].Name` to verify.
 - **Join column casing mismatch** — `str1` is the FK column on this entity; `str2` is the PK column on the target entity. The same logical key can have different casing on each side (e.g. `$(doctorId)` on Doctor but `$(doctorid)` on Prescription). Always verify both sides separately with `entities get` — do not assume the casing matches.
+- **Same-column-name join treated as a mistake** — when FK and PK share the same column name (e.g. both `supplierId`), `str1` and `str2` both use `$(supplierId)`. This is correct — YARRRML resolves each from its own source table. Do not invent different aliases.
 - **Missing `a` triple** — every mapping block must have `- - a\n  - ont:{ClassName}` or the ontology class instances won't be typed.
 - **Wrong object property direction** — check `ObjectPropertyDomain` and `ObjectPropertyRange` in `schema.ofn`. The mapping entry goes on the entity that holds the foreign key.
+- **Object property name not in schema** — `ont:{objectProperty}` in the `p:` line must exactly match an `ObjectProperty` declared in `schema.ofn`. A mismatch causes upload rejection with a property-not-found error. Read `schema.ofn` to find the correct IRI before writing the condition.
+- **Missing `mapping:` block for target class** — `mapping: {TargetClassName}` must reference a top-level mapping key that exists in this file. A missing or misspelled block causes YARRRML to silently produce no join triples for that property — no upload error, no runtime error, just absent relationships.
 - **folderId vs folderKey** — Data Fabric uses `FolderKey` in the API response; this maps to `folderId` in the YARRRML source block.
 - **Uploading mapping before schema/constraints** — the server validates that every `ont:` property referenced in the mapping exists in the schema. Upload schema and constraints first.
