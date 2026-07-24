@@ -1,0 +1,10 @@
+{
+  "Result": "Success",
+  "Code": "JobTraces",
+  "_doc": "Traces show the non-screen activities Succeeded and the 'Take Screenshot' activity Faulted with the Win32 invalid-handle error — pinpointing the screen-capture step as the failure, consistent with no live desktop surface in the unattended session.",
+  "Data": [
+    {"Activity": "Main Sequence", "Status": "Faulted", "StartTime": "2026-06-29T03:30:02.010Z", "EndTime": "2026-06-29T03:30:09.210Z"},
+    {"Activity": "Open dashboard", "Status": "Succeeded", "StartTime": "2026-06-29T03:30:02.220Z", "EndTime": "2026-06-29T03:30:08.700Z"},
+    {"Activity": "Take Screenshot", "Status": "Faulted", "StartTime": "2026-06-29T03:30:08.720Z", "EndTime": "2026-06-29T03:30:09.200Z", "Error": {"Type": "System.ComponentModel.Win32Exception", "Message": "The handle is invalid.", "Activity": "Take Screenshot", "StackTrace": "at System.Drawing.Graphics.CopyFromScreen(...)"}}
+  ]
+}

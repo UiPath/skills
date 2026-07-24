@@ -41,8 +41,7 @@ initial_prompt: |
   My DashboardSnapshotBot job in the MonitoringOps folder faults
   midway with a "handle is invalid" error when it tries to grab a
   screenshot. It works when I run it interactively on my machine but
-  fails as a scheduled unattended job. The project source is in the
-  current working directory. Why, and how do I fix it?
+  fails as a scheduled unattended job. Why, and how do I fix it?
 
 success_criteria:
   - type: skill_triggered

@@ -1,0 +1,10 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "_doc": "Logs show the Take Screenshot activity failing with the Win32 invalid-handle error because there was no active desktop session for CopyFromScreen to read. The Robot note points at the missing interactive session.",
+  "Data": [
+    {"Level": "Error", "TimeStamp": "2026-06-29T03:30:09.200Z", "Message": "Take Screenshot: System.ComponentModel.Win32Exception (6): The handle is invalid. at System.Drawing.Graphics.CopyFromScreen(...)"},
+    {"Level": "Error", "TimeStamp": "2026-06-29T03:30:09.050Z", "Message": "[Robot] Screen capture requested but no active interactive desktop session is available for this unattended run (LoginToConsole is off and no RDP session is established). CopyFromScreen has no valid device context."},
+    {"Level": "Info", "TimeStamp": "2026-06-29T03:30:04.100Z", "Message": "[DashboardSnapshotBot] Capturing dashboard snapshot."}
+  ]
+}

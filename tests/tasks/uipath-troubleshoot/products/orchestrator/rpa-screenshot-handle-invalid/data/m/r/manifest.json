@@ -2,14 +2,14 @@
   "version": 2,
   "_doc": "Synthetic fixture set for the screen-capture handle-invalid scenario (screen-capture-handle-invalid playbook). The agent chains: folders list -> jobs list --state Faulted -> jobs get (Info: Win32Exception handle invalid at CopyFromScreen) -> jobs logs (no active interactive desktop) -> jobs traces (Take Screenshot faulted, prior activities Succeeded) -> users get (LoginToConsole=false, unattended). Fix: enable Login to Console / ensure a live session. Keys are stable.",
   "rules": [
-    { "match": "or folders list", "file": "folders-list.json" },
-    { "match": "or jobs list --folder-key a7e7f8a9-b0c1-2345-6789-abcdef012345 --state Faulted", "file": "jobs-list-faulted.json" },
-    { "match": "or jobs get ccddeeff-3344-5566-7788-99aabbccddee", "file": "jobs-get-failing.json" },
-    { "match": "or jobs logs ccddeeff-3344-5566-7788-99aabbccddee --level Error", "file": "jobs-logs-failing-error.json" },
-    { "match": "or jobs logs ccddeeff-3344-5566-7788-99aabbccddee", "file": "jobs-logs-failing-error.json" },
-    { "match": "or jobs traces ccddeeff-3344-5566-7788-99aabbccddee", "file": "jobs-traces-failing.json" },
-    { "match": "traces spans get --job-key ccddeeff-3344-5566-7788-99aabbccddee", "file": "jobs-traces-failing.json" },
-    { "match": "or users get bb22cc33-dd44-ee55-ff66-778899aabbcc", "file": "users-get.json" },
+    { "match": "or folders list", "file": "ee2628e6b6.json" },
+    { "match": "or jobs list --folder-key a7e7f8a9-b0c1-2345-6789-abcdef012345 --state Faulted", "file": "9a58c51891.json" },
+    { "match": "or jobs get ccddeeff-3344-5566-7788-99aabbccddee", "file": "c4e34690df.json" },
+    { "match": "or jobs logs ccddeeff-3344-5566-7788-99aabbccddee --level Error", "file": "7d3d027c8a.json" },
+    { "match": "or jobs logs ccddeeff-3344-5566-7788-99aabbccddee", "file": "f301adfb55.json" },
+    { "match": "or jobs traces ccddeeff-3344-5566-7788-99aabbccddee", "file": "88b1fb5ee1.json" },
+    { "match": "traces spans get --job-key ccddeeff-3344-5566-7788-99aabbccddee", "file": "8e03f98302.json" },
+    { "match": "or users get bb22cc33-dd44-ee55-ff66-778899aabbcc", "file": "2c1eba59a4.json" },
     { "match": "docsai ask", "passthrough": true }
   ],
   "unmocked_default": { "response": "[]\n", "exit_code": 0 }
