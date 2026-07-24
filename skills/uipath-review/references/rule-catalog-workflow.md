@@ -1,6 +1,6 @@
 # Rule Catalog — Workflow (SKILL.md Step 2.5)
 
-Step 2.5 of the review workflow. Runs **after** Step 2 (`uip agent validate` and related CLI validation) and **before** Step 3 (manual checklist review). Adds rule-ID-level findings to the report from two sources, in order:
+Step 2.5 of the review workflow. Runs **after** Step 2 (`uip agent refresh` then `uip agent validate` for low-code agents, plus related CLI validation) and **before** Step 3 (manual checklist review). Adds rule-ID-level findings to the report from two sources, in order:
 
 1. **The review CLI** (`uip agent review` / `uip codedagent review`) — all deterministic static checks.
 2. **The judgment catalog** (`agents-*-rules.md`) — checks that require the agent to read source and reason.
@@ -87,6 +87,6 @@ Two consecutive runs over the same project produce identical findings *for the r
 1. **Do not invent rule IDs.** If you observe a real issue covered by neither the review CLI nor the judgment catalog, surface it under the Critical / Warning / Info sections as a normal finding — do not promote it to a `rule_id`.
 2. **Do not re-rank severities.** The CLI's `Severity` and the catalog's `severity` are authoritative for `error` / `warning` / `info`. For `judgment` rows, log the reasoning when picking the report band.
 3. **Do not silently skip rules.** Every skip belongs in the report's "Rules Skipped" subsection with a reason.
-4. **Do not run the catalog before the CLI.** Run `uip agent review` / `uip codedagent review` first (2.5a), then `uip agent validate` is assumed already passed (Step 2) — so the judgment catalog focuses only on reasoning the CLI cannot do.
+4. **Do not run the catalog before the CLI.** Run `uip agent review` / `uip codedagent review` first (2.5a); for low-code agents, `uip agent refresh` and `uip agent validate` are assumed already completed in that order (Step 2) — so the judgment catalog focuses only on reasoning the CLI cannot do.
 5. **Do not load catalog files outside the detection table.** Loading low-code rules against a non-agent project produces false positives.
 6. **Do not re-implement deterministic checks inline.** Counts, regex, schema-presence, and set-membership are the review CLI's job. The skill itself ships no executable code.

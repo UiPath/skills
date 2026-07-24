@@ -1,0 +1,103 @@
+task_id: skill-review-agents-lowcode-studio-web-workspace
+description: >
+  Regression smoke for a read-only review of a Studio Web-originated low-code
+  agent with current authored source, a stale entry-points.json, and misleading
+  canaries in generated runtime trees.
+  Verifies the reviewer refreshes and validates the project, runs deterministic
+  review without explicitly writing or editing project files, accepts
+  refresh-managed synchronization, and excludes generated-only findings from
+  the report.
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  max_turns: 30
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_studio_web_workspace/setup_fixture.py"
+    timeout: 30
+
+initial_prompt: |
+  I exported a low-code UiPath agent from Studio Web to
+  `StudioWebSol/SupportAgent`. Please review it and save the structured report
+  to `./_review_report.md`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside the low-code project"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*StudioWebSol/SupportAgent'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside the low-code project"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*StudioWebSol/SupportAgent'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Reviewer did not directly read generated runtime files"
+    tool_name: "Read"
+    command_pattern: '"(?:file_path|path)":\s*"[^"]*(?:\.agent-builder|\.local/build)'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Reviewer did not target generated runtime trees with Glob"
+    tool_name: "Glob"
+    command_pattern: '"(?:pattern|path)":\s*"[^"]*(?:\.agent-builder|\.local/build)'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Reviewer did not target generated runtime trees with Grep"
+    tool_name: "Grep"
+    command_pattern: '"(?:pattern|path)":\s*"[^"]*(?:\.agent-builder|\.local/build)'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Reviewer refreshed the low-code project successfully"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+agent\s+refresh\b'
+    min_count: 1
+    max_count: 1
+    require_success: true
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Reviewer validated the refreshed low-code project successfully"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+agent\s+validate\b'
+    min_count: 1
+    max_count: 1
+    require_success: true
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Reviewer ran the deterministic low-code review successfully"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+agent\s+review\b'
+    min_count: 1
+    max_count: 1
+    require_success: true
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Refreshed derived state passes and the report does not cite generated runtime files"
+    command: "python3 $TASK_DIR/check_studio_web_workspace.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

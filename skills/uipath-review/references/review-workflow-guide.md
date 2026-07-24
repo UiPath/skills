@@ -72,10 +72,10 @@ Run these commands to detect what exists in the target directory:
 find . -maxdepth 1 -name "*.uipx" 2>/dev/null
 
 # Detect all project types
-find . -maxdepth 3 -name "project.json" -o -name "agent.json" -o -name "*.flow" -o -name "app.config.json" -o -name "project.uiproj" 2>/dev/null
+find . -maxdepth 3 \( -type d \( -name ".agent-builder" -o -path "*/.local/build" \) \) -prune -o \( -name "project.json" -o -name "agent.json" -o -name "*.flow" -o -name "app.config.json" -o -name "project.uiproj" \) -print 2>/dev/null
 
 # Detect coded agent markers
-find . -maxdepth 2 \( -name "langgraph.json" -o -name "llama_index.json" -o -name "openai_agents.json" -o -name "uipath.json" \) 2>/dev/null
+find . -maxdepth 2 \( -type d \( -name ".agent-builder" -o -path "*/.local/build" \) \) -prune -o \( -name "langgraph.json" -o -name "llama_index.json" -o -name "openai_agents.json" -o -name "uipath.json" \) -print 2>/dev/null
 ```
 
 ### Scope Decision Tree
@@ -173,6 +173,7 @@ Include the Workflow Analyzer rule ID (e.g., ST-NMG-001, ST-DBP-003, ST-SEC-007)
 
 ```bash
 # Low-code agent
+uip agent refresh ./agent-directory --output json
 uip agent validate ./agent-directory --output json
 
 # Coded agent — check if eval sets exist first
