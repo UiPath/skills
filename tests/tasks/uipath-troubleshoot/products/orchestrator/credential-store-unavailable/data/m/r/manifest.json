@@ -2,12 +2,12 @@
   "version": 2,
   "_doc": "Synthetic fixture set for the credential-store-unavailable scenario (credential-store-unavailable playbook, Orchestrator Database store branch). The agent chains: folders list -> jobs list --state Faulted (two processes, same store error = store-wide) -> jobs get (Info: retrieval from Orchestrator Database credential store, no logon code) -> jobs logs (SQL DB unreachable; no logon attempted). Keys are stable.",
   "rules": [
-    { "match": "or folders list", "file": "folders-list.json" },
-    { "match": "or jobs list --folder-key e5c5d6e7-f8a9-0123-4567-89abcdef1234 --state Faulted", "file": "jobs-list-faulted.json" },
-    { "match": "or jobs list --state Faulted", "file": "jobs-list-faulted.json" },
-    { "match": "or jobs get aabbccdd-1122-3344-5566-778899aabbcc", "file": "jobs-get-failing.json" },
-    { "match": "or jobs logs aabbccdd-1122-3344-5566-778899aabbcc --level Error", "file": "jobs-logs-failing-error.json" },
-    { "match": "or jobs logs aabbccdd-1122-3344-5566-778899aabbcc", "file": "jobs-logs-failing-error.json" },
+    { "match": "or folders list", "file": "ee2628e6b6.json" },
+    { "match": "or jobs list --folder-key e5c5d6e7-f8a9-0123-4567-89abcdef1234 --state Faulted", "file": "d87aa5fe36.json" },
+    { "match": "or jobs list --state Faulted", "file": "f5f2f217c8.json" },
+    { "match": "or jobs get aabbccdd-1122-3344-5566-778899aabbcc", "file": "baee8dcd63.json" },
+    { "match": "or jobs logs aabbccdd-1122-3344-5566-778899aabbcc --level Error", "file": "b7c928630b.json" },
+    { "match": "or jobs logs aabbccdd-1122-3344-5566-778899aabbcc", "file": "3bca59ffbc.json" },
     { "match": "docsai ask", "passthrough": true }
   ],
   "unmocked_default": { "response": "[]\n", "exit_code": 0 }

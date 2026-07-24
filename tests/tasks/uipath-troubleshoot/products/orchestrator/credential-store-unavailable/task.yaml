@@ -42,8 +42,7 @@ reference:
 initial_prompt: |
   My SecurePortalBot jobs in the SecureOps folder started failing at
   launch this morning — a teammate says one of their bots in the same
-  folder is failing the same way too. The project source is in the
-  current working directory. Can you find out why they won't start?
+  folder is failing the same way too. Can you find out why they won't start?
 
 success_criteria:
   - type: skill_triggered
