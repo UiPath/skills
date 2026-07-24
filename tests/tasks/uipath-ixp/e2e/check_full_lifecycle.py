@@ -10,7 +10,7 @@ delta is printed but never gates. An advanced version with byte-identical Fields
 only WARNs — on the coarse fixture a genuine retrain can flip no prediction, so
 identical metrics are the same noise this check refuses to grade, and it cannot be
 told from a counter bump by the artifacts alone. "Did the agent run the improve loop"
-(update-prompts, two metric fetches, publish) is graded by the command_executed criteria.
+(update-prompts, two metric fetches, publish) is graded from `calls.log`.
 """
 from __future__ import annotations
 
@@ -112,9 +112,9 @@ def main() -> int:
         # the retrain flipped no prediction, so every field's F1 is unchanged — the same coarse-metric
         # noise this check deliberately refuses to grade (see docstring / #1814). The artifacts alone
         # cannot tell the two apart; whether the agent actually re-measured is enforced by the
-        # command_executed criteria (get-metrics >=2, update-prompts, publish). So warn, don't fail.
+        # calls.log criteria (get-metrics >=2, update-prompts, publish). So warn, don't fail.
         if improved_fields == baseline_fields:
-            log_warn(f"ModelVersion advanced {baseline_version} -> {improved_version} but Fields[] is identical to baseline — retrain likely flipped no prediction on the coarse fixture; re-measurement is graded by the command_executed criteria")
+            log_warn(f"ModelVersion advanced {baseline_version} -> {improved_version} but Fields[] is identical to baseline — retrain likely flipped no prediction on the coarse fixture; re-measurement is graded from calls.log")
 
     # Chosen field must resolve to a numeric F1 in both snapshots (catches a hallucinated
     # field_id or truncated metrics), regardless of which way F1 moved.

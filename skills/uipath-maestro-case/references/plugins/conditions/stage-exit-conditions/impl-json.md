@@ -94,6 +94,8 @@ The case pauses after the rule fires; the user picks the next stage from candida
 
 Routes the case back to the originating stage.
 
+Write this object directly. Do not rely on `uip maestro case stage-exit-conditions add --type return-to-origin` defaults: without the explicit completion rule and `marksStageComplete: true`, the CLI can persist an empty or non-rendering return shape.
+
 ### Divert into an exception lane (gated routing exit)
 
 To route the **origin** stage into a decision/signal-routed exception lane (the lane then returns via `return-to-origin`), the origin carries TWO mutually-exclusive exits: a gated divert (`marksStageComplete: false`) into the lane, and a completion gated by the inverse `IF`.

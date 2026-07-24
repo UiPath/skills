@@ -61,13 +61,19 @@ initial_prompt: |
   confirmation — this is an automated test.
 
 success_criteria:
+  # Advisory (pass_threshold: 0): records the login-status convention without
+  # gating. The cloud deploy/validate criteria below already require working
+  # auth to pass, so an explicit `uip login status` is convention, not outcome
+  # — hard-gating it docks agents (e.g. codex) that authenticate implicitly and
+  # still complete every cloud op. Per tests/README §"Grade Behavior, Not
+  # Self-Reports" and .claude/rules/test-writing.md.
   - type: command_executed
-    description: "Agent verified login status before cloud commands"
+    description: "Advisory: agent ran `uip login status` before cloud commands (convention, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: command_executed
     description: "Agent created a fresh per-run folder via `uip or folders create` (isolated for cleanup)"
