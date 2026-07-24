@@ -57,7 +57,7 @@ Do not inspect `~/.uip/case-resources/` first to decide whether the pull is nece
 
 Accept the `sdd.md` file path from the user, or ask if not provided. When the directory contains multiple `.md` files, use **AskUserQuestion** with the candidates + "Something else" to disambiguate.
 
-If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) before this step. See [phase-0-interview.md](phase-0-interview.md). Phase 1 resumes here only after the Approve hard-stop in Phase 0.
+If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) before this step. See [phase-0-interview.md](phase-0-interview.md). Phase 1 begins after Phase 0's confirmation (a Build answer). **Same-session fast path:** Phase 0 just rendered `sdd.md` from the confirmed in-memory model — plan from that model directly and skip re-reading the file; re-read `sdd.md` only when working memory may be stale (context compaction, resumed session), and then trust it as written (Rule 2).
 
 `sdd.md` is the **sole required input**. It describes stages, tasks, conditions, SLA, component types, persona information, and provides the search keys for registry lookups. The portable name is type-specific: `Resolved Resource` for process/agent/rpa/api-workflow, the Action App title in `HITL Implementation` for action, and `Child Case` for case-management. The corresponding identity cell (`Resource Identity` or `Action App ID`) says whether an earlier phase resolved it. (The SDD does not describe edges — transitions are stage entry/exit conditions; Rule 20.) The skill does not validate or gap-fill sdd.md — trust it as written. (Phase 0 may have generated it; once approved, Rule 2 applies regardless of source.)
 

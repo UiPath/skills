@@ -78,48 +78,100 @@
     {
       "id": 7,
       "prompt": "I want to create a new case but I do not have an sdd.md yet",
-      "expected_output": "Skill starts with a short journey-specific roadmap, opens the interview immediately, and confirms the inferred case in three plain-language packets before creating sdd.md",
+      "expected_output": "Skill shows the roadmap, asks the Listen opener once (bare request), designs the case by best assumption, and confirms it in ONE summary that discloses every decision",
       "expectations": [
         "The case-management skill was triggered",
-        "Before detailed interview questions, shows the user the high-level journey: understand and ground, confirm in short summaries, generate and validate the SDD, build and review, then ask before debug or publish",
+        "Shows the high-level journey first: reads the request and makes the design calls, one summary with every decision for confirmation, then build and validate without interruptions, pausing only before any run or publish",
         "Does not expose internal Phase 0 through Phase 6 labels in the user-facing roadmap",
-        "Uses three confirmation packets: case shape, work inside stages, and operational contract",
-        "The case-shape packet includes the trigger, primary stage flow, interrupting secondary stages, and case outcomes",
-        "The work packet includes task type, sequential/event-driven/manually-triggered activation, required/optional status, owner, and tenant resource candidate",
-        "The operational packet includes decision routing, data inputs/outputs, resolved resources/connections, and timing",
+        "Asks the Listen opener once, then fills every open field by best assumption — no per-dimension question walk about trigger, task types, exits, or SLAs",
+        "Presents ONE confirmation covering trigger, primary stage flow, interrupting secondary stages, outcomes, per-stage tasks with type and activation and required/optional status, and resource state",
+        "The confirmation includes a complete Decisions-I-made block with a plain-language source per assumption",
         "A manually triggered task is presented as optional manually triggered work without exposing the internal adhoc rule name",
-        "The final approval summary is the second confirmation layer, so the user does not need to inspect the full sdd.md"
+        "The confirmation carries the build continuation choice (build straight through vs pause at the build preview) so it is never asked mid-build",
+        "On a Build answer, sdd.md is written batched with the first build actions and mentioned in one line as a reference artifact — never presented for review"
       ]
     },
     {
       "id": 8,
       "prompt": "Create a vendor onboarding case. I attached two process documents. It uses VendorRiskAgent, Salesforce Prod, and a Slack notification connector.",
-      "expected_output": "Skill overlaps independent document and tenant discovery work, resolves tenant resources before the confirmation that depends on them, and keeps dependency-bound operations sequential",
+      "expected_output": "Skill overlaps document reads with the background tenant warm-up, runs one light name-match pass with no schema discovery and no resource questions, and defers everything unclear to the build",
       "expectations": [
-        "Opens the interview without waiting for tenant discovery to finish",
-        "After the user's first description, reads all supplied documents in parallel with the UiPath login-status check",
-        "Runs registry pull only after login succeeds",
-        "After a successful pull, searches all stable runnable-task candidates, connector operations/triggers, and enabled connection inventories in parallel",
-        "Does not search tenant caches before a successful Phase 0 pull and does not treat a failed pull as zero matches",
-        "Batches independent ambiguous resource and connection choices into one user turn when possible",
-        "After selections, runs tasks describe and case spec calls concurrently across all selected live resources",
-        "Fetches a unique high-confidence candidate's schema before presenting the work or operational confirmation that depends on it",
+        "Starts the login and registry warm-up in the background at Phase 0 entry, before the user finishes describing the case",
+        "Reads all supplied documents in parallel while the warm-up resolves",
+        "Runs registry pull only after login succeeds and does not treat a failed pull as zero matches",
+        "After a successful pull, runs ONE parallel name-match lookup per named resource — no tasks describe, no case spec, no schema discovery in Phase 0",
+        "With four or more independent lookups pending, may fan them out to parallel read-only subagents that never write artifacts or prompt the user",
+        "A single confident match is adopted silently and shown as a decision; multiple matches, cross-folder names, missing connections, and empty lookups become resolve-at-build decisions — never a Phase 0 question",
         "Does not let tenant inventory add or rename business stages or tasks",
-        "Leaves Phase 1 registry refresh as the authoritative pre-planning gate"
+        "Leaves Phase 1 registry refresh as the authoritative pre-planning gate and its Rule 17 gate as the place ambiguity is decided"
       ]
     },
     {
       "id": 9,
       "prompt": "Interview me, confirm your understanding, and generate the SDD only after I approve it",
-      "expected_output": "Skill checkpoints the draft in batches, validates the completed draft, and promotes it to sdd.md only after explicit final approval",
+      "expected_output": "Skill designs in memory with no draft files, and because the user requested a final sign-off it shows the explicit approval prompt and writes sdd.md only after approval",
       "expectations": [
-        "Does not rewrite the complete sdd.draft.md after every answer; persists resumable state only at confirmed packet boundaries",
-        "Writes sdd.draft.md and tasks/registry-resolved.json independently and may persist them concurrently once their shared state is frozen",
-        "Runs the existing SDD finalization checks against sdd.draft.md before the final approval prompt",
-        "Shows a compact approval summary with main flow, interrupting secondary stages, task activation counts, resolved/unresolved resources, defaults, and review-item counts",
-        "Does not create or rename to sdd.md before the user selects approval",
-        "On correction, edits sdd.draft.md, revalidates affected checks, and re-shows the summary",
-        "On approval, atomically renames sdd.draft.md to sdd.md and then proceeds to Phase 1"
+        "Keeps the design in session memory — no sdd.draft.md or checkpoint files are written during the interview",
+        "Runs the finalization checks against the in-memory model before presenting the confirmation, fixing failures silently",
+        "Shows one confirmation with main flow, interrupting secondary stages, tasks with activation, resource state, and a complete Decisions-I-made block",
+        "Because the user explicitly asked to approve first, an explicit approval prompt follows the confirmation — no file is created before it",
+        "On correction, updates the model, re-runs affected checks, and re-shows only the changed rows",
+        "On approval, writes sdd.md and proceeds directly to Phase 1 without asking the user to review the SDD document"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "Build me a complete employee-offboarding case end to end. I trust the design process — I don't need to review anything until it's ready to run.",
+      "expected_output": "Skill designs by best assumption, confirms once (capturing the straight-through choice), then writes sdd.md batched with the first build actions and runs Phase 1 through Phase 4 automatically, pausing next at the debug gate",
+      "expectations": [
+        "The single confirmation carries the build continuation choice: build straight through vs pause at the build preview",
+        "The confirmation's Decisions-I-made block discloses every assumption with a plain-language source",
+        "On the Build answer, the transition line is announced and sdd.md is written in the same batch as the first build actions — never as a standalone blocking turn",
+        "One line reports the design doc path as a reference artifact",
+        "No blocking prompt between the confirmation and Phase 4 validation on the straight-through path — the Phase 2 boundary prints the skeleton counts line and continues",
+        "The build proceeds from the in-memory model without re-reading the just-written sdd.md",
+        "Posts an expectation-setting line before long silent work and one-line business-language milestones during the build — no internal phase or mode names",
+        "Still stops at the debug-consent gate and the publish gate — those are never bypassed",
+        "If any high review item exists, the Build option is relabeled build-despite with the count"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "Create a claims-intake case for me. (Tenant login is currently broken in this environment.)",
+      "expected_output": "Skill tells the user immediately, in one plain line, that tenant resources are unreachable, continues the interview with intended names, and leaves identities unresolved for the build to wire later",
+      "expectations": [
+        "Says tenant resources are unreachable in one business-language line as soon as the login or refresh fails — not first revealed by Not-available-yet rows in the work packet",
+        "Continues the interview without blocking on tenant discovery",
+        "Keeps concrete intended resource names and marks only identity/folder fields unresolved with paired review items",
+        "Does not surface internal filenames, cache paths, or CLI mechanics in the notice"
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "Build a case from this requirements document: ./claim-settlement-requirements.md (a complete spec: 5 phases with per-phase SLA targets, 3 wrap-up outcomes, a 4-way adjuster decision, amount-tiered sign-off, anytime actions).",
+      "expected_output": "Skill digests the doc, decides everything it covers by best assumption, presents ONE structured confirmation with tables and a decisions block, writes the case board files, and on the Build answer moves straight into the build with sdd.md written alongside",
+      "expectations": [
+        "Skips the entry menu — the request already describes the case, so the doc is read immediately",
+        "Asks at most one batched clarifying call, and only for genuine contradictions in the spec — everything the doc covers is assumed, not re-confirmed",
+        "The confirmation includes a happy-path table (stage, target, work, who/what), exception lanes, anytime actions, rules/tiers, and a complete Decisions-I-made block with plain-language sources",
+        "The confirmation options carry the build continuation choice",
+        "Copies the static case-board template byte-identical and writes case-board-data.js — never generates the board HTML inline and never reads either file back",
+        "Prints one pointer line to the visual board at the confirmation only",
+        "On the Build answer: no re-summary — transition line, then sdd.md batched with the first build actions and one artifact line",
+        "The confirmation question anchors to the chat tables, not to the board file"
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "Design a claims intake case with me — I want to see the case take shape as we go",
+      "expected_output": "Skill narrates decisions as they land during listening, keeps the model in memory, shows the whole case once with resources inline, and starts the build with sdd.md written alongside",
+      "expectations": [
+        "Doc-read lines and inference one-liners narrate the design as it forms — decisions are informed, not asked",
+        "No draft or checkpoint files are written while designing; the model lives in session memory and the case board dual-renders the confirmation",
+        "The confirmation shows the whole case: stages, tasks with activation, resolved resources or resolve-at-build inline, exceptions, and the decisions block",
+        "Corrections re-show only the changed rows and refresh the board data via targeted edits",
+        "On the Build answer, sdd.md is written batched with the first build actions and reported in one line as a reference artifact",
+        "High-severity review items still require the explicit build-despite opt-in"
       ]
     }
   ]

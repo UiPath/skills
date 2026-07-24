@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="refresh" content="6">
+<title>Case board</title>
+<!--
+  Case board — static app styled after the Studio Web case designer canvas
+  (Apollo Design System, light theme). Copied byte-identical to the working root
+  as ./case-board.html (SKILL.md Rule 13 carve-out: verbatim template copy, no
+  parsing, no token replacement). All case content comes from ./case-board-data.js,
+  written by the agent next to this file:
+
+    window.SDD_DATA = {
+      caseName: "ClaimSettlement",          // string
+      prefix: "CLM",                        // string
+      slaLabel: "10 business days",         // string|null
+      updatedAt: "design summary accepted", // string — checkpoint label shown in header
+      focus: "Senior review",               // string|null — stage name to spotlight, or null
+      trigger: { name: "Claim submitted via portal", kind: "event" }, // kind: manual|event|timer
+      stages: [                             // primary stages, in order
+        { name: "Claim check", sla: "1d",
+          tasks: [
+            { name: "Validate claim details",
+              type: "agent",                // human|agent|connector|process|rpa|api|wait|child
+              activation: "seq",            // seq|event|manual
+              required: true,
+              resource: "ClaimIntakeAgent", // string|null
+              status: "resolved" }          // resolved|unresolved|placeholder
+          ] }
+      ],
+      lanes: [                              // secondary/exception stages
+        { name: "Withdrawn", trigger: "claimant exits any active phase",
+          outcome: "closes the case",       // free text
+          ends: true }                      // true → red "Ends case" pill; false → "returns" chip
+      ],
+      adhoc: [ { name: "Order independent inspection", status: "unresolved" } ],
+      rules: [ "under $500 auto-approved; $5,000+ needs senior sign-off" ],
+      assumed: [ "case prefix CLM (from the CLM-001 example)" ],
+      reviewItems: { high: 0, medium: 0 }
+    };
+
+  The page reloads itself every 6 seconds (meta refresh) so it live-updates while
+  the interview runs. Scroll position is preserved across reloads.
+-->
+<style>
+  :root{--bg2:#f4f5f7;--fg:#273139;--fg-emp:#182027;--mut:#526069;--line:#cfd8dd;--line-strong:#a4b1b8;
+        --primary:#0067df;--sel:#b2d2f3;--warn:#ffb40e;--err:#cc3d45}
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--fg);
+    font-family:noto-sans,"Noto Sans",-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:14px;line-height:1.43;
+    background:var(--bg2);
+    background-image:radial-gradient(rgba(207,216,221,.5) 1px,transparent 1px);
+    background-size:16px 16px;
+    padding:18px 22px}
+  header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  h1{font-size:16px;margin:0;font-weight:700;color:var(--fg-emp)}
+  .meta{color:var(--mut);font-size:12px}
+  .chipTop{display:inline-flex;align-items:center;height:24px;background:#fff;color:var(--fg);
+    border:1px solid var(--line);border-radius:10px;padding:0 8px;font-size:12px;margin-left:8px}
+  .row{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding:6px 2px 14px}
+  .trigger{flex:none;width:96px;height:96px;border-radius:50%;background:#fff;border:1.5px solid var(--line);
+    display:flex;align-items:center;justify-content:center;align-self:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .trigger .inner{width:72px;height:72px;border-radius:50%;background:var(--bg2);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--fg)}
+  .trigger svg{width:32px;height:32px}
+  .trigLabel{font-size:12px;color:var(--mut);text-align:center;max-width:110px;margin-top:6px}
+  .trigWrap{flex:none;display:flex;flex-direction:column;align-items:center;align-self:center}
+  .arrow{flex:none;align-self:center;display:flex;align-items:center;color:var(--fg-emp)}
+  .arrow svg{width:34px;height:14px}
+  .stage{flex:none;width:288px;background:#fff;border:2px solid var(--line);border-radius:16px;
+    display:flex;flex-direction:column;
+    box-shadow:0 8px 24px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06)}
+  .stage.focus{border-color:var(--primary);outline:4px solid var(--sel)}
+  .shead{padding:12px 16px;border-bottom:1px solid var(--line);border-radius:14px 14px 0 0;
+    display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .shead .t{font-size:14px;font-weight:700;color:var(--fg)}
+  .shead .sla{font-size:12px;color:var(--mut);white-space:nowrap}
+  .sbody{padding:15px 14px 12px;display:flex;flex-direction:column;gap:12px}
+  .task{min-height:36px;display:flex;align-items:center;gap:8px;padding:4px 6px;
+    background:#fff;border:1px solid var(--line);border-radius:8px;color:var(--fg);transition:all .2s ease}
+  .task:hover{border-color:var(--primary);outline:4px solid var(--sel)}
+  .task.ph{border-style:dashed}
+  .ticon{flex:none;width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center}
+  .ticon svg{width:16px;height:16px;stroke:var(--fg);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .g-purple{background:linear-gradient(135deg,#ffe0ff,#cfd9ff)}
+  .g-green{background:linear-gradient(135deg,#ddfbf1,#daf3ff)}
+  .g-blue{background:linear-gradient(135deg,#f6faff,#d8eeff)}
+  .g-grey{background:linear-gradient(135deg,#fafafb,#ecedef)}
+  .tmain{min-width:0;flex:1}
+  .tname{font-size:13.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tsub{font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pill{flex:none;display:inline-flex;align-items:center;height:20px;border-radius:10px;padding:0 7px;
+    font-size:11px;border:1px solid transparent}
+  .p-opt{background:var(--bg2);color:var(--mut)}
+  .p-warn{background:rgba(255,180,14,.16);color:#7a5600;border-color:rgba(255,180,14,.5)}
+  .p-ends{background:var(--err);color:#f8f9fa}
+  .p-ret{background:transparent;color:var(--fg);border-color:var(--line)}
+  .lanerow{display:flex;gap:14px;flex-wrap:wrap;margin-top:2px}
+  .lane{flex:1;min-width:250px;max-width:340px;background:#fff;border:2px solid var(--line);border-radius:16px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .lane .shead{background:var(--bg2);border-radius:14px 14px 0 0}
+  .lane .lbody{padding:10px 16px 12px;font-size:12px;color:var(--mut)}
+  .strip{margin-top:14px;background:#fff;border:1px solid var(--line-strong);border-radius:8px;
+    padding:8px 12px;font-size:12px;color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+  .strip b{font-size:11px;letter-spacing:.03em;text-transform:uppercase;color:var(--mut);margin-right:8px;font-weight:700}
+  .assumed{margin-top:14px;background:#fff;border:1px solid var(--line-strong);border-left:4px solid var(--warn);
+    border-radius:0 8px 8px 0;padding:8px 12px;font-size:12px;color:var(--fg)}
+  .assumed b{font-size:11px;letter-spacing:.03em;text-transform:uppercase;color:#7a5600;font-weight:700}
+  .legend{margin-top:12px;font-size:11.5px;color:var(--mut)}
+  .sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin:0 4px -2px 12px;border:1px solid var(--line)}
+  .empty{color:var(--mut);background:#fff;border:2px dashed var(--line);border-radius:16px;padding:40px;text-align:center;font-size:13px}
+</style>
+</head>
+<body>
+<div id="app"><div class="empty">Waiting for case data… (case-board-data.js not found yet)</div></div>
+<script src="./case-board-data.js"></script>
+<script>
+(function(){
+  var d = window.SDD_DATA;
+  if(!d) return;
+  var GRAD = {agent:"g-purple", child:"g-purple", human:"g-blue",
+              rpa:"g-green", api:"g-green",
+              process:"g-grey", connector:"g-grey", wait:"g-grey"};
+  var TYPE = {human:"Human action", agent:"Agent", connector:"Connector", process:"Process",
+              rpa:"RPA", api:"API workflow", wait:"Wait", child:"Child case"};
+  var ACT = {seq:"", event:"event-driven", manual:"manually triggered"};
+  var ICON = {
+    human:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg>',
+    agent:'<svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg>',
+    connector:'<svg viewBox="0 0 24 24"><path d="M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0zM12 16v5"/></svg>',
+    process:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="6" rx="1"/><rect x="14" y="14" width="7" height="6" rx="1"/><path d="M10 7h7v7"/></svg>',
+    rpa:'<svg viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="10" rx="2"/><circle cx="9.5" cy="13" r="1"/><circle cx="14.5" cy="13" r="1"/><path d="M12 8V4M8 4h8"/></svg>',
+    api:'<svg viewBox="0 0 24 24"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13 6l-2 12"/></svg>',
+    wait:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>',
+    child:'<svg viewBox="0 0 24 24"><path d="M9 13a4 4 0 0 1 0-6l2-2a4 4 0 0 1 6 6l-1 1M15 11a4 4 0 0 1 0 6l-2 2a4 4 0 0 1-6-6l1-1"/></svg>'
+  };
+  var ZAP = '<svg viewBox="0 0 24 24" style="stroke:#273139;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg>';
+  var CLOCK = '<svg viewBox="0 0 24 24" style="stroke:#273139;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+  var ARROW = '<svg viewBox="0 0 34 14"><path d="M1 7h28" stroke="#182027" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M25 2l6 5-6 5" stroke="#182027" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
+  function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+  function task(t){
+    var g = GRAD[t.type]||"g-grey", ic = ICON[t.type]||ICON.process;
+    var bits=[]; if(TYPE[t.type])bits.push(TYPE[t.type]); if(ACT[t.activation])bits.push(ACT[t.activation]);
+    if(t.resource&&t.status==="resolved")bits.push(esc(t.resource));
+    var pills="";
+    if(t.required===false)pills+='<span class="pill p-opt">optional</span>';
+    if(t.status==="unresolved")pills+='<span class="pill p-warn">not available yet</span>';
+    return '<div class="task'+(t.status==="placeholder"?" ph":"")+'"><span class="ticon '+g+'">'+ic+'</span>'+
+      '<span class="tmain"><span class="tname">'+esc(t.name)+'</span>'+
+      (bits.length?'<span class="tsub">'+bits.join(" · ")+'</span>':'')+'</span>'+pills+'</div>';
+  }
+  var h='<header><div><h1>'+esc(d.caseName||"Case")+
+    (d.prefix?' <span class="meta">'+esc(d.prefix)+'-…</span>':'')+
+    (d.updatedAt?'<span class="chipTop">'+esc(d.updatedAt)+'</span>':'')+'</h1></div>'+
+    '<div class="meta">'+(d.slaLabel?("Case target: "+esc(d.slaLabel)+" · "):"")+'updates automatically while you talk</div></header>';
+  h+='<div class="row">';
+  if(d.trigger){
+    h+='<div class="trigWrap"><div class="trigger"><div class="inner">'+(d.trigger.kind==="timer"?CLOCK:ZAP)+'</div></div>'+
+       '<div class="trigLabel">'+esc(d.trigger.name||"")+'</div></div><div class="arrow">'+ARROW+'</div>';
+  }
+  (d.stages||[]).forEach(function(s,i){
+    if(i>0)h+='<div class="arrow">'+ARROW+'</div>';
+    h+='<div class="stage'+(d.focus===s.name?" focus":"")+'"><div class="shead"><span class="t">'+esc(s.name)+'</span>'+
+       (s.sla?'<span class="sla">'+esc(s.sla)+'</span>':'')+'</div><div class="sbody">';
+    (s.tasks||[]).forEach(function(t){h+=task(t)});
+    h+='</div></div>';
+  });
+  h+='</div>';
+  if((d.lanes||[]).length){
+    h+='<div class="lanerow">';
+    d.lanes.forEach(function(l){
+      var pill = l.ends?'<span class="pill p-ends">Ends case</span>':'<span class="pill p-ret">returns</span>';
+      h+='<div class="lane"><div class="shead"><span class="t">'+esc(l.name)+'</span>'+pill+'</div>'+
+         '<div class="lbody">'+esc(l.trigger||"")+(l.outcome?' → '+esc(l.outcome):'')+'</div></div>';
+    });
+    h+='</div>';
+  }
+  if((d.adhoc||[]).length){
+    h+='<div class="strip"><b>Anytime actions</b>'+d.adhoc.map(function(a){
+      return esc(a.name)+(a.status==="unresolved"?' <span class="pill p-warn">not available yet</span>':'');
+    }).join(" · ")+'</div>';
+  }
+  if((d.rules||[]).length){h+='<div class="strip"><b>Rules</b>'+d.rules.map(esc).join(" · ")+'</div>';}
+  if((d.assumed||[]).length){h+='<div class="assumed"><b>Assumed</b><br>'+d.assumed.map(esc).join(" · ")+'</div>';}
+  h+='<div class="legend">Task tiles:'+
+    '<span class="sw" style="background:linear-gradient(135deg,#f6faff,#d8eeff)"></span>human'+
+    '<span class="sw" style="background:linear-gradient(135deg,#ffe0ff,#cfd9ff)"></span>agent / child case'+
+    '<span class="sw" style="background:linear-gradient(135deg,#ddfbf1,#daf3ff)"></span>RPA / API workflow'+
+    '<span class="sw" style="background:linear-gradient(135deg,#fafafb,#ecedef)"></span>process / connector / wait'+
+    ((d.reviewItems&&(d.reviewItems.high||d.reviewItems.medium))?
+      ' &nbsp;·&nbsp; review items: high '+(d.reviewItems.high||0)+' · medium '+(d.reviewItems.medium||0):'')+'</div>';
+  var el=document.getElementById("app"); el.innerHTML=h;
+  var k="cb-scroll"; var y=sessionStorage.getItem(k); if(y)window.scrollTo(0,+y);
+  window.addEventListener("scroll",function(){sessionStorage.setItem(k,window.scrollY)});
+})();
+</script>
+</body>
+</html>

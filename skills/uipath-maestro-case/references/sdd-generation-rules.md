@@ -1,6 +1,6 @@
 # SDD Generation Rules
 
-Content-quality contract for Phase 0's `sdd.md`. The interview in [phase-0-interview.md](phase-0-interview.md) owns the **conversation flow** (Listen / Sketch / Ask / Resolve / Approve). This file owns the **content rules** every generated `sdd.md` must satisfy before Approve renames the draft.
+Content-quality contract for Phase 0's `sdd.md`. The interview in [phase-0-interview.md](phase-0-interview.md) owns the **conversation flow** (Listen / Sketch / Confirm / Build start). This file owns the **content rules** the in-memory case model must satisfy before the confirmation is presented — and therefore before `sdd.md` renders from it. Where older wording says "Approve" or "the Approve summary", read the §Confirm checkpoint and its `Decisions I made` block.
 
 Phase 1 trusts `sdd.md` as written (SKILL.md Rule 2). These rules make that trust safe.
 
@@ -59,7 +59,7 @@ Exact cell formats live in [§ Stage content rules](#stage-content-rules) and [�
 - `Intsvc.TimerTrigger` → **Timer**: a schedule starts it.
 - `Intsvc.EventTrigger` → **Connector Event**: an external system fires it.
 
-One trigger is the root; additional triggers are secondary. Ask: *what makes a new case appear?* A portal signup, inbound form, or schedule is NEVER Manual — trigger type is Always-Ask the moment such a source is named.
+One trigger is the root; additional triggers are secondary. Reason: *what makes a new case appear?* A portal signup, inbound form, or schedule is NEVER Manual — assume the event/timer trigger per the playbook and disclose the decision the moment such a source is named.
 
 **Connector** — the case's hands into an external system (an Integration Service connection). It surfaces three ways: an `execute-connector-activity` task (perform one operation — push), a `wait-for-connector` task/rule (pause for an inbound event — pull), or an `Intsvc.EventTrigger` (start on an event). Identity (`typeId` + `connectionId`) resolves from the registry — never fabricate IDs (SKILL.md Rule 8). Ask: *which system, and does the case call it (push) or wait for it (pull)?*
 
@@ -78,10 +78,10 @@ Reason the shape; do not template it:
 
 - **Milestones → stages:** Intake → Screening → Compliance → Finance Setup → Activation — regular stages on the main flow.
 - **"goes back for remediation" → secondary stage.** Remediation fires only on a condition (compliance failed) and routes back — model it as a secondary stage (condition-entered, `return-to-origin`), **not** a sixth inline primary stage.
-- **"sign up through portal" → trigger.** A portal signup is an inbound event, not Manual — Always-Ask the trigger type.
+- **"sign up through portal" → trigger.** A portal signup is an inbound event, not Manual — assume the event trigger and disclose it.
 - **Tasks + types** (read verb + actor, ask the [§ Choosing](#choosing-the-task-type) question):
   - *screen them* → AI judges unstructured docs → `agent`
-  - *compliance check* → ambiguous: a connector call (`execute-connector-activity`) vs human sign-off (`action`); the verb is Always-Ask, and a "licensed officer signs off" phrase forces `action`.
+  - *compliance check* → ambiguous: a connector call (`execute-connector-activity`) vs human sign-off (`action`); decide per the assumption playbook, and a "licensed officer signs off" phrase forces `action`.
   - *set them up in finance system* → SAP connector operation → `execute-connector-activity`; if a deployed process packages it → `process`.
   - *activate* → one connector op or a human flip → confirm with the user.
 
@@ -110,10 +110,10 @@ When signals conflict, apply this priority — top wins:
 3. **Tenant evidence** from the registry cache — a deployed Action App, process, agent, API workflow, connector activity/trigger, or enabled connection that already matches work the user described. Prefer that resource's type/identity, but never add stages/tasks or rename business work merely because the tenant has a resource.
 4. **User-stated preference** in chat (verbatim "set the task to agent", "trigger = portal event").
 5. **Doc-extracted values** from user-shared docs.
-6. **Inferred defaults** per the high-confidence test in [phase-0-interview.md § When to Ask vs Default](phase-0-interview.md#when-to-ask-vs-default).
+6. **Inferred defaults** per the assumption playbook in [phase-0-interview.md § Sketch](phase-0-interview.md#sketch--best-assumption-every-field).
 7. **General-practice fallback.**
 
-When a higher tier overrides a lower one, narrate the override in chat AND surface it in the Approve summary's `Inferred / defaulted` block with provenance `(source: <higher-tier>-override)`.
+When a higher tier overrides a lower one, apply it and surface it in the confirmation's `Decisions I made` block with provenance `(source: <higher-tier>-override)`.
 
 ## Choosing the task type
 
@@ -131,11 +131,11 @@ The `type` says **how the work gets done**, not what it's about. Read the verb +
 | `wait-for-timer` | the case **pauses for a duration or until a datetime** | Is the case just waiting on time? |
 | `case-management` | the step **launches / coordinates a child case** | Does this spin up a sub-case? |
 
-**Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. "Approve / review / decide" verbs are ambiguous between `action` (human) and `agent` (AI) — these are Always-Ask ([phase-0-interview.md § When to Ask vs Default](phase-0-interview.md#when-to-ask-vs-default)); never guess. A compliance trigger phrase forces `action` regardless of the pick above (see below).
+**Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. "Approve / review / decide" verbs are ambiguous between `action` (human) and `agent` (AI) — decide per the assumption playbook in [phase-0-interview.md § Sketch](phase-0-interview.md#sketch--best-assumption-every-field) and disclose the decision in the confirmation. A compliance trigger phrase forces `action` regardless of the pick above (see below).
 
 ## Task-type override priority
 
-Extends the Always-Ask gate. Apply in this order when picking task `type`:
+Extends the assumption playbook. Apply in this order when picking task `type`:
 
 1. **User decision pinned to a type** — honor unless schema-invalid (Rule 16) or conflicting with (2).
 2. **Regulatory constraint requiring human sign-off** — task MUST be `action`. Trigger phrases that force `action` (regardless of user preference):
@@ -152,7 +152,7 @@ Extends the Always-Ask gate. Apply in this order when picking task `type`:
 
 3. **Tenant evidence** — if the registry cache resolves a deployed Action App / process / agent / api-workflow / RPA that fits, prefer that resource's type and surface the match.
 4. **Connector availability** — when an IS connector matches the integration, choose `execute-connector-activity` over `api-workflow`.
-5. **Verb signal** — fall through to the Always-Ask table in [phase-0-interview.md § When to Ask vs Default](phase-0-interview.md#when-to-ask-vs-default).
+5. **Verb signal** — fall through to the assumption playbook in [phase-0-interview.md § Sketch](phase-0-interview.md#sketch--best-assumption-every-field).
 6. **Fallback** — keep the user's stated value if any; otherwise emit a placeholder per SKILL.md Rule 8 and pair it with a high-severity review item (§Review items).
 
 **Worked examples:**
@@ -161,7 +161,7 @@ Extends the Always-Ask gate. Apply in this order when picking task `type`:
 |---|---|---|---|
 | Adverse-action notice (lending) — "ECOA mandates licensed compliance officer signs off" | `agent` (LLM drafts notice) | Yes — tier 2 | `action` (Compliance Officer recipient; LLM-drafted body bound to the action's form context) |
 | Vendor scoring on intake | `agent` (LLM scores docs) | No — no regulation, no licensed role | `agent` |
-| Underwriting decision on mortgage | `agent` (LLM applies criteria) | Maybe — depends on jurisdiction; verb `decision` Always-Ask + tier-2 trigger phrase absent → Ask user | Ask |
+| Underwriting decision on mortgage | `agent` (LLM applies criteria) | Maybe — jurisdiction-dependent; no tier-2 trigger phrase in transcript → keep user's `agent`, disclose the compliance caveat as a decision line | `agent` (disclosed) |
 | Inbound webhook from Salesforce | `api-workflow` | No — but tier 4 says prefer connector | `execute-connector-activity` if Salesforce connector exists in tenant; else `api-workflow` |
 | Process orchestration call | `process` | No | `process` |
 
@@ -171,7 +171,7 @@ Extends the Always-Ask gate. Apply in this order when picking task `type`:
 
 Reason the shape first — [§ Mental model](#mental-model-stages-secondary-stages-tasks) — then apply this contract; it governs *how* a decided stage / secondary stage / task is written, not *whether* it should exist.
 
-Phase 1 reads `sdd.md` as written (Rule 2). The following three sections define **what each case / stage / task element MUST contain** before Approve renames the draft. Every block specifies required vs optional cells, allowed values, source of truth, and the fallback when a value is missing.
+Phase 1 reads `sdd.md` as written (Rule 2). The following three sections define **what each case / stage / task element MUST contain** before the model may render to `sdd.md`. Every block specifies required vs optional cells, allowed values, source of truth, and the fallback when a value is missing — in Phase 0, "Ask" fallbacks are settled by playbook assumption first and the one clarifying call only when no assumption is defensible.
 
 **Allowed `—`** (cells the user did not touch and Phase 1 can default safely): case-level Description, variable defaults, persona scope notes, app-view detail, secondary-stage description, optional `IF` conditionExpressions, business calendars on timers.
 
@@ -570,7 +570,7 @@ These four runnable types share a single render block. The SDD surfaces both por
 | Inputs | yes | Table: `Field | Type | Binding` — `Field` MUST match the runnable's declared In argument name verbatim; `Binding` per §Binding cell |
 | Outputs | yes | Table: `Field | Binding / Value` — `Field` MUST match the runnable's declared Out argument name verbatim for `->` rows (or `—` for `=` rows); see §Outputs cell operators |
 
-**Where the rest of the metadata lives.** Deep per-type runtime metadata that does NOT affect replication of the case plan (agent system prompt, RPA package version, api-workflow endpoint URL, process release tag) stays out of the SDD body — it is resolved during §Resolve in [phase-0-interview.md](phase-0-interview.md#resolve) and persisted in `tasks/registry-resolved.json` under the task's resolution entry (per SKILL.md Rule 9 shape). The SDD carries the resource **name + folder + id + sub-type** (above). Phase 1 may reuse deeper metadata only after the cached type/name/folder/identity matches the current SDD per [planning.md § Phase 0 carryover](planning.md#step-2--locate-and-parse-the-design-document); otherwise it re-runs discovery from the SDD and replaces the stale entry. Mapping:
+**Where the rest of the metadata lives.** Deep per-type runtime metadata that does NOT affect replication of the case plan (agent system prompt, RPA package version, api-workflow endpoint URL, process release tag) stays out of the SDD body — it is resolved during Phase 1 discovery ([planning.md](planning.md)) and persisted in `tasks/registry-resolved.json` under the task's resolution entry (per SKILL.md Rule 9 shape). The SDD carries the resource **name + folder + id + sub-type** (above). Phase 1 may reuse deeper metadata only after the cached type/name/folder/identity matches the current SDD per [planning.md § Phase 0 carryover](planning.md#step-2--locate-and-parse-the-design-document); otherwise it re-runs discovery from the SDD and replaces the stale entry. Mapping:
 
 | Task type | Registry source | Identity field in `registry-resolved.json` |
 |---|---|---|
@@ -637,15 +637,15 @@ For worked patterns by Category and operator, see [`sdd-template-examples.md`](.
 
 ### Resolved-resource I/O completeness
 
-When a task resolves to a **live** resource (`process` / `agent` / `rpa` / `api-workflow` / `action` / `execute-connector-activity` / `wait-for-connector` / `case-management`), the SDD's binding contract MUST cover that resource's declared I/O — not merely match names verbatim where rows exist (§Binding cell, §Outputs cell). The declared contract is the one pulled at §Resolve in [phase-0-interview.md](phase-0-interview.md#resolve) (`tasks describe` for runnables, `spec` for connectors) and persisted — including each input's `required` flag and the full output-field list — in `tasks/registry-resolved.json`. Coverage is two-directional:
+When a task resolves to a **live** resource (`process` / `agent` / `rpa` / `api-workflow` / `action` / `execute-connector-activity` / `wait-for-connector` / `case-management`), the SDD's binding contract MUST cover that resource's declared I/O — not merely match names verbatim where rows exist (§Binding cell, §Outputs cell). The declared contract is the one pulled during build-phase discovery (`tasks describe` for runnables, `spec` for connectors — Phase 1 per [planning.md](planning.md), re-verified in Phase 3) and persisted — including each input's `required` flag and the full output-field list — in `tasks/registry-resolved.json`. Coverage is two-directional:
 
-**Inputs — required-coverage.** Every **required** declared input has an Inputs row whose `Binding` is non-empty (any allowed form in §Binding cell), OR is explicitly `<UNRESOLVED>` paired with a `high` review item (`rev_unbound_input_<task>_<field>`). A required input silently absent from the Inputs table is the defect this rule catches — it resolves to runtime null and faults the job. **Optional** declared inputs MAY be omitted; an optional input the user described but did not map → `medium` review item (existing §Resolve behavior). Never invent a `Default` to suppress an unmapped required input.
+**Inputs — required-coverage.** Every **required** declared input has an Inputs row whose `Binding` is non-empty (any allowed form in §Binding cell), OR is explicitly `<UNRESOLVED>` paired with a `high` review item (`rev_unbound_input_<task>_<field>`). A required input silently absent from the Inputs table is the defect this rule catches — it resolves to runtime null and faults the job. **Optional** declared inputs MAY be omitted; an optional input the user described but did not map → `medium` review item (build-phase discovery behavior). Never invent a `Default` to suppress an unmapped required input.
 
 **Outputs — field fidelity.** Every Outputs `-> caseVar` (extract) row's `Field` (its top-level leaf) MUST exist verbatim in the resolved output contract. A `Field` the resource does not emit → `high` review item (`rev_phantom_output_<task>_<field>`); it cannot bind. The case still binds outputs **selectively** — only the outputs it consumes need rows; this rule forbids referencing outputs the resource never produces, not under-consuming. (This generalizes the action-app-only fidelity rule, §Finalization step 16, to all runnable/connector types.)
 
 **xref carve-out — an upstream-output-fed input is *defined*, NOT a case variable.** When a required input is satisfied by an upstream task's output — whole-value `<- "Stage"."Task".out` (resolves to `=vars.<outputId>`) or in-expression `vars.$xref('Stage','Task','out')` — it counts as covered: do **NOT** raise a "missing variable" finding for it. The emitting task self-declares the output and is its own producer; declare a §1.5 row for it only per the [§ 1.5 declare-vs-xref test](#15-case-variables) (rename / custom `Default` / `Type` / `Description` / case-level state read in ≥ 2 places). See also [§ Variable lineage closure → Task-output direct reference](#variable-lineage-closure).
 
-Enforced at the Approve gate (§Variable lineage closure audit checklist + §Finalization step 19) and re-verified at build (Phase 3 io-binding Check 5, [`io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)). A task whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` has no resolved contract and is skipped by this rule. Its type-specific portable name remains concrete.
+Enforced at build (Phase 1 discovery + Phase 3 io-binding Check 5, [`io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)) — Phase 0's best-assumption path pulls no I/O contracts, so its `Field` cells reflect the best-known names and Phase 3 discovery reconciles them against the live contract during binding. For a user-authored SDD the rule applies as written. A task whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` has no resolved contract and is skipped by this rule. Its type-specific portable name remains concrete.
 
 ## Integrations content rules (Section 4)
 
@@ -716,7 +716,7 @@ Otherwise the variable is open-lineage and Phase 0 cannot Approve.
 
 Pattern X1 is preferred unless an actual connector emits the close event. When the pattern is detected at Sketch time (multiple terminal candidates AND a branching decision earlier in the case), narrate the choice and surface BOTH patterns to the user via AskUserQuestion before drafting the rows.
 
-**Audit checklist** (run before Approve renames the draft):
+**Audit checklist** (run against the in-memory model before the confirmation is presented):
 
 1. Every variable referenced by any `=vars.<name>` (or `=vars.<name>.<sub>`) anywhere in `sdd.md` (task Inputs, IF columns, exit rules, button `Maps To`, SLA expressions) has a matching §1.5 row whose `Name` equals `<name>` — OR `<name>` is an upstream task's auto-emitted output field (see §Variable lineage closure → Task-output direct reference; never add a §1.5 row to back such a ref).
 2. Every §1.5 row's `Category` is exactly one of `In` / `Out` / `Variable` — never blank, never `—`.
@@ -728,11 +728,11 @@ Pattern X1 is preferred unless an actual connector emits the close event. When t
 8. **Forbidden body vocabulary.** No occurrence in any narrative cell of: `Pattern C`, `bridge`, `companion`, `inputOutputs[]`, `=jsonString:` (outside connector `Operation Configuration` cells), `groupOperator`, `essentialConfiguration` (as prose), `savedFilterTrees`, `dispatcher`, `Phase 2 validator`, `Phase 3 dispatcher`, `Q10 II`, `Finding #N`, `io-binding`, `aliased into / from / back into`, `reassign`, `originalVar`, `auto-mint`. These are skill-internal terms — see [sdd-template.md § Output Rules](../assets/templates/sdd-template.md).
 9. **Resolved-resource I/O completeness** (§Resolved-resource I/O completeness). For each task resolved to a live resource (contract present in `tasks/registry-resolved.json`): every **required** declared input has a non-empty `Binding` row OR `<UNRESOLVED>` + a paired `high` review item; every Outputs `-> caseVar` row's `Field` exists verbatim in the resolved output contract. An upstream-output-fed input (whole-value `<-` or `vars.$xref(...)`) satisfies coverage with NO §1.5 row — do not flag it as a missing variable. Skip tasks whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` (no contract).
 
-Any failure → Phase 0 cannot Approve. Surface in edit-validation errors. AskUserQuestion `Re-edit` / `Restart` / `Abort`.
+Any failure → fix in the model before presenting the confirmation (lineage defects are the agent's, not the user's); a genuinely unfixable item becomes a ⚠ flagged line in the confirmation's `Decisions I made` block.
 
 ## Review items
 
-A review item is a structured gap escalation. Phase 0 emits one whenever a field could not be fully resolved but Phase 1 needs the context. Review items live in `tasks/registry-resolved.json` under the matching task's `review_items[]` array and surface in the Approve summary — never in the `sdd.md` body (per [sdd-template.md § Output Rules](../assets/templates/sdd-template.md): review items belong in the summary, not the document).
+A review item is a structured gap escalation. Phase 0 emits one whenever a field could not be fully resolved but Phase 1 needs the context. In Phase 0 they live in the in-memory model and surface as ⚠ lines in the confirmation's `Decisions I made` block — never in the `sdd.md` body (per [sdd-template.md § Output Rules](../assets/templates/sdd-template.md)); Phase 1 persists them into `tasks/registry-resolved.json` under the matching task's `review_items[]` array when it writes that file.
 
 Shape:
 
@@ -754,7 +754,7 @@ Severity:
 | **medium** | Phase 1 can default with a prompt. | Missing SLA escalation recipient (default = owner group); missing variable default; ambiguous recipient (persona name without group resolution). |
 | **low** | Cosmetic. | Missing case-level description; missing secondary-stage description; stylistic placeholder. |
 
-**Approve gate behavior.** When any `high` review items exist, Approve adds an explicit follow-up: `Approve despite N high-severity items` (with the count populated). User must opt in — silent approval is forbidden. Medium and low items show in the Approve summary count but do not require explicit acknowledgment.
+**Confirmation gate behavior.** When any `high` review items exist, they appear as ⚠ lines in the confirmation's `Decisions I made` block and the Build option is relabeled `Build despite N flagged items` (count populated). User must pick it — silently building past `high` items is forbidden. Medium and low items surface as advisory lines and need no acknowledgment.
 
 ## Domain fidelity
 
@@ -774,7 +774,7 @@ Phase 0's narrative cells (Description, persona names, stage names, task names, 
 - 2-4 char identifier prefix from the PascalCase name.
 - camelCase variable names from spaced phrases (`loan amount` → `loanAmount`).
 
-**Detection — when user writes a term once, surface it in the source ledger** as `verbatim:"<quoted exact phrase>"` (see §Source ledger). On Approve, the user is asked to confirm spelling/casing for every customer-named entity.
+**Detection — when user writes a term once, surface it in the source ledger** as `verbatim:"<quoted exact phrase>"` (see §Source ledger). The confirmation's tables render every customer-named entity verbatim — that display is the spelling/casing check; corrections fix any drift. No separate confirmation question.
 
 **Anti-paraphrase rule.** When the agent feels the urge to write `the manager approves the request` and the user said `the senior underwriter signs off`, the agent MUST use `the senior underwriter signs off`. Synonyms are a fidelity bug, not a polish improvement.
 
@@ -820,14 +820,14 @@ Phase 0's job is to surface execution-readiness gaps, not just schema validity. 
 | **Multiple parallel single-recipient bottlenecks** | ≥ 2 stages have single-recipient bottleneck check fire AND they fan-in to the same downstream stage | `rev_multi_bottleneck_<stages>`: "Multiple single-recipient bottlenecks gate a downstream stage — fan-in stalls cascade." |
 | **Case-var relay (over-declaration)** | A §1.5 `Variable` row whose **only** producer is one task's Outputs `->` row AND whose **only** consumer is one downstream binding (one task Input `=vars.X`, OR one `=js:` expression / `IF`) — i.e., it carries a single output to a single consumer and is neither `In`/`Out` nor read in ≥ 2 places. **Exempt:** rows that rename, set a custom `Default` / `Type` / `Description`, or are read by ≥ 2 consumers / a condition. | `rev_relay_var_<name>`: "Variable `<name>` relays one task's output to a single consumer — reference the output directly (`<- \"Stage\".\"Task\".out` or `vars.$xref('Stage','Task','out')`) and drop the §1.5 row (see § 1.5 declare-vs-xref test)." |
 
-`medium` items DO NOT block Approve. They surface in the Approve summary's `Review items` count (not in the `sdd.md` body) — `medium` requires no acknowledgment but should not be silently buried. The **`high` variants above** (`rev_substitute_app`, and `rev_no_failure_path` at the ≥ 2-connector threshold) gate Approve like any other `high` item: the user can only `Approve despite N high-severity items`.
+`medium` items DO NOT block the confirmation. They surface as advisory lines in it (not in the `sdd.md` body) — no acknowledgment required, but never silently buried. The **`high` variants above** (`rev_substitute_app`, and `rev_no_failure_path` at the ≥ 2-connector threshold) gate like any other `high` item: the user can only `Build despite N flagged items`.
 
 ## Source ledger (provenance)
 
 When Phase 0 defaults or infers a value, record provenance so Phase 1 and downstream auditors can trace it. The ledger has two surfaces:
 
 1. **Inline in `sdd.md`** — italic source attribution after the value: `Manual _(source: user-stated)_`. Omit attribution when the kind is `user-stated`.
-2. **Approve summary `Inferred / defaulted` block** — see [phase-0-interview.md § Approve](phase-0-interview.md#approve).
+2. **Confirmation `Decisions I made` block** — see [phase-0-interview.md § Confirm](phase-0-interview.md#confirm--the-single-checkpoint).
 
 Provenance kinds:
 
@@ -846,7 +846,7 @@ A non-`user-stated` and non-`verbatim` field without provenance is a validation 
 
 ## Finalization
 
-Before the final approval prompt, Phase 0 runs these checks against `sdd.draft.md` in order. Failure at any step blocks approval and preserves the draft. Passing checks make the draft eligible for promotion; they do not create `sdd.md`.
+Phase 0 runs these checks **once, against the in-memory case model, before presenting the §Confirm checkpoint** ([phase-0-interview.md § Confirm](phase-0-interview.md#confirm--the-single-checkpoint)). Failures are the agent's defects: fix them in the model silently and re-check; a genuinely unfixable item becomes a ⚠ flagged line in the confirmation. After a user correction, re-run only the affected checks. **Steps 16 and 19 require resolved I/O contracts, which Phase 0's light pass does not pull — they are enforced at build time instead (Phase 1 discovery + Phase 3 io-binding Check 5); run them in Phase 0 only when a contract happens to be in memory.** The rendered `sdd.md` must match the confirmed model exactly; passing checks make the model eligible for rendering, they do not create the file.
 
 1. **Schema check.** Every task `type` ∈ 9-value enum (Rule 16). Every WHEN ↔ Marks-complete pair valid per sdd-template Key Rule 4:
    - Case-exit `Yes` + `selected-stage-*` → error
@@ -882,14 +882,14 @@ Before the final approval prompt, Phase 0 runs these checks against `sdd.draft.m
 18. **Resolved-resource presence (standalone replicability).** Every process/agent/rpa/api-workflow task has a concrete `Resolved Resource`; every action has a concrete Action App title in `HITL Implementation`; every case-management task has a concrete `Child Case`. These portable names are never `<UNRESOLVED>`. Each task also has its required type-specific identity + folder pair (`Resource Identity` + `Folder Path`, or `Action App ID` + `Deployment Folder`): a concrete identity requires the exact concrete folder; an unresolved identity permits an unresolved folder and requires a paired `high` review item. Every connector task has `Connection ID` + `Activity Type ID`. Missing portable intent, or unresolved identity with no review item, is a blocking error.
 19. **Resolved-resource I/O completeness** (§Resolved-resource I/O completeness; audit-checklist item 9). For every task resolved to a live resource (contract in `tasks/registry-resolved.json`): every **required** declared input is bound (any §Binding cell form, incl. an upstream-output ref — which needs NO §1.5 row) OR `<UNRESOLVED>` + a paired `high` review item (`rev_unbound_input_<task>_<field>`); every Outputs `-> caseVar` row's `Field` exists verbatim in the resolved output contract (a phantom field → `high` `rev_phantom_output_<task>_<field>`). Unbound required input with no review item → blocking error. Step 16 is the `action`-app instance of the output-fidelity direction; this step extends both directions to all runnable/connector types. Tasks whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` (no contract) are skipped.
 
-On pass: print the Approve summary (plain-language case digest + Inferred / defaulted block + Caller obligation block when applicable + review-items count), then run AskUserQuestion. Only an explicit approve response atomically renames `sdd.draft.md` → `sdd.md`; corrections edit the draft and re-run affected checks.
+On pass: present the §Confirm checkpoint (whole-case tables + complete `Decisions I made` block + Caller obligation block when applicable + ⚠ flags). A Build answer is the consent — `sdd.md` renders from the confirmed model batched with the first build actions ([phase-0-interview.md § Build start](phase-0-interview.md#build-start--sdd-written-alongside-the-build)); an explicit sign-off request adds one approval prompt before any file is created; design-only/draft requests save and stop. Corrections update the model and re-run only the affected checks.
 
-On fail: list the specific failing checks, return to AskUserQuestion `Re-edit` / `Restart` / `Abort`. On `Re-edit`, fix the cited rows and **re-run only the checks that failed** (plus any whose inputs changed) — not the full suite, and without re-reading the whole document. No Approve until the cited checks pass.
+On fail: fix the model and re-run the failed checks (plus any whose inputs changed) — not the full suite. Do not present the confirmation, and never render `sdd.md`, while a fixable check is failing; surface only the unfixable as ⚠ flags.
 
 ## Anti-patterns
 
 - **Do NOT silently accept a user-proposed type when a compliance trigger phrase is in the transcript.** Tier 2 of the authority hierarchy overrides user preference; Ask before recording.
-- **Do NOT create `sdd.md` before explicit final approval.** Finalization validates `sdd.draft.md`; a passing draft is promoted only after the user approves the compact case summary.
+- **Do NOT create `sdd.md` before the confirmation's Build (or save) answer.** Finalization validates the in-memory model before the confirmation; the file renders only after consent — batched with the first build actions, or alone for design-only/draft requests. Never render with a failing fixable check or an undisclosed decision, and never build past a `high` item without the `Build despite N flagged items` pick.
 - **Do NOT ship `sdd.md` with a banned `—` or `<UNRESOLVED>` on a render-required field.** Emit a placeholder + review item, or Ask.
 - **Do NOT pair `Marks Stage Complete: Yes` with `selected-tasks-completed` or `Marks Case Complete: Yes` with `selected-stage-*`.** Both are schema-pairing errors (Key Rule 4).
 - **Do NOT emit an `action` task without typed recipient prefix.** Bare strings (`"the underwriter"`) force Phase 1 to guess.
