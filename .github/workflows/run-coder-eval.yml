@@ -542,7 +542,7 @@ jobs:
           # Create the tilde-free temp root pinned via TMP/TEMP above.
           mkdir -p /c/cetmp
           # Agent selection. claude (default) takes the experiment YAML config;
-          # codex overrides to gpt-5.4 (auth via CODEX_API_KEY/CODEX_BASE_URL);
+          # codex overrides to gpt-5.6-terra (auth via CODEX_API_KEY/CODEX_BASE_URL);
           # antigravity overrides to gemini-3.5-flash (auth via
           # GEMINI_API_KEY). AGENT_MODEL overrides the model for any agent (e.g.
           # opus / haiku for claude). Driver is unchanged (tempdir here).
