@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "_doc": "Failing DashboardSnapshotBot job. Info = Win32Exception (6) 'The handle is invalid' at System.Drawing.Graphics.CopyFromScreen — a screen-capture activity with no live desktop surface. The robot user runs unattended with LoginToConsole=false (see users get), so there is no interactive session to capture. The fix is to give the robot a live session (Login to Console), not to change the workflow logic.",
+  "Data": {
+    "Key": "ccddeeff-3344-5566-7788-99aabbccddee",
+    "StartTime": "2026-06-29T03:30:01.500Z",
+    "EndTime": "2026-06-29T03:30:09.220Z",
+    "State": "Faulted",
+    "Source": "Schedule",
+    "SourceType": "Schedule",
+    "Info": "System.ComponentModel.Win32Exception (6): The handle is invalid.\r\n   at System.Drawing.Graphics.CopyFromScreen(Int32 sourceX, Int32 sourceY, Int32 destinationX, Int32 destinationY, Size blockRegionSize, CopyPixelOperation copyPixelOperation)",
+    "CreationTime": "2026-06-29T03:30:01.400Z",
+    "ReleaseName": "DashboardSnapshotBot",
+    "Type": "Unattended",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "OrganizationUnitId": 7791650,
+    "FolderKey": "a7e7f8a9-b0c1-2345-6789-abcdef012345",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\SVCMON",
+    "OrchestratorUserIdentity": "svcmonitor",
+    "LastModificationTime": "2026-06-29T03:30:09.220Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "ccddeeff-3344-5566-7788-99aabbccddee",
+    "Id": 672000011
+  }
+}
