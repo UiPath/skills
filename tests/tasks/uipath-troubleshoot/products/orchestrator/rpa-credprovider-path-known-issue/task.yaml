@@ -11,7 +11,7 @@ description: >
   NOT hand-creating the missing folder or changing TEMP permissions.
   Per the known-issue-robot-defect playbook.
 
-tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose]
+tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
