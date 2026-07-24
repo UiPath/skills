@@ -35,7 +35,7 @@ Confirm: input port `input`, output ports `output` and `error`. Set the node ins
 }
 ```
 
-`core.subflow`'s registry `outputDefinition` declares `error` only, so omit `output` — the converter injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` and downstream still reads `$vars.{nodeId}.output`. `=result.response` is the connector/script source; on this node it resolves to null at runtime while `flow validate` passes.
+**Declare `error` only — `output` is derived.** `core.subflow`'s registry `outputDefinition` declares `error` alone; the converter injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}`, and downstream reads `$vars.{nodeId}.output` regardless. `"=result.response"` is the connector/script source and does not belong here.
 
 ## Subflow Definition
 

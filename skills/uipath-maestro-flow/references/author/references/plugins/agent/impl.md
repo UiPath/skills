@@ -67,12 +67,6 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
   "display": { "label": "Classify Intent" },
   "inputs": {},
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the agent",
-      "source": "=this",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the agent fails",
@@ -102,11 +96,12 @@ Confirm all three from `registry get` before wiring.
   "display": { "label": "<Label>", "icon": "<AGENT_ICON>" },
   "inputs": {},
   "outputs": {
-    "output": { "type": "object", "description": "The return value of the agent", "source": "=this", "var": "output" },
-    "error":  { "type": "object", "description": "Error information if the agent fails", "source": "=Error", "var": "error" }
+    "error": { "type": "object", "description": "Error information if the agent fails", "source": "=Error", "var": "error" }
   }
 }
 ```
+
+**Declare `error` only — `output` is derived.** The converter injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` when a non-empty `outputs` omits it; Studio Web writes the block that way too. Downstream reads `$vars.{nodeId}.output` regardless. Authoring `output` here makes the converter copy your `source` verbatim, so `"=result.response"` (the connector/script source) would resolve to null at runtime while `flow validate` passes.
 
 `<AGENT_ICON>` depends on the agent's implementation type: `"coded-agent"` for Python-coded agents, `"autonomous-agent"` for low-code (`agent.json`) agents. Detect the type by inspecting the sibling agent project directory: if `agent.json` exists at its root, use `"autonomous-agent"`; otherwise use `"coded-agent"`. Do NOT copy `.display.icon` from `uip maestro flow registry get --local` — that manifest returns `"coded-agent"` for every in-solution agent regardless of implementation type, and the value must be corrected here.
 

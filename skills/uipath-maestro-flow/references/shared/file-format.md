@@ -148,7 +148,7 @@ When you DO author the instance `outputs` block (for documentation / parity with
 
 - `type` — data type (usually `"object"`)
 - `description` — human-readable description
-- `source` — runtime binding expression. **Copy it from the node type's registry `outputDefinition`; never invent one.** `"=Error"` for errors, always. For the primary output: `"=result.response"` on connector and built-in action nodes (script, transform, HTTP), `"=this"` on Orchestrator-job nodes (api-workflow, rpa-workflow, agent, agentic-process, published flow, subflow) — and those mostly declare `error` only, in which case omit `output` and the converter injects it. A wrong `source` leaves `$vars.<nodeId>.output` null at runtime while `flow validate` passes.
+- `source` — runtime binding expression. `"=Error"` for errors, always. **`output` is derived — prefer declaring `error` only.** Where an example does declare `output`, its `source` comes from the node type's registry `outputDefinition`: `"=result.response"` on connector and built-in action nodes (script, transform, HTTP), `"=this"` on Orchestrator-job nodes. Inventing one is only harmful on the Orchestrator-job families (the converter copies it verbatim there), where it leaves `$vars.<nodeId>.output` null at runtime while `flow validate` passes.
 - `var` — the variable name (matches the output ID, e.g., `"output"`, `"error"`)
 
 The standard `outputs` block for most action nodes (script, HTTP, transform, connector, agent):

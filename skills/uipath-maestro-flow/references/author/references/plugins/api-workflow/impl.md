@@ -36,7 +36,7 @@ Confirm:
 - `model.bindings.resourceSubType` — `Api`
 - `model.bindings.resourceKey` — the `<FolderPath>.<ApiName>` string used to scope binding resolution
 - `inputDefinition` — typically empty
-- `outputDefinition` — always `error` (`source: "=Error"`). Whether it also declares `output` varies **per published API workflow**: some declare `output` with `source: "=this"`, some declare only `error`. Read it for the node type you are wiring and mirror what it declares (see § JSON Structure)
+- `outputDefinition` — always `error` (`source: "=Error"`). Whether it also declares `output` varies per published API workflow; either way, do not author `output` on the instance (see § JSON Structure)
 
 ## Adding / Editing
 
@@ -66,9 +66,9 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 }
 ```
 
-**Mirror the registry's `outputDefinition` — never invent a `source`.** Keep `outputs` non-empty (the converter skips an empty/absent `outputs` entirely) and author `output` only when the registry declares it, copying its `source: "=this"`. When the registry declares `error` only, omit `output`: the converter then injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` — but only when the instance omits it.
+**Declare `error` only — `output` is derived.** The converter injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` whenever a non-empty `outputs` omits `output`; Studio Web writes the block that way too. Downstream reads `$vars.{nodeId}.output` either way.
 
-Author `output` with any other `source` and the converter copies it verbatim. `"=result.response"` (correct for connector activities) resolves to nothing on an Orchestrator activity, so `$vars.{nodeId}.output` is **null at runtime** while `flow validate` passes. A downstream agent binding it as a required object then dies at startup: `AGENT_STARTUP.INPUT_VALIDATION_ERROR`, incident `170002`. Downstream reads `$vars.{nodeId}.output` in every one of these cases.
+Authoring `output` is the trap: for Orchestrator-job nodes the converter copies your `source` verbatim, so `"=result.response"` — correct only on connector and script/transform nodes — leaves `$vars.{nodeId}.output` **null at runtime** while `flow validate` passes. A downstream agent binding it as a required object then dies at startup: `AGENT_STARTUP.INPUT_VALIDATION_ERROR`, incident `170002`.
 
 ### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 

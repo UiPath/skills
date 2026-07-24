@@ -69,7 +69,7 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 }
 ```
 
-**Author only the keys the registry's `outputDefinition` declares** (`uip maestro flow registry get <nodeType> --output json`). This node type declares `error` only, so omit `output` — the converter then injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` itself, and downstream still reads `$vars.{nodeId}.output`. Hand-writing `output` with `source: "=result.response"` suppresses that injection and resolves to null at runtime while `flow validate` passes. `=result.response` belongs to connector activities, not to Orchestrator jobs.
+**Declare `error` only — `output` is derived.** The converter injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` when a non-empty `outputs` omits it, and downstream reads `$vars.{nodeId}.output` regardless. Authoring `output` on an Orchestrator-job node makes the converter copy your `source` verbatim; `"=result.response"` (the connector/script source) then resolves to null at runtime while `flow validate` passes.
 
 ### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 
