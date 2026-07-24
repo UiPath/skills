@@ -34,7 +34,7 @@ One UIA activity set covers every UI target:
 
 ## UIA Prerequisites
 
-**Required package:** `UiPath.UIAutomation.Activities` — minimum version (`<MIN_VERSION>`): **`26.10.0`**, from the official UiPath NuGet feed (stable GA release; no prerelease flag needed). The `uip rpa uia` CLI, the package docs, and the UIA skills require `<MIN_VERSION>` or newer — before any UIA work, check the installed version in `project.json` under `dependencies`. Do not hardcode the version from memory; this section is the only source of truth.
+**Required package:** `UiPath.UIAutomation.Activities` — minimum version (`<MIN_VERSION>`): **`26.10.2-alpha.12792334`**, from the internal UiPath NuGet feed (prerelease flag needed). The `uip rpa uia` CLI, the package docs, and the UIA skills require `<MIN_VERSION>` or newer — before any UIA work, check the installed version in `project.json` under `dependencies`. Do not hardcode the version from memory; this section is the only source of truth.
 
 **Upgrades require explicit user consent.** Never install or upgrade UIA silently. Consent comes from one of:
 
