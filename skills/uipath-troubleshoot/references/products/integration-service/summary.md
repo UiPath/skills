@@ -56,3 +56,11 @@ Keyed on the Maestro IntSvc code (`102002`…) or the user-facing message. Same 
 | Connector Activity — RemoteException (IPC) | Medium | `UiPath.Ipc.RemoteException` / `UiPath.CoreIpc.RemoteException` — out-of-process connector executor fault crossing the IPC boundary (no DAP code). Match on the **unwrapped inner message**: token/auth, transport, or downstream HTTP (404/502/503). Disambiguate from non-connector RemoteExceptions. | [connector-remote-exception.md](./playbooks/connector-remote-exception.md) |
 | Connector Activity — NullReferenceException | Medium | `System.NullReferenceException` on/after a connector activity — typically enumerating a null connector output (`ForEach` over `SWEntities.*_List`), an unmapped output, or a null required input. | [connector-null-reference.md](./playbooks/connector-null-reference.md) |
 | Connector Activity — AggregateException | Low | `System.AggregateException` on a connector activity — async connector fault(s). The real cause is `InnerExceptions[0]`; unwrap and re-classify. | [connector-aggregate-exception.md](./playbooks/connector-aggregate-exception.md) |
+
+## Design-time (Studio)
+
+Keyed on Studio package-restore / dependency errors — these fire while building or opening a project, not at runtime.
+
+| Issue | Confidence | Description | Playbook |
+|-------|:---:|-------------|----------|
+| IS Activities Prerelease/Beta Not Found | Medium | Studio dependency restore fails on `UiPath.IntegrationService.Activities` pinned to a prerelease/`-beta` version not served by the configured feed (`Unable to find package … version <X.Y.Z-beta…>`); IS activities show missing/invalid. The unified package auto-upgrades on open and can pull a prerelease; fix = connect to the official cloud env / UiPath-Official feed and pin a stable version. | [is-activities-prerelease-not-found.md](./playbooks/is-activities-prerelease-not-found.md) |
