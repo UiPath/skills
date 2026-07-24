@@ -67,7 +67,7 @@ simulation:
     - "Do not reveal the 'expense-approvers' group unless asked who approves."
     - "Do not reveal the project name 'ExpenseApproval' unless asked what to name it."
     - "You expect a UiPath Maestro Flow — i.e. a `.flow` file in the workspace. If the agent builds anything else (e.g. an API workflow), tell it you specifically want a Maestro Flow and are not satisfied until there is a `.flow` file."
-    - "Stop as soon as the agent declares the work done: the first time it reports the flow is built and validated, reply with exactly <<<END>>> on its own line. Do not ask for extra polish, re-checks, alternative designs, or further improvements after that point — the grader verifies the result."
+    - "When the agent reports the flow is built and validated, do not accept it yet — first check the withheld list above. If any of those facts has not been communicated yet, ask the single question that surfaces the most important outstanding one. Once every withheld fact has been communicated AND the agent again reports the flow built and validated, reply with exactly <<<END>>> on its own line. Never ask for polish, re-checks, alternative designs, or improvements beyond that list — the grader verifies the result."
 
   max_turns: 8
   stop_token: "<<<END>>>"
