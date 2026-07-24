@@ -1,0 +1,10 @@
+{
+  "Result": "Success",
+  "Code": "JobTraces",
+  "_doc": "Traces confirm the workflow ran to completion — every activity Succeeded and the Main sequence reached its end. This distinguishes a result-handback failure (output too large) from a mid-run workflow fault: the automation logic is fine; the OutputArguments payload is the problem.",
+  "Data": [
+    {"Activity": "Main Sequence", "Status": "Succeeded", "StartTime": "2026-06-24T04:00:02.010Z", "EndTime": "2026-06-24T04:03:50.980Z"},
+    {"Activity": "Extract all invoices", "Status": "Succeeded", "StartTime": "2026-06-24T04:00:02.220Z", "EndTime": "2026-06-24T04:03:49.700Z"},
+    {"Activity": "Assign Out_AllInvoices", "Status": "Succeeded", "StartTime": "2026-06-24T04:03:49.720Z", "EndTime": "2026-06-24T04:03:50.960Z"}
+  ]
+}

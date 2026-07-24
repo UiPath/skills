@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "_doc": "Failing InvoiceExtractor job. Info = 'Could not retrieve the result of the job execution. This might be because a message was too large to process.' OutputArguments is empty because the result could not be handed back. The workflow itself completed (see traces). The process declares a DataTable output argument Out_AllInvoices (see process/project.json + entry-points.json) — the bulk payload that overflowed the result message.",
+  "Data": {
+    "Key": "bbdd5566-77ee-88ff-99aa-00bb11223344",
+    "StartTime": "2026-06-24T04:00:01.100Z",
+    "EndTime": "2026-06-24T04:03:52.640Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Schedule",
+    "SourceType": "Schedule",
+    "Info": "Could not retrieve the result of the job execution. This might be because a message was too large to process.",
+    "CreationTime": "2026-06-24T04:00:01.000Z",
+    "ReleaseName": "InvoiceExtractor",
+    "Type": "Unattended",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "OutputArguments": "",
+    "HostMachineName": "MOCK-HOST",
+    "OrganizationUnitId": 7791630,
+    "FolderKey": "f4a4b5c6-d7e8-9012-3def-456789012345",
+    "ProcessType": "Process",
+    "LastModificationTime": "2026-06-24T04:03:52.640Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "bbdd5566-77ee-88ff-99aa-00bb11223344",
+    "Id": 671550011
+  }
+}
