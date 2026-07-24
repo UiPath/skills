@@ -1,0 +1,76 @@
+                         uip agenthub mcp-tools update
+Update a uipath MCP tool by id or by --name lookup.
+
+Use `--rename <new-name>` to change the tool's name; the
+lookup `--name` flag selects the existing tool to update.
+                Use --help with nested commands for more detail.
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip agenthub mcp-tools update [options] [id]                                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ id   Tool id (omit when using --name).                                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --name <substr>                Lookup by tool name substring.                │
+│ --allow-multiple               Apply the update to every name match.         │
+│ --rename <name>                Rename the tool to this value.                │
+│ --description <text>           Updated description.                          │
+│ --target-identifier <guid>     Updated target identifier.                    │
+│ --target-folder-key <key>      Orchestrator folder key (GUID) of the         │
+│                                target's folder, when it differs from the MCP │
+│                                server's folder. Use --target-folder-path for │
+│                                the folder name or fully-qualified path.      │
+│ --target-folder-path <path>    Orchestrator folder display name or           │
+│                                fully-qualified path of the target's folder   │
+│                                (e.g. 'Shared' or 'Foo/Shared'). Resolved to  │
+│                                the folder key via the Orchestrator SDK.      │
+│ --input-schema <json>          JSON input schema.                            │
+│ --output-schema <json>         JSON output schema.                           │
+│ --metadata <json>              JSON metadata.                                │
+│ --force                        Bypass the IS-activity environment            │
+│                                availability gate when the payload is an      │
+│                                IS-activity tool (type 1, processType Api;    │
+│                                only for tenants enrolled in the cloud        │
+│                                rollout).                                     │
+│ --mcp <slug>                   Parent MCP server slug.                       │
+│ --file <path>                  Read JSON payload from file.                  │
+│ --body <json>                  Read JSON payload from inline JSON.           │
+│ --dry-run                      Print the mutation plan without calling the   │
+│                                API.                                          │
+│ --folder-key <key>             Orchestrator folder key (GUID). Use           │
+│                                --folder-path for the folder name or          │
+│                                fully-qualified path.                         │
+│ --folder-path <path>           Orchestrator folder display name or           │
+│                                fully-qualified path (e.g. 'Shared' or        │
+│                                'Foo/Shared'). Resolved to the folder key via │
+│                                the Orchestrator SDK.                         │
+│ --login-validity <minutes>     Interactive-login token lifetime.             │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ <table|json|yaml|plain>                                                      │
+│ --output-filter <expression>   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: info)           │
+│ <debug|info|warn|error>                                                      │
+│ --log-file <path>              Write logs to file instead of stderr          │
+│ --profile <name>               Use a named login profile                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Examples ───────────────────────────────────────────────────────────────────┐
+│ Rename a tool by id (parent --mcp required; see --help)                      │
+│                                                                              │
+│   $ uip agenthub mcp-tools update tool-1 --rename CreateInvoice              │
+│                                                                              │
+│   id    tool-1                                                               │
+│   name  CreateInvoice                                                        │
+│                                                                              │
+│ Update by --name lookup (parent --mcp required; see --help)                  │
+│                                                                              │
+│   $ uip agenthub mcp-tools update --name LegacyTool --rename NewTool         │
+│                                                                              │
+│   id    tool-1                                                               │
+│   name  NewTool                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘

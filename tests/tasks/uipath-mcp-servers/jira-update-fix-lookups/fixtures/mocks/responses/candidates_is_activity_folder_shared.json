@@ -1,0 +1,362 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpToolsCandidates",
+  "Data": {
+    "Items": [
+      {
+        "Id": "uipath-atlassian-jira",
+        "Name": "Jira",
+        "Description": "A cloud-based issue tracking and project management platform. Automate issue creation and assignment, status updates, and agile processes across projects and boards.",
+        "ConnectorKey": "uipath-atlassian-jira",
+        "Active": true
+      },
+      {
+        "Id": "uipath-amazon-workspaces",
+        "Name": "Amazon Workspaces",
+        "Description": "Amazon Workspace connector",
+        "ConnectorKey": "uipath-amazon-workspaces",
+        "Active": false
+      },
+      {
+        "Id": "uipath-sap-buildprocessautomation",
+        "Name": "SAP Build Process Automation",
+        "Description": "This API uses the workflow capability of SAP Build Process Automation. With the API, you can, for example, start new workflow instances.",
+        "ConnectorKey": "uipath-sap-buildprocessautomation",
+        "Active": false
+      },
+      {
+        "Id": "uipath-microsoft-onedrive-test",
+        "Name": "OneDrive Test",
+        "Description": "A file hosting platform and a web-based collaborative platform, respectively, both integrated with Microsoft Office. Take control with automated file organization, documentation or versioning tasks, and management of your files and projects.",
+        "ConnectorKey": "uipath-microsoft-onedrive-test",
+        "Active": false
+      },
+      {
+        "Id": "uipath-microsoft-activedirectorydomainservices",
+        "Name": "Active Directory",
+        "Description": "Microsoft Active Directory Domain Services connector offers activities for automating LDAP directory services management: objects, users, groups, computers. Note: Shared connections are not supported on this connector.",
+        "ConnectorKey": "uipath-microsoft-activedirectorydomainservices",
+        "Active": false
+      },
+      {
+        "Id": "uipath-adobe-esign",
+        "Name": "Adobe Sign",
+        "Description": "Adobe e-sign is a cloud-based e-signature service that allows the user to send, sign, track, and manage signature processes. You will need your Adobe e-sign account information to add an instance.",
+        "ConnectorKey": "uipath-adobe-esign",
+        "Active": false
+      },
+      {
+        "Id": "uipath-microsoft-systemcenter",
+        "Name": "System Center",
+        "Description": "Microsoft System Center Orchestrator activities for managing and interacting with System Center Orchestrator runbooks, jobs and events. Note: Shared connections are not supported on this connector.",
+        "ConnectorKey": "uipath-microsoft-systemcenter",
+        "Active": false
+      },
+      {
+        "Id": "uipath-pipedrive-pipedrive",
+        "Name": "Pipedrive",
+        "Description": "Pipedrive is a sales management tool designed to help small sales teams manage intricate or lengthy sales processes.",
+        "ConnectorKey": "uipath-pipedrive-pipedrive",
+        "Active": false
+      },
+      {
+        "Id": "uipath-microsoft-exchangeserver",
+        "Name": "Exchange Server",
+        "Description": "Connect to Microsoft Exchange Server on-premises and automate the management and provisioning of mailboxes (eg Create, Delete, Enable/Disable Archive). Note: Shared connections are not supported on this connector.",
+        "ConnectorKey": "uipath-microsoft-exchangeserver",
+        "Active": false
+      },
+      {
+        "Id": "uipath-microsoft-hyperv",
+        "Name": "HyperV",
+        "Description": "Microsoft Hyper-V activities enable you to easily automate the provisioning and management of infrastructure: virtual machines provisioning, power on/off, configuration and maintenance. Note: Shared connections are not supported on this connector.",
+        "ConnectorKey": "uipath-microsoft-hyperv",
+        "Active": false
+      },
+      {
+        "Id": "uipath-mock-outlook",
+        "Name": "Microsoft Mocked Outlook 365 for webhooks",
+        "Description": "A cloud-based version of Microsoft's email, calendar, and contact management program. Automate repetitive or time-intensive tasks like email sorting/funneling, report generation, and event creation. (.NET 5.0)",
+        "ConnectorKey": "uipath-mock-outlook",
+        "Active": false
+      },
+      {
+        "Id": "uipath-microsoft-azureapplicationinsights",
+        "Name": "Azure Application Insights",
+        "Description": "azure app insights\n",
+        "ConnectorKey": "uipath-microsoft-azureapplicationinsights",
+        "Active": false
+      },
+      {
+        "Id": "uipath-mock-teams",
+        "Name": "Mock Microsoft Teams",
+        "Description": "Teams is a mock connector for microsoft teams for testing purposes only and should not be deployed beyond alpha trigger deployment",
+        "ConnectorKey": "uipath-mock-teams",
+        "Active": false
+      },
+      {
+        "Id": "uipath-amazon-connect",
+        "Name": "Amazon Connect",
+        "Description": "Amazon Connect is an omnichannel contact center as a service (CCaaS) solution that offers easy, self-service configuration and enables dynamic, personal, and natural customer engagement including voice interactions at any scale.",
+        "ConnectorKey": "uipath-amazon-connect",
+        "Active": false
+      },
+      {
+        "Id": "uipath-close-close",
+        "Name": "Close CRM",
+        "Description": "Close is a CRM designed to unify sales communication, engagement, and automation into a flexible platform. It's geared towards helping teams increase efficiency and close more deals. The CRM integrates with your email and calendar, and features built-in calling and SMS, simplifying your outreach efforts and making it easier to manage leads.",
+        "ConnectorKey": "uipath-close-close",
+        "Active": false
+      },
+      {
+        "Id": "uipath-meta-facebook",
+        "Name": "Facebook",
+        "Description": "Facebook is a social networking platform that allows users to connect with friends and family, share content, and engage with communities.",
+        "ConnectorKey": "uipath-meta-facebook",
+        "Active": false
+      },
+      {
+        "Id": "uipath-sap-c4c",
+        "Name": "SAP Cloud for Customer (Legacy)",
+        "Description": "This legacy connector has limited functionality i.e. no event trigger, custom object/field support. So, use the latest and more advanced SAP Cloud for Customer (C4C) connector. SAP C4C is a cloud-based platform consisting of SAP Sales Cloud and SAP Service Cloud that allows you to manage customer sales components such as accounts, contacts, opportunities and customer service components such as incidents etc.",
+        "ConnectorKey": "uipath-sap-c4c",
+        "Active": false
+      },
+      {
+        "Id": "uipath-sage-intacct",
+        "Name": "Sage Intacct",
+        "Description": "A cloud-based accounting system. After connecting, manage processes related to accounting, finance, sales, purchase, and warehousing.",
+        "ConnectorKey": "uipath-sage-intacct",
+        "Active": false
+      },
+      {
+        "Id": "custom-ada-testconnector",
+        "Name": "Test-Connector",
+        "Description": "Test-Connector connector",
+        "ConnectorKey": "custom-ada-testconnector",
+        "Active": false
+      },
+      {
+        "Id": "uipath-mock-jira",
+        "Name": "Mocked Jira for webhooks",
+        "Description": "A cloud-based issue tracking and project management platform. After connecting, automate issue creation and assignment, status updates, and agile processes across multiple projects and boards.",
+        "ConnectorKey": "uipath-mock-jira",
+        "Active": false
+      },
+      {
+        "Id": "uipath-activecampaign-activecampaign",
+        "Name": "ActiveCampaign",
+        "Description": "A cloud-based email marketing and lead nurturing platform. It provides easy to use email marketing automated tools and fully-featured email platforms that can be used to create, send, and optimize the email marketing campaigns, by teams of all size.",
+        "ConnectorKey": "uipath-activecampaign-activecampaign",
+        "Active": false
+      },
+      {
+        "Id": "uipath-act-act365",
+        "Name": "Act! 365",
+        "Description": "A cloud based customer relationship management (CRM) and marketing solution designed primarily for small & midsized businesses. It provides essential customer management, email marketing, sales acceleration tools and allows users to manage prospects, lead data, contact details, potential opportunities, track interactions and take down notes–all from a single platform, eliminating the need for multiple systems.",
+        "ConnectorKey": "uipath-act-act365",
+        "Active": false
+      },
+      {
+        "Id": "uipath-amazon-polly",
+        "Name": "Amazon Polly",
+        "Description": "Amazon Polly is a service that turns text into lifelike speech, allowing you to create applications that talk.",
+        "ConnectorKey": "uipath-amazon-polly",
+        "Active": false
+      },
+      {
+        "Id": "uipath-amazon-ses",
+        "Name": "Amazon SES",
+        "Description": "Amazon SES is a cloud-based email sending service designed to help digital marketers and application developers send marketing, notification, and transactional emails.",
+        "ConnectorKey": "uipath-amazon-ses",
+        "Active": false
+      },
+      {
+        "Id": "uipath-asana-asana",
+        "Name": "Asana",
+        "Description": "Work management platform to help teams organize, track, and manage their work",
+        "ConnectorKey": "uipath-asana-asana",
+        "Active": false
+      },
+      {
+        "Id": "uipath-azuread-azuread",
+        "Name": "azuread3",
+        "Description": "This is the connector for Azure Active Directory activty package. This will provide features for adding connection which can be used to login in order to use activities and also make api calls to Azure Active Directory",
+        "ConnectorKey": "uipath-azuread-azuread",
+        "Active": false
+      },
+      {
+        "Id": "uipath-aws-bedrock",
+        "Name": "Amazon Bedrock",
+        "Description": "Amazon Bedrock is a fully managed service that makes foundational models (LLMs) from leading AI startups and Amazon available via an API, so you can choose the best model for your generative AI automation use cases.",
+        "ConnectorKey": "uipath-aws-bedrock",
+        "Active": false
+      },
+      {
+        "Id": "uipath-calendly-calendly",
+        "Name": "Calendly",
+        "Description": "Calendly is used for scheduling meetings professionally and efficiently, eliminating the hassle of back-and-forth emails so you can get back to work.",
+        "ConnectorKey": "uipath-calendly-calendly",
+        "Active": false
+      },
+      {
+        "Id": "uipath-campaignmonitor-campaignmonitor",
+        "Name": "Campaign Monitor",
+        "Description": "A cloud-based email marketing platform. It provides easy to use email marketing automated tools and fully-featured email platforms that can be used to create, send, and optimize the email marketing campaigns, by teams of all size.",
+        "ConnectorKey": "uipath-campaignmonitor-campaignmonitor",
+        "Active": false
+      },
+      {
+        "Id": "uipath-citrix-sharefile",
+        "Name": "Citrix ShareFile",
+        "Description": "A cloud-based file hosting service. After connecting, use cloud storage and content in automated processes, such as creating, updating, sharing files in real time to accelerate productivity.",
+        "ConnectorKey": "uipath-citrix-sharefile",
+        "Active": false
+      },
+      {
+        "Id": "uipath-citrix-hypervisor",
+        "Name": "Citrix Hypervisor",
+        "Description": "Citrix Hypervisor activities can be used for XenServer 7.x and Citrix Hypervisor 8.x+ virtualised infrastructures. These activities enable IT Departments to easily automate processes for on-demand management and maintenance of Citrix virtual machines. Note: Shared connections are not supported on this connector",
+        "ConnectorKey": "uipath-citrix-hypervisor",
+        "Active": false
+      },
+      {
+        "Id": "uipath-cisco-webexteams",
+        "Name": "Cisco Webex Teams",
+        "Description": "An organizational communication and collaboration platform. After connecting, automate user and room management, messaging, file sharing and other ways to work together.",
+        "ConnectorKey": "uipath-cisco-webexteams",
+        "Active": false
+      },
+      {
+        "Id": "uipath-clover-clover",
+        "Name": "Clover",
+        "Description": "A cloud-based POS system. After connecting, easily manage customers, order entries, inventory and accept payments.",
+        "ConnectorKey": "uipath-clover-clover",
+        "Active": false
+      },
+      {
+        "Id": "uipath-constantcontact-constantcontact",
+        "Name": "Constant Contact",
+        "Description": "A web-based email marketing platform. After connecting, bring powerful automation to email marketing campaigns and related processes—from content creation and management to execution and reporting.",
+        "ConnectorKey": "uipath-constantcontact-constantcontact",
+        "Active": false
+      },
+      {
+        "Id": "uipath-deepseek-deepseek",
+        "Name": "DeepSeek",
+        "Description": "Perform chat completion and reasoning with DeepSeek's generative AI models",
+        "ConnectorKey": "uipath-deepseek-deepseek",
+        "Active": false
+      },
+      {
+        "Id": "uipath-freshworks-freshdesk",
+        "Name": "Freshdesk",
+        "Description": "Freshdesk is a customer support software that helps manage tickets, automate responses, and streamline customer interactions",
+        "ConnectorKey": "uipath-freshworks-freshdesk",
+        "Active": false
+      },
+      {
+        "Id": "uipath-exchangerates-exchangerates",
+        "Name": "Exchangerates",
+        "Description": "Exchangerates offers up-to-the-minute conversion information for a comprehensive range of 168 global currencies",
+        "ConnectorKey": "uipath-exchangerates-exchangerates",
+        "Active": false
+      },
+      {
+        "Id": "uipath-freshworks-freshbooks",
+        "Name": "FreshBooks",
+        "Description": "FreshBooks, an online invoicing and accounting platform, efficiently streamlines financial management with key features like invoicing, expense tracking, and time management",
+        "ConnectorKey": "uipath-freshworks-freshbooks",
+        "Active": false
+      },
+      {
+        "Id": "uipath-freshworks-freshservice",
+        "Name": "Freshservice",
+        "Description": "A cloud-based IT help desk and service management software. After connecting, manage incidents, assets, tickets and more.",
+        "ConnectorKey": "uipath-freshworks-freshservice",
+        "Active": false
+      },
+      {
+        "Id": "uipath-google-cloudplatform",
+        "Name": "Google Cloud Platform",
+        "Description": "A suite of cloud computing services that employs the online file storage web service of Google Cloud Storage for storing and accessing data on Google Cloud Platform infrastructure and the Infrastructure as a Service component of Google Cloud Platform i.e. Google Compute Engine, which enables the IT Departments to easily automate processes related to the provisioning, management, and maintenance of virtual machine instances hosted on Google Cloud Platform.",
+        "ConnectorKey": "uipath-google-cloudplatform",
+        "Active": false
+      },
+      {
+        "Id": "uipath-google-forms",
+        "Name": "Google Forms",
+        "Description": "Google Forms is a survey administration software included as part of the free, web-based Google Docs Editors suite offered by Google.",
+        "ConnectorKey": "uipath-google-forms",
+        "Active": false
+      },
+      {
+        "Id": "uipath-google-tasks",
+        "Name": "Google Tasks",
+        "Description": "Get more done with Google Tasks. Manage, capture, and edit your tasks from anywhere, at anytime, with to-dos that sync across all your devices. Integrations with Gmail and Google Calendar help you get tasks done—faster.",
+        "ConnectorKey": "uipath-google-tasks",
+        "Active": false
+      },
+      {
+        "Id": "uipath-google-workspace",
+        "Name": "Google Workspace",
+        "Description": "Google Workspace Connector gives you access to the whole Google Workspace office suite so, you can boost your productivity in our common applications. For now this Connector is dedicated for advanced users which needs are not fulfilled by the Google Workspace service Connectors such as: Gmail, Google Drive, Sheets, Docs or Tasks",
+        "ConnectorKey": "uipath-google-workspace",
+        "Active": false
+      },
+      {
+        "Id": "uipath-google-vision",
+        "Name": "Google Vision",
+        "Description": "Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications.",
+        "ConnectorKey": "uipath-google-vision",
+        "Active": false
+      },
+      {
+        "Id": "uipath-google-texttospeech",
+        "Name": "Google Text-to-Speech",
+        "Description": "Google Text-to-Speech enables the transformation of any strings, words, or sentences into audio mimicking human speech",
+        "ConnectorKey": "uipath-google-texttospeech",
+        "Active": false
+      },
+      {
+        "Id": "uipath-httpbin-httpbin",
+        "Name": "Httpbin",
+        "Description": "Httpbin tester element service",
+        "ConnectorKey": "uipath-httpbin-httpbin",
+        "Active": false
+      },
+      {
+        "Id": "uipath-hubspot-clearbit",
+        "Name": "Clearbit",
+        "Description": "Clearbit enriches business data with diverse details about leads and customers, aiding in personalized communication and targeted marketing efforts",
+        "ConnectorKey": "uipath-hubspot-clearbit",
+        "Active": false
+      },
+      {
+        "Id": "uipath-icertis-icertis",
+        "Name": "Icertis",
+        "Description": "Icertis is a contract management platform that centralizes and streamlines the creation, execution, and management of contracts for businesses",
+        "ConnectorKey": "uipath-icertis-icertis",
+        "Active": false
+      },
+      {
+        "Id": "uipath-keap-keap",
+        "Name": "Keap",
+        "Description": "A cloud-based CRM and email marketing system. After connecting, easily manage customers, order entries, inventory and accept payments.",
+        "ConnectorKey": "uipath-keap-keap",
+        "Active": false
+      },
+      {
+        "Id": "uipath-jina-jina",
+        "Name": "Jina",
+        "Description": "Given a URL as input, it returns the content of the page as Markdown text. The Reader endpoint extracts the core content from a URL and converts it into clean, LLM-friendly text.",
+        "ConnectorKey": "uipath-jina-jina",
+        "Active": false
+      }
+    ],
+    "Total": 201,
+    "Count": 50,
+    "Category": "is-activity",
+    "Instructions": "Pick a connector `Key`, then drill into its activities via `mcp-tools candidates --category is-activity --connector <key>`. Create the MCP tool via `mcp-tools create-is-activity --mcp <slug> --target-name <activity-name> --category <connectorKey>`."
+  }
+}

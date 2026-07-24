@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpToolsList",
+  "Data": {
+    "Items": [
+      {
+        "Id": "tool-mock-jira-create-001",
+        "Type": 1,
+        "ProcessType": "Api",
+        "Name": "Create Issue",
+        "McpName": "createIssue",
+        "Description": "Create a Jira issue in project MOCKPROJ with type Task.",
+        "TargetIdentifier": "conn-mock-jira-01",
+        "TargetFolderKey": "folder-mock-shared",
+        "ServerId": "mcp-mock-id-001"
+      }
+    ],
+    "Total": 1,
+    "Count": 1
+  }
+}

@@ -2,6 +2,7 @@
   "version": 2,
   "rules": [
     { "match": "or folders list",                                          "file": "or_folders_list.json" },
+    { "match": "mcp list --help",                                          "file": "mcp_list_help.txt" },
     { "match": "agenthub mcp list",                                        "file": "agenthub_mcp_list.json" },
     { "match": "agenthub mcp template remote",                             "file": "template_remote.json" },
     { "match": "agenthub mcp create remote --print-schema",                "file": "create_remote_schema.json" },
