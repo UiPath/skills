@@ -26,29 +26,35 @@ run_limits:
 initial_prompt: |
   Restrict AI model access for my finance team in UiPath.
 
-  Capture your response to ./output.txt.
-
 success_criteria:
   - type: llm_judge
-    description: "Agent asks the numbered disambiguation question before running any commands"
+    description: "Agent asks the disambiguation question instead of silently picking a branch"
     include_agent_output: true
     prompt: |
       The user asked: "Restrict AI model access for my finance team in UiPath."
 
-      This prompt is ambiguous — it could mean:
-      1. Block an AI model provider in AI Trust Layer for all users (AOps product policy)
-      2. Restrict which agents or flows the finance team can invoke as tools (Access ToolUsePolicy)
+      This request is ambiguous — it maps to two different governance layers:
+      1. Blocking an AI model provider in the AI Trust Layer for all users (AOps product policy)
+      2. Restricting which agents/flows the finance team may invoke as tools (Access ToolUsePolicy)
 
-      The correct behavior is for the agent to present a numbered disambiguation question
-      asking the user which layer they want to govern, WITHOUT running any CLI commands first.
+      Correct behavior: the agent asks the user which layer they mean BEFORE
+      committing to one, ideally as a numbered choice.
 
-      Score 1.0 if the agent:
-        - Presents a numbered list with at least two options (product governance vs resource/tool-use governance)
-        - Does NOT describe having already created or deployed any policy
-        - Does NOT list any CLI commands it has already run
-      Score 0.5 if the agent asks a clarifying question but does not use a numbered list or
-        conflates both paths.
-      Score 0.0 if the agent silently picks one branch and runs commands without asking.
+      IMPORTANT — grading scope:
+      - Whether the agent executed any CLI command is verified by SEPARATE
+        deterministic criteria. Do NOT infer from any descriptive text that the
+        agent ran, created, or deployed anything. Describing what each option
+        WOULD do — even naming example commands — is expected and good, NOT a
+        violation.
+      - Judge ONLY the agent's final response text.
+
+      Score 1.0 if the response presents a choice between at least two distinct
+        governance interpretations (numbered or clearly enumerated) and asks the
+        user to pick before proceeding.
+      Score 0.5 if it asks a clarifying question but blends the two paths or does
+        not clearly enumerate them.
+      Score 0.0 only if it silently commits to one interpretation with no
+        clarifying question.
     weight: 3.0
     pass_threshold: 0.5
 
