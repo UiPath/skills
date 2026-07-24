@@ -46,6 +46,8 @@ The Case App selector has three distinct modes:
 
 `adhoc` is task-entry-only. It is never a stage entry rule and never a substitute for `wait-for-connector`.
 
+For generated SDDs, a plain immediate-predecessor chain should already be authored as `runs-sequentially`. If a task row says `selected-tasks-completed("<previous task>")`, preserve it only when the SDD is intentionally expressing a condition/event-driven sibling gate, branch convergence, or non-immediate dependency.
+
 ## Ordering
 
 Task entry conditions are created **after** all tasks in the stage have been added (so `selected-tasks-ids` can resolve).

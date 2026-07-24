@@ -31,7 +31,7 @@ This maps to the **scope-conflict variant of branch 1** in:
 `skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/write-cell-failures.md`
 
 The agent must distinguish this from the **external-locker variant**
-covered by `read-range-file-locked.md`. The decisive signal is the
+covered by `workbook-file-locked.md`. The decisive signal is the
 workflow source — both scopes visible in `Main.xaml` — combined
 with the user's explicit exclusion of external lockers.
 

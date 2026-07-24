@@ -18,7 +18,7 @@ run's `Excel Application Scope` cannot open it. The intermittent pattern
 not a workflow defect.
 
 This maps to:
-`references/activity-packages/excel-activities/playbooks/lookup-range-file-locked.md`
+`references/activity-packages/excel-activities/playbooks/workbook-file-locked.md`
 
 It is **distinct** from the modern-surface COM dispatcher fault
 (`0x80010100 RPC_E_SYS_CALL_FAILED`): that one is a *blocked/hung* Excel
@@ -46,7 +46,7 @@ to attempt host commands.
 ## Success criteria
 
 - Agent invoked the `uipath-troubleshoot` skill
-- Agent matched `lookup-range-file-locked.md` (not the COM-interop playbook)
+- Agent matched `workbook-file-locked.md` (not the COM-interop playbook)
 - Agent identified the workbook being held by another process (orphaned
   `EXCEL.EXE` the most likely unattended cause) and recommended forcing a
   clean release - e.g. a `Kill Process` (EXCEL) at workflow start plus a

@@ -13,7 +13,7 @@ Create the full project on disk in a single plugin invocation — 5 scaffold fil
 1. **§ Scaffold** — write the 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly.
 2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
 
-Solution setup (`uip solution init`) and project registration (`uip solution project add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
+Solution setup (`uip solution init`) and project registration (`uip solution projects add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
 
 **No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 via direct JSON write.
 
@@ -132,6 +132,7 @@ Hard-fail on the first write error — no rollback, no staging directory. Partia
 - `<SolutionDir>/<ProjectName>/project.uiproj` exists and parses as JSON.
 - `<SolutionDir>/<ProjectName>/operate.json` contains a non-empty `projectId` string.
 - `<SolutionDir>/<ProjectName>/entry-points.json` parses as JSON and its `entryPoints` field is `[]`.
+- **No `content/` dir on disk.** Case file is flat at `<SolutionDir>/<ProjectName>/caseplan.json`; if nested under `content/`, layout is wrong — halt. `validate`/`debug` resolve only the flat root path (an ad-hoc validate against the nested path passes, but real project-dir resolution fails).
 
 If any check fails, halt and report.
 

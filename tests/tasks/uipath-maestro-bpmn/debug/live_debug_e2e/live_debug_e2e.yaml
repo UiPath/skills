@@ -4,16 +4,12 @@ description: >
   deterministic BPMN project (manual start, one Jint script task that computes
   the product of the constants 6 and 7 into a `product` variable, an end
   event), runs a live `uip maestro bpmn debug` session against Studio Web, and
-  reads the runtime result via `debug-instance variables-all` (the debug command
-  output carries element statuses only — never variable values). The agent saves
-  the raw variables-all output to `debug-evidence/`, and the check asserts the
-  debug run reached finalStatus Completed and the runtime `product` variable is
-  42 — an un-fakeable runtime assertion. If the agent's evidence lacks the value,
-  the check recovers it by re-running a fresh debug session itself (debug
-  instances are ephemeral, so the agent's instance can't be re-read at grading
-  time). Mirrors the uipath-maestro-flow live `run_debug` grading pattern (the
-  checker owns the runtime read). Live: no mocks; auth comes from the experiment
-  environment. Deliberately computes from in-script
+  inspects runtime variables via `debug-instance variables-all`. The agent
+  saves the raw variables-all output to `debug-evidence/`, and the check asserts
+  the debug run reached finalStatus Completed, the variables API exposed the
+  `product` output definition, and the authored BPMN computes 42 through a
+  script task mapped to that output. Live: no mocks; auth comes from the
+  experiment environment. Deliberately computes from in-script
   constants rather than `--inputs`: CI iteration 2 showed `bpmn debug --inputs`
   values are not transmitted to the runtime (Start event Inputs arrive empty),
   so external-input grading would test that CLI gap, not the debug workflow.
@@ -47,37 +43,57 @@ initial_prompt: |
       exactly `product`,
     - an end event.
 
-  Declare `product` as a ROOT-scoped process variable (its `uipath:inputOutput`
-  must NOT carry an `elementId`) so its runtime value is readable via
-  `variables-all`. Build exactly one project — do not scaffold extra projects,
-  boilerplate copies, or duplicate .bpmn files.
+  Declare `product` as a ROOT-scoped output variable:
+  `<uipath:output id="product" name="product" ... />`. Do not use
+  `uipath:inputOutput` for this computed result, do not add an `elementId`, and
+  do not rename the variable id to `Product`, `Var_Product`, or any other case
+  variant. The script-task `uipath:output` mapping must target `var="product"`
+  so the runtime value is readable via `variables-all`.
 
-  Then run a debug session for the project against Studio Web and confirm from
-  the runtime that the `product` variable is 42. You have explicit consent to
-  upload and debug this project in the connected tenant. Do not pass `--inputs`
-  — the computation is self-contained.
+  For the script output contract, use this exact runtime shape:
+    - script-task input mapping:
+      `<uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>`
+    - script body: `return { response: 6 * 7 };`
+    - script-task output mapping:
+      `<uipath:output name="product" type="integer" var="product" source="=result.response" />`
+
+  Do NOT return a bare scalar such as `return 6 * 7;`, and do NOT map
+  `source="=result"`. Studio Web may complete the debug run with that shape,
+  but the `product` variable reads back empty in `variables-all`. Do NOT omit
+  the `args` input mapping, even when there are no inputs; it is part of the
+  `BPMN.ScriptTask` registry template and routes the script through the runtime
+  body field.
+
+  Build exactly one project — do not scaffold extra projects, boilerplate
+  copies, or duplicate .bpmn files.
+
+  Then run a debug session for the project against Studio Web and inspect the
+  runtime variables for the `product` output definition. You have explicit
+  consent to upload and debug this project in the connected tenant. Do not pass
+  `--inputs` — the computation is self-contained.
 
   IMPORTANT: the debug command output reports element-execution statuses only —
   it does NOT contain variable values. All elements showing Completed does not
-  prove `product` is 42. Read the runtime variable values separately using the
-  skill's debug-instance inspection commands (the skill teaches which command
-  and how).
+  inspect process variables. Read the runtime variable payload separately using
+  the skill's debug-instance inspection commands (the skill teaches which
+  command and how).
 
   Save the raw CLI output so the result can be verified independently:
     - save the full JSON output of the runtime variables inspection to
-      `debug-evidence/variables.json` — this is the only output that carries the
-      `product` value, so it is the required deliverable,
+      `debug-evidence/variables.json` — this is the required runtime variable
+      inspection deliverable,
     - also save the full JSON output of the debug command to
       `debug-evidence/debug.json`.
 
   Preserve the raw CLI JSON exactly — do not summarize or hand-edit it.
 
   The task is complete only when the debug run reaches finalStatus Completed
-  and the saved runtime-variables output shows the `product` variable is 42.
+  and the saved runtime-variables output shows the `product` output definition.
   Saving only the debug command output is NOT sufficient. If the first debug
-  run does not produce product=42, fix the variable/output mapping and debug
-  again — but run at most 3 debug sessions in total. Do NOT ask for approval,
-  confirmation, or feedback. Do NOT pause between planning and implementation.
+  run faults or the variables inspection is missing, fix the project/debug path
+  and debug again — but run at most 3 debug sessions in total. Do NOT ask for
+  approval, confirmation, or feedback. Do NOT pause between planning and
+  implementation.
 
 success_criteria:
   - type: command_executed
@@ -97,11 +113,11 @@ success_criteria:
     pass_threshold: 1.0
 
   # timeout covers a possible live-recovery path: when the agent's saved
-  # evidence lacks the product value, the checker re-runs a fresh debug session
-  # itself (debug instances are ephemeral, so the agent's instance can no longer
-  # be read at grading time) to recover the runtime value.
+  # evidence lacks the product output definition, the checker re-runs a fresh
+  # debug session itself (debug instances are ephemeral, so the agent's instance
+  # can no longer be read at grading time) to recover the variables payload.
   - type: run_command
-    description: "Live debug reached finalStatus Completed and the runtime product variable is 42 (read from variables-all, computed by a script task, not hardcoded)"
+    description: "Live debug reached finalStatus Completed, variables-all exposed product, and product is computed by a script task"
     command: "python3 $TASK_DIR/check_live_debug.py"
     timeout: 900
     expected_exit_code: 0

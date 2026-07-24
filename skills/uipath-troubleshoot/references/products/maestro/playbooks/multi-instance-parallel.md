@@ -7,9 +7,15 @@ confidence: medium
 ## Context
 
 What this looks like:
-- "Failed to evaluate the input collection variable for the marker element"
+- "Failed to evaluate the input collection variable for the marker element" (code `400008`) without an `InvalidCastException` inner exception
+- An item fails with `AttributeError: 'NoneType' object has no attribute 'lower'` because `file.mime_type` is null
 - Parallel steps failing
 - Questions about how to loop over items
+
+Not this playbook:
+- Code `400008` with inner `InvalidCastException: System.Object[] to ExpressionList` (JS "Items" expression) → [marker-invalid-cast](marker-invalid-cast.md)
+- Code `400007` / `Input collection for the marker element must not be null` → [marker-input-null](marker-input-null.md)
+- Non-marker expression failures (`400300`-`400302`, `Property 'X' not found`) → [expression-evaluation-errors](expression-evaluation-errors.md)
 
 What can cause it:
 - JS expression InvalidCastException (see [marker-invalid-cast](marker-invalid-cast.md) for the specific bug)

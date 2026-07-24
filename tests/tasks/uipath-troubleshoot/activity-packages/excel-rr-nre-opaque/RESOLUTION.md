@@ -3,7 +3,7 @@
 ---
 
 **Outcome:** The `uip` CLI evidence confirms the playbook match
-(read-range-null-reference) and rules out two of the five branches,
+(null-reference-from-activity) and rules out two of the five branches,
 but it cannot positively identify which of branch 2 (structural
 corruption) / branch 4 (unsupported OpenXML feature) / branch 5
 (heavy formatting / scale) applies. Diagnosis requires manual
@@ -20,7 +20,7 @@ candidate, but still requires verification.
 - The exception is `TargetInvocationException` wrapping a generic
   `NullReferenceException` from inside the activity, with no
   cell / sheet / range pointer in the stack trace.
-- The fingerprint matches the read-range-null-reference playbook.
+- The fingerprint matches the null-reference-from-activity playbook.
 
 **What the CLI evidence RULES OUT:**
 

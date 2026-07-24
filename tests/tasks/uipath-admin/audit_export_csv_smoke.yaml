@@ -15,19 +15,8 @@ run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  An admin needs a single CSV of all tenant audit events from yesterday
-  to open in Excel for a quick review. Write it into the ./audit-yesterday
-  base directory in the current working directory (the CLI creates a
-  uniquely-named .csv inside it).
-
-  Important:
-  - The `uip` CLI is available but the `admin` subcommand may not be
-    installed and/or the CLI is not connected to a live tenant.
-    Commands WILL fail — that is expected and acceptable.
-    Run each command exactly once regardless of errors.
-    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
-    do NOT troubleshoot errors.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  I need yesterday's tenant Admin audit events as a single CSV I can open in
+  Excel for a quick review. Put it in a folder called audit-yesterday.
 
 success_criteria:
   - type: command_executed

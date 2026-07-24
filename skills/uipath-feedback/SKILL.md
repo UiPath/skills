@@ -292,26 +292,32 @@ The user can adjust type, priority, or title (the title carries the area / optio
 
 ### Step 4 -- Send feedback
 
+**Never inline the multi-line description as a `--description "…"` argument.** On Windows PowerShell the native-command argument serializer mangles multi-line values (lines starting with `-` reach the CLI as options → `ValidationError`). Always pass the body through `--description-file`.
+
+1. Write the sanitized description body to a temp file using the **Write tool** (not a shell heredoc — heredocs are bash-only and fail on PowerShell). Use an absolute path in the OS temp dir, e.g. `<temp>/uip-feedback/description.md`.
+2. Invoke the CLI with `--description-file` pointing at that file:
+
 ```bash
 uip feedback send \
   --type "<bug|improvement>" \
   --title "<TITLE>" \
-  --description "$(cat <<'FEEDBACK_EOF'
-<DESCRIPTION_BODY>
-FEEDBACK_EOF
-)" \
+  --description-file "<TEMP>/uip-feedback/description.md" \
   --priority "<critical|normal|minor>" \
   --attachment <FILE1> <FILE2> \
   --output json
 ```
 
-The title's leading `[Tag]` segments (the area, plus an optional `[CLI]`/`[Skill]` marker) become Jira labels automatically -- no extra flags.
+`--description-file` reads the body from disk, so it is immune to shell quoting and works identically on PowerShell, cmd, and bash. (If the CLI predates this flag, pipe the body via stdin instead; do not inline it.)
+
+The title (`--title`) is short and single-line, so passing it inline is safe. Its leading `[Tag]` segments (the area, plus an optional `[CLI]`/`[Skill]` marker) become Jira labels automatically -- no extra flags.
 
 If an email is available from `uip login status`, include `--email "<EMAIL>"`. The CLI places it in the issue's Environment field, never in the description body.
 
 Parse the JSON output. On success, show the user a confirmation with any reference ID returned.
 
-**Fallback:** If `uip feedback send` fails (network, auth, CLI error), save the full feedback to `./feedback-report.md` using the description body and tell the user: _"Could not send automatically. The report is saved to `feedback-report.md`."_
+**Diagnose failures correctly.** A `ValidationError` that names an option you did not pass (e.g. it complains about `-` or a bullet line) is a **shell-quoting** failure, not a CLI bug — you inlined a multi-line value. Fix it by using `--description-file`; do not report the CLI as broken and do not retry the same inline invocation.
+
+**Fallback:** Only after `--description-file` genuinely fails (network, auth, real CLI error) save the full feedback to `./feedback-report.md` using the description body and tell the user: _"Could not send automatically. The report is saved to `feedback-report.md`."_
 
 Clean up temp attachments:
 
