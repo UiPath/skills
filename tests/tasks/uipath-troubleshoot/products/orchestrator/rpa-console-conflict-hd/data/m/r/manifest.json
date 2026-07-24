@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the rpa-console-conflict-hd scenario. The agent chains folders list -> jobs list --state Faulted -> jobs get -> jobs logs -> jobs history -> jobs list (concurrency) -> machines list --all-fields. Discriminating evidence: HD-BOT-POOL is a high-density host (5 unattended slots, 4 robot users), yet the job faulted with 'Another interactive job is using the machine's console' while a second ClaimsIntake job was Running on the same host — the single-console limit that Login to Console imposes on HD robots. Specific rules precede generic ones (first-match-wins).",
+  "rules": [
+    { "match": "or folders list", "file": "ee2628e6b6.json" },
+    { "match": "or jobs list --folder-key f2a20002-0000-4000-8000-000000000002 --state Faulted", "file": "a189cd9315.json" },
+    { "match": "or jobs list --folder-key f2a20002-0000-4000-8000-000000000002", "file": "a760f714cb.json" },
+    { "match": "or jobs list --state Faulted", "file": "f5f2f217c8.json" },
+    { "match": "or jobs list", "file": "75949d659e.json" },
+    { "match": "or jobs get b2820001-2222-4222-8222-222222222222", "file": "13914e1259.json" },
+    { "match": "or jobs logs b2820001-2222-4222-8222-222222222222 --level Error", "file": "d15031826a.json" },
+    { "match": "or jobs logs b2820001-2222-4222-8222-222222222222", "file": "18dc0563d3.json" },
+    { "match": "or jobs history b2820001-2222-4222-8222-222222222222", "file": "1798ee29d5.json" },
+    { "match": "or machines list --all-fields", "file": "8883fea2d6.json" },
+    { "match": "or machines list", "file": "dc064823f4.json" },
+    { "match": "docsai ask", "passthrough": true }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any unmatched uip command returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}

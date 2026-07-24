@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "b2820001-2222-4222-8222-222222222222",
+    "StartTime": "2026-07-19T10:15:07.200Z",
+    "EndTime": "2026-07-19T10:15:08.050Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "SpecificPriorityValue": 50,
+    "Source": "Queue",
+    "SourceType": "Queue",
+    "Info": "Another interactive job is using the machine's console. Only one interactive job can use the console at a time.\r\n   at UiPath.Robot.Service.SessionManager.AttachToConsoleAsync(LogonRequest request)\r\n   at UiPath.Robot.Service.JobManager.StartJobAsync(JobStartRequest request, CancellationToken cancellationToken)\r\n",
+    "CreationTime": "2026-07-19T10:15:06.600Z",
+    "ReleaseName": "ClaimsIntake",
+    "Type": "Unattended",
+    "OutputArguments": "{}",
+    "HostMachineName": "HD-BOT-POOL",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": true,
+    "FolderKey": "f2a20002-0000-4000-8000-000000000002",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\SVC_HD2",
+    "OrchestratorUserIdentity": "svc_hd2",
+    "LastModificationTime": "2026-07-19T10:15:08.050Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "b2820001222242228222222222222222",
+    "Id": 671440202
+  }
+}

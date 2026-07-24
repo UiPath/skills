@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the rpa-workstation-in-use scenario. The agent chains folders list -> jobs list --state Faulted -> jobs get -> jobs logs -> jobs history -> jobs list (concurrency) -> machines list --all-fields. Discriminating evidence: WS-CLIENT-07 is a Windows client (single interactive session) but its template grants unattendedSlots=3, and a concurrent job (HourlySync) was Running on the same host when DailyExtract faulted with 'workstation is in use by another user'. Specific rules precede generic ones (first-match-wins).",
+  "rules": [
+    { "match": "or folders list", "file": "ee2628e6b6.json" },
+    { "match": "or jobs list --folder-key f1a10001-0000-4000-8000-000000000001 --state Faulted", "file": "e0f3d81244.json" },
+    { "match": "or jobs list --folder-key f1a10001-0000-4000-8000-000000000001", "file": "4b9e5c8cb4.json" },
+    { "match": "or jobs list --state Faulted", "file": "f5f2f217c8.json" },
+    { "match": "or jobs list", "file": "75949d659e.json" },
+    { "match": "or jobs get a1710001-1111-4111-8111-111111111111 --level Error", "file": "145e3fa0fb.json" },
+    { "match": "or jobs get a1710001-1111-4111-8111-111111111111", "file": "d28a78f6ea.json" },
+    { "match": "or jobs logs a1710001-1111-4111-8111-111111111111 --level Error", "file": "356bfb7143.json" },
+    { "match": "or jobs logs a1710001-1111-4111-8111-111111111111", "file": "7a6e65f01a.json" },
+    { "match": "or jobs history a1710001-1111-4111-8111-111111111111", "file": "8b13f09c9d.json" },
+    { "match": "or machines list --all-fields", "file": "8883fea2d6.json" },
+    { "match": "or machines list", "file": "dc064823f4.json" },
+    { "match": "docsai ask", "passthrough": true }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any unmatched uip command returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}

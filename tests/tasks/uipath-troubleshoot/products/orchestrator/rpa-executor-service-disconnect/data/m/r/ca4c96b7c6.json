@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobHistory",
+  "Data": [
+    {
+      "State": "Faulted",
+      "Timestamp": "2026-07-19T01:31:12.600Z",
+      "JobId": 671660404
+    },
+    {
+      "State": "Running",
+      "Timestamp": "2026-07-19T01:30:04.210Z",
+      "JobId": 671660404
+    },
+    {
+      "State": "Pending",
+      "Timestamp": "2026-07-19T01:30:03.740Z",
+      "JobId": 671660404
+    }
+  ]
+}

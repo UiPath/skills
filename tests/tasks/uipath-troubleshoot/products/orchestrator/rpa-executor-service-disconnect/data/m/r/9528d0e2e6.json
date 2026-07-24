@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-19T01:31:12.500Z",
+      "Message": "Job faulted due to service shutdown or disconnect."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-07-19T01:30:20.100Z",
+      "Message": "NightlyPost execution started"
+    }
+  ]
+}

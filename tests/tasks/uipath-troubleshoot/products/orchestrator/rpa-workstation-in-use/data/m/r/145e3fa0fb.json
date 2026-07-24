@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "a1710001-1111-4111-8111-111111111111",
+    "StartTime": "2026-07-19T06:00:03.100Z",
+    "EndTime": "2026-07-19T06:00:03.900Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "SpecificPriorityValue": 50,
+    "Source": "Schedule",
+    "SourceType": "Schedule",
+    "Info": "Could not start executor. The workstation is in use by another user. Please retry after the user logs off or disconnects.\r\n   at UiPath.Robot.Service.SessionManager.CreateSessionAsync(LogonRequest request)\r\n   at UiPath.Robot.Service.JobManager.StartJobAsync(JobStartRequest request, CancellationToken cancellationToken)\r\n",
+    "CreationTime": "2026-07-19T06:00:02.500Z",
+    "ReleaseName": "DailyExtract",
+    "Type": "Unattended",
+    "OutputArguments": "{}",
+    "HostMachineName": "WS-CLIENT-07",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "FolderKey": "f1a10001-0000-4000-8000-000000000001",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\SVC_EXTRACT",
+    "OrchestratorUserIdentity": "svc_extract",
+    "LastModificationTime": "2026-07-19T06:00:03.900Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "a1710001111141118111111111111111",
+    "Id": 671330101
+  }
+}

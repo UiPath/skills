@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "MachineList",
+  "Data": [
+    {
+      "name": "BATCH-BOT-02",
+      "description": "Overnight batch unattended host.",
+      "type": "Template",
+      "key": "beef4001-2222-4333-8444-555566667704",
+      "id": 1990704
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}
