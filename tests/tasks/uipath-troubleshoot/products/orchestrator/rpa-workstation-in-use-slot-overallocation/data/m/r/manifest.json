@@ -2,14 +2,14 @@
   "version": 2,
   "_doc": "Synthetic fixture set for the workstation-in-use / machine-template slot over-allocation scenario (job-faulted-session-console-contention playbook, branch 3). The agent chains: folders list -> jobs list --state Faulted -> jobs get (Info: 'workstation is in use') -> jobs logs -> jobs list --state Running (two other accounts seated in the 2 available RDP slots) -> machines list (template exposes 4 runtimes on a host that seats 2) -> users get (LoginToConsole=false rules out console contention). Keys are stable.",
   "rules": [
-    { "match": "or folders list", "file": "folders-list.json" },
-    { "match": "or jobs list --folder-key c1a1b2c3-d4e5-6789-0abc-def012345678 --state Faulted", "file": "jobs-list-faulted.json" },
-    { "match": "or jobs list --folder-key c1a1b2c3-d4e5-6789-0abc-def012345678 --state Running", "file": "jobs-list-running.json" },
-    { "match": "or jobs get 77aa11bb-22cc-33dd-44ee-55ff66778811", "file": "jobs-get-failing.json" },
-    { "match": "or jobs logs 77aa11bb-22cc-33dd-44ee-55ff66778811 --level Error", "file": "jobs-logs-failing-error.json" },
-    { "match": "or jobs logs 77aa11bb-22cc-33dd-44ee-55ff66778811", "file": "jobs-logs-failing-error.json" },
-    { "match": "or machines list", "file": "machines-list.json" },
-    { "match": "or users get aa11bb22-cc33-dd44-ee55-ff6677889900", "file": "users-get.json" },
+    { "match": "or folders list", "file": "ee2628e6b6.json" },
+    { "match": "or jobs list --folder-key c1a1b2c3-d4e5-6789-0abc-def012345678 --state Faulted", "file": "f8cdedc625.json" },
+    { "match": "or jobs list --folder-key c1a1b2c3-d4e5-6789-0abc-def012345678 --state Running", "file": "2d05ec61b6.json" },
+    { "match": "or jobs get 77aa11bb-22cc-33dd-44ee-55ff66778811", "file": "40b2fc4e50.json" },
+    { "match": "or jobs logs 77aa11bb-22cc-33dd-44ee-55ff66778811 --level Error", "file": "b6aa82c62a.json" },
+    { "match": "or jobs logs 77aa11bb-22cc-33dd-44ee-55ff66778811", "file": "df0dfd2736.json" },
+    { "match": "or machines list", "file": "dc064823f4.json" },
+    { "match": "or users get aa11bb22-cc33-dd44-ee55-ff6677889900", "file": "260696ccea.json" },
     { "match": "docsai ask", "passthrough": true, "_doc": "Proxy any docsai query to the real uip CLI; cache in _cache/." }
   ],
   "unmocked_default": {
