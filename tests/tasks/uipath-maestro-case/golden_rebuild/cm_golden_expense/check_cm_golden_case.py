@@ -9,7 +9,7 @@ design, not just a structurally valid case:
     lane) and S7->S8
   - exactly 1 Manual trigger (not an event trigger)
   - 2 case-exit rules: required-stages-completed (marksCaseComplete) +
-    Stage 4 lane exit (does not mark complete)
+    Stage 4 lane exit gated on the Rework Approval reject output
   - 15 tasks, per-stage task-type multisets covering all 9 task types
   - the named Stage 2 timer is explicitly marked run-once
   - direct task-output passing and connector activity v2 are enabled
@@ -157,6 +157,28 @@ def main():
     happy = False
     lane_exit = False
     stage4_id = stage_by_key[SECONDARY_STAGE]["id"]
+    rework_tasks = [
+        task
+        for task in _stage_tasks(stage_by_key[SECONDARY_STAGE])
+        if task.get("displayName") == "Rework Approval"
+    ]
+    if len(rework_tasks) != 1:
+        _fail(f"expected exactly one Stage 4 'Rework Approval' task; got {len(rework_tasks)}")
+    action_outputs = [
+        output
+        for output in ((rework_tasks[0].get("data") or {}).get("outputs") or [])
+        if output.get("name") == "Action"
+    ]
+    if len(action_outputs) != 1 or not action_outputs[0].get("id"):
+        _fail(
+            "Stage 4 'Rework Approval' must expose exactly one generated "
+            "'Action' output with an id"
+        )
+    action_output_id = action_outputs[0]["id"]
+    reject_gate = re.compile(
+        rf"^\s*=js:\s*vars\.{re.escape(action_output_id)}\s*"
+        rf"===\s*(['\"])reject\1\s*$"
+    )
     for case_exit in case_exits:
         rule = first_rule_of_condition(case_exit) or {}
         name = rule.get("rule")
@@ -167,13 +189,19 @@ def main():
             and rule.get("selectedStageId") == stage4_id
             and case_exit.get("marksCaseComplete") is not True
         ):
+            expression = rule.get("conditionExpression")
+            if not isinstance(expression, str) or reject_gate.fullmatch(expression) is None:
+                _fail(
+                    "Stage 4 non-completing case exit must be gated on "
+                    f"vars.{action_output_id} === 'reject'; got {expression!r}"
+                )
             lane_exit = True
     if not happy:
         _fail("missing case-exit 'required-stages-completed' with marksCaseComplete=true")
     if not lane_exit:
         _fail(
-            "missing case-exit on the 'Stage 4 - return to origin' lane "
-            "(selected-stage-completed, marksCaseComplete=false)"
+            "missing reject-gated case-exit on the 'Stage 4 - return to origin' "
+            "lane (selected-stage-completed, marksCaseComplete=false)"
         )
 
     # -- tasks: count + per-stage type multisets -------------------------------

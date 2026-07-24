@@ -1,0 +1,9 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "_doc": "Logs surface the CredProvider TEMP-path error at executor start and note it is a known issue on older Robot builds. The credential provider directory handling was fixed in a later Robot release.",
+  "Data": [
+    {"Level": "Error", "TimeStamp": "2026-06-28T06:00:02.000Z", "Message": "Job 'bbccddee-2233-4455-6677-8899aabbccdd' failed to start. Could not start executor. Could not find a part of the path 'C:\\Windows\\TEMP\\UiPath\\CredProvider'."},
+    {"Level": "Error", "TimeStamp": "2026-06-28T06:00:01.850Z", "Message": "[Robot] Executor bootstrap failed creating the credential-provider working directory under C:\\Windows\\TEMP\\UiPath\\CredProvider. This matches a known Robot defect on builds prior to 23.10.9."}
+  ]
+}

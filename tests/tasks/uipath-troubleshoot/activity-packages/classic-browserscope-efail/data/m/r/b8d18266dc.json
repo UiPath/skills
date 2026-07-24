@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-15T02:15:11.640Z",
+      "Message": "Attach Browser 'Chrome portal': Could not attach to the browser. Invalid access to memory location. (Exception from HRESULT: 0x800703E6)\r\nin Main.xaml\r\n    at Attach Browser \"Attach Browser 'Chrome portal'\"\r\n    at Sequence \"Reconcile\"\r\n    at DynamicActivity \"Main\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.Core.Activities.BrowserOperationException ---> System.Runtime.InteropServices.COMException (0x800703E6): Invalid access to memory location.\r\n   at UiPath.UIAutomationCore.UiNode.SetForeground()\r\n   at UiPath.Core.Activities.BrowserScope.AttachToBrowser(Browser browser, NativeActivityContext context)\r\n   at UiPath.Core.Activities.BrowserScope.Execute(NativeActivityContext context)"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-07-15T02:15:05.010Z",
+      "Message": "Attach Browser 'Chrome portal' execution started"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-07-15T02:15:04.520Z",
+      "Message": "PortalReconciliation execution started"
+    }
+  ]
+}
