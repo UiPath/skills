@@ -57,7 +57,7 @@ on:
         default: claude
       # Overrides the model for ANY agent. Blank keeps the per-agent default:
       # claude → experiment YAML's sonnet (override e.g. opus / haiku),
-      # codex → gpt-5.4, antigravity → gemini-3.1-pro-preview.
+      # codex → gpt-5.6-terra, antigravity → gemini-3.5-flash.
       agent_model:
         description: 'Model override (blank = default).'
         type: string
@@ -257,16 +257,16 @@ jobs:
           # `parallelism` input default (4) only applies on workflow_dispatch.
           j="${TASK_PARALLELISM:-4}"
           # Agent selection. claude (default) takes the experiment YAML's
-          # claude-code/sonnet config; codex overrides to gpt-5.4 (auth via
+          # claude-code/sonnet config; codex overrides to 5.6-terra (auth via
           # CODEX_API_KEY/CODEX_BASE_URL); antigravity overrides to
-          # gemini-3.1-pro-preview (auth via GEMINI_API_KEY; SDK baked into the
+          # gemini-3.5-flash (auth via GEMINI_API_KEY; SDK baked into the
           # agent image). AGENT_MODEL overrides the model for any agent (e.g.
           # opus / haiku for claude). Driver is unchanged (docker here).
           agent_flags=""
           if [ "$AGENT" = "codex" ]; then
-            agent_flags="--type codex --model ${AGENT_MODEL:-gpt-5.4}"
+            agent_flags="--type codex --model ${AGENT_MODEL:-gpt-5.6-terra}"
           elif [ "$AGENT" = "antigravity" ]; then
-            agent_flags="--type antigravity --model ${AGENT_MODEL:-gemini-3.1-pro-preview}"
+            agent_flags="--type antigravity --model ${AGENT_MODEL:-gemini-3.5-flash}"
           elif [ -n "$AGENT_MODEL" ]; then
             agent_flags="--model $AGENT_MODEL"
           fi
@@ -542,15 +542,15 @@ jobs:
           # Create the tilde-free temp root pinned via TMP/TEMP above.
           mkdir -p /c/cetmp
           # Agent selection. claude (default) takes the experiment YAML config;
-          # codex overrides to gpt-5.4 (auth via CODEX_API_KEY/CODEX_BASE_URL);
-          # antigravity overrides to gemini-3.1-pro-preview (auth via
+          # codex overrides to gpt-5.6-terra (auth via CODEX_API_KEY/CODEX_BASE_URL);
+          # antigravity overrides to gemini-3.5-flash (auth via
           # GEMINI_API_KEY). AGENT_MODEL overrides the model for any agent (e.g.
           # opus / haiku for claude). Driver is unchanged (tempdir here).
           agent_flags=""
           if [ "$AGENT" = "codex" ]; then
-            agent_flags="--type codex --model ${AGENT_MODEL:-gpt-5.4}"
+            agent_flags="--type codex --model ${AGENT_MODEL:-gpt-5.6-terra}"
           elif [ "$AGENT" = "antigravity" ]; then
-            agent_flags="--type antigravity --model ${AGENT_MODEL:-gemini-3.1-pro-preview}"
+            agent_flags="--type antigravity --model ${AGENT_MODEL:-gemini-3.5-flash}"
           elif [ -n "$AGENT_MODEL" ]; then
             agent_flags="--model $AGENT_MODEL"
           fi
