@@ -16,7 +16,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir
@@ -32,8 +31,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  Why did my last job from folder Finance fail? The failing project source
-  is in the current working directory.
+  Why did my last job from folder Finance fail?
 
 success_criteria:
   - type: skill_triggered

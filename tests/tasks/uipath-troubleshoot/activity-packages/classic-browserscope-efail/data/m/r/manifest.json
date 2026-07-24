@@ -9,23 +9,23 @@
     },
     {
       "match": "or folders list",
-      "file": "folders.json"
+      "file": "ee2628e6b6.json"
     },
     {
       "match": "or jobs list",
-      "file": "joblist.json"
+      "file": "75949d659e.json"
     },
     {
       "match": "or jobs logs",
-      "file": "joblogs.json"
+      "file": "b8d18266dc.json"
     },
     {
       "match": "or jobs history",
-      "file": "jobhist.json"
+      "file": "701433db1c.json"
     },
     {
       "match": "or jobs get",
-      "file": "jobget.json"
+      "file": "3db6b96527.json"
     }
   ],
   "unmocked_default": {
