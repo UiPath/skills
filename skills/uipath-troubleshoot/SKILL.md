@@ -32,9 +32,23 @@ ALL phases. Never override.
 
 ## 2. Anchor & primary evidence
 
+0. **Inventory customer-provided artifacts.** Before classifying, identify what the user has already provided. Map each artifact to what it surfaces, and ask for missing ones via `AskUserQuestion` before falling back to CLI commands:
+
+   | Artifact | What it surfaces | Ask if missing when… |
+   |---|---|---|
+   | Solution file (`.uis`, `.uipx`, `.flow`, `.bpmn`, `caseplan.json`) | Component schemas, prompts, tool definitions, data contracts between components | Agent, Flow, Case, or BPMN failure |
+   | Trace JSON | Span-level model calls, token counts, durations, rendered prompts, output values, error codes | Agent or LLM failure |
+   | Error message / screenshot | Exact error text, UI state, job detail | Any failure without a trace |
+   | HAR file | HTTP status codes, response bodies, gateway routing | UI, API, or connector failure |
+   | Eval / debug run output | Input→output pairs, step-level variable state, pass/fail pattern | Wrong output, regression, or silent failure |
+
+   **Solution files are zipped archives** — unzip and read the schema files inside (`agent.json`, `entry-points.json`, `caseplan.json`, `.flow`) before running any CLI command. For multi-component solutions, compare the `outputSchema` of each upstream component against the `inputSchema` of each downstream component — naming mismatches and unhandled controlled-vocabulary values between components are a root-cause class not visible from traces alone.
+
+   **Silent failures require explicit output inspection** — a job or run reporting success does not mean the output is correct. Whenever the user describes wrong, empty, or null results on an apparently successful run, treat it as a silent failure: inspect the actual output value in the artifact or trace before routing. Do not route on job status alone.
+
 1. **Classify (system, entity) from the user's message.** Cross-check against `references/summary.md` domains.
 2. **Branch on anchor presence:**
-   - **Anchored** — user named a concrete locator (id/key, process/package/queue/folder name, instance/incident id, specific error code/message), or the working directory contains a recognisable UiPath project at top level (`project.json`, `agent.json`, `caseplan.json`). Run the first locator command documented in the system's `investigation_guide.md`; if the system has no guide, proceed with the user-supplied signals to §3–§4 — the matched playbook's `## Investigation` supplies the commands.
+   - **Anchored** — user named a concrete locator (id/key, process/package/queue/folder name, instance/incident id, specific error code/message), or the working directory contains a recognisable UiPath project at top level (`project.json`, `agent.json`, `caseplan.json`), or the user provided a solution file (`.uis`, `.uipx`, `.flow`, `.bpmn`). Run the first locator command documented in the system's `investigation_guide.md`; if the system has no guide, proceed with the user-supplied signals to §3–§4 — the matched playbook's `## Investigation` supplies the commands.
    - **No anchor** — ask via `AskUserQuestion`, offering plausible anchor candidates. Do NOT broad-scan, do NOT fetch a placeholder entity, do NOT enumerate folders/queues hoping to find the right one. A bounded locate pass only if the user explicitly authorizes a scan — then confirm the candidate with them.
 3. **Entity-instance selection** when a query yields multiple candidates (several faulted jobs, incidents): filter by the user-named or directory-implied anchor and take the most recent match; if candidates span multiple plausible anchors, ask — do not default; fall back to most-recent-overall only with user-authorized scan.
 4. **Fetch the primary entity and its error surface** per the domain's `investigation_guide.md` when the domain has one (always also read `references/investigation_guide.md` for generic Data Correlation and Output Capture rules). Gather only what routes: entity headline, error message, exception class, error code, activity/package namespace from error logs. Deeper data (full traces, healing data, secondary entities, pings) waits until a playbook's `## Investigation` asks for it.
@@ -54,7 +68,7 @@ Grep the playbook corpus for each extracted signal — fixed-string, filenames o
 - **One dominant playbook** — most distinct signal hits; ties break by reading each hit's `## Context` and keeping the one whose preconditions fit the evidence; honor a playbook's explicit redirects to sibling playbooks. → Load ONLY that playbook + its domain's `investigation_guide.md` (if the domain has one). Go to §5.
 - **Cross-domain signal** — evidence carries a key/ID/exception belonging to another product (e.g., an Excel fault wrapping an Integration Service connection error, an Orchestrator job spawned by a Maestro instance). → Follow the chain **one hop**: fetch the linked entity's error surface, extract its signals, re-grep. The upstream playbook drives the resolution; the downstream domain contributes a propagation fix (`references/presenting.md`). Deeper than one hop → escalate.
 - **Fault signal but no grep hit** — map the faulting activity/exception namespace to its owning domain (`references/summary.md`) and check that domain's `summary.md` for a family playbook covering the activity. One dominant family playbook → proceed to §5 with it. Still nothing → escalate.
-- **No match, or an escalation trigger (§7) fires** → load `references/escalation.md`. For silent failures (no fault signal anywhere: job Successful but wrong output, hang, stuck state), enter via the no-signature routing table in `references/summary.md`.
+- **No match, or an escalation trigger (§7) fires** → load `references/escalation.md`. For silent failures (no fault signal anywhere: job Successful but wrong output, hang, stuck state, or all-null agent output), enter via the no-signature routing table in `references/summary.md`. **Silent failures are not detectable from job status alone** — they require inspection of the actual output value in the trace's output span or the run's result payload.
 
 ## 5. Walk the playbook
 
