@@ -3,8 +3,9 @@ description: >
   Interactive-mode variant of init-validate. The working directory already
   contains two existing solutions (SolarReports, TideTracker). When asked to
   create a new Flow project, the skill's greenfield rule
-  (`author/references/greenfield.md` — "Check the current directory for
-  existing .uipx files") requires the agent to STOP and present a dropdown via
+  (`author/references/greenfield.md` — "Check for existing solutions with
+  `find . -maxdepth 2 -type f -name '*.uipx' -print`") requires the agent to
+  STOP and present a dropdown via
   the interaction mechanism available in its runtime (one option per
   discovered solution + "Create a new solution" + "Something else") instead of
   guessing. A simulated user answers the prompt with a non-default solution
@@ -128,7 +129,7 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+solution\s+(init|new)'
     min_count: 1
     weight: 1.0
-    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+    pass_threshold: 0.0  # advisory: outcome already enforced by the WeatherSelection-7K4M json_check; records the explicit-init convention only
 
   - type: command_not_executed
     description: "Advisory: no default WeatherAlert solution before the name was given — records the default-then-repair inefficiency; nondeterministic on simulator name-timing, so non-gating"
