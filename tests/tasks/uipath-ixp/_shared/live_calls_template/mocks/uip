@@ -1,0 +1,25 @@
+#!/bin/sh
+# Record the expanded invocation, then delegate unchanged to the real live CLI.
+wrapper_path=$(readlink -f "$0")
+wrapper_dir=$(dirname "$wrapper_path")
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$wrapper_dir/calls.log" 2>/dev/null || true
+
+old_ifs=$IFS
+IFS=:
+for path_dir in $PATH; do
+    [ -n "$path_dir" ] || path_dir=.
+    candidate="$path_dir/uip"
+    [ -x "$candidate" ] || continue
+    candidate_path=$(readlink -f "$candidate" 2>/dev/null) || continue
+    [ "$candidate_path" = "$wrapper_path" ] && continue
+
+    IFS=$old_ifs
+    exec "$candidate_path" "$@"
+done
+IFS=$old_ifs
+
+echo "uip logger: real uip executable not found later in PATH" >&2
+exit 127

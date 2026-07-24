@@ -1,0 +1,37 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "f7a2e5c8-9d31-4b62-a074-6c1e3f9b2d58",
+    "StartTime": "2026-07-20T08:03:11.410Z",
+    "EndTime": "2026-07-20T08:03:14.980Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "Info": "Job faulted",
+    "CreationTime": "2026-07-20T08:03:11.410Z",
+    "ReleaseName": "InvoicePortalSubmit",
+    "Type": "Unattended",
+    "InputArguments": "{}",
+    "OutputArguments": null,
+    "HostMachineName": "MOCK-HOST",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 1500287,
+    "FolderKey": "c4f18b20-5d0e-4a39-b16f-3e7c9d2a5b81",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\svc_robot",
+    "OrchestratorUserIdentity": "original_email@test.com",
+    "LastModificationTime": "2026-07-20T08:03:14.980Z",
+    "JobError": {
+      "Type": "System.MissingMethodException",
+      "Message": "Enter invoice number: Method not found: 'Void UiPath.UIAutomationNext.Activities.NTypeInto.set_DelayBetweenKeys(System.Activities.InArgument`1<System.Int32>)'.",
+      "RuleId": null
+    },
+    "ErrorCode": null,
+    "TraceId": "f7a2e5c89d314b62a0746c1e3f9b2d58",
+    "Id": 67023456
+  }
+}

@@ -26,19 +26,21 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent confirmed predictions on doc-abc-123 via `labellings confirm`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123).*'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
   # "Confirm all" = the no-field form. Scoping with --fields would confirm
   # only specific fields, not every prediction — so it must NOT appear.
-  - type: command_not_executed
+  - type: file_matches_regex
     description: "Agent did NOT scope the confirm with --fields (bulk-confirms all predicted fields)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\b.*--fields'
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b.*--fields)[^\r\n]*$
+    must_match: false
     weight: 1.0
     pass_threshold: 1.0

@@ -29,10 +29,10 @@ initial_prompt: |
 success_criteria:
   # Deterministic: the skill maps 100+ page docs to gemini_2_5_pro, which the
   # 150-page prompt triggers (so gpt_4o would be wrong here).
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent switched to a more capable model via `configure-model --model gemini_2_5_pro`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+configure-model\b(?=.*--model\s+gemini_2_5_pro\b).*'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+configure-model\b(?=.*--model\s+gemini_2_5_pro\b).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0

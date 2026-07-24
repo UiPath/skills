@@ -26,10 +26,10 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent fetched predictions via `labellings get-predictions … doc-abc-123`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+get-predictions\b(?=.*doc-abc-123).*'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+get-predictions\b(?=.*doc-abc-123).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
