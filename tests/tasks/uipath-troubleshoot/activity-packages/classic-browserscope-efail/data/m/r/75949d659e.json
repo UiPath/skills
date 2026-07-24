@@ -1,0 +1,40 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "7c4e0b9a-3f21-4d88-a6b2-19e5c3d40f77",
+      "State": "Faulted",
+      "ProcessName": "PortalReconciliation",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-07-15T02:15:04.180Z",
+      "EndTime": "2026-07-15T02:15:11.902Z",
+      "CreationTime": "2026-07-15T02:15:03.900Z"
+    },
+    {
+      "Key": "1b90d6f2-8c44-4a1e-b7d3-6f0a2e9c5511",
+      "State": "Successful",
+      "ProcessName": "PortalReconciliation",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "DEV-BOX",
+      "MachineKey": "",
+      "StartTime": "2026-07-14T16:42:22.501Z",
+      "EndTime": "2026-07-14T16:43:07.815Z",
+      "CreationTime": "2026-07-14T16:42:22.501Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

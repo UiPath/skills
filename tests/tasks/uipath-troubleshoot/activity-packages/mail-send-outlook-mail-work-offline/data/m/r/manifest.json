@@ -8,23 +8,23 @@
     },
     {
       "match": "or folders list",
-      "file": "78f94b6048.json"
+      "file": "ee2628e6b6.json"
     },
     {
       "match": "or jobs list",
-      "file": "6059da6ae1.json"
+      "file": "75949d659e.json"
     },
     {
       "match": "or jobs logs --level Error",
-      "file": "8f63dd2da5.json"
+      "file": "d742317695.json"
     },
     {
       "match": "or jobs logs",
-      "file": "e2a5346a88.json"
+      "file": "b8d18266dc.json"
     },
     {
       "match": "or jobs get",
-      "file": "464db476bb.json"
+      "file": "3db6b96527.json"
     }
   ],
   "unmocked_default": {
