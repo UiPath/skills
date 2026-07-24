@@ -31,9 +31,10 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  I opened this project in Studio and it won't run — the Error List flags a red
-  error on one of my Assign activities, something about "Cannot assign from
-  type ... to ...". What's actually wrong and how do I fix it?
+  My project suddenly won't run — the moment I open it in Studio, the Error List
+  throws a red error on one of my Assign activities, something about "Cannot
+  assign from type ... to ...". It ran fine before and I haven't knowingly
+  changed anything. Can you investigate what's causing this?
 
 success_criteria:
   - type: skill_triggered
