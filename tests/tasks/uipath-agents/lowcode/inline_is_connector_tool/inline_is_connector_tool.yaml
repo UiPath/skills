@@ -2,16 +2,21 @@ task_id: skill-agent-inline-is-connector-tool
 description: >
   Integration Service (IS) tools for flow inline agents. End-to-end
   test: scaffold a flow project containing an inline low-code agent
-  that exposes an IS connector activity as a tool. The agent under
-  test must discover the connector via `uip is`, author a
-  `type: "integration"` resource.json inside the inline agent's UUID
-  subdirectory, create a `bindings_v2.json`, run
-  `uip solution resources refresh`, and wire a
-  `uipath.agent.resource.tool.connector` flow node to the
-  `uipath.agent.autonomous` node's `tool` handle. Verifies design-time
-  artifacts only (no runtime connector invocation). Cloud auth
-  required — depends on the staging tenant having the
-  `uipath-uipath-airdk` (GenAI Activities) connector available.
+  that exposes an IS connector activity (Web Search) as a tool. The
+  agent under test discovers the connector via `uip is`, adds a
+  `uipath.agent.resource.tool.connector` node to the flow and
+  configures it with `uip maestro flow node configure`, wires it to the
+  `uipath.agent.autonomous` node's `tool` handle, then runs
+  `uip agent refresh --inline-in-flow` — which GENERATES the tool's
+  `type: "integration"` resource.json (no hand-authoring) by fetching
+  the connector's IS metadata and joining it with the node's configured
+  values, plus `bindings_v2.json`, then `uip solution resources refresh`
+  to materialize the solution-level connection resource.
+  `uip agent validate --inline-in-flow` then checks it. Verifies the
+  generated design-time artifacts only (no runtime connector
+  invocation). Cloud auth required — depends on the staging tenant
+  having the `uipath-uipath-airdk` (GenAI Activities) connector
+  available.
 tags: [uipath-agents, e2e, mode:build, low-code, inline-flow]
 
 run_limits:
@@ -19,14 +24,13 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath Flow project "ResearchFlow" that runs an inline low-code
-  agent which can look things up on the web. Give the agent a tool so it can
-  run web searches on demand, and wire it into the flow. The solution should be
-  named "ResearchFlowSol".
+  I want to build an automation that can look things up on the web for me.
+  Set it up as a flow with an AI agent inside it, and give the agent a way to
+  search the web on its own whenever it needs to. Call the flow "ResearchFlow"
+  and the solution "ResearchFlowSol".
 
-  Do NOT publish, upload, or deploy. Do NOT ask for approval,
-  confirmation, or feedback. Do NOT pause between planning and
-  implementation. Complete the entire task end-to-end in a single pass.
+  Build it locally, start to finish — no need to publish or deploy it, and
+  don't stop to check in with me along the way.
 
 success_criteria:
   - type: command_executed
@@ -53,6 +57,22 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent added the connector tool node to the flow with uip maestro flow node add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+node\s+add\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent configured the connector tool node with uip maestro flow node configure (populates inputs.detail that refresh reads)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+node\s+configure\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
   # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
   # `uip solution project add` both populate Projects[] in the .uipx).
   - type: json_check
@@ -66,19 +86,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent refreshed solution resources"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+refresh'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent refreshed the inline agent with --inline-in-flow"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+refresh\s+.*--inline-in-flow'
     min_count: 1
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed solution resources to materialize the connection resource"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+refresh'
+    min_count: 1
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
