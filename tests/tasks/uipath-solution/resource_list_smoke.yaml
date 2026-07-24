@@ -30,7 +30,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed solution resources via uip solution resources list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+list'
+    command_pattern: 'uip\s+solution\s+resources\s+list\b(?!\s+--help)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
