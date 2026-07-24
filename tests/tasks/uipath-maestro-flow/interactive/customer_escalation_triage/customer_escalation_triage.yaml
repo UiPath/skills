@@ -50,7 +50,7 @@ simulation:
     businessImpact, and correlationId. The completed flow must validate. Do not
     ask the coding agent to run it; the grader supplies seeded cases and runs it.
   constraints:
-    - "In the opening request, state the goal and input/output names, but do not volunteer any severity, engineering-handoff, or acknowledgement policy."
+    - "In the opening request, state the goal, the input/output names, and that you need a UiPath Maestro Flow validated before sign-off — but do not volunteer any severity, engineering-handoff, or acknowledgement policy."
     - "Only reveal a policy after the agent asks a relevant follow-up question."
     - "Sev1 means an Enterprise customer has production unavailable and no workaround."
     - "Sev2 means production is degraded or unavailable but a viable workaround exists."
@@ -61,7 +61,8 @@ simulation:
     - "If asked a finite-choice question, choose the option matching these policies."
     - "Keep each reply concise and internally consistent."
     - "If asked for permission to run or debug the flow, decline and say the grader will execute it after validation."
-  max_turns: 10
+    - "Stop as soon as the agent declares the work done: the first time it reports the flow is built and validated, reply with exactly <<<END>>> on its own line. Do not ask for extra polish, re-checks, alternative designs, or further improvements after that point — the grader verifies the result."
+  max_turns: 8
 
 success_criteria:
   - type: skill_triggered
