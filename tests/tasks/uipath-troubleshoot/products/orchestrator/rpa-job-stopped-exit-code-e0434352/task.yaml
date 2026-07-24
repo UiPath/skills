@@ -44,10 +44,9 @@ reference:
 initial_prompt: |
   My ReportCompiler nightly job faulted in Orchestrator with
   "Job stopped with an unexpected exit code: 0xE0434352". It had
-  been running fine for months and nothing obvious changed. The
-  project source is in the current working directory and it runs in
-  the ReportingOps folder. What actually went wrong, and how do I
-  fix it so it stops happening?
+  been running fine for months and nothing obvious changed. It
+  runs in the ReportingOps folder. What actually went wrong, and
+  how do I fix it so it stops happening?
 
 success_criteria:
   - type: skill_triggered
