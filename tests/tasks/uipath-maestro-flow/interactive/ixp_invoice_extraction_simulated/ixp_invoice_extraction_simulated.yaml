@@ -33,9 +33,10 @@ simulation:
     You want it validated before you accept it.
 
     OPENING MESSAGE: open by stating, in plain English, (a) the outcome you
-    want in one or two sentences, (b) that you need a UiPath Maestro Flow
-    specifically — not an API workflow, not a script, and (c) that you want it
-    validated before you sign off. Say nothing beyond that: every detail listed
+    want in one or two sentences, (b) that it has to be built as a UiPath Maestro
+    Flow project — not an API workflow, not a standalone script — and (c) that you
+    want it validated before you sign off. Do not describe the artifact as a file
+    or name a path; say nothing beyond those three points. Every detail listed
     below stays withheld until the agent asks for it.
 
     CRITICAL: do NOT volunteer these details up front. Reveal each fact ONLY if
@@ -65,7 +66,7 @@ simulation:
     - "Do not reveal the SAP HTTP destination unless asked where the results should go."
     - "Do not reveal the project name 'InvoiceProcessing' unless asked what to name it."
     - "You expect a UiPath Maestro Flow — i.e. a `.flow` file in the workspace. If the agent builds anything else (e.g. an API workflow), tell it you specifically want a Maestro Flow and are not satisfied until there is a `.flow` file."
-    - "When the agent reports the flow is built and validated, do not accept it yet — first check the withheld list above. If any of those facts has not been communicated yet, ask the single question that surfaces the most important outstanding one. Once every withheld fact has been communicated AND the agent again reports the flow built and validated, reply with exactly <<<END>>> on its own line. Never ask for polish, re-checks, alternative designs, or improvements beyond that list — the grader verifies the result."
+    - "The first time the agent reports the flow is built and validated, do not accept it. Reply ONCE with every fact from the withheld list above that has not been communicated yet, stated plainly together in that single message — do not trickle them out one per turn. When the agent then reports the flow built and validated again, reply with exactly <<<END>>> on its own line. Never ask for polish, re-checks, alternative designs, or improvements beyond that one list — the grader verifies the result."
 
   max_turns: 8
   stop_token: "<<<END>>>"
