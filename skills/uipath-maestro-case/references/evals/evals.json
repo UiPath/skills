@@ -38,15 +38,16 @@
                 "Writes caseplan.json directly via plugin impl-json.md recipes"
             ]
         },
-        {
-            "id": 4,
-            "prompt": "I want to create a case management project",
-            "expected_output": "Skill triggers and asks the user for the sdd.md design document to proceed",
-            "expectations": [
-                "The case-management skill was triggered",
-                "Asks user for the sdd.md file path"
-            ]
-        },
+    {
+      "id": 4,
+      "prompt": "I want to create a case management project",
+      "expected_output": "Skill triggers, shows the new-case roadmap, and offers either an interview or a user-provided sdd.md path",
+      "expectations": [
+        "The case-management skill was triggered",
+        "Shows the journey-specific roadmap before detailed questions",
+        "Offers Interview to generate sdd.md, provide an sdd.md path, or abort"
+      ]
+    },
         {
             "id": 5,
             "prompt": "Add a stage called 'Document Review' to my case.stage.json file",
@@ -56,10 +57,10 @@
                 "Does NOT go through the sdd.md planning workflow"
             ]
         },
-        {
-            "id": 6,
-            "prompt": "Build my case from ./sdd.md",
-            "expected_output": "Skill triggers, emits caseplan.json with the top-level shape (id: case-<10>, version: 23.0.0, metadata, top-level bindings/variables, layout: {}), runs Phase 4 validate authoritatively",
+    {
+      "id": 6,
+      "prompt": "Build my case from ./sdd.md",
+      "expected_output": "Skill triggers, emits caseplan.json with the top-level shape (id: case-<10>, version: 23.0.0, metadata, top-level bindings/variables, layout: {}), runs Phase 4 validate authoritatively",
             "expectations": [
                 "The case-management skill was triggered",
                 "caseplan.json top-level keys are: id, version, name, metadata, bindings, variables, nodes, edges, layout",
@@ -71,8 +72,55 @@
                 "Top-level bindings and variables (not nested under any wrapper)",
                 "Stage and Trigger nodes have NO position, style, measured, width, height, zIndex (Rule 18)",
                 "Top-level layout: {} present and empty",
-                "Phase 4 validate runs authoritatively — 3-retry cap and hard stop on 3rd failure"
-            ]
-        }
-    ]
+        "Phase 4 validate runs authoritatively — 3-retry cap and hard stop on 3rd failure"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "I want to create a new case but I do not have an sdd.md yet",
+      "expected_output": "Skill starts with a short journey-specific roadmap, opens the interview immediately, and confirms the inferred case in three plain-language packets before creating sdd.md",
+      "expectations": [
+        "The case-management skill was triggered",
+        "Before detailed interview questions, shows the user the high-level journey: understand and ground, confirm in short summaries, generate and validate the SDD, build and review, then ask before debug or publish",
+        "Does not expose internal Phase 0 through Phase 6 labels in the user-facing roadmap",
+        "Uses three confirmation packets: case shape, work inside stages, and operational contract",
+        "The case-shape packet includes the trigger, primary stage flow, interrupting secondary stages, and case outcomes",
+        "The work packet includes task type, sequential/event-driven/manually-triggered activation, required/optional status, owner, and tenant resource candidate",
+        "The operational packet includes decision routing, data inputs/outputs, resolved resources/connections, and timing",
+        "A manually triggered task is presented as optional manually triggered work without exposing the internal adhoc rule name",
+        "The final approval summary is the second confirmation layer, so the user does not need to inspect the full sdd.md"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Create a vendor onboarding case. I attached two process documents. It uses VendorRiskAgent, Salesforce Prod, and a Slack notification connector.",
+      "expected_output": "Skill overlaps independent document and tenant discovery work, resolves tenant resources before the confirmation that depends on them, and keeps dependency-bound operations sequential",
+      "expectations": [
+        "Opens the interview without waiting for tenant discovery to finish",
+        "After the user's first description, reads all supplied documents in parallel with the UiPath login-status check",
+        "Runs registry pull only after login succeeds",
+        "After a successful pull, searches all stable runnable-task candidates, connector operations/triggers, and enabled connection inventories in parallel",
+        "Does not search tenant caches before a successful Phase 0 pull and does not treat a failed pull as zero matches",
+        "Batches independent ambiguous resource and connection choices into one user turn when possible",
+        "After selections, runs tasks describe and case spec calls concurrently across all selected live resources",
+        "Fetches a unique high-confidence candidate's schema before presenting the work or operational confirmation that depends on it",
+        "Does not let tenant inventory add or rename business stages or tasks",
+        "Leaves Phase 1 registry refresh as the authoritative pre-planning gate"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "Interview me, confirm your understanding, and generate the SDD only after I approve it",
+      "expected_output": "Skill checkpoints the draft in batches, validates the completed draft, and promotes it to sdd.md only after explicit final approval",
+      "expectations": [
+        "Does not rewrite the complete sdd.draft.md after every answer; persists resumable state only at confirmed packet boundaries",
+        "Writes sdd.draft.md and tasks/registry-resolved.json independently and may persist them concurrently once their shared state is frozen",
+        "Runs the existing SDD finalization checks against sdd.draft.md before the final approval prompt",
+        "Shows a compact approval summary with main flow, interrupting secondary stages, task activation counts, resolved/unresolved resources, defaults, and review-item counts",
+        "Does not create or rename to sdd.md before the user selects approval",
+        "On correction, edits sdd.draft.md, revalidates affected checks, and re-shows the summary",
+        "On approval, atomically renames sdd.draft.md to sdd.md and then proceeds to Phase 1"
+      ]
+    }
+  ]
 }

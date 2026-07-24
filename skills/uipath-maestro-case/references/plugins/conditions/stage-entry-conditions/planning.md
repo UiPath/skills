@@ -18,7 +18,7 @@ Every stage with an **Entry Condition** declared in sdd.md gets its own stage-en
 |-------|--------|-------|
 | `<stage-id>` | previously captured from the stages plugin | Target stage |
 | `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. e.g., "Pre-check", "Interrupt on Fraud" |
-| `is-interrupting` | sdd.md (default `false`) | `true` if the condition interrupts the current stage |
+| `is-interrupting` | sdd.md (default `false`) | `true` if the condition interrupts the current stage. Required for every secondary-stage entry row; `false` is for regular-stage entry only. |
 | `rule-type` | Pick from the catalog below | See §Rule-type catalog |
 | `selected-stage-id` | Required for `selected-stage-*` rule-types | ID of the referenced stage |
 | `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — resolved via [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline) |
@@ -37,7 +37,7 @@ Allowed `ruleType` values and when to pick each:
 | `user-selected-stage` | Fires when an upstream stage exits via a `wait-for-user` exit condition and the user selects this stage as the next one. Only stages carrying this rule appear in the picker. | — |
 | `wait-for-connector` | Waits for a connector event (binds an IS connector trigger under `uipath`) | connector fields (above); `conditionExpression` optional |
 
-`is-interrupting: true` means the condition can fire **while another stage is active** and will interrupt it. Use for exception/interrupt flows.
+`is-interrupting: true` means the condition can fire **while another stage is active** and will interrupt it. Use it on every secondary-stage entry row. If a candidate secondary stage would use `is-interrupting: false`, it is misclassified: use a regular stage/path or an `adhoc` task instead.
 
 > **First-stage start — `case-entered` is the case-start signal (Rule 20).** The case begins at the stage whose entry condition is `case-entered`, not a Trigger→first-stage edge. **At least one regular stage must carry `case-entered`**, or the case can never start. The sdd.md's first stage normally declares it — emit it verbatim. If NO stage declares `case-entered`, flag to the user via AskUserQuestion; do NOT silently inject one (Rule 2 — trust the sdd.md, no gap-fill). The reachability walk in [`sdd-generation-rules.md` § Logical integrity](../../../sdd-generation-rules.md) treats a case with no `case-entered` stage as a blocking orphan.
 
