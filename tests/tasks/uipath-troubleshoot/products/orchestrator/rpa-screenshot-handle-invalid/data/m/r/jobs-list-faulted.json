@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Faulted DashboardSnapshotBot job. It fails partway through at a screenshot activity with a Win32 'handle is invalid' on CopyFromScreen — the unattended session has no live interactive desktop to capture.",
+  "Data": [
+    {"Key": "ccddeeff-3344-5566-7788-99aabbccddee", "State": "Faulted", "ProcessName": "DashboardSnapshotBot", "Source": "Schedule", "Type": "Unattended", "RuntimeType": "Unattended", "Machine": "MOCK-HOST", "StartTime": "2026-06-29T03:30:01.500Z", "EndTime": "2026-06-29T03:30:09.220Z", "CreationTime": "2026-06-29T03:30:01.400Z"}
+  ]
+}
