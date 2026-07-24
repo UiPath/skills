@@ -12,12 +12,6 @@ agent:
 run_limits:
   expected_turns: 21
 
-# Persistent traces fixture (codereval/DefaultTenant, alpha):
-#   process "traces-smoke-v3"  bf544b24-9133-41b5-9361-4f9f75c64467  (inlined in the prompt below)
-#   Orchestrator process ID 893686 · folder ID 2824630 · tenant ID 801178
-# Inlined rather than read from TRACES_SMOKE_PROCESS_KEY: that var is wired in
-# this repo's GitHub workflows but not in the ADO nightly, so the env-var form
-# failed every ADO run. The key is a plain resource identifier, not a secret.
 initial_prompt: |
   Start a new job for the published agent at process key `bf544b24-9133-41b5-9361-4f9f75c64467` and wait for it to finish. Then verify the run produced LLM trace spans and save the raw spans output to spans.json.
 
