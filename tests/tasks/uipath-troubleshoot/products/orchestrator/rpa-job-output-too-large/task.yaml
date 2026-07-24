@@ -12,7 +12,7 @@ description: >
   reference (Storage Bucket / queue / Data Fabric) instead of the
   bulk payload, per the job-output-too-large playbook.
 
-tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose]
+tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
