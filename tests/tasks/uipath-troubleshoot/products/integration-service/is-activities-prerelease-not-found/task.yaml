@@ -32,7 +32,7 @@ initial_prompt: |
   Studio, dependency restore fails and all the Integration Service activities
   show up as invalid — Studio says it can't find the
   UiPath.IntegrationService.Activities package version it wants. Nothing changed
-  on my side. The failing project source is in the current working directory.
+  on my side.
   Can you help me figure out why this broke and how to fix it?
 
 success_criteria:
