@@ -44,8 +44,7 @@ reference:
 initial_prompt: |
   My InvoiceIngestor process has been faulting in Orchestrator
   every time it runs since this morning — each job dies within a
-  second of starting. The project source is in the current working
-  directory. One thing that might be relevant: my AD admin rotated
+  second of starting. One thing that might be relevant: my AD admin rotated
   the password for the UIPATH\USER1 service account yesterday
   (2026-05-11). Can you investigate?
 
@@ -97,7 +96,8 @@ simulation:
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
     - "If the agent asks for the AD PasswordLastSet timestamp, repeat: the AD admin rotated the password yesterday (2026-05-11) — that is all you know."
     - "If the agent asks whether the account is locked, say you cannot check AD directly — point them at the Robot service logs and Orchestrator data."
-    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

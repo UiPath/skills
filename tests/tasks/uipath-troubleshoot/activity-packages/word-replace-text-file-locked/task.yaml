@@ -40,10 +40,7 @@ initial_prompt: |
   first item seems to work and then it dies.
 
   I'm not on the robot host right now, only Orchestrator. Diagnose what you
-  can from Orchestrator and the project source, and give me the fix.
-
-  The project source for the failing process is in the current working
-  directory.
+  can from Orchestrator, and give me the fix.
 
 success_criteria:
   - type: skill_triggered
@@ -88,7 +85,8 @@ simulation:
     - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the fix at the end."
     - "If asked whether anything else opens that document at the same time, say not that you know of - it is the same single template the loop keeps editing."
-    - "Never invent or provide new factual data beyond your initial report."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent or provide new factual data beyond your initial report, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

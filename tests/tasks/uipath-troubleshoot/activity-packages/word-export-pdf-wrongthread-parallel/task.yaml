@@ -45,8 +45,7 @@ initial_prompt: |
   one had Word open — it ran on its own.
 
   Pinned faulted job: f6a7b8c9-d0e1-4c4d-8f60-718293041526. Diagnose the
-  cause and tell me exactly what to change. The project source for the
-  process is in the current working directory.
+  cause and tell me exactly what to change.
 
 success_criteria:
   - type: skill_triggered
@@ -90,7 +89,8 @@ simulation:
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and hand you the steps."
     - "If asked whether any Word window was open on the host, say no - nothing was open, it ran on its own."
     - "If asked whether the run was unattended on a server, say no - you launched it attended on your own machine and let it run."
-    - "Never invent or provide new factual data beyond your initial report and these answers."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent or provide new factual data beyond your initial report and these answers, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

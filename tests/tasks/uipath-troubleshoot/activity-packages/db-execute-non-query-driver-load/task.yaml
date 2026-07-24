@@ -43,8 +43,7 @@ initial_prompt: |
   scheduled run. Can you investigate and tell me what's wrong?
 
   I only have Orchestrator access from my laptop — I can't get onto the
-  Robot host machine myself. The project source for the failing process
-  is in the current working directory.
+  Robot host machine myself.
 
 success_criteria:
   - type: skill_triggered
@@ -90,7 +89,8 @@ simulation:
     - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, database-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
     - "If the agent asks you to run something on the Robot host, log onto the machine, install a driver, or check the host directly, remind it you only have Orchestrator access and cannot get on the host — ask it to diagnose from the evidence it can already reach and tell you what instruction to hand to the host owner."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
-    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

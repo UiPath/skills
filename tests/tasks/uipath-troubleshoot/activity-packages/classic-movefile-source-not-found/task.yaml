@@ -33,8 +33,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My last job from folder Shared failed. The failing project source is in
-  the current working directory.
+  My last job from folder Shared failed.
 
 success_criteria:
   - type: skill_triggered
@@ -81,7 +80,8 @@ simulation:
   constraints:
     - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
-    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

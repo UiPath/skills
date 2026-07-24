@@ -29,7 +29,6 @@ reference:
 
 initial_prompt: |
   My deployed SupportAgent run failed with trace ID aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.
-  The local solution source is under process/SupportSolution.
   Diagnose the root cause and tell me exactly what to change. Do not run mutating repair commands; provide the commands I should run.
 
 success_criteria:

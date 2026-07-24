@@ -47,9 +47,6 @@ initial_prompt: |
   things to verify and I'll come back with the result. Do not stall waiting on
   me - hand me the list and stop.
 
-  The project source for the failing process is in the current working
-  directory.
-
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
@@ -93,7 +90,8 @@ simulation:
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the check list at the end."
     - "If asked whether the Done transition shows a screen in Jira, say that when you close a ticket by hand Jira does pop up a box asking for a resolution."
     - "If asked what fields the transition step sets, say it is whatever is in the project."
-    - "Never invent or provide new factual data beyond your initial report."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent or provide new factual data beyond your initial report, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

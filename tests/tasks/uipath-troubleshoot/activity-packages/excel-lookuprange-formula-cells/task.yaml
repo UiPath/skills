@@ -44,9 +44,6 @@ initial_prompt: |
   open the workbook - I can see today's price next to it. The folder is
   "RPA Production".
 
-  The project source for the failing process is in the current working
-  directory.
-
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
@@ -98,7 +95,8 @@ simulation:
     - "If the agent asks about filters, AutoFilters, hidden rows, or row visibility, say there are no filters applied that you are aware of."
     - "If the agent asks about the SKU value itself (whitespace, type, casing), say it is a plain SKU string with no extra characters."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
-    - "Never invent factual data beyond what is stated in the persona and these constraints."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent factual data beyond what is stated in the persona and these constraints, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

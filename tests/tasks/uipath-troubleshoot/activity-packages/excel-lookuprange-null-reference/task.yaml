@@ -39,9 +39,6 @@ initial_prompt: |
   is "RPA Production". It is supposed to look up order IDs in an orders
   spreadsheet.
 
-  The project source for the failing process is in the current working
-  directory.
-
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
@@ -84,7 +81,8 @@ simulation:
     - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, excel-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
     - "If the agent asks whether the workflow was recently changed, say you are not sure - you did not build it and do not know its internals."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the workflow source and the job evidence already gathered."
-    - "Never invent factual data beyond your initial report."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent factual data beyond your initial report, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6
