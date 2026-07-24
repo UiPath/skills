@@ -40,12 +40,11 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  A whole bunch of my automations failed around 08:15 this morning —
-  it's not just one process, different jobs in several different
-  folders all died around the same time, and I don't know which
-  folder to point you at. The source for one of them (NightlyBilling)
-  is in the current working directory. Can you figure out what
-  happened?
+  A whole bunch of my automations failed around 08:15 this
+  morning — it's not just one process, different jobs in several
+  different folders all died around the same time, and I don't
+  know which folder to point you at. One of them is
+  NightlyBilling. Can you figure out what happened?
 
 success_criteria:
   - type: skill_triggered
