@@ -60,11 +60,19 @@ ont:{functionName}
         ont:kind       "FUNCTION" ;
         ont:language   "SPARQL" ;
         ont:statement  "PREFIX ont: <https://ontology.uipath.com/{name}#> SELECT ?var1 ?var2 WHERE { ... }" ;
-        fno:returns    ( ont:ret.{functionName}.{var1}
-                         ont:ret.{functionName}.{var2} ) .
+        fno:returns    ( ont:output.{functionName}.{var1} ont:output.{functionName}.{var2} ) .
 
-ont:ret.{functionName}.{var1}  a fno:Output ; ont:returnName "{var1}" ; ont:returnType "xsd:{type}" .
-ont:ret.{functionName}.{var2}  a fno:Output ; ont:returnName "{var2}" ; ont:returnType "xsd:{type}" .
+ont:output.{functionName}.{var1}
+        a              fno:Output ;
+        rdfs:comment   "{What this output field contains.}" ;
+        ont:paramName  "{var1}" ;
+        ont:paramType  "xsd:{type}" .
+
+ont:output.{functionName}.{var2}
+        a              fno:Output ;
+        rdfs:comment   "{What this output field contains.}" ;
+        ont:paramName  "{var2}" ;
+        ont:paramType  "xsd:{type}" .
 ```
 
 No `fno:expects` when the function takes no parameters — omit it entirely.
@@ -82,7 +90,7 @@ ont:{functionName}
         ont:language   "SPARQL" ;
         ont:statement  "PREFIX ont: <https://ontology.uipath.com/{name}#> SELECT ?var1 WHERE { ... ?param1 ... }" ;
         fno:expects    ( ont:param.{functionName}.{param1} ) ;
-        fno:returns    ( ont:ret.{functionName}.{var1} ) .
+        fno:returns    ( ont:output.{functionName}.{var1} ) .
 
 ont:param.{functionName}.{param1}
         a              fno:Parameter ;
@@ -90,10 +98,14 @@ ont:param.{functionName}.{param1}
         ont:paramType  "xsd:{type}" ;
         ont:required   true .
 
-ont:ret.{functionName}.{var1}  a fno:Output ; ont:returnName "{var1}" ; ont:returnType "xsd:{type}" .
+ont:output.{functionName}.{var1}
+        a              fno:Output ;
+        rdfs:comment   "{What this output field contains.}" ;
+        ont:paramName  "{var1}" ;
+        ont:paramType  "xsd:{type}" .
 ```
 
-Multiple parameters: list them in `fno:expects ( p1 p2 p3 )` and define each `ont:param.*` block immediately after. List all projected variables in `fno:returns ( r1 r2 r3 )` and define each `ont:ret.*` block immediately after.
+Multiple parameters: list them in `fno:expects ( p1 p2 p3 )` and define each `ont:param.*` block immediately after. List all projected variables in `fno:returns ( r1 r2 r3 )` and define each `ont:output.*` block immediately after.
 
 ---
 
@@ -116,9 +128,15 @@ The runtime applies `ont:default` when the caller omits the parameter from `/inv
 
 Every function must declare its outputs via `fno:returns`. Each `fno:Output` node names a projected variable from the SELECT and declares its XSD type. This drives: (1) type-checking invoke responses, (2) telling callers the function's signature without reading its SPARQL.
 
+**Output node conventions:**
+- Prefix: `ont:output.{functionName}.{varName}` (not `ont:ret.*`)
+- Properties: `ont:paramName` and `ont:paramType` (same property names as parameters)
+- Each output node must have `rdfs:comment` describing what the field contains
+- Format: multi-line one property per line (not single-line)
+
 **The mapping is bidirectional and must be exact:**
-- Every variable projected in `SELECT ?x ?y …` must have a matching `ont:ret.*` block where `ont:returnName = "x"` (the variable name without `?`).
-- Every `ont:returnName` value must correspond to a variable actually projected in the SELECT — no orphaned return nodes.
+- Every variable projected in `SELECT ?x ?y …` must have a matching `ont:output.*` block where `ont:paramName = "x"` (the variable name without `?`).
+- Every `ont:paramName` value on an output node must correspond to a variable actually projected in the SELECT — no orphaned output nodes.
 
 | `ont:returnType` value | Use for |
 |---|---|
@@ -385,7 +403,7 @@ cl:countPrescriptionsByStatus
         ont:language   "SPARQL" ;
         ont:statement  "PREFIX cl: <https://ontology.uipath.com/clinic#> SELECT (COUNT(*) AS ?n) WHERE { ?p a cl:Prescription ; cl:Prescription.status ?status }" ;
         fno:expects    ( cl:param.countPrescriptionsByStatus.status ) ;
-        fno:returns    ( cl:ret.countPrescriptionsByStatus.n ) .
+        fno:returns    ( cl:output.countPrescriptionsByStatus.n ) .
 
 cl:param.countPrescriptionsByStatus.status
         a              fno:Parameter ;
@@ -393,7 +411,11 @@ cl:param.countPrescriptionsByStatus.status
         ont:paramType  "xsd:string" ;
         ont:required   true .
 
-cl:ret.countPrescriptionsByStatus.n  a fno:Output ; ont:returnName "n" ; ont:returnType "xsd:integer" .
+cl:output.countPrescriptionsByStatus.n
+        a              fno:Output ;
+        rdfs:comment   "Number of prescriptions with the given status." ;
+        ont:paramName  "n" ;
+        ont:paramType  "xsd:integer" .
 
 cl:countPrescriptionsPerDoctor
         a              fno:Function ;
@@ -402,11 +424,19 @@ cl:countPrescriptionsPerDoctor
         ont:kind       "FUNCTION" ;
         ont:language   "SPARQL" ;
         ont:statement  "PREFIX cl: <https://ontology.uipath.com/clinic#> SELECT ?doctor (COUNT(?p) AS ?n) WHERE { ?p a cl:Prescription ; cl:prescribedBy ?d . ?d a cl:Doctor ; cl:Doctor.name ?doctor } GROUP BY ?doctor" ;
-        fno:returns    ( cl:ret.countPrescriptionsPerDoctor.doctor
-                         cl:ret.countPrescriptionsPerDoctor.n ) .
+        fno:returns    ( cl:output.countPrescriptionsPerDoctor.doctor cl:output.countPrescriptionsPerDoctor.n ) .
 
-cl:ret.countPrescriptionsPerDoctor.doctor  a fno:Output ; ont:returnName "doctor" ; ont:returnType "xsd:string" .
-cl:ret.countPrescriptionsPerDoctor.n       a fno:Output ; ont:returnName "n"      ; ont:returnType "xsd:integer" .
+cl:output.countPrescriptionsPerDoctor.doctor
+        a              fno:Output ;
+        rdfs:comment   "Name of the doctor." ;
+        ont:paramName  "doctor" ;
+        ont:paramType  "xsd:string" .
+
+cl:output.countPrescriptionsPerDoctor.n
+        a              fno:Output ;
+        rdfs:comment   "Total number of prescriptions issued by this doctor." ;
+        ont:paramName  "n" ;
+        ont:paramType  "xsd:integer" .
 
 cl:listPrescriptionsWithDoctorAndPatient
         a              fno:Function ;
@@ -415,15 +445,31 @@ cl:listPrescriptionsWithDoctorAndPatient
         ont:kind       "FUNCTION" ;
         ont:language   "SPARQL" ;
         ont:statement  "PREFIX cl: <https://ontology.uipath.com/clinic#> SELECT ?medication ?status ?doctorName ?patientName WHERE { ?p a cl:Prescription ; cl:Prescription.medication ?medication ; cl:Prescription.status ?status ; cl:prescribedBy ?d ; cl:prescriptionFor ?pat . ?d a cl:Doctor ; cl:Doctor.name ?doctorName . ?pat a cl:Patient ; cl:Patient.name ?patientName }" ;
-        fno:returns    ( cl:ret.listPrescriptions.medication
-                         cl:ret.listPrescriptions.status
-                         cl:ret.listPrescriptions.doctorName
-                         cl:ret.listPrescriptions.patientName ) .
+        fno:returns    ( cl:output.listPrescriptions.medication cl:output.listPrescriptions.status cl:output.listPrescriptions.doctorName cl:output.listPrescriptions.patientName ) .
 
-cl:ret.listPrescriptions.medication   a fno:Output ; ont:returnName "medication"   ; ont:returnType "xsd:string" .
-cl:ret.listPrescriptions.status       a fno:Output ; ont:returnName "status"       ; ont:returnType "xsd:string" .
-cl:ret.listPrescriptions.doctorName   a fno:Output ; ont:returnName "doctorName"   ; ont:returnType "xsd:string" .
-cl:ret.listPrescriptions.patientName  a fno:Output ; ont:returnName "patientName"  ; ont:returnType "xsd:string" .
+cl:output.listPrescriptions.medication
+        a              fno:Output ;
+        rdfs:comment   "Name of the medication prescribed." ;
+        ont:paramName  "medication" ;
+        ont:paramType  "xsd:string" .
+
+cl:output.listPrescriptions.status
+        a              fno:Output ;
+        rdfs:comment   "Current status of the prescription." ;
+        ont:paramName  "status" ;
+        ont:paramType  "xsd:string" .
+
+cl:output.listPrescriptions.doctorName
+        a              fno:Output ;
+        rdfs:comment   "Name of the prescribing doctor." ;
+        ont:paramName  "doctorName" ;
+        ont:paramType  "xsd:string" .
+
+cl:output.listPrescriptions.patientName
+        a              fno:Output ;
+        rdfs:comment   "Name of the patient the prescription is for." ;
+        ont:paramName  "patientName" ;
+        ont:paramType  "xsd:string" .
 ```
 
 ### clinic-updatePrescriptionStatus.ttl (Clinic)
@@ -463,6 +509,12 @@ cl:param.updatePrescriptionStatus.newStatus
 | Mistake | Correct form |
 |---|---|
 | Missing `fno:returns` on a function | Every function must declare `fno:returns` with typed `fno:Output` nodes |
+| `fno:returns` without parentheses (comma-separated) | Use RDF list syntax: `fno:returns ( node1 node2 )` — parentheses are required |
+| Output node prefix `ont:ret.` | Use `ont:output.` — correct form is `ont:output.{functionName}.{varName}` |
+| `ont:returnName` / `ont:returnType` on output nodes | Use `ont:paramName` / `ont:paramType` on both `fno:Output` and `fno:Parameter` nodes |
+| Single-line output node | Output nodes must be multi-line with `rdfs:comment` describing the returned value |
+| Missing `rdfs:comment` on output nodes | Every `fno:Output` node requires `rdfs:comment` explaining what the column contains |
+| `https://w3id.org/function/ontology#` for fno: prefix | Use `http://w3id.org/function/ontology#` (http, not https) — backend rejects https |
 | Singular `ont:statement` for actions | Actions use `ont:statements` (plural, a list) |
 | `fno:expects` with no params | Omit `fno:expects` entirely when there are no parameters |
 | Using `FILTER` for all params | Use triple binding for equality (`; ont:prop ?param`); use `FILTER` for comparisons (`< > !=`) |
