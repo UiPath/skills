@@ -18,7 +18,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir
@@ -36,8 +35,7 @@ reference:
 initial_prompt: |
   My VendorOnboarding job in folder Finance finished Successful last night, but
   the bank account number it wrote to the vendor record is wrong — it does not
-  match the value we gave it, and there was no error at all. Why? The failing
-  project source is in the current working directory.
+  match the value we gave it, and there was no error at all. Why?
 
 success_criteria:
   - type: skill_triggered

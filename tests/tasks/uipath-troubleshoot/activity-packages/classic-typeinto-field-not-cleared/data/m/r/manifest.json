@@ -9,23 +9,23 @@
     },
     {
       "match": "or folders list",
-      "file": "10fold.json"
+      "file": "ee2628e6b6.json"
     },
     {
       "match": "or jobs list",
-      "file": "20jobs.json"
+      "file": "75949d659e.json"
     },
     {
       "match": "or jobs get 9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40",
-      "file": "30jobg.json"
+      "file": "44a081cb26.json"
     },
     {
       "match": "or jobs logs 9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40 --level Error",
-      "file": "40errl.json"
+      "file": "75f6ad6632.json"
     },
     {
       "match": "or jobs logs 9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40",
-      "file": "50infl.json"
+      "file": "e1a227ecb5.json"
     }
   ],
   "unmocked_default": {
