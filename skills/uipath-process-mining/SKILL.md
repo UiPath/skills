@@ -9,6 +9,8 @@ allowed-tools: Bash, Read, Write, Glob, Grep
 
 Build and operate a UiPath Process Mining process app end-to-end from the terminal with `uip pm`: from a raw CSV to a queryable process model. The whole loop — templates, data mapping, upload, ingest, the dbt/Snowflake transformation layer, and querying — is scriptable; **use the CLI, don't hand-roll the Process Mining REST API.**
 
+**This works for every app type**, not just `uipath.custom`: the pipeline (mapping → upload → ingest → transform → data model → query) is identical across the `uipath.custom` event-log template and the source-system templates (P2P / O2C / IM / AP / … on SAP, Oracle, NetSuite, ServiceNow, Salesforce, …). Only **what the data mapping / extract must contain** differs. See [`references/app-types.md`](references/app-types.md).
+
 The command groups: `uip pm app-types` (templates), `apps` (create/list/delete), `files` (upload), `ingestions` (create/logs), `transformations` (list/get/create/update/apply/run/status/logs — the dbt dev loop), and `query` (run/details/percentile/rca/insights/info/layout).
 
 ## When to Use This Skill
@@ -46,9 +48,9 @@ The **ELT editor** is the `transformations` command group operating on the dbt (
    ```
    `Kind` is `nominal` (text dimension), `ordinal` (ordered), or `numeric` (aggregatable metric). Do this in the `model` JSON at `apps create` time (add your tables before creating), or via a data-model edit afterwards. **Anti-pattern:** overwriting the template `Tags.sql`/`Due_dates.sql` to smuggle unrelated rows through their pre-registered entities — it works but corrupts those features and confuses the next reader. See [`references/data-model.md`](references/data-model.md).
 
-2. **Pick `uipath.custom` for a flat event log.** A single denormalized log (Case, Activity, Timestamp [+ attributes]) ⇒ `uipath.custom` (`app-types` `DefaultName` "Event log"). Only use a source-system template (`uipath.im.servicenow`, `uipath.p2p.sap`, `uipath.o2c.*`, …) when you have that system's **full multi-table extract** with the expected schema — not a single log, even if the data came from ServiceNow/SAP.
+2. **Match the template to the data — the rest of the pipeline is identical for all app types.** A single denormalized log (Case, Activity, Timestamp [+ attributes]) ⇒ `uipath.custom` ("Event log"). Otherwise pick the `<process>.<system>` template matching your source system AND process (Purchase-to-Pay on SAP ⇒ `uipath.p2p.sap`; incidents from ServiceNow ⇒ `uipath.im.servicenow`) — but only when you actually have that system's **full multi-table extract**, not a single log you exported from it. Every template shares the same model shape and the same mapping→ingest→transform→query machinery; only the expected input tables differ. Discover with `app-types list`, inspect a template with `app-types get`. See [`references/app-types.md`](references/app-types.md).
 
-3. **Patch the `uipath.custom` `Cases.sql` optional-column gotcha.** The template's `models/Cases.sql` references `Event_log."Case"`, `"Case_status"`, `"Case_type"`, `"Case_value"`. A minimal mapping (Case_ID/Activity/timestamp only) doesn't produce those ⇒ dbt `000904 invalid identifier`. Fix: pull the file, replace the missing refs with `cast(null as varchar/float)`, push, and **`transformations apply`**. `Tags.sql`/`Due_dates.sql` are safe `where 1=0` stubs.
+3. **Patch the `uipath.custom` `Cases.sql` optional-column gotcha (custom-only).** Source-system templates ship their own correct transformations — this gotcha is specific to the `uipath.custom` event-log template. The template's `models/Cases.sql` references `Event_log."Case"`, `"Case_status"`, `"Case_type"`, `"Case_value"`. A minimal mapping (Case_ID/Activity/timestamp only) doesn't produce those ⇒ dbt `000904 invalid identifier`. Fix: pull the file, replace the missing refs with `cast(null as varchar/float)`, push, and **`transformations apply`**. `Tags.sql`/`Due_dates.sql` are safe `where 1=0` stubs.
 
 4. **After a transform-only failure, `apply` — don't re-ingest.** The data is already loaded. Fix SQL (`transformations get` → edit → `transformations update`/`create`) then `transformations apply` (re-transforms loaded data). Re-ingest only when the raw data or the mapping/parse settings change.
 
@@ -95,6 +97,7 @@ The killer use case is your own SQL. Add analytical dbt models with `transformat
 
 | File | Read when |
 |------|-----------|
+| [`references/app-types.md`](references/app-types.md) | choosing/targeting a template — custom vs source-system, why the pipeline is the same for all, what the mapping/extract must contain per family |
 | [`references/pre-flight.md`](references/pre-flight.md) | before any upload — encoding/delimiter/date-format/empty-row checks and the minimal `mapping.json` recipe |
 | [`references/transformations.md`](references/transformations.md) | authoring/fixing dbt models — the `Cases.sql` patch, apply-vs-run, pm_utils macros, Snowflake identifier quoting |
 | [`references/data-model.md`](references/data-model.md) | exposing a custom table to `query`/dashboards — the add-table pattern and `Tables[]`/`Fields[]` schema |
