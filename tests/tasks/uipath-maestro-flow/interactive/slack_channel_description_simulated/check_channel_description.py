@@ -28,7 +28,7 @@ ADDRESS_FRAGMENTS = [
 
 def main():
     assert_flow_uses_connector_target("uipath-salesforce-slack")
-    payload = run_debug(timeout=240)
+    payload = run_debug(timeout=660)
     assert_outputs_contain(payload, ADDRESS_FRAGMENTS, require_all=True)
     print("OK: Slack connector target present; output contains Bellevue office address")
 

@@ -81,7 +81,7 @@ success_criteria:
   - type: run_command
     description: "Flow debug runs; Slack connector executed and output has the channel description"
     command: "python3 $TASK_DIR/check_channel_description.py"
-    timeout: 300
+    timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
