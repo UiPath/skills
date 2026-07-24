@@ -94,16 +94,17 @@
     {
       "id": 8,
       "prompt": "Create a vendor onboarding case. I attached two process documents. It uses VendorRiskAgent, Salesforce Prod, and a Slack notification connector.",
-      "expected_output": "Skill overlaps document reads with the background tenant warm-up, runs one light name-match pass with no schema discovery and no resource questions, and defers everything unclear to the build",
+      "expected_output": "Skill starts the tenant chain only when the description names tenant-bound work, designs in parallel with it, joins it at confirmation time without waiting, and never pulls twice in the session",
       "expectations": [
-        "Starts the login and registry warm-up in the background at Phase 0 entry, before the user finishes describing the case",
-        "Reads all supplied documents in parallel while the warm-up resolves",
+        "Does not touch the tenant at entry — the background login and registry chain starts only once the description names tenant-bound work (the agent, Salesforce, the Slack connector), in the same batch as other work",
+        "Reads all supplied documents in parallel while the chain resolves",
         "Runs registry pull only after login succeeds and does not treat a failed pull as zero matches",
-        "After a successful pull, runs ONE parallel name-match lookup per named resource — no tasks describe, no case spec, no schema discovery in Phase 0",
+        "Joins the chain at confirmation time: ONE parallel name-match lookup per named resource — no tasks describe, no case spec, no schema discovery in Phase 0",
+        "If the pull has not finished when the confirmation is ready, presents anyway with resolve-at-build on tenant-bound items — the confirmation is never delayed by the tenant",
         "With four or more independent lookups pending, may fan them out to parallel read-only subagents that never write artifacts or prompt the user",
         "A single confident match is adopted silently and shown as a decision; multiple matches, cross-folder names, missing connections, and empty lookups become resolve-at-build decisions — never a Phase 0 question",
         "Does not let tenant inventory add or rename business stages or tasks",
-        "Leaves Phase 1 registry refresh as the authoritative pre-planning gate and its Rule 17 gate as the place ambiguity is decided"
+        "On the Build answer, Phase 1 reuses this session's successful pull instead of re-pulling; its Rule 17 gate remains where ambiguity is decided"
       ]
     },
     {
@@ -129,7 +130,7 @@
         "On the Build answer, the transition line is announced and sdd.md is written in the same batch as the first build actions — never as a standalone blocking turn",
         "One line reports the design doc path as a reference artifact",
         "No blocking prompt between the confirmation and Phase 4 validation on the straight-through path — the Phase 2 boundary prints the skeleton counts line and continues",
-        "The build proceeds from the in-memory model without re-reading the just-written sdd.md",
+        "The build proceeds from the in-memory model without re-reading the just-written sdd.md, and Phase 1 reuses this session's successful registry pull instead of re-pulling",
         "Posts an expectation-setting line before long silent work and one-line business-language milestones during the build — no internal phase or mode names",
         "Still stops at the debug-consent gate and the publish gate — those are never bypassed",
         "If any high review item exists, the Build option is relabeled build-despite with the count"

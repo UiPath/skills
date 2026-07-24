@@ -44,14 +44,14 @@ If `npm install -g` fails with a permission error, prompt the user to re-run it 
 
 ## Step 1 — HARD GATE: check login and pull registry
 
-Registry discovery happens during planning, so login is required first. This gate is unconditional on every Phase 1 run, including SDD-only handoffs and runs with a staged `tasks/registry-resolved.json`.
+Registry discovery happens during planning, so login is required first. This gate runs on every Phase 1 run — including SDD-only handoffs and runs with a staged `tasks/registry-resolved.json` — **with one exception (same-session fast path, SKILL.md Rule 3):** when Phase 0's `registry pull` already succeeded in THIS session and `sdd.md` was just rendered from the confirmed in-memory model, reuse that cache and skip the re-pull. Any doubt (user-provided SDD, cross-session resume, context compaction, failed or never-run Phase 0 pull, missing cache files) runs the gate in full.
 
 ```bash
 uip login status --output json
 uip maestro case registry pull
 ```
 
-Do not inspect `~/.uip/case-resources/` first to decide whether the pull is necessary: cache absence is exactly why the pull must run. Do not continue to Step 2/3 and do not write `tasks.md` or `registry-resolved.json` unless the pull succeeds. If not logged in, prompt the user to log in and stop Phase 1; if the pull fails, surface the command error and stop Phase 1. After a successful pull, read [registry-discovery.md](registry-discovery.md) before the first cache lookup. The pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
+Outside the fast path, do not inspect `~/.uip/case-resources/` first to decide whether the pull is necessary: cache absence is exactly why the pull must run. Do not continue to Step 2/3 and do not write `tasks.md` or `registry-resolved.json` unless the pull succeeds. If not logged in, prompt the user to log in and stop Phase 1; if the pull fails, surface the command error and stop Phase 1. After a successful pull, read [registry-discovery.md](registry-discovery.md) before the first cache lookup. The pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
 
 ## Step 2 — Locate and parse the design document
 

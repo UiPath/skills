@@ -32,17 +32,19 @@ If the user prompt names no `.md` reference, default candidate is `./sdd.md` —
 
 **If the user's request already describes the case** (any stages, work, trigger, domain, or attached docs), skip every entry prompt: print the roadmap from `SKILL.md § User-facing roadmap` and go straight to work — the request IS the first Listen input. **Only a bare request** ("create a case" with nothing else) gets the Listen opener after the roadmap. There is no entry menu; a user who has an `sdd.md` will say so, and abort is always a free-text away.
 
-**Warm the tenant cache at Entry.** In the same turn that prints the roadmap, start the grounding chain as ONE background command: `uip login status --output json && uip maestro case registry pull`. It runs while the user reads or types — by the time the sketch needs the cache, the pull is usually done. Best-effort: never block on it, never surface its output unprompted; on failure carry `resource grounding unavailable` and follow §Failure modes. If the harness cannot run background commands, run login → pull in the first work batch instead.
+**No tenant work at Entry.** Nothing about the tenant is a prerequisite for designing the case — do not run login or `registry pull` up front. Grounding starts only when the case shows it needs it (§Tenant grounding).
 
-## Tenant grounding — one light pass, no questions
+## Tenant grounding — requirement-driven, one light pass, no questions
 
-Phase 0 grounds resources with a **single name-match pass**, nothing more. Phase 1's hard gate (SKILL.md Rule 3) re-pulls and resolves authoritatively; schema discovery (`tasks describe`, `case spec`) belongs to the build phases — never run it in Phase 0.
+Phase 0 grounds resources lazily, in parallel with the design, with a **single name-match pass** at most. Schema discovery (`tasks describe`, `case spec`) belongs to the build phases — never run it in Phase 0.
 
-1. **Intake batch.** Read every supplied document in parallel (plus login status if the warm-up didn't start). Extract named systems, resources, likely tasks, and roles while it resolves.
-2. **Join the refresh.** Check the warm-up; if it never started, run the pull after login. Login → pull stays sequential. On failure: one plain-language line (§What to say while working), keep intended names, mark identities `resolve at build`, continue.
-3. **Light match pass.** After a successful pull, run ONE cache lookup per named or inferred resource (`~/.uip/case-resources/<type>-index.json`; `action-apps-index.json` for HITL apps; `typecache-activities-index.json` / `typecache-triggers-index.json` for connectors) — all lookups in one parallel batch. With ≥ 4 lookups, fan them out to parallel read-only subagents (one per item or type family; cache Reads only — never writes, never prompts, never login/pull; parent spot-verifies adopted identities). Bucket each result:
+1. **Intake batch.** Read every supplied document in parallel. Extract named systems, resources, likely tasks, and roles.
+2. **Requirement-driven kickoff.** The FIRST moment the sketch identifies tenant-bound work — a named system/resource/connector, or an inferred runnable/connector/action task — start the grounding chain as ONE background command, in the same batch as whatever is already running: `uip login status --output json && uip maestro case registry pull`. It resolves while sketching continues; a case with no tenant-bound items never pulls in Phase 0. Best-effort: never block on it, never surface its output unprompted; on failure, one plain-language line (§What to say while working), keep intended names, mark identities `resolve at build`, continue. If the harness cannot run background commands, run login → pull in the batch that composes the confirmation.
+3. **Light match pass — join, never wait.** When composing the confirmation, check the chain. If the pull succeeded, run ONE cache lookup per named or inferred resource (`~/.uip/case-resources/<type>-index.json`; `action-apps-index.json` for HITL apps; `typecache-activities-index.json` / `typecache-triggers-index.json` for connectors) — all lookups in one parallel batch. With ≥ 4 lookups, fan them out to parallel read-only subagents (one per item or type family; cache Reads only — never writes, never prompts, never login/pull; parent spot-verifies adopted identities). Bucket each result:
    - **Single confident match** (1 match across all folders, ≥ 1 shared name token) → adopt silently; shows as the task's resource in the confirmation with a decision line.
    - **Anything else** (multiple matches, cross-folder same-name, no token overlap, zero matches, 0 or > 1 enabled connections for a connector) → mark `resolve at build`. Do NOT ask, do NOT auto-pick among candidates, do NOT fetch schemas. Phase 1's discovery and its Rule 17 gate handle the choice with full authority.
+
+   If the pull has NOT finished when the confirmation is ready, do not wait: present with `resolve at build` on the tenant-bound items and let the build reconcile — the confirmation is never delayed by the tenant.
 
 **Guardrails:** registry data is evidence, not requirements — never add/rename business work to match tenant inventory; never dump catalogs; keep type-specific portable names concrete (`Resolved Resource`, Action App title, `Child Case`) even when identity defers; a connector with zero connections is `resolve at build`, not a reason to change the task type.
 
@@ -139,7 +141,7 @@ Corrections (`Change something` or any free text) update the model, re-run affec
 On a Build answer:
 
 1. **Transition line** (§What to say while working): `Starting the build — the design doc will be saved alongside as a reference. Say stop anytime.`
-2. **One parallel batch:** Write `sdd.md` (full render from the confirmed in-memory model — direct Write, no draft, no rename) + `uip solution init <SolutionName>` (derived exactly as Phase 2 Step 6.0 does; its idempotent skip then applies) + Phase 1's Rule 3 `uip login status` → `registry pull` chain. The SDD write is NEVER a standalone blocking turn — it always shares the batch with build actions.
+2. **One parallel batch:** Write `sdd.md` (full render from the confirmed in-memory model — direct Write, no draft, no rename) + `uip solution init <SolutionName>` (derived exactly as Phase 2 Step 6.0 does; its idempotent skip then applies) + Phase 1's Rule 3 `uip login status` → `registry pull` chain **only if Phase 0's pull did not already succeed this session** — a same-session successful pull is reused, never repeated (SKILL.md Rule 3 fast path). The SDD write is NEVER a standalone blocking turn — it always shares the batch with build actions.
 3. **One artifact line** after the write lands: `Design doc saved to ./sdd.md — reference it anytime.`
 4. Proceed into [planning.md](planning.md) Step 1 **from the in-memory model** — do not re-read the just-written `sdd.md` in this session. Re-read it only when working memory may be stale (context compaction, resumed session); then the file is authoritative (Rule 2). For later sessions and re-runs, `sdd.md` is the contract exactly as if the user wrote it.
 5. If `sdd.md` appeared at the path since Phase 0 started, abort instead of overwriting.
@@ -196,7 +198,7 @@ If the user asks how something works, explain in their language (cases, stages, 
 
 ## Output contract — what the build sees
 
-- **In-session:** the confirmed in-memory model drives Phase 1 directly. `sdd.md` — written at build start (batched with build actions) — matches it exactly. `tasks/registry-resolved.json` is produced by Phase 1, not Phase 0; light-pass matches are hints Phase 1 re-verifies against its own refreshed cache.
+- **In-session:** the confirmed in-memory model drives Phase 1 directly. `sdd.md` — written at build start (batched with build actions) — matches it exactly. A Phase 0 pull that succeeded this session is reused by Phase 1 (no re-pull — Rule 3 fast path). `tasks/registry-resolved.json` is produced by Phase 1, not Phase 0; light-pass matches are hints Phase 1 re-verifies against the session cache.
 - **Cross-session / re-run:** `sdd.md` is the sole contract, read per Rule 2 exactly as a user-provided file — including after context compaction. It may carry `<UNRESOLVED>` identities and `—` placeholders, but every process/agent/rpa/api-workflow task has a concrete `Resolved Resource`, every action a concrete Action App title, every case-management task a concrete `Child Case`.
 - `case-board.html` + `case-board-data.js` — present when the confirmation rendered; ignored by Phase 1. `sdd-viewer.html` — on request only.
 
@@ -206,6 +208,7 @@ If the user asks how something works, explain in their language (cases, stages, 
 - **Do NOT interrogate.** No entry menu when the request has content, no per-dimension question walk, no confirming what the playbook decides. The budget is ONE clarifying call (when earned) + ONE confirmation. Uncertainty is resolved by assumption + disclosure, not by a question.
 - **Do NOT hide a decision.** Every assumption, override, and resource pick appears in the `Decisions I made` block. Best-assumption without disclosure is guessing.
 - **Do NOT run schema discovery (`tasks describe` / `case spec`) or ambiguity prompts in Phase 0.** One light name-match pass only; everything unclear is `resolve at build` — Phase 1 owns authoritative resolution and its Rule 17 gate.
+- **Do NOT pull the tenant registry as a prerequisite, and never twice in one session.** The login/pull chain starts only when the case first shows tenant-bound work; a pull that succeeded this session is reused by Phase 1 (Rule 3 fast path). Equally, never delay the confirmation waiting for the pull.
 - **Do NOT auto-pick among multiple resource matches.** Cross-folder or multi-match = `resolve at build`, disclosed. (Single confident match adopts silently — that is the only silent pick.)
 - **Do NOT write `sdd.draft.md` or checkpoint files in a normal run.** The model lives in memory; the only pre-build writes are the board files. Drafts exist on explicit request only.
 - **Do NOT block the build on the SDD write, and do NOT re-read the just-written `sdd.md` in-session.** The write shares a batch with the first build actions; memory drives the build. Re-read only on staleness (compaction/resume).
