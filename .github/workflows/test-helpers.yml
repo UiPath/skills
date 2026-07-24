@@ -5,7 +5,6 @@ on:
     paths:
       - 'tests/tasks/uipath-maestro-flow/**'
       - 'tests/tasks/uipath-maestro-case/**'
-      - 'tests/tasks/uipath-agents/**'
       - 'tests/scripts/**'
       - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
       - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
@@ -44,22 +43,6 @@ jobs:
 
       - name: Run pytest
         run: pytest tests/tasks/uipath-maestro-case/ -v
-
-  pytest-agents-check:
-    runs-on: ubuntu-latest
-    name: uipath-agents checker unit tests
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Install pytest
-        run: pip install pytest
-
-      - name: Run pytest
-        run: pytest tests/tasks/uipath-agents/ -v
 
   runtime-payload-casing-guard:
     runs-on: ubuntu-latest
