@@ -4,11 +4,14 @@
 The starting fixture chains three stages: Intake → Review → Decision. The
 Review stage runs TWO parallel wait-for-timer tasks in distinct data.tasks
 lanes: "Hold For 1 Hour" (required) and "Notify Reviewer" (optional). The
-agent must remove the REQUIRED "Hold For 1 Hour" task, leaving Review with
-exactly one task ("Notify Reviewer") otherwise unchanged, while keeping
-Review's required-tasks-completed exit condition intact. Verifies the removal
-happened, the exit condition still holds, the surviving task and the stage
-chain are intact (a true delete, not a rebuild), and the edited case launches.
+agent must remove the REQUIRED "Hold For 1 Hour" task — Review's ONLY required
+task — leaving Review with exactly one task ("Notify Reviewer"). Because a
+required-tasks-completed exit rule needs at least one required task to stay
+valid, the agent must promote the surviving "Notify Reviewer" to required
+while leaving it otherwise unchanged, keeping Review's required-tasks-completed
+exit condition intact. Verifies the removal happened, the survivor was promoted
+to required and is otherwise intact, the exit condition still holds, the stage
+chain is intact (a true delete, not a rebuild), and the edited case launches.
 """
 
 import os
@@ -103,6 +106,17 @@ def main():
         sys.exit(
             f"FAIL: 'Notify Reviewer' task-entry rule should be "
             f"'current-stage-entered'; got {rule and rule.get('rule')!r}"
+        )
+
+    # The survivor must be promoted to required. "Hold For 1 Hour" was Review's
+    # only required task; a required-tasks-completed exit rule needs at least
+    # one required task, so leaving "Notify Reviewer" optional would make the
+    # stage's exit condition invalid (it could never complete / fails validate).
+    if not survivor.get("isRequired"):
+        sys.exit(
+            "FAIL: 'Notify Reviewer' must be promoted to required "
+            "(isRequired: true) so Review's required-tasks-completed exit rule "
+            "still has a required task; got isRequired=false"
         )
 
     # Review's exit condition must still hold: the required-tasks-completed

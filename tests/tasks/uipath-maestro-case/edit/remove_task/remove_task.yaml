@@ -4,10 +4,12 @@ description: >
   stage of an existing LinearThreeStages case. Review starts with two parallel
   tasks in distinct data.tasks lanes ("Hold For 1 Hour" required, "Notify
   Reviewer" optional); after the edit Review must carry only "Notify Reviewer".
-  Exercises editing an existing caseplan.json: deleting a task from a stage's
-  data.tasks lanes while leaving the stage's required-tasks-completed exit
-  condition intact (it still holds — the agent must not rewrite or break it),
-  the surviving task undisturbed, and the linear stage chain unchanged.
+  Exercises editing an existing caseplan.json: deleting a stage's ONLY required
+  task from its data.tasks lanes, then keeping the stage's
+  required-tasks-completed exit condition valid by promoting the surviving
+  "Notify Reviewer" to required (a required-tasks-completed exit needs at least
+  one required task), while leaving the surviving task otherwise undisturbed and
+  the linear stage chain unchanged.
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:edit, shape:multi-node, feature:stages, feature:conditions, feature:wait-for-timer]
 max_iterations: 1
 
@@ -35,7 +37,10 @@ initial_prompt: |
     - Review's exit condition must still hold: leave the
       required-tasks-completed exit rule (marksStageComplete) in place,
       unchanged. Do NOT rewrite, weaken, or delete it.
-    - "Notify Reviewer" must be left otherwise unchanged (same type and
+    - "Hold For 1 Hour" was Review's ONLY required task, and a
+      required-tasks-completed exit rule needs at least one required task to
+      stay valid. So promote the surviving "Notify Reviewer" to required
+      (isRequired: true). Leave it otherwise unchanged (same type and
       task-entry condition).
     - The three stages and the Intake → Review → Decision chain must be
       unchanged — do NOT touch Intake, Decision, the stage-entry conditions, or
@@ -59,7 +64,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Hold For 1 Hour task removed from Review: 3 stages unchanged, Review carries exactly one task ('Notify Reviewer') left intact, 'Hold For 1 Hour' is gone from the whole case, Review's required-tasks-completed exit condition still holds, the linear chain is unchanged, and the edited case launches in the Studio Web debug runtime"
+    description: "Hold For 1 Hour task removed from Review: 3 stages unchanged, Review carries exactly one task ('Notify Reviewer') promoted to required and otherwise intact, 'Hold For 1 Hour' is gone from the whole case, Review's required-tasks-completed exit condition still holds, the linear chain is unchanged, and the edited case launches in the Studio Web debug runtime"
     command: "python3 $TASK_DIR/check_remove_task.py"
     timeout: 720
     expected_exit_code: 0

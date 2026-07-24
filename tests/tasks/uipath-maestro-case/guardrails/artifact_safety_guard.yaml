@@ -163,12 +163,16 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: json_check
     description: "Caseplan contains both an action task and a process task"
     path: "InvoiceReviewCase/InvoiceReviewCase/caseplan.json"
-    includes:
-      - '"type": "action"'
-      - '"type": "process"'
+    assertions:
+      - operator: regex
+        expression: "join(',', nodes[].data.tasks[][].type)"
+        expected: "\\baction\\b"
+      - operator: regex
+        expression: "join(',', nodes[].data.tasks[][].type)"
+        expected: "\\bprocess\\b"
     weight: 1.5
     pass_threshold: 1.0
 
