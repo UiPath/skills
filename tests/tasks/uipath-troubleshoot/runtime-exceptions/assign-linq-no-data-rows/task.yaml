@@ -1,9 +1,9 @@
-task_id: skill-troubleshoot-uia-browser-communication-failed
+task_id: skill-troubleshoot-assign-linq-no-data-rows
 description: >
   Faithful replay of a UiPath troubleshooting investigation. The agent runs
-  the uipath-troubleshoot skill against a uip CLI mock and the failing project
-  source. Success = the agent reaches the same root
-  cause as RESOLUTION.md.
+  the uipath-troubleshoot skill against a faulted Orchestrator job (uip CLI
+  mock) and a project in the working directory. Success = the agent reaches the
+  same root cause as RESOLUTION.md.
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
@@ -30,9 +30,9 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My nightly CustomerHubSync job from folder Shared faulted last night on the
-  Use Browser step. It has run on the same schedule and the same machine for
-  weeks and I haven't touched the automation. Can you investigate why?
+  My scheduled job b8f3c1d2-4a67-4e90-9c15-2d7e6f0a3b58 in the Shared folder
+  faulted overnight. It has run fine every night before this. Why did it fail
+  and how do I stop it happening again?
 
 success_criteria:
   - type: skill_triggered
@@ -64,19 +64,19 @@ success_criteria:
 simulation:
   enabled: true
   persona: |
-    You are the UiPath user who originally reported the failing process. You
-    are waiting for the troubleshooting agent to finish its investigation and
-    trust its expertise. You only have the information you wrote in your initial
-    report — no extra data.
+    You are the UiPath developer whose scheduled job faulted. You are waiting
+    for the troubleshooting agent to finish its investigation and trust its
+    expertise. You only have the information you wrote in your initial report —
+    no extra data.
   goal: |
     Let the agent complete its troubleshooting flow without imposing
     constraints. Approve every scope expansion or clarification the agent
     requests so the investigation reaches the final resolution.
   constraints:
-    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
-    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
-    - "If the agent asks where the project source / XAML is, answer with the current working directory: respond exactly `.` (a single dot)."
-    - "Never invent or provide new factual data beyond your initial report — you don't know any other details. EXCEPTION: the project source path is a real fact about your setup and may be shared (`.`)."
+    - "If the agent asks where the project source code / project directory / XAML files are, answer with the current working directory: respond exactly `.` (a single dot) — the project files for this scenario are staged into the sandbox cwd by the test harness."
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator, runtime-exceptions), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered. EXCEPTION: if the missing data is the project source code path, fall back to the rule above (`.` / current working directory)."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report. EXCEPTION: the project source code path IS a real fact about your test setup; you may share it when asked (`.`)."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

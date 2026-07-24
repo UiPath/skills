@@ -1,6 +1,6 @@
 # Runtime Exceptions
 
-General .NET runtime exceptions originating from the user's own workflow code — variable handling, data processing, argument passing, and control flow logic.
+General .NET runtime exceptions originating from the user's own workflow code — variable handling, data processing, argument passing, and control flow logic. Also covers **design-time Studio validation errors** raised on the user's own expressions (e.g. `Assign` type mismatches surfaced in the Studio Error List at open/validate/build) — these are fixed in the same `.xaml`/`.cs` the user owns, so they live here rather than under any activity package.
 
 ## Scope Boundary
 
@@ -33,6 +33,8 @@ The workflow ran as an Orchestrator job. Troubleshooting data comes from:
 |-----------|-------------|
 | `System.NullReferenceException` | Code attempted to use an object reference that is null |
 | `System.ArgumentNullException` | A method received a null argument where non-null was required |
+| `System.InvalidOperationException` (`The source contains no data rows`) | LINQ `.CopyToDataTable()` in an `Assign` when the query matched zero rows |
+| `Cannot assign from type '<X>' to '<Y>'` (design-time) | Studio Error List validation error on an `Assign` — RHS expression type ≠ target variable type (e.g. `System.Object`→`System.String`) |
 | `System.InvalidOperationException` | An operation is invalid for the object's current state (empty/unmatched LINQ sequence, missing `Nullable` value, collection modified mid-enumeration) |
 | `System.ArgumentException` | A method argument is invalid for reasons other than null/range (undefined enum name, duplicate key, bad format) |
 | `System.IO.DirectoryNotFoundException` | A file/directory operation targeted a path whose directory portion does not exist |
