@@ -1,0 +1,6 @@
+{
+  "Name": "LedgerPostingBot",
+  "ProjectType": "Process",
+  "Description": "Unattended worker that posts ledger entries; logs activity and exits.",
+  "MainFile": "Main.xaml"
+}

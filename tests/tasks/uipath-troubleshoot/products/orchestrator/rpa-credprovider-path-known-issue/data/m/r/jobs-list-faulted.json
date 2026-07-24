@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Faulted LedgerPostingBot job. Fails at executor start with the CredProvider TEMP-path error — a documented Robot defect (ROBO-4022) fixed in 23.10.9. The host runs an older Robot build (see machines list).",
+  "Data": [
+    {"Key": "bbccddee-2233-4455-6677-8899aabbccdd", "State": "Faulted", "ProcessName": "LedgerPostingBot", "Source": "Schedule", "Type": "Unattended", "RuntimeType": "Unattended", "Machine": "MOCK-HOST", "StartTime": "2026-06-28T06:00:01.400Z", "EndTime": "2026-06-28T06:00:02.010Z", "CreationTime": "2026-06-28T06:00:01.300Z"}
+  ]
+}
