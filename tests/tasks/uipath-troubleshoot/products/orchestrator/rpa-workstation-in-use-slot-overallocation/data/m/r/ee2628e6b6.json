@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "b2c8cb22-2ebc-4c27-87f3-05efe701af1c",
+      "Name": "original_email@test.com's workspace",
+      "Path": "original_email@test.com's workspace",
+      "Description": "",
+      "Type": "Personal",
+      "ParentKey": ""
+    },
+    {
+      "Key": "c1a1b2c3-d4e5-6789-0abc-def012345678",
+      "Name": "ClaimsProcessing",
+      "Path": "ClaimsProcessing",
+      "Description": "Folder hosting the PolicyRenewalWorker unattended process and its runtime machine template.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "e0772cbe-c19c-4d5f-926c-043c2d2d300a",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

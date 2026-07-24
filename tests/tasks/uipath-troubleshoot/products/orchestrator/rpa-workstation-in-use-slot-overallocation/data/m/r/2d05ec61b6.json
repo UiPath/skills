@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Jobs that were Running on MOCK-HOST at the moment PolicyRenewalWorker faulted. TWO distinct jobs, TWO distinct robot accounts (UIPATH\\SVCINV, UIPATH\\SVCMAIL) — both healthy and executing. This proves (a) the host CAN create sessions (rules out session-creation timeout), (b) the failing user's own account is not already running an interactive job (rules out single-interactive-job-per-user), and (c) exactly 2 sessions are seated — the workstation's concurrent-session ceiling — so PolicyRenewalWorker is the 3rd concurrent dispatch and is refused.",
+  "Data": [
+    {
+      "Key": "88bb22cc-33dd-44ee-55ff-66aa77bb8801",
+      "State": "Running",
+      "ProcessName": "InvoiceMatcher",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Machine": "MOCK-HOST",
+      "LocalSystemAccount": "UIPATH\\SVCINV",
+      "StartTime": "2026-06-18T09:08:12.010Z",
+      "EndTime": null,
+      "CreationTime": "2026-06-18T09:08:11.900Z"
+    },
+    {
+      "Key": "88bb22cc-33dd-44ee-55ff-66aa77bb8802",
+      "State": "Running",
+      "ProcessName": "MailDispatcher",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Machine": "MOCK-HOST",
+      "LocalSystemAccount": "UIPATH\\SVCMAIL",
+      "StartTime": "2026-06-18T09:10:44.530Z",
+      "EndTime": null,
+      "CreationTime": "2026-06-18T09:10:44.410Z"
+    }
+  ]
+}

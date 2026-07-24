@@ -1,0 +1,35 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Faulted PolicyRenewalWorker jobs during the morning peak. Both faulted within ~1s of start on MOCK-HOST with the 'workstation is in use by another user' signature. Note these run as UIPATH\\SVCRENEW — a DIFFERENT account from the two jobs that were Running at the same time (see jobs-list-running), so this is not a single-interactive-job-per-user collision; it is machine-slot over-allocation.",
+  "Data": [
+    {
+      "Key": "77aa11bb-22cc-33dd-44ee-55ff66778811",
+      "State": "Faulted",
+      "ProcessName": "PolicyRenewalWorker",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-18T09:12:00.402Z",
+      "EndTime": "2026-06-18T09:12:01.233Z",
+      "CreationTime": "2026-06-18T09:12:00.190Z"
+    },
+    {
+      "Key": "77aa11bb-22cc-33dd-44ee-55ff66778822",
+      "State": "Faulted",
+      "ProcessName": "PolicyRenewalWorker",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-18T09:05:00.311Z",
+      "EndTime": "2026-06-18T09:05:01.090Z",
+      "CreationTime": "2026-06-18T09:05:00.150Z"
+    }
+  ]
+}
