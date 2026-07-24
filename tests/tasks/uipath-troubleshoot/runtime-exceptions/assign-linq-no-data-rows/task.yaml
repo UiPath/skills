@@ -32,9 +32,8 @@ reference:
 
 initial_prompt: |
   My scheduled job b8f3c1d2-4a67-4e90-9c15-2d7e6f0a3b58 in the Shared folder
-  faulted overnight. It has run fine every night before this. The project
-  source is in the current working directory. Why did it fail and how do I stop
-  it happening again?
+  faulted overnight. It has run fine every night before this. Why did it fail
+  and how do I stop it happening again?
 
 success_criteria:
   - type: skill_triggered

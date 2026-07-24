@@ -33,8 +33,7 @@ reference:
 initial_prompt: |
   I opened this project in Studio and it won't run — the Error List flags a red
   error on one of my Assign activities, something about "Cannot assign from
-  type ... to ...". The project source is in the current working directory.
-  What's actually wrong and how do I fix it?
+  type ... to ...". What's actually wrong and how do I fix it?
 
 success_criteria:
   - type: skill_triggered
