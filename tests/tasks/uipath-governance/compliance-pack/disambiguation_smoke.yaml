@@ -1,10 +1,10 @@
 task_id: skill-governance-compliance-disambiguation
 description: >
-  Skill-guided: ambiguous prompt "restrict AI model access for my finance team"
-  matches both Branch A (AOps: block a model provider in AI Trust Layer) and
-  Branch B (Access: restrict which identities can invoke agents). The skill must
-  ask the numbered disambiguation question and NOT run any governance mutations
-  before the user replies.
+  Skill-guided: the canonical ambiguous prompt "block ChatGPT for my finance team"
+  (disambiguation-guide.md worked example) matches both Branch A (AOps: block the
+  model at the AI Trust Layer / Studio) and Branch B (Access: block agents/flows
+  wrapping ChatGPT from being invoked by finance). The skill must ask the numbered
+  disambiguation question and NOT run any governance mutations before the user replies.
 
   This tests the most fragile routing path — wrong silent routing here produces
   a real artifact on the wrong branch.
@@ -24,18 +24,20 @@ run_limits:
   max_turns: 5
 
 initial_prompt: |
-  Restrict AI model access for my finance team in UiPath.
+  Block ChatGPT for my finance team in UiPath.
 
 success_criteria:
   - type: llm_judge
     description: "Agent asks the disambiguation question instead of silently picking a branch"
     include_agent_output: true
     prompt: |
-      The user asked: "Restrict AI model access for my finance team in UiPath."
+      The user asked: "Block ChatGPT for my finance team in UiPath."
 
       This request is ambiguous — it maps to two different governance layers:
-      1. Blocking an AI model provider in the AI Trust Layer for all users (AOps product policy)
-      2. Restricting which agents/flows the finance team may invoke as tools (Access ToolUsePolicy)
+      1. Blocking the ChatGPT model itself at the AI Trust Layer / Studio for the
+         finance team (AOps product policy)
+      2. Blocking the finance team from invoking agents/flows that wrap ChatGPT
+         as a tool (Access ToolUsePolicy)
 
       Correct behavior: the agent asks the user which layer they mean BEFORE
       committing to one, ideally as a numbered choice.
