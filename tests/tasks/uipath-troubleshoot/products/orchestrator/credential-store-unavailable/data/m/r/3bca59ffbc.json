@@ -1,0 +1,9 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "_doc": "Logs show Orchestrator failing to read the credential from the Orchestrator Database credential store because the backing SQL database is unreachable — a store-backend/connectivity failure, not a wrong password. The credential was never obtained, so no Windows logon was attempted.",
+  "Data": [
+    {"Level": "Error", "TimeStamp": "2026-06-27T05:00:02.740Z", "Message": "Job 'aabbccdd-1122-3344-5566-778899aabbcc' failed to start. Unable to retrieve credentials from Orchestrator Database credential store. Please check your connection settings and ensure the Orchestrator Database service is running."},
+    {"Level": "Error", "TimeStamp": "2026-06-27T05:00:02.500Z", "Message": "[Orchestrator] Credential store 'Orchestrator Database' read failed: unable to open a connection to the Orchestrator SQL database (timeout). No credential was retrieved; Windows logon was not attempted."}
+  ]
+}

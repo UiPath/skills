@@ -1,0 +1,6 @@
+{
+  "Name": "SecurePortalBot",
+  "ProjectType": "Process",
+  "Description": "Unattended worker that signs into a secure portal; logs activity and exits.",
+  "MainFile": "Main.xaml"
+}

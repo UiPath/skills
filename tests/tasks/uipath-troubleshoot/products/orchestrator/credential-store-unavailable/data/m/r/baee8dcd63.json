@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "_doc": "Failing SecurePortalBot job. Info is a credential-RETRIEVAL failure from the Orchestrator Database credential store — no logon was attempted (no 0x0000052E / Logon failed). The store backend is unreachable. Distinct from robot-credentials (wrong password) and job-faulted-logon-failure (LSA rejects a logon).",
+  "Data": {
+    "Key": "aabbccdd-1122-3344-5566-778899aabbcc",
+    "StartTime": "2026-06-27T05:00:02.100Z",
+    "EndTime": "2026-06-27T05:00:02.760Z",
+    "State": "Faulted",
+    "Source": "Schedule",
+    "SourceType": "Schedule",
+    "Info": "Unable to retrieve credentials from Orchestrator Database credential store. Please check your connection settings and ensure the Orchestrator Database service is running.",
+    "CreationTime": "2026-06-27T05:00:02.000Z",
+    "ReleaseName": "SecurePortalBot",
+    "Type": "Unattended",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "OrganizationUnitId": 7791640,
+    "FolderKey": "e5c5d6e7-f8a9-0123-4567-89abcdef1234",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\SVCPORTAL",
+    "LastModificationTime": "2026-06-27T05:00:02.760Z",
+    "JobError": {},
+    "ErrorCode": "Orchestrator",
+    "TraceId": "aabbccdd-1122-3344-5566-778899aabbcc",
+    "Id": 671880011
+  }
+}

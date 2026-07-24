@@ -1,0 +1,9 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Two DIFFERENT processes in SecureOps faulted within a minute, both with the SAME 'Unable to retrieve credentials from Orchestrator Database credential store' error. Store-wide impact (multiple robots/processes bound to the same store) points at the store backend being unreachable, not one user's password.",
+  "Data": [
+    {"Key": "aabbccdd-1122-3344-5566-778899aabbcc", "State": "Faulted", "ProcessName": "SecurePortalBot", "Source": "Schedule", "Type": "Unattended", "RuntimeType": "Unattended", "Machine": "MOCK-HOST", "StartTime": "2026-06-27T05:00:02.100Z", "EndTime": "2026-06-27T05:00:02.760Z", "CreationTime": "2026-06-27T05:00:02.000Z"},
+    {"Key": "aabbccdd-1122-3344-5566-778899aabbdd", "State": "Faulted", "ProcessName": "VendorSyncBot", "Source": "Schedule", "Type": "Unattended", "RuntimeType": "Unattended", "Machine": "MOCK-HOST-2", "StartTime": "2026-06-27T05:00:41.320Z", "EndTime": "2026-06-27T05:00:41.980Z", "CreationTime": "2026-06-27T05:00:41.200Z"}
+  ]
+}
