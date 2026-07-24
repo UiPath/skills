@@ -47,9 +47,6 @@ simulation:
     - "If asked any other clarifying question, pick the recommended / first sensible option and keep moving."
     - "Keep replies short — one sentence or a single chosen option."
     - "Never tell the agent to stop, skip validation, or reuse an existing solution."
-    - "Stop as soon as the agent declares the work done: the first time it reports the project is created and validated, reply with exactly <<<END>>> on its own line. Do not ask for extra polish, re-checks, alternative designs, or further improvements after that point — the grader verifies the result."
-  # Already below the 8-turn cap the other simulated tasks were lowered to: this
-  # is a narrow single-question probe, not an elicitation dialog.
   max_turns: 6
 
 success_criteria:
