@@ -48,9 +48,6 @@ initial_prompt: |
   Diagnose what you can; if the fix needs the host, hand me the exact
   things to check next time I'm there and stop.
 
-  The project source for the failing process is in the current working
-  directory.
-
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
@@ -92,9 +89,10 @@ simulation:
     constraints. Approve every scope expansion or clarification the agent
     requests so the investigation reaches the final resolution.
   constraints:
+    - "If the agent asks where the project source code / project directory / XAML files are, answer with the current working directory: respond exactly `.` (a single dot) — the project files for this scenario are staged into the sandbox cwd by the test harness."
     - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
-    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered and to hand you the host check list at the end."
-    - "Never invent or provide new factual data beyond your initial report — you only know that the job times out every run, that no pop-up appeared in your attended test, and that the email was left in the Outbox."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered and to hand you the host check list at the end. EXCEPTION: if the missing data is the project source code path, fall back to the rule above (`.` / current working directory)."
+    - "Never invent or provide new factual data beyond your initial report — you only know that the job times out every run, that no pop-up appeared in your attended test, and that the email was left in the Outbox. EXCEPTION: the project source code path IS a real fact about your test setup; you may share it when asked (`.`)."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6
