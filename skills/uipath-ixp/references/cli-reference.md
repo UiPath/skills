@@ -134,3 +134,41 @@ For working with runtime (deployed) IXP models — separate from the training wo
 | Command | Description |
 |---------|-------------|
 | `uip ixp deployments get-taxonomy <project-name> --version <N> --output json` | Get the project taxonomy (data types + field groups) at a specific trained model version. `--version` is **required** (non-negative integer; 0 is valid; no short alias) — get the number from `projects list-models`. Like `projects get-taxonomy`, the body is the raw IXP dataset artifact in snake_case, under `Data.dataset` (`entity_defs[]` + `label_groups[]`), bound to the snapshot the version was trained on (Code: `IxpDeploymentsGetTaxonomy`). |
+
+### Runtime extraction
+
+Runtime extraction runs a **published (deployed) model** on a new file — the live runtime path, not the training-data prediction path. **Async, two-step flow:**
+
+1. `uip ixp extraction start <project-id> <file> --tag <tag> --output json` — uploads the file and starts extraction; returns an `operationId` immediately (does **not** wait for the result). **File types:** same whitelist as document upload — see [Supported document files](#supported-document-files). Redirect the response to a file under the project working dir so a later session can resume the poll — same pattern as saving a taxonomy snapshot:
+
+   ```bash
+   uip ixp extraction start <project-id> <file> --tag <tag> --output json \
+     > /tmp/ixp/<project-name>/<file>.extraction.json
+   ```
+2. `uip ixp extraction get-result <project-id> <operation-id> --tag <tag> --output json` — fetches the operation by id: still running, the extracted fields when done, or a failure. **Output** on completion (Code `IxpExtractionGetResult`): `Data` is an array of field groups, each `{ "fieldGroupName": "<name>", "fields": [{ "name": "<field>", "value": "<extracted>" }] }`.
+
+> **Runtime extraction vs `labellings get-predictions` — two separate workflows, NOT two ways to process one file.** You never pick between them for a given document; they differ in how the file gets in and which model runs:
+> - **Design-time (`labellings get-predictions`)** — the labelling/review loop against the *draft* model. Two steps: `documents upload` first adds the file to the **training set**, then `get-predictions` returns the draft model's predictions on that already-uploaded document to label and review. The file lives in the training set.
+> - **Runtime (`extraction start`)** — production extraction against a *published* model. One step: the file is passed inline to `extraction start`, which uploads it as part of the call — there is **no** separate upload command and the file is **not** added to the training set. Use it to run a deployed model on a fresh document.
+
+#### Project **Id**, not Name
+
+Unlike every other `uip ixp` command (which take the project `Name` slug — Critical Rule 7), the runtime extraction commands take the project **Id** (a GUID). If you already hold the GUID (the user gave it, or it's in context from an earlier `projects list`), use it directly — no lookup call. Otherwise — the usual case, where the user names a project by **Title or Name** — resolve its `Id` by calling `uip ixp projects list --output json` and picking the entry whose `Title` or `Name` matches. If nothing matches, the title/name is wrong — list projects and confirm. If **more than one** matches, STOP and ask which project (Critical Rule 16).
+
+Pass that `Id` as `<project-id>` to **all extraction commands**.
+
+#### `--tag` (required)
+
+`--tag` is **required** on all extraction commands — `live` (production) or `staging`; those are the only two tags (see `projects publish --tag`). Use the **same tag and project-id** for `extraction start` and every `extraction get-result` poll of that operation. (There is no `--version`; runtime extraction is tag-only.)
+
+#### Polling — you drive it
+
+`extraction start` returns as soon as extraction begins; the CLI no longer waits or polls. **Poll `extraction get-result` every 5 seconds until it returns a terminal shape** (finished or failed — below). Do NOT impose an arbitrary time cap: extraction runs server-side and continues whether or not you poll, so quitting early neither cancels it nor makes it finish sooner. If your own turn/time budget runs out before the operation resolves, report the resumable `operationId` (persisted in step 1) and stop — a later session can pick up the same poll. `extraction get-result` returns one of three shapes (Code `IxpExtractionGetResult`):
+
+| State | Envelope | What to do |
+|-------|----------|------------|
+| Still running | `Result: Success`, `Data: { operationId, status }` where `status` is `NotStarted` or `Running`, plus `Instructions` "…still in progress…". | Wait 5 s and poll again. |
+| Finished | `Result: Success`, `Data` is the **array of field groups** (no `status` field). | Done — report the fields. |
+| Failed | `Result: Failure` (model failure, or a digitization/extractor timeout — the backend has **no timeout status**, it surfaces as a failure). | Stop and report the error. |
+
+> The framework operation status is only `NotStarted \| Running \| Failed \| Succeeded` — there is **no `Timeout` status**. When extraction runs too long the backend itself ends the operation as `Failure` (surfaced by `extraction get-result`) rather than inventing a distinct timeout state — so the backend owns the timeout, not you. Poll until `extraction get-result` is terminal; don't guess a client-side deadline.
