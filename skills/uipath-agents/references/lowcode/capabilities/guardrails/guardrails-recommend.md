@@ -73,19 +73,28 @@ its input or output (literal word/phrase, regex, number, boolean, or always),
 use the custom deterministic recipe below. This decision happens before
 built-in catalog candidate ranking:
 
-1. Read the Tool's `resource.json.name` and use that exact value as the only
+1. Treat quoted text and a distinct all-caps token such as `CONFIDENTIAL` as
+   an exact literal predicate, even when the surrounding request is phrased
+   semantically (for example, "worried it might publish CONFIDENTIAL content"
+   or "what guardrails should I add?"). Do not broaden that literal into a
+   semantic confidentiality classification.
+2. Read the Tool's `resource.json.name` and use that exact value as the only
    entry in `selector.matchNames`.
-2. Set `$guardrailType: "custom"` and `selector.scopes: ["Tool"]`. This branch
+3. Set `$guardrailType: "custom"` and `selector.scopes: ["Tool"]`. This branch
    does not use a `builtInValidator` or `validatorParameters`.
-3. For a literal word or phrase, use `$ruleType: "word"`,
+4. For a literal word or phrase, use `$ruleType: "word"`,
    `operator: "contains"`, and preserve the exact requested literal as `value`.
    Use the matching custom rule type when the user explicitly requests a
    regex, number, boolean, or always condition.
-4. Use a blocking action when the request says to prevent the Tool operation,
+5. Use a blocking action when the request says to prevent the Tool operation,
    then build the complete object from [guardrails.md](guardrails.md).
 
 Broad semantic threats without an exact mechanical predicate continue through
 the built-in catalog ranking in Step 2.
+
+Once this deterministic branch matches, the catalog/list calls remain
+mandatory discovery steps but cannot replace or override the custom rule with
+`llm_as_judge`, PII detection, or any other built-in validator.
 
 ### Step 2 — Catalog-Driven Recommendation Analysis
 
@@ -176,6 +185,13 @@ Write the new guardrail blocks to `agent.json`'s `guardrails[]` array. Then run:
 ```bash
 uip agent validate "<AgentName>" --output json
 ```
+
+**Deterministic completion gate:** when the request matched the exact
+named-Tool branch, re-read `agent.json` before validation and confirm the
+written entry has `$guardrailType: "custom"`, Tool scope, the exact Tool name,
+and the requested custom rule type/value. If a built-in validator was written,
+replace it with the required custom rule before running validation or
+reporting completion.
 
 Report to the user:
 - What was added (by name)
