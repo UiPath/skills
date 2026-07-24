@@ -14,6 +14,11 @@ Both workflows are driven by live data — the catalog (`uip agent guardrails ca
 
 > Full three-fetch mandate applies to **Recommend mode**. In **Validate mode** of an existing guardrail the SDK docs are the authoritative, sufficient source for a validator's scope/stage — `catalog` (relevance metadata) and `list` (tenant entitlement) are recommended cross-checks, not a hard prerequisite for a scope/placement fix. See [Validate Mode](#validate-mode).
 
+**Required first operation in both modes:** use `WebFetch` on
+`https://uipath.github.io/uipath-python/core/guardrails/` before catalog calls,
+project inspection, analysis, or edits. A coded guardrail recommendation or
+validation is not grounded until this WebFetch has completed.
+
 ### Catalog (cacheable — 30-minute TTL)
 
 The catalog is the same for all tenants (authored metadata, rarely changes). Cache it locally for 30 minutes to avoid redundant calls.
@@ -192,7 +197,7 @@ Map catalog parameter shapes to Python:
 | `map-enum` (e.g. `entityThresholds`) | Dict from enum member → number (e.g. `{PIIDetectionEntityType.EMAIL: 0.5}`) — keys must exactly match the `enum-list` parameter's values |
 | `number` (e.g. `threshold`) | Plain `float` / `int` constructor argument |
 | `text` (e.g. `guardrailText`) | Plain `str` constructor argument |
-| `enum` (e.g. `model`) | `str` value from the allowed options list. When the catalog shows an empty options list (as with `llm_as_judge`'s `model`), ask the user which model ID to use — the available values depend on the LLM Gateway configuration in their tenant. |
+| `enum` (e.g. `model`) | `str` value from the allowed options list. When the catalog shows an empty options list (as with `llm_as_judge`'s `model`), run `uip agent guardrails llm-as-judge-models --output json` and use a `ModelId` from the result. Ask the user for a model ID only if the command returns nothing or fails. |
 | `text-list` (e.g. `positiveExamples`, `negativeExamples`) | `List[str]` constructor argument |
 
 Use `BlockAction(...)`, `LogAction(severity_level=...)`, or `EscalateAction(app_name=..., app_folder_path=..., recipient=...)` for human-in-the-loop review — or any other action the SDK docs expose. Never invent action class names. For `EscalateAction`, the fetched SDK docs must expose the class/parameters, and the Action App must be deployed and declared in `bindings.json` using [../../lifecycle/bindings-reference.md](../../lifecycle/bindings-reference.md) (see [guardrails.md § Escalation action (HITL)](guardrails.md#escalation-action-human-in-the-loop)).

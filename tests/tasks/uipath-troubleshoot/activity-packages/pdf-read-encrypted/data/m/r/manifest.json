@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay: a UiPath.PDF.Activities ReadPDFText on an encrypted PDF faults with UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException 'The password is incorrect.' (from PdfReader..ctor -> ReadPDFText.GetFileReader) because no/wrong Password was supplied for the password-protected PDF. Signature captured verbatim from a live uip rpa run; workflow/process names neutralized. The agent must read the encrypted-PDF/password signature as the cause, not blame a missing file (FileNotFoundException), corrupt content (Invalid input stream), or Manage-PDF-Password argument strings. First-match-wins.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "0c745290f5.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e --state Faulted",
+      "file": "68d4f00f88.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+      "file": "68d4f00f88.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "68d4f00f88.json"
+    },
+    {
+      "match": "or jobs get 8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40",
+      "file": "ad51ce00fc.json"
+    },
+    {
+      "match": "or jobs logs 8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40 --level Error",
+      "file": "3427f5d6e4.json"
+    },
+    {
+      "match": "or jobs logs 8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40",
+      "file": "3427f5d6e4.json"
+    },
+    {
+      "match": "or jobs traces 8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40",
+      "file": "2d930e2440.json"
+    },
+    {
+      "match": "traces spans get --job-key 8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40",
+      "file": "56a91ad33d.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent lists faulted jobs in Shared to find the failing job."
+    },
+    {
+      "pattern": "or jobs get 8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the PdfException 'The password is incorrect.' signature."
+    }
+  ]
+}

@@ -4,12 +4,21 @@ description: >
   documented Orchestrator, A2A, queue, business-rule, call-activity,
   message-event, case-management, wait-event, migration, and preserve-only
   extension variants.
-tags: [uipath-maestro-bpmn, integration, lifecycle:generate, contract:xml, node:service-task, node:call-activity, connector]
+tags: [uipath-maestro-bpmn, integration, "mode:build", lifecycle:generate, contract:xml, node:service-task, node:call-activity, connector]
 
 run_limits:
   expected_turns: 20
   max_turns: 90
-  turn_timeout: 1200
+  # 17 typed contract wrappers + full BPMN DI authored in one unbroken turn,
+  # each preceded by a slow `registry` resolve. The experiment default caps
+  # task_timeout at 1200s, which hard-kills the whole task before the BPMN
+  # lands no matter how high turn_timeout is (observed ERROR: killed mid-write
+  # at 1200s with only a start/end skeleton written). Raise BOTH: task_timeout
+  # for the end-to-end wall clock, turn_timeout for the long authoring turn.
+  # Matches the uipath-planner constraint-gate budget proven for heavy
+  # single-turn authoring.
+  task_timeout: 3600
+  turn_timeout: 2700
 initial_prompt: |
   Create a local BPMN project named "ContractVariantsBpmn".
   Use synthetic placeholder resource names only. Do not include tenant URLs,
@@ -50,16 +59,10 @@ initial_prompt: |
   publish, deploy, debug, or run the process.
 
 success_criteria:
-  - type: file_exists
-    description: "BPMN source was created"
-    path: "ContractVariantsBpmn/ContractVariantsBpmn.bpmn"
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Contract variant wrappers use the documented BPMN element types"
     command: "python3 $TASK_DIR/check_contract_variant_wrappers.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 5.0
+    weight: 6.0
     pass_threshold: 1.0

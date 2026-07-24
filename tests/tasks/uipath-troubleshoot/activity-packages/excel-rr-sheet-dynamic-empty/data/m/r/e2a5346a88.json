@@ -1,0 +1,86 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-bb222288-001",
+      "JobKey": "bb222222-8888-9999-0000-111122223333",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T06:00:01.250Z",
+      "Message": "Execution started.",
+      "ProcessName": "MonthlySalesImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb222288-002",
+      "JobKey": "bb222222-8888-9999-0000-111122223333",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T06:00:01.360Z",
+      "Message": "[MonthlySalesImport] Starting monthly sales import — reading C:\\Robot\\Data\\sales-2026-05.xlsx",
+      "ProcessName": "MonthlySalesImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb222288-003",
+      "JobKey": "bb222222-8888-9999-0000-111122223333",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T06:00:01.470Z",
+      "Message": "Use Excel File: sales-2026-05.xlsx — executing",
+      "ProcessName": "MonthlySalesImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb222288-004",
+      "JobKey": "bb222222-8888-9999-0000-111122223333",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T06:00:01.560Z",
+      "Message": "Get Workbook Sheets — executing",
+      "ProcessName": "MonthlySalesImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb222288-005",
+      "JobKey": "bb222222-8888-9999-0000-111122223333",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T06:00:01.760Z",
+      "Message": "[MonthlySalesImport] Available sheets in workbook: [\"Sheet1\", \"Data\", \"Summary\"]",
+      "ProcessName": "MonthlySalesImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb222288-006",
+      "JobKey": "bb222222-8888-9999-0000-111122223333",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T06:00:02.010Z",
+      "Message": "[MonthlySalesImport] Target sheet resolved to: ''",
+      "ProcessName": "MonthlySalesImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb222288-007",
+      "JobKey": "bb222222-8888-9999-0000-111122223333",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T06:00:02.410Z",
+      "Message": "Read monthly sales sheet — executing (SheetName='')",
+      "ProcessName": "MonthlySalesImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb222288-008",
+      "JobKey": "bb222222-8888-9999-0000-111122223333",
+      "Level": "Error",
+      "Timestamp": "2026-05-20T06:00:02.680Z",
+      "Message": "Read monthly sales sheet — UiPath.Excel.BusinessException: The sheet with the name '' does not exist.",
+      "ProcessName": "MonthlySalesImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

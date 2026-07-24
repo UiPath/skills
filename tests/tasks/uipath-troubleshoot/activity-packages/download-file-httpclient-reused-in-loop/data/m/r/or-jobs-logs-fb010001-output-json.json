@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-16T08:14:30.140Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-16T08:14:32.260Z",
+      "Message": "[Download File from URL] Downloaded report-1.pdf (iteration 1 of 3)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T08:14:35.470Z",
+      "Message": "[Download File from URL] This instance has already started one or more requests. Properties can only be modified before sending the first request. (iteration 2 of 3)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T08:14:35.540Z",
+      "Message": "Download File from URL: This instance has already started one or more requests. Properties can only be modified before sending the first request.\r\nin Main.xaml\r\n    at DownloadFileFromUrl \"Download File from URL\"\r\n    at ForEach<String> \"For Each url\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-16T08:14:35.600Z",
+      "Message": "Execution ended in: 00:00:05"
+    }
+  ]
+}

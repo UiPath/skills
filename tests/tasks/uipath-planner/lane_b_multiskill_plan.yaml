@@ -42,6 +42,33 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  - type: file_contains
+    description: "Plan uses the task row schema, not prose (Task headings, identity, dependencies, prompts)"
+    path: "solution-plan.md"
+    includes:
+      - "Task T"
+      - "Identity"
+      - "Blocked by"
+      - "Skill prompt"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Mandatory Testing task present for the generation skills"
+    path: "solution-plan.md"
+    includes:
+      - "Testing (MANDATORY)"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Task prompts embed the plan path (not 'this plan') so resumed tasks can find their values"
+    path: "solution-plan.md"
+    includes:
+      - "solution-plan.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: run_command
     description: "Stayed in planning — did not start building (no .xaml/.flow/agent.json authored)"
     command: "! find . \\( -name '*.xaml' -o -name '*.flow' -o -name 'agent.json' \\) -not -path '*/.venv/*' -not -path '*/node_modules/*' | grep -q ."

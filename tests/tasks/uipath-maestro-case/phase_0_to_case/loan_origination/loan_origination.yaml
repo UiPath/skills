@@ -158,7 +158,7 @@ simulation:
   constraints:
     - "Answer each question concisely and decisively — one short sentence, or pick the recommended / first option in an AskUserQuestion. Never bounce the decision back ('you decide') and never stall."
     - "Ground every answer in the process described in your opening message. For a detail you never specified, make a sensible, consistent call and state it in one line — do not invent new stages, exception lanes, personas, external systems, or extra tasks beyond that brief."
-    - "Keep the design lightweight and within Phase-0 scope: about two tasks per stage (~12–14 total), three personas, three integrations. When the agent lays out a stage's tasks, confirm a minimal set — do NOT pad, add steps, or suggest extra automations."
+    - "Capture the stages, tasks, personas, integrations, and rules described in the opening brief. Do not invent unrelated business processes or external systems."
     - "You want a draft to review first. If the assistant offers to finalize, validate, approve, build, or move to a next phase, tell it to leave it as a draft for now — you'll finalize later. If it wants to keep polishing or double-checking the draft, say it's good enough for a first review."
     - "Once the draft captures the design, you're done — end the conversation; don't open new topics or extend the interview."
     - "Keep replies short — one sentence or a single option pick."

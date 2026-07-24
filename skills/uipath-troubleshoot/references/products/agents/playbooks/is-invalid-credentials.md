@@ -7,7 +7,7 @@ confidence: high
 ## Context
 
 What this looks like:
-- Agent job faults during an IS tool call; `uip agent run status <job-id> --output json` shows `Faulted`
+- A deployed agent job or `uip agent debug` run faults during an IS tool call
 - `uip traces spans get <trace-id> --output json` contains a `toolCall` span whose `ATTRIBUTES.error` contains:
   ```
   {"details":"Invalid Organization or User secret, or invalid Element token provided.","message":"Failed to execute IS call to /curated_soqlQuery: HTTP Status: 401 - Unauthorized","status":400}
@@ -29,11 +29,13 @@ What to look for:
 
 ## Investigation
 
-1. Get the job trace ID:
+1. Get the spans for the failing run. If you already have a trace ID, use it directly. If you only have an Orchestrator job key, resolve it through traces:
 
    ```bash
-   uip agent run status <job-id> --output json \
-     --output-filter "traceId"
+   uip traces spans get <trace-id> --output json
+
+   # or
+   uip traces spans get --job-key <job-key> --folder-path "<folder-path>" --output json
    ```
 
 2. Pull the IS tool call span and extract the error:
@@ -80,15 +82,16 @@ What to look for:
 
   Note the new connection ID. Update `properties.connection.id`, `properties.connection.name`, and `solutionProperties.resourceKey` in `<agent-path>/resources/<ToolName>/resource.json` to the new connection ID — see [`uipath-agents`](/uipath:uipath-agents) IS tool reference for the full resource shape.
 
-  Validate, refresh, and republish:
+  Refresh and validate the agent:
 
   ```bash
-  uip agent validate --output json
-  uip solution resource refresh --output json
-  uip solution publish --output json
+  uip agent refresh "<AGENT_PROJECT_DIR>" --output json
+  uip agent validate "<AGENT_PROJECT_DIR>" --output json
   ```
 
-  > Use this same rebind sequence for all resolution paths that create a new connection.
+  After successful validation, report the result and ask whether the user wants to upload the corrected solution to Studio Web or publish/deploy it to Orchestrator. Do not perform any delivery action without explicit approval.
+
+  > Use this same rebind, refresh, validate, and approval sequence for all resolution paths that create a new connection.
 
 **If `Org/User secret` invalid — re-authenticate with updated credentials:**
 

@@ -19,7 +19,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
 
 sandbox:
-  driver: tempdir
   python: {}
 
 initial_prompt: |

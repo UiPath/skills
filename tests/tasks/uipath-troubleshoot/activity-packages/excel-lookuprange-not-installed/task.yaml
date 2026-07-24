@@ -5,7 +5,7 @@ description: >
   caused by Microsoft Excel not being installed on the robot host: the
   Excel Application Scope cannot create the Excel.Application COM object and
   faults with REGDB_E_CLASSNOTREG (0x80040154). Success = agent matches the
-  lookup-range-excel-not-installed playbook AND recommends installing Excel
+  excel-not-installed failure-mode playbook AND recommends installing Excel
   OR migrating to the Workbook Read Range + Lookup Data Table path.
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 

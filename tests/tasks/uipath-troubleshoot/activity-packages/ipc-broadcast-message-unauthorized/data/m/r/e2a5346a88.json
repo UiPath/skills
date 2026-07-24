@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-29T16:04:31.520Z",
+      "Message": "Broadcast Control Signal: Access to the path '\\\\.\\pipe\\UiPath.Ipc.ControlChannel' is denied.\r\nin Main.xaml\r\n    at Broadcast Message \"Broadcast Control Signal\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.UnauthorizedAccessException: Access to the path '\\\\.\\pipe\\UiPath.Ipc.ControlChannel' is denied.\r\n   at System.IO.Pipes.NamedPipeClientStream.TryConnect(Int32 timeout)\r\n   at System.IO.Pipes.NamedPipeClientStream.Connect(Int32 timeout)\r\n   at UiPath.IPC.Activities.BroadcastMessage.<ExecuteAsync>d__24.MoveNext()\r\n--- End of stack trace from previous location ---\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivity`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)"
+    }
+  ]
+}

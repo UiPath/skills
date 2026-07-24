@@ -12,7 +12,7 @@ Reason the case shape from the process the user describes — **do not reach for
 
 **Secondary stage** (a `case-management:Stage` node carrying `data.stageType: "secondary"` — the `case-management:ExceptionStage` node type is removed at v22) — work that is **not a fixed step on the line**: it can fire at many points and only under a condition. Errors, escalations, rejections, rework loops, cancellations. Three rules define it, all CLI-enforced:
 
-- **No edges** — reached and exited purely by conditions, never wired by an edge. (True of every stage now that edges are retired; the legacy `CASE_MGMT_SECONDARY_STAGE_EDGES` validator that flagged secondary-stage edges is moot.) It is detached from any flow graph.
+- **No edges** — reached and exited purely by conditions, never wired by an edge (true of every stage — edges retired). It is detached from any flow graph.
 - **Entered by its own condition**, never by an edge — but the entry shape depends on the lane's trigger:
   - **(a) Mid-stage interrupt** — user-launched (`user-selected-stage`, paired with a `wait-for-user` exit) or external (`wait-for-connector`). Fires *while the origin is still active* and genuinely interrupts it.
   - **(b) Decision/signal divert** — the **origin** stage carries a **gated diverting exit** (`Marks Stage Complete: No`, `IF` on the decision/signal, `exitToStageId` → this lane), and this lane's `selected-stage-exited(origin) + IF` entry **matches** it. Fires when the origin *exits* — a divert-and-return, NOT a true mid-stage interrupt. A variable-driven mid-stage interrupt is not expressible without a connector, so a decision- or signal-gated lane MUST use shape (b). See [§ Logical integrity step 5](#logical-integrity--stage-graph).
@@ -42,8 +42,10 @@ The case, each stage, and each task move through a lifecycle gated by **rules** 
 How to reason with these:
 
 - **`required-*` vs `selected-*`.** `required-tasks-completed` / `required-stages-completed` = "all items flagged required are done" (the `isRequired` flow). `selected-tasks-completed` / `selected-stage-completed` / `selected-stage-exited` = "these *specific named* items." Pairing rule (Key Rule 4): `Marks Complete: Yes` pairs only with `required-*`; `selected-*` is for `No` (routing / early exit / alternate disposition). A `Yes` + `selected-*` pair is a schema error.
-- **Secondary stage** uses **stage-entry + stage-exit rules only, never edges** (true of every stage now — edges are retired). Its entry rule is typically *interrupting* (`isInterrupting: true`); its exit uses `return-to-origin` to rejoin the flow it left. **For a decision/signal-routed lane, the routing lives on the *origin* stage:** a gated diverting exit (`Marks Stage Complete: No`, `IF` on the decision/signal, `exitToStageId` → the lane), with the origin's completion exit gated by the inverse `IF` so the two paths are mutually exclusive — see [§ Logical integrity step 5](#logical-integrity--stage-graph).
-- **First task in a stage** must carry `current-stage-entered` (emit it explicitly). `wait-for-connector` makes a gate pause for an inbound connector callback — its `conditionExpression` gates on **case state** only (no `event` payload; in-rule extract-then-gate is unsupported at runtime — gate a downstream condition instead); `adhoc` lets a *task* fire manually from the case app (task-entry only — never a stage-entry rule); `runs-sequentially` chains tasks in a lane.
+- **Secondary stage** uses **stage-entry + stage-exit rules only, never edges** (true of every stage — edges retired). Its entry rule is typically *interrupting* (`isInterrupting: true`); its exit uses `return-to-origin` to rejoin the flow it left. **For a decision/signal-routed lane, the routing lives on the *origin* stage:** a gated diverting exit (`Marks Stage Complete: No`, `IF` on the decision/signal, `exitToStageId` → the lane), with the origin's completion exit gated by the inverse `IF` so the two paths are mutually exclusive — see [§ Logical integrity step 5](#logical-integrity--stage-graph).
+- **First event-driven task in a stage** must carry `current-stage-entered` (emit it explicitly). A sequential chain is the exception: the first sequential task carries only `runs-sequentially`, which the frontend interprets as current-stage-entered; later sequential tasks carry only `runs-sequentially`, which the frontend interprets as the preceding task completing. `wait-for-connector` makes a gate pause for an inbound connector callback — its `conditionExpression` gates on **case state** only (no `event` payload; in-rule extract-then-gate is unsupported at runtime — gate a downstream condition instead); `adhoc` lets a *task* fire manually from the case app (task-entry only — never a stage-entry rule).
+
+**Frontend task-mode mapping.** The UI's `sequential`, `event-triggered`, and `manually-triggered` choices are not interchangeable: sequential means the task-only `runs-sequentially` rule; event-triggered means an explicit event/condition rule (use `wait-for-connector` for an external connector callback); manually-triggered means an `adhoc`-only task with `isRequired: false`. Do not infer one mode from `data.tasks` lanes, and do not add a second entry rule that changes the selected mode.
 - **`user-selected-stage`** (stage entry) starts a stage on demand by a user rather than by flow. The CLI validator requires it to pair with a `wait-for-user` stage exit elsewhere: a `wait-for-user` exit with no `user-selected-stage` entry — or a `user-selected-stage` entry with no `wait-for-user` exit — fails `validate`.
 
 Exact cell formats live in [§ Stage content rules](#stage-content-rules) and [§ Task content rules](#task-content-rules) — this table is the conceptual map of *which rule belongs where*.
@@ -126,7 +128,7 @@ The `type` says **how the work gets done**, not what it's about. Read the verb +
 | `execute-connector-activity` | one **operation on an Integration Service connector** (e.g. Salesforce create record, send email) | Is this a single connector operation against a SaaS system? |
 | `wait-for-connector` | the case **pauses until an external system calls back** (webhook, inbound message, event) | Is the case waiting for an external system to respond? |
 | `wait-for-timer` | the case **pauses for a duration or until a datetime** | Is the case just waiting on time? |
-| `case-management` | the step **launches / coordinates a child case** | Does this spin up a sub-case? (any child case trips the Phase 0 threshold → soft-redirect) |
+| `case-management` | the step **launches / coordinates a child case** | Does this spin up a sub-case? |
 
 **Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. "Approve / review / decide" verbs are ambiguous between `action` (human) and `agent` (AI) — these are Always-Ask ([phase-0-interview.md § When to Ask vs Default](phase-0-interview.md#when-to-ask-vs-default)); never guess. A compliance trigger phrase forces `action` regardless of the pick above (see below).
 
@@ -192,6 +194,20 @@ Defines what `sdd.md` Section 1 (Case Definition) must contain.
 | SLA Type | conditional | `time-based` (single unconditional duration) / `condition-based` (one or more conditionExpression-keyed overrides + a default time-based row) | Default `time-based` when Case SLA set with no per-condition overrides. The FE persists `condition-based` whenever ≥ 1 `slaRules[]` entry carries a non-empty `conditionExpression` (see PO.Frontend `CaseManagementSlaProperties.tsx:27-30`). `condition-based` requires populating the §Variable SLA Rules table; `time-based` omits it. |
 | Case App | optional | `Enabled` / `Disabled` — whether the in-product Case App UI is on (`metadata.caseAppEnabled`). | Default `Disabled`; record in source ledger. |
 | Task-output passing | optional | `Direct` / `Shared` — `metadata.caseDirectlyPassTaskOutputs`. `Direct` passes a task's outputs straight to downstream tasks (default). | Default `Direct`. |
+
+**PO.Frontend validation parity.** Before Approve, apply the same name and SLA checks that the Case App applies:
+
+| Surface | Required checks |
+|---|---|
+| Stage label | Non-empty; unique across stages; no `:`. A non-Case-Manager stage also cannot reuse the reserved default Case Manager stage label when a Case Manager stage exists. |
+| Task display name | No `:` for materialized tasks. |
+| SLA rule title (`displayName`) | Non-empty; unique within the root or stage target; no `:`. |
+| Escalation title (`displayName`) | Non-empty; unique across escalations on the target; no `:`. |
+| SLA duration | `count > 0`; when `unit: min`, `15 ≤ count ≤ 1000`. Supported units are `min`, `h`, `d`, `w`, and `m`. |
+| Conditional SLA | Every non-default SLA rule has a non-empty expression/condition. |
+| Escalation payload | Every escalation has at least one recipient; an `at-risk` escalation has an `atRiskPercentage` value. |
+
+These are blocking authoring errors, not optional style warnings. Preserve the user's wording when repairing a name, but ask for a replacement when uniqueness or a reserved delimiter is violated; never silently suffix or truncate it.
 
 ### 1.2 Case-level SLA escalation
 
@@ -442,13 +458,15 @@ Defines per-task detail blocks. Every task opens with an **Entry Condition** blo
 
 | Rule | When to use |
 |---|---|
-| `current-stage-entered` | First task in stage, or any ungated task (including connector tasks) that should start when its stage is entered (REQUIRED for the first task; emit explicitly, never imply). When a task has multiple entry rows, render this one first. |
-| `selected-tasks-completed("<Task>")` | Sibling-gated task (e.g., after upstream task in same stage). Multiple tasks comma-separated inside the parens. |
+| `current-stage-entered` | First event-driven task in stage, or any ungated task (including connector tasks) that should start when its stage is entered. A first task in a sequential chain uses `runs-sequentially` instead. When a task has multiple entry rows, render this one first. |
+| `selected-tasks-completed("<Task>")` | Explicit sibling gate, fan-in, branch convergence, or conditional handoff where this task should start only after named sibling task(s) complete. Multiple tasks comma-separated inside the parens. Do not use it merely to express the next step in a simple top-to-bottom task list; use `runs-sequentially` for that UI mode. |
 | `wait-for-connector` | Async connector callback. Pair with `conditionExpression` to gate on **case state** (`vars.X`); the event payload is not accessible (no `event` namespace). **In-rule extract-then-gate (extract + same-rule `=js:vars.caseVar` gate) does NOT work at runtime** — case-backend evaluates the gate before the extract populates the case var. To condition on payload content: extract `response.field -> caseVar` on the connector rule and place the case-state gate on a DOWNSTREAM stage-entry / task-entry condition. |
 | `adhoc` | Manual fire from the case app. Optional gating expression. |
-| `runs-sequentially` | Tasks in a lane that should run top-to-bottom in declaration order. |
+| `runs-sequentially` | Tasks that should run top-to-bottom in their stage declaration order. The frontend toggle writes this as the task's only entry rule; it is not represented by a lane. |
 
 Multiple entry conditions render as multiple rows (DNF outer-OR). When `current-stage-entered` is among them, render it first.
+
+**Sequential normalization rule.** When a contiguous set of tasks in one stage is described as a plain ordered workflow with no branch condition, fan-in, alternate trigger, or manually launched task between them, author **each task in that run** with exactly one `runs-sequentially` Entry Condition row. This includes the first task: do not write `current-stage-entered` for the first item and `selected-tasks-completed("<previous>")` for later items. That explicit chain is valid backend logic, but Studio Web classifies it as condition/event-driven rather than Sequential. Break the run at tasks that are `adhoc`, `wait-for-connector` entry-triggered by an external event, condition-gated, or intentionally dependent on non-immediate sibling task(s).
 
 ### `action` task — required cells
 
@@ -535,7 +553,7 @@ No `<UNRESOLVED>` on Duration / Until — timer cannot fire without it. Block Ap
 | Wait for Completion | `Yes` / `No` |
 | Data Returned (child → parent) | Table: `Child Variable | Parent Variable` — render only when `Wait for Completion: Yes` |
 
-`Child Case` is the portable Phase 0 → Phase 1 lookup name. Establish it before registry lookup and preserve it when unresolved; never substitute the parent task's display name. A missing live child case yields unresolved identity/folder fields + a `high` review item and remains placeholder-only. Every `case-management` task also triggers the §Soft redirect during Phase 0 threshold check (child cases ≥ 1 is a threshold breach per [phase-0-interview.md § Thresholds](phase-0-interview.md#thresholds)).
+`Child Case` is the portable Phase 0 → Phase 1 lookup name. Establish it before registry lookup and preserve it when unresolved; never substitute the parent task's display name. A missing live child case yields unresolved identity/folder fields + a `high` review item and remains placeholder-only.
 
 ### `process` / `agent` / `rpa` / `api-workflow` task — required cells
 

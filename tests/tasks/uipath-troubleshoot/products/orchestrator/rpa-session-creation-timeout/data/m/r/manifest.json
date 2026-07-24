@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the rpa-session-creation-timeout scenario (job-faulted-session-timeout playbook, cause 1 - known Robot defect on versions < 23.10). The agent derives keys by chaining: folders list -> jobs list --state Faulted -> jobs get -> jobs logs -> jobs history -> machines list. The Robot version 23.4.7 (< 23.10) on RECON-BOT-01 is the discriminating evidence; the 'Creating user session timed out' string (no logon-failure code) rules out job-faulted-logon-failure, and the Pending->Running->Faulted history rules out no-host/Pending. Specific rules precede generic ones so first-match-wins picks the narrower fixture.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "folders.json"
+    },
+    {
+      "match": "or jobs list --folder-key a1b2c3d4-e5f6-4789-abcd-000000000001 --state Faulted",
+      "file": "jobs-faulted.json"
+    },
+    {
+      "match": "or jobs list --folder-key a1b2c3d4-e5f6-4789-abcd-000000000001",
+      "file": "jobs-faulted.json"
+    },
+    {
+      "match": "or jobs get c0ffee01-1111-4222-8333-444455556666",
+      "file": "job-get.json"
+    },
+    {
+      "match": "or jobs logs c0ffee01-1111-4222-8333-444455556666 --level Error",
+      "file": "job-logs.json"
+    },
+    {
+      "match": "or jobs logs c0ffee01-1111-4222-8333-444455556666",
+      "file": "job-logs.json"
+    },
+    {
+      "match": "or jobs history c0ffee01-1111-4222-8333-444455556666",
+      "file": "job-history.json"
+    },
+    {
+      "match": "or machines list --all-fields",
+      "file": "machines-all.json"
+    },
+    {
+      "match": "or machines list",
+      "file": "machines.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy any docsai query to the real uip CLI; query strings vary between runs so canned responses go stale. Optional corroboration step in the playbook - an empty/failed KB result is not disconfirming."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched above returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}

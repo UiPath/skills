@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Mocked public-safe BPMN element-executions + cursors for a gateway stall.",
+  "rules": [
+    { "match": "instance element-executions inst-triage-001 -f folder-public", "file": "element-executions.json", "exit_code": 0 },
+    { "match": "instance element-executions inst-triage-001 --folder-key folder-public", "file": "element-executions.json", "exit_code": 0 },
+    { "match": "instance element-executions inst-triage-001", "file": "element-executions.json", "exit_code": 0 },
+    { "match": "instance cursors inst-triage-001 -f folder-public", "file": "cursors.json", "exit_code": 0 },
+    { "match": "instance cursors inst-triage-001 --folder-key folder-public", "file": "cursors.json", "exit_code": 0 },
+    { "match": "instance cursors inst-triage-001", "file": "cursors.json", "exit_code": 0 }
+  ],
+  "unmocked_default": {
+    "response": "{\"error\":\"unmocked public-safe BPMN command\"}\n",
+    "exit_code": 1
+  }
+}

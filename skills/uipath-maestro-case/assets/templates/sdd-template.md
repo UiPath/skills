@@ -166,6 +166,8 @@ The generated SDD must start with:
 | Task-output passing | {Direct \| Shared} — `caseDirectlyPassTaskOutputs` (Direct = a task's outputs flow straight to downstream tasks; default Direct) |
 | Case Identifier source | {`=metadata.ExternalId` (platform-generated — the default) \| custom} — what every `caseId` task input binds to |
 
+> **Case App validation contract:** Stage names must be non-empty, unique, and contain no `:`. Task names must contain no `:`. Every SLA rule and escalation needs a non-empty, target-unique title/display name with no `:`. SLA durations must be positive; minute-based SLAs must be 15–1000 minutes. Non-default SLA rows need an expression; escalations need a recipient, and at-risk escalations need a percentage.
+
 ### Case-Level SLA Escalation Rules
 
 | SLA Status | Threshold | Action |
@@ -279,7 +281,7 @@ If neither holds, the io-binding validator surfaces the misalignment.
 - **Outputs `Binding / Value` column** uses one of two operators:
   - **`-> caseVar`** (extract): the value at the runtime path in the `Field` column is extracted into the named case variable. `Field` is the **full runtime path relative to the task's root scope** — write `response.status` for a connector payload field, `Action` for an action task's top-level output, `Error.code` for a nested error sub-field, etc. The skill emits `source: "=<Field>"` verbatim; no envelope inference.
   - **`caseVar = <expression>`** (set / compute / copy): the case variable is assigned the result of the expression at task completion. The `Field` column is `—` for `=` rows. Expression can be a literal (`"InReview"`, `5`), a computed value (`=js:(vars.count + 1)`), a top-level case-var copy (`=vars.X`), or a sub-field copy via JS eval (`=js:vars.X.Y`).
-- **In-expression upstream reference (`vars.$xref(...)`)** — inside ANY `=js:` expression (a composite input payload, a computed `=` output, an IF `conditionExpression`, an SLA expression), reference another task's output directly with `vars.$xref('Stage Name','Task Name','output_name')` instead of routing it through a "middle" case variable. Single quotes only. The skill resolves it to the source output's variable at build time. Use this whenever a case variable would exist only to carry one task's output into a downstream expression. When the output IS the entire input value (not part of a larger expression), use the whole-value `<- "Stage"."Task".output` form instead. See [bindings-and-expressions.md § In-expression references](../../references/bindings-and-expressions.md#in-expression-references-varsxref).
+- **In-expression upstream reference (`vars.$xref(...)`)** — inside ANY `=js:` expression (a composite input payload, a computed `=` output, an IF `conditionExpression`, an SLA expression), reference another task's output directly with `vars.$xref('Stage Name','Task Name','output_name')` instead of routing it through a "middle" case variable. Single quotes only. The skill resolves it to the source output's runtime reference ID at build time. Use this whenever a case variable would exist only to carry one task's output into a downstream expression. When the output IS the entire input value (not part of a larger expression), use the whole-value `<- "Stage"."Task".output` form instead. See [bindings-and-expressions.md § In-expression references](../../references/bindings-and-expressions.md#in-expression-references-varsxref).
 
 - **Case identity — bind `caseId` to `=metadata.ExternalId`.** The case external id is platform-generated (constant prefix or external expression) and exposed as `metadata.ExternalId`; it is NOT a task output. Every task input named `caseId` binds to `=metadata.ExternalId`. **Never** author a `-> caseId` extraction on a workflow whose result has no `caseId` key — it resolves to runtime null. (`Action` is the conventional top-level output field of an `action` task — its button result — captured via `Action -> <decisionVar>`.)
 
@@ -348,7 +350,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| {count} | {h \| d \| w \| m} | {percentage}% | {Notify: recipient or specific action} | {Notify: recipient or specific action} |
+| {count} | {min \| h \| d \| w \| m} | {percentage}% | {Notify: recipient or specific action} | {Notify: recipient or specific action} |
 
 #### Tasks
 
@@ -369,9 +371,11 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 **Entry Condition:**
 
-> **Valid WHEN rule types for task entry (strict subset of Key Rule 3):** `current-stage-entered` (default — fires when the containing stage is entered; typical for first task or any task with no sibling gate), `selected-tasks-completed("TaskA", "TaskB")` (fires when specific sibling tasks in the same stage complete), `wait-for-connector` (waits for a connector event), `adhoc` (user-triggered from the case app — task does not auto-start), `runs-sequentially` (sequential ordering within the stage; parallel members of the group share a lane, solo members get their own lane). Other rule types from Key Rule 3 are NOT valid here.
+> **Valid WHEN rule types for task entry (strict subset of Key Rule 3):** `current-stage-entered` (fires when the containing stage is entered; use for ungated event/condition-driven tasks, not for the first task in a sequential run), `selected-tasks-completed("TaskA", "TaskB")` (explicit sibling gate, fan-in, branch convergence, or non-immediate dependency), `wait-for-connector` (waits for a connector event), `adhoc` (user-triggered from the case app — task does not auto-start), `runs-sequentially` (sequential ordering within the stage; parallel task sets remain allowed, and the entry rule—not lane placement—carries the sequencing intent). Other rule types from Key Rule 3 are NOT valid here.
 >
 > Each row is a separate entry condition. List multiple rows when a task can be entered through more than one path. Author a `current-stage-entered` row for any ungated task — including connector tasks (`execute-connector-activity`, `wait-for-connector`) — that should start when its stage is entered.
+>
+> **Sequential normalization:** for a plain top-to-bottom task run, write `runs-sequentially` as the only Entry Condition row on every task in that run, including the first task. Do not model the run as `current-stage-entered` plus `selected-tasks-completed("<previous>")`; Studio Web classifies that as condition/event-driven, not Sequential.
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|

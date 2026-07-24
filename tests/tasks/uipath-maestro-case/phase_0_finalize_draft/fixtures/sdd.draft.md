@@ -1,10 +1,5 @@
 # SDD — CandidateInterview
 
-> **⚠️ Generated lightweight; complexity exceeded thresholds.**
-> Counts at generation time: 7 primary stages (within), 31 tasks (exceeds 14), 4 integrations (exceeds 3),
-> 5 personas (exceeds 3), 0 child cases.
-> Review carefully before approving. Consider splitting into smaller cases or trimming scope.
-
 A Case Definition Blueprint for the Helix end-to-end candidate hiring process — from initial application receipt through recruiter screen, technical evaluation, onsite loop, debrief, offer, and final HRIS handoff to Workday.
 
 ---

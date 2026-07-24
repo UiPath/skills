@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-20T08:31:57.900Z",
+      "Message": "Read document text: Invalid input stream\r\nException Type: UiPath.PDF.PdfException\r\nin Main.xaml\r\n    at ReadPDFText \"Read document text\"\r\n    at Sequence \"Read document text\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.PDF.PdfException: Invalid input stream\r\n   at UiPath.PDF.PdfReader..ctor(String filepath, String password)\r\n   at UiPath.PDF.Activities.ReadTextBase.Execute(CodeActivityContext context)"
+    }
+  ]
+}

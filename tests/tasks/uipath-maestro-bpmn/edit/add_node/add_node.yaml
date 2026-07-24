@@ -1,0 +1,60 @@
+task_id: skill-bpmn-edit-add-node
+description: >
+  Brownfield edit: insert a new script task into an existing, valid Maestro BPMN
+  between two adjacent tasks, rewiring the sequence flow and diagram while
+  preserving element ids, uipath:* payloads, and uipath:migrationVersion.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 80
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  A valid Maestro BPMN file `OrderIntake.bpmn` is in the working directory. Its
+  flow is: "Validate Order" (Task_Validate) -> "Notify Customer" (Task_Notify).
+
+  Insert a new script task named "Reserve Stock" BETWEEN "Validate Order" and
+  "Notify Customer", so the order becomes
+  Validate Order -> Reserve Stock -> Notify Customer. Rewire the sequence flows
+  and update the diagram so the new node and its flows render.
+
+  Make a SURGICAL edit: preserve everything you did not author — the existing
+  element ids, the uipath:* extension payloads, uipath:migrationVersion, and the
+  process variables must round-trip untouched.
+
+  Validate the edited file locally before finishing. Do not upload, publish,
+  deploy, debug, run, or pack anything, and do not pause for approval — make the
+  edit end to end in one pass.
+
+success_criteria:
+  - type: file_exists
+    description: "The edited BPMN file is still present"
+    path: "OrderIntake.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Preserve-only payload round-tripped untouched"
+    path: "OrderIntake.bpmn"
+    includes:
+      - "preserve-only-do-not-touch"
+      - 'uipath:migrationVersion'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "New script node inserted and wired, untouched content preserved, file still structurally sound"
+    command: "python3 $TASK_DIR/check_add_node.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

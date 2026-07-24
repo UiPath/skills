@@ -52,7 +52,12 @@ Each RPA project in the scope is one of three sub-types. Pick the default from s
 ### RPA Process (default)
 
 **Signals:**
-- UI-heavy automation (web forms, desktop apps, Excel, email)
+- UI-heavy automation (web forms, desktop apps, Citrix / virtual desktop)
+- Excel / Office automation; classic PDF operations (split, merge, non-AI text extraction)
+- File & folder operations on local or network storage (move, rename, archive, watch folders)
+- On-prem database read/write via Database activities (behind-the-firewall SQL)
+- Terminal / mainframe (green-screen) automation — exclusive to RPA; no other product drives terminals
+- Desktop email clients (Outlook); scheduled batch jobs over machine-local resources
 - Data processing between applications
 - Attended or unattended execution
 - Queue-based transactional processing
@@ -152,7 +157,9 @@ If **fewer than two** are true and the body is >70% UI, recommend XAML. The "cle
 
 Apply these signals **to every RPA Process project** in the scope. Skip for RPA Library, RPA Test Automation, and non-RPA products — those are always one project each.
 
-Walk through the signals. **If 2 or more signals match → Master Project.** If 0-1 match → Single Project.
+Walk through the signals — they are *evidence*, not the decision. **2+ matches → candidate Master Project**; confirm each proposed split earns a **boundary**: at least one of independent scaling (different robot counts/speeds per stage), independent failure recovery (queue-isolated per-stage retry/replay), separate ownership or deployment cadence, or independent scheduling. No boundary need → **Single Project** with internal phases (transactional processing + ordinary end-of-run reporting alone is usually ONE project). 0–1 matches → Single Project.
+
+> Queue design is independent of decomposition: a **Single Project** that is queue-triggered, consumes an existing queue, or self-dispatches still fills §12 Queue Architecture in the RPA template — only a project with no queue involvement omits it.
 
 | # | Signal in PDD | What it means |
 |---|---|---|
@@ -273,8 +280,11 @@ The defining criterion is **per-item independence**: one failing item must not b
 | Reporting (reads queue, generates output) | **REFramework** *(default)* or Sequence | Use REFramework when per-item reporting failures must be tracked, or when the reporting queue can exceed ~10 items per run (typical for daily/weekly aggregation over a Master Project). Use Sequence only for atomic end-of-run aggregation of a small, fixed set of items where a single failure can fail the whole run without loss. |
 | Single Project (no queues, but iterates discrete items) | **REFramework** | REFramework gives per-item retry + state tracking even without a queue. Lifecycle just becomes Init → GetTransactionData (loads from memory / UI / file system) → Process → SetTransactionStatus. |
 | Single Project (no iteration at all) | **Sequence** | Linear pipeline, no transactions, no retry semantics. |
+| Process with an in-flight human approval / async wait (single process, not cross-product) | **Sequence or REFramework, + Persistence = YES** | Persistence is a modifier on the chosen framework, not a framework: suspend the job, release the robot, resume on Action Center completion — see [Long-running workflows](#long-running-workflows-persistence--action-center) |
 
 **Rule R-04 — REFramework boundary:** a project uses REFramework when its unit of work is an **item that can fail, be retried, and be tracked independently** — regardless of whether the items come from a queue, memory, UI, file system, or API. A project uses Sequence when its unit of work is **atomic** (the whole run succeeds or fails as one).
+
+**Proportionality note — REFramework is a template, not a mandate.** R-04 decides the *semantics* the project needs (per-item retry, isolation, tracking); REFramework is the standard way to get them. For a genuinely trivial iteration — a 2-3 activity body, no per-item state beyond success/failure, and a full-run rerun that is safe and cheap — a Sequence with a per-item Try/Catch and a documented rerun rule delivers the same semantics with less scaffolding; record that deviation in §13's justification. This does NOT reopen the anti-patterns below: volume and queue-absence are never, by themselves, reasons to reject REFramework.
 
 When REFramework is selected for a project, the project structure in §11 of the RPA template must use the REFramework folder layout (Init, GetTransactionData, Process states) instead of a custom framework.
 
@@ -303,3 +313,13 @@ Reasoning along the lines of "this process has ~15 items/day, no Orchestrator qu
 - REFramework's overhead is fixed (folder layout + states). The per-item benefits — retry, exception isolation, state tracking — apply whether items come from a queue or the UI.
 
 If you find yourself rejecting REFramework on volume or queue-absence grounds, re-read the "Use REFramework when…" criteria above before committing to Sequence + custom loop.
+
+## Long-running workflows (persistence + Action Center)
+
+RPA handles asynchronous human interaction **inside a single process** — do not escalate to Maestro or a separate HITL project just because a human approves mid-run.
+
+- **Mechanism:** Studio long-running workflow (Persistence activities — Create Form Task / Wait for Task and Resume). The job **suspends**, the robot is **released** (no license burned while waiting), and the job **resumes** — potentially on a different robot — when the Action Center task completes.
+- **Use when:** one process needs an in-flight approval, data validation, or async wait (task completion, queue item, job) and the rest of the coordination is within that process.
+- **Do NOT use when:** the wait spans **multiple products** (RPA + agents + APIs) or needs formal gateways/events — that is Maestro territory ([Product Selection Guide → Maestro disambiguation](product-selection-guide.md#maestro-disambiguation--bpmn-vs-flow-vs-case)).
+- **Identities & licensing:** record three separate decisions — the **start identity** (an attended user start is supported, not just unattended), the **resume identity** (typically an unattended robot; resume may land on a different robot than the start), and the **licensing implication** of each. Attended-start + unattended-resume is a valid, common shape (§11 Attendance column).
+- **SDD impact:** Persistence = YES in §11 Project Mode Decision (framework stays Sequence/REFramework); mark suspend/resume points in the Workflow Inventory; the approval task is flagged as an Action Center touchpoint, not a `uipath-human-in-the-loop` task.

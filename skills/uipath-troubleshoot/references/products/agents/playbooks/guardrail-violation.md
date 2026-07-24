@@ -7,7 +7,7 @@ confidence: high
 ## Context
 
 What this looks like:
-- Agent job faults; `uip agent run status <job-id> --output json` shows `Faulted`
+- A deployed agent job or `uip agent debug` run faults
 - `agentRun` span has `AGENT_RUNTIME.TERMINATION_GUARDRAIL_VIOLATION` in `attributes.error`
 - Container span (`agentPreGuardrails`, `llmPreGuardrails`, `toolPreGuardrails`, `agentPostGuardrails`, `llmPostGuardrails`, `toolPostGuardrails`) carries the blocking error
 - Child `guardrailEvaluation` or `toolGuardrailEvaluation` span identifies the rule: `guardrailName`, `action`, `validationResult`, `reason`
@@ -36,11 +36,13 @@ What can cause it:
 
 ## Investigation
 
-1. Get trace ID:
+1. Get the spans for the failing run. If you already have a trace ID, use it directly. If you only have an Orchestrator job key, resolve it through traces:
 
    ```bash
-   uip agent run status <job-id> --output json \
-     --output-filter "traceId"
+   uip traces spans get <trace-id> --output json
+
+   # or
+   uip traces spans get --job-key <job-key> --folder-path "<folder-path>" --output json
    ```
 
 2. Find erroring spans, identify container span, classify pre/post using the table above. If the only erroring span is `agentRun` and no container guardrail span appears in the results, the termination error propagated from a child evaluation — proceed to step 3 to find the `guardrailEvaluation` or `toolGuardrailEvaluation` span directly:
@@ -72,11 +74,9 @@ What can cause it:
    uip agent guardrails catalog --validator <validator-id> --output json
    ```
 
-   For custom guardrails (rule logic in agent definition):
-
-   ```bash
-   uip agent config get guardrails --path <PROJECT_DIR> --output json
-   ```
+   For custom guardrails (rule logic in the agent definition), inspect
+   `<AGENT_PROJECT_DIR>/agent.json` directly and look for the matching
+   guardrail entry.
 
    To confirm action type and last-modified date: open agent in AgentBuilder or Flow → Guardrails → find rule by name from step 3 (optional — confirms action type and last-modified date; CLI output above is sufficient to identify the rule).
 
@@ -103,9 +103,11 @@ What can cause it:
 
 **Recent rule regression:** Check last-modified date in AgentBuilder or Flow → Guardrails. Restore the prior rule definition or disable the rule temporarily. Document the rollback and review rule scope with the guardrail policy team.
 
-Validate and republish after any rule or agent change:
+Refresh and validate after any rule or agent change:
 
 ```bash
-uip agent validate --output json
-uip solution publish --output json
+uip agent refresh "<AGENT_PROJECT_DIR>" --output json
+uip agent validate "<AGENT_PROJECT_DIR>" --output json
 ```
+
+After successful validation, report the result and ask whether the user wants to upload the corrected solution to Studio Web or publish/deploy it to Orchestrator. Do not perform any delivery action without explicit approval.

@@ -6,7 +6,7 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 
 > **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file. When SLA escalations are present, also `tasks/recipients-resolved.json` — see [`plugins/sla/planning.md` § Identity Resolution](plugins/sla/planning.md#identity-resolution).
 >
-> **Exit gate:** User must explicitly approve `tasks.md` before Phase 2 begins.
+> **Exit:** Auto-proceeds to Phase 2 — plan treated as approved, no prompt by default. Stops after `tasks.md` only when the request explicitly asked for a plan-only / review-first run. Re-read `tasks.md` before execution.
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting planning workflow. For how to fill fields for a specific node, consult the relevant plugin:
 > - Root case → `plugins/case/planning.md`
@@ -16,9 +16,11 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 > - Conditions → `plugins/conditions/<scope>/planning.md`
 > - SLA → `plugins/sla/planning.md`
 > - Global variables & arguments → `plugins/variables/global-vars/planning.md`
-> - Task I/O binding → `plugins/variables/io-binding/planning.md`
+> - Task I/O binding → `plugins/variables/io-binding/planning.md` (**always read alongside the matching task plugin**)
 
 ---
+
+> **Kickoff overview first (if not already shown).** When Phase 0 did not run (user-provided `sdd.md`), this is the run's start — present the greenfield flow overview once before Step 0 so the dev knows the phases and the decision points. See [SKILL.md § Kickoff — set dev expectations](../SKILL.md#kickoff--set-dev-expectations-first). If Phase 0 already showed it, skip.
 
 ## Step 0 — Resolve the `uip` binary
 
@@ -40,16 +42,16 @@ Use `$UIP` in place of `uip` for all subsequent commands if the plain `uip` comm
 
 If `npm install -g` fails with a permission error, prompt the user to re-run it with the appropriate privileges (e.g., `sudo npm install -g @uipath/cli@latest`) — do not retry automatically.
 
-## Step 1 — Check login and pull registry
+## Step 1 — HARD GATE: check login and pull registry
 
-Registry discovery happens during planning, so login is required first.
+Registry discovery happens during planning, so login is required first. This gate is unconditional on every Phase 1 run, including SDD-only handoffs and runs with a staged `tasks/registry-resolved.json`.
 
 ```bash
 uip login status --output json
 uip maestro case registry pull
 ```
 
-If not logged in, prompt the user to log in. The registry pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
+Do not inspect `~/.uip/case-resources/` first to decide whether the pull is necessary: cache absence is exactly why the pull must run. Do not continue to Step 2/3 and do not write `tasks.md` or `registry-resolved.json` unless the pull succeeds. If not logged in, prompt the user to log in and stop Phase 1; if the pull fails, surface the command error and stop Phase 1. After a successful pull, read [registry-discovery.md](registry-discovery.md) before the first cache lookup. The pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
 
 ## Step 2 — Locate and parse the design document
 
@@ -57,9 +59,11 @@ Accept the `sdd.md` file path from the user, or ask if not provided. When the di
 
 If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) before this step. See [phase-0-interview.md](phase-0-interview.md). Phase 1 resumes here only after the Approve hard-stop in Phase 0.
 
-`sdd.md` is the **sole required input**. It describes stages, tasks, conditions, SLA, component types, persona information, and provides the search keys for registry lookups. The portable name is type-specific: `Resolved Resource` for process/agent/rpa/api-workflow, the Action App title in `HITL Implementation` for action, and `Child Case` for case-management. The corresponding identity cell (`Resource Identity` or `Action App ID`) says whether an earlier phase resolved it. (The SDD does not describe edges — transitions are expressed as stage entry/exit conditions; edges are retired.) The skill does not validate or gap-fill sdd.md — trust it as written. (Phase 0 may have generated it; once approved, Rule 2 applies regardless of source.)
+`sdd.md` is the **sole required input**. It describes stages, tasks, conditions, SLA, component types, persona information, and provides the search keys for registry lookups. The portable name is type-specific: `Resolved Resource` for process/agent/rpa/api-workflow, the Action App title in `HITL Implementation` for action, and `Child Case` for case-management. The corresponding identity cell (`Resource Identity` or `Action App ID`) says whether an earlier phase resolved it. (The SDD does not describe edges — transitions are stage entry/exit conditions; Rule 20.) The skill does not validate or gap-fill sdd.md — trust it as written. (Phase 0 may have generated it; once approved, Rule 2 applies regardless of source.)
 
-> **Phase 0 carryover.** `tasks/registry-resolved.json` is an optional performance cache/audit artifact, never the source of resource intent. If it exists, read it first, associate an entry by exact `stage` + `task`, and reuse it **only when ALL four hold against the current SDD contract**:
+> **Cache-state distinction — mandatory.** Step 1 refreshes discovery state; it does not validate or override sdd.md. Before a successful pull, a missing cache directory or type index is a failed refresh precondition, not evidence that the SDD resource is unavailable. After a successful pull, search by the SDD's concrete portable name; only an empty exact-name match set (or a still-absent type index) is a genuine empty lookup. An `<UNRESOLVED>` identity or folder means name-only discovery, not permission to skip discovery.
+
+> **Phase 0 carryover.** `tasks/registry-resolved.json` is an optional performance cache/audit artifact, never the source of resource intent. Step 1 still runs first. If it exists, read it, associate an entry by exact `stage` + `task`, and reuse it **only when ALL four hold against the current SDD contract**:
 >
 > 1. `taskType` matches the SDD task type.
 > 2. `cacheFile` is compatible with that type under [registry-discovery.md](registry-discovery.md) (`action` and `case-management` require their primary cache exactly).
@@ -80,7 +84,7 @@ Before resource resolution, seed TodoWrite with the items below to track Phase 1
 6. Write task entries (§4.6)
 7. Write condition entries (§4.7)
 8. Write SLA entries (§4.8)
-9. User approves tasks.md (Step 5)
+9. Finalize tasks.md, auto-proceed to Phase 2 (Step 5)
 
 For every task, trigger, and condition in the sdd.md:
 
@@ -161,9 +165,9 @@ Every declaration in `sdd.md` must become a T-task in `tasks.md`. Mapping is 1-t
 - **When in doubt, emit.** It is always correct to create a T-task that mirrors an sdd.md row. It is never correct to silently omit one.
 - **When format is ambiguous or unrecognized, ASK — do not skip.** If a row exists but you cannot determine the right plugin, category, or T-entry shape (e.g., trigger "Initial Variable Mapping" uses an aggregate phrase instead of explicit per-field mappings; a variable's category — In / Out / Variable — is unclear; a task type does not match the closed enum), invoke **AskUserQuestion** with the row content + the specific ambiguity + bounded options. Silent omission is a defect. This obligation applies to every sdd.md declaration class above, including variables and arguments.
 
-Before presenting `tasks.md` at Step 5, run a completeness cross-check: for every declared stage / task / trigger / condition / SLA row **and every Case Variables table row (one T-entry each, per §4.2.1)** in sdd.md, verify a corresponding T-task exists. Gaps are a defect — fix before approval.
+Before finalizing `tasks.md` at Step 5, run a completeness cross-check: for every declared stage / task / trigger / condition / SLA row **and every Case Variables table row (one T-entry each, per §4.2.1)** in sdd.md, verify a corresponding T-task exists. Gaps are a defect — fix before proceeding to Phase 2.
 
-**Cross-check inventory.** Before approval, count and report each class:
+**Cross-check inventory.** Before proceeding to Phase 2, count and report each class:
 
 | Class | Source in sdd.md | T-entry section |
 |---|---|---|
@@ -175,7 +179,7 @@ Before presenting `tasks.md` at Step 5, run a completeness cross-check: for ever
 | Conditions | Stage Entry / Stage Exit / Task Entry / Case Exit tables | §4.7 |
 | SLA | Case-Level SLA + per-stage Stage SLA + per-action Task SLA | §4.8 |
 
-Counts that don't match the sdd.md → fix before Step 5 hard stop.
+Counts that don't match the sdd.md → fix before Step 5 (before proceeding to Phase 2).
 
 ### 4.0a — Section-batched write contract (mandatory)
 
@@ -225,7 +229,7 @@ Title format: `Configure <trigger-type> trigger "<name>"`
 
 Consult the corresponding trigger plugin (`plugins/triggers/<type>/planning.md`) for required fields.
 
-**One T-entry per trigger row in sdd.md.** A case with N entry-point rows in its triggers table emits N trigger T-entries (T02, T03, …) — even when several rows would resolve to `<UNRESOLVED>` because the IS connection isn't provisioned. Per §4.0, "value can't be resolved yet" is not a reason to omit a row; it's a reason to mark `<UNRESOLVED: …>` and continue. Regardless of how many triggers a case has, no per-trigger edge is created (edges are retired) — the case starts at the first stage's `case-entered` entry condition whenever any trigger fires.
+**One T-entry per trigger row in sdd.md.** A case with N entry-point rows in its triggers table emits N trigger T-entries (T02, T03, …) — even when several rows would resolve to `<UNRESOLVED>` because the IS connection isn't provisioned. Per §4.0, "value can't be resolved yet" is not a reason to omit a row; it's a reason to mark `<UNRESOLVED: …>` and continue. Regardless of how many triggers a case has, no per-trigger edge is created (Rule 20; §4.5) — the case starts at the first stage's `case-entered` entry condition whenever any trigger fires.
 
 Each trigger row uses its plugin's full field set — see `plugins/triggers/<type>/planning.md` for the per-type entry format. Worked example — sdd.md declares 3 entry-point rows (one manual + two events), one of which is unresolved:
 
@@ -269,13 +273,13 @@ One task per stage. Consult [`plugins/stages/planning.md`](plugins/stages/planni
 
 ### 4.5 Edges — not authored (RETIRED)
 
-The skill does not author edges. Emit no edge T-entries. Stage transitions derive entirely from stage entry/exit conditions (§4.7); `caseplan.json.edges` stays `[]`. The first stage's `case-entered` entry condition replaces the former Trigger→first-stage edge. See the reachability check in [`sdd-generation-rules.md`](sdd-generation-rules.md).
+The skill does not author edges (Rule 20). Emit no edge T-entries. Stage transitions derive entirely from stage entry/exit conditions (§4.7); `caseplan.json.edges` stays `[]`; case start is the first stage's `case-entered` entry condition. See the reachability check in [`sdd-generation-rules.md`](sdd-generation-rules.md).
 
 ### 4.6 Add tasks
 
 Title format: `Add <type> task "<name>" to "<stage>"`
 
-One task per task from the sdd.md — do NOT group multiple tasks under a single T-number. The plugin for the task's type (`plugins/tasks/<type>/planning.md`) lists exactly which fields to record.
+One task per task from the sdd.md — do NOT group multiple tasks under a single T-number. Read both the task-type plugin (`plugins/tasks/<type>/planning.md`) and the shared I/O-binding plugin (`plugins/variables/io-binding/planning.md`) before writing the entry. The task plugin owns resource-specific fields; the I/O-binding plugin is the single source of truth for the common output-row grammar.
 
 Every task entry includes at least:
 
@@ -284,14 +288,25 @@ Every task entry includes at least:
 - **runOnlyOnce** — from sdd.md (default `true` if not specified)
 - **isRequired** — from sdd.md (default `true` if not specified)
 - **order** — dependency on previous tasks (`after T05`, etc.)
-- **lane** — integer, default increments per task within the stage starting at 0 (FE layout). **Exception:** parallel members of a `runs-sequentially` group share the same `lane` (semantic — same lane = parallel siblings inside the sequential group). Solo runs-sequentially tasks still get their own lane.
+- **lane** — integer, default increments per task within the stage starting at 0 for structural/layout compatibility. Lane does not express sequencing; preserve task order in `data.tasks` and use task entry conditions for execution semantics.
 - **verify** — what the execution phase should check after running
 
 Additional fields are plugin-specific; read the plugin's `planning.md` before filling the entry.
 
+> **Outputs are a lossless handoff, not a discovered-name summary.** Project each SDD Outputs table row through the common grammar in [`plugins/variables/io-binding/planning.md` § SDD table → `tasks.md` projection](plugins/variables/io-binding/planning.md#sdd-table-to-tasksmd-projection-mandatory), then preserve the resulting list item exactly. Schema discovery may add truly undeclared fields as bare items, but it must not rewrite an SDD row. An explicit equal-name extract such as `greeting -> greeting` stays exactly that; collapsing it to bare `greeting` changes the binding from "write the existing case variable" to "auto-mint a task output." Before the Step 5 approval gate, compare every SDD Outputs row to its task T-entry and fix any missing or changed operator/operand or leaked table placeholder.
+
+> **Registry handoff:** For a resolved `action` or `case-management` T-entry, translate the selected audit object into the canonical `tasks.md` labels and values:
+>
+> | Task type | `name` from | `folder-path` from | `taskTypeId` from |
+> |---|---|---|---|
+> | `action` | `selected.deploymentTitle` | `selected.deploymentFolder.fullyQualifiedName` | `selected.id` |
+> | `case-management` | `selected.name` | `selected.folders[0].fullyQualifiedName` | `selected.entityKey` |
+>
+> Before Step 5, confirm these labels and values match the `selected` object in `registry-resolved.json`.
+
 > **No shell commands in task entries.** Each task is a declarative specification. Never write `uip` invocations or any other shell commands inside a task body — the execution phase translates specs into JSON mutations.
 
-> **Record `lane: <n>` per task.** Default: increment within each stage starting at 0 — lane is FE layout only, task ordering comes from task-entry conditions. **Exception:** within a `runs-sequentially` group, tasks meant to run in parallel share the same `lane` (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get own lane.
+> **Record `lane: <n>` per task only when required by the artifact contract.** It is structural/layout state, not a sequencing control. For sequential tasks, preserve their order in `data.tasks` and add the `runs-sequentially` entry condition to each task.
 
 > **Placeholder shape for unresolved resources.** If `taskTypeId` / `typeId` / `connectionId` is `<UNRESOLVED: …>`, omit `inputs:` and `outputs:` entirely and capture wiring intent in a trailing comment block. Execution creates a bare task node — structural only. See [placeholder-tasks.md](placeholder-tasks.md) for the full pattern and upgrade path.
 
@@ -317,12 +332,10 @@ Add a brief section at the end of `tasks.md` listing things referenced in sdd.md
 
 ---
 
-## Step 5 — HARD STOP: User reviews and approves tasks.md
+## Step 5 — Finalize tasks.md (auto-proceed to Phase 2)
 
-Present the generated `tasks.md` to the user and ask for explicit approval before proceeding.
+Treat the generated `tasks.md` as approved and proceed directly to Phase 2 by default — no AskUserQuestion approval prompt, no wait for sign-off.
 
-Use **AskUserQuestion** with options: `Approve and proceed`, `Request changes`.
+**Stop-after-plan exception (the virtual gate).** When the request explicitly scoped the work to planning only (e.g. "just build tasks.md", "Phase 1 only", "stop after the plan for review", "don't build the case yet"), stop here: report the finished plan and do NOT create a solution or caseplan. This is the only condition that halts the auto-proceed.
 
-If user requests changes, update `tasks.md` and re-present. Do NOT proceed to Phase 2 until user explicitly approves.
-
-**After approval:** re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](implementation.md)). `tasks.md` is complete handoff artifact — all resolved IDs, inputs, outputs, and references captured there.
+Re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](implementation.md)); context may have compacted during planning. `tasks.md` is complete handoff artifact — all resolved IDs, inputs, outputs, and references captured there.

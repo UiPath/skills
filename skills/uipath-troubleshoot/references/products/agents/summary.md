@@ -1,6 +1,6 @@
 # Agents Playbooks
 
-Covers errors from `uip agent` (low-code agents). Primary investigation surface: `uip traces spans get <trace-id> --output json`.
+Covers low-code agent runtime and authoring errors. Primary investigation surface: `uip traces spans get <trace-id> --output json` or `uip traces spans get --job-key <job-key> --output json`; local reproduction uses `uip agent debug` only with explicit user approval because it uploads and executes the agent.
 
 **Always check the `agentOutput` span even when the job reports success.** A run can complete without error while returning all-null output — this is a silent failure class not surfaced by Orchestrator job status.
 

@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "3c8f1a52-7b09-4d64-9e28-1a5c0f3e7b26",
+      "State": "Faulted",
+      "ProcessName": "TaxProcessing",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-07-16T13:22:05.410Z",
+      "EndTime": "2026-07-16T13:22:06.220Z",
+      "CreationTime": "2026-07-16T13:22:05.410Z"
+    },
+    {
+      "Key": "5a2c0e93-8f14-4b67-9d02-3e7a1c5f9b48",
+      "State": "Successful",
+      "ProcessName": "TaxProcessing",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "DEV-STUDIO-01",
+      "StartTime": "2026-07-14T08:11:02.330Z",
+      "EndTime": "2026-07-14T08:11:07.880Z",
+      "CreationTime": "2026-07-14T08:11:02.330Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "c9a4e2f1-7b53-4d81-a260-3f8e1c6d0b49",
+    "StartTime": "2026-07-19T06:20:03.410Z",
+    "EndTime": "2026-07-19T06:20:05.120Z",
+    "State": "Successful",
+    "JobPriority": "Normal",
+    "Source": "Schedule",
+    "SourceType": "Schedule",
+    "Info": "Job completed",
+    "CreationTime": "2026-07-19T06:20:03.410Z",
+    "ReleaseName": "OrderApprovalRouter",
+    "Type": "Unattended",
+    "InputArguments": "{}",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 1500287,
+    "FolderKey": "a2f18c53-9d07-4b26-8e41-6c0b3a9f7d28",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\svc_robot",
+    "OrchestratorUserIdentity": "original_email@test.com",
+    "LastModificationTime": "2026-07-19T06:20:05.120Z",
+    "JobError": {},
+    "ErrorCode": null,
+    "TraceId": "c9a4e2f17b534d81a2603f8e1c6d0b49",
+    "Id": 66923456
+  }
+}
