@@ -272,4 +272,160 @@ namespace MyProject
 | Shared helper methods for all workflows | `partial class CodedWorkflow` (no hooks) |
 | All of the above | Combine patterns in one or more partial files |
 
-Code templates: [assets/before-after-hooks-template.md](../../assets/before-after-hooks-template.md)
+Code templates: [assets/codedworkflow-template.md § Before/After Hooks Templates](../../assets/codedworkflow-template.md#beforeafter-hooks-templates)
+
+---
+
+## Inspect NuGet Package Tool (On-Demand API Discovery)
+
+Use this when `.local/docs/packages/<PackageId>/coded/coded-api.md` doesn't cover an API, when the user has a different package version, or when you need ground-truth method signatures. Bundled fallback: `references/activity-docs/<PackageId>/<closest-version>/coded/` in this skill ships per-package coded docs (`<service>.md` overview, `api.md` / `windows-api.md` + `portable-api.md` signatures, `examples.md`) for the major UiPath packages — read those when `.local/docs` has no coded docs for the package, picking the version folder closest to the installed one.
+
+### How to Run
+
+The `packages inspect` verb is built into the UiPath CLI. No separate build step is needed.
+
+#### Inspect a package from a NuGet feed
+```bash
+uip rpa packages inspect --package-name <PackageName> --package-version <Version> [--feed-url <NuGetV3FeedUrl>]
+```
+
+When `--feed-url` is omitted, the tool downloads from the UiPath Official feed first and falls back to nuget.org.
+
+#### Inspect a local .nupkg file
+```bash
+uip rpa packages inspect --nupkg-path <path/to/package.nupkg>
+```
+
+Use this when the package is already cached locally (e.g. from a private feed) or when you have a `.nupkg` file on disk.
+
+### Examples
+
+```bash
+# Inspect Excel activities from UiPath feed
+uip rpa packages inspect --package-name UiPath.Excel.Activities --package-version 3.3.1
+# Inspect a specific version the user has
+uip rpa packages inspect --package-name UiPath.System.Activities --package-version 25.12.2
+# Inspect from a custom feed
+uip rpa packages inspect --package-name MyPackage --package-version 1.0.0 --feed-url https://my-feed/v3/index.json
+# Inspect third-party package from nuget.org
+uip rpa packages inspect --package-name CsvHelper --package-version 33.0.1
+# Inspect a local .nupkg file directly
+uip rpa packages inspect --nupkg-path ~/.nuget/packages/csvhelper/33.0.1/csvhelper.33.0.1.nupkg
+```
+
+### Finding the Latest Stable Version
+
+When you don't know the version of a UiPath package, query the UiPath Official NuGet feed to find the latest stable (non-preview) version:
+
+```bash
+UIPATH_FEED="https://uipath.pkgs.visualstudio.com/5b98d55c-1b14-4a03-893f-7a59746f1246/_packaging/1c781268-d43d-45ab-9dfc-0151a1c740b7/nuget/v3/flat2" && bun -e "const p=process.argv[1];const r=await fetch(p+'/index.json');const d=await r.json();console.log(d.versions.find(v=>v.indexOf('preview')<0))" "$UIPATH_FEED/<package-name-lowercase>"
+```
+
+Replace `<package-name-lowercase>` with the package ID in lowercase (e.g. `uipath.microsoftoffice365.activities`).
+
+**Examples:**
+```bash
+# Latest stable UiPath.MicrosoftOffice365.Activities → 3.6.10
+... "$UIPATH_FEED/uipath.microsoftoffice365.activities"
+
+# Latest stable UiPath.System.Activities → 25.12.2
+... "$UIPATH_FEED/uipath.system.activities"
+```
+
+**Notes:**
+- The feed returns versions in descending order (newest first); the one-liner picks the first non-preview entry
+- Package names in the URL **must be lowercase**
+- This feed is public for version listing but requires authentication for package downloads (Studio handles this automatically when restoring dependencies)
+
+---
+
+### When to Use
+
+- **First**, check for pre-generated coded API docs at `{projectRoot}/.local/docs/packages/{PackageId}/coded/coded-api.md` — these contain service API signatures and usage for coded workflows. Use `packages inspect` only when these docs are missing or insufficient.
+- You encounter an unknown activity/method not in reference files
+- The user's `project.json` has a different package version than reference docs
+- You need exact method signatures, parameter types, or enum values
+- You're unsure about the correct API and want to verify against the actual package
+- You need to find and evaluate a third-party NuGet package for use in a coded workflow
+
+### Output
+
+Structured markdown listing all public types, methods, properties, enums, delegates, and events from the package DLLs. The tool performs framework-aware DLL selection and recursive dependency resolution (up to depth 2).
+
+### Requirements & Notes
+
+- Requires `uip` to be available on PATH
+- Downloads from the UiPath Official feed first, then falls back to nuget.org — so it works with **any** NuGet package, not just UiPath ones
+- The tool automatically checks the local NuGet cache at `~/.nuget/packages/` when a package cannot be downloaded
+- For local `.nupkg` files (e.g. packages from private feeds already cached locally), use `--nupkg-path` to skip the download entirely
+- Some packages are metapackages with no DLLs (e.g. `Humanizer`). If you get "No DLLs found", try the `.Core` sub-package (e.g. `Humanizer.Core`)
+
+---
+
+## Third-Party NuGet Packages
+
+When a user needs functionality that **no UiPath built-in activity provides** (e.g. PDF generation, barcode reading, advanced math, specific file formats), find and use a third-party NuGet package.
+
+### Decision Flow
+
+1. **Consider whether a built-in activity or plain .NET is the better fit** — prefer activities for Orchestrator integration, UI automation, and document handling; prefer .NET for data transforms, HTTP to external APIs, parsing, etc.
+2. **If no built-in activity fits** — search for a well-known .NET NuGet package that provides the capability
+3. **Inspect the package** — run the `uip rpa packages inspect` command with the appropriate flags in order to get exact API signatures before writing code
+4. **Install it** — run `uip rpa packages install --project-dir "<PROJECT_DIR>" --packages 'id=<PACKAGE_ID>,version=<VERSION>' --output json`. Omit `,version=<VERSION>` to resolve the latest compatible. Do NOT hand-edit `project.json` `dependencies`. **There is no `uip rpa add-dependency` command.**
+5. **Write C# code using the package** — use the package's API directly in the `Execute` method (no service proxy needed — just `using` + direct API calls)
+
+### How Third-Party Packages Differ from UiPath Activity Packages
+
+- UiPath packages provide services on the `CodedWorkflow` base class (e.g. `excel.ReadRange(...)`)
+- Third-party packages are used as **plain C# libraries** — instantiate classes, call methods directly
+- They do NOT get a service property on `CodedWorkflow`
+- Add them to `project.json` `dependencies` just like UiPath packages: `"PackageName": "[version]"`
+
+### Example — Using CsvHelper in a Coded Workflow
+
+```csharp
+using System;
+using System.Globalization;
+using System.IO;
+using CsvHelper;
+using UiPath.CodedWorkflows;
+
+namespace MyProject
+{
+    public class ProcessCsv : CodedWorkflow
+    {
+        [Workflow]
+        public void Execute(string inputPath)
+        {
+            using var reader = new StreamReader(inputPath);
+            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+            var records = csv.GetRecords<dynamic>().ToList();
+            Log($"Read {records.Count} records from CSV");
+        }
+    }
+}
+```
+
+With `project.json` dependency:
+```json
+{
+  "dependencies": {
+    "CsvHelper": "[33.0.1]"
+  }
+}
+```
+
+### How to Search for Packages
+
+- Use web search to find the best .NET NuGet package for the task
+- Look for packages with high download counts, active maintenance, and .NET 6+ support
+- Common choices:
+  - `CsvHelper` (CSV parsing)
+  - `QuestPDF` (PDF generation)
+  - `ClosedXML` (Excel without UiPath)
+  - `HtmlAgilityPack` (HTML parsing)
+  - `Dapper` (database access)
+  - `RestSharp` (REST APIs)
+  - `Polly` (retry/resilience patterns)
+  - `Newtonsoft.Json` (JSON parsing - already included in most projects)
+- After identifying a package, run the `uip rpa packages inspect` command to discover exact APIs before coding

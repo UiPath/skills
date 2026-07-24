@@ -4,7 +4,7 @@ Structured error handling patterns for legacy UiPath RPA workflows. Use this gui
 
 For TryCatch XAML syntax, see [activity-docs/_BUILT-IN-ACTIVITIES.md](./activity-docs/_BUILT-IN-ACTIVITIES.md).
 For REFramework exception flow, see [activity-docs/_REFRAMEWORK.md](./activity-docs/_REFRAMEWORK.md).
-For Throw expression escaping, see [common-pitfalls.md](./common-pitfalls.md).
+For Throw expression escaping, see [xaml-basics-and-rules.md § Common Pitfalls](./xaml-basics-and-rules.md#common-pitfalls--quick-reference).
 
 ---
 
@@ -160,7 +160,7 @@ Use `Throw` to signal a business rule violation or intentional failure:
 2. **Build complex messages in a variable first** — avoids VB.NET compiler issues with `&quot;` in `Throw.Exception`
 3. **Include context in the message** — "Invoice INV-12345 amount -500.00 is negative" not "Invalid amount"
 
-See [common-pitfalls.md](./common-pitfalls.md) for the full Throw expression escaping reference.
+See [xaml-basics-and-rules.md § Common Pitfalls](./xaml-basics-and-rules.md#common-pitfalls--quick-reference) for the full Throw expression escaping reference.
 
 ### Rethrow — Preserve Original Stack Trace
 
