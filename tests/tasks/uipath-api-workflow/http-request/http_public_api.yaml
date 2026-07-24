@@ -12,8 +12,9 @@ description: >
 tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, feature:http, feature:registry]
 
 initial_prompt: |
-  Make a UiPath API Workflow JSON file at Workflow.json that calls the public
-  Cat Facts API (GET https://catfact.ninja/fact) and returns the fact text as
+  Author a UiPath API Workflow — in a project named `CatFact` (its workflow file
+  will be `CatFact/Workflow.json`) — that calls the public Cat Facts API
+  (GET https://catfact.ninja/fact) and returns the fact text as
   { "fact": "<fact>" }.
 
   Build the HTTP Request activity through the skill's connector discovery flow
@@ -23,15 +24,17 @@ initial_prompt: |
   planning and implementation.
 
 success_criteria:
-  - type: file_exists
-    description: "Workflow.json was created"
-    path: "Workflow.json"
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Workflow.json is valid JSON"
-    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); python -c "import json,sys; json.load(open(sys.argv[1]))" "$WF"'
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -45,17 +48,17 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Uses the unified HTTP kind (call: UiPath.Http)"
-    path: "Workflow.json"
-    includes:
-      - "UiPath.Http"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "UiPath.Http" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Does NOT use the deprecated simple form call:\"http\" (anti-pattern)"
-    command: "! grep -q '\"call\": \"http\"' Workflow.json"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF" && ! grep -q ''"call": "http"'' "$WF"'
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -63,7 +66,7 @@ success_criteria:
 
   - type: run_command
     description: "Workflow runs locally (--no-auth, ImplicitConnection) and returns a fact"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --output json | grep -qi ''fact'''
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --output json | grep -qi ''fact'''
     timeout: 120
     expected_exit_code: 0
     weight: 3.0

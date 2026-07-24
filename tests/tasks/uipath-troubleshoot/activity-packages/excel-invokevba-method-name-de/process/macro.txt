@@ -1,0 +1,11 @@
+Sub ProcessInvoices()
+    Dim ws As Worksheet
+    Set ws = ActiveWorkbook.Sheets("Invoices")
+    Dim lastRow As Long
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    Dim i As Long
+    For i = 2 To lastRow
+        ws.Cells(i, 5).Value = ws.Cells(i, 3).Value * ws.Cells(i, 4).Value
+    Next i
+    ActiveWorkbook.Save
+End Sub

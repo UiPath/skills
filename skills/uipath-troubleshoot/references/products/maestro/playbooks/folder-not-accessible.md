@@ -15,7 +15,7 @@ What can cause it:
 - Robot/user account is not assigned to the target folder
 - Folder name contains characters Maestro's folder-path resolver historically chokes on — e.g., commas (`"Autopilot, Agentic, and Gen AI"` triggered `PLT-82739`)
 - Folder was renamed or deleted; bindings still reference the old path or key
-- Solution imported across environments (staging → alpha) where folder keys differ — keys were baked into the solution
+- Solution imported across environments where folder keys differ - keys were baked into the solution. This playbook owns the stale-folder-key diagnosis; the same root cause surfaces as `Request to Integration Services failed with status code '404'` - arrive here from [integration-service-404](integration-service-404.md)
 - API call missing or pointing the `X-UIPATH-OrganizationUnitId` header at the wrong folder
 - Modern folder permissions missing at tenant level (need both tenant-level access and folder-level role)
 

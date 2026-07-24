@@ -78,8 +78,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "JobsTable handles text overflow somewhere (.tsx inline style OR .css file) — Rule #12: text overflow guards"
-    command: "find . \\( -path '*JobsTable*' \\) -not -path '*/node_modules/*' -exec grep -lE '(text-overflow|overflow-wrap|word-break|truncate|line-clamp)' {} + | grep -q ."
+    description: "JobsTable handles text overflow somewhere (.tsx inline style OR .css file) — Rule #12: text overflow guards. Accepts camelCase JSX inline-style props (textOverflow, overflowWrap, whiteSpace) AND kebab-case CSS/Tailwind (text-overflow, word-break, truncate)."
+    command: "find . \\( -path '*JobsTable*' \\) -not -path '*/node_modules/*' -exec grep -liE 'overflow|truncate|word-?break|white-?space|line-?clamp' {} + | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 2.5

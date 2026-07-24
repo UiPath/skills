@@ -4,7 +4,7 @@ Agent nodes invoke UiPath AI agents via node type `uipath.core.agent.{key}`. Cod
 
 The agent lives in one of two places:
 
-- **In this solution** — sibling project inside the current solution. `{key}` is the local `resource.key` minted by `uip solution project add` (written to `resources/solution_folder/process/agent/<CodedAgentProject>.json`). The runtime resolves the node via the Studio Web projects API after `uip solution upload`. The manifest in `definitions[]` carries `model.section: "In this solution"`.
+- **In this solution** — sibling project inside the current solution. `{key}` is the local `resource.key` minted by `uip solution projects add` (written to `resources/solution_folder/process/agent/<CodedAgentProject>.json`). The runtime resolves the node via the Studio Web projects API after `uip solution upload`. The manifest in `definitions[]` carries `model.section: "In this solution"`.
 - **Published** — deployed to Orchestrator as a tenant resource. `{key}` is the Orchestrator-assigned resource key. Discoverable via `uip maestro flow registry search`. The manifest in `definitions[]` carries `model.section: "Published"`.
 
 The node-instance shape (in `nodes[]`) is identical across the two variants — only the manifest in `definitions[]` differs (`{key}` and `model.section`).
@@ -114,7 +114,7 @@ Same shape as the published variant — no `model` on the instance.
 
 **Never hand-author the `definitions[]` entry.** Run `uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output json`, extract the `Data.Node` object, and paste it verbatim into `definitions[]`. Constructing it by hand risks missing required validator fields (`model.section`, `runtimeConstraints`, `supportsErrorHandling`, etc.).
 
-`<resourceKey>` is the local `resource.key` written by `uip solution project add` to `resources/solution_folder/process/agent/<CodedAgentProject>.json` — read it from that file or from `uip maestro flow registry list --local --output json`. Read `<DEFINITION_VERSION>` from `uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output json` (`.version`).
+`<resourceKey>` is the local `resource.key` written by `uip solution projects add` to `resources/solution_folder/process/agent/<CodedAgentProject>.json` — read it from that file or from `uip maestro flow registry list --local --output json`. Read `<DEFINITION_VERSION>` from `uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output json` (`.version`).
 
 ### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 
@@ -166,7 +166,7 @@ return { classification: response };
 
 Create the agent first, then wire it. Three paths:
 
-- **In-solution (sibling project, coded or low-code)** — scaffold via `uipath-agents`, register with `uip solution project add` to mint the local `resource.key`, then discover via `uip maestro flow registry list --local`. For the coded pipeline, see [coded/embedding-in-flows.md](../../../../../../uipath-agents/references/coded/embedding-in-flows.md).
+- **In-solution (sibling project, coded or low-code)** — scaffold via `uipath-agents`, register with `uip solution projects add` to mint the local `resource.key`, then discover via `uip maestro flow registry list --local`. For the coded pipeline, see [coded/embedding-in-flows.md](../../../../../../uipath-agents/references/coded/embedding-in-flows.md).
 - **Published coded agent** — `uip codedagent deploy`, then `uip maestro flow registry pull --force`.
 - **Published low-code agent** — `uip solution deploy`, then `uip maestro flow registry pull --force`.
 
@@ -183,7 +183,7 @@ For the resource file format and wiring details, see the `uipath-agents` skill:
 | Error | Cause | Fix |
 | --- | --- | --- |
 | Node type not found in registry | Agent not published, or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip maestro flow registry pull --force`. For coded agents, ensure `uip codedagent deploy` completed successfully |
-| In-solution node doesn't resolve | `resourceKey` was hand-invented rather than read from the resource file, or `uip solution project add` was never run for the agent project | Run `uip maestro flow registry list --local` and use the returned `resourceKey` (same value as `resource.key` in `resources/solution_folder/process/agent/<CodedAgentProject>.json`) |
+| In-solution node doesn't resolve | `resourceKey` was hand-invented rather than read from the resource file, or `uip solution projects add` was never run for the agent project | Run `uip maestro flow registry list --local` and use the returned `resourceKey` (same value as `resource.key` in `resources/solution_folder/process/agent/<CodedAgentProject>.json`) |
 | Agent execution failed | Underlying agent errored | Check `$vars.{nodeId}.error` for details. For coded agents, test locally first with `uip codedagent run` |
 | Empty `output.content` | Agent returned no response | Verify the agent is configured correctly (published: in Orchestrator; in-solution: in Studio Web) |
 | `inputDefinition` is empty | Expected — agents accept input via flow wiring, not typed fields | Wire upstream data to the agent via `$vars` expressions |

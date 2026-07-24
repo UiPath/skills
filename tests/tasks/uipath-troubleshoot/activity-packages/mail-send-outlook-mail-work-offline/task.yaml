@@ -1,0 +1,98 @@
+task_id: skill-troubleshoot-send-outlook-mail-work-offline
+description: >
+  UiPath troubleshooting agent must diagnose a Send Outlook Mail Message
+  failure where the activity times out (System.TimeoutException after
+  TimeoutMS) because Outlook is offline (Work Offline) under the Robot's
+  profile — the message is queued in the Outbox and never transmitted.
+  This is the Work Offline sub-cause of send-outlook-mail-failures
+  Branch 2, distinguished from the security-prompt sibling by evidence
+  that no prompt was raised and the item sits in the Outbox. Success =
+  agent matches Branch 2 (Work Offline), hands a host-side check list
+  (turn off Work Offline / confirm Online / flush Outbox / SMTP-Graph
+  for unattended), and does NOT merely raise TimeoutMS.
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+  - type: template_dir
+    path: ../../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: data
+  mock_path_dirs:
+  - m
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My NightlyStatementMailer process runs unattended every night and is
+  faulting in Orchestrator on every run. The folder is "RPA Production".
+
+  I'm not on the Robot host (MOCK-HOST), only Orchestrator. One thing I
+  noticed: when I ran it attended on that host once to watch, no pop-up
+  or permission dialog ever appeared — it just sat there until it failed,
+  and afterwards I found the email sitting unsent in Outlook's Outbox.
+
+  Diagnose what you can; if the fix needs the host, hand me the exact
+  things to check next time I'm there and stop.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    NightlyStatementMailer runs unattended on a nightly schedule. You are
+    away from the Robot host (MOCK-HOST) and only have Orchestrator
+    access. You trust the agent's expertise and are waiting for either a
+    diagnosis or a list of host-side things to check next time you are in
+    front of the machine.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks where the project source code / project directory / XAML files are, answer with the current working directory: respond exactly `.` (a single dot) — the project files for this scenario are staged into the sandbox cwd by the test harness."
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered and to hand you the host check list at the end. EXCEPTION: if the missing data is the project source code path, fall back to the rule above (`.` / current working directory)."
+    - "Never invent or provide new factual data beyond your initial report — you only know that the job times out every run, that no pop-up appeared in your attended test, and that the email was left in the Outbox. EXCEPTION: the project source code path IS a real fact about your test setup; you may share it when asked (`.`)."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
