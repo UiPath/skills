@@ -84,14 +84,18 @@ uip ont create <name> --folder-key $UIPATH_FOLDER_KEY
 
 ## Creating an Ontology
 
-Use the right skill based on what you have:
+**STOP — this skill does not handle ontology creation. You MUST switch skills immediately.**
 
-| Starting point | Skill to use |
+If the user wants to create a new ontology, do not proceed with this skill. Invoke the correct skill right now before doing anything else:
+
+| What the user has | Skill to invoke |
 |---|---|
-| An SDD, PDD, or design document | **`uipath-ontology-authoring`** — reads the document, sets up Data Fabric entities, invokes the modeler, and deploys |
-| A domain described in a prompt ("I have Orders, Customers, Products…") | **`uipath-ontology-modeler`** — builds the domain model from your description and generates all artifacts |
+| An SDD, PDD, or design document | **`uipath-ontology-authoring`** |
+| A domain described in a prompt ("I have Orders, Customers, Products…") | **`uipath-ontology-modeler`** |
 
-This skill covers **operations on existing ontologies only**.
+Do not ask clarifying questions, do not run any commands, do not outline a plan. Switch skills first.
+
+This skill covers **operations on existing ontologies only**: list, get, update, delete, export, and artifact management.
 
 ---
 

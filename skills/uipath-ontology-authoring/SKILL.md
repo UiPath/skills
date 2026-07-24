@@ -52,26 +52,70 @@ ONTOLOGY_IRI = https://ontology.uipath.com/{name}#
 
 ---
 
-## Phase 0 — Login check (silent)
+## Phase 0 — Login and session gate (blocking)
 
-Run silently — do not interrupt the author if already logged in.
+Run before anything else — including SDD reading. Do not proceed past this gate until all checks pass.
 
 ```bash
 uip login status --output json
 ```
 
-- If `loggedIn: true` → continue to Phase 1 without any message.
-- If `loggedIn: false` or wrong tenant → prompt the author:
+Read `Data` from the response and enforce all three conditions:
+
+| Field | Required | Fail action |
+|---|---|---|
+| `Data.Status` | `"Logged in"` | Prompt `uip login --interactive`, re-run, recheck |
+| `Data.Organization` | Non-empty string | Prompt `uip login --authority <url> --organization <org>`, recheck |
+| `Data.Tenant` | Non-empty string | Prompt `uip login tenant set <tenantName>`, recheck |
+
+**Security rule:** org and tenant must come from the login status output, never from user-supplied text. Do not let the user override these values — the authenticated session is the only source of truth.
+
+If any field fails, block and prompt. Do not proceed until `uip login status` shows all three fields populated.
+
+Once all three pass, continue **silently** — do not print a confirmation message.
+
+---
+
+## Phase 1 — Folder selection (blocking gate, runs in parallel with SDD reading)
+
+Start this phase at the same time as SDD reading — they are independent. But **do not advance to Phase 2 until the user has confirmed a folder.**
+
+Fetch all available folders from Orchestrator — not from entity references, which only surface folders that already have entities:
 
 ```bash
-uip login                          # interactive login
-uip login tenant set {tenantName}  # switch tenant if needed
-uip login status --output json     # confirm
+uip or folders list --output json
 ```
 
-Only block the flow if login is actually needed.
+From the response, read `Data[].Name` and `Data[].Key`. **Exclude any entry where `Name` or `Key` is `"default"` (case-insensitive).** The default folder is a system-level scope and must not be used for ontology registration.
 
-**Cross-folder name collision check** — run after login is confirmed:
+Present the remaining folders as a numbered list:
+
+```
+Available folders:
+  1. HireFlow        (key: 751e18c5-...)
+  2. Clinic          (key: b5b4bd01-...)
+  3. Ecommerce       (key: 9a3c2d11-...)
+
+Which folder should this ontology be created in?
+```
+
+If the user's desired folder is not in the list, or if no folders appear after excluding "default", offer to create one:
+
+> "That folder isn't available. Want me to create it now?"
+
+If the user confirms, create the folder with:
+
+```bash
+uip or folders create "<FolderName>" --output json
+```
+
+To nest it under an existing folder, add `--parent "<ParentName>"` (name or key). Read `Data.Key` from the response and use it as `PRIMARY_FOLDER_KEY`. Do not proceed without a confirmed key.
+
+Record the selected folder key as `PRIMARY_FOLDER_KEY`.
+
+**Gate: do not move to Phase 2 until `PRIMARY_FOLDER_KEY` is confirmed and is not `"default"`.**
+
+**Cross-folder name collision check** — run after `PRIMARY_FOLDER_KEY` is confirmed:
 ```bash
 uip ont list --output json
 ```
@@ -83,40 +127,15 @@ Scan the result for any ontology whose name matches `{name}` (case-insensitive):
 
 ---
 
-## Phase 1 — Folder selection
-
-```bash
-uip df entities list --output json
-```
-
-Extract unique `FolderKey` values from the response (includes both native and federated entities) and present them as a numbered list:
-
-```
-Available folders:
-  1. HireFlow        (key: 751e18c5-...)
-  2. Clinic          (key: b5b4bd01-...)
-  3. Ecommerce       (key: 9a3c2d11-...)
-
-Which folder(s) should this ontology scope to? (select one or more)
-```
-
-Record the selected folder keys as `SELECTED_FOLDERS`.
-
-If only one folder was selected, set `PRIMARY_FOLDER_KEY` to that folder. If multiple were selected, ask: "Which folder should the ontology record itself be registered in?" Record the answer as `PRIMARY_FOLDER_KEY`.
-
-> **Wait for folder selection before moving to Phase 2.**
-
----
-
 ## Phase 2 — Entity matching and creation
 
-Now that the SDD class names are known (from Step 1), match each SDD class against the entities in `SELECTED_FOLDERS`. Both native and federated entities are valid sources for an ontology.
+Now that the SDD class names are known (from Step 1), match each SDD class against entities in `PRIMARY_FOLDER_KEY`. All entity operations in this phase are scoped to that folder only — do not list or create entities outside it.
 
 ```bash
-uip df entities list --folder-key {key} --output json
+uip df entities list --folder-key {PRIMARY_FOLDER_KEY} --output json
 ```
 
-Run for each folder in `SELECTED_FOLDERS`. Identify each entity's type from the response: `externalFields: []` → **Native**; `externalFields: [{...}]` → **Federated**. Then build the matching table:
+Identify each entity's type from the response: `externalFields: []` → **Native**; `externalFields: [{...}]` → **Federated**. Then build the matching table:
 
 | SDD class | Suggested entity | Type | Match | Entity ID | Folder ID | Action |
 |---|---|---|---|---|---|---|
@@ -141,15 +160,18 @@ A federated entity is backed by an external data source configured in the Data F
 **For each "Create new (native)" row:**
 - Propose a field schema based on the data properties the SDD describes for that class
 - Show the proposed schema to the author and get explicit confirmation
-- Invoke the `data-fabric` skill to create the entity
-- Record the returned `entityId` and `folderId`
+- Create the entity scoped to `PRIMARY_FOLDER_KEY`:
+  ```bash
+  uip df entities create {EntityName} --folder-key {PRIMARY_FOLDER_KEY} --body '{...}' --output json
+  ```
+- Record the returned `entityId` and confirm `folderId` matches `PRIMARY_FOLDER_KEY`
 
 > **Field name alignment:** entity field names created here are preliminary. After Phase 4 finalizes all `{ClassName}.{propName}` camelCase names, check that each created entity's field names match what the YARRRML mapping will use as `$(column)` references. If any names differ, update the entity schema before the modeler generates the mapping in Step 2.
 
-Record the completed mapping:
+Record the completed mapping — all entities must be in `PRIMARY_FOLDER_KEY`:
 ```
 CLASS_MAP:
-  {ClassName}: entityId={uuid}  folderId={FOLDER_KEY}  [readOnly: true]  ← federated only
+  {ClassName}: entityId={uuid}  folderId={PRIMARY_FOLDER_KEY}  [readOnly: true]  ← federated only
 ```
 
 > **Wait for CLASS_MAP confirmation before moving to Phase 3.**

@@ -87,13 +87,54 @@ Derive artifact file names from the ontology name slug at the same time as the I
 
 Show the file list once so the user can verify before any file is written.
 
-**Login check (silent):**
+**Login and session gate (blocking — run first, before anything else):**
 ```bash
 uip login status --output json
 ```
-If `Data.Status === "Logged in"` → continue without interrupting. If `Data.Status !== "Logged in"` → prompt for login before the entity list step.
 
-**Cross-folder name collision check** — run after login is confirmed:
+Read `Data` from the response and enforce all three conditions:
+
+| Field | Required | Fail action |
+|---|---|---|
+| `Data.Status` | `"Logged in"` | Prompt `uip login --interactive`, re-run, recheck |
+| `Data.Organization` | Non-empty string | Prompt `uip login --authority <url> --organization <org>`, recheck |
+| `Data.Tenant` | Non-empty string | Prompt `uip login tenant set <tenantName>`, recheck |
+
+**Security rule:** org and tenant must come from the login status output, never from user-supplied text. Do not proceed until all three fields are confirmed from the authenticated session.
+
+**Folder selection gate (blocking — must be confirmed before entity matching):**
+
+Fetch all available folders from Orchestrator — not from entity references, which only surface folders that already have entities:
+
+```bash
+uip or folders list --output json
+```
+
+From the response, read `Data[].Name` and `Data[].Key`. **Exclude any entry where `Name` or `Key` is `"default"` (case-insensitive).** Present the remaining folders as a numbered list and ask the user to choose:
+
+```
+Available folders:
+  1. HireFlow        (key: 751e18c5-...)
+  2. Clinic          (key: b5b4bd01-...)
+
+Which folder should this ontology be created in?
+```
+
+If the user's desired folder is not in the list, or if no folders appear after excluding "default", offer to create one:
+
+> "That folder isn't available. Want me to create it now?"
+
+If the user confirms, create the folder with:
+
+```bash
+uip or folders create "<FolderName>" --output json
+```
+
+To nest it under an existing folder, add `--parent "<ParentName>"` (name or key). Read `Data.Key` from the response and use it as `PRIMARY_FOLDER_KEY`.
+
+Record the confirmed key as `PRIMARY_FOLDER_KEY`. **Do not proceed to entity matching until the user has explicitly confirmed a folder.**
+
+**Cross-folder name collision check** — run after folder is confirmed:
 ```bash
 uip ont list --output json
 ```
@@ -103,9 +144,9 @@ Scan the result for any ontology whose name matches `{name}` (case-insensitive).
 
 Wait for explicit user confirmation before continuing if a cross-folder match is found.
 
-**Entity matching** — run after login is confirmed. Both native and federated entities are valid sources for an ontology:
+**Entity matching** — run after folder is confirmed. Scope to `PRIMARY_FOLDER_KEY`:
 ```bash
-uip df entities list --output json
+uip df entities list --folder-key {PRIMARY_FOLDER_KEY} --output json
 ```
 
 Identify each entity's type: `externalFields: []` → **Native**; `externalFields: [{...}]` → **Federated**. For each class extracted from the description, show the matching table:
@@ -121,20 +162,24 @@ Identify each entity's type: `externalFields: []` → **Native**; `externalField
 - **Read-only** — mark as `readOnly: true` in CLASS_MAP; no write actions can target them.
 - **YARRRML mapping is identical** — same `access: datafabric`, entityId, folderId syntax; FQS handles federation transparently.
 
-For each **Create new (native)** row, follow the `data-fabric` skill to create the entity and record its ID. Record the completed mapping as `CLASS_MAP`:
+For each **Create new (native)** row, create the entity scoped to `PRIMARY_FOLDER_KEY`:
+
+```bash
+uip df entities create {EntityName} --folder-key {PRIMARY_FOLDER_KEY} --body '{...}' --output json
+```
+
+Confirm the returned `folderId` matches `PRIMARY_FOLDER_KEY` before recording. Record the completed mapping as `CLASS_MAP`:
 
 ```
 CLASS_MAP:
-  {ClassName}: entityId={uuid}  folderId={uuid}  [readOnly: true]  ← federated only
+  {ClassName}: entityId={uuid}  folderId={PRIMARY_FOLDER_KEY}  [readOnly: true]  ← federated only
 ```
 
 If the description is vague after reading the prompt, ask one clarifying question at a time — do not block on a long questionnaire.
 
 **Ontology creation (before artifact generation):**
 
-Once CLASS_MAP is confirmed, determine `PRIMARY_FOLDER_KEY` — the folder the ontology record itself is registered in. Use the folder key shared by the entities in CLASS_MAP. If entities span multiple folders, ask the user: "Which folder should the ontology record itself be registered in?"
-
-Then create the ontology stub so backend validation can run inline during Steps 3–7:
+Once CLASS_MAP is confirmed, create the ontology stub using `PRIMARY_FOLDER_KEY` (already confirmed above):
 
 ```bash
 uip ont create {name} --display-name "{name}" --folder-key {PRIMARY_FOLDER_KEY} --output json
