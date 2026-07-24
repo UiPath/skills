@@ -60,7 +60,7 @@ success_criteria:
   - type: command_executed
     description: "Agent registered the coded agent in the solution"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+project\s+add'
+    command_pattern: 'uip\s+solution\s+projects?\s+add\b(?!\s+--help)'
     min_count: 1
     weight: 2.0
     pass_threshold: 0.0  # advisory: registration is outcome-checked via Projects[] below; init auto-registers (CLI #2470), so `project add` is optional
