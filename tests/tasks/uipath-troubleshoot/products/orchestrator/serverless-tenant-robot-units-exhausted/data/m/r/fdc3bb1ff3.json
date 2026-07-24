@@ -1,0 +1,33 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Recently faulted serverless jobs in LedgerOps. TWO different serverless processes owned by TWO different users (alice / bob) both fault with the SAME 'tenant's assigned Robot Units have been exceeded' message within minutes — a tenant-wide capacity shortage, NOT a single user's Personal Automation quota. RuntimeType is Serverless on both.",
+  "Data": [
+    {
+      "Key": "99cc33dd-44ee-55ff-66aa-77bb88990011",
+      "State": "Faulted",
+      "ProcessName": "LedgerSyncService",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "RuntimeType": "Serverless",
+      "Machine": "",
+      "StartTime": "2026-06-20T02:00:03.140Z",
+      "EndTime": "2026-06-20T02:00:03.900Z",
+      "CreationTime": "2026-06-20T02:00:03.000Z",
+      "OrchestratorUserIdentity": "alice"
+    },
+    {
+      "Key": "99cc33dd-44ee-55ff-66aa-77bb88990022",
+      "State": "Faulted",
+      "ProcessName": "ExpenseImporter",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "RuntimeType": "Serverless",
+      "Machine": "",
+      "StartTime": "2026-06-20T02:03:41.220Z",
+      "EndTime": "2026-06-20T02:03:41.870Z",
+      "CreationTime": "2026-06-20T02:03:41.110Z",
+      "OrchestratorUserIdentity": "bob"
+    }
+  ]
+}

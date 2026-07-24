@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "b2c8cb22-2ebc-4c27-87f3-05efe701af1c",
+      "Name": "original_email@test.com's workspace",
+      "Path": "original_email@test.com's workspace",
+      "Description": "",
+      "Type": "Personal",
+      "ParentKey": ""
+    },
+    {
+      "Key": "d2b2c3d4-e5f6-7890-1bcd-ef0123456789",
+      "Name": "LedgerOps",
+      "Path": "LedgerOps",
+      "Description": "Folder hosting serverless finance automations (LedgerSyncService, ExpenseImporter).",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "e0772cbe-c19c-4d5f-926c-043c2d2d300a",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

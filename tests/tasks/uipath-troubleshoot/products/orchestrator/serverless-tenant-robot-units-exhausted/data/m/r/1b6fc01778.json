@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "_doc": "Failing serverless LedgerSyncService job. RuntimeType=Serverless and the Info carries the tenant-scoped Robot Units message. This is the licensing/capacity branch (branch 3) of the serverless-cannot-start-licensing playbook. The message names the TENANT (not the user), and licenses info confirms the tenant Robot Unit pool is fully consumed — distinct from branch 1 (per-user Personal Automation quota) and branch 2 (per-user Robot Units).",
+  "Data": {
+    "Key": "99cc33dd-44ee-55ff-66aa-77bb88990011",
+    "StartTime": "2026-06-20T02:00:03.140Z",
+    "EndTime": "2026-06-20T02:00:03.900Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Schedule",
+    "SourceType": "Schedule",
+    "Info": "Automation cannot be started. Your tenant's assigned Robot Units have been exceeded. Allocate more Robot Units to your tenant to continue.",
+    "CreationTime": "2026-06-20T02:00:03.000Z",
+    "ReleaseName": "LedgerSyncService",
+    "Type": "Unattended",
+    "RuntimeType": "Serverless",
+    "RequiresUserInteraction": false,
+    "OutputArguments": "{}",
+    "HostMachineName": "",
+    "OrganizationUnitId": 7791620,
+    "FolderKey": "d2b2c3d4-e5f6-7890-1bcd-ef0123456789",
+    "ProcessType": "Process",
+    "OrchestratorUserIdentity": "alice",
+    "LastModificationTime": "2026-06-20T02:00:03.900Z",
+    "JobError": {},
+    "ErrorCode": "License",
+    "TraceId": "99cc33dd-44ee-55ff-66aa-77bb88990011",
+    "Id": 671330011
+  }
+}

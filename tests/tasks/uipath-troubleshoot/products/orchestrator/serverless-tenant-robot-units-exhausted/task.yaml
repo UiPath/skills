@@ -1,0 +1,96 @@
+task_id: skill-troubleshoot-serverless-tenant-robot-units-exhausted
+description: >
+  UiPath diagnostic agent must diagnose serverless (RuntimeType
+  Serverless, runtimetype 9) jobs that fault immediately at start.
+  The failing job's Info reads "Automation cannot be started. Your
+  tenant's assigned Robot Units have been exceeded." The root cause
+  is tenant-wide Robot Unit pool exhaustion
+  (serverless-cannot-start-licensing playbook, branch 3): two
+  different serverless processes owned by two different users fault
+  with the same message, and `uip or licenses info` shows the tenant
+  Robot Unit pool at 0 of 25 available. The agent must recognize the
+  scope is TENANT-wide (not the per-user Personal Automation quota,
+  branch 1, and not per-user Robot Units, branch 2 — the user has
+  headroom) and recommend allocating more Robot Units to the tenant
+  (or freeing units), NOT waiting for a personal-quota reset.
+
+tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose, lifecycle:discover]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 300
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: data
+  mock_path_dirs: ["m"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  Our nightly LedgerSyncService automation stopped completing — the
+  jobs disappear within a second of starting and never do any work.
+  A teammate says their finance automation started dying the same
+  way overnight too. The project source is in the current working
+  directory and it runs in the LedgerOps folder. Can you find out
+  what's stopping these jobs from running?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing nightly
+    serverless automation. You are waiting for the diagnostic agent
+    to finish and trust its expertise. You only know what you wrote
+    in your initial report — your job and a teammate's finance
+    automation both die immediately overnight. You are not an admin
+    and cannot see tenant licensing yourself.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (orchestrator, licensing, users), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

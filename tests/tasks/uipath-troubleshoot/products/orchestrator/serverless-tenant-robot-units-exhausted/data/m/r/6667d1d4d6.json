@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-20T02:00:03.880Z",
+      "Message": "Job '99cc33dd-44ee-55ff-66aa-77bb88990011' could not be started. Automation cannot be started. Your tenant's assigned Robot Units have been exceeded. Allocate more Robot Units to your tenant to continue."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-20T02:00:03.500Z",
+      "Message": "[Serverless] Robot Unit reservation denied for tenant: requested 1 unit, tenant pool has 0 of 25 available (25 in use). Reservation is tenant-scoped; per-user quota is not the limiting factor."
+    }
+  ]
+}
