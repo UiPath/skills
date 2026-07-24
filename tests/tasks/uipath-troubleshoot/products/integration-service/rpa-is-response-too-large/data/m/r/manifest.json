@@ -4,51 +4,51 @@
   "rules": [
     {
       "match": "--version",
-      "file": "version.json"
+      "file": "02e8acc99f.json"
     },
     {
       "match": "or folders list",
-      "file": "folders.json"
+      "file": "ee2628e6b6.json"
     },
     {
       "match": "or processes list",
-      "file": "processes.json"
+      "file": "1a3b347f14.json"
     },
     {
       "match": "or jobs list --state Faulted",
-      "file": "jobs-faulted.json"
+      "file": "f5f2f217c8.json"
     },
     {
       "match": "or jobs get",
-      "file": "job-get.json"
+      "file": "3db6b96527.json"
     },
     {
       "match": "or jobs logs",
-      "file": "job-logs.json"
+      "file": "b8d18266dc.json"
     },
     {
       "match": "or jobs history",
-      "file": "job-history.json"
+      "file": "701433db1c.json"
     },
     {
       "match": "is connections ping",
-      "file": "conn-ping.json"
+      "file": "b0ee5b9db3.json"
     },
     {
       "match": "is connections list --connection-id",
-      "file": "conn-list-id.json"
+      "file": "59c71d8a84.json"
     },
     {
       "match": "is connections list uipath-servicenow",
-      "file": "conn-list-folder.json"
+      "file": "8d32c56987.json"
     },
     {
       "match": "is resources describe uipath-servicenow incident --operation List",
-      "file": "resource-list-op.json"
+      "file": "c3017f84e2.json"
     },
     {
       "match": "is resources describe uipath-servicenow incident",
-      "file": "resource-list.json"
+      "file": "b58d253fd5.json"
     },
     {
       "match": "docsai ask",
