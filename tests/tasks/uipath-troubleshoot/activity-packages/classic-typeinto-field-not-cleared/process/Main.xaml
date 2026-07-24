@@ -1,0 +1,60 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#" sap:VirtualizedContainerService.HintSize="1234,899" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Core.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Update Vendor Account" sap:VirtualizedContainerService.HintSize="512,700" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="currentAccount" />
+      <Variable x:TypeArguments="x:String" Name="accountAfter" />
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:GetText ContinueOnError="{x:Null}" DelayBefore="{x:Null}" DelayMS="{x:Null}" DisplayName="Get Text 'Current Account'" sap:VirtualizedContainerService.HintSize="454,141" sap2010:WorkflowViewState.IdRef="GetText_1" Text="[currentAccount]">
+      <ui:GetText.Target>
+        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="b1d2c3e4-0001-4a10-9b20-11aa22bb33cc" Selector="&lt;wnd app='vendormgr.exe' cls='WindowsForms10.Window' title='Vendor Master' /&gt;&lt;wnd ctrlid='txtAccountNumber' /&gt;">
+          <ui:Target.TimeoutMS>
+            <InArgument x:TypeArguments="x:Int32">30000</InArgument>
+          </ui:Target.TimeoutMS>
+        </ui:Target>
+      </ui:GetText.Target>
+    </ui:GetText>
+    <ui:LogMessage DisplayName="Log current account" sap:VirtualizedContainerService.HintSize="454,91" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Current account on file: &quot; + currentAccount]" />
+    <ui:TypeInto ActivateBefore="{x:Null}" AlterIfDisabled="{x:Null}" ContinueOnError="{x:Null}" DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" SendWindowMessages="{x:Null}" SimulateType="{x:Null}" ClickBeforeTyping="NONE" DisplayName="Type Into 'Account Number'" EmptyField="False" sap:VirtualizedContainerService.HintSize="454,141" sap2010:WorkflowViewState.IdRef="TypeInto_1" Text="8891245">
+      <ui:TypeInto.Target>
+        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="b1d2c3e4-0002-4a10-9b20-11aa22bb33cc" Selector="&lt;wnd app='vendormgr.exe' cls='WindowsForms10.Window' title='Vendor Master' /&gt;&lt;wnd ctrlid='txtAccountNumber' /&gt;">
+          <ui:Target.TimeoutMS>
+            <InArgument x:TypeArguments="x:Int32">30000</InArgument>
+          </ui:Target.TimeoutMS>
+        </ui:Target>
+      </ui:TypeInto.Target>
+    </ui:TypeInto>
+    <ui:GetText ContinueOnError="{x:Null}" DelayBefore="{x:Null}" DelayMS="{x:Null}" DisplayName="Get Text 'Account After Save'" sap:VirtualizedContainerService.HintSize="454,141" sap2010:WorkflowViewState.IdRef="GetText_2" Text="[accountAfter]">
+      <ui:GetText.Target>
+        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="b1d2c3e4-0003-4a10-9b20-11aa22bb33cc" Selector="&lt;wnd app='vendormgr.exe' cls='WindowsForms10.Window' title='Vendor Master' /&gt;&lt;wnd ctrlid='txtAccountNumber' /&gt;">
+          <ui:Target.TimeoutMS>
+            <InArgument x:TypeArguments="x:Int32">30000</InArgument>
+          </ui:Target.TimeoutMS>
+        </ui:Target>
+      </ui:GetText.Target>
+    </ui:GetText>
+    <ui:LogMessage DisplayName="Log submitted account" sap:VirtualizedContainerService.HintSize="454,91" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Account submitted for vendor V-40817: &quot; + accountAfter]" />
+  </Sequence>
+</Activity>

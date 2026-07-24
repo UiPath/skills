@@ -27,8 +27,15 @@ Studio under `UiPath.Core.Activities`. They split across two NuGet packages:
   reached; `Wait UI Element Appear` element never appeared; `Wait Image Vanish` image never vanished.
 - Element found but the action failed (`ElementOperationException`) — disabled, occluded,
   off-screen, or focus lost between find and act.
+- `Type Into` wrote the wrong value (no exception, job `Successful`) — text appended because the field
+  was not cleared (`EmptyField` unset), characters dropped by the input method, literal text
+  interpreted as key commands, or a mask/autocomplete rewrite.
 - Browser could not be opened or attached (`BrowserOperationException`) — browser not installed,
   extension missing, browser crashed, wrong browser type for the communication method.
+- `BrowserScope` (Attach Browser) COM / environmental faults (`COMException`, `HRESULT E_FAIL`,
+  "Invalid access to memory location") — display-scaling or privilege/integrity-level mismatch between
+  the dev machine and the runtime robot, or a non-interactive/Session-0 run; strategic fix is
+  migrating to the modern Use Application/Browser container.
 - Application could not be launched (`Open Application` / `Open Browser`) — file/path not found, bad
   arguments, app never produced a window.
 - Design-time configuration / validation errors — mutually-exclusive options both set, conflicting
