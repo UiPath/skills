@@ -75,7 +75,10 @@ uip or processes list --all-folders --limit 200 --output json \
   --output-filter "[?Key=='bf544b24-9133-41b5-9361-4f9f75c64467'].{Name:Name,Key:Key,FolderPath:FolderPath}"
 ```
 
-Expected: a one-element array. Record `Name` and `FolderPath` — they go in the PR body as fixture provenance.
+Expected: a one-element array. Record `Name` and `FolderPath`:
+
+- `Name` goes into the provenance comment in Task 2 Steps 1 and 3, matching PR #1946's `project "test-webapp"` shape.
+- `FolderPath` goes into the PR body as fixture provenance.
 
 If the array is empty, the key does not exist on this tenant. STOP and report — do not guess at a substitute key.
 
@@ -145,7 +148,7 @@ run_limits:
   expected_turns: 21
 
 # Persistent traces fixture (codereval/DefaultTenant, alpha):
-#   process key  bf544b24-9133-41b5-9361-4f9f75c64467  (inlined in the prompt below)
+#   process "<NAME_FROM_TASK_1_STEP_3>"  bf544b24-9133-41b5-9361-4f9f75c64467  (inlined in the prompt below)
 #   Orchestrator process ID 893686 · folder ID 2824630 · tenant ID 801178
 # Inlined rather than read from TRACES_SMOKE_PROCESS_KEY: that var is wired in
 # this repo's GitHub workflows but not in the ADO nightly, so the env-var form
@@ -201,7 +204,7 @@ run_limits:
   expected_turns: 16
 
 # Persistent traces fixture (codereval/DefaultTenant, alpha):
-#   process key  bf544b24-9133-41b5-9361-4f9f75c64467  (inlined in the prompt below)
+#   process "<NAME_FROM_TASK_1_STEP_3>"  bf544b24-9133-41b5-9361-4f9f75c64467  (inlined in the prompt below)
 #   Orchestrator process ID 893686 · folder ID 2824630 · tenant ID 801178
 # Inlined rather than read from TRACES_SMOKE_PROCESS_KEY: that var is wired in
 # this repo's GitHub workflows but not in the ADO nightly, so the env-var form
@@ -575,6 +578,6 @@ Substitute the two real scores from Task 4 Step 3 before running. Do not open th
 
 No gaps.
 
-**Placeholder scan:** The only bracketed tokens are `<JOB_KEY_FROM_STEP_4>` (Task 1 Step 5) and `<SCORE from Task 4>` (Task 5 Step 3). Both are runtime values that cannot exist at authoring time, and each has an explicit instruction naming the step that produces it. No "TBD", no "add appropriate error handling", no "similar to Task N" — the provenance comment block is repeated in full in Task 2 Steps 1 and 3 rather than cross-referenced.
+**Placeholder scan:** The only bracketed tokens are `<JOB_KEY_FROM_STEP_4>` (Task 1 Step 5), `<NAME_FROM_TASK_1_STEP_3>` (Task 2 Steps 1 and 3), and `<SCORE from Task 4>` (Task 5 Step 3). All three are runtime values that cannot exist at authoring time, and each names the step that produces it. No "TBD", no "add appropriate error handling", no "similar to Task N" — the provenance comment block is repeated in full in Task 2 Steps 1 and 3 rather than cross-referenced.
 
 **Type consistency:** The GUID `bf544b24-9133-41b5-9361-4f9f75c64467` is byte-identical in Global Constraints, both Task 2 edits, and Task 1's lookup and job-start commands. File paths and line numbers were read from the working tree, not recalled. `check_traces_e2e.py` / `check_traces_feedback_e2e.py` are named consistently and, per Global Constraints, unmodified.
