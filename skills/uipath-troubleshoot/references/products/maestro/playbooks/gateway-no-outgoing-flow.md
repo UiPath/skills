@@ -11,6 +11,9 @@ What this looks like:
 - Error message: `No condition for an outgoing flow was met. At least one outgoing flow condition needs to evaluate to true or have a default flow.`
 - Always raised by an Exclusive or Inclusive Gateway
 
+Not this playbook:
+- Gateway condition evaluates without `400001` but takes the wrong branch (case mismatch, emoji in expressions) → [variable-expression-errors](variable-expression-errors.md)
+
 What can cause it:
 - All outgoing sequence flow conditions evaluated to `false` and no default flow was configured
 - Variable ID mismatch — designer-side bug where renaming a variable leaves expressions bound to the old variable ID, so they read the wrong value

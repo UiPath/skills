@@ -2,6 +2,8 @@
 
 **Investigation guide:** [investigation_guide.md](./investigation_guide.md) — data correlation rules and testing prerequisites for System Activities investigations
 
+> **Activity-type tokens.** Classic `Get Asset` / `Get Robot Asset` compile to the `GetRobotAsset` activity type; classic `Get Credential` / `Get Robot Credential` compile to `GetRobotCredential`. Both read Orchestrator assets and share the `get-asset-*` failure families below — when the faulting activity is `GetRobotAsset` or `GetRobotCredential`, route by the error signal (error code / exception class), not by the type token.
+
 | Issue | Confidence | Description | Playbook |
 |-------|:---:|-------------|----------|
 | Get Asset — Wrong Activity for Asset Type | High | `Get Asset` used on a Credential or `Get Credential` used on a Text/Integer/Boolean asset | [get-asset-wrong-activity-type.md](./playbooks/get-asset-wrong-activity-type.md) |

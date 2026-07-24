@@ -32,6 +32,10 @@ Studio under `UiPath.Core.Activities`. They split across two NuGet packages:
   interpreted as key commands, or a mask/autocomplete rewrite.
 - Browser could not be opened or attached (`BrowserOperationException`) — browser not installed,
   extension missing, browser crashed, wrong browser type for the communication method.
+- `BrowserScope` (Attach Browser) COM / environmental faults (`COMException`, `HRESULT E_FAIL`,
+  "Invalid access to memory location") — display-scaling or privilege/integrity-level mismatch between
+  the dev machine and the runtime robot, or a non-interactive/Session-0 run; strategic fix is
+  migrating to the modern Use Application/Browser container.
 - Application could not be launched (`Open Application` / `Open Browser`) — file/path not found, bad
   arguments, app never produced a window.
 - Design-time configuration / validation errors — mutually-exclusive options both set, conflicting
@@ -42,8 +46,13 @@ Studio under `UiPath.Core.Activities`. They split across two NuGet packages:
 **System / Core:**
 - File operations (`Rename File`, `Move File`, `Append Line`) — source not found, destination not a
   folder, file already exists, path is a directory, access denied, file locked.
-- Workflow invocation (`Invoke Workflow File`, `Start Triggers`) — file not found, argument
-  name/type/direction mismatch, isolated/elevated/session validation, persistence not supported.
+- Workflow invocation at run time (`Invoke Workflow File`, `Start Triggers`) — file not found,
+  argument name/type/direction mismatch, isolated/elevated/session validation, persistence not
+  supported.
+- Workflow invocation at design/build time (`Invoke Workflow File`) — `Cannot set unknown member
+  ...ArgumentsVariable` (package-version mismatch), Cache Mechanism Error / `Error code: 7` (project
+  cache corruption), invoked `.xaml` outside the project root or a null path variable, or a new
+  required argument not re-imported.
 - Code invocation (`Invoke Code`) — compilation failure, unsupported language, or exceptions thrown
   by the user's own code at run time.
 - Queue operations (`Add Queue Item`) — empty queue name, invalid/duplicate item-information keys,

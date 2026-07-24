@@ -15,6 +15,8 @@ This is the **no-signature** counterpart to [verify-execution-failure.md](./veri
 
 Applies to the input activities whose driver posts an event without asserting the outcome: `NClick`, `NTypeInto`, `NSetText`, `NCheck`, `NSelectItem`, `NHover`, `NKeyboardShortcuts`.
 
+**Classic input activities (`UiPath.Core.Activities` — `Click`, `Type Into`, `Send Hotkey`) are a different playbook** — they have no Verify Execution feature at all, so a missed classic click is silent by design: [classic-activities/click-silent-no-op.md](../../classic-activities/playbooks/click-silent-no-op.md). This playbook covers UIAutomationNext (`N*`) activities only.
+
 What this looks like:
 
 - Job/instance `State = Successful`; **zero** Error-level logs for the run.

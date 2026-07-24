@@ -13,7 +13,6 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  driver: tempdir
   mock_path_dirs: [mocks]
   template_sources:
     - {type: template_dir, path: ../_shared/mock_template}
@@ -29,19 +28,21 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent moved live to v16 via `projects publish <Name> --model-version 16 --tag live`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+publish\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*(--model-version|-m)\s+16\b)(?=.*--tag\s+["'']?live\b).*'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+publish\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*(--model-version|-m)\s+16\b)(?=.*--tag\s+["']?live\b).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
   # The publish above already moves the tag; untagging the old version first
   # is unnecessary and wrong.
-  - type: command_not_executed
+  - type: file_matches_regex
     description: "Agent did NOT untag (moving a tag does not require untag first)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+untag\b'
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+untag\b)[^\r\n]*$
+    must_match: false
     weight: 1.0
     pass_threshold: 1.0

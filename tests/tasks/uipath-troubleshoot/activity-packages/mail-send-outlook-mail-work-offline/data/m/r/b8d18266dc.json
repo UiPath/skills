@@ -1,0 +1,46 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T02:30:00.200Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T02:30:01.420Z",
+      "Message": "[Send Outlook Mail Message] Attaching to Outlook; launching OUTLOOK.EXE under UIPATH\\ROBOTUSER1"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T02:30:04.760Z",
+      "Message": "[Send Outlook Mail Message] Outlook profile loaded; composing message to statements-dl@test.com"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T02:30:05.910Z",
+      "Message": "[Send Outlook Mail Message] Message composed; item placed in the Outbox for sending"
+    },
+    {
+      "Level": "Warn",
+      "TimeStamp": "2026-06-03T02:30:26.240Z",
+      "Message": "[Send Outlook Mail Message] The item is still in the Outbox and has not been transmitted; Outlook connectivity state reports Disconnected. Send pending >20s (no dialog or prompt was raised)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T02:30:30.680Z",
+      "Message": "[Send Outlook Mail Message] Timeout reached. (30000 ms) Outlook accepted the item into the Outbox but did not transmit it before the timeout elapsed; the COM send did not complete."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T02:30:30.712Z",
+      "Message": "Send Outlook Mail Message: Timeout reached. (30000 ms)\r\nin Main.xaml\r\n    at SendOutlookMail \"Send Outlook Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.TimeoutException: The operation has timed out."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T02:30:30.730Z",
+      "Message": "Execution ended in: 00:00:30"
+    }
+  ]
+}

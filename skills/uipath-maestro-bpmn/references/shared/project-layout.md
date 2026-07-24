@@ -59,6 +59,14 @@ For the regeneration and drift-check contract, see [local-metadata-regeneration-
 
 ## Package content
 
+A synthetic local project authored without a CLI generator must still match the
+executable and metadata contract before packing: the BPMN root process includes
+`isExecutable="true"`, `project.uiproj` has lowercase `"main"`,
+`operate.json` has `"main"` plus `"contentType": "ProcessOrchestration"`, and
+`package-descriptor.json` has top-level `"content"` entries under `content/`.
+For the exact minimal JSON, see
+[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
+
 A Process Orchestration package content folder contains:
 
 - One or more `.bpmn` files.

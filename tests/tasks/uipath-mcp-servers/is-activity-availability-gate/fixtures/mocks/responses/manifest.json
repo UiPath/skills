@@ -1,6 +1,7 @@
 {
   "version": 2,
   "rules": [
+    { "match": "login status",                                      "file": "login_status.json" },
     { "match": "or folders list",                                    "file": "or_folders_list.json" },
     { "match": "agenthub mcp list",                                  "file": "agenthub_mcp_list.json" },
     { "match": "agenthub mcp-tools list",                            "file": "agenthub_mcp_tools_list.json" },

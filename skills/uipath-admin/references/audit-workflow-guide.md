@@ -4,6 +4,8 @@ Four canonical investigations the `uipath-audit` skill should drive. Each starts
 
 > Every command below assumes the user has run `uip login` and the active token includes the `Audit.Read` scope. Every command should pass `--output json` so the agent can parse the envelope.
 
+> **Use `uip admin audit`, never `uip or audit-logs`.** Every org/tenant audit request — including generic phrasings like "audit logs", "export the audit trail", "login history", "who did what" — is answered with `uip admin audit <scope>` (`sources`/`events`/`export`). `uip or audit-logs` is the *Orchestrator-operational* audit surface (different schema, `--export` yields a CSV; `uipath-platform` skill) and is the wrong tool here even when the wording is generic. When asked **what** events/sources exist, run `uip admin audit <scope> sources` and report the live catalog — don't describe it from memory.
+
 ## Audit scope disambiguation — route by user phrasing
 
 Pick `org` vs `tenant` BEFORE any `audit` call. They hit different basePaths and surface different events. Use this table to route a user query (SKILL.md Critical Rule 23 is the contract; this is the decision tool):
@@ -180,20 +182,24 @@ For each event:
 
 If the user is ambiguous about scope, ask once. For compliance reviews, **both** scopes are typically needed (separately).
 
+Resolve relative window phrases ("yesterday", "past week", "last month") against the **actual current UTC date** — e.g. `date -u +%F`, `date -u -d 'yesterday' +%F` (macOS/BSD: `date -u -v-1d +%F`) — never guess dates, and echo the resolved bounds in your reply. Export bounds are **whole UTC days, inclusive on both ends**: "yesterday" is the same date for both `--from-date` and `--to-date`; "the past week" is 7 days ago through yesterday (or today, accepting that the trailing day may lag — see gotchas).
+
+If the user named a destination folder, pass it verbatim as `--output-path` — no confirmation needed. Only when they didn't say where should you propose a default (e.g. `./audit-exports`) and confirm once.
+
 ### Step 2 — Export
 
 ```bash
 # Tenant scope — most events (default json: a uniquely-named folder of day-wise JSON files under the base dir)
 uip admin audit tenant export \
   --from-date 2026-01-01 \
-  --to-date   2026-02-01 \
+  --to-date   2026-01-31 \
   --output-path ./audit-exports \
   --output json
 
 # Tenant scope as a single merged CSV (flat, Excel-friendly)
 uip admin audit tenant export \
   --from-date 2026-01-01 \
-  --to-date   2026-02-01 \
+  --to-date   2026-01-31 \
   --file-format csv \
   --output-path ./audit-exports \
   --output json
@@ -201,7 +207,7 @@ uip admin audit tenant export \
 # Org scope — admin events (memberships, license, tenant lifecycle)
 uip admin audit org export \
   --from-date 2026-01-01 \
-  --to-date   2026-02-01 \
+  --to-date   2026-01-31 \
   --output-path ./audit-exports \
   --output json
 ```
@@ -220,7 +226,7 @@ Typical layout (the base dir holds one generated folder; one file per UTC day wi
 
 ```
 audit-exports/
-└── audit_2026-01-01_2026-02-01_20260617T112630/
+└── audit_2026-01-01_2026-01-31_20260617T112630/
     ├── 2026-01-01.json
     ├── ...
     └── 2026-01-31.json
@@ -301,7 +307,10 @@ Two or more signals? Run them in sequence and stitch the results in the final re
 
 - **`tenant` events without an active tenant fail loudly.** If `uip login` has no tenant selected, every tenant-scoped command throws. Either re-`uip login` and pick a tenant, or pass `--tenant-id <guid>` on every call.
 - **`events` cursor pagination is chronologically reversed from intuition.** `next` = newer (often null), `previous` = older (the typical "load more"). The CLI tool follows `previous` automatically when you bump `--limit > 200` — don't re-implement this in the agent.
-- **Date-only ISO strings are interpreted as UTC midnight.** `--from-date 2026-01-01` means `2026-01-01T00:00:00Z`. To capture the full final day in `--to-date`, use `2026-02-01` (exclusive next day) or `2026-01-31T23:59:59.999Z`.
+- **On `events`, date-only ISO strings are interpreted as UTC midnight.** `--from-date 2026-01-01` means `2026-01-01T00:00:00Z`. To capture the full final day in `--to-date`, use `2026-02-01` (exclusive next day) or `2026-01-31T23:59:59.999Z`.
+- **On `export`, both bounds are whole UTC days, inclusive** — the server truncates times to the calendar day. All of January is `--from-date 2026-01-01 --to-date 2026-01-31`; a single day is the same date for both bounds. Do NOT carry the `events` next-day trick over to `export` — it exports an extra full day.
+- **The long-term store lags live `events`** (typically up to ~24–48 h). An export window that includes today/yesterday succeeds but the trailing days may come back empty even though `events` shows data. Mention this when the user's window is that recent; offer to re-run later or end the window 2 days back if completeness matters.
+- **Resolve relative dates against the real UTC clock** (`date -u +%F`, `date -u -d 'yesterday' +%F`; macOS/BSD `date -u -v-1d +%F`) and echo the resolved window — never guess what "yesterday" is.
 - **Export format depends on `--file-format`.** The default `json` writes one **JSON** file per UTC day (named `<YYYY-MM-DD>.json`) into a generated subfolder under `--output-path`, with **LTS-schema** keys; `--file-format csv` produces a single merged **CSV** whose header uses those same LTS-schema field names. Both differ from the camelCase live `events` endpoint — don't paste an export into a parser expecting the live shape. In the CSV, `Status` is numeric (`0`/`1`) and `ClientInformation` is a JSON-stringified cell.
 - **Org sources and tenant sources are different sets.** Don't reuse a GUID from `org sources` in a `tenant events` query — the filter will silently match nothing.
 
@@ -314,4 +323,4 @@ After every `events` or `export` call, surface the following before waiting for 
 3. **Time window** — explicit ISO bounds, even if they came from a relative phrase ("last 7 days").
 4. **Filters applied** — sources, types, users, status.
 5. **Cursor state** — for `events`, mention whether `Data.previous` is null (start of audit history) or populated (more older events available — re-run with a larger `--limit`).
-6. **Next step** — "Want me to widen the window?", "Want me to export this slice?", "Want me to filter by user X?". Wait for the user's choice.
+6. **Next step** — "Want me to widen the window?", "Want me to export this slice?", "Want me to filter by user X?". Wait for the user's choice — **unless the user's original message already asked for the follow-on steps** (e.g. "show me the sources, preview recent events, then export the week"): finish the full requested sequence first, then hand off. These are read-only queries; pausing mid-way to re-confirm work the user already asked for is noise, not safety.

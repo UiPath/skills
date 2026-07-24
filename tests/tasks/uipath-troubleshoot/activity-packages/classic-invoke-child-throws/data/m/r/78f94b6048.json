@@ -1,0 +1,28 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "5f2a9c81-6b03-4d27-8e14-9a0f3c7b2d56",
+      "Name": "original_email@test.com's workspace",
+      "Path": "original_email@test.com's workspace",
+      "Description": "",
+      "Type": "Personal",
+      "ParentKey": ""
+    },
+    {
+      "Key": "b7c93a10-2d54-4e88-9a16-3f0e7c2b5d41",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

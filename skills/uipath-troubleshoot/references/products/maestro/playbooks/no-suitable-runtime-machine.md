@@ -11,6 +11,8 @@ What this looks like:
 - Error message: `Operation returned invalid status code '409'. Could not find a machine with Unattended or NonProduction runtimes in the current folder`
 - Orchestrator error code `#2818`
 
+Ownership: the underlying fault is Orchestrator folder capacity/configuration; this playbook owns only the Maestro surface (the incident and the Maestro-specific runtime-type default). Discriminator: `#2818` means Orchestrator refused to create the job - there is no child job. If a child job WAS created and sits in Pending ("No host is available on the machine template"), continue in [job-pending-no-host](../../orchestrator/playbooks/job-pending-no-host.md) instead.
+
 What can cause it:
 - Folder has no machine templates with Unattended or NonProduction runtime slots assigned
 - Folder only has Test Runtimes but Maestro defaults to NonProduction runtime type (tracked historically as `MST-6775`)
