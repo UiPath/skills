@@ -1,0 +1,28 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "6e7f8a9b-0c1d-4e2f-8a3b-4c5d6e7f8a9b",
+      "Name": "automation1@test.com's workspace",
+      "Path": "automation1@test.com's workspace",
+      "Description": "",
+      "Type": "Personal",
+      "ParentKey": ""
+    },
+    {
+      "Key": "d4e5f6a7-b8c9-4d0e-9f1a-3b4c5d6e7f80",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

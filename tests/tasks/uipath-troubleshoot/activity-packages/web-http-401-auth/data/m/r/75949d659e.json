@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90",
+      "State": "Faulted",
+      "ProcessName": "InvoiceApiClient",
+      "ReleaseName": "InvoiceApiClient",
+      "StartTime": "2026-07-20T08:44:12.300Z",
+      "EndTime": "2026-07-20T08:44:13.780Z",
+      "CreationTime": "2026-07-20T08:44:09.100Z",
+      "Type": "Unattended",
+      "Source": "Manual",
+      "Priority": null
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+<Activity x:Class="Wf_PostPayment" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Sequence DisplayName="Post Payment">
+    <ui:HttpClient EndPoint="https://payments.partner.example/api/charges" Method="POST" BodyFormat="application/json" TimeoutMS="30000" DisplayName="HTTP Request" />
+  </Sequence>
+</Activity>

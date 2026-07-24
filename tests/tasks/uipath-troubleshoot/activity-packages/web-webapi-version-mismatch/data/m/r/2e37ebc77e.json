@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b",
+      "Name": "Integrations Dev",
+      "Path": "Integrations Dev",
+      "Description": "Development folder for integration automations.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "CrmContactUpload",
+  "description": "Process",
+  "main": "Wf_CreateContact.xaml",
+  "dependencies": {
+    "UiPath.System.Activities": "[26.2.6]",
+    "UiPath.WebAPI.Activities": "2.4.0"
+  },
+  "schemaVersion": "4.0",
+  "projectVersion": "1.0.0",
+  "expressionLanguage": "CSharp",
+  "targetFramework": "Windows",
+  "entryPoints": [
+    {
+      "filePath": "Wf_CreateContact.xaml",
+      "input": [],
+      "output": [],
+      "uniqueId": "33333333-3333-3333-3333-333333333333"
+    }
+  ],
+  "designOptions": {
+    "outputType": "Process",
+    "fileInfoCollection": []
+  }
+}
