@@ -109,12 +109,12 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    events, multi-instance/loop markers, `errorMapping`/retry structure, or
    diagrams.
 3. **Assemble.** Author directly from the complete minimal file in
-   [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-fixtures)
+   [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton already
-   shows variables, the entry point, a branch, and the diagram. **Do not read the
-   validator's `test/fixtures/`, task fixtures, or generated package files to
-   infer authoring patterns** — fixture spelunking is the top reason authoring
-   runs out of time. Add only the structural pieces your process needs (extra
+   shows variables, the entry point, a branch, and the diagram. **Do not
+   reverse-engineer authoring patterns from task fixtures or generated package
+   files** — fixture spelunking is the top reason authoring runs out of time.
+   Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
    expression/error mappings, retry attributes), then generate one
    `BPMNShape`/`BPMNEdge` per node and flow. For local authoring prompts, use the
@@ -152,19 +152,21 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    metadata shape in
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
    Do not copy CLI scaffold metadata shapes into a synthetic local project.
-4. **Validate.** There is **no** `uip maestro bpmn validate` CLI command. Run the
-   bundled validator — it reconstructs the canvas model and runs every
-   PO.Frontend rule:
+4. **Validate.** Run the CLI validator — it runs the full PO.Frontend canvas
+   rule set (structural rules plus variable, method-call, input-type, and
+   event-object checks) offline, plus deploy-readiness checks:
 
    ```bash
-   cd skills/uipath-maestro-bpmn/validator && npm install --silent
-   node validate-bpmn.mjs <file.bpmn>   # prints VALID (exit 0) or the errors (exit 1)
+   uip maestro bpmn validate <file.bpmn> --output json
    ```
 
-   A well-formed-XML parse is the secondary fallback if Node is unavailable. See
+   Exit 0 = valid; exit 1 = validation failed (the envelope lists each issue
+   with its rule code). Warnings are reported but do not fail the run. Validate
+   once; fix only error-severity findings. Do not re-validate in a loop chasing
+   warnings. If `validate` reports "unknown command" or clearly skips the
+   structural rules, the installed CLI predates them — update it (see
+   [references/cli-conventions.md](references/cli-conventions.md)). See
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
-   Validate once; fix only ERROR-severity findings (warnings do not block import).
-   Do not re-validate in a loop chasing warnings.
 
 ## Operate and diagnose
 
@@ -245,7 +247,6 @@ and honestly surfaced to the user as gaps when asked.
 | Runtime expressions, `vars.`/`bindings.`/`iterator.`, `=js:` (Jint) syntax | [references/expression-authoring.md](references/expression-authoring.md) |
 | CLI conventions and the side-effect boundary | [references/cli-conventions.md](references/cli-conventions.md) |
 | Keeping content public-safe | [references/public-safety.md](references/public-safety.md) |
-| Bundled offline validator (every PO.Frontend rule) | [validator/README.md](validator/README.md) |
 | Package, upload, publish, run, or manage instances | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md) |
 | Diagnose a failed or misbehaving run | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
 | Project layout and generated package files | [references/shared/project-layout.md](references/shared/project-layout.md) |

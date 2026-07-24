@@ -19,11 +19,19 @@ All commands below are discovery/read-only. None mutate cloud state.
 | `uip maestro bpmn registry get <extensionType> [--connection-id <id>] [--object-name <name>]` | Get the full spec for one extension type: `xmlTemplate`, `contextFields`, `bindingInfo`, input/output patterns. `--connection-id`/`--object-name` add live Integration Service field metadata for `Intsvc.*` connector types. |
 | `uip is connections list --all-folders` | List live Integration Service connections (id + state) across all folders. Always pass `--all-folders`; a folder-scoped list silently misses connections. |
 
-These are the **only** commands the skill verifies against the CLI source
-(`packages/maestro-tool/src/commands/registry.ts`). Do not invent flags. In
-particular, there is **no** `uip maestro bpmn validate` command — see
-[Validation](structural-bpmn.md#validation). Validation is done with the bundled
-offline validator, not a CLI.
+These are the registry/discovery commands the skill verifies against the CLI
+source (`packages/maestro-tool/src/commands/registry.ts`). Do not invent flags.
+Validation uses `uip maestro bpmn validate <file>` — see
+[Validation](structural-bpmn.md#validation).
+
+The `validate` command runs the full PO.Frontend canvas rule set offline (it was
+added to the CLI in UiPath/cli#3135). If your CLI reports `validate` as an
+unknown command, or it clearly runs only the deploy-readiness checks and not the
+structural rules, the installed CLI predates that change — update to the latest:
+
+```bash
+npm install -g @uipath/cli@latest   # or: bun add -g @uipath/cli
+```
 
 > **Don't conclude "it doesn't exist" from truncated discovery output.** A row past a cutoff reads exactly like a missing row. Two cutoffs bite here: `registry list` defaults to **30** — pass `--limit -1` for the full set — and piping `registry search`/`is connections list` through `head`/`tail`/`grep -m`/a pager drops everything past the cap. To check existence, narrow the query (keyword to `registry search`, `--all-folders` to connection lists) rather than capping rows; cap only data already known complete.
 
@@ -35,7 +43,8 @@ manual and tell the user.
 
 ## Login boundary
 
-Local source authoring and the bundled validator work without login. Registry
+Local source authoring and `uip maestro bpmn validate` work without login (the
+validator runs fully offline). Registry
 discovery of **connectors and processes** (and Integration Service field
 enrichment) requires `uip login`. Without login, `registry pull` still returns
 the built-in (OOTB) extension types.

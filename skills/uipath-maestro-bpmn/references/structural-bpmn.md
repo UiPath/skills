@@ -66,14 +66,14 @@ XML comments must not contain `--` (double-hyphen): it is invalid XML and the
 file will fail to parse. Never paste CLI commands or flags
 (`--output`, `--connection-id`) into `<!-- … -->`. Keep comments minimal.
 
-## A complete minimal file (author from this, not from fixtures)
+## A complete minimal file (author from this, not from examples)
 
 This is the whole shape — variables, an entry point, one node, a branch, and
 the diagram — in one valid file. Author from this skeleton plus the registry
-templates for your nodes. **Do not read the validator's `test/fixtures/` to
-infer the pattern**; those are validator test data, and reading them is the
-main reason authoring runs out of time. Swap the `scriptTask` payload for the
-registry `xmlTemplate` of whatever node you need.
+templates for your nodes. **Do not reverse-engineer the pattern from full
+example BPMN files** — it is the main reason authoring runs out of time. Swap
+the `scriptTask` payload for the registry `xmlTemplate` of whatever node you
+need.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -511,23 +511,24 @@ Re-check after any edit:
 
 ## Validation
 
-There is **no** `uip maestro bpmn validate` CLI command. The skill ships its own
-offline validator that reconstructs the PO.Frontend Node/Edge/CanvasState model
-from the parsed BPMN and runs **every** canvas validation rule — run it as the
-primary check:
+Validate with the CLI — it runs the full PO.Frontend canvas rule set offline
+(the same Node/Edge/CanvasState reconstruction and every canvas rule), plus the
+deploy-readiness checks:
 
 ```bash
-cd skills/uipath-maestro-bpmn/validator && npm install --silent
-node validate-bpmn.mjs <file.bpmn>   # prints VALID and exits 0, or prints errors and exits 1
+uip maestro bpmn validate <file.bpmn> --output json
 ```
 
-`VALID` / exit 0 means the document passes all rules. Any other output lists the
-blocking errors (gateway/condition, fake-join, superfluous-gateway, error
-end/boundary event, timer-duration, single-blank-start, variable-reference, and
-IS-connector checks). See [validator/README.md](../validator/README.md).
+Exit 0 means the document passes all rules. Exit 1 lists the blocking errors,
+each with its rule code (gateway/condition, fake-join, superfluous-gateway,
+error end/boundary event, timer-duration/required-field, single-blank-start,
+single-conditional-outgoing-flow, variable-reference, method-parentheses,
+input-type, event-object, and IS-connector checks). Warnings are reported but do
+not block. If `validate` is unknown or runs only deploy-readiness checks, update
+the CLI — see [cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).
 
-If Node is unavailable, fall back to a well-formed-XML parse plus the structural
-checklist below — it mirrors the same blocking rules:
+If the CLI is unavailable, fall back to a well-formed-XML parse plus the
+structural checklist below — it mirrors the same blocking rules:
 
 ```bash
 python3 -c "import xml.etree.ElementTree as ET; ET.parse('<file.bpmn>')"
