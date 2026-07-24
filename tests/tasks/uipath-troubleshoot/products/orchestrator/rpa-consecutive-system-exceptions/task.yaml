@@ -12,7 +12,7 @@ description: >
   stop throwing, per the job-consecutive-system-exceptions playbook —
   raising MaxConsecutiveSystemExceptions only delays the abort.
 
-tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose]
+tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
