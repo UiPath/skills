@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "ProcessList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "A1F2E3D4-1122-3344-5566-7788990011AA",
+      "Name": "Data Export",
+      "ProcessKey": "DataExport.process.Data.Export",
+      "ProcessVersion": "1.0.0",
+      "Description": "",
+      "IsLatestVersion": true,
+      "RetentionPeriod": 30,
+      "RetentionAction": "Delete"
+    }
+  ]
+}
