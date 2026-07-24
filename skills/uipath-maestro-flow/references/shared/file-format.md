@@ -148,8 +148,10 @@ When you DO author the instance `outputs` block (for documentation / parity with
 
 - `type` — data type (usually `"object"`)
 - `description` — human-readable description
-- `source` — runtime binding expression. `"=Error"` for errors, always. **`output` is derived — prefer declaring `error` only.** Where an example does declare `output`, its `source` comes from the node type's registry `outputDefinition`: `"=result.response"` on connector and built-in action nodes (script, transform, HTTP), `"=this"` on Orchestrator-job nodes. Inventing one is only harmful on the Orchestrator-job families (the converter copies it verbatim there), where it leaves `$vars.<nodeId>.output` null at runtime while `flow validate` passes.
+- `source` — runtime binding expression, copied from the manifest `outputDefinition`. `"=Error"` for errors, always.
 - `var` — the variable name (matches the output ID, e.g., `"output"`, `"error"`)
+
+**Declare `error` only — `output` is derived.** Orchestrator-job nodes (api-workflow, rpa-workflow, agent, agentic-process, function, subflow, published flow) are the one family whose instance block the converter reads: it copies an authored `source` verbatim, and injects `{output, jsonSchema, "=this"}` when a non-empty `outputs` omits `output`. So `"=result.response"` there — the connector/script source — leaves `$vars.<nodeId>.output` null at runtime while `flow validate` passes. Studio Web writes `error` only on these nodes.
 
 The standard `outputs` block for most action nodes (script, HTTP, transform, connector, agent):
 

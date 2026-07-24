@@ -66,9 +66,7 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 }
 ```
 
-**Declare `error` only — `output` is derived.** The converter injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` whenever a non-empty `outputs` omits `output`; Studio Web writes the block that way too. Downstream reads `$vars.{nodeId}.output` either way.
-
-Authoring `output` is the trap: for Orchestrator-job nodes the converter copies your `source` verbatim, so `"=result.response"` — correct only on connector and script/transform nodes — leaves `$vars.{nodeId}.output` **null at runtime** while `flow validate` passes. A downstream agent binding it as a required object then dies at startup: `AGENT_STARTUP.INPUT_VALIDATION_ERROR`, incident `170002`.
+**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. See [file-format.md § Node outputs](../../../../shared/file-format.md#node-outputs).
 
 ### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 
@@ -107,4 +105,4 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 | --- | --- | --- |
 | Node type not found in registry | API workflow not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force`; for in-solution API workflows use `--local` |
 | Execution failed | Underlying API workflow errored | Check `$vars.{nodeId}.error` for details |
-| Node Completed but `$vars.{nodeId}.output` is null downstream (e.g. consumer agent faults `AGENT_STARTUP.INPUT_VALIDATION_ERROR` / incident `170002`) | Instance hand-declares `outputs.output` with `source: "=result.response"`, suppressing the converter's injected `=this` output | Set the `source` to `=this`, or delete the `output` entry and let the converter inject it (see § JSON Structure) |
+| Node Completed but `$vars.{nodeId}.output` is null downstream (consumer agent faults `AGENT_STARTUP.INPUT_VALIDATION_ERROR` / incident `170002`) | Instance declares `outputs.output` with `source: "=result.response"`, suppressing the injected `=this` output | Delete the `output` entry — keep `error` only |

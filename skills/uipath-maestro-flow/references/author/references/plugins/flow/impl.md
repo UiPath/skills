@@ -66,7 +66,7 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 }
 ```
 
-**Declare `error` only — `output` is derived**, matching what Studio Web writes for a published-flow node. The converter injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}`, and downstream reads `$vars.{nodeId}.output` (Studio Web declares it in `variables.nodes[]`). `"=result.response"` belongs to connector and built-in action nodes.
+**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. See [file-format.md § Node outputs](../../../../shared/file-format.md#node-outputs).
 
 ### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 

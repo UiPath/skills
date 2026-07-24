@@ -101,7 +101,7 @@ Confirm all three from `registry get` before wiring.
 }
 ```
 
-**Declare `error` only — `output` is derived.** The converter injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` when a non-empty `outputs` omits it; Studio Web writes the block that way too. Downstream reads `$vars.{nodeId}.output` regardless. Authoring `output` here makes the converter copy your `source` verbatim, so `"=result.response"` (the connector/script source) would resolve to null at runtime while `flow validate` passes.
+**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. See [file-format.md § Node outputs](../../../../shared/file-format.md#node-outputs).
 
 `<AGENT_ICON>` depends on the agent's implementation type: `"coded-agent"` for Python-coded agents, `"autonomous-agent"` for low-code (`agent.json`) agents. Detect the type by inspecting the sibling agent project directory: if `agent.json` exists at its root, use `"autonomous-agent"`; otherwise use `"coded-agent"`. Do NOT copy `.display.icon` from `uip maestro flow registry get --local` — that manifest returns `"coded-agent"` for every in-solution agent regardless of implementation type, and the value must be corrected here.
 
