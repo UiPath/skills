@@ -357,12 +357,20 @@ secrets:
 
 - [ ] **Step 8: Verify the var is gone and every touched YAML still parses**
 
+The gate asserts that nothing **reads** the variable — not that the string is absent. Task 2's provenance comments name it in explanatory prose (documenting why the key is inlined), which is exactly the history a future maintainer needs. So the gate targets the three consumption forms instead of the bare name.
+
 ```bash
 cd /Users/sakshar.thakkar/repos/skills
-echo "--- grep gate (expect no output) ---"
-grep -rn TRACES_SMOKE_PROCESS_KEY . --exclude-dir=.git --exclude-dir=docs --exclude-dir=.venv || echo "CLEAN"
+echo "--- live-reference gate (expect CLEAN) ---"
+live=$(grep -rn '\$TRACES_SMOKE_PROCESS_KEY\|\${TRACES_SMOKE_PROCESS_KEY\|secrets\.TRACES_SMOKE_PROCESS_KEY' . \
+         --exclude-dir=.git --exclude-dir=docs --exclude-dir=.venv --exclude-dir=.superpowers
+       grep -rnE '^\s*(-|")\s*TRACES_SMOKE_PROCESS_KEY' . \
+         --exclude-dir=.git --exclude-dir=docs --exclude-dir=.venv --exclude-dir=.superpowers)
+if [ -z "$live" ]; then echo "CLEAN"; else echo "$live"; fi
+echo "--- remaining mentions (expect only the 2 prose comments) ---"
+grep -rn TRACES_SMOKE_PROCESS_KEY . --exclude-dir=.git --exclude-dir=docs --exclude-dir=.venv --exclude-dir=.superpowers
 echo "--- yaml parse gate ---"
-python3 -c "
+tests/.venv/bin/python3 -c "
 import yaml
 for f in ('.github/workflows/run-coder-eval.yml',
           '.github/workflows/smoke-skills.yml',
@@ -373,7 +381,7 @@ for f in ('.github/workflows/run-coder-eval.yml',
 "
 ```
 
-Expected: `CLEAN`, then four `parses OK` lines. `docs/` is excluded because the spec and this plan legitimately name the variable.
+Expected: `CLEAN`, then exactly two remaining mentions — `traces_e2e.yaml:18` and `traces_feedback_e2e.yaml:20`, both the provenance comment prose Task 2 added — then four `parses OK` lines. `docs/` and `.superpowers/` are excluded because the spec, this plan, and the SDD ledger all legitimately name the variable. System `python3` lacks PyYAML, hence `tests/.venv/bin/python3`.
 
 - [ ] **Step 9: Confirm the E2E vars survived untouched**
 
