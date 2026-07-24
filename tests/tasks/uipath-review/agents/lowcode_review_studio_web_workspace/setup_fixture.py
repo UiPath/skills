@@ -48,21 +48,6 @@ def write_json(path: Path, value: object) -> None:
 
 def main() -> None:
     write_json(
-        SOLUTION / "StudioWebSol.uipx",
-        {
-            "DocVersion": "1.0.0",
-            "Projects": [
-                {
-                    "Id": "22222222-2222-4222-8222-222222222222",
-                    "ProjectRelativePath": "SupportAgent/project.uiproj",
-                    "Type": "Agent",
-                }
-            ],
-            "SolutionId": "11111111-1111-4111-8111-111111111111",
-            "StudioMinVersion": "2025.10.0",
-        },
-    )
-    write_json(
         PROJECT / "agent.json",
         {
             "guardrails": [],
