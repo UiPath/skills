@@ -44,6 +44,18 @@ The transform runtime turns the path string into a lookup such as `vars.orders.o
 
 For static data, store the array in a workflow variable `defaultValue` or emit it from an upstream static-data/script node, then point `collection` at that variable or node output. Filtering, mapping, and grouping still belong in transform nodes.
 
+## Output Shape
+
+`$vars.<transformNode>.output` is a **bare array** — no `.items`, `.body`, `.response`. filter → surviving elements; map → mapped elements; group-by → group objects (`{<groupByField>, <alias>…}`).
+
+Chain transforms off the bare array. `.output.items` on a transform → `undefined` → empty, silently (no fault). `.items`/`.body.items` in the examples below is HTTP-body/variable shape, never a transform's own output.
+
+```json
+"collection": "$vars.filterHighViewDays.output"
+```
+
+Read an element field in a Script node: `$vars.groupByNode.output[0].totalViews`.
+
 ---
 
 ## Generic Transform (`core.action.transform`)
@@ -272,3 +284,4 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 | Collection is null/empty | `collection` was wrapped in `=js:` or set to an inline array literal instead of a plain variable path | Use a path such as `"$vars.loadCatalog.output.catalog"` or `"$vars.catalog"`; keep static arrays in a variable default or upstream node |
 | Map output missing fields | `keepOriginalFields: false` and field not in mappings | Add the field to mappings or set `keepOriginalFields: true` |
 | GroupBy produces empty groups | No items match the group field | Check `groupByField` matches actual field names in the data |
+| Chained transform gets empty input, upstream had rows | `collection` used `$vars.<transform>.output.items`; transform output is a bare array (`.items` → `undefined`) | Use `$vars.<transform>.output` — see [Output Shape](#output-shape) |

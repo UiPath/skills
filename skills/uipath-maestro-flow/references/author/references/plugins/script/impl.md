@@ -39,6 +39,7 @@ See [Action Node Structure — Adding and editing procedures](../../../../shared
 5. **No `console.log`** — `console` is not available. Use `return { debug: value }` to inspect values.
 6. **No external calls** — use the HTTP node or a connector node for API calls.
 7. **30-second timeout** — long-running computations will be killed.
+8. **Never name a variable `aggregate`** — reserved host global. On any `Identifier 'X' has already been declared`, rename `X`.
 
 ## Common patterns
 
@@ -92,3 +93,4 @@ Property access is **case-sensitive** — these casings resolve: `.FullName`, `.
 | Timeout after 30s | Script too expensive | Simplify logic or split into multiple scripts |
 | `console is not defined` | Used `console.log()` | Remove — use `return { debug: val }` instead |
 | `fetch is not defined` | Tried to make HTTP call | Use an HTTP node or connector node instead |
+| `Identifier 'X' has already been declared` | `X` collides with a runtime-injected global (known: `aggregate`) | Rename `X` (e.g. `agg`) |
