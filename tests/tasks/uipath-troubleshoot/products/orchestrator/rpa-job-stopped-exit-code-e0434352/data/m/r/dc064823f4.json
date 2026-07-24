@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "MachineList",
+  "_doc": "Machine hosting the failing job. The robot version (23.4.0) is old — old robots report raw OS/CLR exit codes (0xE0434352) instead of translating them to the managed exception. Upgrading the robot makes the real .NET exception surface directly in the job Info/logs.",
+  "Data": [
+    {
+      "Key": "f0e1d2c3-b4a5-6978-8c9d-0e1f2a3b4c5d",
+      "Name": "ReportingRuntime",
+      "Type": "Template",
+      "Runtimes": 2,
+      "Hosts": ["MOCK-HOST"],
+      "RobotVersion": "23.4.0",
+      "Description": "Runtime template for the ReportingOps folder; hosts run an older robot build."
+    }
+  ]
+}

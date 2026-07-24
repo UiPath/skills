@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Faulted ReportCompiler job. The Info carries only the raw OS/CLR exit code 0xE0434352 (managed CLR unhandled exception). The real underlying exception is NOT in the job Info or the error logs — it must be recovered from job traces. The host robot is an old version that surfaces the raw code instead of the managed exception.",
+  "Data": [
+    {
+      "Key": "aacc44ee-55ff-66aa-77bb-88cc99001122",
+      "State": "Faulted",
+      "ProcessName": "ReportCompiler",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "RuntimeType": "Unattended",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-06-22T06:00:02.500Z",
+      "EndTime": "2026-06-22T06:00:39.870Z",
+      "CreationTime": "2026-06-22T06:00:02.300Z"
+    }
+  ]
+}

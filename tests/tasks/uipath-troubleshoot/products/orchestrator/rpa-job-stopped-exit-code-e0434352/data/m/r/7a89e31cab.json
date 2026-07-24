@@ -1,0 +1,32 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "_doc": "Failing ReportCompiler job. Info shows ONLY the raw CLR exit code 0xE0434352 (a managed .NET exception escaped the process). This is the generic-exit-code playbook: the code is a symptom, not the cause. The real exception must be recovered from job traces (see jobs-traces). The robot version (see machines list) is old and hides the managed exception behind the OS code.",
+  "Data": {
+    "Key": "aacc44ee-55ff-66aa-77bb-88cc99001122",
+    "StartTime": "2026-06-22T06:00:02.500Z",
+    "EndTime": "2026-06-22T06:00:39.870Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Schedule",
+    "SourceType": "Schedule",
+    "Info": "System.Exception: Job stopped with an unexpected exit code: 0xE0434352",
+    "CreationTime": "2026-06-22T06:00:02.300Z",
+    "ReleaseName": "ReportCompiler",
+    "Type": "Unattended",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "OrganizationUnitId": 7791625,
+    "FolderKey": "e3c3d4e5-f6a7-8901-2cde-f01234567890",
+    "ProcessType": "Process",
+    "MachineName": "MOCK-HOST",
+    "MachineKey": "f0e1d2c3-b4a5-6978-8c9d-0e1f2a3b4c5d",
+    "LastModificationTime": "2026-06-22T06:00:39.870Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "aacc44ee-55ff-66aa-77bb-88cc99001122",
+    "Id": 671440011
+  }
+}

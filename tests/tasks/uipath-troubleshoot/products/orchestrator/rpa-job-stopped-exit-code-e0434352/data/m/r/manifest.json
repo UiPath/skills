@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the generic-exit-code scenario (job-stopped-generic-exit-code playbook). The job Info shows only the raw CLR code 0xE0434352; the REAL cause (an unhandled System.Collections.Generic.KeyNotFoundException) is recovered from job traces. The agent chains: folders list -> jobs list --state Faulted -> jobs get (Info: exit code 0xE0434352) -> jobs logs (raw code, note about old robot) -> jobs traces (KeyNotFoundException at 'Lookup region total') -> machines list (robot 23.4.0). Keys are stable.",
+  "rules": [
+    { "match": "or folders list", "file": "ee2628e6b6.json" },
+    { "match": "or jobs list --folder-key e3c3d4e5-f6a7-8901-2cde-f01234567890 --state Faulted", "file": "50bc27043c.json" },
+    { "match": "or jobs get aacc44ee-55ff-66aa-77bb-88cc99001122", "file": "7a89e31cab.json" },
+    { "match": "or jobs logs aacc44ee-55ff-66aa-77bb-88cc99001122 --level Error", "file": "0c37d6b759.json" },
+    { "match": "or jobs logs aacc44ee-55ff-66aa-77bb-88cc99001122", "file": "11d49febab.json" },
+    { "match": "or jobs traces aacc44ee-55ff-66aa-77bb-88cc99001122", "file": "43fefe681e.json" },
+    { "match": "traces spans get --job-key aacc44ee-55ff-66aa-77bb-88cc99001122", "file": "76a86bdeea.json" },
+    { "match": "or machines list", "file": "dc064823f4.json" },
+    { "match": "docsai ask", "passthrough": true, "_doc": "Proxy any docsai query to the real uip CLI; cache in _cache/." }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}

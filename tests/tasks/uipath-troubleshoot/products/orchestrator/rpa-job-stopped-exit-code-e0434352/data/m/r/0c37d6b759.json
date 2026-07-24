@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "_doc": "Error logs for the failing job. The executor logs surface only the raw exit code 0xE0434352 and a note that the running robot version reports OS codes rather than managed exceptions. The real exception is captured in the execution traces, not here.",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-22T06:00:39.860Z",
+      "Message": "Job 'aacc44ee-55ff-66aa-77bb-88cc99001122' faulted. System.Exception: Job stopped with an unexpected exit code: 0xE0434352"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-22T06:00:39.700Z",
+      "Message": "[Robot] Executor process exited with code 0xE0434352 (CLR unhandled managed exception). This robot version (23.4.0-robot) reports the OS process exit code; upgrade the robot to surface the underlying .NET exception directly. Inspect execution traces for the managed exception detail."
+    }
+  ]
+}
