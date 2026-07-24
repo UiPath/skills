@@ -292,6 +292,19 @@ Example entry:
 
 > **Important:** Do NOT use `--kind Process` with `Type: "webApp"` to find Action Center apps. Those entries are the code-behind processes — their `Key` values are process release GUIDs, not app deployment IDs. Using them as `app.id` will cause runtime resolution failures.
 
+**Step 1 completion gate — both branches MUST run `resources get`:**
+
+- Exact app row found: immediately run
+  `uip solution resources get "<Key from the row>" --output json`.
+- No exact app row/key found: immediately run
+  `uip solution resources get "<requested app name>" --output json` once and
+  treat its failure as `GET_ERROR`.
+
+Do not edit files, refresh, validate, or respond to the user between
+`resources list` and this required `resources get` attempt. A missing catalog
+row is not a completed schema check and is never permission to skip the
+command.
+
 **Step 2 — Verify the app exposes the guardrail action-schema contract** (do this **before** writing the guardrail JSON — an incompatible app must be rejected, not authored).
 
 **Required command gate:** execute
@@ -299,13 +312,6 @@ Example entry:
 app before deciding whether it is compatible. The `resources list` row is not
 an action schema and cannot replace this command. Do not write or reject the
 guardrail until the returned action schema has been checked.
-
-If Step 1 returns no exact-name row and therefore no key, the command attempt
-is still mandatory: execute
-`uip solution resources get "<requested app name>" --output json` exactly once
-and treat its failure as `GET_ERROR`. A missing catalog row is not permission to
-skip `resources get`; this terminal lookup is required before rejecting the
-requested escalation app.
 
 A guardrail escalation app must expose a specific action-schema contract. If verification fails, stop and report to the user: `<APP_NAME> does not have the required action schema configuration for tool guardrails.` (replace `<APP_NAME>` with the app's `Name` from Step 1). Do NOT write the guardrail.
 
