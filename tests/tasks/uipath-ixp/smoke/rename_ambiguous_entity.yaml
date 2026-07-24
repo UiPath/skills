@@ -16,7 +16,7 @@ description: >
   do you mean?" (asked without looking at the workspace) does not pass.
 
   Guards grade the mock's calls.log (actual uip executions) via
-  file_contains excludes, NOT command_not_executed regexes over Bash call
+  file_contains excludes, NOT raw-command regexes over Bash call
   text — a correct clarification legitimately QUOTES the candidate rename
   commands, which a text regex would false-match. The discovery criterion
   doubles as the positive control: it proves executed reads land in the
