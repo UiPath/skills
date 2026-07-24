@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-19T14:22:11.250Z",
+      "Message": "Automation cannot be started. Your tenant's assigned Robot Units have been exceeded. Allocate more Robot Units to your tenant to continue."
+    }
+  ]
+}

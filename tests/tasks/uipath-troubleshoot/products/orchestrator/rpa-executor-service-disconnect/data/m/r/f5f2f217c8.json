@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "d4a40001-4444-4444-8444-444444444444",
+      "State": "Faulted",
+      "ProcessName": "NightlyPost",
+      "ReleaseName": "NightlyPost",
+      "StartTime": "2026-07-19T01:30:04.200Z",
+      "EndTime": "2026-07-19T01:31:12.600Z",
+      "CreationTime": "2026-07-19T01:30:03.700Z",
+      "HostMachineName": "BATCH-BOT-02",
+      "Type": "Unattended",
+      "Source": "Schedule",
+      "Priority": null
+    }
+  ]
+}

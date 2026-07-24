@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-19T06:00:03.820Z",
+      "Message": "Could not start executor. The workstation is in use by another user. Please retry after the user logs off or disconnects."
+    }
+  ]
+}
