@@ -158,6 +158,14 @@
       },
       "last_synced": null
     },
+    "uipath-process-mining": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-review": {
       "status": "preview",
       "confluence": {
