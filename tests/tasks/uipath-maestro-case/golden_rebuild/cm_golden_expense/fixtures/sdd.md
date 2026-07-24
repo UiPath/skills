@@ -53,7 +53,7 @@
 | WHEN | IF | THEN | Marks Case Complete | Display Name |
 |------|-----|------|---------------------|--------------|
 | `required-stages-completed` | — | Case exited | Yes | Case complete rule |
-| `selected-stage-completed("Stage 4 - return to origin")` | — | Case exited | No | Case exit rule 1 |
+| `selected-stage-completed("Stage 4 - return to origin")` | `=js:vars.$xref('Stage 4 - return to origin','Rework Approval','Action') === "reject"` | Case exited | No | Reject after rework |
 
 ### Case Variables
 
@@ -479,7 +479,7 @@
 | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
 |------|-----|-----------|---------------------|--------------|
 | `required-tasks-completed` | `=js:vars.$xref('Stage 4 - return to origin','Rework Approval','Action') === "reject"` | exit-only | Yes | Stage 6 App Reject |
-| `selected-tasks-completed("Rework Approval")` | `=js:vars.$xref('Stage 4 - return to origin','Rework Approval','Action') === "approve"` | return-to-origin | No | Exit rule 1 |
+| `required-tasks-completed` | `=js:vars.$xref('Stage 4 - return to origin','Rework Approval','Action') === "approve"` | return-to-origin | Yes | Return to origin |
 
 #### Tasks
 

@@ -12,6 +12,7 @@ from _shared.case_check import (  # noqa: E402
     get_default_sla,
     iter_stage_entry_conditions,
     iter_stage_exit_conditions,
+    partition_return_to_origin_conditions,
     read_caseplan,
 )
 
@@ -100,10 +101,22 @@ def main():
 
     for label, node in (("Issues", issues), ("Critical", critical)):
         exits = list(iter_stage_exit_conditions(node))
-        if not any(ec.get("type") == "return-to-origin" for ec in exits):
+        returns, invalid_returns = partition_return_to_origin_conditions(
+            exits,
+            allowed_rules=frozenset({"required-tasks-completed"}),
+        )
+        if not returns:
             sys.exit(
-                f"FAIL: {label!r} missing return-to-origin exit; "
-                f"types={[ec.get('type') for ec in exits]}"
+                f"FAIL: {label!r} missing canonical return-to-origin exit "
+                f"(marksStageComplete=true + required-tasks-completed); "
+                f"got {[(ec.get('type'), ec.get('marksStageComplete'), (first_rule_of_condition(ec) or {}).get('rule')) for ec in exits]}"
+            )
+        if invalid_returns:
+            sys.exit(
+                f"FAIL: {label!r} has malformed additional return-to-origin "
+                f"exit(s); expected every return to use marksStageComplete=true "
+                f"+ required-tasks-completed; got "
+                f"{[(ec.get('marksStageComplete'), (first_rule_of_condition(ec) or {}).get('rule')) for ec in invalid_returns]}"
             )
 
     default = get_default_sla(issues)

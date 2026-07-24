@@ -32,8 +32,8 @@ The case, each stage, and each task move through a lifecycle gated by **rules** 
 |---|---|---|
 | **Case entry** | how does a case instance begin? | No case-entry condition object — a **trigger** starts the case; the root stage carries `case-entered`. |
 | **Stage entry** | when does this stage activate? | `case-entered` (root only) · `selected-stage-completed` · `selected-stage-exited` · `wait-for-connector` · `user-selected-stage` |
-| **Stage completion** (`Marks Stage Complete: Yes`) | when is the stage done, on the main flow? | `required-tasks-completed` · `wait-for-connector` |
-| **Stage exit** (`Marks Stage Complete: No`) | early hand-off / route without completing | `selected-tasks-completed` · `wait-for-connector`; exit `type`: `exit-only` / `wait-for-user` / `return-to-origin` |
+| **Stage completion** (`Marks Stage Complete: Yes`) | when is the stage done, on the main flow or returning lane? | `required-tasks-completed` · `wait-for-connector`; exit `type`: `exit-only` / `wait-for-user` / `return-to-origin` |
+| **Stage exit** (`Marks Stage Complete: No`) | early hand-off / route without completing | `selected-tasks-completed` · `wait-for-connector`; exit `type`: `exit-only` / `wait-for-user` |
 | **Task entry** | when does this task start inside its stage? | `current-stage-entered` (first task — required) · `selected-tasks-completed` · `wait-for-connector` · `adhoc` · `runs-sequentially` |
 | **Task completion / exit** | — | A task has **no** exit/completion condition. It completes when its own work finishes; downstream stages/tasks key off that via `required-tasks-completed` / `selected-tasks-completed`. |
 | **Case completion** (`Marks Case Complete: Yes`) | when does the case close successfully? | `required-stages-completed` · `wait-for-connector` |
@@ -42,7 +42,7 @@ The case, each stage, and each task move through a lifecycle gated by **rules** 
 How to reason with these:
 
 - **`required-*` vs `selected-*`.** `required-tasks-completed` / `required-stages-completed` = "all items flagged required are done" (the `isRequired` flow). `selected-tasks-completed` / `selected-stage-completed` / `selected-stage-exited` = "these *specific named* items." Pairing rule (Key Rule 4): `Marks Complete: Yes` pairs only with `required-*`; `selected-*` is for `No` (routing / early exit / alternate disposition). A `Yes` + `selected-*` pair is a schema error.
-- **Secondary stage** uses **stage-entry + stage-exit rules only, never edges** (true of every stage — edges retired). Its entry rule is typically *interrupting* (`isInterrupting: true`); its exit uses `return-to-origin` to rejoin the flow it left. **For a decision/signal-routed lane, the routing lives on the *origin* stage:** a gated diverting exit (`Marks Stage Complete: No`, `IF` on the decision/signal, `exitToStageId` → the lane), with the origin's completion exit gated by the inverse `IF` so the two paths are mutually exclusive — see [§ Logical integrity step 5](#logical-integrity--stage-graph).
+- **Secondary stage** uses **stage-entry + stage-exit rules only, never edges** (true of every stage — edges retired). Its entry rule is typically *interrupting* (`isInterrupting: true`); its returning exit uses the canonical completion shape `return-to-origin` + `Marks Stage Complete: Yes` + `required-tasks-completed` to rejoin the flow it left. **For a decision/signal-routed lane, the routing lives on the *origin* stage:** a gated diverting exit (`Marks Stage Complete: No`, `IF` on the decision/signal, `exitToStageId` → the lane), with the origin's completion exit gated by the inverse `IF` so the two paths are mutually exclusive — see [§ Logical integrity step 5](#logical-integrity--stage-graph).
 - **First event-driven task in a stage** must carry `current-stage-entered` (emit it explicitly). A sequential chain is the exception: the first sequential task carries only `runs-sequentially`, which the frontend interprets as current-stage-entered; later sequential tasks carry only `runs-sequentially`, which the frontend interprets as the preceding task completing. `wait-for-connector` makes a gate pause for an inbound connector callback — its `conditionExpression` gates on **case state** only (no `event` payload; in-rule extract-then-gate is unsupported at runtime — gate a downstream condition instead); `adhoc` lets a *task* fire manually from the case app (task-entry only — never a stage-entry rule).
 
 **Frontend task-mode mapping.** The UI's `sequential`, `event-triggered`, and `manually-triggered` choices are not interchangeable: sequential means the task-only `runs-sequentially` rule; event-triggered means an explicit event/condition rule (use `wait-for-connector` for an external connector callback); manually-triggered means an `adhoc`-only task with `isRequired: false`. Do not infer one mode from `data.tasks` lanes, and do not add a second entry rule that changes the selected mode.
@@ -367,7 +367,7 @@ The trailing `` `{stage_id}` `` (e.g., `` `stage-intake` ``) MUST appear so read
 | Description | yes (primary) / optional (secondary) | One prose sentence |
 | Required for case completion | yes | `Yes` (primary, default) / `No` (secondary stages always `No`) |
 | Interrupting | secondary stages only | `Yes` / `No` — does this stage interrupt active stages on activation? |
-| Stage SLA | yes when stage has SLA | Duration + type, plus escalation table |
+| Stage SLA | yes when stage has SLA | Default duration + `time-based` or `condition-based`, plus conditional-rule and escalation tables |
 
 ### Stage Entry Conditions table
 
@@ -397,6 +397,16 @@ Optional. Used for early hand-offs / routing. Same columns and order as the comp
 | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
 |---|---|---|---|---|
 | `selected-tasks-completed("<Task>")` / `wait-for-connector` | optional | `exit-only` / `wait-for-user` | `No` | optional |
+
+`return-to-origin` is a completion exit, not a divergent exit: render it in the `Yes` table with `required-tasks-completed` (or `wait-for-connector`). Never generate `return-to-origin` + `No` + `selected-tasks-completed`.
+
+### Stage conditional SLA rules table
+
+Render when the Stage SLA type is `condition-based`. Each expression-keyed override targets this stage's `data.slaRules[]` and precedes its default row.
+
+| Expression | SLA | Unit | Display Name |
+|---|---|---|---|
+| condition evaluated against case variables | positive count | `min` / `h` / `d` / `w` / `m` | non-empty, stage-unique title without `:` |
 
 ### Stage SLA escalation table
 

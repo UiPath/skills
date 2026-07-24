@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""SlaWithEscalation: root SLA (w + min) + regular-stage SLA (m) + escalations."""
+"""SlaWithEscalation: root and regular-stage conditional SLAs + escalations."""
 
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -13,14 +14,24 @@ from _shared.case_check import (  # noqa: E402
 )
 
 
+def _matches_priority_expression(expression: object, expected_value: str) -> bool:
+    if not isinstance(expression, str):
+        return False
+    pattern = (
+        r"""=js:\s*vars\.priority\s*===\s*"""
+        + rf"""(?P<quote>["']){re.escape(expected_value)}(?P=quote)\s*"""
+    )
+    return re.fullmatch(pattern, expression, re.IGNORECASE) is not None
+
+
 def main():
     plan = read_caseplan()
     rules = get_sla_rules(plan)
 
-    if len(rules) < 3:
+    if len(rules) != 3:
         sys.exit(
-            f"FAIL: case-level slaRules should have ≥3 entries (2 conditional + "
-            f"1 default); got {len(rules)}"
+            "FAIL: case-level slaRules should have exactly 3 entries "
+            f"(2 conditional + 1 default); got {len(rules)}"
         )
     if rules[-1].get("expression") != "=js:true":
         sys.exit(
@@ -38,9 +49,9 @@ def main():
         )
 
     conditional_rules = [r for r in rules if r.get("expression") != "=js:true"]
-    if len(conditional_rules) < 2:
+    if len(conditional_rules) != 2:
         sys.exit(
-            f"FAIL: expected ≥2 conditional SLA rules (Urgent before Standard); "
+            f"FAIL: expected exactly 2 conditional SLA rules (Urgent before Standard); "
             f"got {len(conditional_rules)}"
         )
     urgent = conditional_rules[0]
@@ -49,11 +60,21 @@ def main():
             f"FAIL: 1st conditional rule (Urgent) should be count=30, unit=min; "
             f"got count={urgent.get('count')!r}, unit={urgent.get('unit')!r}"
         )
+    if not _matches_priority_expression(urgent.get("expression"), "Urgent"):
+        sys.exit(
+            "FAIL: 1st conditional rule must be exactly the priority-is-Urgent "
+            f"predicate; got expression={urgent.get('expression')!r}"
+        )
     standard = conditional_rules[1]
     if standard.get("count") != 5 or standard.get("unit") != "d":
         sys.exit(
             f"FAIL: 2nd conditional rule (Standard) should be count=5, unit=d; "
             f"got count={standard.get('count')!r}, unit={standard.get('unit')!r}"
+        )
+    if not _matches_priority_expression(standard.get("expression"), "Standard"):
+        sys.exit(
+            "FAIL: 2nd conditional rule must be exactly the priority-is-Standard "
+            f"predicate; got expression={standard.get('expression')!r}"
         )
 
     default_escs = default.get("escalationRule") or []
@@ -112,6 +133,45 @@ def main():
         )
 
     resolve = find_node_by_label(plan, "Resolve")
+    stage_rules = get_sla_rules(resolve)
+    if len(stage_rules) != 2:
+        sys.exit(
+            "FAIL: stage 'Resolve' should have exactly one conditional SLA plus "
+            f"default; got {len(stage_rules)} rule(s)"
+        )
+    if stage_rules[-1].get("expression") != "=js:true":
+        sys.exit(
+            f"FAIL: stage 'Resolve' trailing SLA must be the '=js:true' default; "
+            f"got expression={stage_rules[-1].get('expression')!r}"
+        )
+    stage_conditionals = [
+        rule for rule in stage_rules if rule.get("expression") != "=js:true"
+    ]
+    if len(stage_conditionals) != 1:
+        sys.exit(
+            "FAIL: stage 'Resolve' must have exactly one conditional SLA rule; "
+            f"got {len(stage_conditionals)}"
+        )
+    stage_urgent = stage_conditionals[0]
+    if stage_urgent.get("count") != 2 or stage_urgent.get("unit") != "w":
+        sys.exit(
+            f"FAIL: stage 'Resolve' Urgent conditional SLA should be count=2, "
+            f"unit=w; got count={stage_urgent.get('count')!r}, "
+            f"unit={stage_urgent.get('unit')!r}"
+        )
+    stage_expression = stage_urgent.get("expression")
+    if not _matches_priority_expression(stage_expression, "Urgent"):
+        sys.exit(
+            "FAIL: stage 'Resolve' conditional SLA must be exactly the "
+            f"priority-is-Urgent predicate; got expression={stage_expression!r}"
+        )
+    stage_display_name = stage_urgent.get("displayName")
+    if stage_display_name != "Resolve Urgent SLA":
+        sys.exit(
+            "FAIL: stage 'Resolve' conditional SLA displayName should be "
+            f"'Resolve Urgent SLA'; got {stage_display_name!r}"
+        )
+
     stage_default = get_default_sla(resolve)
     if not stage_default:
         sys.exit(
@@ -137,7 +197,8 @@ def main():
         "escalation) → Standard (5d) → default =js:true (3w, at-risk 80% "
         "MULTI-RECIPIENT escalation to User manager@corp.com + UserGroup "
         "Operations Leadership); 'Resolve' stage carries its own data.slaRules "
-        "with default 1m AND a non-empty data.description; SLA units "
+        "with conditional Urgent 2w before default 1m AND a non-empty "
+        "data.description; SLA units "
         "min/d/w/m all exercised"
     )
 

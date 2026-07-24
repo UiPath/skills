@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from case_check import (  # noqa: E402
     _get_ci,
     collect_outputs,
+    partition_return_to_origin_conditions,
     run_debug,
 )
 import case_check  # noqa: E402
@@ -62,6 +63,44 @@ def test_collect_outputs_pascalcase_matches_camelcase():
     camel = {"variables": {"globals": {"a": "x"}, "globalVariables": [{"value": 1}]}}
     pascal = {"Variables": {"Globals": {"a": "x"}, "GlobalVariables": [{"Value": 1}]}}
     assert sorted(map(str, collect_outputs(camel))) == sorted(map(str, collect_outputs(pascal)))
+
+
+def test_return_to_origin_partition_checks_every_return_condition():
+    valid_required = {
+        "type": "return-to-origin",
+        "marksStageComplete": True,
+        "rules": [[{"rule": "required-tasks-completed"}]],
+    }
+    valid_connector = {
+        "type": "return-to-origin",
+        "marksStageComplete": True,
+        "rules": [[{"rule": "wait-for-connector"}]],
+    }
+    malformed = {
+        "type": "return-to-origin",
+        "marksStageComplete": False,
+        "rules": [[{"rule": "selected-tasks-completed"}]],
+    }
+    malformed_extra_rule = {
+        "type": "return-to-origin",
+        "marksStageComplete": True,
+        "rules": [[
+            {"rule": "required-tasks-completed"},
+            {"rule": "selected-tasks-completed"},
+        ]],
+    }
+
+    returns, invalid = partition_return_to_origin_conditions(
+        [valid_required, valid_connector, malformed, malformed_extra_rule]
+    )
+
+    assert returns == [
+        valid_required,
+        valid_connector,
+        malformed,
+        malformed_extra_rule,
+    ]
+    assert invalid == [malformed, malformed_extra_rule]
 
 
 def test_run_debug_gate_accepts_pascalcase_finalstatus(monkeypatch):

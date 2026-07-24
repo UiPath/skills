@@ -324,7 +324,7 @@ For per-scope fields, consult the corresponding condition plugin:
 
 ### 4.8 Set SLA and escalation rules
 
-SLA comes last. Consult [`plugins/sla/planning.md`](plugins/sla/planning.md) for the three sub-operations (default SLA, conditional SLA rules, escalation rules), per-target ordering, and the constraint that conditional SLA rules are root-only.
+SLA comes last. Consult [`plugins/sla/planning.md`](plugins/sla/planning.md) for the three sub-operations (default SLA, conditional SLA rules, escalation rules) and per-target ordering. Root rules target `metadata.slaRules[]`; stage rules target that stage's `data.slaRules[]`.
 
 ### 4.9 Not Covered section
 
