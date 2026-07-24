@@ -55,30 +55,42 @@ Field keys:
 A child/related table (like `Tags`) carries a `Reference` field pointing at the
 parent key; a standalone analytical table needs no `Reference`.
 
-## Two ways to register the table
+## Register the table post-create (recommended)
 
-1. **At create time (simplest).** After `app-types get`, add your `Tables[]`
-   entries to the model JSON, then create the app with that model. When your dbt
-   models later produce those tables, they are queryable immediately. (If driving
-   `apps create --data-mapping`, the CLI passes the template model as-is today —
-   to inject custom tables you either edit the fetched model JSON and post it, or
-   apply the data-model edit below after creation.)
+Register the table **after** the app exists — the natural order, because the
+physical table must exist before the semantic model can instantiate it. Build the
+dbt model first, then add the table:
 
-2. **After creation (data-model edit).** The data-model editor persists table
-   additions to the app's model; this is the "Add table" action. Use it to
-   register a table you added to the transformation layer after the fact.
+```bash
+uip pm apps model add-table <app> --file ./Workload_weekly.table.json
+```
 
-Either way the contract is the same: **`Tables[].Id` = the physical table name,
-`Fields[].Name` = its columns.** Once registered, `query info` lists the entity
-and `query run --group-by <col> --metric <col>:<fn>` works against it.
+`add-table` GETs the app's data model (with its ETag), appends your table(s), and
+PUTs it back `If-Match`-guarded. The `--file` JSON is a `tables[]` array (or a
+`{ tables, metrics }` object) using the entry shape above — note the model's
+own JSON is **camelCase** (`id`, `display`, `fields`, `name`, `kind`, `isFilter`).
+Inspect the current model any time with `uip pm apps model get <app>`.
+
+The contract: **`id` = the physical dbt table name, `fields[].name` = its
+columns.** Once added, `query info` lists the entity and
+`query run --group-by <col> --metric <col>:<fn>` works against it.
 
 ## Recipe: expose a custom weekly aggregate
 
 ```bash
-# 1. Author the analytical model (or inline intermediates as CTEs)
+# 1. Author the analytical model + build it (so the physical table exists)
 uip pm transformations create <app> models/Workload_weekly.sql --file ./Workload_weekly.sql
-# 2. Register it as a data-model table (add-table) — Tables[] entry as above
-# 3. Rebuild + (re)publish, then query
 uip pm transformations apply <app> --wait
+# 2. Register it as a data-model table (add-table)
+uip pm apps model add-table <app> --file ./Workload_weekly.table.json
+# 3. Query it
 uip pm query run <app> --group-by Service_Component --metric Closed_Interactions:sum --output table
+```
+
+Where `Workload_weekly.table.json` is:
+
+```json
+[ { "id": "Workload_weekly", "display": "Workload weekly", "fields": [
+  { "type": "column", "name": "Service_Component", "id": "Service_Component", "display": "Service component", "kind": "nominal", "isFilter": true },
+  { "type": "column", "name": "Closed_Interactions", "id": "Closed_Interactions", "display": "Closed interactions", "kind": "numeric", "isFilter": true } ] } ]
 ```
