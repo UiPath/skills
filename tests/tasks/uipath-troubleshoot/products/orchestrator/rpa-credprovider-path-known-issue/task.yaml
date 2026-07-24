@@ -1,0 +1,90 @@
+task_id: skill-troubleshoot-credprovider-path-known-issue
+description: >
+  UiPath diagnostic agent must diagnose a LedgerPostingBot unattended
+  job that faults at executor start with "Could not start executor.
+  Could not find a part of the path 'C:\Windows\TEMP\UiPath\
+  CredProvider'." The root cause is a KNOWN Robot defect (ROBO-4022)
+  fixed in Robot 23.10.9; the host runs 23.10.4 (predates the fix).
+  The agent must recognize this as a known-and-fixed Robot bug —
+  correlate with the customer-portal known-issues feed and the host
+  Robot version — and recommend UPGRADING the Robot to >= 23.10.9,
+  NOT hand-creating the missing folder or changing TEMP permissions.
+  Per the known-issue-robot-defect playbook.
+
+tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose, lifecycle:discover]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 300
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: data
+  mock_path_dirs: ["m"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My LedgerPostingBot job in the BackOffice folder won't start — it
+  faults immediately with something about a missing path under
+  C:\Windows\TEMP\UiPath\CredProvider. What's causing this and how do I fix it
+  properly?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing LedgerPostingBot
+    job. You are waiting for the diagnostic agent to finish and trust
+    its expertise. You only know what you wrote in your initial
+    report — it faults about a missing CredProvider path. You do not
+    know what CredProvider is or what Robot version the host runs.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (orchestrator, robot version, machines, known issues), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
