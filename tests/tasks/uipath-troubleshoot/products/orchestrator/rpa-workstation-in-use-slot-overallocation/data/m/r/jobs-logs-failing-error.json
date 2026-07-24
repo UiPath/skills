@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-18T09:12:01.220Z",
+      "Message": "Job '77aa11bb-22cc-33dd-44ee-55ff66778811' failed to start. Could not start executor. The workstation is in use by another user. Please retry after the user logs off or disconnects."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-18T09:12:01.090Z",
+      "Message": "[Robot] Cannot open a new interactive session for UIPATH\\SVCRENEW on MOCK-HOST: the workstation already has 2 active sessions and refused an additional concurrent connection. Credential validated successfully; this is a session-seating failure, not a logon failure."
+    }
+  ]
+}

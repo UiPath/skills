@@ -1,0 +1,6 @@
+{
+  "Name": "PolicyRenewalWorker",
+  "ProjectType": "Process",
+  "Description": "Unattended worker that renews insurance policies; logs activity and exits.",
+  "MainFile": "Main.xaml"
+}

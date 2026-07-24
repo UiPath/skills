@@ -1,0 +1,25 @@
+{
+  "Result": "Success",
+  "Code": "MachineList",
+  "_doc": "Machine templates. 'ClaimsRuntimeTemplate' maps to the single physical host MOCK-HOST but exposes 4 unattended runtime slots (Runtimes=4). A single Windows workstation seats far fewer concurrent RDP sessions (here 2). The template over-allocates slots relative to what the host can physically seat — root cause of the 'workstation in use' faults under concurrency.",
+  "Data": [
+    {
+      "Key": "9f8e7d6c-5b4a-3210-fedc-ba9876543210",
+      "Name": "ClaimsRuntimeTemplate",
+      "Type": "Template",
+      "Runtimes": 4,
+      "NonProductionSlots": 0,
+      "Hosts": ["MOCK-HOST"],
+      "Description": "Runtime template for the ClaimsProcessing folder. Bound to the single workstation MOCK-HOST."
+    },
+    {
+      "Key": "1122aabb-ccdd-eeff-0011-223344556677",
+      "Name": "SharedRuntimeTemplate",
+      "Type": "Template",
+      "Runtimes": 2,
+      "NonProductionSlots": 0,
+      "Hosts": ["MOCK-HOST-2"],
+      "Description": "Unrelated template in the Shared folder."
+    }
+  ]
+}

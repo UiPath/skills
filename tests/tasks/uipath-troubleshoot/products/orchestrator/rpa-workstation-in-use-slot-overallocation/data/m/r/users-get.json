@@ -1,0 +1,28 @@
+{
+  "Result": "Success",
+  "Code": "UserGet",
+  "_doc": "The failing job's robot account (UIPATH\\SVCRENEW). LoginToConsole=false rules out the HD-console-contention branch (branch 2). RunOnlyOneJobAtATime=false is irrelevant here because the concurrent jobs belong to OTHER accounts — this is not a per-user single-interactive-job collision. Credential is current (no rotation), confirming the fault is session seating, not logon.",
+  "Data": {
+    "Key": "aa11bb22-cc33-dd44-ee55-ff6677889900",
+    "UserName": "svcrenewals",
+    "EmailAddress": "svcrenewals@example.invalid",
+    "DomainName": "UIPATH",
+    "FullName": "Service Account Renewals",
+    "Type": "User",
+    "UnattendedRobot": {
+      "ExecutionSettings": {
+        "LoginToConsole": false,
+        "RunOnlyOneJobAtATime": false,
+        "ResolutionWidth": 1920,
+        "ResolutionHeight": 1080,
+        "ResolutionDepth": 32
+      },
+      "UserName": "UIPATH\\SVCRENEW",
+      "CredentialStoreId": null,
+      "CredentialType": "Default",
+      "PasswordLastSet": "2026-05-30T09:00:00Z"
+    },
+    "TenantId": 1,
+    "Id": 7502
+  }
+}
