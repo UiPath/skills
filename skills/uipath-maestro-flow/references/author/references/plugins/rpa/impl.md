@@ -35,7 +35,7 @@ Confirm:
 - `model.bindings.resourceSubType` — `Process`
 - `model.bindings.resourceKey` — the `<FolderPath>.<ResourceName>` string used to scope binding resolution
 - `inputDefinition` — may contain typed input fields (check `properties`)
-- `outputDefinition` — `error` only (`source: "=Error"`). There is no `output` entry to copy; the converter adds one (`source: "=this"`) so `$vars.{nodeId}.output` still carries the process return value
+- `outputDefinition` — always `error` (`source: "=Error"`); processes with output arguments also declare `output` (`source: "=this"`). Either way do not author `output` on the instance — the converter injects `=this`, and `$vars.{nodeId}.output` carries the process return value
 
 ## Adding / Editing
 

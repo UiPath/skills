@@ -33,12 +33,6 @@ Confirm: input port `input`, output port `success`. Set each node instance's `ty
     "dueDate": "2026-04-07T17:00:00Z"
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the queue operation",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the queue operation fails",
@@ -68,12 +62,6 @@ For step-by-step add, delete, and wiring procedures, see [editing-operations.md]
     "itemData": "=js:JSON.stringify({ invoiceId: $vars.invoiceId })"
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the queue operation",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the queue operation fails",

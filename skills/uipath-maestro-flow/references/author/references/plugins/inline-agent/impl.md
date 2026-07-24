@@ -171,12 +171,6 @@ Use `Edit` to add a node instance to `nodes[]`. The instance carries only per-in
     ]
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "Agent response",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the node fails",
@@ -345,12 +339,6 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
     ]
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "Agent response",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the node fails",

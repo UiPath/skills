@@ -667,7 +667,7 @@ A flow with input, state, and output variables:
         "output": {
           "type": "object",
           "description": "The return value of the trigger.",
-          "source": "=result.response",
+          "source": "null",
           "var": "output"
         }
       }

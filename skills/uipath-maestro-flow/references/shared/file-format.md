@@ -151,9 +151,9 @@ When you DO author the instance `outputs` block (for documentation / parity with
 - `source` — runtime binding expression, copied from the manifest `outputDefinition`. `"=Error"` for errors, always.
 - `var` — the variable name (matches the output ID, e.g., `"output"`, `"error"`)
 
-**Declare `error` only — `output` is derived.** Orchestrator-job nodes (api-workflow, rpa-workflow, agent, agentic-process, function, subflow, published flow) are the one family whose instance block the converter reads: it copies an authored `source` verbatim, and injects `{output, jsonSchema, "=this"}` when a non-empty `outputs` omits `output`. So `"=result.response"` there — the connector/script source — leaves `$vars.<nodeId>.output` null at runtime while `flow validate` passes. Studio Web writes `error` only on these nodes.
+**Declare `error` only — `output` is derived.** Orchestrator-job nodes (api-workflow, rpa-workflow, agent, agentic-process, function) are the one family whose instance block the converter reads: it copies an authored `source` verbatim, and injects `{output, jsonSchema, "=this"}` when a non-empty `outputs` omits `output`. So `"=result.response"` there — the connector/script source — leaves `$vars.<nodeId>.output` null at runtime while `flow validate` passes. Studio Web writes `error` only on these nodes. Subflow and published-flow (`uipath.core.flow.*`) instance blocks are never read — still declare `error` only.
 
-The standard `outputs` block for most action nodes (script, HTTP, transform, connector, agent):
+The standard `outputs` block for most action nodes (script, HTTP, transform, connector):
 
 ```json
 "outputs": {
