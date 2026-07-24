@@ -49,3 +49,14 @@ Rules:
 - **Multi-table apps**: add more `Tables[]` entries (Incidents, Interactions,
   Changes, …). All load; the template models only reference `Event_log`; your
   custom models `source('sources', '<Table>')` the rest and join on a shared key.
+
+## Other app types
+
+The mapping above targets the `uipath.custom` `Event_log`. For a **source-system
+template** (`uipath.p2p.sap`, `uipath.im.servicenow`, …) the same `mapping.json`
+shape applies, but you map your extract to the **template's expected input
+tables** instead — create the app, then read `models/schema/sources.yml`
+(`transformations get <app> models/schema/sources.yml`) to see the exact input
+tables and columns the template's transformations consume, and match your
+`Tables[]`/`Fields[]` to them. The pre-flight checks (encoding, delimiter, dates,
+empty rows) are the same. See [`app-types.md`](app-types.md).
