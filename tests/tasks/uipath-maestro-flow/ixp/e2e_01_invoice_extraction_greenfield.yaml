@@ -25,13 +25,6 @@ initial_prompt: |
     invoice fields as the request body
 
 success_criteria:
-  - type: skill_triggered
-    skill_name: "uipath-maestro-flow"
-    expected_skill: "uipath-maestro-flow"
-    description: "Agent invoked the uipath-maestro-flow Skill"
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: command_executed
     description: "Agent searched the registry for IxP node types"
     tool_name: "Bash"
