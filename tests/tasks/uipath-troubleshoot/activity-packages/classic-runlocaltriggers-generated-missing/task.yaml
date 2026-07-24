@@ -26,7 +26,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir
@@ -45,7 +44,7 @@ initial_prompt: |
   My OrderEntryAssistant attended automation in folder Operations fails right
   after it starts — it is supposed to start some local triggers and then wait,
   but it errors out within a couple of seconds instead. Why does it fault on
-  startup? The failing project source is in the current working directory.
+  startup?
 
 success_criteria:
   - type: skill_triggered
