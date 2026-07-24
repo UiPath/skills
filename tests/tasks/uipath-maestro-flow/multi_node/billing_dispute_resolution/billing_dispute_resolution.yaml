@@ -50,6 +50,9 @@ initial_prompt: |
        - ERP: query entity `BillingDisputeERP` where `invoiceNumber` equals the
          normalized invoice number — trim, uppercase, and prepend `MCS-` if the
          prefix is absent.
+     Configure each Data Service query filter with the connector's expected
+     field-name expression shape from `node configure` / connector metadata;
+     do not serialize the left-hand field name as a plain string literal.
   4. **Merge** — join the two lookup branches.
   5. **Discrepancy Detection (Script)** — compare the disputed line items
      (`$vars.start.output.webhookPayload.dispute.disputedLineItems`) against the
