@@ -2,13 +2,25 @@ task_id: skill-platform-licensing-consumables-folders
 description: >
   Smoke test: agent uses the uipath-platform skill to fetch a per-folder
   consumables breakdown filtered to a specific tenant. Verifies the agent
-  calls `uip platform licenses consumables get --mode folders --tenant <key>
-  --output json`. CLI auth failure is expected offline.
+  calls `uip platform licenses consumables get --mode folders --tenant <name>
+  --unit <code> --start-date <iso> --end-date <iso> --output json`.
+  CLI auth failure is expected offline.
 tags: [uipath-platform, smoke, licensing, consumables]
 
+sandbox:
+  # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
+  # filesystem side effect. Some agent backends (Antigravity) run commands via
+  # background tasks that never surface as tool calls, so command_executed
+  # criteria see zero commands even when the agent ran the exact command.
+  template_sources:
+    - type: template_dir
+      path: _shared/uip-shim
+  mock_path_dirs:
+    - .cmdlog-bin
+
 initial_prompt: |
-  Show me per-folder consumption for tenant
-  `c0ffee00-0000-0000-0000-000000000001`.
+  Show me per-folder AI Units (`AIU`) consumption for tenant `default`
+  for the period 2026-04-01 through 2026-04-30.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live tenant in this
@@ -16,10 +28,10 @@ initial_prompt: |
   - Use `--output json` on every uip command.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent ran `uip platform licenses consumables get --mode folders --tenant`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+licenses\s+consumables\s+get.*--mode\s+folders.*--tenant\s+\S+'
-    min_count: 1
+  - type: run_command
+    description: "Agent ran `uip platform licenses consumables get --mode folders` with tenant, unit, and date range (.uip-cmdlog shim log)"
+    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -E -- '--mode[= ]folders' | grep -E -- '--tenant[= ]default' | grep -E -- '--unit[= ]AIU' | grep -E -- '--start-date[= ]2026-04-01' | grep -Eq -- '--end-date[= ]2026-04-30'"
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

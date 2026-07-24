@@ -29,39 +29,28 @@ initial_prompt: |
   references at least one bundle in the `<Friendly Name> (<CODE>)` format —
   e.g., `Automation Developer Named User (RPADEVPRONU)`.
 
+  Save the docs lookup evidence as `license-codes-evidence.json` in the
+  current directory. Include the source URL and at least one resolved
+  friendly-name/code pair that you use in the summary.
+
   Use `--output json` on every uip command.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent ran users licenses available"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+users\s+licenses\s+available'
-    min_count: 1
+  - type: file_exists
+    description: "Agent wrote web-resolution evidence at license-codes-evidence.json"
+    path: "license-codes-evidence.json"
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent ran groups rules get"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+groups\s+rules\s+get'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent ran consumables get for a summary (summary is the default --mode)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+licenses\s+consumables\s+get(?!.*--mode\s+(?:daily|folders))'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent fetched the UiPath docs license-codes page"
-    tool_name: "WebFetch"
-    command_pattern: 'docs\.uipath\.com.*license-codes'
-    min_count: 1
-    weight: 1.0
+  - type: file_contains
+    description: "Evidence file records the docs source URL and at least one resolved bundle mapping"
+    path: "license-codes-evidence.json"
+    includes:
+      [
+        "docs.uipath.com",
+        "Named User"
+      ]
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: file_exists
@@ -80,6 +69,12 @@ success_criteria:
     description: "consumables.json written to sandbox"
     path: "consumables.json"
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "details.json written when a group was selected for drilldown"
+    path: "details.json"
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command

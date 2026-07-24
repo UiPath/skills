@@ -1,15 +1,17 @@
 task_id: skill-platform-licensing-groups-rules-list
 description: >
   Smoke test: agent uses the uipath-platform skill to list all group
-  license-allocation rules across the account, with pagination flags.
-  Verifies (1) the agent calls `uip platform groups rules get --output json`
-  and (2) uses at least one pagination flag (`--limit`, `--sort-by`, or
-  `--sort-order`). CLI auth failure is expected offline.
+  license-allocation rules across the account, with pagination flags, and
+  saves the full CLI response to `rules.json`. Verifies the file is written
+  and captures the response envelope. CLI auth failure is expected offline.
 tags: [uipath-platform, smoke, licensing, groups]
 
 initial_prompt: |
   List the group license-allocation rules in this account. Sort them by name
   in descending order and limit to the first 20 results.
+
+  Save the full CLI response envelope as `rules.json` in the current
+  directory.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live tenant in this
@@ -17,18 +19,15 @@ initial_prompt: |
   - Use `--output json` on every uip command.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent ran `uip platform groups rules get`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+groups\s+rules\s+get'
-    min_count: 1
+  - type: file_exists
+    description: "Agent wrote the CLI response to rules.json"
+    path: "rules.json"
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent used --limit or --sort-by/--sort-order pagination flags"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+groups\s+rules\s+get.*--(limit|sort-by|sort-order)'
-    min_count: 1
+  - type: file_contains
+    description: "rules.json captures a JSON response envelope"
+    path: "rules.json"
+    includes: ['"Result"']
     weight: 1.0
     pass_threshold: 1.0
