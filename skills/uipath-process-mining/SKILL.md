@@ -39,14 +39,7 @@ The **ELT editor** is the `transformations` command group operating on the dbt (
 
 ## Critical Rules
 
-1. **To make a custom analytical table queryable, ADD IT TO THE DATA MODEL — do not repurpose `Tags`/`Due_dates`.** `query info` only exposes the entities declared in the app's **data model** (`model.Tables[]`: `Cases`, `Event_log`, `Tags`, `Due_dates`, process internals). A bare dbt model you add under `models/` builds a physical table but is **not** queryable until it is registered as a data-model table (this is the "Add table" button in the data-model editor). Register it by adding a `Tables[]` entry whose `Id` is the dbt model/table name and whose `Fields[]` map its columns:
-   ```json
-   { "Id": "Workload_weekly", "Display": "Workload weekly", "Fields": [
-     { "Type": "column", "Name": "Service_Component", "Id": "Service_Component", "Display": "Service component", "Kind": "nominal",  "IsFilter": true },
-     { "Type": "column", "Name": "Week",               "Id": "Week",               "Display": "Week",           "Kind": "ordinal",  "IsFilter": true },
-     { "Type": "column", "Name": "Closed_Interactions","Id": "Closed_Interactions","Display": "Closed interactions","Kind": "numeric","IsFilter": true } ] }
-   ```
-   `Kind` is `nominal` (text dimension), `ordinal` (ordered), or `numeric` (aggregatable metric). Do this in the `model` JSON at `apps create` time (add your tables before creating), or via a data-model edit afterwards. **Anti-pattern:** overwriting the template `Tags.sql`/`Due_dates.sql` to smuggle unrelated rows through their pre-registered entities — it works but corrupts those features and confuses the next reader. See [`references/data-model.md`](references/data-model.md).
+1. **To make a custom analytical table queryable, ADD IT TO THE DATA MODEL — do not repurpose `Tags`/`Due_dates`.** `query info` only exposes the entities declared in the app's **data model** (`model.Tables[]`: `Cases`, `Event_log`, `Tags`, `Due_dates`, process internals). A bare dbt model you add under `models/` builds a physical table but is **not** queryable until registered as a data-model table (the "Add table" button in the data-model editor): a `Tables[]` entry whose `Id` is the dbt table name and whose `Fields[]` map its columns. Register it in the `model` JSON at `apps create`, or via a data-model edit. Full schema + recipe in [`references/data-model.md`](references/data-model.md).
 
 2. **Match the template to the data — the rest of the pipeline is identical for all app types.** A single denormalized log (Case, Activity, Timestamp [+ attributes]) ⇒ `uipath.custom` ("Event log"). Otherwise pick the `<process>.<system>` template matching your source system AND process (Purchase-to-Pay on SAP ⇒ `uipath.p2p.sap`; incidents from ServiceNow ⇒ `uipath.im.servicenow`) — but only when you actually have that system's **full multi-table extract**, not a single log you exported from it. Every template shares the same model shape and the same mapping→ingest→transform→query machinery; only the expected input tables differ. Discover with `app-types list`, inspect a template with `app-types get`. See [`references/app-types.md`](references/app-types.md).
 
@@ -103,3 +96,13 @@ The killer use case is your own SQL. Add analytical dbt models with `transformat
 | [`references/data-model.md`](references/data-model.md) | exposing a custom table to `query`/dashboards — the add-table pattern and `Tables[]`/`Fields[]` schema |
 | [`references/querying.md`](references/querying.md) | pulling numbers out — the aggregate body AST, the `--group-by/--metric` sugar, the `AggregationFunction` enum, and the event-table restriction |
 | [`references/lifecycle-and-rbac.md`](references/lifecycle-and-rbac.md) | dev vs published stages, publishing, and where process-app RBAC is configured |
+
+## Anti-patterns — what NOT to do
+
+- **Repurposing `Tags.sql`/`Due_dates.sql`** to smuggle a custom analytics table through a pre-registered entity. Corrupts those features. Register a real data-model table instead (Rule 1).
+- **Re-uploading + re-ingesting after a transform-only failure.** The data is loaded; fix the SQL and `transformations apply`. Re-ingest only when raw data or parse settings change (Rule 4).
+- **Hand-rolling an `apps list` poll loop.** Use `--wait` on `ingestions create` / `transformations apply` (Rule 5).
+- **Passing column names in a raw `query run` body**, or hand-writing the aggregate AST. Bodies take hashed field ids from `query info`; use the `--group-by/--metric` sugar (Rule 6).
+- **Patching `Cases.sql` on a source-system template.** That gotcha is `uipath.custom`-only; source templates ship correct transformations — feed the expected extract and extend, don't rewrite (Rule 3).
+- **Using a source template for a single flat log** (or `uipath.custom` for a full multi-table extract). Match the template to the data shape (Rule 2).
+- **Iterating on the full dataset.** Develop on `dev` with a small subset; publish the full data (Rule 7).
