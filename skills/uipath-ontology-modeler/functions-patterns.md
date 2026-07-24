@@ -17,7 +17,7 @@ All functions go in a **single file**. Functions are governed SPARQL SELECT quer
 The file opens with a USAGE POLICY block. This is where **rules** live — not in `rdfs:comment` (which carries per-function facts). The USAGE POLICY is a cross-function routing guide: it tells an AI agent which function to call for which question type and what output discipline to follow.
 
 ```turtle
-@prefix fno:   <https://w3id.org/function/ontology#> .
+@prefix fno:   <http://w3id.org/function/ontology#> .
 @prefix ont:   <https://ontology.uipath.com/{name}#> .
 @prefix {ns}:  <https://ontology.uipath.com/{name}#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
@@ -282,7 +282,7 @@ Artifact: `{actionName}.ttl` | CLI type: `actions` | Media type: `text/turtle`
 `ont:` = platform namespace for predicates. Separate prefix for the ontology's own terms.
 
 ```turtle
-@prefix fno:   <https://w3id.org/function/ontology#> .
+@prefix fno:   <http://w3id.org/function/ontology#> .
 @prefix ont:   <https://ontology.uipath.com/ont#> .
 @prefix {ns}:  <https://ontology.uipath.com/{name}#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
@@ -351,7 +351,7 @@ Multiple statements go in the same list: `ont:statements ( "stmt1" "stmt2" )`.
 ### functions.ttl (Clinic)
 
 ```turtle
-@prefix fno:   <https://w3id.org/function/ontology#> .
+@prefix fno:   <http://w3id.org/function/ontology#> .
 @prefix ont:   <https://ontology.uipath.com/ont#> .
 @prefix cl:    <https://ontology.uipath.com/clinic#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
@@ -429,7 +429,7 @@ cl:ret.listPrescriptions.patientName  a fno:Output ; ont:returnName "patientName
 ### clinic-updatePrescriptionStatus.ttl (Clinic)
 
 ```turtle
-@prefix fno:   <https://w3id.org/function/ontology#> .
+@prefix fno:   <http://w3id.org/function/ontology#> .
 @prefix ont:   <https://ontology.uipath.com/ont#> .
 @prefix cl:    <https://ontology.uipath.com/clinic#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
