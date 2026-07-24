@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "c9a4e2f1-7b53-4d81-a260-3f8e1c6d0b49",
+      "State": "Successful",
+      "ProcessName": "OrderApprovalRouter",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-07-19T06:20:03.410Z",
+      "EndTime": "2026-07-19T06:20:05.120Z",
+      "CreationTime": "2026-07-19T06:20:03.410Z"
+    },
+    {
+      "Key": "4b8d1f60-2c37-4a95-8e01-6d3a9c2f7b18",
+      "State": "Successful",
+      "ProcessName": "OrderApprovalRouter",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-07-18T06:20:04.220Z",
+      "EndTime": "2026-07-18T06:20:06.010Z",
+      "CreationTime": "2026-07-18T06:20:04.220Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

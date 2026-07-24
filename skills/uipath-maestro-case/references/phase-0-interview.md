@@ -29,6 +29,8 @@ If the user prompt names no `.md` reference, default candidate is `./sdd.md`. As
 
 ## Entry
 
+Phase 0 is the run's start. Present the greenfield flow overview once (prefixed with the interview line) before the entry prompt, so the dev knows the phases and decision points ahead. See [SKILL.md § Kickoff — set dev expectations](../SKILL.md#kickoff--set-dev-expectations-first).
+
 When Phase 0 runs from scratch, AskUserQuestion (3 options):
 
 | Option | Effect |

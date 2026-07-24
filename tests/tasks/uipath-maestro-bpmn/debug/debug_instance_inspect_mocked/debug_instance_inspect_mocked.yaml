@@ -49,7 +49,7 @@ success_criteria:
   - type: command_executed
     description: "Agent read the debug session's incidents"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug-instance\s+incidents\s+debug-fault-777'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug-instance\s+incidents\s+["'']?debug-fault-777'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -57,7 +57,7 @@ success_criteria:
   - type: command_executed
     description: "Agent inspected the debug session's runtime variables"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug-instance\s+variables(-all)?\s+debug-fault-777'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug-instance\s+variables(-all)?\s+["'']?debug-fault-777'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

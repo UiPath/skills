@@ -13,24 +13,10 @@ tags: [uipath-admin, e2e, mode:operate, audit, export]
 max_iterations: 2
 
 initial_prompt: |
-  A security reviewer needs the full audit history for the last 7 days
-  on the active tenant. They want to:
-
-    1. See what audit event sources are visible (so they know what's
-       being captured).
-    2. Get a quick preview of the most recent events for context.
-    3. Get the entire 7-day window as day-wise JSON files for offline review.
-
-  Output them into the ./audit-last-7d base directory in the current
-  working directory (the CLI creates a uniquely-named folder inside it).
-
-  Do NOT ask for approval, confirmation, or feedback.
-  Do NOT pause between planning and implementation.
-
-  Important:
-  - The `uip` CLI is available but is NOT connected to a live tenant.
-    Commands will fail with auth errors — that is expected. Run each
-    command exactly once and continue. Do NOT retry or attempt to login.
+  I'm doing a security review of this tenant and want the last 7 days of
+  Admin audit history. Show me what audit event sources are being captured, let
+  me see the most recent events for context, and export the whole week as
+  JSON files for offline review into a folder called audit-last-7d.
 
 success_criteria:
   # 1. sources discovery happened first

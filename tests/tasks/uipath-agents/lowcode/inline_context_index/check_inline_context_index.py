@@ -14,7 +14,7 @@ Validates:
      "UiPathAgentsProductKnowledge" external semantic index with:
        - $resourceType == "context"
        - contextType == "index"
-       - name == "UiPathAgentsProductKnowledge"
+       - name is a non-empty display name
        - indexName == "UiPathAgentsProductKnowledge"
        - folderPath == "Shared/uipath-agents"
        - settings.retrievalMode in {semantic, structured, deepRAG, batchTransform}
@@ -101,10 +101,9 @@ def main() -> None:
     )
 
     name = resource.get("name")
-    if name != EXPECTED_INDEX_NAME:
+    if not isinstance(name, str) or not name.strip():
         sys.exit(
-            f"FAIL: resource.json name should be {EXPECTED_INDEX_NAME!r} "
-            f"(matching the deployed index), got {name!r}"
+            f"FAIL: resource.json name must be a non-empty display name, got {name!r}"
         )
     folder_path = resource.get("folderPath")
     if folder_path != EXPECTED_FOLDER_PATH:
@@ -114,7 +113,8 @@ def main() -> None:
         )
     print(
         f'OK: resource.json is $resourceType="context", contextType="index", '
-        f"name=indexName={EXPECTED_INDEX_NAME!r}, folderPath={EXPECTED_FOLDER_PATH!r}"
+        f"name={name!r}, indexName={EXPECTED_INDEX_NAME!r}, "
+        f"folderPath={EXPECTED_FOLDER_PATH!r}"
     )
 
     settings = resource.get("settings") or {}

@@ -3,7 +3,7 @@ description: >
   UiPath troubleshoot agent must diagnose a Read Range failure
   (System.IO.IOException: ... used by another process) where two Orchestrator
   jobs ran concurrently against the same workbook on the same host. The agent
-  must match the activity-packages/excel-activities/playbooks/read-range-file-locked.md
+  must match the activity-packages/excel-activities/playbooks/workbook-file-locked.md
   playbook, identify the concurrent-jobs branch from overlapping `or jobs
   list` windows and `or triggers list` schedules, and recommend
   serialization (single-instance via lock asset, single-performer queue,
@@ -21,7 +21,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir

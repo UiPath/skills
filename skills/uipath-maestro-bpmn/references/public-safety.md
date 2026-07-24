@@ -19,6 +19,21 @@ This skill is intended for a public skills repository. Keep all content, example
 - Short structural examples that demonstrate XML shape without private data.
 - Summaries of behavior rather than copied private XML.
 
+## XML placeholder escaping
+
+Angle-bracket placeholders are safe only when the XML location can contain text
+or CDATA. In XML attributes, escape the brackets so the BPMN remains
+well-formed:
+
+- Attribute values: `value="&lt;TENANT_URL&gt;"`,
+  `value="&lt;FOLDER_KEY&gt;"`, `value="&lt;CONNECTION_NAME&gt;"`.
+- Element text or CDATA: `<TENANT_URL>`, `<FOLDER_KEY>`, and
+  `<CONNECTION_NAME>` may be used as literal placeholder text.
+
+After sanitizing a BPMN file, parse it before reporting done. A sanitization
+pass that replaces a private value with unescaped `<PLACEHOLDER>` inside an
+attribute has made the file invalid.
+
 ## Review checklist
 
 Before committing:

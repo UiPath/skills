@@ -2,7 +2,9 @@
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="sample-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL">
   <bpmn:process id="Process_1" isExecutable="false">
     <bpmn:extensionElements>
-      <uipath:variables version="v1" />
+      <uipath:variables version="v1">
+        <uipath:output id="x" name="x" type="integer" />
+      </uipath:variables>
     </bpmn:extensionElements>
     <bpmn:startEvent id="Event_start">
       <bpmn:extensionElements>
@@ -12,12 +14,14 @@
     </bpmn:startEvent>
     <bpmn:scriptTask id="Activity_Writer" name="Writer (writes x=42)" scriptFormat="JavaScript">
       <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.Variables" version="v1" />
-          <uipath:output name="x" type="integer" source="=this.result" var="x" custom="true" />
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="x" type="integer" source="=result.response" var="x" />
         </uipath:mapping>
       </bpmn:extensionElements>
-      <bpmn:script>return 42;</bpmn:script>
+      <bpmn:script>return { response: 42 };</bpmn:script>
       <bpmn:incoming>flow_start_to_writer</bpmn:incoming>
       <bpmn:outgoing>flow_writer_to_gw</bpmn:outgoing>
     </bpmn:scriptTask>

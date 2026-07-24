@@ -4,7 +4,7 @@
 
 **Outcome:** The `uip` CLI evidence is **insufficient** to identify
 which cause-branch of the
-`activity-packages/excel-activities/playbooks/read-range-file-locked.md`
+`activity-packages/excel-activities/playbooks/workbook-file-locked.md`
 playbook applies. The agent's correct action is to surface a host-
 side investigation recommendation to the user, NOT to guess a branch.
 
@@ -15,7 +15,7 @@ side investigation recommendation to the user, NOT to guess a branch.
   signature: `System.IO.IOException: The process cannot access the
   file 'C:\Robot\Data\sales-2026-05.xlsx' because it is being used
   by another process.`
-- The fingerprint matches the read-range-file-locked playbook
+- The fingerprint matches the workbook-file-locked playbook
   exactly.
 
 **What the CLI evidence RULES OUT:**

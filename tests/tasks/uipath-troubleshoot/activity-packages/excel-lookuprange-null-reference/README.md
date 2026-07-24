@@ -16,12 +16,12 @@ in the Main `Sequence` with **no surrounding `Excel Application Scope`**
 dereferences null and throws a `NullReferenceException` the instant it runs.
 
 This maps to:
-`references/activity-packages/excel-activities/playbooks/lookup-range-null-reference.md`
+`references/activity-packages/excel-activities/playbooks/null-reference-from-activity.md`
 (the **no surrounding scope** cause).
 
 It is **not** a missing Excel install (no `REGDB_E_CLASSNOTREG` -> that
-routes to `lookup-range-excel-not-installed.md`) and **not** a file-in-use
-fault (no IOException -> `lookup-range-file-locked.md`). The fault stack
+routes to `excel-not-installed.md`) and **not** a file-in-use
+fault (no IOException -> `workbook-file-locked.md`). The fault stack
 goes `ExcelLookUpRange` -> `Sequence "Main Sequence"` -> `Main` with **no scope
 in between**, which is the tell that the activity has no workbook context.
 
@@ -44,7 +44,7 @@ not wrapped in any Excel scope.
 ## Success criteria
 
 - Agent invoked the `uipath-troubleshoot` skill
-- Agent matched `lookup-range-null-reference.md`
+- Agent matched `null-reference-from-activity.md`
 - Agent identified that the `Lookup Range` is outside any Excel scope (no
   workbook context), found in `Main.xaml`, as the cause of the
   `NullReferenceException`, and recommended wrapping it in an

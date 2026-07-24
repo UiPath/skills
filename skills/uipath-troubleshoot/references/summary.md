@@ -22,7 +22,7 @@ CLI: `uip login status`, `uip admin tenants get`, `uip admin tenants services en
 
 ## Runtime Exceptions
 
-General .NET runtime exceptions originating from the user's own workflow code — not from activity packages or platform internals. Covers null references, null/invalid/out-of-range arguments, invalid operations (LINQ, nullable, enumeration), missing files/directories, out-of-bounds indexing, and missing dictionary keys in workflow logic, variable handling, and data processing.
+General .NET runtime exceptions originating from the user's own workflow code — not from activity packages or platform internals. Covers null references, null/invalid/out-of-range arguments, invalid operations (LINQ, nullable, enumeration), `If` condition compiler/type errors (design-time Studio validation, e.g. `Compiler error(s) encountered processing expression` / `Option Strict On disallows implicit conversions`), silent wrong-branch `If` faults, `Assign` type mismatches (design-time Studio validation, e.g. `Cannot assign from type 'System.Object' to 'System.String'`), LINQ `CopyToDataTable` "source contains no data rows", missing files/directories, out-of-bounds indexing, and missing dictionary keys in workflow logic, variable handling, and data processing.
 
 - [runtime-exceptions/overview.md](./runtime-exceptions/overview.md) — Scope boundary, investigation sources (local logs and Orchestrator jobs)
 - [runtime-exceptions/summary.md](./runtime-exceptions/summary.md) — All playbooks for runtime exception issues
@@ -109,11 +109,20 @@ Namespaces: `UiPath.CV.Activities` (exceptions: `UiPath.CV`)
 - [activity-packages/cv-activities/overview.md](./activity-packages/cv-activities/overview.md) — Package overview, CV targeting mechanics, exception types, and common failure patterns
 - [activity-packages/cv-activities/summary.md](./activity-packages/cv-activities/summary.md) — All playbooks for Computer Vision Activities issues
 
+## OCR Activities
+
+Low-level OCR engine activities from `UiPath.OCR.Activities` — UiPath Screen OCR and UiPath Document OCR (cloud or local server), plus CJK / Extended Languages OCR via Document Understanding. These are the foundational text-recognition engines consumed by Document Understanding `Digitize` and Computer Vision screen scopes. Issues here involve missing local-server / CoreIPC packages, incompatible companion-package versions, invalid API key / endpoint / CJK configuration, service timeouts and invalid responses, invalid or missing image input, unsupported rotation, wrong scrape usage, and empty/silent results. For the DU document pipeline (`Digitize` / classify / extract) see Document Understanding; for CV screen-targeting see Computer Vision.
+
+Namespaces: `UiPath.OCR.Activities` (exceptions: `OCRException` with `OCRResultCode`)
+
+- [activity-packages/ocr-activities/overview.md](./activity-packages/ocr-activities/overview.md) — Package overview, engines, local-server modes, and failure families
+- [activity-packages/ocr-activities/summary.md](./activity-packages/ocr-activities/summary.md) — All playbooks for OCR Activities issues
+
 ## System Activities
 
-Core workflow activities from `UiPath.System.Activities` that interact with Orchestrator resources at runtime — asset retrieval, credential lookup, queue operations, and storage buckets. Issues here involve asset-not-found errors, permission denied, folder scope mismatches, external vault failures, and package version bugs.
+Core workflow activities from `UiPath.System.Activities`. Two families: Orchestrator-resource activities (asset retrieval, credential lookup, queue operations, storage buckets — asset-not-found, permission denied, folder scope mismatches, external vault failures, package version bugs); and local runtime activities (compression `Compress/Extract Files` → `CompressionException`; modern StudioX file/folder `Copy/Move/Rename/Delete` → `FileSystemException`; `Download File from URL` / `Wait for Download`). For the classic `Rename/Move File`, `Kill Process`, `Invoke Code/Workflow File`, and `Add Queue Item` activities, see **Classic Activities**.
 
-Namespaces: `UiPath.Core.Activities`
+Namespaces: `UiPath.Core.Activities`, `UiPath.System.Activities`
 
 - [activity-packages/system-activities/overview.md](./activity-packages/system-activities/overview.md) — Package overview, activity types, and common failure patterns
 - [activity-packages/system-activities/summary.md](./activity-packages/system-activities/summary.md) — All playbooks for System Activities issues
@@ -279,6 +288,15 @@ Namespaces: `UiPath.IntelligentOCR.Activities` (exceptions: `UiPath.SmartData.Ut
 
 - [activity-packages/intelligent-ocr-activities/overview.md](./activity-packages/intelligent-ocr-activities/overview.md) — Package overview, pipeline phases, exception types, and common failure patterns
 - [activity-packages/intelligent-ocr-activities/summary.md](./activity-packages/intelligent-ocr-activities/summary.md) — All playbooks for Intelligent OCR / Document Understanding Activities issues
+
+## IPC Activities
+
+Activities for **inter-process communication** between UiPath processes running at the same time on one host. `Broadcast Message` / `Send Message` publish a payload on a named **channel**; a **Message Receiver Trigger** in a parallel process listens on the same channel. The transport is a local **named pipe** — confined to the **same robot, same Windows user, same session, same machine**. Issues here involve `System.TimeoutException` (`Timeout of <N> ms has passed and no channel was found to send the message to.` — no live receiver on the channel before the timeout, a channel-name mismatch, or a too-low `Timeout`) and `System.UnauthorizedAccessException` (`Access to the path is denied.` — the pipe ACL rejects a peer in a different session / user / elevation level). The faulted activity + exception class is the discriminator (the `System.*` exception prefix alone does NOT route here). Not to be confused with the internal `UiPath.Ipc` / `UiPath.CoreIpc` transport behind Integration Service connectors (`RemoteException`, `DAP-*`) — that is under Integration Service.
+
+Namespaces: `UiPath.IPC.Activities`
+
+- [activity-packages/ipc-activities/overview.md](./activity-packages/ipc-activities/overview.md) — Package overview, channel / named-pipe execution model, and common failure patterns
+- [activity-packages/ipc-activities/summary.md](./activity-packages/ipc-activities/summary.md) — All playbooks for IPC Activities issues
 
 
 ## Playbooks

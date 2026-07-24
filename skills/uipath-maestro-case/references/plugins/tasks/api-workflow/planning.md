@@ -11,11 +11,11 @@ Pick this plugin when the sdd.md labels a task as `API_WORKFLOW` — typically a
 | Field | Source | Notes |
 |-------|--------|-------|
 | `display-name` | Task `Task Name` | |
-| `name` | Task `Resolved Resource` | Concrete intended resource name and registry query |
+| `name` | Resolved registry entry's **`name` field** (NOT the sdd.md "Resolved Resource") | Binds to `data.name` AND forms the `resourceKey` suffix `<folderPath>.<name>`. The sdd.md "Resolved Resource" is only the **search query** (matches `folders[0].displayName`). For `api-index.json` the entry `name` is the literal constant **`"API Workflow"`** — NOT the workflow's own name. See [§ Registry Resolution](#registry-resolution). |
 | `folder-path` | Resolved registry `folders[0].fullyQualifiedName` (NOT the sdd.md "Folder") | Binds to `data.folderPath`; Orchestrator starts the workflow here at runtime. The sdd.md "Folder" only seeds the lookup and may be a parent/truncated path. See [§ Registry Resolution](#registry-resolution). For an API workflow **built inline** as an in-solution sibling, the runtime `folder-path` is **empty `""`** (co-located — the case starts the workflow in its own deployed folder) while `resourceKey` stays `solution_folder.<name>`; do NOT put the `solution_folder` sentinel in `folder-path` (runtime `folder not exist`). See [§ Creating an API workflow inline](#creating-an-api-workflow-inline). |
 | `task-type-id` | Registry resolution (below) | `entityKey` in `api-index.json` |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
-| `outputs` | Discovered via `tasks describe` | |
+| `outputs` | sdd.md task Outputs + resolved schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
 | `runOnlyOnce` | sdd.md (default `true`) | |
 | `isRequired` | sdd.md (default `true`) | |
 
@@ -24,7 +24,7 @@ Pick this plugin when the sdd.md labels a task as `API_WORKFLOW` — typically a
 1. **Primary cache file:** `api-index.json`.
 2. **Identifier field:** `entityKey`.
 3. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > **no match**. An exact-name hit in a **different** folder — including a child of the sdd.md folder (which only seeds the lookup and **may be a parent/truncated path**, see field table) — is an **exact name only** match: **resolve it** (bind `folder-path` to the registry entry's full path per step 4). Do NOT treat a folder difference as no-match or fall through to the Create gate — the gate is only for names **no** registry entry carries at all. A true no-match runs the [§ in-solution check](#no-tenant-index-match--check-in-solution-siblings-before-the-gate) first, then the Rule 17 gate; only a task left unresolved after the gate falls back to the sdd.md folder (step 4).
-4. **`folder-path` = the SELECTED entry's `folders[0].fullyQualifiedName`** (not the sdd.md "Folder" — see the field table above). Fall back to the sdd.md folder only when there is no registry match (Unresolved path).
+4. **Take BOTH `name` and `folder-path` from the SELECTED entry, never the sdd.md** (which only seeds the lookup): `folder-path` = `folders[0].fullyQualifiedName`; `name` = the entry's `name` field (`"API Workflow"` for `api-index.json` — see field table). So `resourceKey` = `<folders[0].fullyQualifiedName>.API Workflow`, NOT `<…>.<workflow name>` — the wrong suffix passes `validate` but faults at `case debug` (process unresolvable). Fall back to the sdd.md folder/name only on no registry match (Unresolved path).
 5. Discover inputs/outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
 
 ### No tenant-index match → check in-solution siblings BEFORE the gate
@@ -96,13 +96,13 @@ do not ask for approval; do not publish/upload/deploy; do NOT execute the workfl
   `bindings_v2.json`, which the caller's `uip solution resources refresh` (run post-register)
   then catalogues into the solution. Http-kind (`ImplicitConnection`) and pure-compute
   workflows need no connection and no bindings sync.
-  Do NOT register into the solution — the caller registers (via `uip solution project add`).
+  Do NOT register into the solution — the caller registers (via `uip solution projects add`).
   If you cannot locate/load the uipath-api-workflow skill, do NOT improvise a build — return
   { built:false, error:"skill uipath-api-workflow not installed" }.
 Return JSON: { built: bool, path, finalInputs:[{name,type}], finalOutputs:[{name,type}], error? }
 ```
 
-The brief is self-contained — it carries the Step-1b Purpose and the pinned I/O, and no other case context (do not dump `caseplan.json` or sibling tasks). Quote `<WorkflowName>` and paths (SDD-derived). Building runs in a sub-agent; orchestration/parallelism per [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Because the sibling is built **without self-registration**, the **caller registers** each built sibling into the solution `.uipx` (sequential `uip solution project add`, then `resources refresh`) — see [registry-discovery.md § Create-on-Missing, Step 3 — Register](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). This must happen before rediscovery (§4), which reads the `.uipx` `Projects[]`.
+The brief is self-contained — it carries the Step-1b Purpose and the pinned I/O, and no other case context (do not dump `caseplan.json` or sibling tasks). Quote `<WorkflowName>` and paths (SDD-derived). Building runs in a sub-agent; orchestration/parallelism per [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Because the sibling is built **without self-registration**, the **caller registers** each built sibling into the solution `.uipx` (sequential `uip solution projects add`, then `resources refresh`) — see [registry-discovery.md § Create-on-Missing, Step 3 — Register](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). This must happen before rediscovery (§4), which reads the `.uipx` `Projects[]`.
 
 ### Step 3 — Binding (no new field)
 
@@ -125,10 +125,11 @@ Shared contract — [create-inline-common.md § Failure](../create-inline-common
 - folder-path: "<folder>"
 - inputs:
   - <input_name> = "<value>"
-- outputs: <out1>, <out2>
+- outputs:
+  - <SDD output row, copied verbatim>
 - runOnlyOnce: true
 - isRequired: true
 - order: after T<m>
-- lane: <n>  # FE layout; increment per task. Within `runs-sequentially` group, parallel members share a lane (semantic).
+- lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
 - verify: Confirm Result: Success, capture TaskId
 ```

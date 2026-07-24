@@ -10,7 +10,6 @@ run_limits:
   expected_turns: 6
 
 sandbox:
-  driver: tempdir
   mock_path_dirs: [mocks]
   template_sources:
     - {type: template_dir, path: ../_shared/mock_template}
@@ -27,10 +26,10 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent marked the field missing via `labellings mark-missing` on the right project + document + field id"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+mark-missing\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123)(?=.*a7c3e9105f2b4d86).*'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+mark-missing\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123)(?=.*a7c3e9105f2b4d86).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0

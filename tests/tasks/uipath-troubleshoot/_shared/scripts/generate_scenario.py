@@ -741,7 +741,7 @@ def apply_plan(plan: dict) -> None:
     fixtures_dir = base / "data" / "m" / "r"
     fixtures_dir.mkdir(parents=True, exist_ok=True)
     (fixtures_dir / "manifest.json").write_text(
-        json.dumps(plan["manifest"], indent=2) + "\n", encoding="utf-8"
+        json.dumps(plan["manifest"], indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
     for fname, content in plan["fixtures"].items():
         (fixtures_dir / fname).write_text(content, encoding="utf-8")

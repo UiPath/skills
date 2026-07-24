@@ -109,6 +109,8 @@ This is a hard gate — do NOT proceed to writing tasks.md until every required 
 
 SDD input names rarely match connector field names exactly. Match each SDD input to a `bodyFields`/`pathParameters`/`queryParameters` entry by comparing the SDD field name against the `displayName` (or `name`) from Step 3.
 
+An SDD input that matches `spec.inputs.*` remains a normal Step 6 input even when its name is literally `filter`: include it in `input-values`; Step 7 applies only when the SDD separately requests a structured filter tree and `spec.filter` supports one.
+
 For each required field in spec.inputs.*, there must be a matching SDD input. If a required field has no match, **AskUserQuestion** — never leave required fields unmapped.
 
 Values can be:
@@ -117,7 +119,7 @@ Values can be:
 - **Case variable references** — `=vars.X` (impl wraps as `=js:(vars.X)` for the connector body sink before passing to the CLI)
 - **Metadata references** — `=metadata.X` (impl wraps as `=js:(metadata.X)`)
 - **Pre-wrapped operator expressions** — `=js:(vars.amount > 5000)` (already canonical — pass-through)
-- **Cross-task refs** — `<- "Stage"."Task".output` (impl resolves to `=vars.<outputVar>` then wraps)
+- **Cross-task refs** — `<- "Stage"."Task".output` (impl resolves through the common [output-reference-ID algorithm](../../variables/io-binding/impl-json.md#output-reference-id-authoritative) to `=vars.<outputReferenceId>`, then wraps)
 
 > **tasks.md carries SDD-natural form.** The implementation step (Step 9.7 of connector-activity impl) rewrites every reference to its canonical sink form when constructing `--input-details`. Connector body sinks use `=js:(<expr>)`. Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
@@ -178,6 +180,8 @@ Planner emits to `tasks.md input-values.bodyParameters`:
 
 ## tasks.md Entry Format
 
+Populate `outputs:` using the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list).
+
 ```markdown
 ## T<n>: Add connector-activity task "<display-name>" to "<stage>"
 - type-id: <uiPathActivityTypeId>
@@ -186,6 +190,8 @@ Planner emits to `tasks.md input-values.bodyParameters`:
 - object-name: <objectName>
 - input-values: {"bodyParameters":{...},"queryParameters":{...},"pathParameters":{...}}
 - filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Active\"","value":"Active"},"uiId":null}]}
+- outputs:                            # optional; omit only when the SDD declares none
+  - <SDD output row, copied verbatim>
 - isRequired: true
 - runOnlyOnce: false
 - order: after T<m>

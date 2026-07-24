@@ -23,11 +23,10 @@ initial_prompt: |
   body.
 
 success_criteria:
-  - type: command_executed
+  - type: skill_triggered
     description: "Agent engaged the uipath-planner skill to evaluate the entry guard"
-    tool_name: "Skill"
-    command_pattern: "uipath-planner"
-    min_count: 1
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
     weight: 2.0
     pass_threshold: 1.0
 
