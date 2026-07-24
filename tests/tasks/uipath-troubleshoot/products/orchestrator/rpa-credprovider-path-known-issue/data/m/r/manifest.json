@@ -2,12 +2,12 @@
   "version": 2,
   "_doc": "Synthetic fixture set for the CredProvider-path known-issue scenario (known-issue-robot-defect playbook). The agent chains: folders list -> jobs list --state Faulted -> jobs get (Info: CredProvider TEMP path) -> jobs logs (known defect on builds < 23.10.9) -> machines list (RobotVersion 23.10.4). Correct fix: upgrade Robot to >= 23.10.9 (ROBO-4022), NOT create the folder / fix TEMP permissions. Keys are stable.",
   "rules": [
-    { "match": "or folders list", "file": "folders-list.json" },
-    { "match": "or jobs list --folder-key f6d6e7f8-a9b0-1234-5678-9abcdef01234 --state Faulted", "file": "jobs-list-faulted.json" },
-    { "match": "or jobs get bbccddee-2233-4455-6677-8899aabbccdd", "file": "jobs-get-failing.json" },
-    { "match": "or jobs logs bbccddee-2233-4455-6677-8899aabbccdd --level Error", "file": "jobs-logs-failing-error.json" },
-    { "match": "or jobs logs bbccddee-2233-4455-6677-8899aabbccdd", "file": "jobs-logs-failing-error.json" },
-    { "match": "or machines list", "file": "machines-list.json" },
+    { "match": "or folders list", "file": "ee2628e6b6.json" },
+    { "match": "or jobs list --folder-key f6d6e7f8-a9b0-1234-5678-9abcdef01234 --state Faulted", "file": "a8569d7fc7.json" },
+    { "match": "or jobs get bbccddee-2233-4455-6677-8899aabbccdd", "file": "3d6f8cbb3b.json" },
+    { "match": "or jobs logs bbccddee-2233-4455-6677-8899aabbccdd --level Error", "file": "7f45d08f0f.json" },
+    { "match": "or jobs logs bbccddee-2233-4455-6677-8899aabbccdd", "file": "fb379d10d9.json" },
+    { "match": "or machines list", "file": "dc064823f4.json" },
     { "match": "docsai ask", "passthrough": true }
   ],
   "unmocked_default": { "response": "[]\n", "exit_code": 0 }

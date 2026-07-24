@@ -39,8 +39,7 @@ reference:
 initial_prompt: |
   My LedgerPostingBot job in the BackOffice folder won't start — it
   faults immediately with something about a missing path under
-  C:\Windows\TEMP\UiPath\CredProvider. The project source is in the
-  current working directory. What's causing this and how do I fix it
+  C:\Windows\TEMP\UiPath\CredProvider. What's causing this and how do I fix it
   properly?
 
 success_criteria:
