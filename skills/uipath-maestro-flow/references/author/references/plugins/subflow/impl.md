@@ -25,21 +25,17 @@ Confirm: input port `input`, output ports `output` and `error`. Set the node ins
     "b": 3
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the subflow",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the subflow fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
 }
 ```
+
+`core.subflow`'s registry `outputDefinition` declares `error` only, so omit `output` — the converter injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` and downstream still reads `$vars.{nodeId}.output`. `=result.response` is the connector/script source; on this node it resolves to null at runtime while `flow validate` passes.
 
 ## Subflow Definition
 
@@ -86,7 +82,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
             "error": {
               "type": "object",
               "description": "Error information if the script fails",
-              "source": "=result.Error",
+              "source": "=Error",
               "var": "error"
             }
           }

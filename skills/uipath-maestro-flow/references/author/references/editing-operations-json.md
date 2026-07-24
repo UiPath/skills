@@ -109,25 +109,21 @@ Reach for `jq` / `python3` only when JMESPath cannot express the operation (mult
   "display": { "label": "<LABEL>" },
   "inputs": {},
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the <node type>",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the <node type> fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
 }
 ```
 
+**Copy `outputs` from the registry's `outputDefinition` for that node type — never invent a `source`.** Orchestrator-job nodes (api-workflow, rpa-workflow, agent, agentic-process) and `core.subflow` use `=Error`, and either declare `output` with `source: "=this"` or declare `error` only — when they declare `error` only, omit `output` and the converter injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}`. Connector activities (`uipath.connector.*`) are the ones that declare `source: "=result.response"`; using that source on an Orchestrator job leaves `$vars.{nodeId}.output` null at runtime while `flow validate` passes.
+
 > **`display` is required on every node** — including control-flow nodes (`core.control.end`, `core.logic.terminate`) where it may feel optional. Omitting it produces a vague `[(root)] Schema validation failed: Invalid input: expected object, received undefined` from `uip maestro flow validate`, which does NOT pinpoint the missing field. Always include `"display": { "label": "<label>" }` on every node, even bare end nodes. See [file-format.md — Node instance](../../shared/file-format.md#node-instance).
 
-> **What actually makes `$vars.<sourceNodeId>.output` resolve is `variables.nodes[]` (step 4 below), not the instance `outputs` block.** The BPMN emitter ignores the action-node instance `outputs` block at serialization — it reads the manifest's `outputDefinition` for the activity-side mapping and reads `variables.nodes[]` for the process-level `<uipath:inputOutput>` declarations downstream nodes depend on. Authoring an `outputs` block matching the manifest is fine (the canonical examples include it for documentation), but you can skip it on action and trigger nodes. End / terminate nodes are different — see [end/impl.md](plugins/end/impl.md). The standard patterns are in [file-format.md — Node outputs](../../shared/file-format.md#node-outputs). **Always run `uip maestro flow format` after structural edits — it regenerates `variables.nodes[]` from the current node graph (MST-9972).**
+> **What actually makes `$vars.<sourceNodeId>.output` resolve is `variables.nodes[]` (step 4 below), not the instance `outputs` block.** The BPMN emitter ignores the action-node instance `outputs` block at serialization — it reads the manifest's `outputDefinition` for the activity-side mapping and reads `variables.nodes[]` for the process-level `<uipath:inputOutput>` declarations downstream nodes depend on. Authoring an `outputs` block matching the manifest is fine (the canonical examples include it for documentation), but you can skip it on action and trigger nodes. **Exception — Orchestrator-job nodes** (api-workflow, rpa-workflow, agent, agentic-process): the converter DOES read their instance `outputs` and copies each `source` verbatim into `model.outputDefinition`, so a wrong `source` there (e.g. `=result.response`) breaks the downstream variable. Mirror the registry or omit the block. End / terminate nodes are different — see [end/impl.md](plugins/end/impl.md). The standard patterns are in [file-format.md — Node outputs](../../shared/file-format.md#node-outputs). **Always run `uip maestro flow format` after structural edits — it regenerates `variables.nodes[]` from the current node graph (MST-9972).**
 
 > **No instance `model` block.** BPMN type, serviceType, event definition, and binding/context templates are provided by the definition in `definitions[]` (copied verbatim from the registry). Instance-specific identity fields live under `inputs`: `entryPointId`/`isDefaultEntryPoint` for triggers, `color`/`content` for sticky notes, and `source` for every inline-agent-related node — `uipath.agent.autonomous` plus every attached `uipath.agent.resource.*` node (tool, escalation, context) writes the inline agent's `projectId` (autonomous) or resource UUID (resource nodes) at `inputs.source`. Their definitions declare `model.source: true`; flow-core hoists source identity onto the instance — no `"model": { "source": ... }` block is written. See [file-format.md — Instance-specific identity fields](../../shared/file-format.md#instance-specific-identity-fields).
 
@@ -415,16 +411,10 @@ Use `Edit` to modify the start node in-place (no delete/re-add needed):
        "<IN_VAR>": "=js:<EXPRESSION>"
      },
      "outputs": {
-       "output": {
-         "type": "object",
-         "description": "The return value of the subflow",
-         "source": "=result.response",
-         "var": "output"
-       },
        "error": {
          "type": "object",
          "description": "Error information if the subflow fails",
-         "source": "=result.Error",
+         "source": "=Error",
          "var": "error"
        }
      }

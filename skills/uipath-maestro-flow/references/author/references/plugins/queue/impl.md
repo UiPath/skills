@@ -42,7 +42,7 @@ Confirm: input port `input`, output port `success`. Set each node instance's `ty
     "error": {
       "type": "object",
       "description": "Error information if the queue operation fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
@@ -77,7 +77,7 @@ For step-by-step add, delete, and wiring procedures, see [editing-operations.md]
     "error": {
       "type": "object",
       "description": "Error information if the queue operation fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }

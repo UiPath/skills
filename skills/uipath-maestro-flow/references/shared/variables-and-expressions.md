@@ -689,7 +689,7 @@ A flow with input, state, and output variables:
         "error": {
           "type": "object",
           "description": "Error information if the script fails",
-          "source": "=result.Error",
+          "source": "=Error",
           "var": "error"
         }
       }

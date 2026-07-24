@@ -70,13 +70,13 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
     "output": {
       "type": "object",
       "description": "The return value of the agent",
-      "source": "=result.response",
+      "source": "=this",
       "var": "output"
     },
     "error": {
       "type": "object",
       "description": "Error information if the agent fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
@@ -102,8 +102,8 @@ Confirm all three from `registry get` before wiring.
   "display": { "label": "<Label>", "icon": "<AGENT_ICON>" },
   "inputs": {},
   "outputs": {
-    "output": { "type": "object", "description": "The return value of the agent", "source": "=result.response", "var": "output" },
-    "error":  { "type": "object", "description": "Error information if the agent fails", "source": "=result.Error", "var": "error" }
+    "output": { "type": "object", "description": "The return value of the agent", "source": "=this", "var": "output" },
+    "error":  { "type": "object", "description": "Error information if the agent fails", "source": "=Error", "var": "error" }
   }
 }
 ```

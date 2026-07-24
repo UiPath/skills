@@ -59,13 +59,13 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
     "output": {
       "type": "object",
       "description": "The return value of the agentic process",
-      "source": "=result.response",
+      "source": "=this",
       "var": "output"
     },
     "error": {
       "type": "object",
       "description": "Error information if the agentic process fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }

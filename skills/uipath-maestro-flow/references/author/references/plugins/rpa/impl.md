@@ -59,21 +59,17 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
     "batchSize": 50
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the RPA process",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the RPA process fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
 }
 ```
+
+**Author only the keys the registry's `outputDefinition` declares** (`uip maestro flow registry get <nodeType> --output json`). This node type declares `error` only, so omit `output` — the converter then injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` itself, and downstream still reads `$vars.{nodeId}.output`. Hand-writing `output` with `source: "=result.response"` suppresses that injection and resolves to null at runtime while `flow validate` passes. `=result.response` belongs to connector activities, not to Orchestrator jobs.
 
 ### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 

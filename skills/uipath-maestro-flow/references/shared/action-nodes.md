@@ -59,7 +59,7 @@ All action nodes share this base shape on the node instance:
     "error": {
       "type": "object",
       "description": "Error information if the action fails.",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }

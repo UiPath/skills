@@ -65,7 +65,7 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
     "error": {
       "type": "object",
       "description": "Error information if the flow fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }

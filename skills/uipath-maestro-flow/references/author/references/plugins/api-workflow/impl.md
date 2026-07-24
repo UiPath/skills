@@ -36,7 +36,7 @@ Confirm:
 - `model.bindings.resourceSubType` — `Api`
 - `model.bindings.resourceKey` — the `<FolderPath>.<ApiName>` string used to scope binding resolution
 - `inputDefinition` — typically empty
-- `outputDefinition.error` — error schema. This node type declares **no `output`** — do not author one (see § JSON Structure)
+- `outputDefinition` — always `error` (`source: "=Error"`). Whether it also declares `output` varies **per published API workflow**: some declare `output` with `source: "=this"`, some declare only `error`. Read it for the node type you are wiring and mirror what it declares (see § JSON Structure)
 
 ## Adding / Editing
 
@@ -59,16 +59,16 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
     "error": {
       "type": "object",
       "description": "Error information if the API workflow fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
 }
 ```
 
-**Declare `error` only — never author an `output` entry.** The converter injects the return-value output itself (`{name: "output", type: "jsonSchema", source: "=this", var: "output"}`) and only when the instance omits `outputs.output`. Author `output` yourself and the converter copies your `source` verbatim: `"=result.response"` resolves to nothing on this activity, so `$vars.{nodeId}.output` is **null at runtime** while `flow validate` still passes. A downstream agent binding it as a required object then dies at startup — `AGENT_STARTUP.INPUT_VALIDATION_ERROR`, surfaced as flow incident `170002`.
+**Mirror the registry's `outputDefinition` — never invent a `source`.** Keep `outputs` non-empty (the converter skips an empty/absent `outputs` entirely) and author `output` only when the registry declares it, copying its `source: "=this"`. When the registry declares `error` only, omit `output`: the converter then injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` — but only when the instance omits it.
 
-Downstream nodes read the return value as `$vars.{nodeId}.output` either way. General rule: author only the output keys the registry's `outputDefinition` declares — for this node type, that is `error`.
+Author `output` with any other `source` and the converter copies it verbatim. `"=result.response"` (correct for connector activities) resolves to nothing on an Orchestrator activity, so `$vars.{nodeId}.output` is **null at runtime** while `flow validate` passes. A downstream agent binding it as a required object then dies at startup: `AGENT_STARTUP.INPUT_VALIDATION_ERROR`, incident `170002`. Downstream reads `$vars.{nodeId}.output` in every one of these cases.
 
 ### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 
@@ -107,4 +107,4 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 | --- | --- | --- |
 | Node type not found in registry | API workflow not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force`; for in-solution API workflows use `--local` |
 | Execution failed | Underlying API workflow errored | Check `$vars.{nodeId}.error` for details |
-| Node Completed but `$vars.{nodeId}.output` is null downstream (e.g. consumer agent faults `AGENT_STARTUP.INPUT_VALIDATION_ERROR` / incident `170002`) | Instance hand-declares `outputs.output` with `source: "=result.response"`, suppressing the converter's injected `=this` output | Delete the `output` entry — keep `error` only (see § JSON Structure) |
+| Node Completed but `$vars.{nodeId}.output` is null downstream (e.g. consumer agent faults `AGENT_STARTUP.INPUT_VALIDATION_ERROR` / incident `170002`) | Instance hand-declares `outputs.output` with `source: "=result.response"`, suppressing the converter's injected `=this` output | Set the `source` to `=this`, or delete the `output` entry and let the converter inject it (see § JSON Structure) |

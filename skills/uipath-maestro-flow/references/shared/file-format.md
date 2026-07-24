@@ -81,7 +81,7 @@ Optional top-level `runtime`: a CLI-managed object that appears on some flows (e
     "error": {
       "type": "object",
       "description": "Error information if the script fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
@@ -148,7 +148,7 @@ When you DO author the instance `outputs` block (for documentation / parity with
 
 - `type` — data type (usually `"object"`)
 - `description` — human-readable description
-- `source` — runtime binding expression (e.g., `"=result.response"` for the primary output, `"=result.Error"` for errors)
+- `source` — runtime binding expression (e.g., `"=result.response"` for the primary output, `"=Error"` for errors)
 - `var` — the variable name (matches the output ID, e.g., `"output"`, `"error"`)
 
 The standard `outputs` block for most action nodes (script, HTTP, transform, connector, agent):
@@ -164,7 +164,7 @@ The standard `outputs` block for most action nodes (script, HTTP, transform, con
   "error": {
     "type": "object",
     "description": "Error information if the <node type> fails",
-    "source": "=result.Error",
+    "source": "=Error",
     "var": "error"
   }
 }
@@ -396,7 +396,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
         "error": {
           "type": "object",
           "description": "Error information if the script fails",
-          "source": "=result.Error",
+          "source": "=Error",
           "var": "error"
         }
       }
