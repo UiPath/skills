@@ -2,12 +2,12 @@
   "version": 2,
   "_doc": "Synthetic fixture set for the serverless tenant-Robot-Units-exhausted scenario (serverless-cannot-start-licensing playbook, branch 3). The agent chains: folders list -> jobs list --state Faulted (two serverless processes, two users, same tenant-RU message) -> jobs get (RuntimeType Serverless, Info: tenant RU exceeded) -> jobs logs -> licenses info (tenant pool 0 of 25, per-user quota fine). Keys are stable.",
   "rules": [
-    { "match": "or folders list", "file": "folders-list.json" },
-    { "match": "or jobs list --folder-key d2b2c3d4-e5f6-7890-1bcd-ef0123456789 --state Faulted", "file": "jobs-list-faulted.json" },
-    { "match": "or jobs get 99cc33dd-44ee-55ff-66aa-77bb88990011", "file": "jobs-get-failing.json" },
-    { "match": "or jobs logs 99cc33dd-44ee-55ff-66aa-77bb88990011 --level Error", "file": "jobs-logs-failing-error.json" },
-    { "match": "or jobs logs 99cc33dd-44ee-55ff-66aa-77bb88990011", "file": "jobs-logs-failing-error.json" },
-    { "match": "or licenses info", "file": "licenses-info.json" },
+    { "match": "or folders list", "file": "ee2628e6b6.json" },
+    { "match": "or jobs list --folder-key d2b2c3d4-e5f6-7890-1bcd-ef0123456789 --state Faulted", "file": "fdc3bb1ff3.json" },
+    { "match": "or jobs get 99cc33dd-44ee-55ff-66aa-77bb88990011", "file": "1b6fc01778.json" },
+    { "match": "or jobs logs 99cc33dd-44ee-55ff-66aa-77bb88990011 --level Error", "file": "0e9e2742e2.json" },
+    { "match": "or jobs logs 99cc33dd-44ee-55ff-66aa-77bb88990011", "file": "6667d1d4d6.json" },
+    { "match": "or licenses info", "file": "f6f03a53bc.json" },
     { "match": "docsai ask", "passthrough": true, "_doc": "Proxy any docsai query to the real uip CLI; cache in _cache/." }
   ],
   "unmocked_default": {
