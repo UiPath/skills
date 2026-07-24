@@ -17,6 +17,11 @@ max_iterations: 2
 initial_prompt: |
   Using the organization Admin audit trail (sign-in history), show me login attempts for jane.doe@example.com over the last month.
 
+  This is an automated run — do not stop to ask me for confirmation. If the user
+  cannot be resolved in this org, follow the skill's documented fallback (query the
+  User Login type over the date window and note the result is approximate) rather
+  than pausing to ask which user I meant.
+
 success_criteria:
   - type: command_executed
     description: "Agent invoked `uip admin audit org sources` to discover the User Login type GUID"

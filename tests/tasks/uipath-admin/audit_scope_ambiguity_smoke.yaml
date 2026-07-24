@@ -5,15 +5,17 @@ description: >
   must recognize the org-vs-tenant scope ambiguity and STOP TO ASK a
   clarifying question — never silently default to a single scope.
 
-  Gating signal: the agent calls AskUserQuestion (it asked to disambiguate
-  scope). That is the deterministic, non-interactive-safe signal that it
-  did not silently pick a scope. The original "ask AND then run nothing"
-  assertion is NOT enforceable in a non-interactive harness — the agent
-  receives no answer, so after asking it may proceed (often querying BOTH
-  scopes, which is acceptable). So the four command_not_executed checks are
-  advisory (pass_threshold 0): retained to REPORT what the agent ran, not
-  to gate. A truly-silent agent that runs a scope without ever asking fails
-  the AskUserQuestion gate.
+  Gating signal: an llm_judge reads the agent's reply and its tool calls and
+  passes when the agent either (a) stops and asks the user to clarify org vs
+  tenant, or (b) proceeds by querying BOTH scopes and combining them — the two
+  behaviors Rule 23 sanctions for a non-interactive run. It fails only when the
+  agent silently commits to a single scope without asking. Gating on an
+  AskUserQuestion tool call is not viable: that tool is not in the experiment
+  allowlist, so every agent (claude, codex, gemini) asks in prose instead, and
+  "ask AND then run nothing" is not enforceable non-interactively — the agent
+  receives no answer, so after asking it may proceed. The four
+  command_not_executed checks stay advisory (pass_threshold 0): retained to
+  REPORT what the agent ran, not to gate.
 
   Platform note: runs without an authenticated tenant — commands will fail
   with auth errors. That is acceptable; what matters is that the agent asks
@@ -27,17 +29,35 @@ initial_prompt: |
   Show me the Admin audit trail for the last 24 hours.
 
 success_criteria:
-  # GATE: the agent must recognize the org-vs-tenant ambiguity and ask a
-  # clarifying question instead of silently defaulting. Asking (AskUserQuestion)
-  # is the deterministic signal; "ask AND run nothing" can't be enforced
-  # non-interactively (the agent gets no answer and proceeds), so we gate on
-  # the ask itself. No command_pattern → any AskUserQuestion call counts.
-  - type: command_executed
-    description: "Agent stopped to clarify scope (called AskUserQuestion) instead of silently defaulting"
-    tool_name: "AskUserQuestion"
-    min_count: 1
+  # GATE: the agent must recognize the org-vs-tenant ambiguity and NOT silently
+  # default to one scope. Per Rule 23 the non-interactive-acceptable behaviors are
+  # to ASK for clarification (prose or tool) or to query BOTH scopes. We can't gate
+  # on an AskUserQuestion tool call — it isn't in the experiment allowlist, so every
+  # agent asks in prose — so an llm_judge reads the reply + tool calls and grades
+  # ask-or-query-both vs silent-single-scope.
+  - type: llm_judge
+    description: "Agent asked to clarify org vs tenant (or queried both scopes) instead of silently defaulting to one"
     weight: 3.0
     pass_threshold: 1.0
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      The user sent an ambiguous audit request — "Show me the Admin audit trail
+      for the last 24 hours" — with no prior context fixing the scope. UiPath Admin
+      audit has two distinct scopes, ORG (organization / IdP-level) and TENANT, that
+      live in different stores and return different events. Per the skill's Rule 23
+      the agent must NOT silently default to one scope. In a non-interactive run the
+      acceptable behaviors are:
+        - it STOPS AND ASKS the user to clarify org vs tenant (a clarifying question
+          in its reply, or an AskUserQuestion tool call), OR
+        - it PROCEEDS BY QUERYING BOTH scopes (org AND tenant) and reports/combines them.
+
+      Inspect the agent's final reply and its tool calls, then score:
+        1.0  Asked the user to clarify org vs tenant, OR queried both org and tenant scopes.
+        0.0  Silently queried or committed to a single scope without asking, or ignored
+             the scope question entirely.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
   # Advisory (pass_threshold 0): report which skill engaged. Post audit-surface
   # separation either uipath-admin or uipath-platform can correctly drive the
