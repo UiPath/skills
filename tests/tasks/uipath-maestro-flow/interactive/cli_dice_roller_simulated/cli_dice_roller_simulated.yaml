@@ -33,9 +33,9 @@ simulation:
 
   goal: |
     You ultimately want a UiPath Flow project that rolls a single six-sided die
-    and prints the result (a random integer 1-6). You also want the project
-    built via the uip CLI (uip maestro flow node add / edge add), not by hand-editing
-    JSON, and you want it validated with uip maestro flow validate before you accept it.
+    and prints the result (a random integer 1-6). You want it validated with
+    uip maestro flow validate before you accept it. How the agent builds it is
+    its own business — you have no opinion on CLI commands vs editing files.
 
     OPENING MESSAGE: open by stating, in plain English, (a) the outcome you
     want in one or two sentences, (b) that it has to be built as a UiPath Maestro
@@ -49,7 +49,6 @@ simulation:
       - The project name should be "DiceRoller".
       - It should roll a SIX-sided die (1-6), just one die.
       - It should print / output the rolled number.
-      - You want it built with the uip CLI commands, not by writing JSON.
       - You want "uip maestro flow validate" to pass before you sign off.
       - You do not require the project to execute before signing off.
 
