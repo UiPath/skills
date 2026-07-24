@@ -127,7 +127,7 @@ Example — manual start trigger:
     "entryPointId": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5"
   },
   "outputs": {
-    "output": { "type": "object", "description": "The return value of the trigger.", "source": "=result.response", "var": "output" }
+    "output": { "type": "object", "description": "Data passed when manually triggering the process.", "source": "null", "var": "output" }
   }
 }
 ```
@@ -148,7 +148,7 @@ When you DO author the instance `outputs` block (for documentation / parity with
 
 - `type` — data type (usually `"object"`)
 - `description` — human-readable description
-- `source` — runtime binding expression (e.g., `"=result.response"` for the primary output, `"=Error"` for errors)
+- `source` — runtime binding expression. **Copy it from the node type's registry `outputDefinition`; never invent one.** `"=Error"` for errors, always. For the primary output: `"=result.response"` on connector and built-in action nodes (script, transform, HTTP), `"=this"` on Orchestrator-job nodes (api-workflow, rpa-workflow, agent, agentic-process, published flow, subflow) — and those mostly declare `error` only, in which case omit `output` and the converter injects it. A wrong `source` leaves `$vars.<nodeId>.output` null at runtime while `flow validate` passes.
 - `var` — the variable name (matches the output ID, e.g., `"output"`, `"error"`)
 
 The standard `outputs` block for most action nodes (script, HTTP, transform, connector, agent):
@@ -170,14 +170,14 @@ The standard `outputs` block for most action nodes (script, HTTP, transform, con
 }
 ```
 
-Trigger nodes (manual, scheduled, connector triggers) have a single output — no error port:
+Trigger nodes (manual, scheduled, connector triggers) have a single output — no error port. A manual trigger carries the literal string `"null"` as its `source`, matching what Studio Web writes:
 
 ```json
 "outputs": {
   "output": {
     "type": "object",
-    "description": "The return value of the trigger.",
-    "source": "=result.response",
+    "description": "Data passed when manually triggering the process.",
+    "source": "null",
     "var": "output"
   }
 }
@@ -372,8 +372,8 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
       "outputs": {
         "output": {
           "type": "object",
-          "description": "The return value of the trigger.",
-          "source": "=result.response",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
           "var": "output"
         }
       }

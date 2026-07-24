@@ -181,7 +181,7 @@ the subflow's `in` variable:
       "type": "core.trigger.manual",
       "typeVersion": "1.0",
       "inputs": { "entryPointId": "<uuid>", "isDefaultEntryPoint": true },
-      "outputs": { "output": { "type": "object", "source": "=result.response", "var": "output" } }
+      "outputs": { "output": { "type": "object", "description": "Data passed when manually triggering the process.", "source": "null", "var": "output" } }
     },
     {
       "id": "reverseSubflow",
