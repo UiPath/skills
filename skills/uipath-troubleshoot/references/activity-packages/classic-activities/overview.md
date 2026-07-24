@@ -46,6 +46,11 @@ Studio under `UiPath.Core.Activities`. They split across two NuGet packages:
   ...ArgumentsVariable` (package-version mismatch), Cache Mechanism Error / `Error code: 7` (project
   cache corruption), invoked `.xaml` outside the project root or a null path variable, or a new
   required argument not re-imported.
+- Trigger infrastructure (`Trigger Scope`, `Run Local Triggers`, Hotkey/Key Press/Click/Form triggers)
+  — missing/stale `.local\generated\Triggers.Generated.xaml`, duplicate `TriggerId` / mismatched Form
+  field key, a `Trigger Scope` that blocks the flow (stuck in / never stops — a lifecycle issue, not a
+  concurrency limit; parallel scopes are supported), legacy `UiPath.Core.Activities` package conflict,
+  or a hotkey the OS/another app already owns.
 - Code invocation (`Invoke Code`) — compilation failure, unsupported language, or exceptions thrown
   by the user's own code at run time.
 - Queue operations (`Add Queue Item`) — empty queue name, invalid/duplicate item-information keys,

@@ -1,0 +1,20 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "Message": "OrderEntryAssistant execution error: System.Exception: The invoked workflow could not be loaded. A referenced workflow file was not found in the running package.\n   at UiPath.Studio.LocalTriggers.GeneratedWorkflowLoader.Load(String path)\n   at UiPath.Core.Activities.RunLocalTriggers.Execute(NativeActivityContext context)\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivity(...)",
+      "TimeStamp": "2026-07-21T14:02:13.520Z",
+      "RobotName": "aturner",
+      "HostMachineName": "MOCK-HOST",
+      "ProcessName": "OrderEntryAssistant"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 100,
+    "Offset": 0,
+    "HasMore": false
+  }
+}
