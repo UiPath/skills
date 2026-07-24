@@ -41,11 +41,12 @@
     {
       "id": 4,
       "prompt": "I want to create a case management project",
-      "expected_output": "Skill triggers, shows the new-case roadmap, and offers either an interview or a user-provided sdd.md path",
+      "expected_output": "Skill triggers, shows the new-case roadmap, and asks the bare-request Listen opener without an entry menu",
       "expectations": [
         "The case-management skill was triggered",
         "Shows the journey-specific roadmap before detailed questions",
-        "Offers Interview to generate sdd.md, provide an sdd.md path, or abort"
+        "Does not offer an entry menu or ask for an sdd.md path before the user names one",
+        "Asks the bare-request opener so the user can describe what kicks off the case, what stages it moves through, and how it closes"
       ]
     },
         {
@@ -101,7 +102,7 @@
         "Runs registry pull only after login succeeds and does not treat a failed pull as zero matches",
         "Joins the chain at confirmation time: ONE parallel name-match lookup per named resource — no tasks describe, no case spec, no schema discovery in Phase 0",
         "If the pull has not finished when the confirmation is ready, presents anyway with resolve-at-build on tenant-bound items — the confirmation is never delayed by the tenant",
-        "With four or more independent lookups pending, may fan them out to parallel read-only subagents that never write artifacts or prompt the user",
+        "With four or more independent lookups pending, may fan them out to parallel read-only workers that never write artifacts or prompt the user",
         "A single confident match is adopted silently and shown as a decision; multiple matches, cross-folder names, missing connections, and empty lookups become resolve-at-build decisions — never a Phase 0 question",
         "Does not let tenant inventory add or rename business stages or tasks",
         "On the Build answer, Phase 1 reuses this session's successful pull instead of re-pulling; its Rule 17 gate remains where ambiguity is decided"
@@ -150,16 +151,14 @@
     {
       "id": 12,
       "prompt": "Build a case from this requirements document: ./claim-settlement-requirements.md (a complete spec: 5 phases with per-phase SLA targets, 3 wrap-up outcomes, a 4-way adjuster decision, amount-tiered sign-off, anytime actions).",
-      "expected_output": "Skill digests the doc, decides everything it covers by best assumption, presents ONE structured confirmation with tables and a decisions block, writes the case board files, and on the Build answer moves straight into the build with sdd.md written alongside",
+      "expected_output": "Skill digests the doc, decides everything it covers by best assumption, presents ONE structured confirmation with tables and a decisions block, and on the Build answer moves straight into the build with sdd.md written alongside",
       "expectations": [
         "Skips the entry menu — the request already describes the case, so the doc is read immediately",
         "Asks at most one batched clarifying call, and only for genuine contradictions in the spec — everything the doc covers is assumed, not re-confirmed",
         "The confirmation includes a happy-path table (stage, target, work, who/what), exception lanes, anytime actions, rules/tiers, and a complete Decisions-I-made block with plain-language sources",
         "The confirmation options carry the build continuation choice",
-        "Copies the static case-board template byte-identical and writes case-board-data.js — never generates the board HTML inline and never reads either file back",
-        "Prints one pointer line to the visual board at the confirmation only",
         "On the Build answer: no re-summary — transition line, then sdd.md batched with the first build actions and one artifact line",
-        "The confirmation question anchors to the chat tables, not to the board file"
+        "The confirmation question anchors to the chat tables"
       ]
     },
     {
@@ -168,9 +167,9 @@
       "expected_output": "Skill narrates decisions as they land during listening, keeps the model in memory, shows the whole case once with resources inline, and starts the build with sdd.md written alongside",
       "expectations": [
         "Doc-read lines and inference one-liners narrate the design as it forms — decisions are informed, not asked",
-        "No draft or checkpoint files are written while designing; the model lives in session memory and the case board dual-renders the confirmation",
+        "No draft or checkpoint files are written while designing; the model lives in session memory",
         "The confirmation shows the whole case: stages, tasks with activation, resolved resources or resolve-at-build inline, exceptions, and the decisions block",
-        "Corrections re-show only the changed rows and refresh the board data via targeted edits",
+        "Corrections re-show only the changed rows",
         "On the Build answer, sdd.md is written batched with the first build actions and reported in one line as a reference artifact",
         "High-severity review items still require the explicit build-despite opt-in"
       ]

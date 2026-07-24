@@ -11,7 +11,6 @@ Design the case as an in-memory model shaped by [`assets/templates/sdd-template.
 Phase 0 writes:
 
 - `sdd.md` — rendered once from the confirmed model, batched with the first build actions (or written and reported when the request was design-only).
-- `case-board.html` + `case-board-data.js` — the dual-render visual board (§Case board): app byte-copied from `assets/templates/case-board.html`, data write-only. Phase 1 ignores both.
 - `sdd-viewer.html` — optional, generated only on explicit request (§HTML preview).
 - `sdd.draft.md` — ONLY when the user explicitly asks for a draft to review; normal runs never create it. `tasks/registry-resolved.json` is a Phase 1 artifact — Phase 0 does not write it.
 
@@ -40,7 +39,7 @@ Phase 0 grounds resources lazily, in parallel with the design, with a **single n
 
 1. **Intake batch.** Read every supplied document in parallel. Extract named systems, resources, likely tasks, and roles.
 2. **Requirement-driven kickoff.** The FIRST moment the sketch identifies tenant-bound work — a named system/resource/connector, or an inferred runnable/connector/action task — start the grounding chain as ONE background command, in the same batch as whatever is already running: `uip login status --output json && uip maestro case registry pull`. It resolves while sketching continues; a case with no tenant-bound items never pulls in Phase 0. Best-effort: never block on it, never surface its output unprompted; on failure, one plain-language line (§What to say while working), keep intended names, mark identities `resolve at build`, continue. If the harness cannot run background commands, run login → pull in the batch that composes the confirmation.
-3. **Light match pass — join, never wait.** When composing the confirmation, check the chain. If the pull succeeded, run ONE cache lookup per named or inferred resource (`~/.uip/case-resources/<type>-index.json`; `action-apps-index.json` for HITL apps; `typecache-activities-index.json` / `typecache-triggers-index.json` for connectors) — all lookups in one parallel batch. With ≥ 4 lookups, fan them out to parallel read-only subagents (one per item or type family; cache Reads only — never writes, never prompts, never login/pull; parent spot-verifies adopted identities). Bucket each result:
+3. **Light match pass — join, never wait.** When composing the confirmation, check the chain. If the pull succeeded, run ONE cache lookup per named or inferred resource (`~/.uip/case-resources/<type>-index.json`; `action-apps-index.json` for HITL apps; `typecache-activities-index.json` / `typecache-triggers-index.json` for connectors) — all lookups in one parallel batch. With ≥ 4 lookups, use parallel read-only workers where supported (one per item or type family; cache reads only — never writes, never prompts, never login/pull; parent spot-verifies adopted identities). Bucket each result:
    - **Single confident match** (1 match across all folders, ≥ 1 shared name token) → adopt silently; shows as the task's resource in the confirmation with a decision line.
    - **Anything else** (multiple matches, cross-folder same-name, no token overlap, zero matches, 0 or > 1 enabled connections for a connector) → mark `resolve at build`. Do NOT ask, do NOT auto-pick among candidates, do NOT fetch schemas. Phase 1's discovery and its Rule 17 gate handle the choice with full authority.
 
@@ -84,7 +83,7 @@ When the user mentions `file`, `attachment`, `PDF`, `upload`, `evidence`, `recei
 
 ### Sketch — best assumption, every field
 
-Fill the complete SDD shape against [`sdd-template.md`](../assets/templates/sdd-template.md) from what Listen captured, deciding every open field by best assumption. Authority order per [sdd-generation-rules.md § Content authority hierarchy](sdd-generation-rules.md#content-authority-hierarchy) — platform schema and compliance constraints override user phrasing (apply the override silently; it becomes a decision line). Every non-verbatim value gets a source-ledger entry AND a line in the confirmation's `Decisions` block. The model lives in memory — **no draft file, no checkpoint writes**; the only Phase 0 writes are the board files (§Case board) and, later, `sdd.md`.
+Fill the complete SDD shape against [`sdd-template.md`](../assets/templates/sdd-template.md) from what Listen captured, deciding every open field by best assumption. Authority order per [sdd-generation-rules.md § Content authority hierarchy](sdd-generation-rules.md#content-authority-hierarchy) — platform schema and compliance constraints override user phrasing (apply the override silently; it becomes a decision line). Every non-verbatim value gets a source-ledger entry AND a line in the confirmation's `Decisions` block. The model lives in memory — **no draft file, no checkpoint writes**; `sdd.md` is written later at build start.
 
 **Assumption playbook** (former ask-list, now decided and disclosed):
 
@@ -109,19 +108,9 @@ Fill the complete SDD shape against [`sdd-template.md`](../assets/templates/sdd-
 
 **Red flags — you're about to over-ask.** "I should confirm the trigger type" / "review could be action or agent, better ask" / "the SLA wording is vague" / "this resource has two matches" — STOP: the playbook decides all of these; the decision line in the confirmation is the user's chance to correct. The bar for a question is *contradiction or emptiness*, not uncertainty. Equally, there is NO size gate, no "approval before creating files", no lightweight mode — the only stops in Phase 0 are the one clarifying call (when earned), the confirmation itself, and the explicit-sign-off path.
 
-### Case board — dual-render at the confirmation
-
-The confirmation (and every correction re-show) renders from the SAME in-memory model, in the same turn:
-
-1. **Chat structure — canonical.** The confirmation tables below. The question always anchors here; approval never depends on a browser.
-2. **Case board file — enhancement.** At the first render, copy the static app byte-identical — `cp "<skill>/assets/templates/case-board.html" ./case-board.html` (sanctioned verbatim copy — SKILL.md Rule 13 carve-out) — then Write `./case-board-data.js` (`window.SDD_DATA = {...}` per the schema in the template's header comment). On corrections, patch only changed sections via Edit. Never Read either file back — the model lives in memory; the board is write-only output.
-3. **One pointer line, first render only:** `Visual board: ./case-board.html — it updates as we refine.` Open it on request (`open` / `xdg-open`). Do not re-mention it.
-
-Board failure → one-line notice, continue. The board never blocks, never gates, never substitutes for the chat confirmation.
-
 ### Confirm — the single checkpoint
 
-One structured presentation of the whole case, one question. Run the [sdd-generation-rules.md § Finalization](sdd-generation-rules.md#finalization) checks against the in-memory model FIRST — fix failures silently (they are the agent's defects, not the user's decisions); anything unfixable becomes a flagged line. Then show, in chat (canonical) with the board refreshed in the same turn:
+One structured presentation of the whole case, one question. Run the [sdd-generation-rules.md § Finalization](sdd-generation-rules.md#finalization) checks against the in-memory model FIRST — fix failures silently (they are the agent's defects, not the user's decisions); anything unfixable becomes a flagged line. Then show, in chat:
 
 - **Happy path table** — one row per primary stage: `# | Stage | Target | Work | Who / what` (work = task names in order; who/what = user-visible type names, resolved resource names, or `resolve at build`).
 - **Exception lanes** — one line each: name · what fires it · pauses/returns/closes.
@@ -150,7 +139,7 @@ On a Build answer:
 
 ## HTML preview
 
-Optional, **on-request only** — never offered proactively; the case board covers the visual need. Available any time after the confirmation exists, including mid-build. Self-contained local HTML: Case Definition, collapsible Stages & Tasks with detail panels, Personas & App Views, Integrations; persona/type filters, unresolved-only and schema-view toggles, search, print stylesheet.
+Optional, **on-request only** — never offered proactively. Available any time after the confirmation exists, including mid-build. Self-contained local HTML: Case Definition, collapsible Stages & Tasks with detail panels, Personas & App Views, Integrations; persona/type filters, unresolved-only and schema-view toggles, search, print stylesheet.
 
 Generation: Read [`assets/templates/sdd-viewer.html`](../assets/templates/sdd-viewer.html), replace the `__SDD_DATA__` token in its `<script id="sdd-data">` block with JSON serialized from the in-memory model (schema in the template's header comment — do NOT re-parse `sdd.md`), Write `./sdd-viewer.html` (Rule 13), tell the user: `Generated ./sdd-viewer.html — open it in a browser to review.` Failure → one-line notice, continue.
 
@@ -178,7 +167,7 @@ Silence and machinery-talk are both experience defects. Business-language lines 
 
 The user sees a conversation that produces a case. Never surface in chat or in `sdd.md`:
 
-- `sdd.draft.md`, `tasks/registry-resolved.json`, internal filenames. (**Exceptions:** `sdd.md` (the artifact line), `case-board.html` (pointer line — once), `sdd-viewer.html` (at generation) are intentionally user-visible. `case-board-data.js` is never mentioned.)
+- `sdd.draft.md`, `tasks/registry-resolved.json`, internal filenames. (**Exceptions:** `sdd.md` (the artifact line) and `sdd-viewer.html` (at generation) are intentionally user-visible.)
 - `<UNRESOLVED>` markers in narration (file-only; chat says `resolve at build`).
 - `Listen`, `Sketch`, `Confirm`, mode names, `the validator`, `structural validation`, `the cache`, `the registry index`, `~/.uip/`.
 - `interview answers`, `from cache`, `REVIEW:`, `PDD`, or any chain-of-thought mechanics (echoes [`sdd-template.md`](../assets/templates/sdd-template.md) Output Rules).
@@ -194,13 +183,13 @@ If the user asks how something works, explain in their language (cases, stages, 
 | AskUserQuestion unavailable / unresponsive | One-line notice, continue best-assumption: every would-have-asked value gets a decision line; promotion scoped to the request — draft request → `sdd.draft.md` only; design-only → `sdd.md` on a clean Finalization pass, stop; build request → proceed, decisions carried in the confirmation text. |
 | Registry pull fails (CLI error, no auth) | One plain-language line immediately. Keep concrete portable names (`Resolved Resource`, Action App title, `Child Case`); mark identities/folders `resolve at build` (`<UNRESOLVED>` in the file) with paired review items. Phase 1 retries discovery. |
 | `sdd.md` already exists at path when interview begins | Should not happen — trigger detection exits Phase 0 first. If race, abort. Never overwrite. |
-| Board or viewer write fails | One-line notice, continue — chat is the approval surface. |
+| Viewer write fails | One-line notice, continue — chat is the approval surface. |
 
 ## Output contract — what the build sees
 
 - **In-session:** the confirmed in-memory model drives Phase 1 directly. `sdd.md` — written at build start (batched with build actions) — matches it exactly. A Phase 0 pull that succeeded this session is reused by Phase 1 (no re-pull — Rule 3 fast path). `tasks/registry-resolved.json` is produced by Phase 1, not Phase 0; light-pass matches are hints Phase 1 re-verifies against the session cache.
 - **Cross-session / re-run:** `sdd.md` is the sole contract, read per Rule 2 exactly as a user-provided file — including after context compaction. It may carry `<UNRESOLVED>` identities and `—` placeholders, but every process/agent/rpa/api-workflow task has a concrete `Resolved Resource`, every action a concrete Action App title, every case-management task a concrete `Child Case`.
-- `case-board.html` + `case-board-data.js` — present when the confirmation rendered; ignored by Phase 1. `sdd-viewer.html` — on request only.
+- `sdd-viewer.html` — on request only; ignored by Phase 1.
 
 ## Anti-patterns
 
@@ -210,13 +199,12 @@ If the user asks how something works, explain in their language (cases, stages, 
 - **Do NOT run schema discovery (`tasks describe` / `case spec`) or ambiguity prompts in Phase 0.** One light name-match pass only; everything unclear is `resolve at build` — Phase 1 owns authoritative resolution and its Rule 17 gate.
 - **Do NOT pull the tenant registry as a prerequisite, and never twice in one session.** The login/pull chain starts only when the case first shows tenant-bound work; a pull that succeeded this session is reused by Phase 1 (Rule 3 fast path). Equally, never delay the confirmation waiting for the pull.
 - **Do NOT auto-pick among multiple resource matches.** Cross-folder or multi-match = `resolve at build`, disclosed. (Single confident match adopts silently — that is the only silent pick.)
-- **Do NOT write `sdd.draft.md` or checkpoint files in a normal run.** The model lives in memory; the only pre-build writes are the board files. Drafts exist on explicit request only.
+- **Do NOT write `sdd.draft.md` or checkpoint files in a normal run.** The model lives in memory; drafts exist on explicit request only.
 - **Do NOT block the build on the SDD write, and do NOT re-read the just-written `sdd.md` in-session.** The write shares a batch with the first build actions; memory drives the build. Re-read only on staleness (compaction/resume).
 - **Do NOT ask the user to review or approve the `sdd.md` document.** The confirmation is the approval; the file is its artifact. An explicit sign-off request adds one prompt — nothing else does.
-- **Do NOT let discovery subagents write skill artifacts, prompt the user, or run the registry pull.** Fan-out is read-only; the parent owns every write.
+- **Do NOT let discovery workers write skill artifacts, prompt the user, or run the registry pull.** Fan-out is read-only; the parent owns every write.
 - **Do NOT go silent during assembly and build start.** Post the expectation-setter and milestone lines from §What to say while working.
-- **Do NOT Read `case-board.html` or `case-board-data.js` back, and do NOT generate the board app inline.** Byte-copy + write-only data.
-- **Do NOT use `sed`/`awk`/`python`/`node` to mutate `sdd.md`, `sdd.draft.md`, `case-board-data.js`, or `sdd-viewer.html`.** Read + Write/Edit only (Rule 13).
+- **Do NOT use `sed`/`awk`/`python`/`node` to mutate `sdd.md`, `sdd.draft.md`, or `sdd-viewer.html`.** Read + Write/Edit only (Rule 13).
 - **Do NOT invent gates or thresholds.** No size limit, no approval-before-creating-files, no complexity stop. The complete Phase 0 stop list: the one clarifying call (when earned), the confirmation, the explicit-sign-off prompt (when requested) — then the build's own gates (Phase 4 retry cap, debug, publish).
 - **Do NOT narrate filenames or schema mechanics.** See §Forbidden vocabulary.
 - **Do NOT ask for permission to read user-provided docs.** If the user named them, read them.
