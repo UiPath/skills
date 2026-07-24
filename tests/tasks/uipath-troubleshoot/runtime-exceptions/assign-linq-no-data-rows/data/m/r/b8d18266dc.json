@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-19T03:05:12.930Z",
+      "Message": "Filter active invoices: The source contains no data rows.\r\nin Main.xaml\r\n    at Assign \"Filter active invoices\"\r\n    at Sequence \"Main Sequence\"\r\n    at DynamicActivity \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.InvalidOperationException: The source contains no data rows.\r\n   at System.Data.DataTableExtensions.CopyToDataTable[T](IEnumerable`1 source)\r\n   at InvoiceReconciliation_Expressions.__Expr1Get(Object[] locations, IEnumerable`1 executionProperties)\r\n   at System.Activities.Expressions.CompiledExpressionInvoker.InvokeExpression(ActivityContext activityContext)"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-07-19T03:05:11.610Z",
+      "Message": "Invoice reconciliation started, rows loaded: 42"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-07-19T03:05:11.480Z",
+      "Message": "InvoiceReconciliation execution started"
+    }
+  ]
+}

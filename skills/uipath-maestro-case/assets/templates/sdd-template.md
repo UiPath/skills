@@ -371,9 +371,11 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 **Entry Condition:**
 
-> **Valid WHEN rule types for task entry (strict subset of Key Rule 3):** `current-stage-entered` (default — fires when the containing stage is entered; typical for first task or any task with no sibling gate), `selected-tasks-completed("TaskA", "TaskB")` (fires when specific sibling tasks in the same stage complete), `wait-for-connector` (waits for a connector event), `adhoc` (user-triggered from the case app — task does not auto-start), `runs-sequentially` (sequential ordering within the stage; parallel task sets remain allowed, and the entry rule—not lane placement—carries the sequencing intent). Other rule types from Key Rule 3 are NOT valid here.
+> **Valid WHEN rule types for task entry (strict subset of Key Rule 3):** `current-stage-entered` (fires when the containing stage is entered; use for ungated event/condition-driven tasks, not for the first task in a sequential run), `selected-tasks-completed("TaskA", "TaskB")` (explicit sibling gate, fan-in, branch convergence, or non-immediate dependency), `wait-for-connector` (waits for a connector event), `adhoc` (user-triggered from the case app — task does not auto-start), `runs-sequentially` (sequential ordering within the stage; parallel task sets remain allowed, and the entry rule—not lane placement—carries the sequencing intent). Other rule types from Key Rule 3 are NOT valid here.
 >
 > Each row is a separate entry condition. List multiple rows when a task can be entered through more than one path. Author a `current-stage-entered` row for any ungated task — including connector tasks (`execute-connector-activity`, `wait-for-connector`) — that should start when its stage is entered.
+>
+> **Sequential normalization:** for a plain top-to-bottom task run, write `runs-sequentially` as the only Entry Condition row on every task in that run, including the first task. Do not model the run as `current-stage-entered` plus `selected-tasks-completed("<previous>")`; Studio Web classifies that as condition/event-driven, not Sequential.
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|

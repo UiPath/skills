@@ -27,7 +27,7 @@ Trace entry naming the label together pinpoint branch 1 of the
 playbook.
 
 This maps to:
-`skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-null-reference.md`
+`skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/null-reference-from-activity.md`
 (the "Sensitivity label" branch).
 
 ## How this test reproduces it

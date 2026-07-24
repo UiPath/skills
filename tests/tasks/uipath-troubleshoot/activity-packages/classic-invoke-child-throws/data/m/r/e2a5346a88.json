@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-16T09:14:23.510Z",
+      "Message": "Invoke ProcessPayments: Object reference not set to an instance of an object.\r\nin ProcessPayments.xaml\r\n    at Assign \"Sum line items\"\r\n    at Sequence \"ProcessPayments\"\r\n    at InvokeWorkflowFile \"Invoke ProcessPayments\"\r\n    at Sequence \"Main\"\r\n    at DynamicActivity \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.NullReferenceException\r\n   at lambda_method(Closure , ActivityContext )\r\n   at System.Activities.CodeActivity`1.InternalExecuteInResolutionContext(CodeActivityContext context)"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-07-16T09:14:22.300Z",
+      "Message": "PaymentRun execution started"
+    }
+  ]
+}

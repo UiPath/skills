@@ -31,7 +31,7 @@ no sibling job is running. The CLI evidence chain is:
 Together they pinpoint the orphan-process branch.
 
 This maps to:
-`skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-file-locked.md`
+`skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/workbook-file-locked.md`
 (the "Orphan EXCEL.EXE from a prior job" branch).
 
 ## How this test reproduces it

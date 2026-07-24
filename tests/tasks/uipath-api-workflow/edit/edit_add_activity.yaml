@@ -8,9 +8,10 @@ description: >
 tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, shape:multi-node]
 
 initial_prompt: |
-  Work against a single file Workflow.json, in two steps.
+  Work against a single API workflow project named `GreetCount` (its
+  workflow file will be `GreetCount/Workflow.json`), in two steps.
 
-  Step 1 — Create Workflow.json that takes a `name` input and returns
+  Step 1 — Create the workflow so it takes a `name` input and returns
   { "greeting": "hello <name>" }.
 
   Step 2 — EDIT that same file (read it first, then insert the new activity —
@@ -25,15 +26,17 @@ initial_prompt: |
   planning and implementation.
 
 success_criteria:
-  - type: file_exists
-    description: "Workflow.json was created"
-    path: "Workflow.json"
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Workflow.json is valid JSON"
-    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); python -c "import json,sys; json.load(open(sys.argv[1]))" "$WF"'
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -41,7 +44,7 @@ success_criteria:
 
   - type: run_command
     description: "Final workflow returns the original greeting field"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"name":"ada","items":[1,2,3]}'' --output json | grep -q ''hello ada'''
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --input-arguments ''{"name":"ada","items":[1,2,3]}'' --output json | grep -q ''hello ada'''
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -49,7 +52,7 @@ success_criteria:
 
   - type: run_command
     description: "Final workflow also returns the added count field with value 3"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"name":"ada","items":[1,2,3]}'' --output json | grep -qiE ''"count"[ :]+3'''
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --input-arguments ''{"name":"ada","items":[1,2,3]}'' --output json | grep -qiE ''"count"[ :]+3'''
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

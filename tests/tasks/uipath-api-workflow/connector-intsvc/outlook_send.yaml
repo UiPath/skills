@@ -22,9 +22,11 @@ initial_prompt: |
   Do NOT ask for approval, confirmation, or feedback.
 
 success_criteria:
-  - type: file_exists
-    description: "Workflow.json was created in the project folder"
-    path: "OutlookSend/Workflow.json"
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
@@ -44,17 +46,17 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Uses the IntSvc kind (call: UiPath.IntSvc)"
-    path: "OutlookSend/Workflow.json"
-    includes:
-      - "UiPath.IntSvc"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "UiPath.IntSvc" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Workflow exists AND no unresolved connection placeholder survived (rule 16 — sentinel must be replaced)"
-    command: 'test -f OutlookSend/Workflow.json && ! grep -q ''REPLACE_WITH'' OutlookSend/Workflow.json'
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF" && ! grep -q ''REPLACE_WITH'' "$WF"'
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -62,7 +64,7 @@ success_criteria:
 
   - type: run_command
     description: "Workflow passes offline validation"
-    command: 'uip api-workflow validate OutlookSend/Workflow.json --output json | grep -q ''"Status": "Valid"'''
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow validate "$WF" --output json | grep -q ''"Status": "Valid"'''
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

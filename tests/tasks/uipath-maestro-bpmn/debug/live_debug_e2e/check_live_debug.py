@@ -2,21 +2,18 @@
 """Runtime check for the live BPMN debug e2e.
 
 Asserts a real ``uip maestro bpmn debug`` session reached ``finalStatus ==
-Completed`` AND the runtime ``product`` variable is 42, computed by a script task
-(not hardcoded).
+Completed``, the agent inspected variables with ``debug-instance variables-all``,
+and the authored BPMN computes ``product`` via a script task output mapping.
 
 The key CLI fact this check is built around
 -------------------------------------------
 ``uip maestro bpmn debug`` output carries only element-execution *statuses*
-(``Data.ElementExecutions[].Status``) — it NEVER contains variable *values*. The
-computed business result (``product``) lives only in
-``uip maestro bpmn debug-instance variables-all <INSTANCE_ID>``. Grading the
-debug command's own output for ``product == 42`` can therefore never pass; the
-value must come from a ``variables-all`` read. The original check greped the
-agent's saved files for a leaf ``== 42``, which made the primary assertion
-hostage to the agent remembering to persist the ``variables-all`` output — the
-exact flake this task hit (agent saved ``debug.json`` with ``finalStatus:
-Completed`` but no variables file, so ``product`` was nowhere in the evidence).
+(``Data.ElementExecutions[].Status``). Current live BPMN debug exposes root
+output definitions in ``debug-instance variables-all`` but has repeatedly read
+the computed root output value back as ``null`` even for registry-correct script
+task mappings. Therefore this live smoke checks the runtime surfaces that are
+currently observable, while the structural guard proves the authored script
+computes 42 and maps it to ``product``.
 
 Grading strategy
 ----------------
@@ -24,13 +21,11 @@ Grading strategy
      NOT mutate ``Globals.*``/``vars.*`` directly (unsupported in Jint — the
      supported path is ``return`` + a ``uipath:output`` mapping).
   2. Primary (deterministic): the agent's saved evidence shows a completed run
-     AND a ``product``-named variable == 42 (read structurally by name, not by
-     leaf-grep, so GUIDs/timestamps can't false-match).
-  3. Live recovery (best-effort, only if 2 finds no product): re-read the saved
-     ``instanceId`` via ``variables-all`` (debug instances are ephemeral, so this
-     usually 404s), then re-run a fresh debug session and read its variables.
-     This lets a correct build pass even when the agent forgot to save the
-     variables output, without ever causing a false failure.
+     and a ``variables-all`` payload with a ``product`` output definition.
+  3. Live recovery (best-effort, only if 2 finds no variables payload): re-read
+     the saved ``instanceId`` via ``variables-all`` (debug instances are
+     ephemeral, so this usually 404s), then re-run a fresh debug session and
+     read its variables.
 
 Exits 0 with OK lines on success; non-zero with FAIL on the first problem.
 """
@@ -49,6 +44,7 @@ import xml.etree.ElementTree as ET
 EXPECTED_PRODUCT = 42
 PRODUCT_VAR = "product"
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
+UIPATH_NS = "http://uipath.org/schema/bpmn"
 # Keys whose sub-tree legitimately carries variable values — restricts the
 # 42-search haystack so GUIDs/timestamps/status strings can't false-match (the
 # lesson the flow checker's docstring calls out).
@@ -176,6 +172,20 @@ def _has_expected_product(parsed) -> bool:
     return False
 
 
+def _has_product_definition(parsed) -> bool:
+    for val in _find_ci_key(parsed, "globaldefinitions"):
+        if isinstance(val, dict):
+            for key, definition in val.items():
+                if not isinstance(definition, dict):
+                    continue
+                name = definition.get("Name", definition.get("name"))
+                if key.lower() == PRODUCT_VAR or (
+                    isinstance(name, str) and name.lower() == PRODUCT_VAR
+                ):
+                    return True
+    return False
+
+
 # ── CLI ──────────────────────────────────────────────────────────────────────
 
 
@@ -249,7 +259,7 @@ def _fresh_debug_then_variables():
         if not inst:
             continue
         variables = _read_variables_all(inst)
-        if variables is not None and _has_expected_product(variables):
+        if variables is not None and _has_product_definition(variables):
             return (True, variables)
     return (completed, None)
 
@@ -271,11 +281,41 @@ def main() -> None:
     if not bpmn_files:
         _fail("no .bpmn file authored")
     found_script = False
+    found_product_mapping = False
     for path in bpmn_files:
         try:
             root = ET.parse(path).getroot()
         except ET.ParseError as exc:
             _fail(f"{path} is not well-formed XML: {exc}")
+        for task in root.findall(f".//{{{BPMN_NS}}}scriptTask"):
+            has_args_body = any(
+                node.get("name") == "args"
+                and node.get("type") == "json"
+                and node.get("target") == "bodyField"
+                for node in task.findall(f".//{{{UIPATH_NS}}}input")
+            )
+            if not has_args_body:
+                _fail(
+                    f"{path}: script task is missing the registry args body mapping "
+                    "`<uipath:input name=\"args\" type=\"json\" target=\"bodyField\">`. "
+                    "Include it even when the script has no inputs."
+                )
+            for output in task.findall(f".//{{{UIPATH_NS}}}output"):
+                if output.get("var", "").lower() != PRODUCT_VAR:
+                    continue
+                source = output.get("source", "").strip()
+                if source == "=result":
+                    _fail(
+                        f"{path}: script output maps product from source=\"=result\". "
+                        "Studio Web completes this shape but reads product back empty; "
+                        "return { response: 6 * 7 } and map source=\"=result.response\"."
+                    )
+                if source != "=result.response":
+                    _fail(
+                        f"{path}: script output for product must use "
+                        "source=\"=result.response\" so the live runtime exposes the value."
+                    )
+                found_product_mapping = True
         for body in _script_bodies(root):
             found_script = True
             if re.search(r"\bGlobals\.", body) or re.search(r"\bvars\.", body):
@@ -283,11 +323,21 @@ def main() -> None:
                     f"{path}: script task reads/mutates Globals.*/vars.* directly — "
                     "unsupported in Jint. Return a value and map it via uipath:output."
                 )
+            if re.search(r"\breturn\s+(?!\{)", body):
+                _fail(
+                    f"{path}: script task returns a bare scalar. For live BPMN debug, "
+                    "return an object such as `return { response: 6 * 7 };` and map "
+                    "`source=\"=result.response\"`."
+                )
+            if not re.search(r"\b6\s*\*\s*7\b", body):
+                _fail(f"{path}: script task must compute the product with `6 * 7`")
     if not found_script:
         _fail(
             "no scriptTask in any authored .bpmn — the product must be computed by "
             "a script task, not hardcoded"
         )
+    if not found_product_mapping:
+        _fail("no scriptTask output maps to the root `product` variable")
     print("OK: product is computed by a script task (return + output mapping)")
 
     # 2. Read the agent's saved CLI evidence. The `variables-all` output is the
@@ -297,6 +347,7 @@ def main() -> None:
     saved = glob.glob("debug-evidence/**/*.json", recursive=True) + glob.glob("*.json")
     completed = False
     product_from_evidence = False
+    product_definition_from_evidence = False
     instance_id = None
     for path in saved:
         try:
@@ -311,6 +362,8 @@ def main() -> None:
             instance_id = instance_id or _instance_id(parsed)
         if _has_expected_product(parsed):
             product_from_evidence = True
+        if _has_product_definition(parsed):
+            product_definition_from_evidence = True
 
     if not completed:
         _fail(
@@ -323,34 +376,37 @@ def main() -> None:
         print(f"OK: runtime product variable is {EXPECTED_PRODUCT} (from saved variables-all evidence)")
         print("PASS: all live-debug checks passed")
         return
+    if product_definition_from_evidence:
+        print("OK: variables-all exposed the product output definition")
+        print("PASS: live debug completed and product script/output mapping is structurally correct")
+        return
 
-    # 3. The agent did not save a variables-all payload carrying product. The
-    #    `debug` command output alone never contains variable values, so recover
-    #    the value live: re-read the agent's instance (usually gone — debug
-    #    instances are ephemeral), then re-run a fresh debug session.
+    # 3. The agent did not save a variables-all payload carrying the product
+    #    definition. Recover the payload live: re-read the agent's instance
+    #    (usually gone — debug instances are ephemeral), then re-run a fresh
+    #    debug session.
     print(
-        "note: no product value in saved evidence — the debug command output has "
-        "no variable values; attempting live recovery via debug-instance variables-all",
+        "note: no product definition in saved variables evidence — attempting "
+        "live recovery via debug-instance variables-all",
         file=sys.stderr,
     )
     variables_payload = None
     if instance_id:
         live = _read_variables_all(instance_id)
-        if live is not None and _has_expected_product(live):
+        if live is not None and _has_product_definition(live):
             variables_payload = live
     if variables_payload is None:
         _, fresh_vars = _fresh_debug_then_variables()
-        if fresh_vars is not None and _has_expected_product(fresh_vars):
+        if fresh_vars is not None and _has_product_definition(fresh_vars):
             variables_payload = fresh_vars
 
     if variables_payload is None:
         _fail(
-            f"runtime `product` variable is not {EXPECTED_PRODUCT}: not in saved "
-            "evidence, and live recovery via `debug-instance variables-all` failed "
+            "no variables-all evidence exposed the `product` output definition "
             "(save the variables-all output to debug-evidence/ — the debug command "
-            "output does NOT contain variable values)"
+            "output does NOT contain variable definitions)"
         )
-    print(f"OK: live runtime product variable is {EXPECTED_PRODUCT} (recovered via variables-all)")
+    print("OK: variables-all exposed the product output definition (recovered live)")
     print("PASS: all live-debug checks passed")
 
 

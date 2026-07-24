@@ -39,11 +39,10 @@ initial_prompt: |
   approval.
 
 success_criteria:
-  - type: command_executed
+  - type: skill_triggered
     description: "Agent loaded the uipath-agents skill"
-    tool_name: "Skill"
-    command_pattern: "uipath-agents"
-    min_count: 1
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
     weight: 1.0
     pass_threshold: 1.0
 

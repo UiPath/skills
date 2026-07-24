@@ -1,17 +1,17 @@
 # Coded Agents in Flow Projects (Sibling Folder)
 
-A coded agent can live as a sibling folder to a flow project inside the same solution. The flow references it via `uipath.core.agent.<resourceKey>` with `section: "In this solution"`. The flow's `uip maestro flow registry list --local` discovers the agent by reading `resources/solution_folder/process/agent/<CodedAgentProject>.json`, written by `uip solution project add`.
+A coded agent can live as a sibling folder to a flow project inside the same solution. The flow references it via `uipath.core.agent.<resourceKey>` with `section: "In this solution"`. The flow's `uip maestro flow registry list --local` discovers the agent by reading `resources/solution_folder/process/agent/<CodedAgentProject>.json`, written by `uip solution projects add`.
 
 For the published-agent path (deployed standalone via `uip codedagent deploy`), see [coded/flow-integration.md § Pattern 2](flow-integration.md#pattern-2-published-coded-agent).
 
 ## Sibling Folder Structure
 
-The `<resourceKey>` is the local UUID minted by `uip solution project add` — stable the moment the agent joins the solution.
+The `<resourceKey>` is the local UUID minted by `uip solution projects add` — stable the moment the agent joins the solution.
 
 ```
 <SolutionDir>/
 ├── <SolutionName>.uipx
-├── resources/                      # created and maintained by `uip solution project add`
+├── resources/                      # created and maintained by `uip solution projects add`
 │   └── solution_folder/
 │       ├── process/agent/<CodedAgentProject>.json   # holds the `resource.key` UUID
 │       └── package/<CodedAgentProject>.json
@@ -34,7 +34,7 @@ The `<resourceKey>` is the local UUID minted by `uip solution project add` — s
 
 ### Key differences from a published coded agent
 
-- **`resource.key`** is minted locally at `uip solution project add` time, not by Orchestrator at `uip codedagent deploy` time
+- **`resource.key`** is minted locally at `uip solution projects add` time, not by Orchestrator at `uip codedagent deploy` time
 - **No `codedagent deploy`** — the agent ships inside the solution package
 - **Registry discovery is `--local`** (reads `resources/solution_folder/process/` files); no login or `registry pull` required
 - **`model.section`** is `"In this solution"`
@@ -74,7 +74,7 @@ If the solution and flow project don't yet exist, run `uip solution init "<Solut
 
    ```bash
    cd <SolutionDir>
-   uip solution project add <CodedAgentProject> <SolutionName>.uipx --output json
+   uip solution projects add <CodedAgentProject> <SolutionName>.uipx --output json
    ```
 
    After this command, `resources/solution_folder/process/agent/<CodedAgentProject>.json` holds the `resource.key` UUID.

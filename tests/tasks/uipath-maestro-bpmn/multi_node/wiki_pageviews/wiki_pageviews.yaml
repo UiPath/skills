@@ -50,23 +50,27 @@ initial_prompt: |
   Build the complete local project end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source file was created"
-    path: "WikiPageviews/WikiPageviews.bpmn"
+    command: "python3 -c \"from pathlib import Path; import sys; paths=[Path('WikiPageviews/WikiPageviews.bpmn'), Path('WikiPageviewsSolution/WikiPageviews/WikiPageviews.bpmn')]; sys.exit(0 if any(p.is_file() for p in paths) else 'WikiPageviews.bpmn missing in direct or solution-wrapper layout')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "Package operate metadata was created"
-    path: "WikiPageviews/operate.json"
+    command: "python3 -c \"from pathlib import Path; import sys; paths=[Path('WikiPageviews/operate.json'), Path('WikiPageviewsSolution/WikiPageviews/operate.json')]; sys.exit(0 if any(p.is_file() for p in paths) else 'operate.json missing in direct or solution-wrapper layout')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "The invalid-article path returns the fixed error string"
-    path: "WikiPageviews/WikiPageviews.bpmn"
-    includes:
-      - "Article not found"
+    command: "python3 -c \"from pathlib import Path; import sys; paths=[Path('WikiPageviews/WikiPageviews.bpmn'), Path('WikiPageviewsSolution/WikiPageviews/WikiPageviews.bpmn')]; texts=[p.read_text(encoding='utf-8') for p in paths if p.is_file()]; sys.exit(0 if any('Article not found' in t for t in texts) else 'Article not found missing from WikiPageviews.bpmn')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

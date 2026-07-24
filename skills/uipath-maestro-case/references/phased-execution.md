@@ -39,11 +39,11 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 ### Structural nodes (full detail)
 
-- Solution + project scaffolding (`uip solution init`, `uip solution project add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
+- Solution + project scaffolding (`uip solution init`, `uip solution projects add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
 - Root case — `caseplan.json` with top-level fields + `metadata` block populated (name, `metadata.caseIdentifier`, empty `nodes[]`, empty `edges[]`).
 - Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared at top-level `variables`.
 - Stages — all StageIds generated and captured.
-- Edges — none authored; `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 3).
+- Edges — none authored (Rule 20); `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 3).
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
 - Entry-points input/output — `entry-points.json` `input`/`output` schemas refreshed from the declared In/Out arguments (Step 6.3, per [entry-points-sync.md](entry-points-sync.md)). Makes the Phase-2 publish-for-review contract correct; idempotent.
 

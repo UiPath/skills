@@ -51,11 +51,10 @@ initial_prompt: |
   exit. Do NOT publish or deploy. Do NOT pause. Do NOT ask for approval.
 
 success_criteria:
-  - type: command_executed
+  - type: skill_triggered
     description: "Agent loaded the uipath-agents skill"
-    tool_name: "Skill"
-    command_pattern: "uipath-agents"
-    min_count: 1
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
     weight: 1.0
     pass_threshold: 1.0
 

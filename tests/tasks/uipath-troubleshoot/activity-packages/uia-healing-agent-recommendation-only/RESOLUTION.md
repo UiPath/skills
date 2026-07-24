@@ -28,7 +28,7 @@ Immediate fix:
 ### UI Automation (Root Cause)
 1. Apply Healing Agent's recovered selector to the **Click 'Simt că am noroc'** activity in **Google.xaml**, replacing the typo'd `aria-label='Simt că am noroccccccccccc'` with `aria-label='Simt că am noroc'`.
   - Why: The failed and recovered selectors differ only by the `aria-label` value (failed has an extra trailing `cccccccccc`); every other attribute matches the live element. HA's 94% candidate is the same DOM position with the corrected label.
-  - Where: `Google.xaml`, the `NClick` activity named *Click 'Simt că am noroc'* inside `NApplicationCard 'Edge Google'` → `Sequence 'Do'`. Use the `uia-improve-selector` skill at `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-improve-selector/USAGE.md` if available, otherwise edit the XAML target directly with XML-encoded selector text.
+  - Where: `Google.xaml`, the `NClick` activity named *Click 'Simt că am noroc'* inside `NApplicationCard 'Edge Google'` → `Sequence 'Do'`. Use the `uia-improve-selector` skill (invocation recipes: the UIA package docs' improve-selector guide, routed from `ui-automation-guide.md`) if available, otherwise edit the XAML target directly with XML-encoded selector text.
   - Who: RPA developer.
   - Source: `references/activity-packages/ui-automation/playbooks/selector-failure-healing-fix.md` → `interpretations/healing-agent-data.md` § "Applying `update-target` Fixes".
 2. After editing, validate the workflow compiles cleanly.

@@ -83,7 +83,7 @@ The decisive log lines name (a) the surface (Classic, COM-only), (b)
 the host's install state (NOT INSTALLED with the specific registry
 and filesystem evidence), and (c) the canonical COM error
 (REGDB_E_CLASSNOTREG = Excel.Application class isn't registered).
-Three pieces together pin the failure to branch 1 unambiguously.
+Three pieces together pin the failure to the missing-install cause and the Classic-scope discriminator unambiguously.
 
 ### Cross-check — what this is NOT
 - Not branch 2 (empty / illegal WorkbookPath): the path is a

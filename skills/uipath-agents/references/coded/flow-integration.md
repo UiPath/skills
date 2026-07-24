@@ -12,7 +12,7 @@ The coded agent lives as a sibling folder inside the same solution as the flow. 
 - **Wiring the agent's inputs:** [embedding-in-flows.md § Wiring the Agent's Inputs](embedding-in-flows.md#wiring-the-agents-inputs)
 - **Flow node JSON shape + top-level `bindings[]` + `definitions[]` entry:** uipath-maestro-flow skill, agent-plugin reference (In-solution variant)
 
-The node-type's `{key}` is the local `resource.key` minted by `uip solution project add` (written to `resources/solution_folder/process/agent/<name>.json`) and surfaced by `uip maestro flow registry list --local`.
+The node-type's `{key}` is the local `resource.key` minted by `uip solution projects add` (written to `resources/solution_folder/process/agent/<name>.json`) and surfaced by `uip maestro flow registry list --local`.
 
 ---
 

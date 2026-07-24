@@ -50,11 +50,20 @@ initial_prompt: |
       cp BindingsReconfigure/flow_files/BindingsReconfigure.flow after_b.flow
 
 success_criteria:
+  # min_count: 1 (not 2). Per uipath-maestro-flow SKILL.md rule #10, agents
+  # chain sequential `uip` calls — e.g. `node configure <A> && ... && node
+  # configure <B> && validate && format` — into ONE Bash event. command_executed
+  # counts matching Bash events, not command occurrences within an event, so a
+  # correct batched run registers only 1 match and this criterion false-fails.
+  # Multiplicity is instead proven by the A/B snapshot checks below: after_a
+  # references connection A while after_b references ONLY B (no leak, equal
+  # count) — a result a single configure cannot produce. Mirrors the min_count:1
+  # convention in multi_connector_independence.yaml / no_duplicate_connection_bindings.yaml.
   - type: command_executed
-    description: "Agent called `node configure` at least twice"
+    description: "Agent used `uip flow node configure` at least once"
     tool_name: "Bash"
     command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+node\\s+configure"
-    min_count: 2
+    min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 

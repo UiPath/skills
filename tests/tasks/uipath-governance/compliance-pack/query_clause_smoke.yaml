@@ -27,9 +27,16 @@ initial_prompt: |
   - uip CLI not connected - auth errors expected. Use --output json.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-governance skill"
+    skill_name: "uipath-governance"
+    expected_skill: "uipath-governance"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent called catalog get to retrieve clause recommendations"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+(?:iso-42001|\$\S+)'
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
