@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "_doc": "Hand-authored fixtures for a no-signature classic Type Into wrong-value fault (job 9d2f4a71, process VendorOnboarding, folder Finance). Job is Successful with zero Error logs; the Info logs show the field value written = existing '0000' + intended '8891245' = '00008891245' (append because EmptyField was not set). Separate `jobs logs ... --level Error` rule returns empty so the agent confirms no-signature. Matching is token-aware with plain-substring fallback (first match wins).",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Open-ended natural-language query; proxy to the real uip CLI per troubleshoot test rules."
+    },
+    {
+      "match": "or folders list",
+      "file": "ee2628e6b6.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "75949d659e.json"
+    },
+    {
+      "match": "or jobs get 9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40",
+      "file": "44a081cb26.json"
+    },
+    {
+      "match": "or jobs logs 9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40 --level Error",
+      "file": "75f6ad6632.json"
+    },
+    {
+      "match": "or jobs logs 9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40",
+      "file": "e1a227ecb5.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}
