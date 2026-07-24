@@ -1,6 +1,6 @@
 # stages — Planning
 
-A stage node inside the case. Stages contain tasks and connect via entry/exit conditions (edges are retired). Two variants (`stage` and `secondary`) share the same plugin.
+A stage node inside the case. Stages contain tasks and connect via entry/exit conditions (Rule 20). Two variants (`stage` and `secondary`) share the same plugin.
 
 ## Terminology
 

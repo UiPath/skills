@@ -14,7 +14,6 @@ run_limits:
   max_turns: 40
 
 sandbox:
-  driver: tempdir
   python: {}
 
 pre_run:

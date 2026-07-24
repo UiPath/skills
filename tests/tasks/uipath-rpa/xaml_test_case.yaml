@@ -60,13 +60,16 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Test case uses the canonical Given-When-Then sub-sequence structure"
+  - type: file_check
+    description: "Test case uses the Given-When-Then sub-sequence structure (with or without the '... ' prefix)"
     path: "LoginTests/TestLoginSuccess.xaml"
-    includes:
-      - '"... Given"'
-      - '"... When"'
-      - '"... Then"'
+    patterns:
+      - pattern: 'DisplayName="[^"]*\bGiven\b'
+        must_match: true
+      - pattern: 'DisplayName="[^"]*\bWhen\b'
+        must_match: true
+      - pattern: 'DisplayName="[^"]*\bThen\b'
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 

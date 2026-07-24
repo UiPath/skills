@@ -13,9 +13,12 @@ them with expressions only after the variables and scopes exist.
 - Do not use bare variable names such as `=requestId` in generated runtime XML.
 - Context bindings use `=bindings.<bindingId>`.
 - Current element outputs use `result` only in output mappings for that
-  element. Script task return values are exposed under `result.response`; use
-  `source="=result.response"` for scalar returns or
-  `source="=result.response.<field>"` for object fields.
+  element. For new BPMN script tasks, return an object and expose its value
+  through `result.response`: use `return { response: value };` with
+  `source="=result.response"` for a scalar variable, or return a nested object
+  and use `source="=result.response.<field>"` for a field. Do not use
+  `source="=result"` with a bare scalar return in live debug/runtime BPMN; the
+  run can complete while the mapped variable reads back empty.
 - Multi-instance task bodies read the current item from `iterator.item`.
 - Multi-instance subprocess bodies read the current item from
   `iterator[0].item`. Use `iterator[1].item` (and so on) inside nested
@@ -76,11 +79,16 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
 
 - Root variables are visible across the root process after they are declared and
   reachable by control flow.
-- An output variable you intend to READ at runtime (via `debug-instance
-  variables-all` or `instance variables`) must be root-scoped — declare its
-  `uipath:inputOutput` WITHOUT an `elementId`. A variable scoped with `elementId`
-  is bound to that element and is not surfaced as a readable root/global runtime
-  variable, so its computed value will not appear in a `variables-all` read.
+- An output variable you intend to expose in runtime inspection (via
+  `debug-instance variables-all` or `instance variables`) must be root-scoped —
+  declare its `uipath:output` or `uipath:inputOutput` WITHOUT an `elementId`. A
+  variable scoped with `elementId` is bound to that element and is not surfaced
+  as a root/global runtime variable. Preserve exact variable ids: if the
+  requested variable id is `product`, declare `id="product"` and map to
+  `var="product"`, not `Product` or `Var_Product`. Current BPMN live debug may
+  expose the root output definition while still returning the value as `null`;
+  treat that as a runtime/debug API limitation, not proof that the authored
+  mapping is absent.
 - Subprocess variables stay scoped to that subprocess.
 - Output mappings should target `uipath:inputOutput` or `uipath:output`
   variables, not read-only `uipath:input` variables.

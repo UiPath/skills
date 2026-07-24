@@ -46,11 +46,17 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Form.tsx imports from @uipath/coded-action-app (task-lifecycle service)"
-    path: "src/components/Form.tsx"
-    includes:
-      - "@uipath/coded-action-app"
+  - type: run_command
+    # Accept BOTH the direct package import and the skill-prescribed `../uipath`
+    # barrel re-export (create-action-app.md: `import { codedActionAppService }
+    # from '../uipath'`). The barrel form never contains the literal package
+    # string, so an includes-check on `@uipath/coded-action-app` alone
+    # false-fails a skill-correct implementation. setTaskData/completeTask
+    # criteria below already prove the service is actually exercised.
+    description: "Form.tsx wires the task-lifecycle service — direct @uipath/coded-action-app import OR the skill's ../uipath barrel"
+    command: "grep -E '@uipath/coded-action-app|codedActionAppService' src/components/Form.tsx"
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

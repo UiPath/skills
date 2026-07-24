@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T07:10:02.360Z",
+      "Message": "Get Outlook Mail Messages: The specified folder does not exist.\r\nin Main.xaml\r\n    at GetOutlookMailMessages \"Get Outlook Mail Messages\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nUiPath.Mail.Exception: The specified folder does not exist. ---> System.Exception: The specified folder does not exist."
+    }
+  ]
+}

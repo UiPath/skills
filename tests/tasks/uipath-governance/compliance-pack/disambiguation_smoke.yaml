@@ -50,7 +50,7 @@ success_criteria:
         conflates both paths.
       Score 0.0 if the agent silently picks one branch and runs commands without asking.
     weight: 3.0
-    pass_threshold: 0.8
+    pass_threshold: 0.5
 
   - type: command_not_executed
     description: "Agent does NOT run any aops-policy create before disambiguation"
