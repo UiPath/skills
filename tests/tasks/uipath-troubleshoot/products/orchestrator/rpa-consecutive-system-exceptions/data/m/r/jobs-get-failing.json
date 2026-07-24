@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "_doc": "Failing OrderReconciliation job. Info = 'The maximum number of consecutive system exceptions was reached. Consecutive retry number: 5.' This is the abort SYMPTOM. The root cause is the same System Exception recurring on every transaction — recover it from logs/traces (a SelectorNotFoundException on 'Click Submit'). Raising the threshold would only delay the abort.",
+  "Data": {
+    "Key": "ccee6677-88ff-99aa-00bb-11cc22334455",
+    "StartTime": "2026-06-25T07:00:01.200Z",
+    "EndTime": "2026-06-25T07:02:14.880Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Schedule",
+    "SourceType": "Schedule",
+    "Info": "The maximum number of consecutive system exceptions was reached. Consecutive retry number: 5.",
+    "CreationTime": "2026-06-25T07:00:01.000Z",
+    "ReleaseName": "OrderReconciliation",
+    "Type": "Unattended",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "OrganizationUnitId": 7791635,
+    "FolderKey": "a5b5c6d7-e8f9-0123-4567-89abcdef0123",
+    "ProcessType": "Process",
+    "LastModificationTime": "2026-06-25T07:02:14.880Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "ccee6677-88ff-99aa-00bb-11cc22334455",
+    "Id": 671660011
+  }
+}

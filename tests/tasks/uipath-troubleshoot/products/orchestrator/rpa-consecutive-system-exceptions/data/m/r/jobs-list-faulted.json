@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Faulted OrderReconciliation job. It aborted after hitting the consecutive-system-exception ceiling. The abort message is a symptom; the recurring underlying exception (see logs/traces) is the real cause.",
+  "Data": [
+    {
+      "Key": "ccee6677-88ff-99aa-00bb-11cc22334455",
+      "State": "Faulted",
+      "ProcessName": "OrderReconciliation",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "RuntimeType": "Unattended",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-06-25T07:00:01.200Z",
+      "EndTime": "2026-06-25T07:02:14.880Z",
+      "CreationTime": "2026-06-25T07:00:01.000Z"
+    }
+  ]
+}

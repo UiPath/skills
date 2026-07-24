@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the max-consecutive-system-exceptions scenario (job-consecutive-system-exceptions playbook). The agent chains: folders list -> jobs list --state Faulted -> jobs get (Info: max consecutive system exceptions) -> jobs logs (the recurring SelectorNotFoundException on 'Click Submit', 5x, before the abort) -> jobs traces (same activity faults every transaction). Root cause = the recurring selector failure, not the threshold. Keys are stable.",
+  "rules": [
+    { "match": "or folders list", "file": "folders-list.json" },
+    { "match": "or jobs list --folder-key a5b5c6d7-e8f9-0123-4567-89abcdef0123 --state Faulted", "file": "jobs-list-faulted.json" },
+    { "match": "or jobs get ccee6677-88ff-99aa-00bb-11cc22334455", "file": "jobs-get-failing.json" },
+    { "match": "or jobs logs ccee6677-88ff-99aa-00bb-11cc22334455 --level Error", "file": "jobs-logs-failing-error.json" },
+    { "match": "or jobs logs ccee6677-88ff-99aa-00bb-11cc22334455", "file": "jobs-logs-failing-error.json" },
+    { "match": "or jobs traces ccee6677-88ff-99aa-00bb-11cc22334455", "file": "jobs-traces-failing.json" },
+    { "match": "traces spans get --job-key ccee6677-88ff-99aa-00bb-11cc22334455", "file": "jobs-traces-failing.json" },
+    { "match": "docsai ask", "passthrough": true }
+  ],
+  "unmocked_default": { "response": "[]\n", "exit_code": 0 }
+}
