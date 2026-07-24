@@ -39,9 +39,6 @@ initial_prompt: |
   in that spreadsheet - I can see the row when I open the file myself.
   The folder is "RPA Production".
 
-  The project source for the failing process is in the current working
-  directory.
-
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
@@ -84,7 +81,8 @@ simulation:
     - "If the agent asks whether SKU-8842 is really in the file, confirm yes - you can see the row when you open it manually."
     - "If asked about the row's Status value, say you think it is an old/discontinued item but you are not certain - do not volunteer that a filter is involved."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
-    - "Never invent factual data beyond your initial report."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent factual data beyond your initial report, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

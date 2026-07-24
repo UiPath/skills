@@ -40,9 +40,6 @@ initial_prompt: |
   It runs the same nightly schedule it has run for months. Can you
   investigate?
 
-  The project source for the failing process is in the current working
-  directory.
-
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
@@ -85,9 +82,10 @@ simulation:
   constraints:
     - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, orchestrator, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
     # The llm_judge sees only the final turn. If the simulator approves applying the fix, the agent edits Main.xaml in the last turn and its correctly-gated edit is misread as a silent edit. Decline so the agent closes recommendation-only.
     - "If the agent asks whether to apply, edit, or write the fix to a project source file (e.g. 'shall I apply the fix to Main.xaml?'), DECLINE: tell it not to change any files because you will apply the change yourself in Studio, and ask it to give its final summary — the root cause and the exact property change to make. Never approve a source-file edit."
-    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

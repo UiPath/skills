@@ -50,12 +50,9 @@ initial_prompt: |
 
   I only have Orchestrator access right now — I'm not on the Robot
   host and can't run anything on it. Diagnose what you can from
-  Orchestrator and the workflow source; if you need host-side
+  Orchestrator; if you need host-side
   evidence to be sure, just give me the checks to run and I'll come
   back with the output.
-
-  The project source for the failing process is at ./ExcelDailyImport/ in the
-  current working directory.
 
 success_criteria:
   - type: skill_triggered
@@ -102,7 +99,8 @@ simulation:
   constraints:
     - "If the agent asks whether to expand investigation scope (any new product domain), always answer Yes — pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
-    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report, other than the project-source location noted above."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

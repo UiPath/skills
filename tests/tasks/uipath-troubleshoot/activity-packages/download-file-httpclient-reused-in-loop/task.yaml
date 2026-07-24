@@ -41,10 +41,9 @@ initial_prompt: |
   instance has already started one or more requests".
 
   I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
-  only Orchestrator. Diagnose what you can from Orchestrator and the project
-  source in the current working directory. If the answer needs evidence from
-  the host itself, hand me the exact checks to run and stop - don't stall
-  waiting on host data.
+  only Orchestrator. Diagnose what you can from Orchestrator. If the answer
+  needs evidence from the host itself, hand me the exact checks to run and
+  stop - don't stall waiting on host data.
 
 success_criteria:
   - type: skill_triggered
@@ -87,7 +86,8 @@ simulation:
     - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, file-operations, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the host check list at the end."
     - "If asked whether the download is inside a loop and which iteration fails, say it is in a For Each over URLs and the first one works but the next fails."
-    - "Never invent or provide new factual data beyond your initial report."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent or provide new factual data beyond your initial report, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

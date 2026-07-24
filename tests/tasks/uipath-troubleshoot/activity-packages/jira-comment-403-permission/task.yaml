@@ -44,13 +44,9 @@ initial_prompt: |
   fine - it just can't comment.
 
   I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
-  only Orchestrator. Diagnose what you can from Orchestrator and the project
-  source. If the answer needs something only I can check (Jira project settings,
+  only Orchestrator. Diagnose what you can from Orchestrator. If the answer needs something only I can check (Jira project settings,
   an admin action), give me the exact things to verify and I'll come back with
   the result. Do not stall waiting on me - hand me the list and stop.
-
-  The project source for the failing process is in the current working
-  directory.
 
 success_criteria:
   - type: skill_triggered
@@ -95,7 +91,8 @@ simulation:
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the check list at the end."
     - "If asked whether the bot account can read the issue, say yes, reading works - only commenting fails."
     - "If asked whether you can change Jira project permissions, say no, you are not a Jira admin but you can ask one."
-    - "Never invent or provide new factual data beyond your initial report."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent or provide new factual data beyond your initial report, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

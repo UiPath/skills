@@ -41,8 +41,7 @@ reference:
 initial_prompt: |
   My NightlyReconciler process in the UnattendedOps folder has been
   faulting in Orchestrator on every scheduled run since midnight — each
-  job starts, runs for about two minutes, then dies. The project source is
-  in the current working directory. Can you investigate why and tell me how
+  job starts, runs for about two minutes, then dies. Can you investigate why and tell me how
   to fix it?
 
 success_criteria:
@@ -90,6 +89,7 @@ simulation:
     - "If the agent asks what Robot version is on RECON-BOT-01, say you don't know and ask it to check in Orchestrator — do NOT guess a version."
     - "If the agent asks whether the robot account credentials are valid, say as far as you know yes — nothing changed with the account."
     - "If the agent asks how to proceed when some data is missing, tell it to proceed with best-effort findings from the evidence it already gathered."
-    - "Never invent or provide new factual data beyond your initial report and the answers above. Keep replies short (one sentence or pick a numbered option)."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent or provide new factual data beyond your initial report and the answers above, other than the project-source location noted above. Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 8

@@ -39,9 +39,7 @@ initial_prompt: |
   doc was created by one of our team members.
 
   I'm not on the robot host right now, only Orchestrator. Diagnose what you
-  can from Orchestrator and the project source, and tell me how to fix it.
-
-  The project source for the process is in the current working directory.
+  can from Orchestrator, and tell me how to fix it.
 
 success_criteria:
   - type: skill_triggered
@@ -82,7 +80,8 @@ simulation:
     - "If the agent asks whether to expand investigation scope (orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and hand you the fix."
     - "If asked how the Notes.docx file was created, say a teammate made it - you think by creating a new text file and renaming it to .docx, but you are not certain."
-    - "Never invent or provide new factual data beyond your initial report."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent or provide new factual data beyond your initial report, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

@@ -42,8 +42,7 @@ initial_prompt: |
   throws a TargetInvocationException and goes unstable. It has never run;
   it crashes at design time in the designer. I'm on UiPath Studio 2021.10.
 
-  Diagnose what's going on from the project source. The project source is in
-  the current working directory. There are no Orchestrator runs because it
+  Diagnose what's going on. There are no Orchestrator runs because it
   has never executed. Give me the fix and stop.
 
 success_criteria:
@@ -89,7 +88,8 @@ simulation:
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings from the project source and to hand you the fix at the end."
     - "If the agent looks for Orchestrator jobs or runtime logs, remind it the workflow has never run - it crashes in the Studio designer."
     - "If asked, confirm you are on UiPath Studio 2021.10 and that the crash happens at design time (opening the workflow / dropping the activity), before any execution."
-    - "Never invent or provide new factual data beyond your initial report."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent or provide new factual data beyond your initial report, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6
