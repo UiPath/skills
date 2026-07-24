@@ -16,7 +16,6 @@ run_limits:
   task_timeout: 1500
 
 sandbox:
-  driver: tempdir
   node: {}
 
 pre_run:

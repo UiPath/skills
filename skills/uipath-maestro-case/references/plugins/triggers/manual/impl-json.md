@@ -112,6 +112,7 @@ After writing, confirm:
 - `nodes[].data.description` is present and non-empty (direct-JSON-write divergence — always emitted).
 - `nodes[].data.parentElement` always present. No `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18).
 - `nodes[].data.uipath` is **absent** (manual triggers have no `uipath` key).
+- **`schema.edges` is still `[]`** (Rule 20) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
 - `entry-points.json.entryPoints` contains a new entry with `filePath` ending in `#<trigger_XXXXXX>` and `displayName === <displayName>`.
 
 Run `uip maestro case validate <caseplan.json> --output json` after all triggers for this plugin's batch are added.

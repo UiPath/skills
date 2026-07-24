@@ -1,0 +1,6 @@
+{
+  "Name": "OrderProcessor",
+  "ProjectType": "Process",
+  "Description": "Pulls order transactions from the OrdersToProcess queue and processes them.",
+  "MainFile": "Main.xaml"
+}

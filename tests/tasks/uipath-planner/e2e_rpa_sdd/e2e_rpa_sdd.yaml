@@ -48,11 +48,10 @@ initial_prompt: |
 
 success_criteria:
   # ── Skill activation (must engage the planner, not free-form the SDD) ────
-  - type: command_executed
+  - type: skill_triggered
     description: "Agent engaged the uipath-planner skill (rather than free-forming the SDD)"
-    tool_name: "Skill"
-    command_pattern: "uipath-planner"
-    min_count: 1
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
     weight: 2.0
     pass_threshold: 1.0
 

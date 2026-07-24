@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-20T09:14:05.310Z",
+      "Message": "Read document text: Could not find file \"C:\\RPA\\Invoices\\incoming\\invoice_4471.pdf\"\r\nException Type: System.IO.FileNotFoundException\r\nin Main.xaml\r\n    at ReadPDFText \"Read document text\"\r\n    at Sequence \"Read document text\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.IO.FileNotFoundException: Could not find file \"C:\\RPA\\Invoices\\incoming\\invoice_4471.pdf\"\r\n   at UiPath.PDF.Activities.PDF.ValidationHelper.ValidateInputFilePath(String filePath, String extension)\r\n   at UiPath.PDF.Activities.ReadTextBase.<>c__DisplayClass33_0.<Execute>b__2(String p, String _)\r\n   at UiPath.PDF.Activities.PDF.ItemArgument`1.ResolveAsync(ArgValue value, Func`3 pathValidator, CancellationToken cancellationToken)\r\n   at UiPath.PDF.Activities.ReadTextBase.Execute(CodeActivityContext context)"
+    }
+  ]
+}

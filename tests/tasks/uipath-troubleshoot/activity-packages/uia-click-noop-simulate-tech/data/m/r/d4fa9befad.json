@@ -1,0 +1,42 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44",
+    "StartTime": "2026-07-15T08:12:03.101Z",
+    "EndTime": "2026-07-15T08:12:41.552Z",
+    "State": "Successful",
+    "JobPriority": "Normal",
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "BatchExecutionKey": "7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44",
+    "Info": "Job completed",
+    "CreationTime": "2026-07-15T08:12:02.400Z",
+    "ReleaseName": "ClaimsSubmit",
+    "Type": "Unattended",
+    "InputArguments": "{}",
+    "EnvironmentVariables": "",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "HasMediaRecorded": false,
+    "HasVideoRecorded": false,
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "ReleaseVersionId": 30991244,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 734512,
+    "FolderKey": "a1b2c3d4-e5f6-4708-9a1b-2c3d4e5f6071",
+    "Reference": "",
+    "ProcessType": "Process",
+    "ResumeOnSameContext": false,
+    "LocalSystemAccount": "UIPATH\\svc_rpa",
+    "OrchestratorUserIdentity": "rpa-service@contoso.com",
+    "RemoteControlAccess": "None",
+    "LastModificationTime": "2026-07-15T08:12:41.552Z",
+    "AutopilotForRobots": {
+      "Enabled": false,
+      "HealingEnabled": false
+    },
+    "Id": 88123471
+  }
+}

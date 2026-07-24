@@ -16,7 +16,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir
@@ -35,8 +34,8 @@ initial_prompt: |
   robot in the Shared folder. It faults almost immediately with:
   "Enter invoice number: Method not found: 'Void
   UiPath.UIAutomationNext.Activities.NTypeInto...'". The exact same project runs
-  fine when I debug it in Studio on my own machine. The project source is in the
-  current working directory. What's causing this and how do I fix it?
+  fine when I debug it in Studio on my own machine. What's causing this and how
+  do I fix it?
 
 success_criteria:
   - type: skill_triggered

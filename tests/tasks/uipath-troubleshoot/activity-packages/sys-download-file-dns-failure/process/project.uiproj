@@ -1,0 +1,6 @@
+{
+  "Name": "VendorPortalSync",
+  "ProjectType": "Process",
+  "Description": "Downloads the monthly vendor report and syncs it into the finance workspace.",
+  "MainFile": "Main.xaml"
+}

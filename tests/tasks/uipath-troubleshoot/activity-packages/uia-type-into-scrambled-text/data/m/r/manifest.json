@@ -8,27 +8,27 @@
     },
     {
       "match": "or folders list",
-      "file": "folders.json"
+      "file": "ee2628e6b6.json"
     },
     {
       "match": "or jobs list",
-      "file": "jobs-list.json"
+      "file": "75949d659e.json"
     },
     {
       "match": "or jobs logs",
-      "file": "job-logs.json"
+      "file": "b8d18266dc.json"
     },
     {
       "match": "or jobs history",
-      "file": "job-history.json"
+      "file": "701433db1c.json"
     },
     {
       "match": "or jobs traces",
-      "file": "job-traces.json"
+      "file": "b49ae1b1b0.json"
     },
     {
       "match": "or jobs get",
-      "file": "job-get.json"
+      "file": "3db6b96527.json"
     }
   ],
   "unmocked_default": {

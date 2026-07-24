@@ -359,77 +359,39 @@ jobs:
             -f tests/docker/Dockerfile \
             .
 
-      # Pre-auth uip via the CLI's documented env-var bypass so non-RPA
-      # smoke tasks (orchestrator / integration-service / data-fabric / ...)
-      # have a logged-in CLI without the agent ever calling `uip login`.
-      # See smoke-rpa-skills.yml for the chain rationale; this Linux job
-      # doesn't go through Helm, but the same UIPATH_CLI_* env vars
-      # satisfy the JS CLI's general auth state too.
-      - name: Mint UiPath service-account token + enable env-auth
+      # Authenticate as the existing Alpha bot user. Agent guardrail discovery
+      # is served by agentsruntime_ and requires user-only scopes such as
+      # StudioWebBackend; an External App client_credentials token can report a
+      # valid login while still receiving 401 from the guardrail endpoints.
+      #
+      # Reuse the same ROPC helper as the nightly workflow. It writes the
+      # standard ~/.uipath/.auth file that the smoke experiment mounts into
+      # every Docker sandbox.
+      - name: Mint UiPath Alpha bot token (ROPC)
         env:
-          UIPATH_CLIENT_ID:     ${{ secrets.UIPATH_CLIENT_ID }}
-          UIPATH_CLIENT_SECRET: ${{ secrets.UIPATH_CLIENT_SECRET }}
+          UIPATH_URL:               https://alpha.uipath.com
+          UIPATH_ORGANIZATION_NAME: ${{ secrets.UIPATH_ORG_NAME }}
+          UIPATH_ORGANIZATION_ID:   ${{ secrets.UIPATH_ORG_ID }}
+          UIPATH_TENANT_NAME:       ${{ secrets.UIPATH_TENANT_NAME }}
+          UIPATH_TENANT_ID:         ${{ secrets.UIPATH_TENANT_ID }}
+          CLIENT_ID:                ${{ secrets.UIPATH_ROPC_CLIENT_ID }}
+          CLIENT_SECRET:            ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
+          CE_USERNAME:              ${{ secrets.UIPATH_BOT_USERNAME }}
+          CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
         run: |
           set -euo pipefail
-          TOKEN=$(curl -fsS -X POST \
-            "https://alpha.uipath.com/identity_/connect/token" \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "grant_type=client_credentials" \
-            -d "client_id=$UIPATH_CLIENT_ID" \
-            -d "client_secret=$UIPATH_CLIENT_SECRET" \
-            -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read TM.Projects TM.TestCases TM.TestSets TM.TestExecutions TM.Requirements TM.ObjectLabels TM.Attachments TM.CustomFieldValues TM.CustomFieldDefinitions" \
-            | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
-          echo "::add-mask::$TOKEN"
-          TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}"
-          TENANT_ID="${{ secrets.UIPATH_TENANT_ID }}"
-          run_uip_with_tenant() {
-            local tenant_name="$1"
-            shift
-            docker run --rm \
-              -e UIPATH_CLI_ENABLE_ENV_AUTH=true \
-              -e UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
-              -e UIPATH_CLI_ORGANIZATION_NAME="${{ secrets.UIPATH_ORG_NAME }}" \
-              -e UIPATH_CLI_ORGANIZATION_ID="${{ secrets.UIPATH_ORG_ID }}" \
-              -e UIPATH_CLI_TENANT_NAME="$tenant_name" \
-              -e UIPATH_CLI_TENANT_ID="$TENANT_ID" \
-              --entrypoint /bin/sh \
-              skills-image:latest -lc 'uip "$@"' -- "$@"
-          }
-          if [ -n "$TENANT_ID" ]; then
-            TENANT_NAME_FOR_LIST="${TENANT_NAME:-$TENANT_ID}"
-            TENANTS_JSON=$(run_uip_with_tenant "$TENANT_NAME_FOR_LIST" login tenant list --output json)
-            RESOLVED_TENANT_NAME=$(TENANTS_JSON="$TENANTS_JSON" TENANT_ID="$TENANT_ID" python - <<'PY'
-          import json
-          import os
+          bash .github/scripts/refresh-auth.sh
 
-          data = json.loads(os.environ["TENANTS_JSON"])
-          tenant_id = os.environ["TENANT_ID"]
-          for tenant in data.get("Data", []):
-              if tenant.get("TenantId") == tenant_id:
-                  print(tenant.get("TenantName", ""))
-                  break
-          PY
-          )
-            if [ -n "$RESOLVED_TENANT_NAME" ]; then
-              TENANT_NAME="$RESOLVED_TENANT_NAME"
-            fi
-          fi
-          if [ -z "$TENANT_NAME" ] || [ "$TENANT_NAME" = "UIPATH_TENANT_NAME" ]; then
-            echo "::error::Unable to resolve UIPATH_CLI_TENANT_NAME from UIPATH_TENANT_NAME/UIPATH_TENANT_ID"
-            exit 1
-          fi
-          echo "::add-mask::$TENANT_NAME"
-          {
-            echo "UIPATH_CLI_ENABLE_ENV_AUTH=true"
-            echo "UIPATH_CLI_AUTH_TOKEN=$TOKEN"
-            echo "UIPATH_CLI_ORGANIZATION_NAME=${{ secrets.UIPATH_ORG_NAME }}"
-            echo "UIPATH_CLI_ORGANIZATION_ID=${{ secrets.UIPATH_ORG_ID }}"
-            echo "UIPATH_CLI_TENANT_NAME=$TENANT_NAME"
-            echo "UIPATH_CLI_TENANT_ID=$TENANT_ID"
-            echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
-          } >> "$GITHUB_ENV"
-          mkdir ~/.uipath
-          run_uip_with_tenant "$TENANT_NAME" login status --output json
+          # Fail once at setup, with a direct error, rather than letting every
+          # guardrail task discover an unusable auth context independently.
+          docker run --rm \
+            -v "$HOME/.uipath:/.uipath:rw" \
+            --entrypoint /bin/sh \
+            skills-image:latest -lc '
+              set -eu
+              uip login status --output json
+              uip agent guardrails list --output json
+            '
 
       - name: Run smoke tests
         env:

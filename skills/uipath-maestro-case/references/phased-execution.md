@@ -1,6 +1,6 @@
 # Phased Execution: Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6
 
-Authoritative reference for the post-planning execution flow. Read before executing any T-entry from an approved `tasks.md`.
+Authoritative reference for the post-planning execution flow. Read before executing any T-entry from `tasks.md`.
 
 > **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip these phases — see [brownfield.md](brownfield.md).
 
@@ -21,7 +21,7 @@ Skill stays emit-honest: JSON-shape correctness is the skill's job, downstream C
 
 ## Why phased
 
-After `tasks.md` is approved, skill does **not** build full case in one pass. It builds **placeholder** first (Phase 2 Prototyping) — enough structure for user to review case graph visually in Studio Web — then hard-stops for approval before wiring detail (Phase 3 Implementation). Validate (Phase 4), Debug (Phase 5), and Publish (Phase 6) each follow as separate gated phases. Debug runs before Publish so the user only publishes a build they've verified end-to-end.
+Once `tasks.md` is generated, skill does **not** build full case in one pass. It builds **placeholder** first (Phase 2 Prototyping) — enough structure for user to review case graph visually in Studio Web — then hard-stops for approval before wiring detail (Phase 3 Implementation). Validate (Phase 4), Debug (Phase 5), and Publish (Phase 6) each follow as separate gated phases. Debug runs before Publish so the user only publishes a build they've verified end-to-end.
 
 Each hard stop gives user review checkpoint before agent commits to costly downstream work.
 
@@ -39,11 +39,11 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 ### Structural nodes (full detail)
 
-- Solution + project scaffolding (`uip solution init`, `uip solution project add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
+- Solution + project scaffolding (`uip solution init`, `uip solution projects add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
 - Root case — `caseplan.json` with top-level fields + `metadata` block populated (name, `metadata.caseIdentifier`, empty `nodes[]`, empty `edges[]`).
 - Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared at top-level `variables`.
 - Stages — all StageIds generated and captured.
-- Edges — none authored; `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 3).
+- Edges — none authored (Rule 20); `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 3).
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
 - Entry-points input/output — `entry-points.json` `input`/`output` schemas refreshed from the declared In/Out arguments (Step 6.3, per [entry-points-sync.md](entry-points-sync.md)). Makes the Phase-2 publish-for-review contract correct; idempotent.
 
@@ -104,7 +104,7 @@ Use **AskUserQuestion** with three options:
 3. **MUST emit DesignerUrl as plain-text output to user BEFORE invoking AskUserQuestion**, on its own line:
    `Skeleton published. Review at: <DesignerUrl>`
    Never bundle URL only into question body — some renderers display question before surrounding prose, leaving user without URL until after they answer.
-4. Only after URL line emitted, invoke **AskUserQuestion** (second prompt): `Continue to phase 3` / `Abort`.
+4. Only after URL line emitted, invoke **AskUserQuestion** (second prompt): `Continue to implementation` / `Abort`.
 
 If `DesignerUrl` missing from response, dump full upload response to `tasks/upload-response.json`, print path, continue to prompt — user can recover URL from file.
 
@@ -126,7 +126,7 @@ Do **not** delete artifacts. User may want to inspect them, or re-run skill late
 
 ### Re-entry protocol
 
-Phase 3 begins after user selects `Continue to phase 3` (or `Skip publish and continue`). Before executing any Phase 3 step:
+Phase 3 begins after user selects `Continue to implementation` (or `Skip publish and continue`). Before executing any Phase 3 step:
 
 1. **Re-read `tasks.md`** — per Rule 7. Declarative plan is the handoff.
 2. **Re-read `caseplan.json`** — authoritative source of all IDs generated in Phase 2:
@@ -143,14 +143,14 @@ Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — c
 After re-entry:
 
 1. **Connector task detail** — for each connector task in `tasks.md`, run plugin's `impl-json.md` detail steps: `case spec --type {activity,trigger} --input-details`, then mint `data.context[]` / `data.inputs[]` / `data.outputs[]` from the populated `caseShape` (placeholder substitution + var/id minting).
-2. **Task I/O value binding (all task classes)** — per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). Applies to both non-connector and connector tasks. For each task's inputs in `tasks.md` order, write literal, expression, or cross-task reference (resolved to `=vars.<var>`) into `task.data.inputs[i].value`. Connector tasks have `data.inputs[]` schema written in step 1; value binding happens here in step 2, same as non-connector tasks.
+2. **Task I/O value binding (all task classes)** — per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). Applies to both non-connector and connector tasks. For each task's inputs in `tasks.md` order, write literal, expression, or cross-task reference (resolved to `=vars.<outputReferenceId>` through the common `.id`-based resolver) into `task.data.inputs[i].value`. Connector tasks have `data.inputs[]` schema written in step 1; value binding happens here in step 2, same as non-connector tasks.
 3. **Conditions** — per-scope plugin `impl-json.md`:
    - Stage entry conditions
    - Stage exit conditions
    - Task entry conditions (depends on TaskIds from Phase 2)
    - Case exit conditions
 4. **SLA + escalation** — per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Group `tasks.md §4.8` by target (root or stage); write full `slaRules[]` in one mutation per target.
-5. **In-expression marker resolution** — per [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md). After all outputs are minted/deduped and bindings/conditions/SLA are written, resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` to bare `vars.<var>` in one sink-blind whole-file pass (input payloads, conditions, SLA, connector bodies). Unresolved triple → ERROR.
+5. **In-expression marker resolution** — per [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md). After all outputs are minted/deduped and bindings/conditions/SLA are written, resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` to bare `vars.<outputReferenceId>` through the same resolver in one sink-blind whole-file pass (input payloads, conditions, SLA, connector bodies). Unresolved triple or reference ID → ERROR.
 6. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-7 (=vars.X resolution, Out-arg producer presence, type mismatch, surviving `$xref` markers, resolved-resource I/O completeness, entry-point schema parity, bindings sidecar parity). AskUserQuestion for unresolved references (incl. `$xref` markers), pure orphan Out-args, and unbound required inputs / phantom output fields; option (c)/(d) "continue with best-effort emit" preserves forward progress. Checks 6-7 are non-interactive: on mismatch auto re-run/regenerate once; Check 6 logs if still divergent, Check 7 halts before Phase 4 if still divergent. Never HALT otherwise.
 
 Phase 3 produces a `caseplan.json` that should pass authoritative validation. No hard stop (no AskUserQuestion gate) on Phase 3 exit — agent proceeds directly to Phase 4. Sole blocker: Check 7 parity still divergent after regeneration (halt per [`implementation.md § Step 12`](implementation.md)).
@@ -240,7 +240,7 @@ It does **not** write `data.inputs` / `data.outputs` for placeholders. Input bin
 Abort can occur at any hard stop:
 
 - Phase 2 first prompt (`Publish for review` / `Skip` / `Abort`).
-- Phase 2 second prompt (`Continue to phase 3` / `Abort`) after publishing.
+- Phase 2 second prompt (`Continue to implementation` / `Abort`) after publishing.
 - Phase 4 retry-cap prompt (`Retry with fix` / `Pause for manual edit` / `Abort`).
 
 All follow same cleanup:

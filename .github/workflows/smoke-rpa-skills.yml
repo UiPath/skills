@@ -133,39 +133,63 @@ jobs:
             --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
             --store-password-in-clear-text
 
-      # Install from public npm. The `--@uipath:registry=` flag forces
-      # the `@uipath` scope to public npm even if some `.npmrc` (runner
-      # image, user-level, or setup-node config) maps it elsewhere —
-      # notably the internal GitHub Packages feed, which carries
-      # divergent `1.0.0-alpha.*` prereleases under the same scope.
-      # Plain `--registry=` does NOT bypass scope mappings; only the
-      # scope-specific override does.
+      # Install from GitHub Packages `@dev` — the live prerelease train
+      # published on every push to `cli/main`. Public npm mirrors the same
+      # releases ~2 weeks later, so pulling `@latest` from public npm made
+      # RPA-Windows tasks exercise a stale CLI that could miss freshly
+      # renamed/added verbs. `@dev` keeps this runner in lockstep with the
+      # Linux smoke image, which builds from the same `@dev` tag (see
+      # smoke-skills.yml and tests/docker/Dockerfile).
       #
-      # Pin `@uipath/rpa-tool` to the `^0.9` line (currently 0.9.1) to
-      # avoid silently picking up `1.0.0-alpha.*` if `latest` ever
-      # shifts. `@uipath/cli` and `@uipath/rpa-legacy-tool` stay on
-      # `latest` (only the rpa-tool line has the alpha divergence).
+      # The `@uipath` scope is mapped to npm.pkg.github.com via a temp npmrc
+      # (token from GH_PAT, read:packages). EVERY package is pinned to the
+      # explicit `@dev` dist-tag: the same feed also carries a FROZEN `alpha`
+      # tag (1.197.0-alpha.*) and the public `latest` line — never rely on
+      # `latest`/unspecified here, which could resolve to a stale line. The
+      # npmrc is written and deleted inside this step so the token never
+      # lingers on the runner.
       #
-      # `npm install -g` runs from a fresh tempdir so any future
-      # workspace-aware `package.json` at the repo root cannot pull
-      # the install into a workspace context. `npm install -g` lands
-      # under `<npm-prefix>/@uipath/`, where uipcli's ToolManager
-      # discovers tools, so `uip rpa …` / `uip rpa-legacy …` resolve
-      # without triggering auto-install.
-      - name: Install uip CLI + RPA tools (public npm, rpa-tool >=0.9)
+      # Tools are installed with raw `npm install -g @uipath/<tool>@dev`, NOT
+      # `uip tools install`: on a `-dev` CLI the latter resolves the release
+      # channel to `stable` and fails to find `-dev` tool builds (cli PR #2650).
+      # uipcli's ToolManager then discovers them on disk under
+      # `<npm-prefix>/@uipath/`, so `uip rpa …` / `uip rpa-legacy …` resolve
+      # without triggering auto-install. Job-level UIPATH_CLI_DISABLE_VERSION_SYNC
+      # keeps a `-dev` CLI from trying to re-align tools through the (stable-only)
+      # channel path at runtime.
+      #
+      # `npm install -g` runs from a fresh tempdir so any future workspace-aware
+      # `package.json` at the repo root cannot pull the install into a workspace.
+      - name: Install uip CLI + RPA tools (GitHub Packages @dev)
         shell: bash
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
-          set -e
+          set -euo pipefail
+          if [ -z "${GH_PAT:-}" ]; then
+            echo "::error::GH_PAT is empty — cannot authenticate to the GitHub Packages @dev feed"
+            exit 1
+          fi
           install_dir="$(mktemp -d)"
           cd "$install_dir"
           echo "Installing from $install_dir (workspace-isolated)"
-          npm config get registry
-          npm install -g \
-            --@uipath:registry=https://registry.npmjs.org/ \
-            @uipath/cli@latest \
-            "@uipath/rpa-tool@>=0.9" \
-            @uipath/rpa-legacy-tool@latest
+          npmrc="$install_dir/.npmrc"
+          {
+            echo "@uipath:registry=https://npm.pkg.github.com/"
+            echo "//npm.pkg.github.com/:_authToken=${GH_PAT}"
+          } > "$npmrc"
+          export NPM_CONFIG_USERCONFIG="$npmrc"
+          npm install -g @uipath/cli@dev
           uip --version
+          for tool in @uipath/rpa-tool @uipath/rpa-legacy-tool; do
+            echo "Installing ${tool}@dev"
+            if ! npm install -g "${tool}@dev"; then
+              echo "::error::${tool}@dev failed to install — no build on the dev train?"
+              exit 1
+            fi
+          done
+          rm -f "$npmrc"
+          unset NPM_CONFIG_USERCONFIG
           echo "--- Installed @uipath/* packages ---"
           npm ls -g --depth=0 2>/dev/null | grep '@uipath/' || true
           echo "--- uip tools list ---"

@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34",
+      "State": "Faulted",
+      "ProcessName": "VendorPortalSync",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-24T10:02:31.400Z",
+      "EndTime": "2026-06-24T10:02:33.010Z",
+      "CreationTime": "2026-06-24T10:02:31.120Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

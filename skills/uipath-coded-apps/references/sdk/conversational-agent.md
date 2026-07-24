@@ -733,4 +733,4 @@ session.onExchangeStart((exchange) => {
 
 ## OAuth Client Setup
 
-See [oauth-client-setup.md](../oauth-client-setup.md) for browser automation steps to configure the External Application in UiPath Cloud.
+See [oauth-client-setup.md](../oauth-client-setup.md) for the `uip admin external-apps` CLI steps to configure the External Application in UiPath Cloud.

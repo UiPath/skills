@@ -16,7 +16,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir
@@ -34,9 +33,8 @@ initial_prompt: |
   Our overnight unattended job "AccountPortalEntry" in the Finance folder
   finished Successful, but the account number it entered into the billing
   portal came out wrong — some digits are missing and others are out of order,
-  so the record is invalid. The job logs show no errors at all. The project
-  source is in the current working directory. Why did this happen and how do I
-  fix it?
+  so the record is invalid. The job logs show no errors at all. Why did this
+  happen and how do I fix it?
 
 success_criteria:
   - type: skill_triggered

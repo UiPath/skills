@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "2e7c9a10-4b6d-4f82-91c3-5a8e0d1f2b30",
+      "State": "Faulted",
+      "StartTime": "2026-06-20T05:40:18.220Z",
+      "EndTime": "2026-06-20T05:40:19.910Z",
+      "ReleaseName": "SapMasterDataLoad",
+      "Source": "Manual",
+      "HostMachineName": "MOCK-HOST",
+      "ErrorCode": "Robot",
+      "Id": 50605140
+    }
+  ]
+}

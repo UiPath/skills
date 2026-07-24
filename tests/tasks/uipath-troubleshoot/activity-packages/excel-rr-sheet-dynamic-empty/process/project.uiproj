@@ -1,0 +1,6 @@
+{
+  "Name": "MonthlySalesImport",
+  "ProjectType": "Process",
+  "Description": "Reads a monthly sales workbook into a DataTable via Read Range inside a Use Excel File scope; the target sheet name is supplied by the in_TargetSheet input argument.",
+  "MainFile": "Main.xaml"
+}

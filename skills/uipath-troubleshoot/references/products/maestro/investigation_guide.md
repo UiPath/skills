@@ -48,8 +48,12 @@ After the Orchestrator job data bundle (job details, logs, history) is collected
    - **Neither works**: search with `uip maestro <type> incident summary --output json` to find the `processKey`, then `uip maestro <type> processes incidents <process-key> --folder-key <folder-key>` to find incident records containing the `instanceId`. If the process type is unknown, try each (`bpmn`, `flow`, `case`) in turn.
    - **`instance list` may return empty** for completed or faulted instances. Always try `instance get` directly before concluding an instance doesn't exist. Do NOT rely on `instance list` alone.
 4. **Full incident details** — `uip maestro <type> instance incidents <instance-id> --folder-key <folder-key>`. This returns `errorDetails` with stack traces. Do NOT use `uip maestro <type> incident summary` — that returns summaries only without error details.
-5. **Element executions** — `uip maestro <type> instance element-executions <instance-id> --folder-key <folder-key>` to see what each element did and where execution stopped.
-6. **Child jobs** — if the process has service tasks, list child jobs and check their state and error messages. The child's failure reason is often the actual root cause.
+5. **Runtime variables and deployed asset** — inspect variables, then always fetch the deployed definition before writing the diagnosis:
+   - `uip maestro <type> instance variables <instance-id> --folder-key <folder-key> --output json`
+   - `uip maestro <type> instance asset <instance-id> --folder-key <folder-key> --output json`
+   This asset read is required even when incidents/variables already reveal the likely cause; it proves which BPMN definition actually ran.
+6. **Element executions** — `uip maestro <type> instance element-executions <instance-id> --folder-key <folder-key>` to see what each element did and where execution stopped.
+7. **Child jobs** — if the process has service tasks, list child jobs and check their state and error messages. The child's failure reason is often the actual root cause.
 
 ## Top-20 Error Quick Route
 
