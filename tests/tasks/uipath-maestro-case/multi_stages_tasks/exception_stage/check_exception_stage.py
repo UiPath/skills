@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Secondary stages: two secondary stages (Issues + Critical), interrupting entries, return-to-origin (edges retired)."""
+"""Secondary stages: returning and terminal secondary lanes with interrupting entries."""
 
 import os
 import sys
@@ -9,6 +9,7 @@ from _shared.case_check import (  # noqa: E402
     find_node_by_label,
     find_stages,
     first_rule_of_condition,
+    get_case_exit_conditions,
     get_default_sla,
     iter_stage_entry_conditions,
     iter_stage_exit_conditions,
@@ -63,9 +64,8 @@ def main():
     issues = find_node_by_label(plan, "Issues")
     critical = find_node_by_label(plan, "Critical")
 
-    # Edges retired: exception stages were never edge-wired anyway. Their
-    # reachability contract is an interrupting entry condition + a
-    # return-to-origin exit — both asserted below. Nothing edge-shaped remains.
+    # Edges retired: secondary stages are reached by interrupting entry
+    # conditions, then either return to origin or terminate through a case exit.
 
     issues_entry = list(iter_stage_entry_conditions(issues))
     issues_interrupting = [c for c in issues_entry if c.get("isInterrupting") is True]
@@ -100,24 +100,62 @@ def main():
         )
 
     for label, node in (("Issues", issues), ("Critical", critical)):
-        exits = list(iter_stage_exit_conditions(node))
-        returns, invalid_returns = partition_return_to_origin_conditions(
-            exits,
-            allowed_rules=frozenset({"required-tasks-completed"}),
+        entries = list(iter_stage_entry_conditions(node))
+        if not entries or not all(c.get("isInterrupting") is True for c in entries):
+            sys.exit(
+                f"FAIL: every secondary-stage entry for {label!r} must be "
+                f"interrupting; got {[c.get('isInterrupting') for c in entries]}"
+            )
+
+    issues_exits = list(iter_stage_exit_conditions(issues))
+    issues_returns, issues_invalid_returns = partition_return_to_origin_conditions(
+        issues_exits,
+        allowed_rules=frozenset({"required-tasks-completed"}),
+    )
+    if not issues_returns:
+        sys.exit(
+            "FAIL: 'Issues' missing canonical return-to-origin exit "
+            "(marksStageComplete=true + required-tasks-completed); "
+            f"got {[(ec.get('type'), ec.get('marksStageComplete'), (first_rule_of_condition(ec) or {}).get('rule')) for ec in issues_exits]}"
         )
-        if not returns:
-            sys.exit(
-                f"FAIL: {label!r} missing canonical return-to-origin exit "
-                f"(marksStageComplete=true + required-tasks-completed); "
-                f"got {[(ec.get('type'), ec.get('marksStageComplete'), (first_rule_of_condition(ec) or {}).get('rule')) for ec in exits]}"
-            )
-        if invalid_returns:
-            sys.exit(
-                f"FAIL: {label!r} has malformed additional return-to-origin "
-                f"exit(s); expected every return to use marksStageComplete=true "
-                f"+ required-tasks-completed; got "
-                f"{[(ec.get('marksStageComplete'), (first_rule_of_condition(ec) or {}).get('rule')) for ec in invalid_returns]}"
-            )
+    if issues_invalid_returns:
+        sys.exit(
+            "FAIL: 'Issues' has malformed additional return-to-origin exit(s); "
+            "expected every return to use marksStageComplete=true + "
+            "required-tasks-completed; got "
+            f"{[(ec.get('marksStageComplete'), (first_rule_of_condition(ec) or {}).get('rule')) for ec in issues_invalid_returns]}"
+        )
+
+    critical_exits = list(iter_stage_exit_conditions(critical))
+    critical_exit_only = [
+        ec
+        for ec in critical_exits
+        if ec.get("type") == "exit-only"
+        and ec.get("marksStageComplete") is True
+        and (first_rule_of_condition(ec) or {}).get("rule") == "required-tasks-completed"
+    ]
+    if not critical_exit_only:
+        sys.exit(
+            "FAIL: terminal secondary stage 'Critical' must exit via canonical "
+            "exit-only completion (marksStageComplete=true + "
+            "required-tasks-completed); "
+            f"got {[(ec.get('type'), ec.get('marksStageComplete'), (first_rule_of_condition(ec) or {}).get('rule')) for ec in critical_exits]}"
+        )
+    if any(ec.get("type") == "return-to-origin" for ec in critical_exits):
+        sys.exit("FAIL: terminal secondary stage 'Critical' must not return to origin")
+
+    critical_case_exits = []
+    for cond in get_case_exit_conditions(plan):
+        rule = first_rule_of_condition(cond) or {}
+        if rule.get("selectedStageId") == critical["id"]:
+            critical_case_exits.append(cond)
+    if not critical_case_exits:
+        sys.exit("FAIL: terminal secondary stage 'Critical' needs a root case-exit row")
+    if not any((first_rule_of_condition(c) or {}).get("rule") == "selected-stage-completed" for c in critical_case_exits):
+        sys.exit(
+            "FAIL: Critical root case-exit should use selected-stage-completed; "
+            f"got {[(first_rule_of_condition(c) or {}).get('rule') for c in critical_case_exits]}"
+        )
 
     default = get_default_sla(issues)
     if not default:
@@ -193,7 +231,8 @@ def main():
         "return-to-origin exit, 2h SLA + sla-breached UserGroup escalation, AND a "
         "wait-for-timer task using timeDate (wait until 2026-05-01) with "
         "current-stage-entered task-entry; Critical has a second interrupting "
-        "selected-stage-exited entry referencing Process + return-to-origin exit"
+        "selected-stage-exited entry referencing Process + terminal exit-only exit "
+        "and root case-exit"
     )
 
 
