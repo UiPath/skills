@@ -55,6 +55,16 @@ def _build_task_yaml(skill: str, dataset: Path) -> str:
     # Threshold gating lives in Python (see main) — keeping it out of the
     # YAML avoids two enforcement points with potentially different
     # comparison semantics at the boundary.
+    #
+    # stop_when: auto is REQUIRED, not an optimization: the experiment's
+    # defaults arm run_limits.stop_early, and an armed run with no stop
+    # criterion is a hard EarlyStopConfigError at resolution (coder_eval >=
+    # 0.8.10). Gate rows are all positives, so auto arms pass-stop: the run
+    # ends the moment {skill} engages, with the verdict a full run would
+    # have produced (any-engagement latch is monotonic), and a recall miss
+    # never fires a live event so it still runs to the cap. With a single
+    # positive criterion and no distractors, early stop cannot change
+    # recall.yes — only cost.
     return f"""\
 task_id: skill-activation-gate-{skill}
 description: Single-skill activation gate (positives only) for {skill}
@@ -75,6 +85,7 @@ success_criteria:
     description: "{skill} activation"
     skill_name: {skill}
     expected_skill: "${{row.expected_skill}}"
+    stop_when: auto
 """
 
 

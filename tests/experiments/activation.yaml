@@ -20,6 +20,12 @@ defaults:
     # event and run to the cap, so keep it small. (`decided` is invalid here:
     # >= 0.8.9's any-engagement latch narrows each instance to ONE decidable
     # polarity.) See coder_eval "early stop on criterion".
+    #
+    # HARNESS CONSTRAINT: cooperative early-stop is Claude Code-only. codex and
+    # antigravity agents do not support it, and an armed run with such an agent
+    # is a hard EarlyStopConfigError at resolution — runs using `--type codex`
+    # or `--type antigravity` MUST add `-D run_limits.stop_early=false` (they
+    # then pay the full max_turns: 3 on every row; verdicts are unchanged).
     max_turns: 3
     stop_early: true
     task_timeout: 120

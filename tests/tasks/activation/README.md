@@ -36,6 +36,8 @@ uv run --project /path/to/coder_eval coder-eval run \
 
 Reports land in `tmp/<run-id>/`. The suite gate fails per criterion on `recall.yes < 0.70`. Class imbalance (~50 yes / ~1140 no per skill) makes accuracy and recall.no trivially high; recall.yes is the only meaningful gate.
 
+Early stop: the experiment arms `run_limits.stop_early` and every criterion sets `stop_when: auto` (coder_eval >= 0.8.10), so a row ends the moment any skill engages — pass-stop on the expected skill, fail-stop on a misfire; no-engagement rows run to `max_turns: 3`. Claude Code agent only: for `--type codex` or `--type antigravity` add `-D run_limits.stop_early=false`. For authoritative precision numbers (a pass-stop can hide a distractor misfire on a later tool call), run with `-D run_limits.stop_early=false`.
+
 ## Adding a new skill
 
 1. Create `<new-skill>.jsonl` with positive prompts (one JSON object per line, fields: `id`, `prompt`).
