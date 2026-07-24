@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "_doc": "A second affected job (ClaimIntake, ClaimsOps folder — a DIFFERENT process in a DIFFERENT folder). Its Info is a different infrastructure error (could not obtain the user token from Orchestrator) in the same window. Two unrelated automations failing with Orchestrator-side infra errors minutes apart corroborates a platform incident rather than an automation defect.",
+  "Data": {
+    "Key": "ddff7788-99aa-00bb-11cc-22dd33445577",
+    "StartTime": "2026-06-26T08:13:41.220Z",
+    "EndTime": "2026-06-26T08:13:42.010Z",
+    "State": "Faulted",
+    "Source": "Schedule",
+    "Info": "Could not obtain the user token from Orchestrator.",
+    "ReleaseName": "ClaimIntake",
+    "Type": "Unattended",
+    "RuntimeType": "Serverless",
+    "HostMachineName": "",
+    "FolderKey": "c6d7e8f9-a0b1-2345-6789-abcdef012345",
+    "ProcessType": "Process",
+    "JobError": {},
+    "ErrorCode": "Orchestrator",
+    "TraceId": "ddff7788-99aa-00bb-11cc-22dd33445577",
+    "Id": 671770022
+  }
+}
