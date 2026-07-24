@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "_doc": "One of the affected jobs (NightlyBilling, Billing folder). Info is an infrastructure error (503 from Orchestrator), not an automation-logic exception. Combined with the same class of error across four other unrelated processes in the same window, this points at a platform incident.",
+  "Data": {
+    "Key": "ddff7788-99aa-00bb-11cc-22dd33445566",
+    "StartTime": "2026-06-26T08:12:03.100Z",
+    "EndTime": "2026-06-26T08:12:04.900Z",
+    "State": "Faulted",
+    "Source": "Schedule",
+    "Info": "The remote server returned an error: (503) Server Unavailable. Orchestrator returned 503 while starting the job.",
+    "ReleaseName": "NightlyBilling",
+    "Type": "Unattended",
+    "RuntimeType": "Unattended",
+    "HostMachineName": "MOCK-HOST",
+    "FolderKey": "b6c6d7e8-f9a0-1234-5678-9abcdef01234",
+    "ProcessType": "Process",
+    "JobError": {},
+    "ErrorCode": "Orchestrator",
+    "TraceId": "ddff7788-99aa-00bb-11cc-22dd33445566",
+    "Id": 671770011
+  }
+}

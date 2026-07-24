@@ -1,0 +1,12 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Cross-folder Faulted jobs in the reported window (08:12-08:17). FIVE distinct processes across THREE folders (Billing, ClaimsOps, HRBots) all faulted within ~5 minutes, each with an infrastructure-flavored error (503 / could-not-obtain-token / connection reset), not an automation-logic exception. This fan-out across unrelated automations in a tight window is the platform-incident fingerprint — the cause is NOT any single automation.",
+  "Data": [
+    {"Key": "ddff7788-99aa-00bb-11cc-22dd33445566", "State": "Faulted", "ProcessName": "NightlyBilling", "FolderName": "Billing", "Type": "Unattended", "RuntimeType": "Unattended", "Machine": "MOCK-HOST", "StartTime": "2026-06-26T08:12:03.100Z", "EndTime": "2026-06-26T08:12:04.900Z"},
+    {"Key": "ddff7788-99aa-00bb-11cc-22dd33445577", "State": "Faulted", "ProcessName": "ClaimIntake", "FolderName": "ClaimsOps", "Type": "Unattended", "RuntimeType": "Serverless", "Machine": "", "StartTime": "2026-06-26T08:13:41.220Z", "EndTime": "2026-06-26T08:13:42.010Z"},
+    {"Key": "ddff7788-99aa-00bb-11cc-22dd33445588", "State": "Faulted", "ProcessName": "PayrollSync", "FolderName": "HRBots", "Type": "Unattended", "RuntimeType": "Unattended", "Machine": "MOCK-HOST-2", "StartTime": "2026-06-26T08:14:55.640Z", "EndTime": "2026-06-26T08:14:57.300Z"},
+    {"Key": "ddff7788-99aa-00bb-11cc-22dd33445599", "State": "Faulted", "ProcessName": "InvoiceMatcher", "FolderName": "Billing", "Type": "Unattended", "RuntimeType": "Unattended", "Machine": "MOCK-HOST", "StartTime": "2026-06-26T08:15:30.880Z", "EndTime": "2026-06-26T08:15:32.140Z"},
+    {"Key": "ddff7788-99aa-00bb-11cc-22dd334455aa", "State": "Faulted", "ProcessName": "OnboardingBot", "FolderName": "HRBots", "Type": "Unattended", "RuntimeType": "Serverless", "Machine": "", "StartTime": "2026-06-26T08:16:48.500Z", "EndTime": "2026-06-26T08:16:49.220Z"}
+  ]
+}
