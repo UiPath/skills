@@ -76,10 +76,19 @@ return { hasError: false, data: $vars.httpCall.output.body };
 
 ```javascript
 const raw = $vars.fetchRecords.output;
-const body = typeof raw?.body === "string" ? JSON.parse(raw.body) : (raw?.body ?? raw);
-const rows = Array.isArray(body)
-  ? body
-  : (body?.items ?? body?.records ?? body?.Records ?? body?.value ?? body?.data ?? []);
+let body = raw?.body ?? raw;
+if (typeof body === "string") {
+  try {
+    body = JSON.parse(body);
+  } catch {
+    return { rows: [], count: 0, diagnostic: "body was not valid JSON" };
+  }
+}
+
+// Use the exact output field you discovered from the upstream node. Do not
+// silently guess across multiple possible collection keys when the schema is
+// known for this activity.
+const rows = Array.isArray(body?.records) ? body.records : [];
 return { rows, count: rows.length };
 ```
 

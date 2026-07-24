@@ -34,9 +34,9 @@ initial_prompt: |
   `uip is resources run list "uipath-salesforce-slack" "curated_channels"`
   with the `is-sandboxes` connection until you find the channel. If the first
   page has `Data.Pagination.HasMore: "true"`, call the same command again with
-  `--query "nextPage=<Data.Pagination.NextPageToken>"`. Do not configure
-  `bodyParameters.channel` as the literal string `simple`; configure it as the
-  resolved channel ID `C083AN4E61E`.
+  `--query "nextPage=<Data.Pagination.NextPageToken>"`. Configure
+  `bodyParameters.channel` with the resolved channel ID, not the literal string
+  `simple`.
   The checker expects the canonical solution/project layout exactly at
   `SlackPaginationTest/SlackPaginationTest/SlackPaginationTest.flow`, so create
   a solution named `SlackPaginationTest` first and initialize the Flow project

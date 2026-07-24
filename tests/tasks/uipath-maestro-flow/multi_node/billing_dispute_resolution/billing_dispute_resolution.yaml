@@ -65,13 +65,11 @@ initial_prompt: |
          `autoResolutionEligible` (boolean), `creditAmount` (number),
          `confidence` (number), `rationale` (string).
   7. **Switch on `recommendedAction`**:
-      Use a real `core.logic.switch` node here; a `core.logic.decision` node is
-      not equivalent for this step and will fail the structural checker.
       - `escalate_to_manager` → the **approval decision** node (step 8).
-       - `auto_resolve` → a small Script ("Log Credit Amount", returns
-         `$vars.<analyst>.output.creditAmount`) → the **financial posting** node
+      - `auto_resolve` → a small Script ("Log Credit Amount", returns
+        `$vars.<analyst>.output.creditAmount`) → the **financial posting** node
          (step 9).
-       - `reject` → **Return Rejection** end node (step 10).
+      - `reject` → **Return Rejection** end node (step 10).
   8. **Approval decision (`core.logic.decision`)** — represents the manager
      approval outcome. The human approval step has been removed, so evaluate the
      decision to **Approved** by default (expression `false`, with `trueLabel`
