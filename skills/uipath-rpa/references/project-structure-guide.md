@@ -54,7 +54,7 @@ Promote logic only as reuse materializes:
 1. **Inline** — used once in one workflow
 2. **Separate workflow file** — reused within the project
 3. **Shared library** — reused across projects ([library-authoring-guide.md](library-authoring-guide.md))
-4. **UI Library** — selectors shared across projects ([ui-automation-guide.md § Object Repository as a Published UI Library](ui-automation-guide.md))
+4. **UI Library** — selectors shared across projects ([uia-starter-guide.md § Object Repository as a Published UI Library](uia-starter-guide.md))
 
 ## Example — Invoice Processing Project (XAML)
 

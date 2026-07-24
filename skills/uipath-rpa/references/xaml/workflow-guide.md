@@ -167,7 +167,7 @@ For end-to-end authoring of `ConnectorActivity` XAML (connection + type ID + Con
 
 ### UI Automation — Target Configuration Gate (MANDATORY)
 
-Before writing any XAML with UI activities: [ui-automation-guide.md](../ui-automation-guide.md) MUST be read IN FULL first. Every UI element target MUST be configured through the `uia-configure-target` skill flow — [uia-configure-target-workflows.md](../uia-configure-target-workflows.md) MUST be read IN FULL first.
+Before writing any XAML with UI activities: the UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first (SKILL.md Rule 7). Every UI element target MUST be configured through the `uia-configure-target` skill flow — the guide mandates the target-capture orchestration reference to read IN FULL first.
 
 **NEVER** manually call low-level `uip rpa uia` CLI commands outside of the skill flow.
 
@@ -220,7 +220,7 @@ uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 2. **Structural Errors** — Fix XML structure. Cross-check against [xaml-basics-and-rules.md](xaml-basics-and-rules.md).
 3. **Type Errors** — Check activity doc for correct types and enum values. For JIT types: [jit-custom-types-schema.md](jit-custom-types-schema.md).
 4. **Activity Properties Errors** — Read activity doc for properties, conditional groups, valid configurations. Fallback: `activities get-default-xaml`. Watch for OverloadGroup conflicts.
-5. **Logic Errors** — Verify expression syntax matches project language. For UI automation: use `debug start`; [ui-automation-guide.md](../ui-automation-guide.md) MUST be read IN FULL first (see § Running UI Automation Workflows for the debug procedure).
+5. **Logic Errors** — Verify expression syntax matches project language. For UI automation: use `debug start`; follow the debug procedure in [uia-starter-guide.md § Running UI Automation Workflows](../uia-starter-guide.md).
 
 **When stuck:** Defer to user for minor config details. If failing to resolve an activity, consider InvokeCode as a last resort.
 

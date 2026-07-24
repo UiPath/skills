@@ -64,5 +64,5 @@ Some scenarios force a direct shellout — a vendor script with exact-CLI requir
 
 1. **Defaulting to PowerShell when a coded workflow would do.** See § Default.
 2. **Using `Invoke Process` when `InvokePowerShell` works.** Skipping the typed activity for no reason triples the gotcha surface.
-3. **Driving UI from PowerShell.** Use UiPath UIAutomation activities — [ui-automation-guide.md](ui-automation-guide.md) MUST be read IN FULL first.
+3. **Driving UI from PowerShell.** Use UiPath UIAutomation activities — the UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first (SKILL.md Rule 7).
 4. **Omitting `PowerShellProcess`.** A robot upgrade can silently land your script on a different runtime.
