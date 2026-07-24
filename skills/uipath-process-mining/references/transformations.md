@@ -9,8 +9,12 @@ editor surface.
 
 Four template models: **`Event_log`** (built from the source; the events table),
 **`Cases`** (aggregates Event_log — one row per case), **`Tags`** and
-**`Due_dates`** (safe `where 1=0` stubs that depend only on `ref('Cases')`).
-`Event_log` builds first and independently. `models/schema/sources.yml` is
+**`Due_dates`** (ship as safe `where 1=0` stubs depending only on `ref('Cases')`).
+`Tags` and `Due_dates` are pre-registered **Case-child** tables — fill their stubs
+with real rows keyed on `Case_ID` to get per-case labels (`Tag`/`Tag_type`) or
+per-case SLAs (`Expected_date`/`Actual_date`/`On_time`/`Cost`) with **no add-table
+needed**. See [`references/data-model.md`](references/data-model.md) for when to use
+them vs a custom table. `Event_log` builds first and independently. `models/schema/sources.yml` is
 generated from the data mapping and lists every input table with **all** its
 columns (mapped → TargetName, unmapped → raw source name), so multi-table custom
 apps can `source('sources', '<Table>')` any loaded table.
