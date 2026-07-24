@@ -147,8 +147,12 @@ Default to the catalog example's `action_type`, and state which of the two the r
 
 One `LC_GUARDRAIL_RECOMMENDED` (Info) per missing guardrail. The message must carry: which guardrail /
 `security_category`, why (the matched `when_to_use` / `use_cases` item or the data flow), the recommended scope,
-and the recommended action with the protection-vs-audit signal. Cite the catalog's `examples[].config` in the
-fix. Examples:
+and the recommended action with the protection-vs-audit signal. It must also carry a source-evidence clause in
+the form `<source path>: <exact matching identifier(s)>`. Copy schema property names, tool names, resource names,
+and other matched identifiers verbatim from the source; never replace them with display-friendly prose. For a
+schema match, cite the property path and names, for example
+`agent.json inputSchema.properties: customer_email, full_name, ssn`. Cite the catalog's `examples[].config` in
+the fix. Examples:
 
 - *"Recommend a PII-detection guardrail at Agent scope with a **block** action — the input schema carries
   `customer_email` / `ssn` (data_privacy); blocking at Agent · PRE stops unexpected PII before the LLM.
@@ -188,8 +192,9 @@ Merge findings into the Step 5 "Rule Findings" subsection (SKILL.md Step 2.5b), 
    (`when_not_to_use`, `when_to_use` / `use_cases`, `examples[].config.action_type`).
 3. **Catalog unavailable → defer Audit Mode** (Rules Skipped), keep Recommend Mode's `agent.json`-only detection
    with generic wording. Never guess effectiveness/relevance without the catalog.
-4. **Recommendations are one Info rule** (`LC_GUARDRAIL_RECOMMENDED`), one finding per missing guardrail, details
-   in the message; signal **block/escalate** (protection) vs **log** (audit).
+4. **Recommendations are one Info rule** (`LC_GUARDRAIL_RECOMMENDED`), one finding per missing guardrail. The
+   message preserves the exact source path and matched identifiers verbatim, then signals **block/escalate**
+   (protection) vs **log** (audit).
 5. **Never silently downgrade block → log** — a security-critical guardrail at `log` is a defect
    (`LC_GUARDRAIL_ACTION_INEFFECTIVE`), not an acceptable choice, unless the catalog/agent shows a stated reason.
 6. **Do not name platform-documented validators** (`harmful_content` / `intellectual_property` /
