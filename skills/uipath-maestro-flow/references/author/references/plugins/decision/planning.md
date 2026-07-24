@@ -36,3 +36,7 @@ Use a Decision node for binary branching (if/else) based on a boolean condition.
 - Decision nodes produce exactly **two** outgoing edges: one from `true`, one from `false`
 - Both branches must lead to a downstream node (no dangling branches)
 - Each branch typically ends at its own End node or merges back into a shared path
+
+## Outputs
+
+A Decision node is **routing-only** — it has no `.output` object for downstream nodes to read. `$vars.checkTemperature.output.<field>` resolves to `undefined` and crashes the node that dereferences it. When branches merge back into a shared node, that node must **recompute the condition** from the same upstream `$vars` the Decision tested (or a per-branch node must set a variable before the merge); it cannot ask the gateway which branch ran. See [node-output-wiring.md § Routing Nodes](../../../shared/node-output-wiring.md#routing-nodes-decision--switch-have-no-output).
