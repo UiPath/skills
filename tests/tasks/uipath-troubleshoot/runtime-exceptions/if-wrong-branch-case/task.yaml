@@ -16,7 +16,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir
@@ -34,9 +33,8 @@ initial_prompt: |
   Something is wrong with my order automation. Every order is being sent to the
   manual review queue even when the source system already marked it approved —
   yet the Orchestrator job shows as Successful, no error. The run is job
-  c9a4e2f1-7b53-4d81-a260-3f8e1c6d0b49 in the Shared folder, and the project
-  source is in the current working directory. Why is it routing everything to
-  manual review, and how do I fix it?
+  c9a4e2f1-7b53-4d81-a260-3f8e1c6d0b49 in the Shared folder. Why is it routing
+  everything to manual review, and how do I fix it?
 
 success_criteria:
   - type: skill_triggered

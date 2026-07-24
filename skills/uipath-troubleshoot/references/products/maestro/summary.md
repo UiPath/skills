@@ -42,15 +42,15 @@
 | Deployment Error — DateTime Input | High | "Package entry points definition is invalid" due to DateTime BPMN input parameters | [deployment-datetime-input.md](./playbooks/deployment-datetime-input.md) |
 | JS Runtime Discrepancy | High | JS expression passes in editor but fails at runtime — Jint lacks browser APIs | [js-runtime-discrepancy.md](./playbooks/js-runtime-discrepancy.md) |
 | Agent Traces Disappearing | High | Traces missing due to AI Trust Layer Trace TTL policy | [agent-traces-disappearing.md](./playbooks/agent-traces-disappearing.md) |
-| Autopilot 429 Too Many Requests | High | HTTP 429 rate limiting on Autopilot features | [autopilot-429.md](./playbooks/autopilot-429.md) |
+| Autopilot 429 Too Many Requests | High | HTTP 429 "Failed to apply" in the Autopilot designer; runtime connector 429 (DAP-RT-1101) → Integration Service request-failed | [autopilot-429.md](./playbooks/autopilot-429.md) |
 | Multi-Instance Marker InvalidCastException | High | JS array cannot be cast to ExpressionList — switch to C# expressions | [marker-invalid-cast.md](./playbooks/marker-invalid-cast.md) |
 | Attachment Not Found After Retention | High | Files disappear when job retention deletes the owning job | [attachment-not-found.md](./playbooks/attachment-not-found.md) |
 | Argument Mismatch (400) — Generic | Medium | Generic 400 argument mismatch; route to #5 or #6 for specifics | [argument-mismatch-400.md](./playbooks/argument-mismatch-400.md) |
-| Service Task Child Job Faulted (170002) | High | Error 170002, child job faulted — chase child error as root cause, add boundary error event | [service-task-child-job-faulted.md](./playbooks/service-task-child-job-faulted.md) |
+| Service Task Child Job Faulted (170002) | High | Error 170002, child job faulted - pull the child job key, hand the child's diagnosis to the Orchestrator playbooks, add boundary error event | [service-task-child-job-faulted.md](./playbooks/service-task-child-job-faulted.md) |
 | Debug vs Deploy Mismatch | Medium | Process works in debug but fails after deploy — identity, permissions, or bindings | [debug-vs-deploy.md](./playbooks/debug-vs-deploy.md) |
 | Deployment Failure | Medium | Solution deployment fails — duplicate entry points, trigger conflicts, or stale references | [deployment-failure.md](./playbooks/deployment-failure.md) |
 | Variable and Expression Errors | Medium | Missing output variables, assignment errors, case sensitivity in gateway conditions | [variable-expression-errors.md](./playbooks/variable-expression-errors.md) |
 | Boundary Event / Duplicate Task | Medium | Task running twice, boundary events firing unexpectedly, missing incident logging | [boundary-event-duplicate-task.md](./playbooks/boundary-event-duplicate-task.md) |
 | File Handling Issues | Medium | Files not passed correctly, attachment not found, file type incompatibility | [file-handling.md](./playbooks/file-handling.md) |
-| Multi-Instance Parallel Marker | Medium | Parallel marker failures, collection size limits, NoneType errors | [multi-instance-parallel.md](./playbooks/multi-instance-parallel.md) |
+| Multi-Instance Parallel Marker | Medium | Marker failures (400008 without InvalidCastException) - collection size limits, NoneType errors, non-array input | [multi-instance-parallel.md](./playbooks/multi-instance-parallel.md) |
 | BPMN Job Stuck | Low | Instance stuck with no progress or error — disconnected connection, child job not created, or backend delay | [bpmn-job-stuck.md](./playbooks/bpmn-job-stuck.md) |

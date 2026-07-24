@@ -12,6 +12,12 @@ What this looks like:
 - "Failed to evaluate the input collection variable"
 - Exclusive gateway conditions not matching expected values
 
+Not this playbook:
+- `Failed to evaluate the input collection variable for the marker element` with code `400008`: `InvalidCastException` + `ExpressionList` → [marker-invalid-cast](marker-invalid-cast.md); other marker failures (size, null items, non-array) → [multi-instance-parallel](multi-instance-parallel.md). Use this playbook for that message only when no marker element is involved
+- Codes `400300`/`400301`/`400302` or `Property 'X' not found against object of type ExpressionDictionary` → [expression-evaluation-errors](expression-evaluation-errors.md)
+- Gateway raises `400001` (`No outgoing flow condition met`) → [gateway-no-outgoing-flow](gateway-no-outgoing-flow.md); this playbook covers conditions that evaluate but match the wrong branch (case mismatch, emoji)
+- `<api> is not defined` naming a browser API (btoa, atob, TextEncoder) → [js-runtime-discrepancy](js-runtime-discrepancy.md)
+
 What can cause it:
 - Drag/drop swimlane bug — moving task nodes in swimlanes can clear root-level variable references
 - Variable name case sensitivity in exclusive gateway conditions (e.g., "customer" vs "Customer")

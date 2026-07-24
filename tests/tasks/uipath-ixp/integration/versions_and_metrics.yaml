@@ -19,7 +19,10 @@ sandbox:
   # ixp-tool, not the BYOS host's stale pre-migration plugin.
   driver: docker
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
+    - type: template_dir
+      path: ../_shared/live_calls_template
     - type: template_dir
       path: ../_shared/fixtures
 
@@ -51,27 +54,27 @@ initial_prompt: |
   Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
 success_criteria:
-  - type: command_executed
+  - type: file_matches_regex
     description: "Confirmed predictions to establish ground truth (so metrics exist)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+confirm'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Improved a field's extraction instruction (the change that produces v2)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+update-prompts\b.*--updates'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*Total Amount))[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Pulled metrics for each version"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+get-metrics'
-    min_count: 2
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+projects\s+get-metrics)[^\r\n]*$){2}
     weight: 1.0
     pass_threshold: 1.0
 

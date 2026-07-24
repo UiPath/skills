@@ -55,7 +55,7 @@ Connector body sinks (`bodyParameters`, `queryParameters`, `pathParameters`) req
 | `"=metadata.X"` | `"=js:(metadata.X)"` |
 | `"=bindings.X"` | `"=js:(bindings.X)"` |
 | `"=<other-prefix>.X"` (e.g. `=response.X`, `=Error.X`, `=datafabric.X`, `=orchestrator.JobAttachments[0]`) | `"=js:(<other-prefix>.X)"` — strip leading `=`, wrap in `=js:(...)` |
-| `"<- "Stage"."Task".out"` | resolve to `"=vars.<outputVar>"` → `"=js:(vars.<outputVar>)"` |
+| `"<- "Stage"."Task".out"` | resolve through the common [output-reference-ID algorithm](../../variables/io-binding/impl-json.md#output-reference-id-authoritative) to `"=vars.<outputReferenceId>"` → `"=js:(vars.<outputReferenceId>)"` |
 | `"=js:(<expr>)"` (pre-wrapped operator expression) | pass-through unchanged |
 | `"<literal value>"` (no leading `=`) | pass-through unchanged |
 
@@ -205,7 +205,7 @@ Generate the task skeleton:
 }
 ```
 
-Append the task to the target stage's `tasks[]` array. Default: own task set (one task per lane). **Exception:** if this task is a parallel member of a `runs-sequentially` group, push into the shared lane of that group (shared lane = parallel siblings inside the sequence, semantic).
+Append the task to the target stage's `data.tasks` structure in its planned order. Lane placement is structural/layout state; it does not express sequencing. Add `runs-sequentially` to the task's entry conditions when the frontend toggle is selected.
 
 ### Step 9 — Append root-level bindings
 

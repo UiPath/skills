@@ -108,7 +108,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "uip maestro flow validate BillingDisputeResolution/BillingDisputeResolution/BillingDisputeResolution.flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

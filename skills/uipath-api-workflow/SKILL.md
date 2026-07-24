@@ -1,6 +1,6 @@
 ---
 name: uipath-api-workflow
-description: "UiPath API Workflow assistant — author, run, package, publish JSON workflows executed by `uip api-workflow run`. Covers logical/hierarchical structure (Sequence, Assign, JavaScript, If with #Wrapper/#Then/#Else, ForEach, DoWhile, Break, TryCatch, Wait, Response — including nested patterns) AND HTTP / Integration Service connector activities (Gmail, Outlook, GitHub, Slack, etc.) authored via `uip api-workflow registry resolve` + `stub`. Triggers on prompts about UiPath API workflows, project type \"Api\", JSON workflow files containing `document.dsl`/`do[]`, any of those activity types, or fetching data from a public/vendor API. Uses `uip api-workflow run` for local execution and `uip solution pack`/`publish` for deployment. For .flow Maestro→uipath-maestro-flow. For .xaml/coded RPA→uipath-rpa. For coded agents→uipath-agents. For Coded Apps→uipath-coded-apps."
+description: "UiPath API Workflow assistant — author, run, validate, package, publish, deploy, and troubleshoot JSON workflows for `uip api-workflow`. Covers logical/hierarchical structure (Sequence, Assign, JavaScript, If with #Wrapper/#Then/#Else, ForEach, DoWhile, Break, TryCatch, Wait, Response — nested patterns) AND HTTP / Integration Service connector activities (Gmail, Outlook, GitHub, Slack) authored via `uip api-workflow registry resolve`/`stub`. Operate: run locally, manage IS connections (`uip is connections`), pack/publish/deploy via `uip solution`, invoke published workflows via HTTP/schedule/event triggers. Diagnose: validate → run --no-auth loop, root-cause run/expression/connection faults, inspect job logs & traces. Triggers on UiPath API workflows, project type \"Api\", JSON files with `document.dsl`/`do[]`, those activity types, or fetching from a public/vendor API. For .flow Maestro→uipath-maestro-flow. For .xaml/coded RPA→uipath-rpa. For coded agents→uipath-agents. For Coded Apps→uipath-coded-apps."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -19,7 +19,8 @@ Build, run, and publish UiPath API Workflows — JSON files conforming to the CN
 - User asks for an **Integration Service connector activity** (Gmail Send Email, Outlook Get Newest Email, GitHub Search Issues, Slack Send Message, etc.) — follow the discovery flow in [references/connector-activity-discovery.md](references/connector-activity-discovery.md)
 - User asks for a **generic HTTP Request** that needs to render in StudioWeb's designer — same discovery flow
 - User asks about **JavaScript expressions, `$context`, `$input`, `$workflow`, `WorkflowStart`, or the `export.as` pattern**
-- User asks how to **debug** a failing API workflow run
+- User asks how to **debug** a failing API workflow run — the local `validate` → `run --no-auth` loop, or a **post-publish cloud run** (job logs/traces). See [references/operating-published-workflows.md](references/operating-published-workflows.md)
+- User wants to **operate** a published workflow — invoke it (HTTP/schedule/Integration Service event trigger), start/list/stop its Orchestrator jobs, or **manage the Integration Service connections** it uses (`uip is connections list`/`ping`/`edit`). See [references/operating-published-workflows.md](references/operating-published-workflows.md)
 
 Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / coded RPA (→ `uipath-rpa`), coded agents (→ `uipath-agents`), Coded Web Apps (→ `uipath-coded-apps`).
 
@@ -82,9 +83,11 @@ Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / cod
     ```
     It scaffolds `project.uiproj` + `Workflow.json` + `entry-points.json` + `bindings_v2.json` and, when run inside a solution, **auto-registers the project in the surrounding `.uipx`** (correct `ProjectRelativePath` + a fresh `Id`). Success → `Code: "ApiWorkflowInit"`. Then edit `Workflow.json` only.
 
+    **Which mode.** Default = `init` inside a solution (Studio Web-editable + deployable — what a shipped automation needs). Use `--skip-solution-registration` ONLY when the user explicitly wants a CLI-only/local workflow that never opens in Studio Web or ships in a solution; it still emits the full project folder (`<name>/Workflow.json` + siblings), just no `.uipx` wiring. Never emit a lone `Workflow.json` with no project files — even a throwaway local workflow gets a project.
+
     **Why it matters:** a legacy `project.json` + `workflows/WF_*.json` layout (no `.uiproj`) passes every runtime gate — `validate`, `run`, `pack`, `publish`, deploy — but Studio Web rejects it as `invalid_project_folder` and never shows it. `init` is the one step that can't produce the wrong shape. Full layout + field rules: [references/workflow-file-format.md](references/workflow-file-format.md#project-structure-studio-web-editable-contract).
 
-    To **convert a legacy `project.json` project**, `init` a fresh sibling and move the existing workflow content into its `Workflow.json` (cleanest), or convert in place — see [references/troubleshooting.md](references/troubleshooting.md). Never wire it with `uip solution project add/remove` (errors on an already-registered name; `remove`+`add` destroys the project `Id`).
+    To **convert a legacy `project.json` project**, `init` a fresh sibling and move the existing workflow content into its `Workflow.json` (cleanest), or convert in place — see [references/troubleshooting.md](references/troubleshooting.md). Never wire it with `uip solution projects add/remove` (errors on an already-registered name; `remove`+`add` destroys the project `Id`).
 
 20. **`uip api-workflow validate <Workflow.json>` is the autonomous closure step for every authoring or edit cycle.** Run it as the LAST command before asking the user anything about runtime. It's offline (no auth, no network, no side effects): JSON Schema + semantic checks on the static file. Output codes:
     - `Result: "Success"`, `Code: "ApiwfValidate"`, `Data.Status: "Valid"` (exit 0) — possibly with `Data.Warnings`. Proceed to rule 21 (ask the user whether to run).
@@ -182,7 +185,7 @@ State the consequence in the question (e.g. "running with auth WILL send a real 
 
 Fix run failures in category order — **Structure > Expression > Activity Config > Logic** (higher categories often resolve lower ones). Full pitfall catalog: [references/troubleshooting.md](references/troubleshooting.md).
 
-### Phase 4: Package and Publish
+### Phase 4: Package, Publish, and Operate
 
 Once the workflow runs locally, deploy via the solution packager. If the project must open in Studio Web, confirm it uses the `init`-produced shape first (rule 19a) — runtime/pack success does not prove it.
 
@@ -204,6 +207,8 @@ uip solution publish <outputDir>/<package>.zip \
 ```
 
 Requires `uip login`.
+
+**Operate + diagnose the published workflow.** Once deployed, the workflow is an Orchestrator API process — the local `uip api-workflow` verbs no longer apply to it. Invoke it (HTTP/schedule/Integration Service event trigger), start/list/stop its jobs, manage the Integration Service connections it uses, and read cloud-run logs/traces via `uip or` / `uip is` / `uip traces`. Full command map: [references/operating-published-workflows.md](references/operating-published-workflows.md). These are sibling-skill surfaces (`uipath-platform`, `uipath-troubleshoot`) — delegate there for depth.
 
 ## Quick Start (CREATE from scratch)
 
@@ -245,6 +250,7 @@ uip solution publish ./build/MyApiSolution.zip --tenant MyTenant --output json
 | [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — three-step flow, sample stub output, field-shape rules, multipart subsection, worked examples |
 | [references/expressions-and-context.md](references/expressions-and-context.md) | Writing JS expressions, propagating outputs via `export.as`, accessing `$context` / `$input` / `$workflow`, JS_Invoke argument passing, strict-mode gotchas, key patterns |
 | [references/cli-reference.md](references/cli-reference.md) | All `uip` commands — `api-workflow init`, `run`, `build`, `pack`, `validate`, `solution init`, `solution pack`, `solution publish`, `login` |
+| [references/operating-published-workflows.md](references/operating-published-workflows.md) | **Operating + diagnosing a published workflow** — invoke via HTTP/schedule/event triggers, manage Integration Service connections (`uip is connections`), start/list/stop Orchestrator jobs (`uip or jobs`), read cloud-run logs/traces (`uip or jobs logs`, `uip traces spans get`). Delegates depth to `uipath-platform` / `uipath-troubleshoot` |
 | [references/troubleshooting.md](references/troubleshooting.md) | Failed runs, structure/expression/loop/nesting/response/validation pitfalls, packaging errors, publish errors, debugging strategy |
 
 ## Templates
@@ -269,7 +275,8 @@ The mistakes an agent makes most often (each maps to a Critical Rule above — s
 - **Do NOT** read workflow inputs as `$input.<name>` from a non-first activity — use `$workflow.input.<name>`. See rule 13.
 - **Do NOT** invoke `uip api-workflow run` autonomously, and never with auth without an explicit "yes" — vendor calls have irreversible side effects (emails sent, tickets created). See rules 20–21.
 - **Do NOT** hand-assemble a project (`project.json` + `main.json`/`workflows/WF_*.json`). Scaffold with `uip api-workflow init <name>` — it writes the correct `project.uiproj` shape and registers it in the `.uipx`. The legacy `project.json`-only shape runs and packs but Studio Web rejects it (`invalid_project_folder`) and never shows it. See rules 19–19a.
-- **Do NOT** wire a project into the solution with `uip solution project add/remove` — it errors on an already-registered name, and `remove`+`add` destroys the project `Id`. `init` registers it; for an already-built project, edit the `.uipx` `ProjectRelativePath` in place. See rule 19a.
+- **Do NOT** emit a lone `Workflow.json` with no project files, even for a quick local run. It runs under `uip api-workflow run` but is not a Studio Web project — can't be edited or shipped. Every workflow lives in an `init`-scaffolded project (`--skip-solution-registration` when no solution is needed). See rule 19a ("Which mode").
+- **Do NOT** wire a project into the solution with `uip solution projects add/remove` — it errors on an already-registered name, and `remove`+`add` destroys the project `Id`. `init` registers it; for an already-built project, edit the `.uipx` `ProjectRelativePath` in place. See rule 19a.
 - **Do NOT** trust "it packed / published / ran" as proof a project opens in Studio Web — every runtime gate passes on the wrong shape. Scaffolding with `init` is what guarantees it (rule 19a).
 
 ## Infinite Loop Prevention

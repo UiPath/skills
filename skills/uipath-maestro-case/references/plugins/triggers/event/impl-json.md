@@ -105,7 +105,7 @@ Write the un-minted `caseShape` into the shared sidecar artifact for the variabl
 
 **Sidecar lifecycle:**
 
-- **Persistence.** The sidecar persists across hard stops (Phase 2 approval gate, Phase 2 publish-for-preview, etc.) so Phase 3 re-entry doesn't lose spec data. Do NOT regenerate on re-entry — read the existing file.
+- **Persistence.** The sidecar persists across hard stops (Phase 2 publish-for-review, etc.) so Phase 3 re-entry doesn't lose spec data. Do NOT regenerate on re-entry — read the existing file.
 - **Regeneration.** Rule 6 (`Continue with regenerate from scratch`) replaces the sidecar entirely (Write, not append), starting from an empty `{}`. Rule 7 (`Continue without regenerate`) preserves the existing sidecar.
 - **Multi-trigger append.** Trigger plugin runs once per trigger T-entry. Each invocation **merges by T-number** into the existing sidecar JSON: read the file, set or replace the top-level `<T-number>` key, write back. Append order is **T-number ascending** (T02 then T03 then ...). Re-running a single trigger T-entry overwrites only its own key; other triggers' keys are untouched. This makes the sidecar **idempotent** for multi-trigger cases.
 - **Abort cleanup.** On `Abort` (per [`phased-execution.md`](../../../phased-execution.md) abort semantics), the sidecar persists alongside other artifacts — `phased-execution.md` mandates no artifact deletion on abort; user owns partial state. On the next run with regenerate-from-scratch (Rule 6) the sidecar is overwritten; otherwise it is reused.
@@ -140,7 +140,7 @@ When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `conne
 
 `data.uipath` carries **only** `serviceType` — no `context[]`, `inputs[]`, `outputs[]`, `bindings[]`, `metadata`. Equivalent intent to a connector-task `data: {}` placeholder; trigger nodes need `label` / `description` / `parentElement` to render at all.
 
-**Sibling artifacts:** append the matching `entry-points.json` entry per [manual/impl-json.md § Recipe — entry-points.json](../manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints). No trigger-edge is created (edges retired) — the first stage's `case-entered` entry condition starts the case. No root bindings, no `inputOutputs[]` entries from this trigger.
+**Sibling artifacts:** append the matching `entry-points.json` entry per [manual/impl-json.md § Recipe — entry-points.json](../manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints). No trigger-edge is created (Rule 20) — the first stage's `case-entered` entry condition starts the case. No root bindings, no `inputOutputs[]` entries from this trigger.
 
 **Log:** `[SKIPPED] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.`
 
@@ -169,7 +169,7 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 5. **Placeholder:** all four `data.uipath` fields beyond `serviceType` **absent** (not empty arrays); no root bindings entries from this trigger; no `trigger-spec-cache.json` entry from this trigger; `[SKIPPED]` log entry present.
 6. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify).
 7. When the trigger has event parameters: `data.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`).
-8. No edge from this trigger (edges retired) — the case starts via the first stage's `case-entered` entry condition. `schema.edges` stays `[]`.
+8. `schema.edges` stays `[]` (Rule 20) — no edge from this trigger.
 9. `entry-points.json` has a matching entry referencing the trigger node ID.
 
 Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added.

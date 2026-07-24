@@ -1,0 +1,93 @@
+# Tenant-gated. Requires the Databricks-backed Database Hub (JDBC)
+# connection in the runner tenant, reaching the sandbox.globalmart schema whose
+# `employees` table is seeded with the fixture rows this task asserts on (Alice
+# Johnson / Bob Smith / Carol Davis in Engineering+Marketing). Ground truth is
+# owned by the spartacus connector-sanity fixture, NOT this repo.
+#
+# The "Special SDK case" (ENGCE-58640): Databricks SQL has NO native connector
+# path — `uipath-databricks-databricks` exposes only AI serving endpoints, so a
+# SQL intent against Databricks MUST resolve to the JDBC gateway
+# (`uipath-uipath-jdbc.execute-query-synchronously`). Getting that disambiguation
+# right is the point of the test. Per ENGCE-58640: one database, one complex
+# scenario, Flow surface — not the full activity matrix.
+#
+# skip:false — the Databricks-backed JDBC connection + seeded employees table are
+# confirmed on the codereval tenant. Runs under the authed (nightly) experiment.
+task_id: skill-flow-jdbc-databricks-query
+description: >
+  Databricks-via-JDBC coverage (Maestro Flow connector, special SDK case): builds
+  a Flow whose Execute Query Synchronously node
+  (`uipath-uipath-jdbc.execute-query-synchronously`) runs a complex aggregate SQL
+  query (GROUP BY / HAVING / AVG / ORDER BY — expressible only via raw SQL, not
+  the generic record activities) against the `employees` table on a Databricks
+  database, exposing the result as a flow output. Grades structurally: the .flow
+  parses as JSON and wires the JDBC gateway connector as a real node with a bound
+  connection id + folder key and the execute-query-synchronously operation — not
+  the native Databricks connector, not an HTTP fallback. Exercises the
+  disambiguation that Databricks SQL has no native connector — it must resolve to
+  the JDBC gateway. Tenant prerequisite: a Databricks-backed `uipath-uipath-jdbc`
+  connection reaching `sandbox.globalmart` (employees seeded per the spartacus
+  connector-sanity fixture). REQUIRES cloud auth AND that connection.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:single-node, connector, uipath-uipath-jdbc, ipe]
+skip: false
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 900
+
+initial_prompt: |
+  Create a new Flow project called "DatabricksQuery" with a manual trigger.
+
+  It should run a SQL query against a Databricks database using the Database Hub
+  (JDBC) connector, and expose the query result as a flow output. Run an aggregate
+  query over the `employees` table that groups by department, keeps only
+  departments with two or more employees, and orders them by average salary.
+
+  Discover the Databricks-backed Database Hub (JDBC) connection in the
+  `Shared/uipath-maestro-flow` folder from the tenant — do NOT hand-author or
+  invent a connection id. If the JDBC connector isn't available in your registry,
+  stop rather than falling back to a generic HTTP request.
+
+  Validate the final flow file and debug it.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent loaded the uipath-maestro-flow skill"
+    tool_name: "Skill"
+    command_pattern: "uipath-maestro-flow"
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "uip maestro flow validate was called"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "uip maestro flow debug was called"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+debug'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "DatabricksQuery checks: valid flow wires the JDBC Execute-Query node with a bound connection, not the native Databricks connector or an HTTP fallback"
+    command: "python3 $TASK_DIR/check_databricks_query.py"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120
