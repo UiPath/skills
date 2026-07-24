@@ -17,7 +17,7 @@ description: >
   fix. Grades the conclusion (skill_triggered + llm_judge against RESOLUTION.md),
   not the trajectory.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
