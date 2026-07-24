@@ -47,7 +47,11 @@ table`). `fn` ∈ `average | count | sum | min | max`. The sugar and a raw
 ## Restrictions & other subcommands
 
 - **`groupBy` on an `Event_log` (event-table) field 400s** `UserError_EventTableUsedInQuery`.
-  Event-level frequencies come from the process model / `insights`, not `run`.
+  `run` aggregates case-level entities only. For event/activity-level breakdowns:
+  use `insights` (`processId` + 1..10 numeric `metrics` from `query info`) or the
+  process model (`layout`), OR precompute the counts in a dbt model (e.g. group
+  the event log by activity), register it as a data-model table
+  ([`data-model.md`](data-model.md)), and `query run` that table.
 - `percentile --field <id> --values 0.5,0.9,0.95 [--filters <json>]` — points in 0..1.
 - `rca` needs a non-empty `selectedSet`; `insights` needs a `processId` and 1..10 numeric `metrics`.
 - `details` returns raw rows (`DetailsDataRequestDto`); `--limit` is clamped 1..1000 server-side.
