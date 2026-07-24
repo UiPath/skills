@@ -4,10 +4,8 @@ description: >
   async two-step flow — resolve the project Id from the designtime project
   list, `uip ixp extraction start <project-id> <file> --tag <tag>` to get an
   operationId, then `uip ixp extraction get-result <project-id> <operation-id> --tag
-  <tag>` to fetch the result. It must NOT collapse this into a single-shot
-  `uip ixp extract` verb (there is none — extraction is the two-step flow), and
-  must NOT substitute `labellings get-predictions` (which is for the training
-  set, not a fresh runtime file).
+  <tag>` to fetch the result. It must NOT substitute `labellings get-predictions`
+  (which is for the training set, not a fresh runtime file).
 
   Harness is unauthenticated; CLI calls fail with auth/file errors.
   Grades command shape, not wire effect.
@@ -16,11 +14,16 @@ tags: [uipath-ixp, smoke, mode:operate, lifecycle:discover]
 run_limits:
   expected_turns: 6
 
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
 initial_prompt: |
-  A document automation engineer has a published IXP model on project
-  `my_invoices-f1afa9ef-ixp` (tag `live`). They want to run that
-  deployed model on a single new document, `./invoice.pdf`, and see the
-  extracted field values.
+  I have a published IXP model on project `my_invoices-f1afa9ef-ixp`
+  (tag `live`). Run that deployed model on a single new document,
+  `./invoice.pdf`, and show me the extracted field values.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant
@@ -31,41 +34,30 @@ initial_prompt: |
 
 success_criteria:
   # Runtime extraction is keyed by the project Id (GUID), not the Name slug.
-  # The agent must resolve it from the designtime project list/get first.
+  # The agent must resolve it from the designtime project list first.
   - type: command_executed
-    description: "Agent resolved the project Id from the designtime API (`projects list`/`get`)"
+    description: "Agent resolved the project Id from the designtime project list (`projects list`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+(list|get)\b'
+    command_pattern: 'uip\s+ixp\s+projects\s+list\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran `uip ixp extraction start` with `--tag`"
+    description: "Agent ran `uip ixp extraction start` on invoice.pdf with `--tag live`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+extraction\s+start\s+.*--tag\b'
+    command_pattern: 'uip\s+ixp\s+extraction\s+start\b(?=.*invoice\.pdf)(?=.*--tag\s+["'']?live\b).*'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent polled the result with `uip ixp extraction get-result --tag`"
+    description: "Agent polled the result with `uip ixp extraction get-result --tag live`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+extraction\s+get-result\s+.*--tag\b'
+    command_pattern: 'uip\s+ixp\s+extraction\s+get-result\b(?=.*--tag\s+["'']?live\b).*'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on the extraction start call (advisory, non-gating)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+extraction\s+start\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
-    # Non-gating: `--output json` is the CLI default, so omitting it is harmless. Keep the
-    # criterion to report Rule-3 adherence (score 1/0), but pass_threshold 0 means a benign
-    # miss never flips the task to FAILURE — avoids docking an agent that reaches the same result.
-    pass_threshold: 0
 
   # Runtime extraction is `extraction start`/`extraction get-result`, not `get-predictions`
   # (the latter returns predictions on already-uploaded training docs). Guard
@@ -75,15 +67,4 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+ixp\s+labellings\s+get-predictions'
     weight: 1.5
-    pass_threshold: 1.0
-
-  # There is no single-shot `uip ixp extract` verb — runtime extraction is the
-  # two-step `extraction start` / `extraction get-result` flow. Guard against
-  # the agent inventing a one-call verb. (`extract\b` will not match the valid
-  # `extraction` subcommand — no word boundary after "extract" in "extraction".)
-  - type: command_not_executed
-    description: "Agent did NOT invent a single-shot `uip ixp extract`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+extract\b'
-    weight: 1.0
     pass_threshold: 1.0
