@@ -22,6 +22,12 @@ What can cause it:
 - Script Task iterator references unresolved by the engine (fix shipped in alpha and rolled forward)
 - Upstream activity failed silently and left the consumed variable unset
 
+Not this playbook - route on these observable data instead:
+- Code `400007` / `Input collection for the marker element must not be null` → [marker-input-null](marker-input-null.md)
+- Code `400008` / `Failed to evaluate the input collection variable for the marker element`: with `InvalidCastException` + `ExpressionList` → [marker-invalid-cast](marker-invalid-cast.md); otherwise (collection size, null item properties, non-array type) → [multi-instance-parallel](multi-instance-parallel.md)
+- `<api> is not defined` naming a browser API (btoa, atob, TextEncoder) and the expression passes in the JS Editor → [js-runtime-discrepancy](js-runtime-discrepancy.md)
+- `Missing output variables`, `Assignments are not allowed in expressions`, or a gateway condition silently taking the wrong branch with no evaluation error → [variable-expression-errors](variable-expression-errors.md)
+
 What to look for:
 - The exact property/variable name in `errorDetails`
 - Whether the variable is initialized on every execution path that leads to this expression

@@ -1,0 +1,6 @@
+{
+  "Name": "JiraStatusUpdater",
+  "ProjectType": "Process",
+  "Description": "JiraStatusUpdater automation project.",
+  "MainFile": "Main.xaml"
+}

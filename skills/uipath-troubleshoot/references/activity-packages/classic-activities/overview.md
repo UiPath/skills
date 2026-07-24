@@ -39,8 +39,13 @@ Studio under `UiPath.Core.Activities`. They split across two NuGet packages:
 **System / Core:**
 - File operations (`Rename File`, `Move File`, `Append Line`) — source not found, destination not a
   folder, file already exists, path is a directory, access denied, file locked.
-- Workflow invocation (`Invoke Workflow File`, `Start Triggers`) — file not found, argument
-  name/type/direction mismatch, isolated/elevated/session validation, persistence not supported.
+- Workflow invocation at run time (`Invoke Workflow File`, `Start Triggers`) — file not found,
+  argument name/type/direction mismatch, isolated/elevated/session validation, persistence not
+  supported.
+- Workflow invocation at design/build time (`Invoke Workflow File`) — `Cannot set unknown member
+  ...ArgumentsVariable` (package-version mismatch), Cache Mechanism Error / `Error code: 7` (project
+  cache corruption), invoked `.xaml` outside the project root or a null path variable, or a new
+  required argument not re-imported.
 - Code invocation (`Invoke Code`) — compilation failure, unsupported language, or exceptions thrown
   by the user's own code at run time.
 - Queue operations (`Add Queue Item`) — empty queue name, invalid/duplicate item-information keys,

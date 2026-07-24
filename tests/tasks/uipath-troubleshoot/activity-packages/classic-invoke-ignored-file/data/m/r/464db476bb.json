@@ -1,0 +1,33 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "3c8f1a52-7b09-4d64-9e28-1a5c0f3e7b26",
+    "StartTime": "2026-07-16T13:22:05.410Z",
+    "EndTime": "2026-07-16T13:22:06.220Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "Info": "Invoke CalculateTax: Could not find file 'C:\\Users\\robot\\.nuget\\packages\\taxprocessing\\1.0.22\\lib\\net6.0\\Helpers\\CalculateTax.xaml'.\r\n\r\nin Main.xaml\r\n    at InvokeWorkflowFile \"Invoke CalculateTax\"\r\n    at Sequence \"Main\"\r\n    at DynamicActivity \"Main\"\r\n\r\nSystem.IO.FileNotFoundException: Could not find file 'Helpers\\CalculateTax.xaml'.\r\n   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)\r\n   at System.IO.FileStream..ctor(String path, FileMode mode)\r\n   at UiPath.Core.Activities.InvokeWorkflowFile.LoadWorkflow(String fileName)\r\n   at UiPath.Core.Activities.InvokeWorkflowFile.<ExecuteAsync>d__.MoveNext()",
+    "CreationTime": "2026-07-16T13:22:05.410Z",
+    "ReleaseName": "TaxProcessing",
+    "Type": "Unattended",
+    "InputArguments": "{}",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 1500287,
+    "FolderKey": "d4e08b31-5f29-4c48-a163-8a1d2c9f7e60",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\svc_robot",
+    "OrchestratorUserIdentity": "original_email@test.com",
+    "LastModificationTime": "2026-07-16T13:22:06.220Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "3c8f1a527b094d649e281a5c0f3e7b26",
+    "Id": 66122640
+  }
+}

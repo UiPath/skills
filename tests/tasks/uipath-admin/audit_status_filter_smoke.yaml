@@ -14,17 +14,8 @@ run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  Show me all FAILED audit events on the active tenant from the last
+  Show me all the failed events in this tenant's Admin audit trail from the last
   7 days.
-
-  Important:
-  - The `uip` CLI is available but the `admin` subcommand may not be
-    installed and/or the CLI is not connected to a live tenant.
-    Commands WILL fail — that is expected and acceptable.
-    Run each command exactly once regardless of errors.
-    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
-    do NOT troubleshoot errors.
-  - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
   - type: command_executed

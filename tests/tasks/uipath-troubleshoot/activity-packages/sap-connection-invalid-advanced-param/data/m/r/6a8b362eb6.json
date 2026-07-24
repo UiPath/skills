@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-20T05:40:19.700Z",
+      "Message": "SAP Application Scope: Advanced Parameters has invalid parameter BOGUSKEY. Connection cannot be established.\r\nException Type: UiPath.SAP.BAPI.Utilities.SapActivityException\r\nin Main.xaml\r\n    at SapApplicationScope \"SAP Application Scope\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.SAP.BAPI.Utilities.SapActivityException: Advanced Parameters has invalid parameter BOGUSKEY. Connection cannot be established.\r\n   at UiPath.SAP.BAPI.ConnectionService.SapConnectionService.SapConnectionService.OverideWithAdvancedParameters(SapConnection sapConnection)\r\n   at UiPath.SAP.BAPI.Activities.SapApplicationScope.Execute(NativeActivityContext context)"
+    }
+  ]
+}

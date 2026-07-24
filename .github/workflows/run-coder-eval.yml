@@ -174,12 +174,21 @@ jobs:
       - uses: astral-sh/setup-uv@v4
 
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
-      # deps). No source checkout.
-      # codex is NOT installed on the host here: under the docker driver the
-      # agent runs inside skills-image, so the codex SDK belongs in that image
-      # (separate TODO), not on the host CLI.
+      # deps). The Linux docker driver still imports the selected agent class on
+      # the host before dispatching work, so agent-specific extras must be
+      # installed here as well as in the container image.
       - name: Install coder-eval
-        run: uv pip install --system "coder-eval==${{ needs.partition.outputs.coder_eval_version }}"
+        env:
+          CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
+          AGENT: ${{ inputs.agent }}
+        run: |
+          if [ "$AGENT" = "codex" ]; then
+            uv pip install --system "coder-eval[codex]==${CE_VERSION}"
+          elif [ "$AGENT" = "antigravity" ]; then
+            uv pip install --system "coder-eval[antigravity]==${CE_VERSION}"
+          else
+            uv pip install --system "coder-eval==${CE_VERSION}"
+          fi
 
       # Pull the agent image from GHCR (never built from source); the skills
       # image extends it below. Tag defaults to the wheel version but can be

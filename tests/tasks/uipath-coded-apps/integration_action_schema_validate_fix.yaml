@@ -110,8 +110,13 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Invalid `format: email` on the numeric `days` field was removed (validator rejects `format` on non-string types)"
-    command: "python3 -c \"import json,sys; d=json.load(open('action-schema.json'))['inputs']['properties']['days']; sys.exit(0 if d.get('format') != 'email' else 1)\""
+    # Name-agnostic invariant: NO numeric-typed input may carry `format: email`
+    # (the validator rejects `format` on non-string types). Scans all properties
+    # instead of hard-coding `days` — the agent may validly rename the field
+    # (e.g. `days` → `daysOff`), and a hard-coded key lookup throws a KeyError
+    # (crash, not a graceful fail) when it does.
+    description: "No numeric input field carries the invalid `format: email` (validator rejects `format` on non-string types)"
+    command: "python3 -c \"import json,sys; p=json.load(open('action-schema.json')).get('inputs',{}).get('properties',{}); bad=[k for k,v in p.items() if isinstance(v,dict) and v.get('type') in ('number','integer') and v.get('format')=='email']; sys.exit(1 if bad else 0)\""
     timeout: 5
     expected_exit_code: 0
     weight: 1.5

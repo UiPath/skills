@@ -1,0 +1,8 @@
+# Slack Activities (Integration Service) Playbooks
+
+**Investigation guide:** [investigation_guide.md](./investigation_guide.md) — data correlation rules and testing prerequisites for Slack Integration Service Activities investigations
+
+| Issue | Confidence | Description | Playbook |
+|-------|:---:|-------------|----------|
+| Slack — Connection Resolution Failure | Medium | A Slack Integration Service activity (`SendMessage`, `GetUserByEmail`) faults at connection resolution, before the Slack call, with `System.AggregateException`. Inner `UiPath.IntegrationCore.Utilities.ConnectionException` is `Unable to find a connection of type  with the specified Id '<guid>'.` (connection deleted / wrong id / out of scope) or `The selected connection is no longer valid. Please use another connection or create a new one.` (revoked/invalidated); a transient `503 (Service Unavailable)` IPC error surfaces the same way. The cause is the connection, never the channel/email input. | [connection-resolution-failure.md](./playbooks/connection-resolution-failure.md) |
+| Slack — API Rejected the Request | Medium | A Slack Integration Service activity faults *after* the connection resolved, with `UiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException` (`Error Code: [<http>]`, `Message: <slack_error>`, `ProviderMessage: {"ok":false,"error":"<slack_error>",...}`). The Slack `error` code is the cause — e.g. `invalid_arguments` / missing required field `channel`, `channel_not_found`, `not_in_channel`, `invalid_auth`, `ratelimited`. Also the generic BAF auth form `Unauthorized - An invalid connection id, and/or Bearer token provided.` | [slack-api-error.md](./playbooks/slack-api-error.md) |

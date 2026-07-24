@@ -15,7 +15,6 @@ description: >
 tags: [uipath-platform, integration, integration-service, test-manager, resources, execute]
 
 sandbox:
-  driver: tempdir
   python: {}
   node: {}
 

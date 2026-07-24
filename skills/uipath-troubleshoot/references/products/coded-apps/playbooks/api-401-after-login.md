@@ -9,6 +9,7 @@ confidence: high
 What this looks like:
 - The app authenticates and renders, then an SDK call to `https://api.uipath.com/...` returns `HTTP 401 Unauthorized` (visible in the network tab or a caught SDK error)
 - The failure is on a specific API call, **after** a successful login — not an OAuth `error=` on the callback URL (that is [invalid-scope.md](./invalid-scope.md))
+- A 401 on an **API Workflow connector/HTTP activity** (`Invalid Organization or User secret, or invalid Element token provided` in the activity result payload) is a different surface → [api-workflows/connection-auth-failure.md](../../api-workflows/playbooks/connection-auth-failure.md)
 
 What can cause it:
 - The access token lacks the scope required by the API being called

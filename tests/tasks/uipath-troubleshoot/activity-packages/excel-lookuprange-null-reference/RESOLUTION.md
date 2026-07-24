@@ -58,7 +58,7 @@ that does not resolve, but here the activity has no workbook context at all
      modern surface, use `Use Excel File` / `Excel Process Scope` with
      `LookUpRangeX`).
    - **Who:** RPA developer
-   - **Source:** `excel-activities/playbooks/lookup-range-null-reference.md`
+   - **Source:** `excel-activities/playbooks/null-reference-from-activity.md`
 2. After adding the scope, confirm the scope opens the intended workbook and
    the `SheetName` ("Orders") exists in it - if the NRE persists after the
    scope is in place, check for a missing/renamed sheet or an undefined

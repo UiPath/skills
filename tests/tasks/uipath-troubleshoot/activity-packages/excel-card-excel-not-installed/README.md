@@ -27,8 +27,8 @@ Workbook activities or Modern `Use Excel File` (OpenXML default);
 workflows that need COM features need Excel installed on the host.
 
 This maps to:
-`skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/excel-application-card-failures.md`
-(the "Excel not installed / Interop unavailable" branch).
+`skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/excel-not-installed.md`
+(the Classic `Excel Application Scope` discriminator).
 
 ## How this test reproduces it
 
@@ -44,7 +44,7 @@ The expected investigation chain: `folders list-current-user` →
 inner COMException 0x80040154) → `jobs logs` (the three Trace lines
 pinning surface + host state + COM error) → workflow source review
 (confirms Classic surface used for a workflow that doesn't need
-COM) → conclude branch 1.
+COM) → conclude the missing-install cause through the Classic-scope discriminator.
 
 > **Note on the surface-choice fork.** The test rewards agents
 > who recognize that the fix depends on whether the workflow

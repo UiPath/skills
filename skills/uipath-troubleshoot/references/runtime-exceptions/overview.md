@@ -35,3 +35,10 @@ The workflow ran as an Orchestrator job. Troubleshooting data comes from:
 | `System.ArgumentNullException` | A method received a null argument where non-null was required |
 | `System.InvalidOperationException` (`The source contains no data rows`) | LINQ `.CopyToDataTable()` in an `Assign` when the query matched zero rows |
 | `Cannot assign from type '<X>' to '<Y>'` (design-time) | Studio Error List validation error on an `Assign` — RHS expression type ≠ target variable type (e.g. `System.Object`→`System.String`) |
+| `System.InvalidOperationException` | An operation is invalid for the object's current state (empty/unmatched LINQ sequence, missing `Nullable` value, collection modified mid-enumeration) |
+| `System.ArgumentException` | A method argument is invalid for reasons other than null/range (undefined enum name, duplicate key, bad format) |
+| `System.IO.DirectoryNotFoundException` | A file/directory operation targeted a path whose directory portion does not exist |
+| `System.IndexOutOfRangeException` | An array or string was indexed outside its bounds |
+| `System.Collections.Generic.KeyNotFoundException` | A dictionary was indexed with a key it does not contain |
+| `System.ArgumentOutOfRangeException` | An argument was outside the range of valid values (`Substring`, `List<T>` index, date/time component) |
+| `Expression Activity type 'VisualBasicValue`1' requires compilation` | An expression activity was not AOT-compiled and runtime JIT is disabled (modern `Windows`/`Portable` .NET projects) — caused by invalid/smart quotes, expression-language mismatch, or post-`Legacy` migration |

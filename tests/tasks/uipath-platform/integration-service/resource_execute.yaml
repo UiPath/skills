@@ -10,7 +10,6 @@ run_limits:
   expected_turns: 15
 
 sandbox:
-  driver: tempdir
   python: {}
   node: {}
 

@@ -1,0 +1,49 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Recent Faulted NightlyReconciler jobs in UnattendedOps. Three failures on RECON-BOT-01 with identical 'Could not start executor. Creating user session timed out.' — a session-creation TIMEOUT (no logon-failure/locked/RDP code), the entry into job-faulted-session-timeout. Each ran ~120s (the session-creation timeout) before faulting, and each entered Running first (see jobs history) — rules out no-host/Pending.",
+  "Data": [
+    {
+      "Key": "c0ffee01-1111-4222-8333-444455556666",
+      "State": "Faulted",
+      "ProcessName": "NightlyReconciler",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "RECON-BOT-01",
+      "MachineKey": "beef0001-2222-4333-8444-555566667777",
+      "StartTime": "2026-07-13T02:00:05.100Z",
+      "EndTime": "2026-07-13T02:02:05.400Z",
+      "CreationTime": "2026-07-13T02:00:04.900Z"
+    },
+    {
+      "Key": "c0ffee02-2222-4333-8444-555566667788",
+      "State": "Faulted",
+      "ProcessName": "NightlyReconciler",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "RECON-BOT-01",
+      "MachineKey": "beef0001-2222-4333-8444-555566667777",
+      "StartTime": "2026-07-13T01:00:05.050Z",
+      "EndTime": "2026-07-13T01:02:05.300Z",
+      "CreationTime": "2026-07-13T01:00:04.870Z"
+    },
+    {
+      "Key": "c0ffee03-3333-4444-8555-666677778899",
+      "State": "Faulted",
+      "ProcessName": "NightlyReconciler",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "RECON-BOT-01",
+      "MachineKey": "beef0001-2222-4333-8444-555566667777",
+      "StartTime": "2026-07-13T00:00:05.020Z",
+      "EndTime": "2026-07-13T00:02:05.260Z",
+      "CreationTime": "2026-07-13T00:00:04.800Z"
+    }
+  ]
+}

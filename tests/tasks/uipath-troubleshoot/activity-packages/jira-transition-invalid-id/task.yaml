@@ -1,0 +1,100 @@
+task_id: skill-troubleshoot-jira-transition-id
+description: >
+  UiPath troubleshooting agent must diagnose a Transition Issue activity that
+  faults with HTTP 400 "Transition id '31' is not valid for issue OPS-1421 in
+  its current status". The Transition Issue activity has a hardcoded
+  TransitionId="31", but the ticket's current status (In Review) has no legal
+  transition with that ID - transition IDs are per-status edges, not global
+  constants, and the workflow never calls Get Transitions to resolve the ID
+  dynamically. Success = agent matches the jira-transition-issue-failures
+  playbook (sub-case T2), identifies the hardcoded/invalid transition ID for the
+  current status - NOT a missing required field (T1), a permission/validator
+  (T3), or a deserialization bug (T4) - AND recommends resolving the transition
+  ID dynamically via Get Transitions, without fabricating host actions.
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: data
+  mock_path_dirs:
+  - m
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My JiraStatusUpdater process faults in Orchestrator on every run. The folder
+  is "Issue Sync". It dies on the Transition Issue step with a 400 Bad Request
+  about the transition not being valid. It worked on the tickets I first tested
+  it with, but now it fails.
+
+  I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
+  only Orchestrator. Diagnose what you can from Orchestrator and the project
+  source. If the answer needs something only I can check, give me the exact
+  things to verify and I'll come back with the result. Do not stall waiting on
+  me - hand me the list and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing JiraStatusUpdater process.
+    You built the Transition Issue step. You are away from the robot host and
+    only have Orchestrator access. You trust the agent and want a diagnosis or a
+    check list.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, jira-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the check list at the end."
+    - "If asked how the transition step is configured, say it is whatever is in the project - you set it up once from an example."
+    - "If asked what status the failing tickets are in, say they are not all in the same status as the ones you first tested."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

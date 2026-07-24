@@ -1,0 +1,33 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "4e9d2a71-6c05-4f38-9b12-8a3f0e7c1d59",
+    "StartTime": "2026-07-16T14:41:08.220Z",
+    "EndTime": "2026-07-16T14:41:09.010Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Agent",
+    "SourceType": "Agent",
+    "Info": "Invoke ValidatePayment: The values provided for the root activity's arguments did not satisfy the root activity's requirements: The following keys from the input dictionary do not map to arguments and must be removed: in_Amount.  Please note that argument names are case sensitive.\r\nParameter name: rootArgumentValues\r\n\r\nin Main.xaml\r\n    at InvokeWorkflowFile \"Invoke ValidatePayment\"\r\n    at Sequence \"Main\"\r\n    at DynamicActivity \"Main\"\r\n\r\nSystem.ArgumentException: The values provided for the root activity's arguments did not satisfy the root activity's requirements: The following keys from the input dictionary do not map to arguments and must be removed: in_Amount.  Please note that argument names are case sensitive.\r\nParameter name: rootArgumentValues\r\n   at System.Activities.Hosting.WorkflowInstance.RegisterExtensionManager(WorkflowInstanceExtensionManager extensionManager)\r\n   at System.Activities.WorkflowApplication.EnsureInitialized()\r\n   at UiPath.Core.Activities.InvokeWorkflowFile.<ExecuteAsync>d__.MoveNext()",
+    "CreationTime": "2026-07-16T14:41:08.220Z",
+    "ReleaseName": "PaymentValidation",
+    "Type": "Attended",
+    "InputArguments": "{}",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "RuntimeType": "StudioPro",
+    "RequiresUserInteraction": true,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 1500287,
+    "FolderKey": "a2f18c53-9d07-4b26-8e41-6c0b3a9f7d28",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\user1",
+    "OrchestratorUserIdentity": "original_email@test.com",
+    "LastModificationTime": "2026-07-16T14:41:09.010Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "4e9d2a716c054f389b128a3f0e7c1d59",
+    "Id": 66123980
+  }
+}

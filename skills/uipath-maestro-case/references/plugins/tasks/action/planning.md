@@ -19,7 +19,7 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 | `priority` | sdd.md (default `Medium`) | `Low` / `Medium` / `High` / `Critical`.  |
 | `recipient` | sdd.md assignee email; **prompt the user if silent** | See Recipient Handling below. |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
-| `outputs` | Discovered via `tasks describe` | Decision, comments, structured form fields |
+| `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
 | `isRequired` | sdd.md (default `true`) |  |
 
 ## Task Title Fallback
@@ -52,7 +52,7 @@ Mark `<UNRESOLVED: action-app "<resource-name>" in folder "<folder>" not found i
 
 > Resolved action tasks only — placeholders skip this entire section (see § Unresolved Fallback).
 
-- If sdd.md **names a specific user email**, record it in `tasks.md`. Sets `assignmentCriteria: "user"` at execution time.
+- If sdd.md **names a specific user email**, record the bare email exactly as authored in `tasks.md`; never replace it with a UUID resolved for an SLA recipient or write the SLA-only `<uuid> / <email>` pair. Sets `assignmentCriteria: "user"` at execution time.
 - If sdd.md **names a group or role**, do **not** record a recipient — group assignment is configured separately via Actions app rules. Record a note in `tasks.md` so the user remembers to configure group assignment externally.
 - If sdd.md is **silent on assignee**, **prompt the user** using **AskUserQuestion** with a direct open-ended prompt:
   > "The action task '<display-name>' has no assignee specified in sdd.md. Who should receive it? Enter an email, a group/role name, or 'Skip' to leave it unassigned for now."
@@ -81,9 +81,10 @@ Resolved action task. For the unresolved placeholder shape, see [placeholder-tas
 - inputs:
   - <input_name> <- "<Stage>"."<Task>".<output>
   - <input_name> = "<literal-or-expression>"
-- outputs: decision, comments
+- outputs:
+  - <SDD output row, copied verbatim>
 - isRequired: true
 - order: after T<m>
-- lane: <n>  # FE layout; increment per task. Within `runs-sequentially` group, parallel members share a lane (semantic).
+- lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
 - verify: Confirm Result: Success, capture TaskId
 ```

@@ -17,7 +17,10 @@ sandbox:
   # ixp-tool, not the BYOS host's stale pre-migration plugin.
   driver: docker
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
+    - type: template_dir
+      path: ../_shared/live_calls_template
     - type: template_dir
       path: ../_shared/fixtures
 
@@ -37,42 +40,44 @@ initial_prompt: |
   Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
 success_criteria:
-  - type: command_executed
+  - type: file_matches_regex
     description: "Listed documents to resolve the filename → DocumentId, then re-read to save the remaining list"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+documents\s+list'
-    min_count: 2
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+documents\s+list)[^\r\n]*$){2}
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Deleted the named document by resolved id (with -y)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+documents\s+delete\b.*(-y|--yes)'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+documents\s+delete\b.*(-y|--yes))[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Listed projects to resolve Title → Name"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+list'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+list)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Renamed the project via update-title"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+update-title'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+update-title)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_not_executed
+  - type: file_matches_regex
     description: "Did NOT pass the raw filename through as a document id to delete"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+documents\s+delete\s+\S+\s+york_solutions_invoice\.png'
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+documents\s+delete\s+\S+\s+york_solutions_invoice\.png)[^\r\n]*$
+    must_match: false
     weight: 1.5
     pass_threshold: 1.0
 
