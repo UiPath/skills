@@ -58,7 +58,7 @@ A request is **single-skill** when:
 ```
 1. <component skill>   → scaffold any unbuilt component
 2. <component skill>   → testing for the component (mandatory)
-3. uipath-solution     → deploy the component to Orchestrator via `uip solution` (RPA always needs uipath-solution; agents / coded-apps self-deploy)
+3. uipath-solution     → deploy the component to Orchestrator via `uip solution` (RPA always needs uipath-solution; agents self-deploy; coded apps deploy via `uip solution` when the coded-app folder is under a parent `.uipx` — `uip codedapp init` under a solution auto-registers as `Type: "AppV2"`. Only standalone coded apps with no parent `.uipx` self-deploy via `uip codedapp publish` / `deploy`.)
 4. uipath-maestro-flow → design and wire the flow against the published components, validate, finalize
 5. uipath-maestro-flow → testing for the flow (mandatory)
 ```

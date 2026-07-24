@@ -28,7 +28,10 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **Coded Web App** | React/Vue/other frontend hosted on UiPath CDN | User-facing app accessed via a URL |
 | **Coded Action App** | React form wired to UiPath Action Center | Rendered inside human task reviews in Maestro/Agent workflows |
 
-> **Coded apps are not registered in `.uipx` solutions.** They have no `project.uiproj` / `project.json`, so `uip solution projects add` does not apply. A coded app can live alongside a solution directory but deploys independently via `uip codedapp publish` (and `uip codedapp deploy`), not via `uip solution pack` / `publish` / `deploy`.
+> **Two deploy paths, decided by where `uip codedapp init` runs.**
+>
+> - **Standalone (no parent `.uipx`)**: init writes a flat `dist/`, `uipath.json`, `project.uiproj`, `webAppManifest.json` at the project root and deploys via `uip codedapp pack` → `publish` (`-t Action` for action apps) → `deploy`. This is the classic single-app lifecycle covered by the rest of this skill.
+> - **In-solution (parent `.uipx` found)**: init writes the same manifests plus nests runtime + build artefacts under `source/dist/`, auto-registers as `Type: "AppV2"` in the `.uipx`, and emits `resources/solution_folder/app/{Coded,CodedAction}/`. From then on the app is part of the solution — `uip solution pack` bundles its `.nupkg` and `uip solution deploy run` provisions it in the deployment folder. **Do not** run `uip codedapp publish` / `deploy` on a coded app that's already registered in `.uipx` — that bypasses the solution's deploy config (external client ID, routing name, action schema) and double-registers the package. `uip solution projects add` / `projects import` register existing AppV2 folders too, reading `webAppManifest.config.isActionApp` to pick the `Coded` / `CodedAction` subType. For the solution-side lifecycle see [/uipath:uipath-solution](/uipath:uipath-solution).
 
 ## Critical Rules
 
