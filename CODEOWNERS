@@ -136,6 +136,9 @@
 /tests/tasks/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /tests/tasks/activation/uipath-troubleshoot.jsonl @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /skills/uipath-troubleshoot/references/products/agents/ @UiPath/llmops-team @andreibalas-uipath
+# Integration Service connector diagnostics (more specific rules override the generic troubleshoot owners)
+/skills/uipath-troubleshoot/references/products/integration-service/playbooks/connectors/ @chandusailella @baishalighosh
+/skills/uipath-troubleshoot/references/products/integration-service/playbooks/connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
 # Assistant desktop diagnostics domain (diagnostic archives — combined.log / Robot.log)
 /skills/uipath-troubleshoot/references/products/assistant/ @vasyop @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 
