@@ -356,3 +356,7 @@ Pass the query body via `--body` or `--file`; pagination uses `--limit` / `--cur
 - [`filter-platform-contract.md`](filter-platform-contract.md) — Filter body structure, per-type operator support matrix, and what to do when a request needs an unsupported operator
 - [`file-attachments.md`](file-attachments.md) — File field upload/download/delete file
 - [`bulk-import.md`](bulk-import.md) — CSV format requirements and the Basic-fields-only limitation (complex types — `CHOICE_SET_*`, `RELATIONSHIP`, `FILE`, `AUTO_NUMBER` — are **not supported** by `records import`; use `records insert` with a JSON body, plus `files upload` for FILE)
+
+## Packaging into a Solution
+
+To ship a folder-scoped entity or choice set as part of a deployable solution (`.uipx` → `.zip`), use [`uipath-solution`](/uipath:uipath-solution). Workflow: create the resource on the tenant here via `uip df entities create` / `uip df choice-sets create --folder-key <…>` first, then in the solution run `uip solution resources add --source remote --kind Entity|ChoiceSet --name <…> --folder-path <…>`. Local virtual stubs are not supported for DF kinds — they must already exist on the tenant before solution import.

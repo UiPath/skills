@@ -225,6 +225,15 @@ Effect on the file: appends `linkToResource: { name, folderPath }` to the matche
 
 When the same resource name appears multiple times in the config (different kinds), pass `resourceKey` instead of `name` to disambiguate. The CLI surfaces the available keys in the error message.
 
+For Data Fabric kinds (`Entity`, `ChoiceSet`), `link` chooses which Orchestrator entity or choice set the deployment will bind to. A common case is shipping the same solution to multiple tenants or folders: the package was built against an entity in a dev folder, and the deployment needs to use the prod copy of the same entity.
+
+```bash
+uip solution deploy config link config.json Customer \
+  --name Customer --folder-path "Prod/CRM"
+```
+
+The first `Customer` is the resource name inside the solution. `--name` and `--folder-path` identify the entity in Orchestrator to bind to. The two names don't have to match — link the solution's `Customer` to a `CustomerV2` entity in a different folder if that's what the target environment has.
+
 ### Unlink a Resource
 
 Remove the link so the resource is provisioned fresh in the deployment folder:
@@ -342,6 +351,22 @@ Folder filtering with `--folder-path` happens **after** fetching `--limit` resul
 ### Units Mismatch
 
 `--poll-interval` is in **milliseconds** (default 5000ms = 5s). `--timeout` is in **seconds** (default 360s = 6min). Do not confuse the two.
+
+### Data Fabric Resources Stay in Their Source Folder
+
+When the solution includes `Entity` or `ChoiceSet` resources imported via `solution resources add --source remote`, deploy does **not** move or copy them into the new deployment folder. The entity / choice set keeps the `FolderId` it had when created via `uip df entities create` / `uip df choice-sets create --folder-key <…>`; the new deployment folder only holds the binding.
+
+Data Fabric entities and choice sets are owned by the folder they were created in. A solution that imports one just records a pointer to that folder; deploying the solution into a different folder doesn't change ownership, it only wires up the binding the deployed projects will use.
+
+Verify post-deploy by querying the **source** folder, not the deployment folder:
+
+```bash
+# Source folder (where `uip df entities create --folder-key <X>` placed it)
+uip df entities list --folder-key <SOURCE_FOLDER_KEY> --output json
+
+# Deployment folder — will NOT contain the entity
+uip df entities list --folder-key <DEPLOY_FOLDER_KEY> --output json
+```
 
 ---
 
