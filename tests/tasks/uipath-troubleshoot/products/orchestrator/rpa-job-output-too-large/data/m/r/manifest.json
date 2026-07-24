@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the output-too-large scenario (job-output-too-large playbook). The agent chains: folders list -> jobs list --state Faulted -> jobs get (Info: could not retrieve result / message too large; OutputArguments empty) -> jobs logs (workflow completed, then handback failed on Out_AllInvoices DataTable) -> jobs traces (all activities Succeeded) and reads process/project.json + entry-points.json for the DataTable output argument. Keys are stable.",
+  "rules": [
+    { "match": "or folders list", "file": "folders-list.json" },
+    { "match": "or jobs list --folder-key f4a4b5c6-d7e8-9012-3def-456789012345 --state Faulted", "file": "jobs-list-faulted.json" },
+    { "match": "or jobs get bbdd5566-77ee-88ff-99aa-00bb11223344", "file": "jobs-get-failing.json" },
+    { "match": "or jobs logs bbdd5566-77ee-88ff-99aa-00bb11223344 --level Error", "file": "jobs-logs-failing-error.json" },
+    { "match": "or jobs logs bbdd5566-77ee-88ff-99aa-00bb11223344", "file": "jobs-logs-failing-error.json" },
+    { "match": "or jobs traces bbdd5566-77ee-88ff-99aa-00bb11223344", "file": "jobs-traces-failing.json" },
+    { "match": "traces spans get --job-key bbdd5566-77ee-88ff-99aa-00bb11223344", "file": "jobs-traces-failing.json" },
+    { "match": "docsai ask", "passthrough": true }
+  ],
+  "unmocked_default": { "response": "[]\n", "exit_code": 0 }
+}
