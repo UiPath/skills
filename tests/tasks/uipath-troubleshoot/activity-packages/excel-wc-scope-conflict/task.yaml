@@ -11,7 +11,7 @@ description: >
   must match the activity-packages/excel-activities/playbooks/write-cell-failures.md
   playbook and identify the Classic/Modern scope conflict (branch 1
   scope-conflict variant) from the workflow source — NOT the
-  external-locker variant covered by read-range-file-locked.md.
+  external-locker variant covered by workbook-file-locked.md.
 
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
@@ -25,7 +25,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir

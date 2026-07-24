@@ -59,16 +59,10 @@ initial_prompt: |
   publish, deploy, debug, or run the process.
 
 success_criteria:
-  - type: file_exists
-    description: "BPMN source was created"
-    path: "ContractVariantsBpmn/ContractVariantsBpmn.bpmn"
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Contract variant wrappers use the documented BPMN element types"
     command: "python3 $TASK_DIR/check_contract_variant_wrappers.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 5.0
+    weight: 6.0
     pass_threshold: 1.0

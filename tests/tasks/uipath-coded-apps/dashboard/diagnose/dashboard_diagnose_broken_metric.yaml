@@ -16,7 +16,6 @@ run_limits:
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
   node: {}
 
 pre_run:

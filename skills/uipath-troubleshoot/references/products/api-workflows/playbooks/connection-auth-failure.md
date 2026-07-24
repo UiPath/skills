@@ -10,6 +10,7 @@ What this looks like:
 - The workflow runs clean locally with `uip api-workflow run` but a Connector/HTTP activity fails once published (or against the real IS proxy)
 - The Integration Service proxy returns an auth-shaped **4xx**, surfaced in the failing activity's result. (The executor normalizes any 4xx from the proxy to a 400 client-error status on its own error envelope, so triage on the **status code in the result payload**, not the envelope status.)
 - A connection binding that is missing entirely fails earlier, locally, as a 400 validation error (`CONNECTION_REQUIRED`) before any proxy call — not a cloud auth failure
+- A 401 from a **browser Coded App** SDK call (`https://api.uipath.com/...` in the network tab, External Application PKCE token) is a different surface → [coded-apps/api-401-after-login.md](../../coded-apps/playbooks/api-401-after-login.md)
 
 The status code in the result payload discriminates the cause family:
 

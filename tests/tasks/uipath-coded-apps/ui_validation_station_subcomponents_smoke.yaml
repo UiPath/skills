@@ -1,0 +1,118 @@
+task_id: skill-coded-apps-ui-validation-station-subcomponents-smoke
+description: >
+  Smoke test (mode:build): agent composes a custom Document Understanding
+  review screen from the Validation Station **subcomponents** documented in
+  `references/widgets/validation-station.md §Compose-your-own layout`
+  (`DocumentViewer`, `CompactDocTypeField`, `CompactFieldsForm`,
+  `CompactTableEditor`, `CompactBusinessRules` + the `useBucketArtifacts`
+  hook) — NOT the all-in-one `<ValidationStation>`. Grades the four
+  mistakes the skill flags as easy to get wrong:
+  (1) fetch artifacts once and share them, not once per panel;
+  (2) give `sdk`/`data`/`folderId` to the fields form only, so a single
+  panel persists;
+  (3) set `persistent: false` for a static grid, or StrictMode renders it
+  blank;
+  (4) hide the fields form's built-in Business Rules / Doc Type panels when
+  rendering those standalone.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 10
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, build a custom document-review screen for a
+  Document Understanding validation task using the UiPath Validation Station.
+
+  The standard all-in-one Validation Station layout doesn't fit — I need a
+  custom arrangement. Put the document on the left; on the right, as separate
+  stacked panels, the document-type selector, the extraction fields, a
+  line-items table editor, and the evaluated business rules.
+
+  Selecting a field should highlight it in the document and open the right
+  editor for it. Only the fields panel saves the validated document — the rest
+  are display/edit only. Show the user a message if the save fails.
+
+  Author a single component at `src/components/ReviewWorkspace.tsx` at the
+  sandbox root. Assume the authenticated `sdk` comes from `useAuth()` and the
+  component receives an already-hydrated `task` prop (a `TaskGetResponse`
+  whose `task.data` is the `ContentValidationData` payload). Author the source
+  only — do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "src/components/ReviewWorkspace.tsx was created"
+    path: "src/components/ReviewWorkspace.tsx"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Imports from the Validation Station package"
+    command: "grep -Eq \"from ['\\\"]@uipath/ui-widgets-validation-station['\\\"]\" src/components/ReviewWorkspace.tsx"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Uses all five subcomponents (composes the widget, doesn't rebuild it)"
+    command: "for n in DocumentViewer CompactDocTypeField CompactFieldsForm CompactTableEditor CompactBusinessRules; do grep -q \"$n\" src/components/ReviewWorkspace.tsx || exit 1; done"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Chose the subcomponents path — does NOT mount the all-in-one <ValidationStation> tag (ValidationStationLanguage import is fine; this targets the JSX element)"
+    command: "grep -Eq '<ValidationStation[[:space:]/>]' src/components/ReviewWorkspace.tsx"
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Must-know #1 — fetches artifacts once: exactly one useBucketArtifacts(...) call site (not one per panel)"
+    command: "test \"$(grep -oE 'useBucketArtifacts\\(' src/components/ReviewWorkspace.tsx | wc -l | tr -d ' ')\" = \"1\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Must-know linking — a shared instanceId ties the subcomponents to one store"
+    command: "grep -q 'instanceId' src/components/ReviewWorkspace.tsx"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Must-know #2 — only one subcomponent receives the `sdk` prop (only CompactFieldsForm persists). Exactly one `sdk=` JSX prop."
+    command: "test \"$(grep -oE 'sdk[[:space:]]*=' src/components/ReviewWorkspace.tsx | wc -l | tr -d ' ')\" = \"1\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Must-know #3 — persistent is set false for the static grid (leaving it on makes StrictMode render the panel blank)"
+    command: "grep -Eq 'persistent:[[:space:]]*false|persistent=\\{false\\}' src/components/ReviewWorkspace.tsx"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Must-know #4 — fields form hides its built-in Business Rules and Doc Type panels (rendered standalone below), so each appears once"
+    command: "grep -q 'hideBusinessRules' src/components/ReviewWorkspace.tsx && grep -q 'hideDocumentTypeField' src/components/ReviewWorkspace.tsx"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Submit completion is wired (widget surfaces no error UI — host owns it)"
+    command: "grep -Eq 'onSubmitComplete' src/components/ReviewWorkspace.tsx"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

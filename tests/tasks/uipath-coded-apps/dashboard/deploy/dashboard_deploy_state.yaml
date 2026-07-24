@@ -9,7 +9,6 @@ description: >
 tags: [uipath-coded-apps, integration, dashboard, mode:operate, lifecycle:setup]
 
 sandbox:
-  driver: tempdir
   node: {}
 
 pre_run:

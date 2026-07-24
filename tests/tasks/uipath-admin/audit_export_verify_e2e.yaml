@@ -16,8 +16,10 @@ description: >
   <YYYY-MM-DD>.json JSON file per day into the output folder.
 
   LTS lag note: the export reads from the long-term store, which lags
-  the live `events` endpoint. We pin the window to dates at least 48h in
-  the past so LTS has caught up.
+  the live `events` endpoint by up to ~48h. The customer-style "past
+  week" prompt therefore includes trailing days that may come back
+  empty; the assertions below are structural (JSON-array shape +
+  LTS-schema keys) and tolerate empty or missing trailing day files.
 
   Blocker: this task requires the base-directory + generated-name export
   behavior in the published `@uipath/cli` (UiPath/cli#2585 must ship +
@@ -27,18 +29,8 @@ description: >
 tags: [uipath-admin, e2e, mode:operate, audit, export, real-artifact]
 
 initial_prompt: |
-  Export tenant audit events for the 3-day window from 5 days ago
-  through 2 days ago (UTC, whole days) as day-wise JSON files under the
-  ./audit-window base directory in the current working directory.
-  Resolve the dates with `date -u -d '5 days ago' +%Y-%m-%d` and
-  `date -u -d '2 days ago' +%Y-%m-%d` so the window slides with the
-  run date.
-
-  Important:
-  - The `uip` CLI is available and connected via env-var auth to a real
-    tenant. The export should produce a real folder of JSON files at the
-    requested path.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  Can you export the past week's tenant Admin audit events as JSON files? Save
+  them in a folder called audit-window.
 
 success_criteria:
   - type: command_executed

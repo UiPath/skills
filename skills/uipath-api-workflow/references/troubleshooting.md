@@ -582,7 +582,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### `Failed to parse <solution>.uipx`
 - **Cause:** Solution file is malformed JSON
-- **Fix:** Re-create with `uip solution init <name>` and re-add projects via `uip solution project add`
+- **Fix:** Re-create with `uip solution init <name>` and re-add projects via `uip solution projects add`
 
 ### Generated `operate.json` or `package-descriptor.json` mismatch
 - **Cause:** Stale files committed by hand or from an older CLI version
@@ -599,7 +599,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Fix (in-place conversion)** when you must keep the existing folder/`Id` (SKILL.md rule 19a, [workflow-file-format.md](workflow-file-format.md#project-structure-studio-web-editable-contract)):
   - Add `project.uiproj` (`ProjectType: "Api"`, `MainFile: "Workflow.json"`) and `entry-points.json` (`filePath: "content/Workflow.json"`, no leading slash, `type: "Api"`). Copy `bindings_v2.json` if present.
   - Rename the main workflow to `Workflow.json` at the project root.
-  - Edit the `.uipx` `ProjectRelativePath` from `<folder>/project.json` → `<folder>/project.uiproj`, **preserving the project `Id` and `Type`**. Do NOT use `uip solution project remove`+`add` — it mints a new `Id`.
+  - Edit the `.uipx` `ProjectRelativePath` from `<folder>/project.json` → `<folder>/project.uiproj`, **preserving the project `Id` and `Type`**. Do NOT use `uip solution projects remove`+`add` — it mints a new `Id`.
   - Remove the stray `project.json` / `workflows/` (a mismatched `project.json` triggers `ProjectMetadataMismatchError`).
   - Re-pack, then confirm the project opens in Studio Web (runtime/pack success alone does not prove it).
 

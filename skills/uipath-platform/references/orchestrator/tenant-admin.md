@@ -91,7 +91,9 @@ uip or triggers create --type time --name "WeekdayReport" \
 
 ## Audit Logs
 
-Audit logs record who did what and when across the tenant. Filter by component, action, user, or date range. Export to CSV for compliance reporting.
+> **Two audit surfaces — route by intent.** `uip or audit-logs` (this section) is Orchestrator's **operational** audit: entity/operation changes *inside Orchestrator* (folder / queue / asset / process / job / setting CRUD; `Component, User, Action, Operation, Time`). For the **organization/tenant audit trail** — audit events / history / trail, login or sign-in history, who-did-what-when-where, cross-service activity, or a compliance dump/export — use `uip admin audit <org|tenant>` (the **uipath-admin** skill), *not* this command, **even when the request is worded generically** ("audit logs", "export the audit", "the last 7 days of audit"). Reach for `uip or audit-logs` only when the user explicitly wants Orchestrator's own operational audit view (e.g., filtering by Orchestrator `--component` / `--action`).
+
+`uip or audit-logs` records Orchestrator entity/operation changes — who created, updated, deleted, or ran Orchestrator resources. Filter by component, action, user, or date range; export to CSV for Orchestrator-scoped reporting.
 
 | Command | What it does |
 |---------|--------------|

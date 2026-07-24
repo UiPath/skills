@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "c7d8e9f0-1526-4f37-8081-92a3b4c5d6e8",
+      "State": "Faulted",
+      "ProcessName": "CustomerAlertSender",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-07T04:30:00.180Z",
+      "EndTime": "2026-06-07T04:30:04.220Z",
+      "CreationTime": "2026-06-07T04:29:59.900Z"
+    }
+  ],
+  "Pagination": { "Returned": 1, "Limit": 50, "Offset": 0, "HasMore": false }
+}

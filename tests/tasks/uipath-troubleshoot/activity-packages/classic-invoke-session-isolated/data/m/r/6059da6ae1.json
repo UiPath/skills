@@ -1,0 +1,24 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "6b1e4d70-3a92-4c58-8f01-2d7c9a3e5b14",
+      "State": "Faulted",
+      "ProcessName": "ReportDispatch",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-07-16T11:03:47.610Z",
+      "EndTime": "2026-07-16T11:03:48.190Z",
+      "CreationTime": "2026-07-16T11:03:47.610Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}
