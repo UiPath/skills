@@ -15,7 +15,7 @@ description: >
   reduce the template's slot count to match the host's concurrent-
   session capacity and rerun.
 
-tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose]
+tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
