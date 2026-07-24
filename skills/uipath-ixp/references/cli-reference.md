@@ -139,13 +139,13 @@ For working with runtime (deployed) IXP models — separate from the training wo
 
 Runtime extraction runs a **published (deployed) model** on a new file — the live runtime path, not the training-data prediction path. **Async, two-step flow:**
 
-1. `uip ixp extraction start <project-id> <file> --tag <tag> --output json` — uploads the file and starts extraction; returns an `operationId` immediately (does **not** wait for the result). **File types:** same whitelist as document upload — see [Supported document files](#supported-document-files). Redirect the response to a file under the project working dir so a later session can resume the poll — same pattern as saving a taxonomy snapshot:
+1. `uip ixp extraction start <project-id> <file> --tag <tag> --output json` — uploads the file and starts extraction; returns an `operationId` immediately (does **not** wait for the result). **File types:** same whitelist as document upload — see [Supported document files](#supported-document-files). Redirect the response to a file under the project working dir so a later session can resume the poll.
 
    ```bash
    uip ixp extraction start <project-id> <file> --tag <tag> --output json \
      > /tmp/ixp/<project-name>/<file>.extraction.json
    ```
-2. `uip ixp extraction get-result <project-id> <operation-id> --tag <tag> --output json` — fetches the operation by id: still running, the extracted fields when done, or a failure. **Output** on completion (Code `IxpExtractionGetResult`): `Data` is an array of field groups, each `{ "fieldGroupName": "<name>", "fields": [{ "name": "<field>", "value": "<extracted>" }] }`.
+2. `uip ixp extraction get-result <project-id> <operation-id> --tag <tag> --output json` — fetches the operation by id. Returns one of three outcomes: a `status` (`NotStarted`/`Running`) while still in progress, the extracted fields when complete, or a failure. **Output** on completion (Code `IxpExtractionGetResult`): `Data` is an array of field groups, each `{ "fieldGroupName": "<name>", "fields": [{ "name": "<field>", "value": "<extracted>" }] }`.
 
 > **Runtime extraction vs `labellings get-predictions` — two separate workflows, NOT two ways to process one file.** You never pick between them for a given document; they differ in how the file gets in and which model runs:
 > - **Design-time (`labellings get-predictions`)** — the labelling/review loop against the *draft* model. Two steps: `documents upload` first adds the file to the **training set**, then `get-predictions` returns the draft model's predictions on that already-uploaded document to label and review. The file lives in the training set.
