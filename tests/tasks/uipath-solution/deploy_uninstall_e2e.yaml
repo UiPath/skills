@@ -49,7 +49,7 @@ success_criteria:
   - type: command_executed
     description: "Agent deployed the solution (set-up step)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+deploy\s+run\b'
+    command_pattern: 'uip\s+solution\s+deploy\s+run\b(?!\s+--help)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -57,7 +57,7 @@ success_criteria:
   - type: command_executed
     description: "Agent uninstalled the deployment via uip solution deploy uninstall"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+deploy\s+uninstall\b'
+    command_pattern: 'uip\s+solution\s+deploy\s+uninstall\b(?!\s+--help)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

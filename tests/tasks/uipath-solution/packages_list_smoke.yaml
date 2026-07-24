@@ -16,7 +16,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed solution packages via uip solution packages list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+packages\s+list'
+    command_pattern: 'uip\s+solution\s+packages\s+list\b(?!\s+--help)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

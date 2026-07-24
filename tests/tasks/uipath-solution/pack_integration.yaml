@@ -31,7 +31,7 @@ success_criteria:
   - type: command_executed
     description: "Agent built the package via uip solution pack"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+pack\b'
+    command_pattern: 'uip\s+solution\s+pack\b(?!\s+--help)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

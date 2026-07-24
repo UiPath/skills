@@ -44,7 +44,7 @@ success_criteria:
   - type: command_executed
     description: "Agent published the package to the feed (set-up step)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+publish\b'
+    command_pattern: 'uip\s+solution\s+publish\b(?!\s+--help)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -52,7 +52,7 @@ success_criteria:
   - type: command_executed
     description: "Agent downloaded the package via uip solution packages download"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+packages\s+download\b'
+    command_pattern: 'uip\s+solution\s+packages\s+download\b(?!\s+--help)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -60,7 +60,7 @@ success_criteria:
   - type: command_executed
     description: "Agent deleted the package version via uip solution packages delete"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+packages\s+delete\b'
+    command_pattern: 'uip\s+solution\s+packages\s+delete\b(?!\s+--help)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

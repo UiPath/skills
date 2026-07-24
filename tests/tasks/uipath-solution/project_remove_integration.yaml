@@ -35,7 +35,7 @@ success_criteria:
   - type: command_executed
     description: "Agent registered projects (set-up) via uip solution projects add (or import)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+projects?\s+(add|import)\b'
+    command_pattern: 'uip\s+solution\s+projects?\s+(add|import)\b(?!\s+--help)'
     min_count: 2
     weight: 1.0
     pass_threshold: 1.0
@@ -43,7 +43,7 @@ success_criteria:
   - type: command_executed
     description: "Agent unregistered a project via uip solution projects remove"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+projects?\s+remove\b'
+    command_pattern: 'uip\s+solution\s+projects?\s+remove\b(?!\s+--help)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
