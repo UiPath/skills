@@ -1,7 +1,7 @@
 task_id: skill-solution-project-remove
 description: >
   Integration test: agent uses the uipath-solution skill to unregister one
-  project from a solution that has two, via `uip solution project remove`,
+  project from a solution that has two, via `uip solution projects remove`,
   leaving exactly one registered. Covers the remove surface (and the
   manifest ↔ solution-folder consistency rule) that no current test
   exercises. Runs entirely in the sandbox tempdir — no tenant interaction.
@@ -33,17 +33,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent registered projects (set-up) via uip solution project add (or import)"
+    description: "Agent registered projects (set-up) via uip solution projects add (or import)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+project\s+(add|import)\b'
+    command_pattern: 'uip\s+solution\s+projects?\s+(add|import)\b'
     min_count: 2
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent unregistered a project via uip solution project remove"
+    description: "Agent unregistered a project via uip solution projects remove"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+project\s+remove\b'
+    command_pattern: 'uip\s+solution\s+projects?\s+remove\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
