@@ -73,7 +73,6 @@ simulation:
   stop_on_criteria_pass: false
   check_criteria: end_of_dialog
   n_trials: 1
-  parallel_trials: true
 
 success_criteria:
   # Name-agnostic: any .flow the agent built must validate. The exact project
