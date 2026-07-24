@@ -1,0 +1,6 @@
+{
+  "Name": "NightlyStatementMailer",
+  "ProjectType": "Process",
+  "Description": "Sends a nightly account statement email with Send Outlook Mail Message on an unattended Robot session.",
+  "MainFile": "Main.xaml"
+}

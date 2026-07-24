@@ -8,7 +8,7 @@ description: >
   NameToAgeFixed2, CountLetters, ProjectEuler, purchaseorderapp, CaseTest) is the
   sole source of truth. The skill builds the case-management solution and
   validates the caseplan; a structural check then asserts the primary chain, the
-  two interrupting/return-to-origin exception lanes, the connector-free
+  two interrupting/canonical-return-to-origin exception lanes, the connector-free
   task-type mix, the Payment Tracking child case, and the aged_invoice_cases
   event trigger. No debug — the case is HITL- and interrupt-driven, which cannot
   run headless; this is the structural counterpart to the runnable expense e2e.
@@ -93,7 +93,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "caseplan preserves the 3-stage primary chain, the two interrupting/return-to-origin exception lanes, the connector-free task-type mix, the Payment Tracking child case, and the aged_invoice_cases event trigger"
+    description: "caseplan preserves the 3-stage primary chain, the two interrupting exception lanes with canonical return-to-origin exits (required-tasks-completed + marksStageComplete=true), the connector-free task-type mix, the Payment Tracking child case, and the aged_invoice_cases event trigger"
     command: "python3 $TASK_DIR/check_aged_invoice_structure.py"
     timeout: 120
     expected_exit_code: 0

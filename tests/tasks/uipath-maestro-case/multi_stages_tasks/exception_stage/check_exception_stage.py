@@ -13,6 +13,7 @@ from _shared.case_check import (  # noqa: E402
     get_default_sla,
     iter_stage_entry_conditions,
     iter_stage_exit_conditions,
+    partition_return_to_origin_conditions,
     read_caseplan,
 )
 
@@ -107,17 +108,38 @@ def main():
             )
 
     issues_exits = list(iter_stage_exit_conditions(issues))
-    if not any(ec.get("type") == "return-to-origin" for ec in issues_exits):
+    issues_returns, issues_invalid_returns = partition_return_to_origin_conditions(
+        issues_exits,
+        allowed_rules=frozenset({"required-tasks-completed"}),
+    )
+    if not issues_returns:
         sys.exit(
-            f"FAIL: 'Issues' missing return-to-origin exit; "
-            f"types={[ec.get('type') for ec in issues_exits]}"
+            "FAIL: 'Issues' missing canonical return-to-origin exit "
+            "(marksStageComplete=true + required-tasks-completed); "
+            f"got {[(ec.get('type'), ec.get('marksStageComplete'), (first_rule_of_condition(ec) or {}).get('rule')) for ec in issues_exits]}"
+        )
+    if issues_invalid_returns:
+        sys.exit(
+            "FAIL: 'Issues' has malformed additional return-to-origin exit(s); "
+            "expected every return to use marksStageComplete=true + "
+            "required-tasks-completed; got "
+            f"{[(ec.get('marksStageComplete'), (first_rule_of_condition(ec) or {}).get('rule')) for ec in issues_invalid_returns]}"
         )
 
     critical_exits = list(iter_stage_exit_conditions(critical))
-    if not any(ec.get("type") == "exit-only" for ec in critical_exits):
+    critical_exit_only = [
+        ec
+        for ec in critical_exits
+        if ec.get("type") == "exit-only"
+        and ec.get("marksStageComplete") is True
+        and (first_rule_of_condition(ec) or {}).get("rule") == "required-tasks-completed"
+    ]
+    if not critical_exit_only:
         sys.exit(
-            f"FAIL: terminal secondary stage 'Critical' must exit via exit-only; "
-            f"types={[ec.get('type') for ec in critical_exits]}"
+            "FAIL: terminal secondary stage 'Critical' must exit via canonical "
+            "exit-only completion (marksStageComplete=true + "
+            "required-tasks-completed); "
+            f"got {[(ec.get('type'), ec.get('marksStageComplete'), (first_rule_of_condition(ec) or {}).get('rule')) for ec in critical_exits]}"
         )
     if any(ec.get("type") == "return-to-origin" for ec in critical_exits):
         sys.exit("FAIL: terminal secondary stage 'Critical' must not return to origin")

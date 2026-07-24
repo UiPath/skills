@@ -10,6 +10,10 @@ A classic browser activity failed to open, attach to, or close a browser, throwi
 operation error (`BrowserOperationException`) or an invalid-browser error. Applies to `Open Browser`,
 `Attach Browser` (Browser Scope), and `Close Tab`.
 
+> For a `System.Runtime.InteropServices.COMException` / `HRESULT E_FAIL` (`0x80004005`) / "Invalid
+> access to memory location" on `BrowserScope` (an environmental COM fault, not an
+> extension/comms failure) → [browser-scope-errors.md](./browser-scope-errors.md).
+
 What this looks like:
 - `BrowserOperationException`, or an error indicating the browser is invalid / not available
 - `Open Browser` fails to start the browser, or starts it but the automation cannot communicate with
