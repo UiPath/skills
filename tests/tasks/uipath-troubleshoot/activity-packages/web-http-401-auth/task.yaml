@@ -16,7 +16,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir
@@ -34,9 +33,6 @@ initial_prompt: |
   My InvoiceApiClient job just faulted. Job key
   9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90 in folder Shared. Why did it fail and
   how do I fix it?
-
-  The project source for the failing process is at ./InvoiceApiClient/ in the
-  current working directory.
 
 success_criteria:
   - type: skill_triggered

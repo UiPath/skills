@@ -16,7 +16,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir
@@ -34,9 +33,6 @@ initial_prompt: |
   My CrmContactUpload job just faulted. Job key
   3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75 in folder Shared. Why did it fail and
   how do I fix it?
-
-  The project source for the failing process is at ./CrmContactUpload/ in the
-  current working directory.
 
 success_criteria:
   - type: skill_triggered

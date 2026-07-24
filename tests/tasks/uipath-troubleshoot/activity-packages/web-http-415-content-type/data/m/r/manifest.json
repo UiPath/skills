@@ -4,44 +4,44 @@
   "rules": [
     {
       "match": "or jobs logs 3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75 --level Error",
-      "file": "joblogs-error.json"
+      "file": "ed7a6ee927.json"
     },
     {
       "match": "or jobs logs 3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75",
-      "file": "joblogs.json"
+      "file": "201a344869.json"
     },
     {
       "match": "or jobs get 3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75",
-      "file": "jobget.json"
+      "file": "e053591c4a.json"
     },
     {
       "match": "or jobs history 3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75",
-      "file": "jobhistory.json"
+      "file": "63636db9b6.json"
     },
     {
       "match": "or jobs traces 3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75",
-      "file": "jobtraces.json"
+      "file": "72f9d782d3.json"
     },
     {
       "match": "traces spans get --job-key 3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75",
-      "file": "spans-fail.json",
+      "file": "1b1bb73c81.json",
       "exit_code": 1
     },
     {
       "match": "or jobs list --folder-key d4e5f6a7-b8c9-4d0e-9f1a-3b4c5d6e7f80 --state Faulted",
-      "file": "joblist.json"
+      "file": "f65936d6cb.json"
     },
     {
       "match": "or jobs list --folder-key d4e5f6a7-b8c9-4d0e-9f1a-3b4c5d6e7f80",
-      "file": "joblist.json"
+      "file": "fba7e6dc56.json"
     },
     {
       "match": "or jobs list",
-      "file": "joblist.json"
+      "file": "75949d659e.json"
     },
     {
       "match": "or folders list",
-      "file": "folders.json"
+      "file": "ee2628e6b6.json"
     },
     {
       "match": "docsai ask",

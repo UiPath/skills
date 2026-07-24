@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "7b2e1c04-9f3a-4d21-8c6e-2a5f9b1d3e40",
+      "State": "Faulted",
+      "ProcessName": "PaymentGatewaySync",
+      "ReleaseName": "PaymentGatewaySync",
+      "StartTime": "2026-07-21T02:15:04.120Z",
+      "EndTime": "2026-07-21T02:15:09.880Z",
+      "CreationTime": "2026-07-21T02:15:00.500Z",
+      "Type": "Unattended",
+      "Source": "Schedule",
+      "Priority": null
+    }
+  ]
+}

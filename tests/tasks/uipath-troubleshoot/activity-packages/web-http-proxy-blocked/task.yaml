@@ -17,7 +17,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir
@@ -37,9 +36,6 @@ initial_prompt: |
   odd part: the exact same process runs fine when I test it from Studio on my
   laptop — only the unattended run on the server fails. Why did it fail and
   how do I fix it?
-
-  The project source for the failing process is at ./PaymentGatewaySync/ in
-  the current working directory.
 
 success_criteria:
   - type: skill_triggered

@@ -4,27 +4,27 @@
   "rules": [
     {
       "match": "or folders list --output json",
-      "file": "folders.json"
+      "file": "2e37ebc77e.json"
     },
     {
       "match": "or jobs list --folder-key \"e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b\" --state Faulted --output json",
-      "file": "jobs-empty.json"
+      "file": "a58aa4896d.json"
     },
     {
       "match": "or jobs list --folder-key e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b --state Faulted --output json",
-      "file": "jobs-empty.json"
+      "file": "c88524f965.json"
     },
     {
       "match": "or jobs list --folder-key \"e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b\" --output json",
-      "file": "jobs-empty.json"
+      "file": "46e9213335.json"
     },
     {
       "match": "or jobs list --folder-key e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b --output json",
-      "file": "jobs-empty.json"
+      "file": "0a5723e777.json"
     },
     {
       "match": "or jobs list",
-      "file": "jobs-empty.json"
+      "file": "75949d659e.json"
     },
     {
       "match": "docsai ask",
