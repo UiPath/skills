@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobTraces",
+  "_doc": "Execution traces for the failing job. These carry the REAL managed exception that the raw exit code 0xE0434352 hides: an unhandled System.Collections.Generic.KeyNotFoundException thrown at the 'Lookup region total' Assign while indexing a Dictionary with a key that was not present. No top-level Try/Catch caught it, so it escaped to the process boundary and collapsed to the CLR exit code. This is the payoff of the generic-exit-code playbook — recover the real exception from traces, do not stop at the code.",
+  "Data": [
+    {
+      "Activity": "Main Sequence",
+      "Status": "Faulted",
+      "StartTime": "2026-06-22T06:00:03.010Z",
+      "EndTime": "2026-06-22T06:00:39.720Z"
+    },
+    {
+      "Activity": "Read region config",
+      "Status": "Succeeded",
+      "StartTime": "2026-06-22T06:00:03.220Z",
+      "EndTime": "2026-06-22T06:00:12.540Z"
+    },
+    {
+      "Activity": "Lookup region total (Assign)",
+      "Status": "Faulted",
+      "StartTime": "2026-06-22T06:00:39.610Z",
+      "EndTime": "2026-06-22T06:00:39.700Z",
+      "Error": {
+        "Type": "System.Collections.Generic.KeyNotFoundException",
+        "Message": "The given key 'EMEA-NORTH' was not present in the dictionary.",
+        "StackTrace": "at System.Collections.Generic.Dictionary`2.get_Item(TKey key)\r\n   at lambda_method(Closure, ActivityContext)\r\n   at Microsoft.VisualBasic.Activities.VisualBasicValue`1.Execute(CodeActivityContext context)\r\n   at System.Activities.CodeActivity`1.InternalExecuteInResolutionContext(CodeActivityContext context)",
+        "Handled": false
+      }
+    }
+  ]
+}
