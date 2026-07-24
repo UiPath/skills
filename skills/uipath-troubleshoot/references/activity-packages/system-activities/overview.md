@@ -6,8 +6,8 @@ Core workflow activities from the `UiPath.System.Activities` package. Two famili
 
 Orchestrator-resource:
 - **Get Asset / Get Orchestrator Asset** — retrieve a text, integer, boolean, or JSON asset value from Orchestrator
-- **Get Credential / Get Orchestrator Credential** — retrieve a username/password pair from Orchestrator (returns `String` + `SecureString`)
-- **Get Robot Asset** — retrieve an asset value scoped to the executing robot (legacy; replaced by Get Orchestrator Asset in modern folders)
+- **Get Credential / Get Orchestrator Credential / Get Robot Credential** — retrieve a username/password pair from Orchestrator (returns `String` + `SecureString`). Classic activity type: `GetRobotCredential`
+- **Get Robot Asset** — retrieve an asset value scoped to the executing robot (legacy; replaced by Get Orchestrator Asset in modern folders). Classic activity type: `GetRobotAsset`
 - **Get Transaction Item / Set Transaction Status** — pull the next queue item; report its processing outcome
 - **Set Asset / Set Credential** — update an asset or credential in Orchestrator
 
