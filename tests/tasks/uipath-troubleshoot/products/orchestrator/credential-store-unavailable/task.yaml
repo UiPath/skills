@@ -14,7 +14,7 @@ description: >
   connectivity (verify the SQL service is running and reachable),
   then rerun — per the credential-store-unavailable playbook.
 
-tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose]
+tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
