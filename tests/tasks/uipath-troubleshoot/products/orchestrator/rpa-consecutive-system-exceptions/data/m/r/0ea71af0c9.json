@@ -1,0 +1,13 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "_doc": "Logs newest-first. The final line is the max-consecutive abort; the FIVE lines before it are the SAME underlying System Exception — a SelectorNotFoundException on the 'Click Submit' activity — recurring once per transaction. That recurring exception is the root cause.",
+  "Data": [
+    {"Level": "Error", "TimeStamp": "2026-06-25T07:02:14.870Z", "Message": "System exception. The maximum number of consecutive system exceptions was reached. Consecutive retry number: 5. Aborting the process."},
+    {"Level": "Error", "TimeStamp": "2026-06-25T07:02:10.300Z", "Message": "Transaction 5 failed with a system exception: UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException: Could not find the UI element for 'Click Submit'. Selector: <wnd app='orderportal.exe' title='Submit' /> Timeout reached."},
+    {"Level": "Error", "TimeStamp": "2026-06-25T07:01:44.210Z", "Message": "Transaction 4 failed with a system exception: UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException: Could not find the UI element for 'Click Submit'. Selector: <wnd app='orderportal.exe' title='Submit' /> Timeout reached."},
+    {"Level": "Error", "TimeStamp": "2026-06-25T07:01:18.050Z", "Message": "Transaction 3 failed with a system exception: UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException: Could not find the UI element for 'Click Submit'. Selector: <wnd app='orderportal.exe' title='Submit' /> Timeout reached."},
+    {"Level": "Error", "TimeStamp": "2026-06-25T07:00:52.900Z", "Message": "Transaction 2 failed with a system exception: UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException: Could not find the UI element for 'Click Submit'. Selector: <wnd app='orderportal.exe' title='Submit' /> Timeout reached."},
+    {"Level": "Error", "TimeStamp": "2026-06-25T07:00:27.640Z", "Message": "Transaction 1 failed with a system exception: UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException: Could not find the UI element for 'Click Submit'. Selector: <wnd app='orderportal.exe' title='Submit' /> Timeout reached."}
+  ]
+}

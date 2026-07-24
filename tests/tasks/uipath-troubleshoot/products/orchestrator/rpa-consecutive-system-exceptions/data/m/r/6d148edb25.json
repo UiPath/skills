@@ -1,0 +1,12 @@
+{
+  "Result": "Success",
+  "Code": "JobTraces",
+  "_doc": "Traces show the SAME activity ('Click Submit') faulting on every transaction with SelectorNotFoundException — confirming a persistent, per-transaction system failure, not a one-off. The recurring failing activity is the root cause the max-consecutive abort is reacting to.",
+  "Data": [
+    {"Activity": "Process Transaction (txn 1)", "Status": "Faulted", "Error": {"Type": "UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException", "Activity": "Click Submit", "Message": "Could not find the UI element for 'Click Submit'."}},
+    {"Activity": "Process Transaction (txn 2)", "Status": "Faulted", "Error": {"Type": "UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException", "Activity": "Click Submit", "Message": "Could not find the UI element for 'Click Submit'."}},
+    {"Activity": "Process Transaction (txn 3)", "Status": "Faulted", "Error": {"Type": "UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException", "Activity": "Click Submit", "Message": "Could not find the UI element for 'Click Submit'."}},
+    {"Activity": "Process Transaction (txn 4)", "Status": "Faulted", "Error": {"Type": "UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException", "Activity": "Click Submit", "Message": "Could not find the UI element for 'Click Submit'."}},
+    {"Activity": "Process Transaction (txn 5)", "Status": "Faulted", "Error": {"Type": "UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException", "Activity": "Click Submit", "Message": "Could not find the UI element for 'Click Submit'."}}
+  ]
+}
