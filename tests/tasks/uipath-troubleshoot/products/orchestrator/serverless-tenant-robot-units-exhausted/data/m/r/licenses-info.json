@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "LicenseInfo",
+  "_doc": "Tenant license/allocation snapshot. The tenant Robot Unit pool is fully consumed (Available 0 of 25). The reporting user's Personal Automation monthly quota is NOT exhausted, and per-user Robot Unit allocation is not the blocker — so branches 1 (personal quota) and 2 (per-user RU) are ruled out. The limiting resource is the tenant-wide Robot Unit pool.",
+  "Data": {
+    "TenantName": "AcmeProd",
+    "RobotUnits": {
+      "Allocated": 25,
+      "Used": 25,
+      "Available": 0
+    },
+    "PersonalAutomation": {
+      "MonthlyQuota": 200,
+      "Used": 34,
+      "Remaining": 166,
+      "PeriodResets": "2026-07-01T00:00:00Z"
+    },
+    "PerUserAllocations": [
+      { "User": "alice", "RobotUnits": 5, "Used": 0, "Note": "user has headroom; blocked only by the empty tenant pool" },
+      { "User": "bob", "RobotUnits": 5, "Used": 0 }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "Name": "LedgerSyncService",
+  "ProjectType": "Process",
+  "Description": "Serverless worker that syncs ledger entries; logs activity and exits.",
+  "MainFile": "Main.xaml"
+}
