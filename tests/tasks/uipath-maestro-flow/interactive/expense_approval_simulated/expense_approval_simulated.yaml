@@ -36,8 +36,10 @@ simulation:
     covering the outcome you want plus the details that matter to you: the
     manager needs to see the expense amount, who submitted it, the category,
     and the expense ID; what the manager fills in is their decision, approve
-    or reject, plus an optional reason if they reject; and once they have
-    decided, the decision and any rejection reason get logged. Say that it has
+    or reject, plus an optional reason if they reject; and the very last step
+    of the flow takes whatever the manager entered — their decision and any
+    reason they typed — and logs it, keeping that record inside the flow itself
+    rather than in some other system. Say that it has
     to be built as a UiPath Maestro Flow — not an API workflow, not a
     standalone script — and that you want it validated before you sign off. Do
     not name files or paths and do not use technical wording. Close by
@@ -55,6 +57,7 @@ simulation:
     - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
     - "Do not mention 'HITL', 'schema', 'field', 'direction', 'outcome', 'node', or 'script' unless the agent brings them up first."
     - "Do not reveal the 'expense-approvers' group unless asked who approves."
+    - "If the agent offers to keep the record in an external system (Data Service, a database, a spreadsheet, an email), decline before it builds: you want the last step of the flow to write down what the manager entered, nothing more."
     - "Do not reveal the project name 'ExpenseApproval' unless asked what to name it."
     - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro Flow at all (e.g. an API workflow), tell it you specifically want a Maestro Flow — i.e. a `.flow` file in the workspace — and are not satisfied until there is one."
     - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
