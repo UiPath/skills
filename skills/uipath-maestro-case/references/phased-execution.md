@@ -21,15 +21,15 @@ Skill stays emit-honest: JSON-shape correctness is the skill's job, downstream C
 
 ## Why phased
 
-Once `tasks.md` is generated, skill does **not** build full case in one pass. It builds **placeholder** first (Phase 2 Prototyping) — enough structure for user to review case graph visually in Studio Web — then hard-stops for approval before wiring detail (Phase 3 Implementation). Validate (Phase 4), Debug (Phase 5), and Publish (Phase 6) each follow as separate gated phases. Debug runs before Publish so the user only publishes a build they've verified end-to-end.
+Once `tasks.md` is generated, skill does **not** build full case in one pass. It builds **placeholder** first (Phase 2 Prototyping) — enough structure for user to review case graph visually in Studio Web — then wires detail (Phase 3 Implementation). Whether the boundary pauses is the user's up-front build-review preference (SKILL.md Rule 11): pause-at-preview stops for the visual review; straight-through narrates the milestone and continues. Validate (Phase 4), Debug (Phase 5), and Publish (Phase 6) follow; the debug and publish gates are unconditional. Debug runs before Publish so the user only publishes a build they've verified end-to-end.
 
-Each hard stop gives user review checkpoint before agent commits to costly downstream work.
+Decisions are front-loaded so the build can run unattended; the gates that remain protect real-world side effects (debug executes the case, publish ships it).
 
 ## Phase summary
 
 | Phase | What gets built | Output | Hard stop on exit |
 |---|---|---|---|
-| **2 — Prototyping** | Solution + project, root case, global variables, stages, triggers (full), tasks (name + type, no value binding), placeholder tasks for unresolved | `caseplan.json` emitted; placeholder-profile validate run (structural errors only) | `Publish for review` / `Skip publish and continue` / `Abort` |
+| **2 — Prototyping** | Solution + project, root case, global variables, stages, triggers (full), tasks (name + type, no value binding), placeholder tasks for unresolved | `caseplan.json` emitted; placeholder-profile validate run (structural errors only) | Pause-at-preview runs: `Publish for review` / `Skip publish and continue` / `Abort`. Straight-through runs: none — counts line, continue (Rule 11) |
 | **3 — Implementation** | Connector task schemas, task I/O value binding, conditions (all 4 scopes), SLA + escalation | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
 | **4 — Validate** | Run authoritative `uip maestro case validate`, dump `build-issues.md` | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Skip to Publish` |
@@ -39,11 +39,11 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 ### Structural nodes (full detail)
 
-- Solution + project scaffolding (`uip solution init`, `uip solution project add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
+- Solution + project scaffolding (`uip solution init`, `uip solution projects add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
 - Root case — `caseplan.json` with top-level fields + `metadata` block populated (name, `metadata.caseIdentifier`, empty `nodes[]`, empty `edges[]`).
 - Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared at top-level `variables`.
 - Stages — all StageIds generated and captured.
-- Edges — none authored; `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 3).
+- Edges — none authored (Rule 20); `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 3).
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
 - Entry-points input/output — `entry-points.json` `input`/`output` schemas refreshed from the declared In/Out arguments (Step 6.3, per [entry-points-sync.md](entry-points-sync.md)). Makes the Phase-2 publish-for-review contract correct; idempotent.
 
@@ -77,11 +77,17 @@ uip maestro case validate "<caseplan.json path>" --skeleton --output json
 
 ### Phase 2 hard stop
 
-**Unconditional.** Present summary, then prompt via AskUserQuestion. Prompt is MANDATORY on every run — auto mode, non-interactive mode, prior blanket approval do NOT bypass. Only valid transition out of Phase 2 is user response. If harness refuses interactive prompts, halt with explicit error rather than proceeding silently.
+**Gated by the up-front build-review preference (SKILL.md Rule 11) — never a mid-build surprise.** The preference was captured at journey start: the final design confirmation on the interview journey, the single post-roadmap question on the provided-SDD journey. Always print the §Summary content below, then branch:
+
+- **Straight-through** → continue directly into Phase 3 with no prompt; the summary doubles as the milestone narration line.
+- **Pause-at-preview** → present the §Prompt below; only a user response transitions out of Phase 2.
+- **No recorded preference** (resumed or legacy run): interactive → ask the §Prompt now; non-interactive → straight-through (no publish — Phase 6 remains the only, still-gated, publish point) and say so in one line.
+
+The Phase 4 retry-cap, Phase 5 debug-consent, and Phase 6 publish stops below are independent of this preference and are never bypassed.
 
 #### Summary content
 
-Print before prompt:
+Print (before the prompt on the pause branch; as the continuation line otherwise):
 
 1. Counts: stages / primary stages / secondary stages / triggers / tasks total / placeholder tasks / unresolved resources.
 2. Validate result (placeholder-profile): `<N> errors, <M> warnings` — remaining errors are structural (unreachable/orphan stage, missing trigger, duplicate names) and actionable. Surfacing counts is enough; do not dump full error list unless user asks.
@@ -89,7 +95,7 @@ Print before prompt:
 
 Do not enumerate every task. Studio Web visualization fills that role after publish.
 
-#### Prompt
+#### Prompt (pause-at-preview branch only)
 
 Use **AskUserQuestion** with three options:
 
@@ -126,7 +132,7 @@ Do **not** delete artifacts. User may want to inspect them, or re-run skill late
 
 ### Re-entry protocol
 
-Phase 3 begins after user selects `Continue to implementation` (or `Skip publish and continue`). Before executing any Phase 3 step:
+Phase 3 begins after the straight-through continuation, or after the user selects `Continue to implementation` / `Skip publish and continue` on a pause-at-preview run. Before executing any Phase 3 step:
 
 1. **Re-read `tasks.md`** — per Rule 7. Declarative plan is the handoff.
 2. **Re-read `caseplan.json`** — authoritative source of all IDs generated in Phase 2:
@@ -239,7 +245,7 @@ It does **not** write `data.inputs` / `data.outputs` for placeholders. Input bin
 
 Abort can occur at any hard stop:
 
-- Phase 2 first prompt (`Publish for review` / `Skip` / `Abort`).
+- Phase 2 first prompt (`Publish for review` / `Skip` / `Abort`) — pause-at-preview runs only.
 - Phase 2 second prompt (`Continue to implementation` / `Abort`) after publishing.
 - Phase 4 retry-cap prompt (`Retry with fix` / `Pause for manual edit` / `Abort`).
 

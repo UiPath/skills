@@ -28,7 +28,11 @@ deployed BPMN asset correlation, element executions, cursors, generated package 
 ## Critical rules
 
 1. **Investigate in priority order** - context, incidents, runtime variables, deployed BPMN asset,
-   element executions/cursors, generated package files, then traces.
+   element executions/cursors, generated package files, then traces. For failed
+   BPMN run triage, always execute the deployed asset read
+   `uip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json`
+   before writing the diagnosis, even when incidents and variables already
+   reveal the likely root cause.
 2. **Always include folder context on instance and incident reads** - `instance` commands require `--folder-key` or `-f`,
    and `incident get` requires `--folder-key`.
 3. **Use the CLI as the diagnostic interface** - run `uip maestro bpmn ... --output json` reads. When mock or fixture

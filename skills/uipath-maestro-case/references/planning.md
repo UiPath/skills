@@ -44,22 +44,22 @@ If `npm install -g` fails with a permission error, prompt the user to re-run it 
 
 ## Step 1 — HARD GATE: check login and pull registry
 
-Registry discovery happens during planning, so login is required first. This gate is unconditional on every Phase 1 run, including SDD-only handoffs and runs with a staged `tasks/registry-resolved.json`.
+Registry discovery happens during planning, so login is required first. This gate runs on every Phase 1 run — including SDD-only handoffs and runs with a staged `tasks/registry-resolved.json` — **with one exception (same-session fast path, SKILL.md Rule 3):** when Phase 0's `registry pull` already succeeded in THIS session and `sdd.md` was just rendered from the confirmed in-memory model, reuse that cache and skip the re-pull. Any doubt (user-provided SDD, cross-session resume, context compaction, failed or never-run Phase 0 pull, missing cache files) runs the gate in full.
 
 ```bash
 uip login status --output json
 uip maestro case registry pull
 ```
 
-Do not inspect `~/.uip/case-resources/` first to decide whether the pull is necessary: cache absence is exactly why the pull must run. Do not continue to Step 2/3 and do not write `tasks.md` or `registry-resolved.json` unless the pull succeeds. If not logged in, prompt the user to log in and stop Phase 1; if the pull fails, surface the command error and stop Phase 1. After a successful pull, read [registry-discovery.md](registry-discovery.md) before the first cache lookup. The pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
+Outside the fast path, do not inspect `~/.uip/case-resources/` first to decide whether the pull is necessary: cache absence is exactly why the pull must run. Do not continue to Step 2/3 and do not write `tasks.md` or `registry-resolved.json` unless the pull succeeds. If not logged in, prompt the user to log in and stop Phase 1; if the pull fails, surface the command error and stop Phase 1. After a successful pull, read [registry-discovery.md](registry-discovery.md) before the first cache lookup. The pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
 
 ## Step 2 — Locate and parse the design document
 
 Accept the `sdd.md` file path from the user, or ask if not provided. When the directory contains multiple `.md` files, use **AskUserQuestion** with the candidates + "Something else" to disambiguate.
 
-If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) before this step. See [phase-0-interview.md](phase-0-interview.md). Phase 1 resumes here only after the Approve hard-stop in Phase 0.
+If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) before this step. See [phase-0-interview.md](phase-0-interview.md). Phase 1 begins after Phase 0's confirmation (a Build answer). **Same-session fast path:** Phase 0 just rendered `sdd.md` from the confirmed in-memory model — plan from that model directly and skip re-reading the file; re-read `sdd.md` only when working memory may be stale (context compaction, resumed session), and then trust it as written (Rule 2).
 
-`sdd.md` is the **sole required input**. It describes stages, tasks, conditions, SLA, component types, persona information, and provides the search keys for registry lookups. The portable name is type-specific: `Resolved Resource` for process/agent/rpa/api-workflow, the Action App title in `HITL Implementation` for action, and `Child Case` for case-management. The corresponding identity cell (`Resource Identity` or `Action App ID`) says whether an earlier phase resolved it. (The SDD does not describe edges — transitions are expressed as stage entry/exit conditions; edges are retired.) The skill does not validate or gap-fill sdd.md — trust it as written. (Phase 0 may have generated it; once approved, Rule 2 applies regardless of source.)
+`sdd.md` is the **sole required input**. It describes stages, tasks, conditions, SLA, component types, persona information, and provides the search keys for registry lookups. The portable name is type-specific: `Resolved Resource` for process/agent/rpa/api-workflow, the Action App title in `HITL Implementation` for action, and `Child Case` for case-management. The corresponding identity cell (`Resource Identity` or `Action App ID`) says whether an earlier phase resolved it. (The SDD does not describe edges — transitions are stage entry/exit conditions; Rule 20.) The skill does not validate or gap-fill sdd.md — trust it as written. (Phase 0 may have generated it; once approved, Rule 2 applies regardless of source.)
 
 > **Cache-state distinction — mandatory.** Step 1 refreshes discovery state; it does not validate or override sdd.md. Before a successful pull, a missing cache directory or type index is a failed refresh precondition, not evidence that the SDD resource is unavailable. After a successful pull, search by the SDD's concrete portable name; only an empty exact-name match set (or a still-absent type index) is a genuine empty lookup. An `<UNRESOLVED>` identity or folder means name-only discovery, not permission to skip discovery.
 
@@ -229,7 +229,7 @@ Title format: `Configure <trigger-type> trigger "<name>"`
 
 Consult the corresponding trigger plugin (`plugins/triggers/<type>/planning.md`) for required fields.
 
-**One T-entry per trigger row in sdd.md.** A case with N entry-point rows in its triggers table emits N trigger T-entries (T02, T03, …) — even when several rows would resolve to `<UNRESOLVED>` because the IS connection isn't provisioned. Per §4.0, "value can't be resolved yet" is not a reason to omit a row; it's a reason to mark `<UNRESOLVED: …>` and continue. Regardless of how many triggers a case has, no per-trigger edge is created (edges are retired) — the case starts at the first stage's `case-entered` entry condition whenever any trigger fires.
+**One T-entry per trigger row in sdd.md.** A case with N entry-point rows in its triggers table emits N trigger T-entries (T02, T03, …) — even when several rows would resolve to `<UNRESOLVED>` because the IS connection isn't provisioned. Per §4.0, "value can't be resolved yet" is not a reason to omit a row; it's a reason to mark `<UNRESOLVED: …>` and continue. Regardless of how many triggers a case has, no per-trigger edge is created (Rule 20; §4.5) — the case starts at the first stage's `case-entered` entry condition whenever any trigger fires.
 
 Each trigger row uses its plugin's full field set — see `plugins/triggers/<type>/planning.md` for the per-type entry format. Worked example — sdd.md declares 3 entry-point rows (one manual + two events), one of which is unresolved:
 
@@ -273,7 +273,7 @@ One task per stage. Consult [`plugins/stages/planning.md`](plugins/stages/planni
 
 ### 4.5 Edges — not authored (RETIRED)
 
-The skill does not author edges. Emit no edge T-entries. Stage transitions derive entirely from stage entry/exit conditions (§4.7); `caseplan.json.edges` stays `[]`. The first stage's `case-entered` entry condition replaces the former Trigger→first-stage edge. See the reachability check in [`sdd-generation-rules.md`](sdd-generation-rules.md).
+The skill does not author edges (Rule 20). Emit no edge T-entries. Stage transitions derive entirely from stage entry/exit conditions (§4.7); `caseplan.json.edges` stays `[]`; case start is the first stage's `case-entered` entry condition. See the reachability check in [`sdd-generation-rules.md`](sdd-generation-rules.md).
 
 ### 4.6 Add tasks
 
@@ -324,7 +324,7 @@ For per-scope fields, consult the corresponding condition plugin:
 
 ### 4.8 Set SLA and escalation rules
 
-SLA comes last. Consult [`plugins/sla/planning.md`](plugins/sla/planning.md) for the three sub-operations (default SLA, conditional SLA rules, escalation rules), per-target ordering, and the constraint that conditional SLA rules are root-only.
+SLA comes last. Consult [`plugins/sla/planning.md`](plugins/sla/planning.md) for the three sub-operations (default SLA, conditional SLA rules, escalation rules) and per-target ordering. Root rules target `metadata.slaRules[]`; stage rules target that stage's `data.slaRules[]`.
 
 ### 4.9 Not Covered section
 

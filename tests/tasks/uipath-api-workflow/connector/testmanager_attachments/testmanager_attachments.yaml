@@ -29,11 +29,10 @@ initial_prompt: |
   Do NOT pause between planning and implementation.
 
 success_criteria:
-  - type: command_executed
+  - type: skill_triggered
     description: "Agent loaded the uipath-api-workflow skill"
-    tool_name: "Skill"
-    command_pattern: "uipath-api-workflow"
-    min_count: 1
+    skill_name: "uipath-api-workflow"
+    expected_skill: "uipath-api-workflow"
     weight: 1.0
     pass_threshold: 1.0
 

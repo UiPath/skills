@@ -95,7 +95,7 @@ rsync -a --exclude='node_modules' "<SOURCE_PATH>/" "<SOLUTION_DIR>/<APP_NAME>/so
 ## Step 3 — Add Project to Solution
 
 ```bash
-uip solution project add --project-path "<APP_NAME>/project.uiproj" --solution-path "<SOLUTION_DIR>"
+uip solution projects add --project-path "<APP_NAME>/project.uiproj" --solution-path "<SOLUTION_DIR>"
 ```
 
 This updates `<SOLUTION_DIR>/SolutionStorage.json` with a new `Projects` entry for the app.

@@ -37,7 +37,7 @@ build the case in the Case Designer without guessing.
    - `required-stages-completed` — all required stages completed
    - `required-tasks-completed` — all required tasks in stage completed
    - `wait-for-connector` — an Integration Service event received
-   - `adhoc` — ad-hoc / manual trigger
+   - `adhoc` — ad-hoc / manually triggered task entry
    - `runs-sequentially` — runs sequentially
    - `user-selected-stage` - target of an upstream `wait-for-user` exit
 
@@ -52,6 +52,7 @@ build the case in the Case Designer without guessing.
    - `Marks Stage Complete: Yes` → WHEN MUST be `required-tasks-completed` (typical) or `wait-for-connector` (stage completes when the bound connector event arrives). **NEVER** `required-stages-completed` or `selected-tasks-completed(...)`.
    - `Marks Stage Complete: No` (routing / divergent exits) → WHEN may be `selected-tasks-completed("TaskA")`, `wait-for-connector`, etc.
    - Same stage may carry one completion exit (`Yes` + `required-tasks-completed` / `wait-for-connector`) plus zero or more routing exits (`No` + `selected-tasks-completed` / `wait-for-connector`).
+   - `return-to-origin` is a completion exit: use `Marks Stage Complete: Yes` with `required-tasks-completed` (or `wait-for-connector`). Never pair it with `No` + `selected-tasks-completed`.
 
    *Case exit (preferred pattern: one row, `Yes` + `required-stages-completed`):*
    - `Marks Case Complete: Yes` → WHEN MUST be `required-stages-completed` or `wait-for-connector`. **NEVER** `selected-stage-completed(...)` / `selected-stage-exited(...)`.
@@ -318,13 +319,13 @@ The runtime engine resolves the binding when the task completes, writing the res
 **Stage Kind:** {primary \| secondary} _(secondary stages use the `### Secondary Stage:` heading AND set `secondary`; primary stages use `### Stage {N}:` and OMIT this line — default = primary)_
 **Description:** {Prose description of what this stage accomplishes in the case lifecycle}
 **Required for Case Completion:** {Yes \| No}
-**Interrupting:** {Yes \| No} _(secondary stages only — i.e. Stage Kind: secondary; omit for primary)_
+**Interrupting:** Yes _(secondary stages only — i.e. Stage Kind: secondary; omit for primary)_
 
 #### Stage Entry Conditions
 
-> **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (event-driven entry / interrupt — typically pairs with `Interrupting: Yes`). Other rule types from Key Rule 3 are NOT valid here.
+> **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (event-driven entry / interrupt). Other rule types from Key Rule 3 are NOT valid here.
 >
-> **Interrupting column:** `Yes` lets the condition fire while another stage is active and interrupt it — used for exception / fraud / escalation flows on a secondary stage (Stage Kind: secondary). `No` for normal sequential entry on regular stages.
+> **Interrupting column:** `Yes` lets the condition fire while another stage is active and interrupt it. Use `Yes` on every secondary-stage entry row. Use `No` only for normal entry on regular stages; if the work should not interrupt, it is not a secondary stage.
 >
 > Each row is a separate entry condition. List multiple rows when a stage can be entered through more than one path (e.g., normal completion of an upstream stage AND an interrupting connector event).
 
@@ -338,6 +339,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > **WHEN ↔ Marks Stage Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-tasks-completed` (or `required-stages-completed`); `No` row MAY use `selected-tasks-completed(...)`. Mixing is invalid.
 > Completion (`Yes`) and routing (`No`) rows share this one table. **Regular stage-to-stage routing is expressed by the destination stages' Entry Conditions** (`selected-stage-completed("This Stage")` / `selected-stage-exited("This Stage")`) — one stage can fan out to N stages, each declaring it as their entry trigger. `return-to-origin` returns to the origin stage automatically.
+> **Canonical return shape:** `return-to-origin` requires `required-tasks-completed` (or `wait-for-connector`) + `Marks Stage Complete: Yes`. It is not a `No` + `selected-tasks-completed` routing row.
 > **Exception carve-out:** to route this stage INTO a decision/signal-routed exception lane, add a gated divert row here — `Marks Stage Complete: No`, `selected-tasks-completed("<decider>")`, `IF =js:(<signal> === <exception-value>)`, `exit-only`, with `exitToStageId` → the secondary stage — AND gate this stage's `Yes` completion row with the inverse `IF`. The lane returns via `return-to-origin`. Omitting the divert row → dual-fire or deadlock. See sdd-generation-rules § Logical integrity step 5.
 
 | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
@@ -348,9 +350,21 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 #### Stage SLA
 
+> Stage SLA supports the same conditional + default `slaRules[]` model as the case root. For `condition-based`, keep the default row below and add one or more Stage Variable SLA Rules before it.
+
+**SLA Type:** {time-based | condition-based}
+
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
 | {count} | {min \| h \| d \| w \| m} | {percentage}% | {Notify: recipient or specific action} | {Notify: recipient or specific action} |
+
+##### Stage Variable SLA Rules
+
+> Include only for a condition-based Stage SLA. Each row is written before that stage's trailing `=js:true` default.
+
+| Expression | SLA | Unit | Display Name |
+|------------|-----|------|--------------|
+| {conditionExpression evaluated against case variables} | {count} | {min \| h \| d \| w \| m} | {non-empty stage-unique title without `:`} |
 
 #### Tasks
 
@@ -371,9 +385,11 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 **Entry Condition:**
 
-> **Valid WHEN rule types for task entry (strict subset of Key Rule 3):** `current-stage-entered` (default — fires when the containing stage is entered; typical for first task or any task with no sibling gate), `selected-tasks-completed("TaskA", "TaskB")` (fires when specific sibling tasks in the same stage complete), `wait-for-connector` (waits for a connector event), `adhoc` (user-triggered from the case app — task does not auto-start), `runs-sequentially` (sequential ordering within the stage; parallel task sets remain allowed, and the entry rule—not lane placement—carries the sequencing intent). Other rule types from Key Rule 3 are NOT valid here.
+> **Valid WHEN rule types for task entry (strict subset of Key Rule 3):** `current-stage-entered` (fires when the containing stage is entered; use for ungated event/condition-driven tasks, not for the first task in a sequential run), `selected-tasks-completed("TaskA", "TaskB")` (explicit sibling gate, fan-in, branch convergence, or non-immediate dependency), `wait-for-connector` (waits for a connector event), `adhoc` (user-triggered from the case app — task does not auto-start; task-entry only; set `Required: No`; does not determine task type), `runs-sequentially` (sequential ordering within the stage; parallel task sets remain allowed, and the entry rule—not lane placement—carries the sequencing intent). Other rule types from Key Rule 3 are NOT valid here.
 >
 > Each row is a separate entry condition. List multiple rows when a task can be entered through more than one path. Author a `current-stage-entered` row for any ungated task — including connector tasks (`execute-connector-activity`, `wait-for-connector`) — that should start when its stage is entered.
+>
+> **Sequential normalization:** for a plain top-to-bottom task run, write `runs-sequentially` as the only Entry Condition row on every task in that run, including the first task. Do not model the run as `current-stage-entered` plus `selected-tasks-completed("<previous>")`; Studio Web classifies that as condition/event-driven, not Sequential.
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|

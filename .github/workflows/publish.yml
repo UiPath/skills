@@ -8,9 +8,9 @@ name: Publish skills package
 #         Auto on every merge to a release line, mirroring UiPath/cli. Version
 #         `<base>-preview.<run_number>` (never committed), signed with
 #         `--provenance` via OIDC trusted publishing.
-#   - GitHub Release published             -> `latest`  : npmjs (stable)
 #   - workflow_dispatch (channel: latest)  -> `latest`  : npmjs (stable)
-#         Committed `package.json` version. Used by sprint-release-cut.yml.
+#         Committed `package.json` version. Stable is manual-only — there is
+#         no `release:` trigger; publishing a GitHub Release does not publish.
 #   - workflow_dispatch (channel: preview) -> `preview` : npmjs (pre-release)
 #   - workflow_dispatch (channel: dev)     -> `dev`     : GitHub Packages
 #
@@ -27,8 +27,6 @@ on:
     # main       -> `dev` build on GitHub Packages
     # release/v* -> `preview` build on npmjs (mirrors UiPath/cli)
     branches: [main, 'release/v*']
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       channel:
@@ -111,12 +109,11 @@ jobs:
   publish-npmjs:
     name: Publish to npmjs (latest / preview)
     needs: [guard]
-    # release event / dispatch latest      -> `latest`  (committed version).
+    # dispatch channel=latest              -> `latest`  (committed version).
     # release/v* push / dispatch preview   -> `preview` (stamped pre-release).
     if: >-
       github.repository == 'UiPath/skills'
-      && (github.event_name == 'release'
-          || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
+      && ((github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
           || (github.event_name == 'workflow_dispatch'
               && (github.event.inputs.channel == 'latest' || github.event.inputs.channel == 'preview')))
     runs-on: ubuntu-latest
@@ -141,8 +138,8 @@ jobs:
 
       # `preview` when: dispatch channel=preview, OR an auto push to a
       # release/v* branch (mirrors UiPath/cli). Stamps `<base>-preview.<run>`
-      # (never committed). Otherwise `latest` (a GitHub Release event or
-      # channel=latest) publishes the committed version. An explicit
+      # (never committed). Otherwise `latest` (dispatch channel=latest)
+      # publishes the committed version. An explicit
       # `--tag preview` on a pre-release version never moves `latest`, so
       # `npm install @uipath/skills` still resolves the last stable release.
       - name: Resolve dist-tag and stamp version

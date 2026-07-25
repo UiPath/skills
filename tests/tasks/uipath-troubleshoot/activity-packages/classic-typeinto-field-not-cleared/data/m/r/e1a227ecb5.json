@@ -1,0 +1,72 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Information",
+      "Message": "VendorOnboarding execution started",
+      "TimeStamp": "2026-07-16T23:10:02.300Z",
+      "RobotName": "svc_rpa",
+      "HostMachineName": "MOCK-HOST",
+      "ProcessName": "VendorOnboarding"
+    },
+    {
+      "Level": "Trace",
+      "Message": "Get Text 'Current Account' execution ended",
+      "TimeStamp": "2026-07-16T23:10:11.020Z",
+      "RobotName": "svc_rpa",
+      "ProcessName": "VendorOnboarding"
+    },
+    {
+      "Level": "Information",
+      "Message": "Current account on file: 0000",
+      "TimeStamp": "2026-07-16T23:10:11.090Z",
+      "RobotName": "svc_rpa",
+      "HostMachineName": "MOCK-HOST",
+      "ProcessName": "VendorOnboarding"
+    },
+    {
+      "Level": "Trace",
+      "Message": "Type Into 'Account Number' execution started",
+      "TimeStamp": "2026-07-16T23:10:12.400Z",
+      "RobotName": "svc_rpa",
+      "ProcessName": "VendorOnboarding"
+    },
+    {
+      "Level": "Trace",
+      "Message": "Type Into 'Account Number' execution ended",
+      "TimeStamp": "2026-07-16T23:10:14.760Z",
+      "RobotName": "svc_rpa",
+      "ProcessName": "VendorOnboarding"
+    },
+    {
+      "Level": "Trace",
+      "Message": "Get Text 'Account After Save' execution ended",
+      "TimeStamp": "2026-07-16T23:10:16.510Z",
+      "RobotName": "svc_rpa",
+      "ProcessName": "VendorOnboarding"
+    },
+    {
+      "Level": "Information",
+      "Message": "Account submitted for vendor V-40817: 00008891245",
+      "TimeStamp": "2026-07-16T23:10:16.590Z",
+      "RobotName": "svc_rpa",
+      "HostMachineName": "MOCK-HOST",
+      "ProcessName": "VendorOnboarding"
+    },
+    {
+      "Level": "Information",
+      "Message": "VendorOnboarding execution ended",
+      "TimeStamp": "2026-07-16T23:10:39.500Z",
+      "RobotName": "svc_rpa",
+      "HostMachineName": "MOCK-HOST",
+      "ProcessName": "VendorOnboarding"
+    }
+  ],
+  "Pagination": {
+    "Returned": 8,
+    "Limit": 100,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

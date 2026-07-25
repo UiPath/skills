@@ -52,7 +52,7 @@ Parse it as JSON:
 
 Extract `SolutionId` → `SOLUTION_ID`. Find the entry in `Projects[]` whose directory matches the flow file's directory → its `Id` is `PROJECT_KEY`.
 
-> If no project entry matches, the project is not registered. Run `uip solution project add` first.
+> If no project entry matches, the project is not registered. Run `uip solution projects add` first.
 
 ### Step 2 — Search for apps
 
