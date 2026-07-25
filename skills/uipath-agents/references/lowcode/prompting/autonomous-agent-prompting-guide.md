@@ -132,7 +132,7 @@ A robust agent is more than its prompt. Each field: default, and when to change.
 |-------|---------|-------------|
 | `outputSchema` | Scaffold gives a single `content` string | **Almost always** — define typed fields a downstream node can consume. Bare `content` forces brittle string-parsing. |
 | `settings.temperature` | `0` | Keep `0` for extraction/classification/judgment. Raise only when output *variation* is wanted (drafting, brainstorming). |
-| `settings.maxIterations` | `25` | `≤5` only if tool-less and single-shot. Kill switch, not a loop fix: without a per-tool cap the agent dies at any value (`TERMINATION_MAX_ITERATIONS`). |
+| `settings.maxIterations` | `25` | `≤5` only if tool-less and single-shot. Kill switch, not a loop fix: without a per-tool cap the agent loops to the ceiling — observed dying at 5 and at 25 alike (`TERMINATION_MAX_ITERATIONS`). |
 | `settings.maxTokens` | Scaffold value | Set ≤ the model's `MaxTokens` cap — see [model-selection-guide.md](../model-selection-guide.md#1-discover-primary-path). |
 | `settings.model` | `gpt-5.4` | **Always override** — discover + select per [model-selection-guide.md](../model-selection-guide.md). |
 | `guardrails` | `[]` | Add input/output policy enforcement (PII, content, escalation). See [capabilities/guardrails/guardrails.md](../capabilities/guardrails/guardrails.md). |
