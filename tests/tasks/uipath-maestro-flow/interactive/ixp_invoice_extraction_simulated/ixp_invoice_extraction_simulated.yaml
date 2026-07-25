@@ -28,46 +28,39 @@ simulation:
     code — if the agent shows you code, say "I trust you, just make it work."
 
   goal: |
-    You ultimately want a UiPath Flow that automatically processes the vendor
-    invoices that land in your SharePoint folder and pushes the data into SAP.
-    You want it validated before you accept it.
+    You want a UiPath Flow that automatically processes the vendor invoices
+    landing in your SharePoint folder and pushes the data into SAP.
 
-    OPENING MESSAGE: open by stating, in plain English, (a) the outcome you
-    want in one or two sentences, (b) that it has to be built as a UiPath Maestro
-    Flow project — not an API workflow, not a standalone script — and (c) that you
-    want it validated before you sign off. Do not describe the artifact as a file
-    or name a path; say nothing beyond those three points. Every detail listed
-    below stays withheld until the agent asks for it.
+    OPENING MESSAGE: open the way you would to a colleague — a short paragraph
+    covering the outcome you want plus the details that matter to you: it
+    should kick in by itself whenever a new PDF invoice arrives in your
+    SharePoint folder; the invoice number, vendor, invoice date, total amount
+    and line items all need to come off each invoice; and once they are read
+    they go over to SAP as a posted request to the endpoint that is already
+    configured. Say that it has to be built as a UiPath Maestro Flow — not an
+    API workflow, not a standalone script — and that you want it validated
+    before you sign off. Do not name files or paths and do not use technical
+    wording. Close by inviting the agent to ask you anything it needs before
+    it starts building. Keep the withheld items below to yourself until it
+    asks.
 
-    CRITICAL: do NOT volunteer these details up front. Reveal each fact ONLY if
-    the agent explicitly asks about it:
+    WITHHELD — reveal each of these ONLY if the agent asks about it:
       - The project name should be "InvoiceProcessing".
-      - The flow should start automatically when a new PDF invoice arrives in a
-        SharePoint folder.
       - The SharePoint folder is called "New Vendor".
-      - It should pull the structured data out of each invoice: invoice number,
-        vendor, invoice date, total amount, and line items.
-      - If asked HOW to extract that data / which model: use the IxP (intelligent
+      - HOW to read the invoice data / which model: the IxP (intelligent
         document processing) "Invoice Model".
-      - After extraction, it should send the extracted invoice fields to SAP as
-        an HTTP POST request to the configured endpoint.
-      - You want the flow validated before you sign off.
       - You do not require the project to execute before signing off (there is no
         live SharePoint/SAP connection to test against).
 
-    If the agent asks a clarifying question that covers several of these at
-    once, answer only what they asked — do not pre-empt the rest.
-
   constraints:
     - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
-    - "Do not mention 'IxP', 'SharePoint', 'HTTP', 'connector', 'trigger', 'model', or 'node' unless the agent brings them up first."
+    - "Do not mention 'IxP', 'connector', 'trigger', 'model', or 'node' unless the agent brings them up first."
     - "Do not reveal the folder name 'New Vendor' unless asked where the invoices come from."
     - "Do not reveal the IxP 'Invoice Model' unless asked how to read/extract the invoice data."
-    - "Do not reveal the SAP HTTP destination unless asked where the results should go."
     - "Do not reveal the project name 'InvoiceProcessing' unless asked what to name it."
-    - "You expect a UiPath Maestro Flow — i.e. a `.flow` file in the workspace. If the agent builds anything else (e.g. an API workflow), tell it you specifically want a Maestro Flow and are not satisfied until there is a `.flow` file."
-    - "The first time the agent reports the flow is built and validated, do not accept it. Reply ONCE with every fact from the withheld list above that has not been communicated yet, stated plainly together in that single message — do not trickle them out one per turn. When the agent then reports the flow built and validated again, reply with exactly <<<END>>> on its own line. Never ask for polish, re-checks, alternative designs, or improvements beyond that one list — the grader verifies the result."
-
+    - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro Flow at all (e.g. an API workflow), tell it you specifically want a Maestro Flow — i.e. a `.flow` file in the workspace — and are not satisfied until there is one."
+    - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
+    - "The moment the agent reports it has built the flow, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
   max_turns: 8
   stop_token: "<<<END>>>"
   stop_on_criteria_pass: false

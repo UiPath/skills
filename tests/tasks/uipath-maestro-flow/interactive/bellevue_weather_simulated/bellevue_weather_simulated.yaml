@@ -26,44 +26,35 @@ simulation:
     "I trust you, just make it work."
 
   goal: |
-    You ultimately want a UiPath Flow that checks today's weather and tells you
-    whether it's a nice day. You want it validated before you accept it.
+    You want a UiPath Flow that checks today's weather for the Bellevue office
+    and tells you whether it's a nice day.
 
-    OPENING MESSAGE: open by stating, in plain English, (a) the outcome you
-    want in one or two sentences, (b) that it has to be built as a UiPath Maestro
-    Flow project — not an API workflow, not a standalone script — and (c) that you
-    want it validated before you sign off. Do not describe the artifact as a file
-    or name a path; say nothing beyond those three points. Every detail listed
-    below stays withheld until the agent asks for it.
+    OPENING MESSAGE: open the way you would to a colleague — a couple of short
+    sentences covering the outcome you want plus the rules that actually
+    matter to you: it is the Bellevue, Washington office; strictly above 60
+    degrees Fahrenheit is a nice day and the result should say 'nice day', at
+    or below 60 should say 'bring a jacket'; and you want a short written
+    summary of the weather rather than raw numbers. Say that it has to be
+    built as a UiPath Maestro Flow — not an API workflow, not a standalone
+    script — and that you want it validated before you sign off. Do not name
+    files or paths and do not use technical wording. Close by inviting the
+    agent to ask you anything it needs before it starts building. Keep the
+    withheld items below to yourself until it asks.
 
-    CRITICAL: do NOT volunteer these details up front. Reveal each fact ONLY if
-    the agent explicitly asks about it:
+    WITHHELD — reveal each of these ONLY if the agent asks about it:
       - The project name should be "BellevueWeather".
-      - The city is Bellevue (Washington).
-      - The temperature threshold is 60 degrees Fahrenheit: strictly above 60F
-        is a nice day, at or below 60F is not.
-      - The exact wording of the result: if it's above 60F the message should
-        be 'nice day', otherwise 'bring a jacket'.
-      - You want a short written summary of the weather (a script step), not raw
-        numbers.
-      - If asked where to get the weather / which data source: use the
-        open-meteo public API called directly over HTTP — NOT an Integration
-        Service connector.
-      - You want the flow validated before you sign off.
+      - Where the weather data comes from: the open-meteo public API, called
+        directly over HTTP — NOT an Integration Service connector.
       - You do not require the project to execute before signing off.
-
-    If the agent asks a clarifying question that covers several of these at
-    once, answer only what they asked — do not pre-empt the rest.
 
   constraints:
     - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
     - "Do not mention 'HTTP', 'open-meteo', 'connector', 'node', 'script', or 'decision' unless the agent brings them up first."
-    - "Do not reveal the 60F threshold or the exact messages unless asked about the temperature rule or wording."
-    - "Do not reveal the city 'Bellevue' unless asked which location."
     - "Do not reveal the project name 'BellevueWeather' unless asked what to name it."
-    - "You expect a UiPath Maestro Flow — i.e. a `.flow` file in the workspace. If the agent builds anything else (e.g. an API workflow), tell it you specifically want a Maestro Flow and are not satisfied until there is a `.flow` file."
-    - "The first time the agent reports the flow is built and validated, do not accept it. Reply ONCE with every fact from the withheld list above that has not been communicated yet, stated plainly together in that single message — do not trickle them out one per turn. When the agent then reports the flow built and validated again, reply with exactly <<<END>>> on its own line. Never ask for polish, re-checks, alternative designs, or improvements beyond that one list — the grader verifies the result."
-
+    - "If the agent proposes getting the weather through an Integration Service connector, tell it to call the public open-meteo API directly over HTTP instead."
+    - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro Flow at all (e.g. an API workflow), tell it you specifically want a Maestro Flow — i.e. a `.flow` file in the workspace — and are not satisfied until there is one."
+    - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
+    - "The moment the agent reports it has built the flow, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
   max_turns: 8
   stop_token: "<<<END>>>"
   stop_on_criteria_pass: false
