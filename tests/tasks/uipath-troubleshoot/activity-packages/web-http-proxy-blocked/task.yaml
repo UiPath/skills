@@ -78,9 +78,10 @@ simulation:
     agent requests so the investigation reaches the final resolution.
   constraints:
     - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks where the project source code / project directory / XAML files are, answer with the current working directory: respond exactly `.` (a single dot) — the project files for this scenario are staged into the sandbox cwd by the test harness."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
     - "If asked, confirm the process works from Studio on your laptop but fails on the scheduled unattended robot, and that the robot sits on the corporate server network."
-    - "Never invent or provide new factual data beyond that — you don't know proxy addresses or credentials."
+    - "Never invent or provide new factual data beyond that — you don't know proxy addresses or credentials. EXCEPTION: the project source code path IS a real fact about your test setup; you may share it when asked (`.`)."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6
