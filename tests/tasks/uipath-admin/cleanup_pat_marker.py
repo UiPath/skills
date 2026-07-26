@@ -21,8 +21,10 @@ from admin_helpers import run_cli
 logging.basicConfig(level=logging.INFO, format="cleanup_pat_marker: %(message)s")
 logger = logging.getLogger(__name__)
 
-# Case-insensitive substrings that identify a test-created PAT.
-TEST_MARKERS = ("ce-identity-smoke-pat", "e2e-test-pat", "smoke")
+# Case-insensitive substrings that identify a test-created PAT. Deliberately
+# distinctive — a bare "smoke" would also revoke real PATs (e.g. a production
+# "smoke-test detector" token) on the shared org.
+TEST_MARKERS = ("ce-identity-smoke", "e2e-test-pat")
 
 
 def is_test_pat(desc):

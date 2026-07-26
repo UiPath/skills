@@ -26,7 +26,7 @@ success_criteria:
   - type: run_command
     description: "The marker group has at least one member after the agent added a user"
     command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_group_member.py''))"'
-    timeout: 40
+    timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

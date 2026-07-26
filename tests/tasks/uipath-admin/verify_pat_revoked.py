@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Verify the seeded marker PAT is gone after the agent revoked it.
+"""Verify the seeded marker PAT was revoked by the agent.
 
-The marker PAT is created in pre_run (setup_revoke_pat.py); this asserts it is
-absent from the tenant's PAT list. Exits 1 (fail) if still present or the list
-cannot be read.
+Reads the seed PAT id recorded by setup_revoke_pat.py. If the seed was never
+created (no state file) this is an ERROR, not a pass — otherwise a do-nothing
+agent would "pass" because the token is trivially absent. Given a real seed id,
+asserts that exact PAT is now gone from the tenant.
 """
 
 import logging
@@ -16,29 +17,29 @@ from admin_helpers import run_cli, fail, ok
 
 logging.basicConfig(level=logging.INFO, format="verify_pat_revoked: %(message)s")
 
-MARKER = "ce-identity-smoke-revoke-pat"
-
-
-def present():
-    data = run_cli(["admin", "pat", "list"])
-    if not data or data.get("Result") != "Success":
-        return None  # cannot confirm
-    return any((t.get("Description") or t.get("description") or "") == MARKER
-               for t in data.get("Data", []))
+STATE_FILE = "/tmp/ce_revoke_pat_seed.txt"
 
 
 def main():
-    p = None
+    if not os.path.exists(STATE_FILE):
+        fail("seed PAT was never created (no state file) — cannot validate revocation")
+    seed_id = open(STATE_FILE).read().strip()
+    if not seed_id:
+        fail("seed PAT id missing — cannot validate revocation")
+
+    present = None
     for i in range(4):
-        p = present()
-        if p is None:
+        data = run_cli(["admin", "pat", "list"])
+        if not data or data.get("Result") != "Success":
             fail("could not list PATs to confirm revocation")
-        if not p:
+        present = any((t.get("Id") or t.get("id")) == seed_id for t in data.get("Data", []))
+        if not present:
             break
         time.sleep(5)
-    if p:
-        fail(f"PAT '{MARKER}' still present — agent did not revoke it")
-    ok(f"PAT '{MARKER}' successfully revoked (absent from tenant)")
+
+    if present:
+        fail(f"seed PAT id={seed_id} still present — agent did not revoke it")
+    ok(f"seed PAT id={seed_id} successfully revoked (absent from tenant)")
 
 
 main()
