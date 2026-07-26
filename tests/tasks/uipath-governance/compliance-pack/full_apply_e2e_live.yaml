@@ -46,19 +46,26 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # Advisory, not gating. command_executed matches the literal top-level command
+  # string; an agent that batches its CLI calls into a script file and runs
+  # `bash run.sh` executes state coverage/enable correctly but exposes only
+  # `bash run.sh` to the matcher, so the string-match false-fails a correct run.
+  # The real invariant — the pack actually ends up enabled — is gated below by
+  # the weight-5.0 post-hoc `state get` outcome check (and report.json content),
+  # which passes only if these commands genuinely ran against the tenant.
   - type: command_executed
-    description: "Agent called state coverage to analyze posture"
+    description: "Agent called state coverage to analyze posture (advisory — outcome gated by post-hoc check)"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\b'
     min_count: 1
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: command_executed
-    description: "Agent called state enable to apply missing settings"
+    description: "Agent called state enable to apply missing settings (advisory — outcome gated by post-hoc check)"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable\b'
     min_count: 1
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: command_executed
     description: "Agent called state get to verify post-apply state (advisory)"
