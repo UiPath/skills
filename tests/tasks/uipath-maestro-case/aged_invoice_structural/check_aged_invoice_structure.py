@@ -7,7 +7,8 @@ staged sdd.md encodes the intended design:
   - 8 primary stages (Intake -> Enrichment -> Triage -> AP Review -> Exception
     Resolution -> Payment Risk -> Approval -> Closure) chained as a happy path
   - 2 interrupting secondary lanes (SLA Escalation, Automation Incident), each
-    marked interrupting and exiting via return-to-origin
+    marked interrupting and exiting via the canonical return-to-origin shape
+    (required-tasks-completed + marksStageComplete=true)
   - the case starts from an aged_invoice_cases Intsvc.EventTrigger, not Manual
   - the connector-free task-type mix is present (api-workflow, agent, action,
     rpa, wait-for-timer, case-management) and NO connector task types
@@ -32,6 +33,7 @@ from _shared.case_check import (  # noqa: E402
     get_case_exit_conditions,
     find_triggers,
     iter_tasks,
+    partition_return_to_origin_conditions,
     read_caseplan,
 )
 
@@ -53,10 +55,6 @@ FORBIDDEN_TYPES = {"execute-connector-activity", "wait-for-connector"}
 
 def _fail(msg: str) -> None:
     sys.exit(f"FAIL: {msg}")
-
-
-def _norm(s: str) -> str:
-    return re.sub(r"[^a-z0-9]", "", (s or "").lower())
 
 
 def _label(node: dict) -> str:
@@ -133,8 +131,37 @@ def main() -> None:
             _fail(f"secondary lane {name!r} is not marked stageType=secondary")
         if "interrupt" not in blob:
             _fail(f"secondary lane {name!r} must declare an interrupting entry condition")
-        if "returntoorigin" not in _norm(blob):
-            _fail(f"secondary lane {name!r} must exit via return-to-origin")
+        exits = data.get("exitConditions") or []
+        returns, invalid_returns = partition_return_to_origin_conditions(
+            exits,
+            allowed_rules=frozenset({"required-tasks-completed"}),
+        )
+        if not returns:
+            shapes = [
+                (
+                    condition.get("type"),
+                    condition.get("marksStageComplete"),
+                    (first_rule_of_condition(condition) or {}).get("rule"),
+                )
+                for condition in exits
+            ]
+            _fail(
+                f"secondary lane {name!r} must use canonical return-to-origin "
+                f"(required-tasks-completed + marksStageComplete=true); got {shapes}"
+            )
+        if invalid_returns:
+            shapes = [
+                (
+                    condition.get("marksStageComplete"),
+                    (first_rule_of_condition(condition) or {}).get("rule"),
+                )
+                for condition in invalid_returns
+            ]
+            _fail(
+                f"secondary lane {name!r} has malformed additional "
+                f"return-to-origin exit(s); expected every return to use "
+                f"required-tasks-completed + marksStageComplete=true; got {shapes}"
+            )
 
     # --- task-type mix: required present, connectors absent
     tasks = list(iter_tasks(plan))
@@ -159,7 +186,7 @@ def main() -> None:
 
     print(
         f"OK: AgedInvoiceResolution caseplan sound — 8 primary stages chained, "
-        f"2 interrupting return-to-origin lanes, aged_invoice_cases event trigger, "
+        f"2 interrupting canonical return-to-origin lanes, aged_invoice_cases event trigger, "
         f"{len(tasks)} tasks across connector-free types {sorted(REQUIRED_TYPES & types_seen)}, "
         f"no connector task types, Payment Tracking child case, case can close"
     )

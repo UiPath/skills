@@ -13,7 +13,6 @@ run_limits:
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
   node: {}
 
 # Reclaim the build's node_modules before artifact preservation. The build

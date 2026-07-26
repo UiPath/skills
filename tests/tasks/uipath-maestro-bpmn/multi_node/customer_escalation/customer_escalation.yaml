@@ -81,5 +81,8 @@ success_criteria:
     prompt: >
       Pass if the agent created only local project files and did not run or
       request approval for BPMN debug, process run, upload, publish, or deploy
-      commands. Fail if tool calls or the final answer show any cloud-side
+      commands. Read-only registry discovery commands such as `uip maestro bpmn
+      registry pull`, `registry list`, and `registry get` are allowed because
+      they fetch authoring templates and do not mutate a tenant or lifecycle
+      state. Fail if tool calls or the final answer show any cloud-side
       lifecycle mutation or any request to perform one.

@@ -8,7 +8,7 @@ confidence: medium
 
 A modern Orchestrator queue activity (`Get Queue Item` / `Get Transaction Item`, `Set Transaction Status`, or `Add Queue Item`) from `UiPath.System.Activities` faulted — either on client-side input validation or on the Orchestrator API call. Storage-bucket activities (`Get / Upload / Delete Storage File`) share the same "not connected" and API-error modes below.
 
-> For the classic `Add Queue Item` activity (`UiPath.Core.Activities` — "Queue name may not be null or empty", reserved-character keys, duplicate keys), use [classic-activities/add-queue-item-failed.md](../../classic-activities/playbooks/add-queue-item-failed.md). For `Get Asset` / `Get Credential`, use the get-asset playbooks in this package.
+> For the classic `Add Queue Item` activity (`UiPath.Core.Activities` — "Queue name may not be null or empty", reserved-character keys, duplicate keys), use [classic-activities/queue-operation-failed.md](../../classic-activities/playbooks/queue-operation-failed.md). For `Get Asset` / `Get Credential`, use the get-asset playbooks in this package.
 
 What this looks like:
 - `Queue Name is required.` (`ArgumentValueNotSetException`) — the `QueueName` input was empty/unresolved.

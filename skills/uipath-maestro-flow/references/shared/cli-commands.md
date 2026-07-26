@@ -25,7 +25,7 @@ cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output js
 #    `Skipped` / `Failed` (ambiguous discovery or `.uipx` write error), or the
 #    rare `NotInSolution`. (`OptedOut` means `--skip-solution-registration` was
 #    passed and the skip was intentional.)
-uip solution project add \
+uip solution projects add \
   <directory>/<SolutionName>/<ProjectName> \
   <directory>/<SolutionName>/<SolutionName>.uipx
 ```
