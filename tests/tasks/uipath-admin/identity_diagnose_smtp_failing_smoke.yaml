@@ -1,40 +1,33 @@
 task_id: skill-admin-smtp-test-failing-smoke
 description: >
-  Troubleshoot smoke: agent diagnoses SMTP email delivery failure by
-  inspecting current config and running a test. Validates Playbook 5.
-
-  Command-construction only — no live tenant available.
+  Diagnose smoke: agent troubleshoots email-delivery failure by retrieving the
+  current SMTP configuration. Graded on the SMTP settings object read back from
+  the tenant, not the command string.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, troubleshoot, identity, smtp]
 
 run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  Our platform invitation emails stopped working. Users aren't
-  receiving invites. How do I diagnose the SMTP configuration?
+  Our platform invitation emails stopped working — users aren't receiving
+  invites. Retrieve the current SMTP configuration so it can be reviewed for
+  the cause, and save the complete JSON result to ./smtp.json.
 
-  Important:
-  - The `uip` CLI is available but the `admin` subcommand may not be
-    installed and/or the CLI is not connected to a live tenant.
-    Commands WILL fail — that is expected and acceptable.
-    Run each command exactly once regardless of errors.
-    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
-    do NOT troubleshoot errors.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent checked current SMTP config"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+smtp\s+get'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent ran SMTP test"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+smtp\s+test\b'
-    min_count: 1
-    weight: 1.5
+  - type: run_command
+    description: "smtp.json holds the SMTP settings object retrieved from the tenant"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('smtp.json', encoding='utf-8-sig'))
+      assert isinstance(d, dict) and d.get('Result') == 'Success' and 'Data' in d, f'not a successful uip retrieval; top-level={list(d) if isinstance(d, dict) else type(d).__name__}'
+      data = d['Data']
+      assert isinstance(data, dict) and len(data) >= 1, f'expected an SMTP settings object; got {type(data).__name__}'
+      print(f'OK: SMTP settings retrieved; keys={list(data)[:10]}')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
