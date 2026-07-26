@@ -186,7 +186,7 @@ All halts write a deploy record (Apply) or patch record (Diagnose).
 uip gov compliance-packs catalog list --output json
 uip gov compliance-packs catalog get <packId> --output json
 
-# State (tenant-scoped; Policy:Read for coverage/get/list; Policy:Write for enable/disable)
+# State (tenant-scoped; Policy:Read for coverage/get/list; Policy:Write for enable/disable/restore)
 TENANT_ID=$(grep '^UIPATH_TENANT_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
 ORG_ID=$(grep '^UIPATH_ORGANIZATION_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
 
@@ -194,6 +194,7 @@ ORG_ID=$(grep '^UIPATH_ORGANIZATION_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
 uip gov compliance-packs state coverage tenant $TENANT_ID <packId> --output json
 uip gov compliance-packs state enable  tenant $TENANT_ID <packId> --output json
 uip gov compliance-packs state disable tenant $TENANT_ID <packId> --output json
+uip gov compliance-packs state restore tenant $TENANT_ID <packId> --output json
 uip gov compliance-packs state get    tenant $TENANT_ID <packId> --output json
 uip gov compliance-packs state list   tenant $TENANT_ID          --output json
 
