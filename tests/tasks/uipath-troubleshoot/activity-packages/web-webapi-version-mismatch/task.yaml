@@ -38,8 +38,7 @@ initial_prompt: |
   has never run in Orchestrator; this only happens at design time, in UiPath
   Studio 2021.10.
 
-  Why is this happening, and how do I fix it? The project is in the current
-  working directory.
+  Why is this happening, and how do I fix it?
 
 success_criteria:
   - type: skill_triggered

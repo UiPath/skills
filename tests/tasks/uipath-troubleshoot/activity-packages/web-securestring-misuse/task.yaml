@@ -38,8 +38,7 @@ initial_prompt: |
 
   A forum post claims upgrading UiPath.WebAPI.Activities to 2.3.0+ adds native
   secure parameter handling and clears this — is that right? Why is this being
-  flagged, and what's the actual fix? The project is in the current working
-  directory.
+  flagged, and what's the actual fix?
 
 success_criteria:
   - type: skill_triggered
