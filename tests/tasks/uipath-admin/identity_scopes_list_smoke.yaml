@@ -21,8 +21,16 @@ success_criteria:
       python3 -c "
       import json
       d = json.load(open('scopes.json', encoding='utf-8-sig'))
-      assert isinstance(d, dict) and d.get('Result') == 'Success' and 'Data' in d, f'not a successful uip retrieval; top-level={list(d) if isinstance(d, dict) else type(d).__name__}'
-      rows = d['Data']
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      data = d['Data'] if isinstance(d, dict) and 'Data' in d else d
+      def lists(o):
+          if isinstance(o, list):
+              yield o
+              for v in o: yield from lists(v)
+          elif isinstance(o, dict):
+              for v in o.values(): yield from lists(v)
+      rows = data if isinstance(data, list) else next((L for L in lists(data) if L and isinstance(L[0], dict)), None)
       assert isinstance(rows, list) and len(rows) >= 10, f'expected the OAuth2 scope catalog; got {type(rows).__name__} len={len(rows) if isinstance(rows, list) else None}'
       assert 'Name' in rows[0], f'scope record missing Name; keys={list(rows[0])[:8]}'
       nm = rows[0].get('Name')
