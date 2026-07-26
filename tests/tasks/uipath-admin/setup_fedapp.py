@@ -5,7 +5,6 @@ external app the agent will attach a federated credential to. Always exits 0."""
 import logging
 import os
 import sys
-import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
 from admin_helpers import run_cli
@@ -14,10 +13,13 @@ logging.basicConfig(level=logging.INFO, format="setup_fedapp: %(message)s")
 logger = logging.getLogger(__name__)
 
 APP = "ce-identity-smoke-fedapp"
-# The federated-credentials endpoint rejects a just-created app with
-# "Client not found in partition" for a while after creation; give it time to
-# propagate before the agent attaches a credential.
-SETTLE_SECONDS = 75
+
+# KNOWN OPEN ITEM (PLT-107839): the read-back for this test is currently blocked.
+# The federated-credentials endpoint rejects the freshly-created app with
+# HTTP 400 "Client <id> not found in partition"; a 75s settle wait did not fix it
+# (and changed the failure to the app being absent by verify time). Revisit after
+# the rest of the identity migration — either resolve the partition/propagation
+# behavior or fall back to a lighter grading for this one test.
 
 
 def main():
@@ -32,9 +34,6 @@ def main():
     # Confidential app (default) — supports federated credentials.
     res = run_cli(["admin", "external-apps", "create", APP, "--app-scope", "OR.Folders,OR.Jobs"])
     logger.info("Seeded fedapp '%s': %s", APP, (res or {}).get("Result"))
-    if res and res.get("Result") == "Success":
-        logger.info("Waiting %ds for the app to propagate to the federation partition...", SETTLE_SECONDS)
-        time.sleep(SETTLE_SECONDS)
 
 
 main()
