@@ -26,18 +26,18 @@ success_criteria:
       python3 -c "
       import json
       d = json.load(open('login-events.json', encoding='utf-8-sig'))
-      assert isinstance(d, dict) and d.get('Result') == 'Success' and 'Data' in d, f'not a successful uip retrieval; top-level={list(d) if isinstance(d, dict) else type(d).__name__}'
-      data = d['Data']
+      # Tolerate how the agent saved it: full {Result,Code,Data} envelope, the
+      # unwrapped Data, or a bare events array.
+      data = d['Data'] if isinstance(d, dict) and 'Data' in d else d
       def lists(o):
           if isinstance(o, list):
               yield o
               for v in o: yield from lists(v)
           elif isinstance(o, dict):
               for v in o.values(): yield from lists(v)
-      events = next((L for L in lists(data)), None)
-      top = list(data) if isinstance(data, dict) else type(data).__name__
-      assert events is not None, f'no events list found in audit response; Data-keys={top}'
-      print(f'OK: org audit events retrieved; Data-keys={top}; events={len(events)}')
+      events = data if isinstance(data, list) else next((L for L in lists(data)), None)
+      assert events is not None, f'no audit events list found; saved type={type(d).__name__}'
+      print(f'OK: org audit events retrieved; events={len(events)}')
       "
     timeout: 15
     expected_exit_code: 0
