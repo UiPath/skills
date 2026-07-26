@@ -24,10 +24,12 @@ success_criteria:
       python3 -c "
       import json
       d = json.load(open('access.json', encoding='utf-8-sig'))
-      assert isinstance(d, dict) and d.get('Result') == 'Success' and 'Data' in d, f'not a successful uip retrieval; top-level={list(d) if isinstance(d, dict) else type(d).__name__}'
-      data = d['Data']
-      assert data not in (None, {}, []), 'check-access returned empty Data'
-      print(f'OK: effective-access decision retrieved; type={type(data).__name__}')
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'check-access not successful: Result={res}'
+      data = d['Data'] if isinstance(d, dict) and 'Data' in d else d
+      assert isinstance(data, dict) and len(data) >= 1, f'expected an effective-access decision object; got {type(data).__name__}'
+      assert any('role' in k.lower() for k in data), f'decision missing a role-assignments field; keys={list(data)[:10]}'
+      print(f'OK: effective-access decision retrieved; keys={list(data)[:8]}')
       "
     timeout: 15
     expected_exit_code: 0

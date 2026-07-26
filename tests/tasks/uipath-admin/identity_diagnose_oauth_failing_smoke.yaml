@@ -40,4 +40,4 @@ success_criteria:
       Score 0.0 if it misdiagnoses (blames credentials/expiry/network) or gives
         no root cause.
     weight: 3.0
-    pass_threshold: 0.5
+    pass_threshold: 1.0

@@ -24,9 +24,17 @@ success_criteria:
       python3 -c "
       import json
       d = json.load(open('pats.json', encoding='utf-8-sig'))
-      assert isinstance(d, dict) and d.get('Result') == 'Success' and 'Data' in d, f'not a successful uip retrieval; top-level={list(d) if isinstance(d, dict) else type(d).__name__}'
-      rows = d['Data']
-      assert isinstance(rows, list) and len(rows) >= 1, f'expected a list of PATs; got {type(rows).__name__}'
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'PAT retrieval not successful: Result={res}'
+      data = d['Data'] if isinstance(d, dict) and 'Data' in d else d
+      def lists(o):
+          if isinstance(o, list):
+              yield o
+              for v in o: yield from lists(v)
+          elif isinstance(o, dict):
+              for v in o.values(): yield from lists(v)
+      rows = data if isinstance(data, list) else next((L for L in lists(data)), None)
+      assert rows and isinstance(rows[0], dict), f'no PAT records found; saved type={type(d).__name__}'
       r = rows[0]
       assert 'Expiration' in r and 'Scopes' in r, f'PAT record missing Expiration/Scopes; keys={list(r)[:10]}'
       print(f'OK: {len(rows)} PATs retrieved with expiry/scope fields; keys={list(r)[:8]}')

@@ -14,7 +14,6 @@ initial_prompt: |
   multiple failed login attempts over the past week. Investigate the login
   history and save the retrieved audit events to ./login-events.json.
 
-  Login events are recorded at the ORGANIZATION scope, not the tenant scope.
   Do NOT use the uipath-troubleshoot skill.
 
   Do NOT prompt the user for confirmation — this is an automated test.
@@ -35,8 +34,11 @@ success_criteria:
               for v in o: yield from lists(v)
           elif isinstance(o, dict):
               for v in o.values(): yield from lists(v)
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'audit retrieval not successful: Result={res}'
       events = data if isinstance(data, list) else next((L for L in lists(data)), None)
       assert events is not None, f'no audit events list found; saved type={type(d).__name__}'
+      assert all(isinstance(e, dict) for e in events), 'audit events are not record objects'
       print(f'OK: org audit events retrieved; events={len(events)}')
       "
     timeout: 15
