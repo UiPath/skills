@@ -1,23 +1,37 @@
 task_id: skill-admin-identity-list-pats-smoke
 description: >
-  Skill-guided evaluation: agent uses the uipath-admin skill to list
-  personal access tokens. Tests correct CLI namespace and flag usage.
-
+  Smoke test (outcome-graded): agent uses the uipath-admin skill to retrieve the
+  authenticated user's personal access tokens and persist the JSON result.
+  Graded on the retrieved collection envelope read back from the live tenant (a
+  well-formed Data list; empty is valid for a user with no PATs), NOT on the
+  command string — agent-agnostic across Claude/codex. Converted from a
+  command_executed check per PLT-107839.
 tags: [uipath-admin, smoke, mode:operate, list]
 
 run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  List all my personal access tokens in UiPath.
+  List all my personal access tokens in UiPath. Save the complete JSON result
+  to ./pats.json so it can be reviewed.
 
   Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent ran pat list"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+pat\s+list'
-    min_count: 1
-    weight: 2.0
+  - type: run_command
+    description: "pats.json holds the PAT collection retrieved from the tenant (well-formed Data list; empty allowed)"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('pats.json', encoding='utf-8-sig'))
+      assert isinstance(d, dict) and 'Data' in d, f'not the uip success envelope; top-level={list(d) if isinstance(d, dict) else type(d).__name__}'
+      rows = d['Data']
+      assert isinstance(rows, list), f'PAT collection is not a list; got {type(rows).__name__}'
+      if rows:
+          assert 'Id' in rows[0] or 'Name' in rows[0], f'PAT record missing Id/Name; keys={list(rows[0])[:10]}'
+      print(f'OK: PAT collection retrieved; count={len(rows)}')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0

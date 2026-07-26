@@ -24,17 +24,12 @@ success_criteria:
       python3 -c "
       import json
       d = json.load(open('scopes.json', encoding='utf-8-sig'))
-      def lists(o):
-          if isinstance(o, list):
-              yield o
-              for v in o: yield from lists(v)
-          elif isinstance(o, dict):
-              for v in o.values(): yield from lists(v)
-      top = list(d) if isinstance(d, dict) else type(d).__name__
-      cands = [L for L in lists(d) if L]
-      assert cands, f'no non-empty array found; top-level={top}'
-      rows = max(cands, key=len)
-      print(f'OK: {len(rows)} scopes; top-level={top}; sample={rows[0]}')
+      assert isinstance(d, dict) and 'Data' in d, f'not the uip success envelope; top-level={list(d) if isinstance(d, dict) else type(d).__name__}'
+      rows = d['Data']
+      assert isinstance(rows, list) and len(rows) >= 10, f'expected the OAuth2 scope catalog; got {type(rows).__name__} len={len(rows) if isinstance(rows, list) else None}'
+      assert 'Name' in rows[0], f'scope record missing Name; keys={list(rows[0])[:8]}'
+      nm = rows[0].get('Name')
+      print(f'OK: {len(rows)} scopes retrieved; sample={nm}')
       "
     timeout: 15
     expected_exit_code: 0
