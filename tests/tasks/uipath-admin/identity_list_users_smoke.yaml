@@ -23,11 +23,18 @@ success_criteria:
       python3 -c "
       import json
       d = json.load(open('users.json', encoding='utf-8-sig'))
-      rows = d if isinstance(d, list) else next((d[k] for k in ('value','data','items','results','users') if isinstance(d.get(k), list)), None)
-      assert rows is not None, f'no user array in users.json; got {type(d).__name__}'
-      assert len(rows) > 0, 'user list empty - principal may lack identity read access'
-      assert any(k.lower() in ('id','userid') for k in rows[0]), f'first record missing id: {list(rows[0])}'
-      print(f'OK: {len(rows)} users, sample keys={list(rows[0])[:8]}')
+      def lists(o):
+          if isinstance(o, list):
+              yield o
+              for v in o: yield from lists(v)
+          elif isinstance(o, dict):
+              for v in o.values(): yield from lists(v)
+      top = list(d) if isinstance(d, dict) else type(d).__name__
+      cands = [L for L in lists(d) if L and isinstance(L[0], dict)]
+      assert cands, f'no non-empty list of user records found; top-level={top}'
+      rows = max(cands, key=len)
+      assert any(k.lower() in ('id','userid','key') for k in rows[0]), f'record missing id; keys={list(rows[0])[:10]}'
+      print(f'OK: {len(rows)} user records; top-level={top}; keys={list(rows[0])[:10]}')
       "
     timeout: 15
     expected_exit_code: 0

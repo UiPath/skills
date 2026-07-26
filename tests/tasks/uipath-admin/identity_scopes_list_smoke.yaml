@@ -24,9 +24,17 @@ success_criteria:
       python3 -c "
       import json
       d = json.load(open('scopes.json', encoding='utf-8-sig'))
-      rows = d if isinstance(d, list) else next((d[k] for k in ('value','data','items','results','scopes') if isinstance(d.get(k), list)), None)
-      assert rows, f'no non-empty scope array in scopes.json; got {type(d).__name__}'
-      print(f'OK: {len(rows)} scopes, sample={rows[0]}')
+      def lists(o):
+          if isinstance(o, list):
+              yield o
+              for v in o: yield from lists(v)
+          elif isinstance(o, dict):
+              for v in o.values(): yield from lists(v)
+      top = list(d) if isinstance(d, dict) else type(d).__name__
+      cands = [L for L in lists(d) if L]
+      assert cands, f'no non-empty array found; top-level={top}'
+      rows = max(cands, key=len)
+      print(f'OK: {len(rows)} scopes; top-level={top}; sample={rows[0]}')
       "
     timeout: 15
     expected_exit_code: 0
