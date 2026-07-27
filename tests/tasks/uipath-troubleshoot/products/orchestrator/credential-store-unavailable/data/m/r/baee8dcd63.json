@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobGet",
-  "_doc": "Failing SecurePortalBot job. Info is a credential-RETRIEVAL failure from the Orchestrator Database credential store — no logon was attempted (no 0x0000052E / Logon failed). The store backend is unreachable. Distinct from robot-credentials (wrong password) and job-faulted-logon-failure (LSA rejects a logon).",
   "Data": {
     "Key": "aabbccdd-1122-3344-5566-778899aabbcc",
     "StartTime": "2026-06-27T05:00:02.100Z",
