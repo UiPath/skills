@@ -3,11 +3,12 @@ description: >
   UiPath diagnostic agent must diagnose a LedgerPostingBot unattended
   job that faults at executor start with "Could not start executor.
   Could not find a part of the path 'C:\Windows\TEMP\UiPath\
-  CredProvider'." The root cause is a KNOWN Robot defect (ROBO-4022)
-  fixed in Robot 23.10.9; the host runs 23.10.4 (predates the fix).
-  The agent must recognize this as a known-and-fixed Robot bug —
-  correlate with the customer-portal known-issues feed and the host
-  Robot version — and recommend UPGRADING the Robot to >= 23.10.9,
+  CredProvider'." The root cause is a KNOWN Robot defect (UiPath KB
+  799589) fixed in Robot 23.4.11 / 23.10.10 / 24.10.7; the host runs
+  23.10.4 (predates the fix). The agent must recognize this as a
+  known-and-fixed Robot bug — correlate with the customer-portal
+  known-issues feed and the host Robot version — and recommend
+  UPGRADING the Robot to >= 23.10.10,
   NOT hand-creating the missing folder or changing TEMP permissions.
   Per the known-issue-robot-defect playbook.
 
