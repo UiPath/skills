@@ -111,6 +111,7 @@
 # Connector Builder skill
 /skills/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
 /tests/tasks/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
+/tests/tasks/activation/uipath-connector-builder.jsonl @mukeshkumar-uipath @chandusailella @apoosarla-uipath
 
 # Flow skill — plugin guides (away team owned)
 # Add your team here when contributing a new plugin category
