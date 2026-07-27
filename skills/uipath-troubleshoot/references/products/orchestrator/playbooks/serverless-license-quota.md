@@ -18,6 +18,8 @@ What this looks like:
 - The automation never starts — it is rejected at allocation time, not faulted mid-run. There is **no Windows session, executor, logon, or workflow** involved.
 - The message names a **quota / Robot Units** limit at **user** or **tenant** scope.
 
+> A serverless job that **started and ran ~15 minutes before stopping** is a different case — the serverless execution time limit, not an allocation/quota block: see [serverless-time-limit-exceeded.md](./serverless-time-limit-exceeded.md).
+
 What causes it (this is a licensing/allocation state, NOT a code/config/robot bug):
 - **Personal Automation monthly quota exceeded** — the user's free monthly Personal Automation run allowance is used up for the period.
 - **User's Robot Units exceeded** — the serverless capacity **assigned to that user** is exhausted by concurrent/accumulated runs.
