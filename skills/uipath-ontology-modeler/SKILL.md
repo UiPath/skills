@@ -244,6 +244,14 @@ Fields like `CreatedAt`, `UpdatedAt`, `CreatedBy`, `UpdatedBy`, and `Id` are sys
 
 ## Step 3 — Generate {name}.ofn
 
+**⚠ MANDATORY — Read the pattern reference BEFORE generating any content:**
+
+```
+Read {skill_base_dir}/owl-patterns.md
+```
+
+Do not write a single line of the OFN file until you have read this file. It defines the exact structure, annotation forms, and naming conventions for every class, data property, and object property.
+
 Follow [owl-patterns.md](owl-patterns.md) exactly. This step has four sub-steps: build → preview → W3C check → confirm → write.
 
 ---
@@ -362,6 +370,14 @@ On revision request, update the draft and return to step 3b.
 
 ## Step 4 — Generate {name}-constraints.ttl
 
+**⚠ MANDATORY — Read the pattern reference BEFORE generating any content:**
+
+```
+Read {skill_base_dir}/shacl-patterns.md
+```
+
+Do not write a single line of the SHACL file until you have read this file. It defines shape naming conventions, property path forms, and cardinality patterns.
+
 Follow [shacl-patterns.md](shacl-patterns.md) exactly. Same build → preview → check → confirm → write flow as Step 3.
 
 ---
@@ -453,6 +469,14 @@ On revision request, update the draft and return to step 4b.
 ---
 
 ## Step 5 — Generate {name}-mapping.yarrrml.yml
+
+**⚠ MANDATORY — Read the pattern reference BEFORE generating any content:**
+
+```
+Read {skill_base_dir}/mapping-yarrrml.md
+```
+
+Do not write a single line of the mapping file until you have read this file. It defines the exact YARRRML structure, source/po block syntax, FK join conditions, and USAGE POLICY format.
 
 Follow [mapping-yarrrml.md](mapping-yarrrml.md). Same build → preview → check → confirm → write flow.
 
@@ -565,6 +589,18 @@ On revision request, update the draft and return to step 5b.
 
 ## Step 6 — Generate {name}-functions.ttl (skip if SDD has no query operations)
 
+**⚠ MANDATORY — Read the pattern reference BEFORE generating any content:**
+
+```
+Read {skill_base_dir}/functions-patterns.md
+```
+
+Do not write a single line of functions.ttl until you have read this file. The canonical property names for functions are defined there. Key names to confirm before writing:
+- `@prefix ont: <https://ontology.uipath.com/ont#>` — global platform namespace (same as action files)
+- Output nodes: `ont:output.{fn}.{var}` prefix, `ont:paramName`, `ont:paramType`, `rdfs:comment` on each node
+- Parameter nodes: `ont:paramName`, `ont:paramType`, `ont:required`
+- Function node: `ont:kind "FUNCTION"`, `ont:language "SPARQL"`, `ont:statement`
+
 Query operations are natural-language questions the SDD says the system (or an AI agent) should answer from the ontology data: "how many X are in state Y", "show me all X with their Y", "which X has the most Y", "list X grouped by Z". If the SDD describes dashboards, summaries, counts, or searches, those are query operations. If the SDD is purely about data structure with no query requirements, skip this step.
 
 If no query operations → skip this step and proceed to Step 7. Otherwise follow [functions-patterns.md](functions-patterns.md) and the same build → preview → check → confirm → write flow.
@@ -584,12 +620,12 @@ For each function:
 - **Name** — `ont:{camelCaseFunctionName}` (verb phrase: `countPrescriptionsByStatus`, `listPrescriptionsWithDoctorAndPatient`)
 - **Label** — short human phrase
 - **Comment** — per-function fact: what it returns, whether it produces counts or individual rows, what params it needs; do NOT put routing rules here — those go in USAGE POLICY
-- **SPARQL SELECT** — on `ont:statement`; prefixed with `PREFIX ont: <https://ontology.uipath.com/{name}#>`; for equality lookups bind the parameter as an unbound triple variable (`; ont:Prop ?param`); for comparisons (`<`, `>`, `!=`) bind via `FILTER (?field < ?param)`
-- **Parameters** — only if needed; omit `fno:expects` entirely when the function takes none; optional params add `ont:required false ; ont:default "{val}"`
-- **Returns** — always declare `fno:returns ( ont:output.{fn}.{var} … )` and a corresponding `ont:output.*` block (`a fno:Output ; rdfs:comment "…" ; fno:name "…" ; fno:type "xsd:…"`) for every projected SELECT variable
+- **SPARQL SELECT** — on `ont:statement`; prefixed with `PREFIX ont: <https://ontology.uipath.com/ont#>`; for equality lookups bind the parameter as an unbound triple variable (`; ont:Prop ?param`); for comparisons (`<`, `>`, `!=`) bind via `FILTER (?field < ?param)`
+- **Parameters** — only if needed; omit `fno:expects` entirely when the function takes none; optional params add `ont:required false ; ont:default "{val}"`; use `ont:paramName`/`ont:paramType`/`ont:required` on `fno:Parameter` nodes
+- **Returns** — always declare `fno:returns ( ont:output.{fn}.{var} … )` and a corresponding `ont:output.*` block (`a fno:Output ; rdfs:comment "…" ; ont:paramName "…" ; ont:paramType "xsd:…"`) for every projected SELECT variable; use `ont:paramName`/`ont:paramType` on `fno:Output` nodes
 
-**File structure** — all functions in a single file:
-1. Prefix declarations: `fno:`, `ont:`, `rdfs:`
+**File structure** — all functions in a single file (multiple function files per ontology are valid — split by domain area if needed, all use the same namespace):
+1. Prefix declarations: `fno:`, `ont:`, `rdfs:` — `ont:` is the global platform namespace `<https://ontology.uipath.com/ont#>`, same as action files
 2. USAGE POLICY comment block — routing rules and output discipline (≤30 non-empty lines; see functions-patterns.md)
 3. For each function: `ont:{functionName}` block, then `ont:param.*` blocks, then `ont:output.*` blocks immediately after
 
@@ -627,8 +663,8 @@ Functions ({N}):
 **Check 4 — Parameter binding:** every `?paramName` that appears as an unbound input variable in the WHERE clause (whether in a triple pattern or a `FILTER`) must have a matching entry in `fno:expects` and a corresponding `ont:param.*` block.
 
 **Check 5 — Return contract (both directions):**
-- Forward: every variable projected in `SELECT ?x ?y …` must have a matching `ont:output.*` block where `fno:name` equals the variable name (without `?`).
-- Reverse: every `fno:name` value in every `ont:output.*` block must correspond to a variable actually projected in the SELECT. No orphaned output nodes allowed.
+- Forward: every variable projected in `SELECT ?x ?y …` must have a matching `ont:output.*` block where `ont:paramName` equals the variable name (without `?`).
+- Reverse: every `ont:paramName` value in every `ont:output.*` block must correspond to a variable actually projected in the SELECT. No orphaned output nodes allowed.
 
 Report:
 ```
@@ -638,7 +674,7 @@ Functions checks:
   ✓ Object properties — all ont: ObjectProperty terms declared in {name}.ofn
   ✓ Parameter binding — all unbound variables (triple and FILTER) have matching fno:expects entries
   ✓ Return contract (forward) — all projected SELECT variables have matching fno:returns / fno:Output nodes
-  ✓ Return contract (reverse) — all fno:name values on ont:output.* nodes match a projected SELECT variable
+  ✓ Return contract (reverse) — all ont:paramName values on ont:output.* nodes match a projected SELECT variable
 ```
 
 Fix any issues in the draft before proceeding.
@@ -656,6 +692,14 @@ On revision request, update the draft and return to step 6b.
 ---
 
 ## Step 7 — Generate action files (skip if SDD/PDD has no write operations)
+
+**⚠ MANDATORY — Read the pattern reference BEFORE generating any content:**
+
+```
+Read {skill_base_dir}/functions-patterns.md
+```
+
+Do not write a single line of an action file until you have read this file — specifically the "Actions" section. It defines the file structure, `ont:statements` syntax, SQL placeholder format, and parameter property names.
 
 If the SDD/PDD does not describe write/update operations, skip this step. One file per action — the file name IS the action's identity. Generate one action at a time through the full build → preview → check → confirm → write cycle.
 
@@ -677,7 +721,7 @@ For each write operation from the SDD/PDD:
   - `WHERE {{Entity.identifier}} = :id` — how the target row is identified. Typically the entity's primary key field.
   - `:paramName` — bound parameter from the caller. Must match `ont:paramName` in the parameter block exactly.
 - **Parameters** — `fno:expects` + `ont:param.*` block per parameter (from PDD `Inputs` field)
-- **Output** — `fno:returns` with `rowsAffected` output is **mandatory**. Actions use `ont:paramName` on output nodes (actions keep the platform `ont#` namespace where `ont:paramName` is recognized); functions use `fno:name` instead.
+- **Output** — `fno:returns` with `rowsAffected` output is **mandatory**. Both actions and functions use `ont:paramName`/`ont:paramType` on output nodes — both use the global platform `ont#` namespace.
 
 ---
 
