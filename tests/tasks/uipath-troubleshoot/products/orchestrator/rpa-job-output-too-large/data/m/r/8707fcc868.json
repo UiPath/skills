@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobGet",
-  "_doc": "Failing InvoiceExtractor job. Info = 'Could not retrieve the result of the job execution. This might be because a message was too large to process.' OutputArguments is empty because the result could not be handed back. The workflow itself completed (see traces). The process declares a DataTable output argument Out_AllInvoices (see process/project.json + entry-points.json) — the bulk payload that overflowed the result message.",
   "Data": {
     "Key": "bbdd5566-77ee-88ff-99aa-00bb11223344",
     "StartTime": "2026-06-24T04:00:01.100Z",

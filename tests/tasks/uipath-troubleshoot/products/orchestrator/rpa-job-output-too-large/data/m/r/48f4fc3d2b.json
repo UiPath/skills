@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobList",
-  "_doc": "Faulted InvoiceExtractor job. The job ran its full workflow (see traces) but faulted at result hand-back because the DataTable it returns as an OutputArgument was too large for the result message.",
   "Data": [
     {
       "Key": "bbdd5566-77ee-88ff-99aa-00bb11223344",

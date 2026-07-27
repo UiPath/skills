@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobLogs",
-  "_doc": "Logs show the workflow completing its extraction, then the executor failing to return the result because the output payload was too large. The failure is at result hand-back, not in the workflow logic.",
   "Data": [
     {
       "Level": "Error",
@@ -11,7 +10,7 @@
     {
       "Level": "Error",
       "TimeStamp": "2026-06-24T04:03:52.400Z",
-      "Message": "[Robot] Failed to serialize/return job result: output argument 'Out_AllInvoices' (System.Data.DataTable, ~184000 rows) exceeds the maximum result message size. The workflow completed; only the result hand-back to Orchestrator failed."
+      "Message": "[Robot] Failed to serialize and return the job result: output argument 'Out_AllInvoices' (System.Data.DataTable, ~184000 rows)."
     },
     {
       "Level": "Info",
