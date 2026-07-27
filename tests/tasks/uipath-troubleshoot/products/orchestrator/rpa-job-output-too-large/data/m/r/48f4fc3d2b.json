@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "bbdd5566-77ee-88ff-99aa-00bb11223344",
+      "State": "Faulted",
+      "ProcessName": "InvoiceExtractor",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "RuntimeType": "Unattended",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-06-24T04:00:01.100Z",
+      "EndTime": "2026-06-24T04:03:52.640Z",
+      "CreationTime": "2026-06-24T04:00:01.000Z"
+    }
+  ]
+}
