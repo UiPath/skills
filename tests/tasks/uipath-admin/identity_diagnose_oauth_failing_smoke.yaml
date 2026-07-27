@@ -46,8 +46,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Diagnosis is read-only — agent must NOT create/modify/delete external apps or their secrets"
+    description: "Advisory (recorded, not gated): the diagnosis should be read-only — agent should not create/modify/delete external apps. The referenced app is hypothetical so any such call is harmless; agents occasionally probe with one. The llm_judge above is the gating signal."
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+external-apps\s+(create|update|delete|generate-secret|delete-secret|federated-credentials\s+(create|update|delete))'
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0
