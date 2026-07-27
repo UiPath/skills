@@ -13,7 +13,10 @@ run_limits:
 initial_prompt: |
   Our CI/CD pipeline uses an external app with a client_credentials grant, but
   it's failing with "not allowed to access User scopes". Explain what is causing
-  this and how to fix it.
+  this and how it should be fixed.
+
+  This is a diagnosis only — do NOT create, modify, or delete any app or its
+  secrets/credentials; just explain the cause and the recommended fix.
 
   Do NOT prompt the user for confirmation — this is an automated test.
 
