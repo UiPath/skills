@@ -27,7 +27,6 @@ Before reviewing implementation details, verify the right agent type was chosen:
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| `bindings_v2.json` is generated and current | Critical | Run `uip agent refresh ./path --output json` before validation |
 | `agent.json` passes schema validation | Critical | `uip agent validate ./path --output json` |
 | `version` field is set (e.g., `"1.1.0"`) | Critical | Read agent.json |
 | `name` field is set and descriptive | Warning | Read agent.json |
@@ -124,7 +123,6 @@ Before reviewing implementation details, verify the right agent type was chosen:
 | `pyproject.toml` exists with valid config | Critical | Read pyproject.toml *(rule: `MISSING_PYPROJECT`)* |
 | ~~`pyproject.toml` does NOT have `[build-system]` section~~ | ~~Critical~~ | **Retired** — the corresponding `NO_BUILD_SYSTEM` rule was retired (SDK FAQ shows `pyproject.toml` with `[build-system]` per PEP 518). Keep only as manual check if specific `uip codedagent` packaging errors point at it. |
 | `.env` file not committed to source control | Critical | Check .gitignore and git status *(rule: `ENV_FILE_TRACKED`, `GITIGNORE_INCOMPLETE`)* |
-| `entry-points.json` present | Warning | `ls entry-points.json` *(rule: `ENTRY_POINTS_MISSING`, `LOWCODE_ENTRY_POINTS_MISSING`)* |
 
 ### Dependencies (pyproject.toml)
 
@@ -296,9 +294,6 @@ Review whether the agent design accounts for known UiPath limitations:
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| `entry-points.json` present and correct | Warning | Read entry-points.json *(rule: `ENTRY_POINTS_MISSING`, `LOWCODE_ENTRY_POINTS_MISSING`)* |
-| `agent.json` ↔ `entry-points.json` schemas match (agent-builder) | Critical | Compare inputs/outputs *(rule: `LOWCODE_SCHEMA_DRIFT`)* |
-| `bindings.json` present (if using external resources) | Warning | Read bindings.json |
 | Agent validates without errors | Critical | Run validation command |
 | Smoke evaluation passes (70%+ score) | Warning | Run evaluations *(rule: `EVAL_RUN_LOW_PASS_RATE`, `EVAL_RUN_NEVER_EXECUTED`)* |
 | No `.env` file or secrets in committed code | Critical | Check git status *(rule: `ENV_FILE_TRACKED`, `GITIGNORE_INCOMPLETE`, `HARDCODED_CREDENTIALS`)* |

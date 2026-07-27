@@ -69,7 +69,6 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(?:uip|\$UIP)\s+agent\s+refresh\b'
     min_count: 1
-    max_count: 1
     require_success: true
     weight: 1.5
     pass_threshold: 1.0
@@ -79,7 +78,6 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(?:uip|\$UIP)\s+agent\s+validate\b'
     min_count: 1
-    max_count: 1
     require_success: true
     weight: 1.5
     pass_threshold: 1.0
@@ -89,7 +87,6 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(?:uip|\$UIP)\s+agent\s+review\b'
     min_count: 1
-    max_count: 1
     require_success: true
     weight: 1.5
     pass_threshold: 1.0
