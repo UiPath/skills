@@ -21,9 +21,8 @@ MonitoringOps) ran the earlier steps fine and faulted at the "Take
 Screenshot" activity `~8s` in. `jobs traces` shows "Open dashboard"
 Succeeded and "Take Screenshot" Faulted with the Win32 invalid-handle
 error; `jobs logs` states "no active interactive desktop session is
-available for this unattended run (the robot is attached to the
-physical console via LoginToConsole, but no interactive console logon
-is present). CopyFromScreen has no valid device context."
+available for this unattended run. CopyFromScreen has no valid device
+context."
 
 **Why:** `uip or users get` for the robot user (`svcmonitor` /
 `UIPATH\SVCMON`) shows `LoginToConsole: true`. Attached to the
@@ -50,13 +49,13 @@ so the same workflow succeeds — matching the user's observation.
 - Job `Info`: `System.ComponentModel.Win32Exception (6): The handle
   is invalid. at System.Drawing.Graphics.CopyFromScreen(...)`
 - `jobs logs`: `Screen capture requested but no active interactive
-  desktop session is available for this unattended run (the robot is
-  attached to the physical console via LoginToConsole, but no
-  interactive console logon is present). CopyFromScreen has no valid
-  device context.`
+  desktop session is available for this unattended run. CopyFromScreen
+  has no valid device context.`
 - `jobs traces`: "Open dashboard" Succeeded; "Take Screenshot"
   Faulted with the Win32 invalid-handle error
-- `uip or users get` (svcmonitor): `LoginToConsole: true`
+- `uip or users get` (svcmonitor): `LoginToConsole: true` — the robot
+  attaches to the machine's single physical console (no rendered
+  desktop unattended) instead of opening its own RDP session
 
 ---
 
