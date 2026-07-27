@@ -16,10 +16,13 @@ relocates these logs to `%programdata%`). The host runs Robot
 Robot build, not a configuration problem to repair by hand.
 
 **What went wrong:** Job `bbccddee-...-bbccdd` (LedgerPostingBot,
-BackOffice) faulted ~0.6s after start on `MOCK-HOST`. The Robot log
-notes the failure "matches a known Robot defect on builds up to
-23.10.8," and `uip or machines list` shows the host template
-(`BackOfficeRuntime`) running Robot `23.10.4`.
+BackOffice) faulted ~0.6s after start on `MOCK-HOST`, the executor
+unable to find the credential-provider log directory
+`C:\Windows\TEMP\UiPath\CredProvider`. Correlating that signature
+with the customer-portal known-issues feed matches UiPath KB 799589,
+and `uip or machines list` shows the host template
+(`BackOfficeRuntime`) running Robot `23.10.4` — below the 23.10-line
+fix.
 
 **Why:** The running version (`23.10.4`) is older than the 23.10-line
 fix (`23.10.10`). On the affected build the CredProvider log directory
@@ -45,12 +48,11 @@ at start-up; upgrading the Robot to the fix version resolves it.
 - Job `Info`: `Could not start executor. Could not find a part of
   the path 'C:\Windows\TEMP\UiPath\CredProvider'.`
 - Robot log: `Executor start failed: the credential-provider log
-  directory C:\Windows\TEMP\UiPath\CredProvider is missing ... This
-  matches a known Robot defect on builds up to 23.10.8.`
+  directory C:\Windows\TEMP\UiPath\CredProvider is missing.`
 - `uip or machines list`: `BackOfficeRuntime` → `RobotVersion:
   23.10.4` (predates the 23.10.10 fix)
-- Known issue: UiPath KB 799589, fixed in 23.4.11 / 23.10.10 /
-  24.10.7 (customer-portal known-issues feed)
+- Known issue: signature correlates to UiPath KB 799589, fixed in
+  23.4.11 / 23.10.10 / 24.10.7 (customer-portal known-issues feed)
 
 ---
 
@@ -90,7 +92,7 @@ at start-up; upgrading the Robot to the fix version resolves it.
 
 | # | Hypothesis | Confidence | Status | Root Cause? | Key Evidence | Resolution |
 |---|------------|------------|--------|-------------|--------------|------------|
-| H1 | Known Robot defect (KB 799589, CredProvider path) on a build ≤ 23.10.8 | High | Confirmed | Yes | Info = CredProvider TEMP path; log flags a known defect ≤ 23.10.8; machines list shows Robot 23.10.4 | Upgrade Robot to ≥ 23.10.10; rerun |
+| H1 | Known Robot defect (KB 799589, CredProvider path) on a build ≤ 23.10.8 | High | Confirmed | Yes | Info = CredProvider TEMP path missing; signature correlates to KB 799589 (fix ≥ 23.10.10); machines list shows Robot 23.10.4 | Upgrade Robot to ≥ 23.10.10; rerun |
 | H2 | Missing folder / TEMP permissions to fix by hand | Low | Refuted | No | Directory is created by the executor at runtime; manual creation/ACL changes don't fix the build defect | n/a |
 | H3 | Credential-store / logon failure | Low | Refuted | No | No logon code, no credential-retrieval error; failure is executor bootstrap matched to a known issue | n/a |
 
