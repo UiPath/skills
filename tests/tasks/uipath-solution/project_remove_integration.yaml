@@ -35,7 +35,7 @@ success_criteria:
   - type: command_executed
     description: "Agent registered projects (set-up) via uip solution projects add (or import)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+projects?\s+(add|import)\b(?!\s+--help)'
+    command_pattern: 'uip\s+solution\s+projects?\s+(add|import)\b(?!\s+(?:--help|-h)\b)'
     min_count: 2
     weight: 1.0
     pass_threshold: 0.0  # advisory: `uip rpa init --location <solution-dir>` (and init inside a solution) auto-registers projects (CLI #2470), so explicit `projects add` is optional. Registration is outcome-checked by the json_check below plus the successful `projects remove` (which refuses to drop the last project — ending at 1 proves it started at 2). Mirrors uipath-agents/coded/coded_in_flow_e2e.yaml.
@@ -43,7 +43,7 @@ success_criteria:
   - type: command_executed
     description: "Agent unregistered a project via uip solution projects remove"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+projects?\s+remove\b(?!\s+--help)'
+    command_pattern: 'uip\s+solution\s+projects?\s+remove\b(?!\s+(?:--help|-h)\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
