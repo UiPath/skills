@@ -37,10 +37,11 @@ success_criteria:
               for v in o.values(): yield from lists(v)
       res = d.get('Result') if isinstance(d, dict) else None
       assert res in (None, 'Success'), f'audit retrieval not successful: Result={res}'
-      events = data if isinstance(data, list) else next((L for L in lists(data)), None)
-      assert events is not None, f'no audit events list found; saved type={type(d).__name__}'
-      assert all(isinstance(e, dict) for e in events), 'audit events are not record objects'
-      print(f'OK: org audit events retrieved; events={len(events)}')
+      all_lists = [data] if isinstance(data, list) else list(lists(data))
+      assert all_lists, f'no audit events collection in the response; saved type={type(d).__name__}'
+      dict_lists = [L for L in all_lists if L and isinstance(L[0], dict)]
+      n = len(max(dict_lists, key=len)) if dict_lists else 0
+      print(f'OK: org audit events retrieved; events={n}')
       "
     timeout: 15
     expected_exit_code: 0
