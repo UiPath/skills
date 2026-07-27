@@ -46,26 +46,31 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # Advisory, not gating. command_executed matches the literal top-level command
-  # string; an agent that batches its CLI calls into a script file and runs
-  # `bash run.sh` executes state coverage/enable correctly but exposes only
-  # `bash run.sh` to the matcher, so the string-match false-fails a correct run.
-  # The real invariant — the pack actually ends up enabled — is gated below by
-  # the weight-5.0 post-hoc `state get` outcome check (and report.json content),
-  # which passes only if these commands genuinely ran against the tenant.
-  - type: command_executed
-    description: "Agent called state coverage to analyze posture (advisory — outcome gated by post-hoc check)"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\b'
-    min_count: 1
+  # Gate on the CLI RESPONSE captured in output.txt, not the command string.
+  # command_executed matches only the literal top-level command, so an agent that
+  # batches its calls into a script (`bash run.sh`) false-fails even when the
+  # commands ran. But grading solely the end-state (pack enabled) would false-PASS
+  # if the pack were already enabled by something else on the shared tenant (a
+  # concurrent disable_smoke pre_run, a racing cleanup). The CLI echoes a per-call
+  # response envelope (`"Code": "CompliancePacksState<Verb>"`) into output.txt via
+  # the agent's `> output.txt` redirect — present regardless of script-nesting, and
+  # written ONLY when THIS agent actually ran the call. So it proves the command
+  # ran this run without depending on how it was invoked or on prior tenant state.
+  - type: file_contains
+    description: "state coverage ran this run (CLI response captured in output.txt — survives script-nesting, not satisfied by a pre-enabled pack)"
+    path: "output.txt"
+    includes:
+      - "CompliancePacksStateCoverage"
     weight: 3.0
-    pass_threshold: 0
+    pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent called state enable to apply missing settings (advisory — outcome gated by post-hoc check)"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable\b'
-    min_count: 1
+  - type: file_contains
+    description: "state enable ran this run (CLI response captured in output.txt — survives script-nesting, not satisfied by a pre-enabled pack)"
+    path: "output.txt"
+    includes:
+      - "CompliancePacksStateEnable"
     weight: 3.0
-    pass_threshold: 0
+    pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent called state get to verify post-apply state (advisory)"
