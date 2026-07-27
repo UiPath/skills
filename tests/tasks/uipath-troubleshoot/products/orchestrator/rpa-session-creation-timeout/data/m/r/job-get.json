@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobGet",
-  "_doc": "Primary faulting job. Info carries the verbatim 'Could not start executor. Creating user session timed out.' signature — a session-creation TIMEOUT with NO Windows logon-failure code (no 0x0000052E / 0x00000775 / 0x00000532 / 131092, no 'Logon failed', no 'account is locked', no 'RDP connection failed'). Duration ~120s (the session-creation timeout), not sub-second — distinguishes it from job-faulted-logon-failure. RuntimeType Unattended on RECON-BOT-01, whose Robot version is 23.4.7 (< 23.10) per machines list — the known-defect fingerprint.",
   "Data": {
     "Key": "c0ffee01-1111-4222-8333-444455556666",
     "StartTime": "2026-07-13T02:00:05.100Z",
