@@ -2,7 +2,7 @@
 
 The read-only **review** counterpart of the `uipath-agents` coded guardrail recommend/validate capability. It
 powers the coded guardrail judgment rules in [`../agents-coded-rules.md`](../agents-coded-rules.md)
-§GuardrailsChecker. Run it during a **coded** agent review (SKILL.md Step 2.5b) **after** `uip codedagent review`
+§GuardrailsChecker. Run it during a **coded** agent review (SKILL.md Step 2.5b) **after** `uip codedagent review` <!-- uip-check-skip -->
 (Step 2.5a). Two modes:
 
 - **Audit Mode** — the agent already wires guardrails → are they *effective, appropriate, and actually wired*?
@@ -13,7 +13,7 @@ powers the coded guardrail judgment rules in [`../agents-coded-rules.md`](../age
 This is **review only** — never write, fix, or run `uip codedagent` mutating commands. The reviewer emits
 findings; the user (or the `uipath-agents` skill) applies them.
 
-> **Boundary with `uip codedagent review` — do not double-flag.** The review CLI owns every **deterministic**
+> **Boundary with `uip codedagent review` — do not double-flag.** <!-- uip-check-skip --> The review CLI owns every **deterministic**
 > coded guardrail check and emits them as rule IDs: `CODED_GUARDRAIL_WRONG_IMPORT` (LangChain agent imports
 > guardrails from `uipath.platform.guardrails` and never from `uipath_langchain.guardrails`, so the adapter never
 > registers and the guardrail silently no-ops), `CODED_GUARDRAIL_TOOL_SCOPE_NO_TOOLS` (a Tool-scope middleware with
@@ -22,6 +22,27 @@ findings; the user (or the `uipath-agents` skill) applies them.
 > decide: whether a valid action actually protects at its scope, whether a valid guardrail belongs on this agent at
 > all, whether a decorator is wired where it will actually wrap the target, and whether a guardrail the agent should
 > have is missing. Never re-describe a CLI deterministic finding here.
+
+## Deterministic CLI checkpoint — before Step 0
+
+If `uip codedagent review` returns any `Data.Issues[]` entry whose `RuleId` starts with <!-- uip-check-skip -->
+`CODED_GUARDRAIL_`, **immediately create or update the requested review report before any catalog, validator-list,
+SDK-documentation, or package research**. The checkpoint is a valid in-progress report, not scratch notes, and
+contains at minimum:
+
+1. the project and review scope;
+2. the `uip codedagent review` command and `Data.Grade`; <!-- uip-check-skip -->
+3. every emitted `CODED_GUARDRAIL_*` issue with its `RuleId`, `Severity`, `Description`, `File`, and `SuggestedFix`
+   copied verbatim; and
+4. an explicit note that judgment-only analysis is still in progress.
+
+The CLI description and suggested fix are authoritative. Do not re-verify, rename, reword, or supplement a
+deterministic finding by fetching SDK documentation, installing or inspecting packages, or probing framework APIs.
+Exclude every CLI-flagged guardrail from Step 0 class mapping and Audit Mode. Step 0 may still run **after the
+checkpoint** for a separate unflagged guardrail or a distinct missing-guardrail recommendation.
+
+When the remaining review workflow finishes, update the same checkpoint into the complete Step 5 report and remove
+the in-progress note. Preserve the checkpointed deterministic fields verbatim.
 
 Like the recommend capability, this is **live-catalog driven** — the catalog's authored fields (`when_to_use`,
 `use_cases`, `security_risk_addressed`, `when_not_to_use`, `security_category`, `examples[].config`) drive every
@@ -32,10 +53,12 @@ which guardrail fits which agent, or which Python class implements which validat
 
 ## Step 0 — Fetch Catalog, Available Validators, and SDK Docs
 
-Run this once when the coded agent's entry source wires guardrails (any `*UiPath…Middleware(...)` inside
-`create_agent(middleware=[...])` or any `@guardrail(...)` decorator) **or** the agent matches a catalog use case
-(so Recommend Mode can run). This is the read-only review counterpart of the guardrail recommend capability — it
-runs the same Step 0 fetches (specified in full below) but emits findings instead of writing code.
+Run this once when the coded agent has at least one **unflagged** wired guardrail to audit (any
+`*UiPath…Middleware(...)` inside `create_agent(middleware=[...])` or any `@guardrail(...)` decorator) **or** the
+agent matches a catalog use case for a distinct missing-guardrail recommendation. A guardrail already flagged by
+`uip codedagent review` does not, by itself, trigger Step 0. <!-- uip-check-skip --> This is the read-only review counterpart of the
+guardrail recommend capability — it runs the same Step 0 fetches (specified in full below) but emits findings
+instead of writing code.
 
 ### Catalog (cacheable — 30-minute TTL)
 
@@ -62,7 +85,7 @@ uip agent guardrails list --output json
 
 Build a `{ validatorId: status }` lookup from the `Data` array (use only `Status == "Available"`).
 
-### SDK Docs (NEVER skipped — Python class names)
+### SDK Docs (required when Step 0 needs Python class names)
 
 Coded agents reference guardrails by **Python class name** (`UiPathPIIDetectionMiddleware`, `PIIValidator`), not by
 `validator_id`. Fetch the SDK doc pages via `WebFetch` to map the two:
@@ -86,6 +109,9 @@ class/scope/enum names:
    modules (`uipath/platform/guardrails/`, `uipath_langchain/guardrails/`) for middleware/validator/action classes,
    scopes, stages, and entity enums.
 3. Neither reachable → SDK-docs skip path in the next section.
+
+Stop at the first successful documentation source. Guardrail review must not install or download dependencies,
+inspect unrelated framework APIs, or search package internals beyond the documented fallback modules above.
 
 ### If the catalog (or SDK docs) is unavailable
 
@@ -206,26 +232,31 @@ Merge findings into the Step 5 "Rule Findings" subsection (SKILL.md Step 2.5b), 
 - Defects (`CODED_GUARDRAIL_ACTION_INEFFECTIVE`, `CODED_GUARDRAIL_MISAPPLIED`) → the `judgment` band; pick
   Critical/Warning/Info by impact and show the reasoning.
 - `file` = the entry `.py`; `element` = the guardrail name.
+- If a deterministic checkpoint was created, update that same file into the complete report and remove its
+  in-progress note. Do not recreate the report in a way that drops or paraphrases checkpointed CLI findings.
 
 ---
 
 ## Critical Rules
 
-1. **Run after `uip codedagent review` (Step 2.5a)** and only on guardrails the CLI did not flag — never
+1. **Checkpoint deterministic findings first.** Before Step 0 or any research, write every CLI-emitted
+   `CODED_GUARDRAIL_*` issue verbatim into the requested report; later update that same report to the complete
+   Step 5 form.
+2. **Run after `uip codedagent review` (Step 2.5a)** and only on guardrails the CLI did not flag — never <!-- uip-check-skip -->
    double-flag a `CODED_GUARDRAIL_WRONG_IMPORT` / `CODED_GUARDRAIL_TOOL_SCOPE_NO_TOOLS` /
    `CODED_GUARDRAIL_INVALID_CONTRACT` deterministic finding.
-2. **Catalog-driven, not hardcoded** — every audit verdict and recommendation cites a catalog field
+3. **Catalog-driven, not hardcoded** — every audit verdict and recommendation cites a catalog field
    (`when_not_to_use`, `when_to_use` / `use_cases`, `examples[].config.action_type`). Class/enum/import names come
    from the SDK docs, never memory.
-3. **Catalog unavailable → defer Audit Mode** (Rules Skipped), keep Recommend Mode's source-only detection with
+4. **Catalog unavailable → defer Audit Mode** (Rules Skipped), keep Recommend Mode's source-only detection with
    generic wording and the code-only wiring half of `CODED_GUARDRAIL_MISAPPLIED`. Never guess
    effectiveness/relevance without the catalog.
-4. **Recommendations are one Info rule** (`CODED_GUARDRAIL_RECOMMENDED`), one finding per missing guardrail, details
+5. **Recommendations are one Info rule** (`CODED_GUARDRAIL_RECOMMENDED`), one finding per missing guardrail, details
    in the message; signal **block/escalate** (protection) vs **log** (audit).
-5. **Never silently downgrade block → log** — a security-critical guardrail at `log` is a defect
+6. **Never silently downgrade block → log** — a security-critical guardrail at `log` is a defect
    (`CODED_GUARDRAIL_ACTION_INEFFECTIVE`), not an acceptable choice, unless the catalog/agent shows a stated reason.
-6. **Do not name platform-documented validators** (`harmful_content` / `intellectual_property` /
+7. **Do not name platform-documented validators** (`harmful_content` / `intellectual_property` /
    `user_prompt_attacks`) unless already present — phrase generically. `pii_detection` / `prompt_injection` may be
    named.
-7. **Review only** — emit findings; never write guardrails, edit the entry `.py`, or run mutating `uip codedagent`
+8. **Review only** — emit findings; never write guardrails, edit the entry `.py`, or run mutating `uip codedagent`
    commands.
