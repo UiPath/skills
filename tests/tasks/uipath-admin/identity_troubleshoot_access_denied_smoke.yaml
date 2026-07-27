@@ -13,7 +13,8 @@ initial_prompt: |
   A user in our organization reports they cannot publish automations to a
   folder. Use the effective-access diagnostic to determine what a user can
   actually do: resolve a real user from the directory, run the access check on
-  that user, and save the access-check result to ./access.json.
+  that user, and save the raw JSON output of that access-check command verbatim
+  to ./access.json (do not summarize, wrap, or reformat it).
 
   Do NOT prompt the user for confirmation — this is an automated test.
 
@@ -26,10 +27,19 @@ success_criteria:
       d = json.load(open('access.json', encoding='utf-8-sig'))
       res = d.get('Result') if isinstance(d, dict) else None
       assert res in (None, 'Success'), f'check-access not successful: Result={res}'
-      data = d['Data'] if isinstance(d, dict) and 'Data' in d else d
-      assert isinstance(data, dict) and len(data) >= 1, f'expected an effective-access decision object; got {type(data).__name__}'
-      assert any('role' in k.lower() for k in data), f'decision missing a role-assignments field; keys={list(data)[:10]}'
-      print(f'OK: effective-access decision retrieved; keys={list(data)[:8]}')
+      # The check-access decision may be the raw {Result,Data} envelope, the
+      # unwrapped Data, or nested inside an agent-authored wrapper — search
+      # anywhere for the decision's signature: a RoleAssignments field.
+      def keys(o):
+          if isinstance(o, dict):
+              for k, v in o.items():
+                  yield k
+                  yield from keys(v)
+          elif isinstance(o, list):
+              for v in o: yield from keys(v)
+      found = [k for k in keys(d) if 'roleassignment' in k.lower().replace('_', '')]
+      assert found, f'no RoleAssignments field anywhere in the check-access result; keys seen={list(keys(d))[:20]}'
+      print(f'OK: effective-access decision retrieved (found {found[0]})')
       "
     timeout: 15
     expected_exit_code: 0

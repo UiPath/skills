@@ -10,7 +10,7 @@ from admin_helpers import run_cli, poll, fail, ok
 
 logging.basicConfig(level=logging.INFO, format="verify_fedcred: %(message)s")
 
-APP = "ce-identity-smoke-fedapp"
+APP = "ce-identity-fedcred-host"
 
 
 def _first_list(o):
