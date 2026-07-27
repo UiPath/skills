@@ -104,7 +104,7 @@ success_criteria:
 
   - type: run_command
     description: "design captures all 7 primary stages (not truncated)"
-    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 7 ]"
+    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] || exit 1; for s in 'Application Received' 'Recruiter Screen' 'Technical Screen' 'Onsite Loop' 'Debrief' 'Offer' 'Hired'; do grep -Fqi \"$s\" \"$f\" || exit 1; done"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0

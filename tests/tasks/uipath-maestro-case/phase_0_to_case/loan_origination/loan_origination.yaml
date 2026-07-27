@@ -103,7 +103,7 @@ success_criteria:
 
   - type: run_command
     description: "design captures all 6 primary stages (not truncated)"
-    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 6 ]"
+    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] || exit 1; for s in 'Intake' 'Loan Setup' 'Underwriting' 'QA/QC' 'Closing' 'Resolved'; do grep -Fqi \"$s\" \"$f\" || exit 1; done"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
