@@ -7,7 +7,6 @@
     { "match": "or jobs list --folder-key f1a10001-0000-4000-8000-000000000001", "file": "4b9e5c8cb4.json" },
     { "match": "or jobs list --state Faulted", "file": "f5f2f217c8.json" },
     { "match": "or jobs list", "file": "75949d659e.json" },
-    { "match": "or jobs get a1710001-1111-4111-8111-111111111111 --level Error", "file": "145e3fa0fb.json" },
     { "match": "or jobs get a1710001-1111-4111-8111-111111111111", "file": "d28a78f6ea.json" },
     { "match": "or jobs logs a1710001-1111-4111-8111-111111111111 --level Error", "file": "356bfb7143.json" },
     { "match": "or jobs logs a1710001-1111-4111-8111-111111111111", "file": "7a6e65f01a.json" },
