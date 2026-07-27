@@ -1,0 +1,93 @@
+task_id: skill-troubleshoot-credential-store-unavailable
+description: >
+  UiPath diagnostic agent must diagnose SecurePortalBot unattended
+  jobs that fault at start with "Unable to retrieve credentials from
+  Orchestrator Database credential store. Please check your
+  connection settings and ensure the Orchestrator Database service
+  is running." The root cause is that the credential STORE backend
+  (the Orchestrator SQL database backing the Orchestrator Database
+  credential store) is unreachable — the credential is never
+  retrieved, so no Windows logon is attempted. This is distinct from
+  a wrong/expired password (robot-credentials / logon-failure): the
+  fault is store-wide (multiple processes on the same store fail at
+  once). The fix is to restore Orchestrator DB / credential-store
+  connectivity (verify the SQL service is running and reachable),
+  then rerun — per the credential-store-unavailable playbook.
+
+tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose, lifecycle:discover]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 300
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: data
+  mock_path_dirs: ["m"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My SecurePortalBot jobs in the SecureOps folder started failing at
+  launch this morning — a teammate says one of their bots in the same
+  folder is failing the same way too. Can you find out why they won't start?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing SecurePortalBot
+    jobs. You are waiting for the diagnostic agent to finish and
+    trust its expertise. You only know what you wrote in your initial
+    report — your bot and a teammate's bot in the same folder both
+    fail at launch. You are not a DBA and cannot check the SQL
+    database yourself.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (orchestrator, credentials, identity, infrastructure), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

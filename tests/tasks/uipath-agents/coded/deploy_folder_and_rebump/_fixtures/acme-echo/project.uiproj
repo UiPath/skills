@@ -1,0 +1,6 @@
+{
+  "ProjectType": "Agent",
+  "Name": "acme-echo",
+  "Description": "acme-echo",
+  "MainFile": null
+}
