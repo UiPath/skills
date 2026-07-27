@@ -4,8 +4,9 @@ description: >
   handoff. Verifies the agent scaffolds an OpenAI Agents project
   (`uip codedagent new` → `openai_agents.json` + `main.py`
   exporting an `Agent` factory function), uses the factory
-  function pattern (`def main() -> Agent`) so `UiPathChatOpenAI`
-  and `_openai_shared.set_default_openai_client` are deferred
+  function pattern (a function returning `Agent`, any name — e.g.
+  `def main() -> Agent`) so `UiPathChatOpenAI` and
+  `_openai_shared.set_default_openai_client` are deferred
   (Critical Rule C4 — module-level setup breaks
   `uip codedagent init`), and runs the triage agent end-to-end.
 tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-openai-agents]
@@ -15,7 +16,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  I want an OpenAI Agents UiPath coded agent called `triage-bot` that
+  I want an OpenAI Agents UiPath coded agent called `triage-agent` that
   sits in front of two specialists. A triage agent reads the customer's
   message and hands off to a billing agent for invoice and payment
   questions, or to a technical agent for product and feature questions.
