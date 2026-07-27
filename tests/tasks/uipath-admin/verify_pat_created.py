@@ -36,7 +36,10 @@ def main():
     scopes = tok.get("Scopes") or tok.get("scopes")
     if not scopes:
         fail(f"PAT '{MARKER}' exists but carries no Scopes: {tok}")
-    ok(f"PAT '{MARKER}' created with scopes={scopes} expiration={tok.get('Expiration') or tok.get('expiration')}")
+    expiration = tok.get("Expiration") or tok.get("expiration")
+    if not expiration:
+        fail(f"PAT '{MARKER}' created but has no Expiration: {tok}")
+    ok(f"PAT '{MARKER}' created with scopes={scopes} expiration={expiration}")
 
 
 main()

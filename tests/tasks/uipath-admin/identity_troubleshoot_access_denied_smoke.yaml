@@ -37,9 +37,13 @@ success_criteria:
                   yield from keys(v)
           elif isinstance(o, list):
               for v in o: yield from keys(v)
-      found = [k for k in keys(d) if 'roleassignment' in k.lower().replace('_', '')]
-      assert found, f'no RoleAssignments field anywhere in the check-access result; keys seen={list(keys(d))[:20]}'
-      print(f'OK: effective-access decision retrieved (found {found[0]})')
+      allkeys = [k.lower().replace('_', '') for k in keys(d)]
+      # A real check-access PDP decision carries RoleAssignments AND granted-*
+      # metadata (GrantedServicesMetadata / GrantedRolesMetadata). Requiring both
+      # rejects a bare {Result,Data} envelope that merely has a RoleAssignments key.
+      assert any('roleassignment' in k for k in allkeys), f'no RoleAssignments field; keys seen={list(keys(d))[:20]}'
+      assert any('granted' in k and 'metadata' in k for k in allkeys), f'no Granted*Metadata — not a real effective-access decision; keys seen={list(keys(d))[:20]}'
+      print('OK: effective-access decision retrieved (RoleAssignments + granted metadata present)')
       "
     timeout: 15
     expected_exit_code: 0

@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
-"""Verify a federated credential was attached to the marker external app."""
+"""Verify a federated credential was attached to the marker external app AND is
+bound to the requested GitHub Actions identity — the substance of an OIDC
+fed-cred is WHICH issuer + repo/branch (subject) it trusts, so a credential
+bound to the wrong repo/issuer must not pass."""
 
+import json
 import logging
 import os
 import sys
@@ -11,6 +15,9 @@ from admin_helpers import run_cli, poll, fail, ok, first_list as _first_list
 logging.basicConfig(level=logging.INFO, format="verify_fedcred: %(message)s")
 
 APP = "ce-identity-fedcred-host"
+# The requested binding (prompt: GitHub Actions, repo myorg/myrepo, main branch).
+REQUIRED_ISSUER = "token.actions.githubusercontent.com"
+REQUIRED_SUBJECT = "repo:myorg/myrepo"
 
 
 def client_id():
@@ -38,7 +45,12 @@ def main():
     c = poll(has_cred)
     if not c:
         fail(f"app '{APP}' has no federated credentials — agent did not add one")
-    ok(f"app '{APP}' has {len(c)} federated credential(s)")
+    blob = json.dumps(c)
+    if REQUIRED_ISSUER not in blob:
+        fail(f"federated credential present but not bound to issuer {REQUIRED_ISSUER}; creds={blob[:400]}")
+    if REQUIRED_SUBJECT not in blob:
+        fail(f"federated credential present but not bound to subject {REQUIRED_SUBJECT}; creds={blob[:400]}")
+    ok(f"app '{APP}' has a federated credential bound to {REQUIRED_ISSUER} / {REQUIRED_SUBJECT}")
 
 
 main()

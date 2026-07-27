@@ -27,7 +27,12 @@ def main():
     r = poll(find)
     if not r:
         fail(f"no robot account named '{MARKER}' found — create may have failed")
-    ok(f"robot account '{MARKER}' created (id={r.get('Id') or r.get('id')})")
+    # Verify a display name was actually set (the --display-name flag), i.e. it
+    # is present and distinct from the account name — not defaulted to the name.
+    dn = r.get("DisplayName") or r.get("displayName") or ""
+    if not dn or dn == MARKER:
+        fail(f"robot '{MARKER}' created but no distinct display name set (DisplayName={dn!r})")
+    ok(f"robot account '{MARKER}' created with display name {dn!r} (id={r.get('Id') or r.get('id')})")
 
 
 main()
