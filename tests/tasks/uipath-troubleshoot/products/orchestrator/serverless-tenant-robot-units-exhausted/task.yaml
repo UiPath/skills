@@ -43,8 +43,7 @@ initial_prompt: |
   Our nightly LedgerSyncService automation stopped completing — the
   jobs disappear within a second of starting and never do any work.
   A teammate says their finance automation started dying the same
-  way overnight too. The project source is in the current working
-  directory and it runs in the LedgerOps folder. Can you find out
+  way overnight too. It runs in the LedgerOps folder. Can you find out
   what's stopping these jobs from running?
 
 success_criteria:

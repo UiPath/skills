@@ -10,7 +10,7 @@
     {
       "Level": "Error",
       "TimeStamp": "2026-06-20T02:00:03.500Z",
-      "Message": "[Serverless] Robot Unit reservation denied for tenant: requested 1 unit, tenant pool has 0 of 25 available (25 in use). Reservation is tenant-scoped; per-user quota is not the limiting factor."
+      "Message": "[Serverless] Robot Unit reservation denied for tenant: requested 1 unit, tenant pool has 0 of 25 available (25 in use)."
     }
   ]
 }

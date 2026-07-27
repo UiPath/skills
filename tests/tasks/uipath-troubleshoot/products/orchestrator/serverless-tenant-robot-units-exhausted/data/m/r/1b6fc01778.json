@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobGet",
-  "_doc": "Failing serverless LedgerSyncService job. RuntimeType=Serverless and the Info carries the tenant-scoped Robot Units message. This is the licensing/capacity branch (branch 3) of the serverless-cannot-start-licensing playbook. The message names the TENANT (not the user), and licenses info confirms the tenant Robot Unit pool is fully consumed — distinct from branch 1 (per-user Personal Automation quota) and branch 2 (per-user Robot Units).",
   "Data": {
     "Key": "99cc33dd-44ee-55ff-66aa-77bb88990011",
     "StartTime": "2026-06-20T02:00:03.140Z",
