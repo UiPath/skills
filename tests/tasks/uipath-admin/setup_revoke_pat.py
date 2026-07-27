@@ -39,10 +39,10 @@ def main():
                 if tid:
                     run_cli(["admin", "pat", "revoke", tid])
 
-    # Seed the PAT the agent will revoke. Expiration is computed ~1 year out so
-    # the date never falls into the past (would fail create) and stays within any
-    # tenant PAT-lifetime cap.
-    expiration = (datetime.date.today() + datetime.timedelta(days=365)).isoformat()
+    # Seed the PAT the agent will revoke. Expiration is computed ~6 months out so
+    # the date never falls into the past (would fail create) and stays within the
+    # org's PAT-lifetime cap (reference tokens must expire within 360 days).
+    expiration = (datetime.date.today() + datetime.timedelta(days=180)).isoformat()
     res = run_cli(["admin", "pat", "create", "--description", MARKER,
                    "--scope", "OR.Folders.Read", "--expiration", expiration])
     if not res or res.get("Result") != "Success":
