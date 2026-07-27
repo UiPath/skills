@@ -1,0 +1,37 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-06-18T07:32:10.612Z",
+      "Message": "CustomerOrderReport execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-18T07:32:11.140Z",
+      "Message": "Connect to Database execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-18T07:32:11.520Z",
+      "Message": "Connect to Database execution ended"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-18T07:32:11.560Z",
+      "Message": "Execute Query 'Customer Orders' execution started"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-18T07:32:12.041Z",
+      "Message": "Execute Query: Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints."
+    }
+  ],
+  "Pagination": {
+    "Returned": 5,
+    "Limit": 100,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

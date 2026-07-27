@@ -26,10 +26,6 @@ agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite"]
-  # Cap per-turn extended thinking so finalization writes/edits rather than
-  # deliberating the whole document as thinking tokens.
-  sdk_options:
-    max_thinking_tokens: 10000
 
 run_limits:
   task_timeout: 3000

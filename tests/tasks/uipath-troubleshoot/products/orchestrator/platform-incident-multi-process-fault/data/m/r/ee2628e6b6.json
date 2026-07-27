@@ -1,0 +1,10 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {"Key": "b2c8cb22-2ebc-4c27-87f3-05efe701af1c", "Name": "original_email@test.com's workspace", "Path": "original_email@test.com's workspace", "Type": "Personal", "ParentKey": ""},
+    {"Key": "b6c6d7e8-f9a0-1234-5678-9abcdef01234", "Name": "Billing", "Path": "Billing", "Description": "Billing automations (NightlyBilling, InvoiceMatcher).", "Type": "Standard", "ParentKey": ""},
+    {"Key": "c6d7e8f9-a0b1-2345-6789-abcdef012345", "Name": "ClaimsOps", "Path": "ClaimsOps", "Description": "Claims automations.", "Type": "Standard", "ParentKey": ""},
+    {"Key": "d7e8f9a0-b1c2-3456-789a-bcdef0123456", "Name": "HRBots", "Path": "HRBots", "Description": "HR automations.", "Type": "Standard", "ParentKey": ""}
+  ]
+}
