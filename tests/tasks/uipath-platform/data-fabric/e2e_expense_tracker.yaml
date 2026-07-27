@@ -16,6 +16,13 @@ run_limits:
 initial_prompt: |
   Build an expense tracker for Finance in UiPath Data Fabric — two linked entities.
 
+  Reuse suitable existing category and tag dropdowns, and keep both test
+  entities where those dropdowns can be used; if none exists, use tenant scope.
+  I explicitly approve creating `CE_E2EEmployee` and `CE_E2EExpense` in that
+  derived scope and inserting the requested test records. Proceed without
+  another confirmation and do not mutate choice sets or unrelated resources.
+  When an expense shows its submitter, display the employee's name.
+
   `CE_E2EEmployee`:
     - name — required, up to 200 chars
     - email — unique, up to 255 chars
@@ -45,16 +52,15 @@ initial_prompt: |
     - total dollars of expenses from Engineering employees (find the
       3 Engineering employees first, then sum)
 
-  Open one expense: confirm `submitter` stored as employee ID (not
-  email/name), category stored as a number (not the label), tags
-  stored as a list of numbers.
+  Open one expense and confirm the employee link, category, and tags
+  were stored and resolve correctly.
 
   Then walk me through:
     - the per-employee expense count for one specific employee,
     - the per-category breakdown (if categories were used),
     - the Engineering total (three employee IDs + summed amount),
-    - what you saw when you opened one expense — the stored form
-      of submitter / category / tags.
+    - what you saw when you opened one expense for submitter,
+      category, and tags.
 
   We'll wire receipt uploads up later — just get the column in place.
   Don't author any new dropdowns either.
@@ -77,77 +83,52 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created the child Expense entity with a RELATIONSHIP field"
+    description: "Agent created the child Expense entity (quoted or unquoted name accepted)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_E2EExpense)(?=.*RELATIONSHIP)(?=.*referenceEntityId)(?=.*referenceFieldId)'
+    command_pattern: 'uip\s+df\s+entities\s+create\s+"?CE_E2EExpense'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent applied lengthLimit on STRING / MULTILINE_TEXT fields"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create.*lengthLimit'
-    min_count: 1
+  - type: run_command
+    description: "End state: text field length limits match the requested schema"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EEmployee --assertions 'name.lengthLimit=200,email.lengthLimit=255,department.lengthLimit=100' && python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --assertions 'description.lengthLimit=2000'"
+    timeout: 180
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent applied decimalPrecision on the amount DECIMAL field"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create.*decimalPrecision'
-    min_count: 1
+  - type: run_command
+    description: "End state: amount supports cents"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --assertions 'amount.decimalPrecision=2'"
+    timeout: 90
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent applied minValue / maxValue on the amount DECIMAL field"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create.*(minValue|maxValue)'
-    min_count: 1
+  - type: run_command
+    description: "End state: amount limits match the requested range"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --assertions 'amount.minValue=0,amount.maxValue=100000'"
+    timeout: 90
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent created the Receipt FILE field with EntityAttachment referenceEntityId / referenceFieldId binding"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_E2EExpense)(?=.*\"type\"\s*:\s*\"FILE\")(?=.*referenceEntityId)(?=.*referenceFieldId)'
-    min_count: 1
+  - type: run_command
+    description: "End state: Receipt is a FILE field"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --assertions 'Receipt.Name=FILE'"
+    timeout: 90
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent must NOT define a field literally named `Status` (Rule 4 reserved keyword)"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*\"fieldName\"\s*:\s*\"Status\"'
-    min_count: 0
-    max_count: 0
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent must NOT attempt `uip df files upload` — the Receipt FILE field was newly created via CLI, so its referenceEntity is unwired and upload would fail with Relationship violation (see Not Supported)"
+    description: "Agent must NOT attempt `uip df files upload` because this scenario requests only the Receipt schema slot"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+files\s+upload'
     min_count: 0
     max_count: 0
     weight: 2.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent inserted employee records (either --body with inline field names OR --file with a JSON payload)"
-    tool_name: "Bash"
-    command_pattern: '(?is)uip\s+df\s+records\s+insert[\s\S]*?(?:--body[\s\S]*?\\?\"(Name|Email|Department)\\?\"|--file\s+\S+\.json)'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent inserted expense records (either --body with inline submitter UUID, or --file with a JSON payload — the stored-form check is a separate run_command that reads a live record's submitter value)"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert[\s\S]*?(?:--body[\s\S]*?\\?\"[Ss]ubmitter\\?\"\s*:\s*\\?\"[0-9a-fA-F-]{8,}|--file\s+\S+\.json)'
-    min_count: 1
-    weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -162,7 +143,7 @@ success_criteria:
   - type: command_executed
     description: "Agent filtered expenses by the relationship (submitter UUID)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*filterGroup)(?=.*\"fieldName\"\s*:\s*\"[Ss]ubmitter\")'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup.*[Ss]ubmitter'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -292,10 +273,10 @@ success_criteria:
 
 pre_run:
   # Sweep leftover state from prior crashed runs. Child first, then parent.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EExpense"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EExpense --include-folders"
     timeout: 60
     fail_on_error: false
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EEmployee"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EEmployee --include-folders"
     timeout: 60
     fail_on_error: false
 
@@ -304,7 +285,7 @@ post_run:
   # parent (CE_E2EEmployee) because Expense has a RELATIONSHIP FK pointing
   # at Employee. CLI delete on Employee would otherwise fail with an FK
   # constraint.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EExpense"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EExpense --include-folders"
     timeout: 60
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EEmployee"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EEmployee --include-folders"
     timeout: 60

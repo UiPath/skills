@@ -23,8 +23,8 @@ initial_prompt: |
        text. Could you change it to a decimal number so we can add up
        the totals?
 
-    2. Add a new row to the SalesforceContacts list. (Heads-up — that
-       list is one we pull from Salesforce, not one we own directly.)
+    2. Add a new row to the SalesforceContacts entity. (Heads-up — that
+       entity is one we pull from Salesforce, not one we own directly.)
 
   Walk me through what you did or didn't do, and why.
 

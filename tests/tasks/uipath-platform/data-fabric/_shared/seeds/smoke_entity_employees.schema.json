@@ -1,0 +1,25 @@
+{
+  "displayName": "Smoke Employees",
+  "description": "Temporary employee schema for the entity-management smoke test.",
+  "fields": [
+    {
+      "fieldName": "FirstName",
+      "displayName": "First Name",
+      "type": "STRING",
+      "isRequired": true,
+      "lengthLimit": 100
+    },
+    {
+      "fieldName": "LastName",
+      "displayName": "Last Name",
+      "type": "STRING",
+      "isRequired": true,
+      "lengthLimit": 100
+    },
+    {
+      "fieldName": "HireDate",
+      "displayName": "Hire Date",
+      "type": "DATE"
+    }
+  ]
+}

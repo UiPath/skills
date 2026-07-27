@@ -3,9 +3,9 @@ description: >
   Integration: two-entity Customer/Order schema with STRING/MULTILINE_TEXT
   lengthLimit, DECIMAL precision + min/max, a RELATIONSHIP + optional
   CHOICE_SET_SINGLE + FILE field. Exercises the resolve-by-Email pattern
-  before the relational write and the reserved-keyword rename (Rule 4).
-  Grading via assert_record_count + verify_field_binding + inline schema-
-  echo constraint reads + llm_judge on the walk-through.
+  before the relational write. Grading via assert_record_count +
+  verify_field_binding + inline schema-echo constraint reads + llm_judge on
+  the walk-through.
 tags: [uipath-platform, data-fabric, integration, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
@@ -15,6 +15,14 @@ run_limits:
 
 initial_prompt: |
   Build two linked UiPath Data Fabric entities — customers and their orders.
+
+  Reuse a suitable existing category dropdown, and keep both test entities
+  where that dropdown can be used; if none exists, use tenant scope.
+  I explicitly approve creating `CE_IntegrationCustomer` and
+  `CE_IntegrationOrder` in that derived scope and inserting the requested
+  test records. Proceed without another confirmation and do not mutate
+  choice sets or unrelated resources. When an order shows its customer,
+  display the customer's name.
 
   `CE_IntegrationCustomer`:
     - name — required, up to 200 chars
@@ -37,7 +45,7 @@ initial_prompt: |
       link + status (if status was set).
     - If status was set, how many orders come back when you filter
       by that status?
-    - Read both lists' settings back and tell me what Data Fabric
+    - Read both entities' settings back and tell me what Data Fabric
       echoed for the constraints on customer name / notes, order
       amount, and the Receipt column.
 
@@ -102,15 +110,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created a FILE field on CE_IntegrationOrder with referenceEntityId/referenceFieldId (EntityAttachment binding)"
+    description: "Agent created a FILE field on CE_IntegrationOrder; the current CLI/server auto-wires its EntityAttachment binding"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_IntegrationOrder)(?=.*\"type\"\s*:\s*\"FILE\")(?=.*referenceEntityId)(?=.*referenceFieldId)'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*CE_IntegrationOrder.*FILE'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent must NOT attempt `uip df files upload` — the Receipt FILE field was newly created via CLI, so its referenceEntity is unwired and upload would fail with Relationship violation (see Not Supported)"
+    description: "Agent must NOT attempt `uip df files upload` because this scenario requests only the Receipt schema slot"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+files\s+upload'
     min_count: 0
@@ -121,7 +129,7 @@ success_criteria:
   - type: command_executed
     description: "Agent inserted parent records (any reasonable name/email field name)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"(?:[Nn]ame|[Ee]mail)\"\s*:'
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*(?:[Nn]ame|[Ee]mail).*:'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -129,7 +137,7 @@ success_criteria:
   - type: command_executed
     description: "Agent inserted child records writing customerId as a UUID (not an email or name)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"customerId\"\s*:\s*\"[0-9a-fA-F-]{8,}'
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*customerId.*[0-9a-fA-F-]{8,}'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -154,7 +162,7 @@ success_criteria:
   - type: command_executed
     description: "Agent filtered child records by the RELATIONSHIP field"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*filterGroup)(?=.*\"fieldName\"\s*:\s*\"customerId\")'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup.*customerId'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -250,14 +258,10 @@ success_criteria:
     weight: 2.5
     pass_threshold: 0.0
 
-  - type: command_executed
-    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+delete'
-    min_count: 0
-    max_count: 0
-    weight: 2.0
-    pass_threshold: 1.0
+  # Blanket `entities delete` anti-pattern removed — legitimate
+  # self-cleanup of ephemeral probe entities was tripping it. End-state
+  # `assert_record_count.py` on the target entities catches any real delete.
+
   - type: command_executed
     description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
     tool_name: "Bash"

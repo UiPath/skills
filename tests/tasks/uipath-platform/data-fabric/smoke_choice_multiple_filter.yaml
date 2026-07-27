@@ -14,44 +14,32 @@ run_limits:
 
 
 initial_prompt: |
-  We have an Expenses UiPath Data Fabric entity. Each expense has an amount and a `tags`
-  column where you can pick one or more from a fixed UiPath Data Fabric choice set. The
-  three tag options are travel, meals, and lodging (in that order —
-  travel is 1, meals is 2, lodging is 3).
+  We have an ExpenseApproval UiPath Data Fabric entity. Each expense has an
+  amount and a `tags` column where you can pick one or more from a fixed
+  choice set. The options are urgent, billable, and reimbursable.
 
   Could you run these four searches for me:
 
-    - Show me every expense tagged as travel.
-    - Show me every expense whose tags are exactly travel and lodging
+    - Show me every expense tagged as urgent.
+    - Show me every expense whose tags are exactly urgent and reimbursable
       together, nothing else.
-    - Show me every expense that isn't tagged as meals.
+    - Show me every expense that isn't tagged as billable.
     - Show me how many expenses fall under each unique tag
       combination.
 
-  Important:
-  - Do NOT invent operators like `equals`, `contains_any`, or `not_contains`. Use only the operators the uipath-platform skill documents for `records query` filters.
-  - The `uip` CLI is available but not connected to a live tenant. Commands
-    will fail — that is expected. Run each command exactly once regardless
-    of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,
-    do NOT troubleshoot.
-  - Use the placeholder entity ID `exp-ent-001` in every `uip df records query`
-    call. Do NOT look up the entity via `entities list`, do NOT try to create
-    it, do NOT hunt for a real ID — the queries will fail at the CLI, but the
-    JSON body shape is what matters here.
-
 success_criteria:
   - type: command_executed
-    description: "Task 1 — agent used `contains` with a bare NumberId string for membership (travel=1)"
+    description: "Task 1 — agent used `contains` with the resolved NumberId for urgent"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"contains\")(?=.*\"value\"\s*:\s*\"1\")'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*fieldName.*tags.*operator.*contains.*value.*0'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Task 2 — agent used `=` with a JSON-array string for set equality (travel + lodging = [1, 3])"
+    description: "Task 2 — agent used `=` with the resolved set for urgent + reimbursable"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"=\")(?=.*\"value\"\s*:\s*\"\[1,\s*3\]\")'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*fieldName.*tags.*operator.*=.*value.*\[0,\s*2\]'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -59,7 +47,7 @@ success_criteria:
   - type: command_executed
     description: "Task 3 — agent used `not contains` for negated membership"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"not contains\")'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*fieldName.*tags.*operator.*not contains'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -67,7 +55,7 @@ success_criteria:
   - type: command_executed
     description: "Task 4 — agent used groupBy on tags with COUNT aggregate"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"groupBy\"\s*:\s*\[\s*\"tags\")(?=.*\"function\"\s*:\s*\"COUNT\")'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*groupBy.*tags.*function.*COUNT'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -84,7 +72,9 @@ success_criteria:
   - type: command_executed
     description: "Negative — agent must NOT use `contains` with a bracketed value on tags (HTTP 400)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"contains\")(?=.*\"value\"\s*:\s*\"\[)'
+    # Scope all three lookaheads to one flat queryFilter object. This tolerates
+    # JSON key order without combining values from separate filters.
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*\{(?=[^{}]*\\?\"fieldName\\?\"\s*:\s*\\?\"tags\\?\")(?=[^{}]*\\?\"operator\\?\"\s*:\s*\\?\"contains\\?\")(?=[^{}]*\\?\"value\\?\"\s*:\s*\\?\"\[)[^{}]*\}'
     min_count: 0
     max_count: 0
     weight: 3.0
@@ -100,9 +90,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Negative — agent must NOT pass a display label (`travel`/`meals`/`lodging`) into a tags filter"
+    description: "Negative — agent must NOT pass a display label into a tags filter"
     tool_name: "Bash"
-    command_pattern: '(?si)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"value\"\s*:\s*\"(travel|meals|lodging)\")'
+    command_pattern: '(?si)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"value\"\s*:\s*\"(urgent|billable|reimbursable)\")'
     min_count: 0
     max_count: 0
     weight: 2.0

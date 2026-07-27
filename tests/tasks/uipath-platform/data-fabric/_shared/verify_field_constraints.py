@@ -9,7 +9,8 @@ isUnique, etc.) actually echo back correctly under `entities get`.
 Usage:
     verify_field_constraints.py \\
         --entity-name CE_IntegrationOrder \\
-        --assertions "amount.decimalPrecision=2,amount.minValue=0,amount.maxValue=1000000"
+        --assertions "amount.decimalPrecision=2,amount.minValue=0,amount.maxValue=1000000" \\
+        [--ignore-field-case]
 
 Assertion syntax: comma-separated `<field>.<key>=<value>` triples.
     - Field names are case-sensitive (matched against Fields[].Name/FieldName).
@@ -28,6 +29,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 
 UIP_TIMEOUT_SECONDS = 60
 
@@ -47,9 +49,14 @@ def run_uip(*args: str) -> tuple[int, str, str]:
 
 def find_entity_id(name: str) -> tuple[str | None, str | None]:
     """Return (id, folder_key) — folder_key is empty for tenant-scoped."""
-    for extra in (["--include-folders"], []):
+    # The tenant list endpoint is occasionally eventually consistent directly
+    # after entity creation. Try folder-aware discovery once, then retry the
+    # broadly supported tenant listing before declaring the entity absent.
+    for attempt, extra in enumerate((["--include-folders"], [], [], [])):
         code, out, _ = run_uip("df", "entities", "list", "--native-only", *extra)
         if code != 0 or not out.strip():
+            if attempt >= 1:
+                time.sleep(2)
             continue
         try:
             data = json.loads(out)
@@ -62,6 +69,8 @@ def find_entity_id(name: str) -> tuple[str | None, str | None]:
                     e.get("ID") or e.get("Id") or e.get("id"),
                     e.get("FolderKey") or e.get("folderKey") or "",
                 )
+        if attempt >= 1:
+            time.sleep(2)
     return None, None
 
 
@@ -109,10 +118,16 @@ def parse_assertions(spec: str) -> list[tuple[str, str, object]]:
     return out
 
 
-def field_data_type(schema: dict, field_name: str) -> dict | None:
+def field_data_type(schema: dict, field_name: str, ignore_case: bool = False) -> dict | None:
     for f in (schema.get("Fields") or []):
         if not isinstance(f, dict): continue
-        if (f.get("Name") or f.get("FieldName") or f.get("name") or f.get("fieldName")) == field_name:
+        actual_name = f.get("Name") or f.get("FieldName") or f.get("name") or f.get("fieldName")
+        names_match = actual_name == field_name or (
+            ignore_case
+            and isinstance(actual_name, str)
+            and actual_name.casefold() == field_name.casefold()
+        )
+        if names_match:
             fdt = f.get("FieldDataType") or f.get("fieldDataType") or {}
             # Merge top-level constraint fields onto fdt (some CLI versions emit at either level).
             merged = {**f, **fdt}
@@ -134,6 +149,11 @@ def main() -> None:
     p.add_argument("--entity-name", required=True)
     p.add_argument("--assertions", required=True,
                    help='Comma-separated field.key=value assertions, e.g. "amount.decimalPrecision=2,Name.lengthLimit=200"')
+    p.add_argument(
+        "--ignore-field-case",
+        action="store_true",
+        help="Match custom field names case-insensitively (constraint keys are always case-insensitive)",
+    )
     args = p.parse_args()
 
     try:
@@ -152,7 +172,7 @@ def main() -> None:
 
     failures: list[str] = []
     for field_name, key, expected in assertions:
-        fdt = field_data_type(schema, field_name)
+        fdt = field_data_type(schema, field_name, args.ignore_field_case)
         if fdt is None:
             failures.append(f"{field_name}.{key}: field '{field_name}' not found on entity")
             print(f"  ✗ {field_name}.{key}: field not found")

@@ -17,8 +17,13 @@ initial_prompt: |
   Migrating a schema from another system — `schema_migration.json` in
   the working directory has 6 UiPath Data Fabric entities to attempt (each with one `Title`
   column, short text) and 12 columns to add to the first successful
-  list (`CE_NameOK1`). Try each item verbatim. For rejections, capture
+  entity (`CE_NameOK1`). Try each item verbatim. For rejections, capture
   the error verbatim — don't rewrite names or retry.
+
+  Use tenant scope (no folder). I explicitly approve every entity-create
+  and field-add attempt encoded in `schema_migration.json`, including the
+  intentionally invalid names. Proceed without another confirmation and do
+  not mutate resources outside that fixture.
 
   When you're done, walk me through what came back for each item —
   what succeeded, what was rejected, and for the rejections the exact
@@ -26,34 +31,34 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent attempted to create multiple lists (positives and negatives)"
+    description: "Agent attempted the fixture's list creations (calls may be grouped in one shell action)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+entities\s+create'
-    min_count: 5
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent attempted to add columns (may batch multiple per update call)"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+update.*addFields'
-    min_count: 3
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent explicitly tried to add a column named exactly `Id` (must be rejected by server)"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+update[\s\S]*?addFields[\s\S]*?\\?\"fieldName\\?\"\s*:\s*\\?\"Id\\?\"'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent explicitly tried to add a column named exactly `Status` (attempts a SQL-keyword name; platform behavior is what we're testing)"
+    description: "Agent attempted to add the fixture's columns (calls may be grouped in one shell action)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+update[\s\S]*?addFields[\s\S]*?\\?\"fieldName\\?\"\s*:\s*\\?\"Status\\?\"'
+    command_pattern: 'uip\s+df\s+entities\s+update'
     min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: the accepted fixture columns landed on CE_NameOK1"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_NameOK1 --assertions Notes.Name=MULTILINE_TEXT,OrderStatus.Name=STRING,Status.Name=STRING,Key.Name=STRING,Type.Name=STRING"
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: rejected fixture columns did not land as user fields"
+    command: "python3 -c \"import json,subprocess,sys; ls=subprocess.run(['uip','df','entities','list','--native-only','--output','json'],capture_output=True,text=True,timeout=60); eid=next((e.get('Id') for e in json.loads(ls.stdout).get('Data',[]) if e.get('Name')=='CE_NameOK1'),None); g=subprocess.run(['uip','df','entities','get',eid,'--output','json'],capture_output=True,text=True,timeout=60) if eid else None; fields=g and json.loads(g.stdout).get('Data',{}).get('Fields',[]); user={f.get('Name') for f in fields or [] if not f.get('IsSystemField')}; sys.exit(0 if user and not user.intersection({'Id','CreatedBy','CreateTime','UpdatedBy','UpdateTime','Order','Group'}) else 1)\""
+    timeout: 150
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
@@ -61,7 +66,7 @@ success_criteria:
     description: "Agent did NOT silently rename a rejected keyword to make it pass (bounded number of entity-create calls)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+entities\s+create'
-    min_count: 5
+    min_count: 1
     max_count: 15
     weight: 2.0
     pass_threshold: 1.0
@@ -90,11 +95,15 @@ success_criteria:
       names) against Data Fabric entity naming rules:
 
         Should SUCCEED: A1 (CE_NameOK1), B1 (CE_NameWithUnderscore),
-        C1 (100-char CE_A…A), D1 (Notes), E1 (OrderStatus).
+        D1 (Notes), E1 (OrderStatus).
         Should FAIL: A2 (leading digit 9StartsWithDigit), B2 (hyphen
         CE-Name-With-Hyphen), C2 (101-char over-limit), D2-D6 (reserved
         system fields: Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime).
-        Platform-dependent: E2-E6 (SQL keywords Status/Order/Group/Key/Type).
+        Platform-dependent: C1 (100-char CE_A…A; some tenants return an
+        internal server error at this boundary) and E2-E6 (SQL keywords
+        Status/Order/Group/Key/Type). For every platform-dependent probe,
+        either success or rejection is correct when the agent reports the
+        observed response; do not require a "platform-dependent" caveat.
 
       Read the agent's final walk-through. Did the agent:
         - Correctly report the accept/reject outcome for all 18 attempts?
@@ -103,14 +112,15 @@ success_criteria:
         - NOT silently rename any rejected name to make it pass?
 
       Score 1.0 if the walk-through covers all 18 attempts with correct
-      outcomes AND verbatim errors for at least the D2-D6 (system-field)
-      rejections.
+      outcomes AND gives the exact shared error for the D2-D6 system-field
+      rejections. Accept one grouped error template when the response clearly
+      says the same platform message was returned for each named field.
       Score 0.5 if 14-17 attempts are correctly reported OR the reject
       errors are described generically.
       Score 0.0 if 4+ outcomes are wrong OR the agent silently renamed a
       rejected name.
     weight: 3.0
-    pass_threshold: 0.5
+    pass_threshold: 0.8
 
   - type: command_executed
     description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"

@@ -130,7 +130,8 @@ def create_entity(name: str, schema: dict) -> str | None:
             print(f"WARN: could not parse entities create output: {out[:200]}", file=sys.stderr)
             return None
         if isinstance(data, dict):
-            return (data.get("Data") or {}).get("ID")
+            created = data.get("Data") or {}
+            return created.get("ID") or created.get("Id") or created.get("id")
         return None
 
     if code == 124:

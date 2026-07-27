@@ -1,0 +1,13 @@
+{
+  "displayName": "Import Demo Customers",
+  "description": "Temporary customer list for the complex CSV smoke test.",
+  "fields": [
+    {
+      "fieldName": "Name",
+      "displayName": "Name",
+      "type": "STRING",
+      "isRequired": true,
+      "isUnique": true
+    }
+  ]
+}

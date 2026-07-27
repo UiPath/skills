@@ -16,11 +16,16 @@ run_limits:
 initial_prompt: |
   We're setting up a small folder-scoped UiPath Data Fabric entity for a regional-reports test.
 
+  I explicitly approve creating `CE_FolderRecordsTest` in the derived
+  folder A and inserting the three requested records there. Derive folders A
+  and B exactly as instructed, proceed without another confirmation, and do
+  not mutate any unrelated Data Fabric resource.
+
   First, take a look at the folders on the tenant. If there are at least
   two, call the first one folder A and the second folder B. If there's
   only one, note that and stop — this test needs two folders.
 
-  Create a list called `CE_FolderRecordsTest` scoped to folder A, with
+  Create an entity called `CE_FolderRecordsTest` scoped to folder A, with
   two columns:
     - Name — required text, up to 100 characters
     - Value — required whole number, 0 to 1000
@@ -31,12 +36,11 @@ initial_prompt: |
     - "R3", 30
 
   Now check the folder-scope behavior:
-    - Query the list from folder A — expect all 3 rows.
-    - Look at the folder-list output from folder B's context (list the
-      entities scoped to folder B). `CE_FolderRecordsTest` should NOT
-      show up there — folder A is where it lives.
-    - Look at the folder-list output from folder A's context. The list
-      SHOULD show up there.
+    - Query the entity from folder A — expect all 3 rows.
+    - List the entities scoped to folder B. `CE_FolderRecordsTest`
+      should NOT show up there — folder A is where it lives.
+    - List the entities from folder A's context. The entity SHOULD
+      show up there.
 
   When you're done, walk me through what you observed for each of those
   three checks — did the row count / visibility match what we expected?
@@ -51,25 +55,25 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created the entity with --folder-key (folder-scoped placement)"
+    description: "Agent used folder scope for entity creation"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_FolderRecordsTest)(?=.*--folder-key)'
+    command_pattern: '(?is)uip\s+df\s+entities\s+create(?=.*CE_FolderRecordsTest)(?=.*--folder-key)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --folder-key when inserting records into folder A"
+    description: "Agent used folder scope when inserting records into folder A"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert.*--folder-key'
+    command_pattern: '(?is)uip\s+df\s+records\s+insert(?=.*--folder-key)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed entities with --folder-key at least twice (folder A and folder B contexts, to compare visibility)"
+    description: "Agent listed entities in folder context at least twice (folder A and folder B)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+list.*--folder-key'
+    command_pattern: '(?is)uip\s+df\s+entities\s+list(?=.*--folder-key)'
     min_count: 2
     weight: 2.5
     pass_threshold: 1.0
@@ -123,11 +127,11 @@ success_criteria:
 
 pre_run:
   # Sweep any leftover folder-scoped entities from prior runs.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderRecordsTest --include-folders"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderRecordsTest --first-folder"
     timeout: 120
     fail_on_error: false
 
 post_run:
   # Cleanup the folder-scoped entity + any siblings created during the run.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderRecordsTest --include-folders"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderRecordsTest --first-folder"
     timeout: 120

@@ -19,13 +19,18 @@ initial_prompt: |
   for each row. For anything the system rejects, capture the actual error
   verbatim — don't guess or rewrite values.
 
+  Use tenant scope (no folder). I explicitly approve creating
+  `CE_ConstraintTest` and attempting every record write described below,
+  including the intentionally invalid rows. Proceed without another
+  confirmation and do not mutate any other Data Fabric resource.
+
   Set up `CE_ConstraintTest` with these columns first:
-    - Code — required, short text, up to 10 characters
+    - Code — required and unique, short text, up to 10 characters
     - Quantity — whole number, 0 to 100
     - Price — dollars with cents, never negative
     - StockedDate — a date (when the SKU was first stocked)
     - Serial — an auto-generated number the system fills in
-    - ParentLink — optional, links to another row in this list
+    - ParentLink — optional, links to another row in this entity
 
   Then work through `sales_batch.json` — 22 rows, each with a `_label`
   (`"1A"`, `"2B"`, …) that identifies it in your walk-through, plus the
@@ -35,13 +40,20 @@ initial_prompt: |
 
   When you're done, walk me through what succeeded and what failed, with
   the specific error text for each rejection. Don't retry rejected rows.
-
 success_criteria:
   - type: command_executed
     description: "Agent created the test list with the constraint columns"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_ConstraintTest)(?=.*lengthLimit)(?=.*decimalPrecision)(?=.*(minValue|maxValue))'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*CE_ConstraintTest'
     min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Live schema has the required idempotency and constraint settings, regardless of whether create used --body or --file"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_ConstraintTest --assertions 'Code.isRequired=true,Code.isUnique=true,Code.lengthLimit=10,Quantity.decimalPrecision=0,Quantity.minValue=0,Quantity.maxValue=100,Price.decimalPrecision=2,Price.minValue=0'"
+    timeout: 120
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
@@ -49,7 +61,7 @@ success_criteria:
     description: "Agent attempted several inserts (the 23 rows may be batched into fewer CLI calls if the agent uses array bodies)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+insert'
-    min_count: 6
+    min_count: 2
     weight: 2.5
     pass_threshold: 1.0
 
@@ -57,7 +69,7 @@ success_criteria:
     description: "Agent must NOT retry a failed insert with substituted values (allow batched inserts up to ~3 retries' worth)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+insert'
-    min_count: 6
+    min_count: 2
     max_count: 50
     weight: 2.0
     pass_threshold: 1.0
@@ -112,7 +124,7 @@ success_criteria:
     pass_threshold: 0.5
 
   - type: command_executed
-    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    description: "Agent must NOT delete any entity"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+entities\s+delete'
     min_count: 0

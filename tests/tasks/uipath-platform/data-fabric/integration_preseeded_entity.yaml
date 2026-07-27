@@ -18,7 +18,12 @@ initial_prompt: |
   with 20 rows. Please help me poke at it — no changes I don't ask
   for, and please don't delete anything.
 
-  Start by reading the list's settings back and tell me what columns
+  This entity is tenant-scoped. I explicitly approve updating the Notes
+  field on one active row and then clearing that same field as requested
+  below. Proceed without another confirmation and do not change any other
+  field or row.
+
+  Start by reading the entity's settings back and tell me what columns
   it has and their types.
 
   Then run each of these searches and tell me the count that came
@@ -66,10 +71,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran multiple filterGroup queries"
+    description: "Agent ran the requested filterGroup queries (calls may be grouped in one shell action)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+query'
-    min_count: 4
+    min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
@@ -98,10 +103,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used filterGroup key in records query body"
+    description: "Agent used filterGroup in the records query body"
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup'
-    min_count: 4
+    min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 

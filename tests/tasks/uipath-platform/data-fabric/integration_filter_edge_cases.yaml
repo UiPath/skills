@@ -20,6 +20,11 @@ initial_prompt: |
   some have `Notes: ""`, and a few include quotes / percent / underscore
   / backslash / unicode / newline. Load each row verbatim.
 
+  Use tenant scope (no folder). I explicitly approve creating
+  `CE_FilterEdgeTest`, inserting the fixture rows and `midstream-add`, and
+  deleting row 5 during the cursor walk. Proceed without another
+  confirmation and do not mutate any other Data Fabric resource.
+
   Then run these searches and walk me through the counts / results:
 
   Null / empty:
@@ -66,18 +71,29 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran null-handling searches (is null / is not null on Score and Notes)"
+    description: "Agent ran null-handling searches on Score"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*"value"\s*:\s*null'
-    min_count: 2
-    weight: 3.0
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*fieldName.{0,20}Score.*value.{0,12}null'
+    min_count: 1
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent searched on special characters (quote / percent / underscore / backslash)"
+    description: "Agent ran null-handling searches on Notes"
     tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*fieldName.{0,20}Notes.*value.{0,12}null'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent executed the substring and special-character record queries"
+    tool_name: "Bash"
+    # The values may be constructed at runtime with jq/shell variables, so
+    # their literal encoding is not reliably present in command telemetry.
+    # The llm_judge below audits the individual returned outcomes.
     command_pattern: 'uip\s+df\s+records\s+query'
-    min_count: 10
+    min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
@@ -129,7 +145,7 @@ success_criteria:
       Score 0.5 if 3-4 categories are reported clearly.
       Score 0.0 if 3+ categories are missing OR the null count is wrong.
     weight: 3.5
-    pass_threshold: 0.5
+    pass_threshold: 0.8
 
   - type: command_executed
     description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"

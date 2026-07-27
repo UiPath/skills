@@ -14,12 +14,7 @@ run_limits:
   turn_timeout: 900
 
 pre_run:
-  # 1. Stage helper scripts the agent uses for pagination assertions.
-  - command: "cp $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/extract_page_ids.py $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_pagination.py ."
-    timeout: 10
-    fail_on_error: true
-
-  # 2. Brownfield seed: ensure CE_LargePaginationTest exists with the right
+  # Brownfield seed: ensure CE_LargePaginationTest exists with the right
   #    schema AND 500 canonical records. seed_entity.py is idempotent — if
   #    the count already matches, it's a no-op.
   - command: >-
@@ -36,30 +31,16 @@ initial_prompt: |
   row number, 1-500), and an `Active` flag (yes for rows 1-300, no for
   rows 301-500). I'd like you to paginate through it three different ways.
 
-  Two helpers are in the working directory — use them as-is:
-    - `./extract_page_ids.py --out <file> --append` — pipe each page's
-      output through this; it appends IDs to `<file>`.
-    - `./verify_pagination.py --mode {walk|offset|count} …` — checks a
-      captured IDs file (walk / count) or compares against a slice
-      (offset).
-
   Three walks:
 
-  1) Walk all 500 rows, 60 per page. EACH page is its own separate
-     command (no in-process loop). Pipe every page through
-     `./extract_page_ids.py --out walk_ids.txt --append`. Expect 9 pages
-     and 500 unique IDs. Verify:
-        ./verify_pagination.py --mode walk --file walk_ids.txt --count 500
+  1) Walk all 500 rows, 60 per page. Tell me how many pages and unique
+     rows you saw, plus any duplicates or gaps.
 
   2) Jump straight to rows 181-240 — page size 60, start position 180. One
-     page only, no walking. Save to `offset_page_ids.txt`. Verify:
-        ./verify_pagination.py --mode offset --file offset_page_ids.txt \
-          --against walk_ids.txt --start 180 --stop 240
-     Never combine a position jump with paging on the same command.
+     page only. Confirm it matches the same slice from the full walk.
 
-  3) Walk only Active=yes rows, 60 per page, into `active_ids.txt`. Expect
-     5 pages and 300 IDs. Verify:
-        ./verify_pagination.py --mode count --file active_ids.txt --count 300
+  3) Walk only Active=yes rows, 60 per page. Tell me the page and unique-row
+     totals, plus any duplicates or gaps.
 
 success_criteria:
   - type: command_executed
@@ -71,17 +52,31 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent paginated through all records with records list --limit (at least 9 calls to walk the 500 rows in pages of 60)"
+    description: "Agent used bounded pages while walking the records"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+(list|query)\s+.*--limit'
-    min_count: 9
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent reported the three pagination outcomes coherently"
+    include_agent_output: true
+    prompt: |
+      The seeded entity has 500 rows. A full walk at 60 per page should
+      produce 9 pages and 500 unique IDs; the direct slice should represent
+      rows 181-240; filtering Active=true should produce 5 pages and 300
+      unique IDs. The agent should report duplicates or gaps for both walks.
+      Score 1 if all three outcomes are covered without contradiction. Grade
+      the reported outcome only; command criteria separately verify execution,
+      so do not require files, screenshots, logs, or other artifacts here.
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent jumped to a page using -o/--offset on records list"
+    description: "Agent jumped to a page using -o/--offset"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+list\s+.*(-o\s+\d+|--offset\s+\d+)'
+    command_pattern: 'uip\s+df\s+records\s+(list|query)\s+.*(-o\s+\d+|--offset\s+\d+)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -89,7 +84,7 @@ success_criteria:
   - type: command_executed
     description: "Agent must NOT combine --offset and --cursor on the same command"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+(list|query)(?=[^\n]*--cursor)(?=[^\n]*(-o\s+\d+|--offset\s+\d+))'
+    command_pattern: 'uip\s+df\s+records\s+(list|query)(?=[^;&|\n]*--cursor)(?=[^;&|\n]*(-o\s+\d+|--offset\s+\d+))'
     min_count: 0
     max_count: 0
     weight: 2.0

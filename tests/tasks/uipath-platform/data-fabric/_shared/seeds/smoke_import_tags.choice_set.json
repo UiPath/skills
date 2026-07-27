@@ -1,0 +1,6 @@
+{
+  "name": "CE_SmokeImportTags",
+  "displayName": "Import Demo Tags",
+  "description": "Tenant-scoped tags for the complex CSV smoke test.",
+  "values": ["travel", "meals", "lodging"]
+}
