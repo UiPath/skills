@@ -10,6 +10,7 @@ asserts that exact PAT is now gone from the tenant.
 import logging
 import os
 import sys
+import tempfile
 import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
@@ -17,7 +18,7 @@ from admin_helpers import run_cli, fail, ok
 
 logging.basicConfig(level=logging.INFO, format="verify_pat_revoked: %(message)s")
 
-STATE_FILE = "/tmp/ce_revoke_pat_seed.txt"
+STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_revoke_pat_seed.txt")
 
 
 def main():

@@ -7,6 +7,7 @@ it did not). Always exits 0 (best-effort seed)."""
 import logging
 import os
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
 from admin_helpers import run_cli
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 MARKER = "ce-identity-smoke-revoke-pat"
 # Distinctive markers only — a bare "smoke" would revoke real PATs on the org.
 FREE_MARKERS = ("ce-identity-smoke", "e2e-test-pat")
-STATE_FILE = "/tmp/ce_revoke_pat_seed.txt"
+STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_revoke_pat_seed.txt")
 
 
 def main():
