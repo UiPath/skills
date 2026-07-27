@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "5c9d2a71-3e64-4b80-9a15-6b8c0d2e4f31",
+      "Name": "Reporting",
+      "Path": "Reporting",
+      "Description": "Folder hosting the customer and order reporting processes.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "b8e2c145-7d3a-49b6-a2c8-1f4b5e8a9c01",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}
