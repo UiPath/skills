@@ -94,4 +94,4 @@ PDD uses business-friendly types. Map to XSD:
 4. Every input name must appear as `:paramName` in the generated SQL
 5. Input types must match the field's XSD type from schema.ofn
 6. `fno:returns` with `rowsAffected` output is mandatory
-7. Output uses `ont:paramName` (not `ont:returnName`) — parser uses same method for both
+7. Output uses `ont:paramName` on action output nodes (actions keep the platform `ont#` namespace; functions use `fno:name`/`fno:type` instead)

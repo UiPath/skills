@@ -586,12 +586,12 @@ For each function:
 - **Comment** — per-function fact: what it returns, whether it produces counts or individual rows, what params it needs; do NOT put routing rules here — those go in USAGE POLICY
 - **SPARQL SELECT** — on `ont:statement`; prefixed with `PREFIX ont: <https://ontology.uipath.com/{name}#>`; for equality lookups bind the parameter as an unbound triple variable (`; ont:Prop ?param`); for comparisons (`<`, `>`, `!=`) bind via `FILTER (?field < ?param)`
 - **Parameters** — only if needed; omit `fno:expects` entirely when the function takes none; optional params add `ont:required false ; ont:default "{val}"`
-- **Returns** — always declare `fno:returns ( ont:ret.{fn}.{var} … )` and a corresponding `ont:ret.*` block (`a fno:Output ; ont:returnName "…" ; ont:returnType "xsd:…"`) for every projected SELECT variable
+- **Returns** — always declare `fno:returns ( ont:output.{fn}.{var} … )` and a corresponding `ont:output.*` block (`a fno:Output ; rdfs:comment "…" ; fno:name "…" ; fno:type "xsd:…"`) for every projected SELECT variable
 
 **File structure** — all functions in a single file:
 1. Prefix declarations: `fno:`, `ont:`, `rdfs:`
 2. USAGE POLICY comment block — routing rules and output discipline (≤30 non-empty lines; see functions-patterns.md)
-3. For each function: `ont:{functionName}` block, then `ont:param.*` blocks, then `ont:ret.*` blocks immediately after
+3. For each function: `ont:{functionName}` block, then `ont:param.*` blocks, then `ont:output.*` blocks immediately after
 
 ---
 
@@ -627,8 +627,8 @@ Functions ({N}):
 **Check 4 — Parameter binding:** every `?paramName` that appears as an unbound input variable in the WHERE clause (whether in a triple pattern or a `FILTER`) must have a matching entry in `fno:expects` and a corresponding `ont:param.*` block.
 
 **Check 5 — Return contract (both directions):**
-- Forward: every variable projected in `SELECT ?x ?y …` must have a matching `ont:ret.*` block where `ont:returnName` equals the variable name (without `?`).
-- Reverse: every `ont:returnName` value in every `ont:ret.*` block must correspond to a variable actually projected in the SELECT. No orphaned return nodes allowed.
+- Forward: every variable projected in `SELECT ?x ?y …` must have a matching `ont:output.*` block where `fno:name` equals the variable name (without `?`).
+- Reverse: every `fno:name` value in every `ont:output.*` block must correspond to a variable actually projected in the SELECT. No orphaned output nodes allowed.
 
 Report:
 ```
@@ -638,7 +638,7 @@ Functions checks:
   ✓ Object properties — all ont: ObjectProperty terms declared in {name}.ofn
   ✓ Parameter binding — all unbound variables (triple and FILTER) have matching fno:expects entries
   ✓ Return contract (forward) — all projected SELECT variables have matching fno:returns / fno:Output nodes
-  ✓ Return contract (reverse) — all ont:returnName values match a projected SELECT variable
+  ✓ Return contract (reverse) — all fno:name values on ont:output.* nodes match a projected SELECT variable
 ```
 
 Fix any issues in the draft before proceeding.
@@ -677,7 +677,7 @@ For each write operation from the SDD/PDD:
   - `WHERE {{Entity.identifier}} = :id` — how the target row is identified. Typically the entity's primary key field.
   - `:paramName` — bound parameter from the caller. Must match `ont:paramName` in the parameter block exactly.
 - **Parameters** — `fno:expects` + `ont:param.*` block per parameter (from PDD `Inputs` field)
-- **Output** — `fno:returns` with `rowsAffected` output is **mandatory**. Use `ont:paramName` (not `ont:returnName`) on the output node — the parser uses the same method for inputs and outputs.
+- **Output** — `fno:returns` with `rowsAffected` output is **mandatory**. Actions use `ont:paramName` on output nodes (actions keep the platform `ont#` namespace where `ont:paramName` is recognized); functions use `fno:name` instead.
 
 ---
 
