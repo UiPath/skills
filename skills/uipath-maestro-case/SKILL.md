@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-case
-description: "Always invoke for `caseplan.json` files. UiPath Case Management authoring (caseplan.json) from sdd.md, or via interview if sdd.md absent. Produces tasks.md plan, writes caseplan.json via per-plugin JSON recipes. Edits an existing caseplan.json via targeted operations (skips planning). For .xaml→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn. For PDD→SDD or complex/multi-product→uipath-planner."
+description: "Always invoke for UiPath Case Management: `caseplan.json`, Case Management projects/definitions, case-specific SDD/draft/design requests, and Case Management authoring from `sdd.md` or via interview if `sdd.md` is absent. Produces tasks.md plan, writes caseplan.json via per-plugin JSON recipes. Edits an existing caseplan.json via targeted operations (skips planning). For .xaml→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn. For explicit cross-product/multi-project solution planning outside a single Case Management project, suggest `uipath-planner` in plain text; do not hand off automatically."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite, Agent
 ---
 
@@ -8,7 +8,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite, 
 
 Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` plan, then writes `caseplan.json` directly via per-plugin JSON recipes. CLI is reserved for read-only metadata fetches (registry, validate, debug, tasks describe, case spec) and solution boundary operations (`uip solution init` / `project add` / `upload`).
 
-When `sdd.md` is absent, **Phase 0** designs the case by best assumption from the request and documents, confirms it in ONE summary that discloses every decision taken, then starts the build with `sdd.md` written alongside as a reference artifact. Complex / multi-product cases may still be designed with the same workflow; use `uipath-planner` when the user explicitly requests planning across products.
+When `sdd.md` is absent, **Phase 0** designs the case by best assumption from the request and documents, confirms it in ONE summary that discloses every decision taken, then starts the build with `sdd.md` written alongside as a reference artifact. Complex Case Management requests still use this workflow. For explicit cross-product/multi-project solution planning outside a single Case Management project, suggest `uipath-planner` in plain text; do not auto-invoke it.
 
 **Scope:** two journeys — **greenfield** (build a new case from `sdd.md`, user-provided or Phase 0-generated) and **brownfield** (targeted edits to an existing `caseplan.json` — see [references/brownfield.md](references/brownfield.md)). Editing a case that also lives in Studio Web? Brownfield pulls the current server state first (`uip solution download` / `solution projects resync`) so re-publish can't silently clobber server-side changes — see [brownfield.md § Pull latest first](references/brownfield.md#pull-latest-first-before-editing).
 

@@ -48,6 +48,10 @@ initial_prompt: |
   Help me map this out end to end — about two tasks per stage, the key data we
   track, and the business rules. Call it "CandidateInterview".
 
+  Before starting, load the `uipath-maestro-case` skill and follow its Phase 0
+  draft workflow. Do not use `uipath-planner`; this is a single Case Management
+  design request.
+
   I want a draft design document I can review before we commit to anything. Let's
   get the draft down and stop there — we'll finalize and build it later, so don't
   polish or validate it yet, just capture the design.
@@ -57,6 +61,21 @@ success_criteria:
   # sdd.draft.md if it stopped at the draft, or sdd.md if it finalized. All
   # content criteria read whichever exists, so the test does not hinge on the
   # agent stopping at exactly the draft step.
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "did not produce a planner-style SDD artifact"
+    command: "! find . -maxdepth 2 -type f -name '*-sdd.md' ! -name 'sdd.md' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "Phase 0 interview produced a design document (draft or finalized)"
     command: "test -f sdd.draft.md || test -f sdd.md"

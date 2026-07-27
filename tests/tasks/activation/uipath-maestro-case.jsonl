@@ -48,3 +48,5 @@
 {"id": "uipath-maestro-case-048", "prompt": "Add a skeleton task for the credit-check process \u2014 I'll resolve the resource later", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-049", "prompt": "List the stages and tasks in my caseplan.json", "expected_skill": "uipath-maestro-case"}
 {"id": "uipath-maestro-case-050", "prompt": "Refresh the bindings_v2.json before I upload the solution", "expected_skill": "uipath-maestro-case"}
+{"id": "uipath-maestro-case-051", "prompt": "I want a draft design document for a Case Management solution that handles commercial loan origination with Intake, Underwriting, QA/QC, Closing, and exception paths", "expected_skill": "uipath-maestro-case"}
+{"id": "uipath-maestro-case-052", "prompt": "We're designing a case-management solution for candidate interviews. Get a draft SDD down for review and stop before building", "expected_skill": "uipath-maestro-case"}
