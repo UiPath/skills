@@ -1,0 +1,37 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:uix="http://schemas.uipath.com/workflow/activities/excel" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Excel</x:String>
+      <x:String>UiPath.Excel.Activities</x:String>
+      <x:String>UiPath.Excel.Activities.Business</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Excel.Activities.Design</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <uix:ExcelProcessScope DisplayName="Excel Process Scope" KillExcelProcessesEachIteration="True" Private="False" ShowExcel="True" sap2010:WorkflowViewState.IdRef="ExcelProcessScope_1">
+      <uix:ExcelApplicationCard DisplayName="Use Excel File" WorkbookPath="data\Invoices.xlsx" Private="False" sap2010:WorkflowViewState.IdRef="ExcelApplicationCard_1">
+        <uix:InvokeVBAX CodeFilePath="macro.txt" DisplayName="Invoke VBA" EntryMethodName="ProcessInvoces" Private="False" sap2010:WorkflowViewState.IdRef="InvokeVBAX_1">
+          <uix:InvokeVBAX.EntryMethodParameters>
+            <InArgument x:TypeArguments="scg:IEnumerable(x:Object)">
+              <CSharpValue x:TypeArguments="scg:IEnumerable(x:Object)" sap2010:WorkflowViewState.IdRef="CSharpValue`1_1">new Object[] { }</CSharpValue>
+            </InArgument>
+          </uix:InvokeVBAX.EntryMethodParameters>
+        </uix:InvokeVBAX>
+      </uix:ExcelApplicationCard>
+    </uix:ExcelProcessScope>
+  </Sequence>
+</Activity>

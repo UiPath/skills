@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75",
+      "State": "Faulted",
+      "ProcessName": "CrmContactUpload",
+      "ReleaseName": "CrmContactUpload",
+      "StartTime": "2026-07-20T13:02:41.200Z",
+      "EndTime": "2026-07-20T13:02:42.640Z",
+      "CreationTime": "2026-07-20T13:02:38.100Z",
+      "Type": "Unattended",
+      "Source": "Manual",
+      "Priority": null
+    }
+  ]
+}
