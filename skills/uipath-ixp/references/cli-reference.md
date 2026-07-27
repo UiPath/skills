@@ -114,6 +114,20 @@ Structural edits to a field within an existing field group. For instruction-only
 | `uip ixp fields change-type <project-name> --group <field-group-name> --field <name> --type <type-name> -y --output json` | Change a field's type. **IRREVERSIBLE** — the server creates a new field under the hood, so all existing annotations for that field are deleted. `-y, --yes` is **required** (the CLI never prompts). |
 | `uip ixp fields update-prompts <project-name> --updates <json> --output json` | Bulk-update per-field extraction instructions. `--updates` is a JSON array `[{"name":"<field>","instructions":"..."}]` matched by `moon_form` field name (across all field groups). Existing field definitions are preserved. Unmatched names are reported in the response without failing the command. |
 
+### Moving a field to a different field group
+
+There is **no move/reparent command**. Every field command takes its group as `--group`, which only addresses the field — it cannot change which group owns it. A move is two `fields` calls against the existing groups, in this order:
+
+1. `uip ixp projects get-taxonomy <project-name> --output json` — read the field's current `type` and `instructions` so they can be carried over. In `Data.dataset`, the field is a `moon_form` entry under its group's `label_def`; its type is the `entity_defs[]` entry whose `id` matches the entry's **`field_type_id`** (NOT its `field_id`, which is the field's own identity and matches no `entity_def`).
+2. `uip ixp fields add <project-name> --group <target-group> --field <name> --type <type-name> --instructions <text> --output json` — recreate it in the target group.
+3. `uip ixp fields delete <project-name> --group <source-group> --field <name> -y --output json` — remove it from the source group.
+
+Add before deleting: if the add fails, the field is still in its original group. Both groups must already exist — a move never creates one. Creating the target group first, if the user asked for a group that isn't there yet, is a separate `groups add` step you should confirm with them.
+
+**IRREVERSIBLE** — `fields add` mints a new `field_id`, so the field's confirmed labels do not follow it into the new group. Tell the user before starting; documents must be re-reviewed for that field.
+
+**Do NOT move a field by editing the taxonomy and re-importing it.** `projects import-taxonomy` **merges** — it does not replace. Fields you omit from a posted group are kept, and a posted `field_id` is ignored (the backend mints a new one), so the import returns `{"status":"ok"}` while leaving the field in **both** groups as two separate fields. Do not use `groups delete` + `groups add` either: that destroys every other field in the group along with its annotations.
+
 ## Labellings
 
 | Command | Description |
