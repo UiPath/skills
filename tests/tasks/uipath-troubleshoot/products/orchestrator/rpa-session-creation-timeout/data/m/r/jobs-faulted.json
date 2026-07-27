@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobList",
-  "_doc": "Recent Faulted NightlyReconciler jobs in UnattendedOps. Three failures on RECON-BOT-01 with identical 'Could not start executor. Creating user session timed out.' — a session-creation TIMEOUT (no logon-failure/locked/RDP code), the entry into job-faulted-session-timeout. Each ran ~120s (the session-creation timeout) before faulting, and each entered Running first (see jobs history) — rules out no-host/Pending.",
   "Data": [
     {
       "Key": "c0ffee01-1111-4222-8333-444455556666",
