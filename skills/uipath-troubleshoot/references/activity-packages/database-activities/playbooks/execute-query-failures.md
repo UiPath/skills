@@ -6,7 +6,7 @@ confidence: medium
 
 ## Context
 
-A `UiPath.Database.Activities` `Execute Query` activity runs a SQL `SELECT` against a database and returns the result set as a `DataTable`. It needs a live connection, supplied one of two ways: an `ExistingDbConnection` produced by a preceding `Connect to Database` activity (or a `Start Transaction` block), or an inline `ConnectionString` + `ProviderName` set on the activity itself. Failures originate at one of seven surfaces: connection handle (null / expired / out of scope), driver provider (post-migration keyword/driver mismatch), SQL text (syntax error or unsafe concatenation), property misplacement (query pasted into the connection-string field), command timeout, CLR-level crash (oversized result set or incompatible native provider), or wrong activity for the statement type.
+A `UiPath.Database.Activities` `Execute Query` activity runs a SQL `SELECT` against a database and returns the result set as a `DataTable`. It needs a live connection, supplied one of two ways: an `ExistingDbConnection` produced by a preceding `Connect to Database` activity (or a `Start Transaction` block), or an inline `ConnectionString` + `ProviderName` set on the activity itself. Failures originate at one of nine surfaces: connection handle (null / expired / out of scope), driver provider (post-migration keyword/driver mismatch), SQL text (syntax error or unsafe concatenation), property misplacement (query pasted into the connection-string field), command timeout, CLR-level crash (oversized result set or incompatible native provider), wrong activity for the statement type, DataTable constraint enablement (the returned rows violate the auto-inferred schema's unique / non-null / foreign-key constraints), or connection-input misconfiguration (neither, or both, connection methods supplied on the activity).
 
 What this looks like — Execute Query faults surface as one of these signatures:
 
@@ -17,6 +17,8 @@ What this looks like — Execute Query faults surface as one of these signatures
 - `Execute Query: Timeout expired` / `... Timeout period elapsed prior to completion of the operation` — branch 5.
 - The job terminates with exit code `0xE0434352` and no clean activity-level exception in the workflow log — branch 6.
 - An `Execute Non Query` result assigned to a `DataTable` (design-time/cast error), or `Execute Query` used for an `INSERT`/`UPDATE`/`DELETE` (runs but returns an empty/unexpected `DataTable`) — branch 7.
+- `Execute Query: Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.` (`System.Data.ConstraintException`) — the query ran and returned rows, but they violate the schema the activity auto-inferred for the result `DataTable` — branch 8.
+- `Value cannot be null. Parameter name: ProviderName` (or `... at least one of the connections must be used`), or `Only one of the connections can be used` — a connection-input configuration error raised before any SQL runs — branch 9.
 
 What can cause it (cause-branches — pick the right one from evidence):
 
@@ -27,6 +29,8 @@ What can cause it (cause-branches — pick the right one from evidence):
 5. **Command timeout exceeded** — the query ran longer than the activity's `TimeoutMS` (milliseconds; default `30000` = 30 s). Causes: an un-indexed scan, a lock/blocking on the DB side, or a genuinely large/expensive query. The provider aborts and UiPath surfaces `Timeout expired`.
 6. **CLR-level crash (`0xE0434352`)** — a low-level managed-runtime fault that bypasses the normal activity exception path. For `Execute Query` the DB-specific triggers are: a result set large enough to exhaust the Robot process memory (materializing millions of rows into a `DataTable`), an incompatible native provider path (notably Oracle `REF CURSOR` handling), or a stale/incompatible `UiPath.Database.Activities` build. `0xE0434352` is the generic .NET unhandled-exception SEH code — it is not DB-specific on its own; the DB context narrows it.
 7. **Wrong activity for the statement type** — `Execute Query` is for `SELECT` (returns a `DataTable`); `Execute Non Query` is for `INSERT`/`UPDATE`/`DELETE`/DDL (returns the affected-row count in its `AffectedRecords` output, an `Int32`). Using `Execute Query` for a modification returns an empty/meaningless `DataTable` and may error on statements that produce no result set; assigning an `Execute Non Query` `AffectedRecords` result to a `DataTable` fails to compile / casts wrong.
+8. **DataTable constraint enablement fails** — the query ran and returned rows, but `Execute Query` fills a `DataTable` whose **schema it infers from the source columns** (key/uniqueness and nullability derived from the underlying table metadata), and the returned rows violate that inferred schema. `DataTable.EnableConstraints` then throws `System.Data.ConstraintException: Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.` DB-specific triggers: a `SELECT *` (or one-to-many `JOIN`) that returns **duplicate values in the column inferred as the primary/unique key** (e.g. joining `Customers` to `Orders` repeats `CustomerId`); a column that returns `NULL` (often from an `OUTER JOIN`) where the inferred schema marks it non-nullable. The failure is in the **shape of the result set vs. the inferred schema**, not in the SQL syntax (the statement parsed and executed fine) — so it is distinct from branch 3.
+9. **Connection-input misconfiguration** — a configuration error on the activity's two connection overload groups (**Existing Database Connection** vs. **New Database Connection** = `ConnectionString` + `ProviderName`), raised *before* any SQL runs. Two sub-cases: (a) **neither** group fully supplied — an inline `ConnectionString` with an empty `ProviderName`, or no `ExistingDbConnection` either → `Value cannot be null. Parameter name: ProviderName` / `... at least one of the connections must be used`; (b) **both** groups supplied — an `ExistingDbConnection` variable *and* an inline `ConnectionString`/`ProviderName` on the same activity → `Only one of the connections can be used`. Distinct from branch 1 (there a connection method *is* chosen but its variable resolves to `Nothing` at run time); here the activity's inputs are configured wrong.
 
 What to look for:
 
@@ -37,6 +41,8 @@ What to look for:
 - **`TimeoutMS` property** (milliseconds) and the DB-side duration of the query — branch 5.
 - **Result-set size and provider** — expected row count, and whether the engine is Oracle with `REF CURSOR` output — branch 6.
 - **`UiPath.Database.Activities` package version** — branches 2 and 6 are version-sensitive.
+- **The result-set shape vs. its keys** — for a constraint failure (branch 8), whether the `Sql` is a `SELECT *` or a one-to-many `JOIN` that repeats a key column, or an `OUTER JOIN` that yields `NULL` in a key/non-null column. The inner exception is `System.Data.ConstraintException`, not a provider syntax error.
+- **How the connection is configured on the activity** — for branch 9, whether the activity has *both* an `ExistingDbConnection` and an inline `ConnectionString`/`ProviderName`, or *neither* fully set (e.g. a `ConnectionString` with no `ProviderName`).
 
 ## Investigation
 
@@ -52,6 +58,8 @@ Go in this order — cheaper checks first.
    - `Timeout expired` → branch 5; go to step 7.
    - Job exit `0xE0434352`, no activity-level exception → branch 6; go to step 8.
    - Modification statement in `Execute Query`, or `Execute Non Query` result bound to a `DataTable` → branch 7; go to step 9.
+   - `Failed to enable constraints ...` / `System.Data.ConstraintException` → branch 8; go to step 10.
+   - `Value cannot be null. Parameter name: ProviderName` / `at least one of the connections must be used` / `Only one of the connections can be used` → branch 9; go to step 11.
 
 3. **Confirm branch 1 (null/out-of-scope connection).** In the workflow source, trace the variable bound to the query's `ExistingDbConnection` back to its producer:
    - Confirm a `Connect to Database` or `Start Transaction` activity assigns that exact variable, and that it executes on the same path *before* `Execute Query` (not on a sibling `If`/`Catch` branch that was skipped).
@@ -70,7 +78,11 @@ Go in this order — cheaper checks first.
 
 9. **Confirm branch 7 (wrong activity).** Check the statement verb against the activity: `SELECT` → `Execute Query`; `INSERT`/`UPDATE`/`DELETE`/DDL → `Execute Non Query`. Check the output binding: an `Execute Query` output must be a `DataTable`; an `Execute Non Query` exposes an `AffectedRecords` output of type `Int32`.
 
-The root cause must name **which of the seven surfaces** the failure maps to, with the specific evidence: the inner provider exception, how the connection is supplied and scoped, the `Sql`/`ConnectionString`/`ProviderName`/`TimeoutMS` values, and (for branches 2/6) the project compatibility and package version. A generic "Execute Query failed" is not a confirmed finding.
+10. **Confirm branch 8 (constraint enablement).** The inner exception is `System.Data.ConstraintException` — the query *executed* (no provider syntax error), so the fault is the returned rows vs. the inferred `DataTable` schema. Read the `Sql`: a `SELECT *` or a one-to-many `JOIN` that repeats a key column produces duplicate keys; an `OUTER JOIN` (or a nullable source column) produces `NULL` where the schema is non-nullable. Where possible, run the same `SELECT` in a DB client and check for duplicate values in the leftmost/key column or `NULL`s in a would-be-key column. Confirming which column violates which constraint (unique vs non-null) is the finding.
+
+11. **Confirm branch 9 (connection-input misconfiguration).** Read the activity's connection inputs from source: does it carry **both** an `ExistingDbConnection` variable and an inline `ConnectionString`/`ProviderName` (→ `Only one of the connections can be used`), or is a method **incompletely** set — an inline `ConnectionString` with an empty `ProviderName`, or neither input supplied (→ `Value cannot be null. Parameter name: ProviderName` / `at least one of the connections must be used`)? This is a config error visible in the `.xaml`, not a runtime null — distinguish it from branch 1 (a chosen method whose variable resolves to `Nothing`).
+
+The root cause must name **which of the nine surfaces** the failure maps to, with the specific evidence: the inner provider or `ConstraintException`, how the connection is supplied/scoped/configured, the `Sql`/`ConnectionString`/`ProviderName`/`TimeoutMS` values, the result-set shape vs. its keys (branch 8), and (for branches 2/6) the project compatibility and package version. A generic "Execute Query failed" is not a confirmed finding.
 
 ## Resolution
 
@@ -91,6 +103,7 @@ Map the branch identified in Investigation to the fix:
   - Do **not** build SQL by concatenating variables into the statement (`"... WHERE id = " + myVar`) — it breaks parsing and is a SQL-injection risk.
   - Use the activity's **Parameters** collection: reference a named parameter in the `Sql` (`SELECT * FROM t WHERE id = @id`) and map the UiPath variable to `@id` in the Parameters property. The provider handles quoting and typing.
   - Fix any genuine syntax error reported by the inner provider message (the engine names the offending token).
+  - Watch for **non-ASCII "smart" quotes** (`“ ” ‘ ’`) pasted from a browser/document into the `Sql` — the provider does not accept them and rejects the statement. Retype the query with straight ASCII quotes (`" '`). When the `Sql` is built dynamically, `Log Message` the fully resolved string right before the activity to eyeball the exact compiled text.
 
 - **Branch 4 — Query in the wrong property:**
   - Put the connection string (`Server=...;Database=...;...` or DSN) in the `ConnectionString` property, and the `SELECT` in the `Sql` / query property. They are different fields — do not cross them.
@@ -110,6 +123,16 @@ Map the branch identified in Investigation to the fix:
   - Use `Execute Non Query` for `INSERT`/`UPDATE`/`DELETE`/DDL (output → `AffectedRecords`, an `Int32` row count). Do not assign its result to a `DataTable`.
   - For a stored procedure that both modifies and returns rows, pick the activity that matches the result you consume, and confirm the output type binding compiles.
 
+- **Branch 8 — DataTable constraint enablement fails:**
+  - Reshape the query so the result set is consistent with a keyed `DataTable`. Do **not** `SELECT *`: select the explicit columns you need, which stops pulling a key column whose duplicates trigger the violation and pinpoints the offending column.
+  - If the duplication is a one-to-many `JOIN` fan-out (the key column legitimately repeats), select at the correct grain — aggregate, or drop the repeating key from the projection — so the returned key is unique. `SELECT DISTINCT` only helps when whole rows are redundant duplicates; it does **not** fix a key that repeats with differing other columns.
+  - If the violation is a `NULL` in a would-be-key/non-null column (often an `OUTER JOIN`), filter the `NULL`s out or `COALESCE`/cast the column so it is non-null in the result.
+  - Disabling constraint enforcement on the returned `DataTable` is a workaround that hides the schema mismatch — prefer fixing the query so the result matches a valid schema.
+
+- **Branch 9 — Connection-input misconfiguration:**
+  - Supply **exactly one** connection method. If you pass an `ExistingDbConnection` (from `Connect to Database` / `Start Transaction`), leave the activity's `ConnectionString`, `SecureConnectionString`, and `ProviderName` **blank** — when an existing connection is provided those inline properties are ignored, and setting both raises `Only one of the connections can be used`.
+  - If you use an inline connection instead, set **both** `ConnectionString` and `ProviderName` (e.g. `Microsoft.Data.SqlClient` for SQL Server, `System.Data.Odbc` for an ODBC DSN) — an empty `ProviderName` raises `Value cannot be null. Parameter name: ProviderName`; supplying neither method raises `at least one of the connections must be used`.
+
 ## Anti-patterns (what NOT to do)
 
 Common advice for Execute Query failures contains workarounds that hide bugs rather than fix them. The agent should NOT recommend any of these as a primary resolution.
@@ -127,6 +150,8 @@ Common advice for Execute Query failures contains workarounds that hide bugs rat
 - Bound result sets in SQL (`TOP`/`ROWNUM`/`FETCH FIRST`/`LIMIT`) for any query that could return large data, so a data-volume spike cannot crash the Robot (branch 6).
 - Choose the activity by statement verb up front — `Execute Query` for `SELECT`, `Execute Non Query` for modifications — and bind the output to the matching type (branch 7).
 - Pin and track the `UiPath.Database.Activities` version across environments so version-sensitive failures (branches 2, 6) reproduce consistently rather than differing dev-vs-prod.
+- Select explicit columns at the intended grain rather than `SELECT *`; a `SELECT *` over a one-to-many `JOIN` returns duplicate keys that fail `DataTable` constraint enablement (branch 8) and also wastes bandwidth/memory.
+- Configure exactly one connection method per Database activity — an `ExistingDbConnection` **or** an inline `ConnectionString` + `ProviderName`, never both and never neither (branch 9).
 
 ## Related
 

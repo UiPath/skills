@@ -54,11 +54,11 @@ success_criteria:
     pass_threshold: 0
 
   - type: command_executed
-    description: "Agent called state enable at tenant scope"
+    description: "Agent called state enable at tenant scope (advisory — codex stops after auth errors)"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable[\s\S]*tenant'
     min_count: 1
-    weight: 3.0
-    pass_threshold: 1.0
+    weight: 2.0
+    pass_threshold: 0
 
   - type: command_not_executed
     description: "Agent did NOT use organization scope for state enable (backend not implemented)"

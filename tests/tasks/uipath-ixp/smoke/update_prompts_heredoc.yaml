@@ -1,11 +1,9 @@
 task_id: skill-ixp-update-prompts-heredoc-smoke
 description: >
-  Smoke: agent improves a per-field instruction by writing the
-  JSON to `/tmp/ixp/<project-name>/prompts/` via heredoc (Rule 4
-  working dir), then passing it via `"$(cat <file>)"` to
-  `fields update-prompts --updates` (Rule 5). Anti-pattern:
-  inlining the JSON on the command line — breaks shell quoting
-  on non-trivial payloads.
+  Smoke: agent improves a per-field instruction with
+  `fields update-prompts --updates`. The skill constructs the JSON via
+  heredoc; the grader verifies both that shell workflow and the complete
+  expanded payload received by the CLI mock.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -15,7 +13,6 @@ run_limits:
   expected_turns: 8
 
 sandbox:
-  driver: tempdir
   mock_path_dirs: [mocks]
   template_sources:
     - {type: template_dir, path: ../_shared/mock_template}
@@ -39,7 +36,7 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent wrote the --updates payload to a file under /tmp/ixp/<project>/prompts/ via heredoc"
+    description: "Agent wrote the --updates payload under /tmp/ixp/<project>/prompts/ via heredoc"
     tool_name: "Bash"
     command_pattern: 'cat\s*>\s*/tmp/ixp/my_invoices-f1afa9ef-ixp/prompts/[^\s]+\.json\s*<<\s*[''"]?[A-Z][A-Z0-9_]*[''"]?'
     min_count: 1
@@ -47,9 +44,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent invoked `uip ixp fields update-prompts <project> --updates` reading the heredoc file via $(cat ...)"
+    description: "Agent passed the heredoc file to `fields update-prompts --updates`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+fields\s+update-prompts\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+.*--updates\s+["'']?\$\(cat\s+/tmp/ixp/'
+    command_pattern: 'uip\s+ixp\s+fields\s+update-prompts\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+.*--updates\s+["'']?\$\(cat\s+/tmp/ixp/my_invoices-f1afa9ef-ixp/prompts/[^\s]+\.json\)'
     min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "CLI received the structured InvoiceNumber update with the requested instruction"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\s+["']?my_invoices-f1afa9ef-ixp["']?\s+(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*\}\s*\])(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*"name"\s*:\s*"InvoiceNumber")(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*"instructions"\s*:\s*"[^"\r\n]*Extract the unique invoice identifier[^"\r\n]*Do NOT use the Purchase Order[^"\r\n]*")(?=[^\r\n]*--output\s+json(?:\s|$))[^\r\n]*)$
     weight: 2.5
     pass_threshold: 1.0

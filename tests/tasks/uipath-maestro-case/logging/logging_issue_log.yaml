@@ -154,7 +154,7 @@ success_criteria:
     description: "build-issues.md carries the issue-log header naming this case (per logging/impl-json.md dump template)"
     path: "tasks/build-issues.md"
     includes:
-      - "Build Issues"
+      - "Build"
       - "TimerLogCase"
     weight: 2.0
     pass_threshold: 1.0

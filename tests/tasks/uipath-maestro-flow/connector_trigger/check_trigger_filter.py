@@ -44,19 +44,29 @@ def main():
     if detail.get("filterExpression") is not None:
         sys.exit("FAIL: trigger_detail.json must not carry top-level `filterExpression`")
 
-    filter_tree = detail.get("filter")
-    if not isinstance(filter_tree, dict):
-        sys.exit("FAIL: trigger_detail.json has no `filter` object")
+    # Studio Web's persisted group shape: numeric groupOperator (0 = And,
+    # 1 = Or) + a non-empty `filters` array.
+    def _is_filter_group(n):
+        return (
+            isinstance(n, dict)
+            and isinstance(n.get("groupOperator"), (int, float))
+            and not isinstance(n.get("groupOperator"), bool)
+            and isinstance(n.get("filters"), list)
+            and bool(n.get("filters"))
+        )
 
-    # Studio Web's persisted shape: numeric groupOperator (0 = And, 1 = Or) and a
-    # non-empty `filters` array.
-    if not isinstance(filter_tree.get("groupOperator"), (int, float)) or isinstance(
-        filter_tree.get("groupOperator"), bool
-    ):
-        sys.exit("FAIL: filter.groupOperator must be a number (0 = And, 1 = Or)")
-    filters = filter_tree.get("filters")
-    if not isinstance(filters, list) or not filters:
-        sys.exit("FAIL: filter.filters must be a non-empty array")
+    # trigger_detail.json IS the `--detail` object (the exact JSON passed to
+    # `node configure --detail`), so `filter` must be a TOP-LEVEL key — that is
+    # where the CLI reads it. A filter wrapped under `detail` / `inputs` is not
+    # the --detail object and the CLI would silently ignore it, so it fails.
+    filter_tree = detail.get("filter")
+    if not _is_filter_group(filter_tree):
+        top = sorted(detail.keys()) if isinstance(detail, dict) else type(detail).__name__
+        sys.exit(
+            "FAIL: expected a `filter` tree as a TOP-LEVEL key of the --detail "
+            "object (numeric groupOperator + non-empty `filters`); do not wrap it "
+            f"under `detail`/`inputs`. Top-level keys found: {top}"
+        )
 
     nodes = list(_walk(filter_tree))
 
