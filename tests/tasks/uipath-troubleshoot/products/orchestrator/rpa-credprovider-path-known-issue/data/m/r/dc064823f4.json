@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "MachineList",
-  "_doc": "Host running the failing job. RobotVersion 23.10.4 predates 23.10.10, the 23.10-line release that fixed the CredProvider path defect (UiPath KB 799589). This confirms the fault is the known issue and the fix is a Robot upgrade.",
   "Data": [
     {"Key": "c3d4e5f6-a7b8-9012-3456-789abcdef012", "Name": "BackOfficeRuntime", "Type": "Template", "Runtimes": 2, "Hosts": ["MOCK-HOST"], "RobotVersion": "23.10.4", "Description": "Runtime template for BackOffice; hosts run Robot 23.10.4."}
   ]
