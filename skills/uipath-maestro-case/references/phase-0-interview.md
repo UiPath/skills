@@ -119,7 +119,7 @@ One structured presentation of the whole case, one question. Run the [sdd-genera
 - **Decisions I made** — EVERY assumption, override, and resource decision, one line each with its plain-language source (`Trigger: portal event (you said "submitted through the portal")` · `Review application: human task (compliance wording)` · `SlackNotify: resolve at build (two workspaces match)`). This block is mandatory and complete — it is how the user audits the design without being interrogated. Flagged items (unfixable Finalization findings, missing connections) appear here with a ⚠ marker.
 - **Caller obligation** — mandatory fixed text when any §1.5 row is `Category: In` + `Type: file` (JobAttachment pre-create contract; Studio Web's "Start case" dialog handles it automatically). Omit otherwise.
 
-Confirmation question (AskUserQuestion): `Build it — straight through` / `Build it — pause at the build preview` / `Change something`. The build choice records the Rule 11 preference — never re-asked mid-build. When ⚠ flagged items exist, relabel the first option `Build despite N flagged items — straight through`. For a **design-only** request swap the build options for `Save the design`; for a **draft** request, `Save as draft`.
+Confirmation question (AskUserQuestion): `Build it — straight through` / `Build it — pause at the build preview` / `Change something`. The build choice records the Rule 11 preference — never re-asked mid-build. When ⚠ flagged items exist, relabel the first option `Build despite N flagged items — straight through`. For a **design-only** request swap the build options for `Save the design`; for a **draft** request, `Save as draft`. Exception: when the user explicitly says to get/write the draft down now and stop, the user's request is already the save instruction — skip AskUserQuestion, write `sdd.draft.md`, report the path, and stop.
 
 Corrections (`Change something` or any free text) update the model, re-run affected Finalization checks, and re-show ONLY the changed rows plus their decision lines. A correction never restarts the walk.
 
@@ -135,7 +135,7 @@ On a Build answer:
 4. Proceed into [planning.md](planning.md) Step 1 **from the in-memory model** — do not re-read the just-written `sdd.md` in this session. Re-read it only when working memory may be stale (context compaction, resumed session); then the file is authoritative (Rule 2). For later sessions and re-runs, `sdd.md` is the contract exactly as if the user wrote it.
 5. If `sdd.md` appeared at the path since Phase 0 started, abort instead of overwriting.
 
-**Design-only request:** write `sdd.md`, report the path in one line, stop before Phase 1. **Draft request:** write `sdd.draft.md`, report, stop — never promote. **Free-text corrections stay first-class after the build starts:** treat one as a targeted edit to the affected artifact (model + `sdd.md` + downstream), narrate it in one line, continue.
+**Design-only request:** write `sdd.md`, report the path in one line, stop before Phase 1. **Draft request:** write `sdd.draft.md`, report, stop — never promote; if the user asked to write the draft now and stop, do this immediately without asking for `Save as draft`. **Free-text corrections stay first-class after the build starts:** treat one as a targeted edit to the affected artifact (model + `sdd.md` + downstream), narrate it in one line, continue.
 
 ## HTML preview
 

@@ -55,6 +55,8 @@ initial_prompt: |
   I want a draft design document I can review before we commit to anything. Let's
   get the draft down and stop there — we'll finalize and build it later, so don't
   polish or validate it yet, just capture the design.
+  Create `sdd.draft.md` in the working directory now; do not ask for another
+  confirmation or wait for a "Save as draft" reply.
 
 success_criteria:
   # The interview grades the captured DESIGN, in whichever file Phase 0 leaves it:
