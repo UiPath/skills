@@ -31,7 +31,7 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | `current-stage-entered` | Fires when the containing stage is entered | — |
 | `selected-tasks-completed` | Fires when specific sibling tasks in the same stage complete | `selectedTasksIds` |
 | `wait-for-connector` | Waits for a connector event (binds an IS connector trigger under `uipath`) | connector fields; `conditionExpression` optional |
-| `adhoc` | Ad hoc tasks run only when a user triggers them from the case app. | `conditionExpression` (optional) |
+| `adhoc` | Ad hoc tasks run only when a user triggers them from the case app. This controls task activation only; choose the task type separately from what the task does. | `conditionExpression` (optional) |
 | `runs-sequentially` | Sequential tasks run in the order they appear in the stage from top to bottom. The frontend toggle writes this rule as the task's entry condition. | `conditionExpression` (optional) |
 
 ### Frontend task-mode mapping
@@ -42,9 +42,9 @@ The Case App selector has three distinct modes:
 |---|---|---|
 | Sequential | `runs-sequentially` only | Preserve the frontend's ordered `data.tasks` structure. Parallel task sets remain allowed; the first sequential task starts when the stage is entered, and later sequential tasks use the upstream-task completion trigger represented by the preserved task-set/order structure. |
 | Event-triggered | An authored event/condition, normally `wait-for-connector` for an external event | Do not add `runs-sequentially`. A stage-entered task is not automatically an event-triggered task; retain the explicit event rule and its connector configuration. |
-| Manually-triggered (adhoc) | `adhoc` only | Set `isRequired: false`; the user launches it from the Case App. Do not add another entry event or treat it as sequential. |
+| Manually-triggered (adhoc) | `adhoc` only | Set `isRequired: false`; the user launches it from the Case App. Do not add another entry event or treat it as sequential. Do not change the task type merely because it is manual. |
 
-`adhoc` is task-entry-only. It is never a stage entry rule and never a substitute for `wait-for-connector`.
+`adhoc` is task-entry-only. It is never a stage entry rule, never a case trigger, never a substitute for `wait-for-connector`, and never the way to model a user-selected interrupting lane. Use a secondary stage with `user-selected-stage` for that.
 
 For generated SDDs, a plain immediate-predecessor chain should already be authored as `runs-sequentially`. If a task row says `selected-tasks-completed("<previous task>")`, preserve it only when the SDD is intentionally expressing a condition/event-driven sibling gate, branch convergence, or non-immediate dependency.
 

@@ -12,6 +12,8 @@ contract that previously depended on an LLM judge:
   - every stage/task entry and exit condition has the expected rule + target
   - Stage 2 reject and Stage 4 approve/reject gates use the correct output,
     polarity, exit type, and completion behavior
+  - the Stage 4 non-completing case exit is gated on rejection, so approval
+    returns to origin without also exiting the case
 """
 
 from __future__ import annotations
@@ -414,6 +416,25 @@ def _condition_signature(
     )
 
 
+def _case_condition_signature(
+    condition: dict, stage_ids: dict, task_ids: dict, output_ids: dict
+):
+    groups = condition.get("rules") or []
+    if len(groups) != 1 or not isinstance(groups[0], list) or len(groups[0]) != 1:
+        _fail(
+            f"case condition {condition.get('displayName')!r} must contain "
+            f"exactly one rule; got {groups!r}"
+        )
+    rule = groups[0][0]
+    return (
+        rule.get("rule"),
+        _selected_stages(rule, stage_ids),
+        _selected_tasks(rule, task_ids),
+        _canonical_expression(rule.get("conditionExpression"), output_ids),
+        condition.get("marksCaseComplete"),
+    )
+
+
 def _sig(
     rule: str,
     *,
@@ -444,7 +465,14 @@ def _assert_condition_set(where: str, actual_conditions: list, expected, indexes
         _fail(f"{where} conditions differ\n  actual={actual}\n  expected={wanted}")
 
 
-def _assert_conditions(stages: dict, tasks: dict, stage_ids: dict, task_ids: dict, output_ids):
+def _assert_conditions(
+    plan: dict,
+    stages: dict,
+    tasks: dict,
+    stage_ids: dict,
+    task_ids: dict,
+    output_ids,
+):
     manager = ("Stage 2", "Manager Approval")
     rework = ("Stage 4", "Rework Approval")
     indexes = (stage_ids, task_ids, output_ids)
@@ -480,11 +508,10 @@ def _assert_conditions(stages: dict, tasks: dict, stage_ids: dict, task_ids: dic
                 marks=True,
             ),
             _sig(
-                "selected-tasks-completed",
-                tasks=(rework,),
+                "required-tasks-completed",
                 expression=("equals", (*rework, "Action"), "approve"),
                 exit_type="return-to-origin",
-                marks=False,
+                marks=True,
             ),
         ],
         "Stage 5": [_sig("required-tasks-completed", exit_type="wait-for-user", marks=True)],
@@ -561,6 +588,29 @@ def _assert_conditions(stages: dict, tasks: dict, stage_ids: dict, task_ids: dic
             indexes,
         )
 
+    actual_case_exits = Counter(
+        _case_condition_signature(condition, stage_ids, task_ids, output_ids)
+        for condition in ((plan.get("metadata") or {}).get("caseExitRules") or [])
+    )
+    expected_case_exits = Counter(
+        [
+            ("required-stages-completed", (), (), None, True),
+            (
+                "selected-stage-completed",
+                ("Stage 4",),
+                (),
+                ("equals", (*rework, "Action"), "reject"),
+                False,
+            ),
+        ]
+    )
+    if actual_case_exits != expected_case_exits:
+        _fail(
+            "case exit conditions differ\n"
+            f"  actual={actual_case_exits}\n"
+            f"  expected={expected_case_exits}"
+        )
+
 
 def main():
     plan = _read_plan()
@@ -573,7 +623,7 @@ def main():
         output_ids,
     ) = _index_plan(plan)
     _assert_dataflow(plan, tasks, outputs, output_ids)
-    _assert_conditions(stages, tasks, stage_ids, task_ids, output_ids)
+    _assert_conditions(plan, stages, tasks, stage_ids, task_ids, output_ids)
 
     print(
         "OK: CM-Golden caseplan deterministically matches SDD dataflow "

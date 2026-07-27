@@ -1,11 +1,19 @@
-"""Deterministic naming guards for Phase-0/Phase-1 case authoring."""
+"""Deterministic guards for Phase-0/Phase-1 case authoring."""
 
 import os
+import subprocess
 import sys
+import tempfile
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from sdd_check import _colon_issues, _sdd_frontend_issues, _tasks_frontend_issues  # noqa: E402
+from sdd_check import (  # noqa: E402
+    _colon_issues,
+    _return_to_origin_pairing_issue,
+    _sdd_frontend_issues,
+    _tasks_frontend_issues,
+)
 
 
 def test_stage_label_colon_is_rejected_but_heading_separator_is_allowed():
@@ -46,6 +54,84 @@ def test_sdd_sla_duration_bounds_are_checked():
     issues = _sdd_frontend_issues(text)
     assert any("count must be positive" in issue for issue in issues)
     assert any("minute count" in issue for issue in issues)
+
+
+def test_return_to_origin_requires_canonical_completion_pairing():
+    text = """
+## Case Variables
+| Name | Category | Type | Source Trigger | Source Field | Default | Description |
+|---|---|---|---|---|---|---|
+| caseId | In | String | Manual | caseId | — | Case identifier |
+
+### Secondary Stage: Escalation
+**Stage Kind:** secondary
+**Interrupting:** Yes
+
+#### Entry Conditions
+| WHEN | IF |
+|---|---|
+| selected-stage-exited("Review") | — |
+
+#### Exit Conditions
+| WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
+|---|---|---|---|---|
+| selected-tasks-completed("Notify") | — | return-to-origin | No | Return |
+
+### Case Exit Conditions
+| WHEN | IF | Marks Case Complete | Display Name |
+|---|---|---|---|
+| required-stages-completed | — | Yes | Complete |
+"""
+    checker = Path(__file__).with_name("sdd_check.py")
+    with tempfile.TemporaryDirectory() as workdir:
+        Path(workdir, "sdd.md").write_text(text, encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, str(checker)],
+            cwd=workdir,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    assert result.returncode != 0
+    assert (
+        "return-to-origin requires 'required-tasks-completed' or "
+        "'wait-for-connector' with Marks=Yes"
+        in result.stdout + result.stderr
+    )
+
+
+def test_return_to_origin_accepts_both_completing_triggers():
+    assert _return_to_origin_pairing_issue(
+        "required-tasks-completed", True, "Escalation"
+    ) is None
+    assert _return_to_origin_pairing_issue(
+        "wait-for-connector", True, "Escalation"
+    ) is None
+    assert _return_to_origin_pairing_issue(
+        "selected-tasks-completed", False, "Escalation"
+    )
+
+
+def test_stage_variable_sla_rules_are_checked():
+    text = """
+#### Stage SLA
+| 1 | m | 80% | Notify | Notify |
+##### Stage Variable SLA Rules
+| Expression | SLA | Unit | Display Name |
+|---|---|---|---|
+| - | 0 | d | - |
+| priority is Urgent | 10 | min | Urgent: SLA |
+| priority is Standard | 5 | d | Standard SLA |
+| priority is Escalated | 2 | w | Standard SLA |
+"""
+    issues = _sdd_frontend_issues(text)
+    assert any("conditional rule requires an expression" in issue for issue in issues)
+    assert any("count must be positive" in issue for issue in issues)
+    assert any("minute count" in issue for issue in issues)
+    assert any("SLA title is missing" in issue for issue in issues)
+    assert any("SLA title contains ':'" in issue for issue in issues)
+    assert any("duplicate SLA title 'Standard SLA'" in issue for issue in issues)
 
 
 def test_tasks_sla_validation_matches_frontend_contract():

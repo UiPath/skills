@@ -1,0 +1,49 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Information",
+      "Message": "OrderEntryAssistant execution started",
+      "TimeStamp": "2026-07-21T14:02:11.520Z",
+      "RobotName": "aturner",
+      "HostMachineName": "MOCK-HOST",
+      "ProcessName": "OrderEntryAssistant"
+    },
+    {
+      "Level": "Trace",
+      "Message": "Log assistant ready execution started",
+      "TimeStamp": "2026-07-21T14:02:12.040Z",
+      "RobotName": "aturner",
+      "ProcessName": "OrderEntryAssistant"
+    },
+    {
+      "Level": "Information",
+      "Message": "Order Entry Assistant ready",
+      "TimeStamp": "2026-07-21T14:02:12.120Z",
+      "RobotName": "aturner",
+      "HostMachineName": "MOCK-HOST",
+      "ProcessName": "OrderEntryAssistant"
+    },
+    {
+      "Level": "Trace",
+      "Message": "Run Local Triggers execution started",
+      "TimeStamp": "2026-07-21T14:02:12.900Z",
+      "RobotName": "aturner",
+      "ProcessName": "OrderEntryAssistant"
+    },
+    {
+      "Level": "Trace",
+      "Message": "Run Local Triggers execution ended (faulted)",
+      "TimeStamp": "2026-07-21T14:02:13.560Z",
+      "RobotName": "aturner",
+      "ProcessName": "OrderEntryAssistant"
+    }
+  ],
+  "Pagination": {
+    "Returned": 5,
+    "Limit": 100,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40",
+      "State": "Successful",
+      "ProcessName": "VendorOnboarding",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-07-16T23:10:02.140Z",
+      "EndTime": "2026-07-16T23:10:39.610Z",
+      "CreationTime": "2026-07-16T23:10:01.700Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

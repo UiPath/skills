@@ -15,9 +15,11 @@ run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  Can you export all of yesterday's organization-level Admin audit events
-  (memberships, license changes, tenant lifecycle) as JSON files for
-  compliance archival? Save them in a folder called audit-org-yesterday.
+  Can you export yesterday's full organization-level Admin audit trail as
+  JSON files for compliance archival? I want the whole day of org-scope
+  activity (memberships, license changes, tenant lifecycle, and everything
+  else at org level) — a straight export, not a category-filtered slice.
+  Save them in a folder called audit-org-yesterday.
 
 success_criteria:
   - type: command_executed
@@ -29,11 +31,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent's export targeted the requested ./audit-org-yesterday folder (json default; no .zip/.csv extension)"
+    description: "Agent delivered the export into the requested ./audit-org-yesterday folder — passed it as --output-path, or renamed the CLI-generated export folder to it (json default; no .zip/.csv extension)"
     tool_name: "Bash"
-    # Match the audit-org-yesterday folder path; the negative lookahead rejects a .zip/.csv
-    # file (the retired ZIP shape) so this confirms the json-folder default is used.
-    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b.*--output-path\s+\S*audit-org-yesterday(?![\w.])'
+    # The user named a destination folder. Two equally-valid ways honor it, and both count:
+    #   1) pass it straight to --output-path (the CLI nests an audit_<from>_<to>_<ts> subfolder inside), or
+    #   2) export to a base dir, then `mv` the generated audit_<from>_<to>_<ts> folder to the name
+    #      (flatter layout — the per-day json lands directly in audit-org-yesterday/).
+    # The negative lookahead rejects a .zip/.csv target (retired ZIP shape), confirming the json default.
+    command_pattern: '(?:uip\s+admin\s+audit\s+org\s+export\b.*--output-path\s+\S*audit-org-yesterday(?![\w.]))|(?:\bmv\b\s+\S+\s+\S*audit-org-yesterday(?![\w.]))'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
