@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "UserGet",
-  "_doc": "The DashboardSnapshotBot robot user. LoginToConsole=true, so the robot attaches to the machine's single physical console session instead of creating its own RDP session. Unattended, with no interactive logon at that console, there is no rendered desktop for the screenshot's CopyFromScreen to read. Setting Login to Console to false makes the robot open its own RDP session with a real desktop surface.",
   "Data": {
     "Key": "bb22cc33-dd44-ee55-ff66-778899aabbcc",
     "UserName": "svcmonitor",
