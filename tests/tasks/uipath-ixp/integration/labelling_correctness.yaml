@@ -18,7 +18,10 @@ sandbox:
   # ixp-tool, not the BYOS host's stale pre-migration plugin.
   driver: docker
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
+    - type: template_dir
+      path: ../_shared/live_calls_template
     - type: template_dir
       path: ../_shared/fixtures
 
@@ -51,51 +54,51 @@ initial_prompt: |
     missing, and save that response to `mark_missing_result.json`.
 
 success_criteria:
-  - type: command_executed
+  - type: file_matches_regex
     description: "Built the Line Items field group by hand"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+add\b(?=.*Line Items)'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+groups\s+add\b(?=.*Line Items)(?=.*--fields)(?=.*Description)(?=.*Amount)(?=.*Tax))[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Fetched predictions to resolve occurrences and field ids before mutating"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+get-predictions'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+get-predictions)[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Confirmed the first occurrence via --group + --occurrence 0"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+confirm\b(?=.*--group)(?=.*--occurrence(?:\s+|=)0\b)'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--group)(?=.*--occurrence(?:\s+|=)0\b))[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Batched confirm with --updates carrying a corrections entry across occurrences"
-    tool_name: "Bash"
-    command_pattern: '(?s)(?=.*(uip|\$UIP)\s+ixp\s+labellings\s+confirm\b)(?=.*--group)(?=.*--updates)(?=.*corrections)'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--group)(?=.*--updates)(?=.*corrections)(?=.*500\.00)(?=.*105\.42))[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Rolled back with unconfirm"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+unconfirm'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+unconfirm)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Marked a genuinely-absent field missing"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+mark-missing\b.*--fields'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+mark-missing\b(?=.*--fields\s+\S+))[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 

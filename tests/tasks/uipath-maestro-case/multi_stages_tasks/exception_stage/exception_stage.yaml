@@ -9,14 +9,14 @@ description: >
   via a return-to-origin condition, and carries a stage-level default
   SLA (2 hours) with a sla-breached escalation that notifies a
   UserGroup. Critical is reached via a second interrupting
-  selected-stage-exited entry on Process exit and exits via
-  return-to-origin. Both secondary stages are reached only via
-  interrupting entry conditions (edges retired). Exercises: secondary
-  stages (×2 — multi-exception flow), interrupting entry
-  (selected-stage-exited ×2), return-to-origin exit,
-  secondary-stage SLA, sla-breached escalation, UserGroup recipient
-  scope, a task embedded inside a secondary stage, and the
-  wait-for-timer plugin's timeDate branch.
+  selected-stage-exited entry on Process exit and exits as a terminal
+  secondary lane via exit-only plus a root case-exit row. Both secondary
+  stages are reached only via interrupting entry conditions (edges
+  retired). Exercises: secondary stages (×2 — multi-exception flow),
+  interrupting entry (selected-stage-exited ×2), return-to-origin exit,
+  terminal exit-only secondary stage, secondary-stage SLA, sla-breached
+  escalation, UserGroup recipient scope, a task embedded inside a
+  secondary stage, and the wait-for-timer plugin's timeDate branch.
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:exception-stage, feature:multi-exception, feature:conditions, feature:sla, feature:escalation, feature:wait-for-timer]
 max_iterations: 1
 
@@ -36,7 +36,7 @@ initial_prompt: |
 
   **Case Definition Blueprint** · Generic — Secondary Stage Coverage
 
-  One regular Process stage plus TWO secondary stages (Issues, Critical) reached only via interrupting entry conditions and exiting via return-to-origin (edges retired — reachability is condition-driven). Exercises multi-exception flow, interrupting entry (selected-stage-exited ×2 on Process exit), return-to-origin exit, secondary-stage SLA with sla-breached escalation, UserGroup recipient scope, a task embedded inside a secondary stage, and the wait-for-timer plugin's timeDate branch.
+  One regular Process stage plus TWO secondary stages (Issues, Critical) reached only via interrupting entry conditions. Issues returns to the origin; Critical is terminal and exits the case. Exercises multi-exception flow, interrupting entry (selected-stage-exited ×2 on Process exit), return-to-origin exit, terminal exit-only secondary stage, secondary-stage SLA with sla-breached escalation, UserGroup recipient scope, a task embedded inside a secondary stage, and the wait-for-timer plugin's timeDate branch.
 
   Prepared date: 2026-05-19
 
@@ -46,7 +46,7 @@ initial_prompt: |
   | Property | Value |
   |---|---|
   | Case Name | ExceptionStage |
-  | Case Description | One regular Process stage plus two secondary stages (Issues, Critical) reached only via interrupting entry conditions and exiting via return-to-origin. |
+  | Case Description | One regular Process stage plus two secondary stages (Issues returns to origin; Critical exits the case). |
   | Case Identifier | Prefix: ES, Type: constant |
   | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
@@ -70,7 +70,7 @@ initial_prompt: |
   ### 1.4a Case Exit Conditions
   | WHEN | IF | THEN | Marks Case Complete |
   |---|---|---|---|
-  | No case-exit hand-off declared. | - | - | No |
+  | selected-stage-completed ("Critical closed") | selected-stage: Critical | Case exits as critical failure | No |
 
   ### 1.5 Case Variables
   | Variable | Category | Type | Default | Description |
@@ -163,7 +163,7 @@ initial_prompt: |
   ### Stage 3: Critical (`critical`)
   **Type:** Stage
   **Stage Kind:** secondary
-  **Description:** Handles a hard fault that occurs while Process is active. Reached via an interrupting selected-stage-exited entry condition only (edges retired).
+  **Description:** Handles a hard fault that occurs while Process is active. Reached via an interrupting selected-stage-exited entry condition only (edges retired) and exits the case without returning to Process.
   **Required for Case Completion:** No
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
@@ -172,11 +172,11 @@ initial_prompt: |
   #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
   |---|---|---|---|
-  | required-tasks-completed | - | return-to-origin | Yes |
+  | required-tasks-completed | - | exit-only | Yes |
   #### Stage Exit Conditions
   | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
   |---|---|---|---|---|
-  | required-tasks-completed | - | return-to-origin | (origin) | Yes |
+  | required-tasks-completed | - | exit-only | - | Yes |
   #### Tasks
   | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
   |---|---------|-----------|------|----------|---------------|---------|-----|
@@ -217,7 +217,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Process is a regular Stage with an explicit exit-only exit condition (required-tasks-completed, marks stage complete); two secondary stages (Issues + Critical) reached via interrupting entries (edges retired); Issues carries interrupting selected-stage-exited entry + return-to-origin exit + 2h stage SLA with sla-breached UserGroup escalation + a wait-for-timer task using timeDate (specific datetime 2026-05-01) with current-stage-entered task-entry; Critical carries a second interrupting selected-stage-exited entry (on Process exit) + return-to-origin exit"
+    description: "Process is a regular Stage with an explicit exit-only exit condition (required-tasks-completed, marks stage complete); two secondary stages (Issues + Critical) reached via interrupting entries (edges retired); Issues carries interrupting selected-stage-exited entry + return-to-origin exit + 2h stage SLA with sla-breached UserGroup escalation + a wait-for-timer task using timeDate (specific datetime 2026-05-01) with current-stage-entered task-entry; Critical carries a second interrupting selected-stage-exited entry (on Process exit) + terminal exit-only exit plus a root case-exit row"
     command: "python3 $TASK_DIR/check_exception_stage.py"
     timeout: 720
     expected_exit_code: 0

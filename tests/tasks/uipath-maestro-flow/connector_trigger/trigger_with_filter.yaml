@@ -8,22 +8,24 @@ run_limits:
   expected_turns: 7
 
 initial_prompt: |
-  You are authoring a UiPath Flow that is triggered by an Outlook email with subject containing "good day" and sent from
+  You are authoring a UiPath Flow triggered by an Outlook email whose subject contains "good day" and sent from
   abc@xyz.com.
-  Do NOT run any command that requires a live connection — this sandbox has no UiPath
-  tenant. so you can't configure the trigger against a live connection. Instead, capture to trigger_detail.json the configuration 
-  you'd apply for an Outlook trigger that fires on emails whose subject contains 'good day' from abc@xyz.com — include the 
-  connection/folder/event-mode placeholders and the subject filter, in whatever shape the connector trigger actually expects.
+  Do NOT run any command that requires a live connection — this sandbox has no UiPath tenant, so you cannot configure
+  the trigger against a live connection.
+  Instead, write to `trigger_detail.json` the exact JSON object you would pass to
+  `uip maestro flow node configure <flow> <triggerId> --detail '<JSON>'` to configure that trigger.
+  Use placeholders for any connection/folder/event ids you cannot resolve offline.
 
 
 success_criteria:
-  # `check_trigger_filter.py` resolves trigger_detail.json recursively (root or
-  # nested in the flow project dir) and asserts: valid JSON, no top-level
-  # filterExpression (MST-8802 guard), a structured filter tree with numeric
-  # groupOperator + non-empty filters array, and at least one leaf referencing
-  # `subject` with the PascalCase `Contains` operator.
+  # `check_trigger_filter.py` locates trigger_detail.json (root or nested in the
+  # flow project dir) and asserts it is the --detail object: valid JSON, no
+  # top-level filterExpression (MST-8802 guard), and a `filter` tree as a
+  # TOP-LEVEL key (numeric groupOperator + non-empty filters) with at least one
+  # leaf referencing `subject` via the PascalCase `Contains` operator. A filter
+  # wrapped under detail/inputs fails — that is not the --detail object.
   - type: run_command
-    description: "trigger_detail.json (found anywhere under the solution) carries a structured filter tree on `subject` Contains, with no top-level filterExpression"
+    description: "trigger_detail.json is the --detail object with a top-level `filter` tree on `subject` Contains, no top-level filterExpression"
     command: "python3 $TASK_DIR/check_trigger_filter.py"
     timeout: 10
     expected_exit_code: 0

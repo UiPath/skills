@@ -44,8 +44,7 @@ initial_prompt: |
   Some of my PolicyRenewalWorker jobs fault the instant they start
   during our busy morning window (roughly 09:00–09:30), but other
   jobs on the same machine run fine at the exact same time. Nothing
-  changed in the process. The project source is in the current
-  working directory and the process runs in the ClaimsProcessing
+  changed in the process. The process runs in the ClaimsProcessing
   folder. Can you find out why the failing runs die at startup?
 
 success_criteria:
@@ -90,9 +89,10 @@ simulation:
     constraints. Approve every scope expansion or clarification the
     agent requests so the investigation reaches the final resolution.
   constraints:
+    - "If the agent asks where the project source code / project directory / XAML files are, answer with the current working directory: respond exactly `.` (a single dot) — the project files for this scenario are staged into the sandbox cwd by the test harness."
     - "If the agent asks whether to expand investigation scope (orchestrator, machines, robots, licensing, system), always answer Yes — pick the recommended / first / affirmative option."
-    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
-    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered. EXCEPTION: if the missing data is the project source code path, fall back to the rule above (`.` / current working directory)."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report. EXCEPTION: the project source code path IS a real fact about your test setup; you may share it when asked (`.`)."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
   max_turns: 6

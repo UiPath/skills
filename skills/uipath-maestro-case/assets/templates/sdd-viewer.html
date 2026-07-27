@@ -369,7 +369,7 @@
     }
     .schema-name { display: none; }
 
-    /* warning banner (lightweight-override) */
+    /* warning banner */
     .banner-warn {
       background: var(--warn-bg);
       border: 1px solid var(--warn-border);
@@ -630,7 +630,7 @@
       const mount = $("#banner-mount");
       mount.innerHTML = "";
       if (data.warningHeader) {
-        mount.appendChild(el("div", { class: "banner-warn", html: "<strong>⚠ Generated lightweight.</strong> " + escapeHtml(data.warningHeader) }));
+        mount.appendChild(el("div", { class: "banner-warn", html: "<strong>⚠ </strong>" + escapeHtml(data.warningHeader) }));
       }
     }
 
