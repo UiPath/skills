@@ -20,8 +20,21 @@ def fail(message: str) -> None:
     sys.exit(f"FAIL: {message}")
 
 
+# Directory components that never hold the graded project's BPMN. Agents that
+# copy the skill's bundled validator into the output tree (a common read-only
+# fallback) drag ~60 fixture .bpmn files under `validator/`; without this
+# filter discovery finds all of them and grading aborts on "multiple BPMN
+# files found". `node_modules`/`.venv`/`.git` are always vendored.
+_EXCLUDED_DIR_COMPONENTS = {"node_modules", ".venv", "venv", ".git", "validator"}
+
+
+def _is_excluded(path: str) -> bool:
+    components = re.split(r"[\\/]", path)
+    return bool(_EXCLUDED_DIR_COMPONENTS.intersection(components))
+
+
 def find_bpmn_file(name_hint: str | None = None) -> str:
-    paths = sorted(glob.glob("**/*.bpmn", recursive=True))
+    paths = sorted(p for p in glob.glob("**/*.bpmn", recursive=True) if not _is_excluded(p))
     if not paths:
         fail("no BPMN file found")
     if name_hint:
