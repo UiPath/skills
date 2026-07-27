@@ -6,7 +6,7 @@ This is a powerful complement to `validate` (static validation). While `validate
 
 ## Studio Desktop vs headless
 
-Most debugging works on **headless Studio** with no Studio Desktop install: `run`, `debug start` (including **activity-targeted breakpoints via `--breakpoints`**), all stepping verbs (`debug step-over`, `debug step-into`, `debug step-out`), `debug continue`, `debug break`, `debug resume`, `debug continue-retry`, `debug continue-ignore`, `debug state`, `debug set-breakpoints`, `execution cancel`, `debug restart-from-top`.
+Most debugging works on **headless Studio** with no Studio Desktop install: `run`, `debug start` (including **activity-targeted breakpoints via `--breakpoints`**), all stepping verbs (`debug step-over`, `debug step-into`, `debug step-out`), `debug continue`, `debug break`, `debug resume`, `debug continue-retry`, `debug continue-ignore`, `debug state`, `debug set-breakpoints`, `debug apply-file-changes`, `execution cancel`, `debug restart-from-top`.
 
 On the headless backend, every debug command **returns at the next stable state** — paused at an activity, suspended on an exception, or completed — carrying `DebugState` / `DebugDetails` in the result, so you always learn where execution stands from the command's own response. See [The stable-state debug loop](#the-stable-state-debug-loop-headless).
 
@@ -40,7 +40,7 @@ uip rpa debug test-activity     [--input-arguments key=value]... [--input-variab
 uip rpa debug start-from-here   [--input-arguments key=value]... [--input-variables key=value]... [--log-level <level>] [--output json]
 ```
 
-The mid-session verbs (`break`, `continue`, `resume`, `continue-retry`, `continue-ignore`, `step-into`, `step-over`, `step-out`, `state`) operate on the active debug session and take only the optional `--wait-timeout-seconds`. `debug set-breakpoints` takes `--breakpoints`. `debug toggle-breakpoint` and `debug restart-from-top` take no parameters.
+The mid-session verbs (`break`, `continue`, `resume`, `continue-retry`, `continue-ignore`, `step-into`, `step-over`, `step-out`, `state`) operate on the active debug session and take only the optional `--wait-timeout-seconds`. `debug set-breakpoints` takes `--breakpoints`. `debug apply-file-changes` takes `--file-changes`. `debug toggle-breakpoint` and `debug restart-from-top` take no parameters.
 
 | Parameter | Description |
 |-----------|-------------|
@@ -48,6 +48,7 @@ The mid-session verbs (`break`, `continue`, `resume`, `continue-retry`, `continu
 | `--input-arguments` | Project-level input arguments as repeatable `key=value` pairs (`=` string, `:=` raw JSON; see [cli-reference.md § Passing structured inputs](cli-reference.md#passing-structured-inputs)). Only for `run`, `debug start`, `debug test-activity`, and `debug start-from-here` (see [Input Variables vs Input Arguments](#input-variables-vs-input-arguments)) |
 | `--input-variables` | Workflow-level variable values as repeatable `key=value` pairs (values are VB/C# expressions — always `=`). Only for `debug test-activity` and `debug start-from-here` (see [Input Variables vs Input Arguments](#input-variables-vs-input-arguments)) |
 | `--breakpoints` | Activity breakpoints for XAML debugging (headless backend). One array item per flag occurrence, comma-separated `key=value` inside an item: `--breakpoints 'workflowFile=Main.xaml,activityIdRef=Assign_1'`. Keys: `workflowFile` (required; workflow path relative to the project root), `activityIdRef` (the target activity's `sap2010:WorkflowViewState.IdRef` attribute value from the XAML — the stable way to address an activity you can read straight from the file), optional `condition` (VB/C# expression; breaks only when it evaluates to True), `hitCount:=N` (break only on exactly the Nth hit), `enabled` (defaults to true). Whole payload from a file: `--breakpoints-file breakpoints.json`. Used by `debug start` (initial set) and `debug set-breakpoints` (replaces the running session's whole set) |
+| `--file-changes` | On-disk activity-property edits to reconcile into the paused session. One array item per flag occurrence, comma-separated `key=value` inside an item: `--file-changes 'workflowFile=Main.xaml,activityIdRef=Click_2,propertyName=Target'`. Keys: `workflowFile` (required; workflow path relative to the project root), `activityIdRef` (the target activity's `sap2010:WorkflowViewState.IdRef`), `propertyName` (the edited property as named in the XAML). Whole payload from a file: `--file-changes-file changes.json`. Only for `debug apply-file-changes` — see [In-Run Fix and Retry](in-run-fix-retry-guide.md) |
 | `--wait-timeout-seconds` | Maximum seconds a mid-session verb waits for the next stable state before returning `DebugState: "Running"` instead of hanging. Default 120 (0 for `debug state`, making it an instant probe). Headless backend only |
 | `--log-level` | Minimum log level: `Verbose`, `Trace` (default), `Information`, `Warning`, `Error`, `Critical` |
 | `--skip-build` | Skip the pre-run build step (use only when you've just built) |
@@ -73,6 +74,7 @@ The mid-session verbs (`break`, `continue`, `resume`, `continue-retry`, `continu
 | `debug resume` | Resume from suspended state | Resumes execution when the workflow is in a suspended (not just paused) state |
 | `debug continue-retry` | Retry after exception | Resumes execution and **retries the current activity** that caused the exception. Use when you've fixed the underlying issue (e.g., network timeout) and want to try again |
 | `debug continue-ignore` | Skip past exception | Resumes execution and **ignores the exception** on the current activity, pausing at the next activity. Use when the error is non-critical and you want to proceed |
+| `debug apply-file-changes` | Fix the workflow without restarting | Reconciles your on-disk activity-property edits into the **paused** session via hot-reload, so the current execution picks them up. Edit the file, name what you changed with `--file-changes`, then resume: `continue-retry` re-runs a faulted activity with the fix, plain `continue` suffices at a breakpoint. Returns `applied` / `rejected` / `debugState`. See [In-Run Fix and Retry](in-run-fix-retry-guide.md) |
 | `execution cancel` | End the session | Cancels the currently active execution — works for both `run` and `debug start` |
 | `debug restart-from-top` | Start over | Restarts execution from the beginning of the workflow without ending the debug session. Breakpoints are preserved |
 
@@ -86,8 +88,8 @@ On the headless backend, debugging is a synchronous request/response loop: **eve
 
 | `DebugState` | Meaning | What to do next |
 |---|---|---|
-| `Paused` | Stopped at a breakpoint or after a step/break. `DebugDetails` carries the current activity (name, id, workflow file) and a snapshot of in-scope variables, arguments, and properties | Inspect `DebugDetails`, then `step-over` / `step-into` / `step-out` / `continue`, or `execution cancel` |
-| `Suspended` | Stopped on an unhandled exception; the session is still alive. `DebugDetails` carries the exception type, message, faulting activity, and locals | `continue` to propagate the exception, `continue-retry` to re-run the faulted activity, `continue-ignore` to skip it, or `execution cancel` |
+| `Paused` | Stopped at a breakpoint or after a step/break. `DebugDetails` carries the current activity (name, id, workflow file) and a snapshot of in-scope variables, arguments, and properties | Inspect `DebugDetails`, then `step-over` / `step-into` / `step-out` / `continue`, or `execution cancel`. The activity has not run yet — if it looks misconfigured, fix the file and `debug apply-file-changes` before continuing ([In-Run Fix and Retry](in-run-fix-retry-guide.md)) |
+| `Suspended` | Stopped on an unhandled exception; the session is still alive. `DebugDetails` carries the exception type, message, faulting activity, and locals | Fix the cause on disk and `debug apply-file-changes`, then `continue-retry` to re-run the faulted activity with the fix ([In-Run Fix and Retry](in-run-fix-retry-guide.md)) — or `continue-retry` alone for a transient fault, `continue-ignore` to skip it, `continue` to propagate the exception, `execution cancel` to give up |
 | `Completed` | The run finished. The response is the normal run result (`Output`, `HasErrors`, `ErrorMessage`) | Read the run result; the session is gone |
 | `Running` | The wait timed out before a stable state was reached — execution is still going | Poll with `debug state`, send `debug break` to pause at the next activity, or `execution cancel` |
 | `None` | No debug session is active | Start one with `debug start` |
@@ -333,16 +335,24 @@ uip rpa debug start --file-path "MyWorkflow.xaml" --output json
 # - errorMessage carries the guidance on which commands apply
 
 # Then choose how to proceed:
-# Option A: Retry the failed activity (e.g., transient network error)
+# Option A: Fix the root cause and retry — WITHOUT restarting the session.
+#   The app is still in the state that reached the failure; restarting throws that away.
+#   Edit the workflow file, name the edit, then retry. See in-run-fix-retry-guide.md.
+uip rpa debug apply-file-changes \
+  --file-changes 'workflowFile=MyWorkflow.xaml,activityIdRef=Click_2,propertyName=Target' --output json
 uip rpa debug continue-retry --output json
 
-# Option B: Ignore the exception and continue past it (pauses at the next activity)
+# Option B: Retry as-is, for a genuinely transient fault (e.g., network timeout)
+uip rpa debug continue-retry --output json
+
+# Option C: Ignore the exception and continue past it (pauses at the next activity)
 uip rpa debug continue-ignore --output json
 
-# Option C: Propagate the exception (the run fails; response is Completed with hasErrors: true)
+# Option D: Propagate the exception (the run fails; response is Completed with hasErrors: true)
 uip rpa debug continue --output json
 
-# Option D: Cancel and fix the root cause
+# Option E: Cancel — the last resort, for a structural fix the session cannot absorb
+#   (adding/removing activities, new variables). Option A handles property-level fixes in place.
 uip rpa execution cancel --output json
 ```
 

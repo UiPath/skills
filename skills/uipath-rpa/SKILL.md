@@ -327,6 +327,7 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 | **Inspect Integration Service trigger lifecycle** (webhook vs. polling, filter fields, webhook URL retrieval) | Both | [trigger-pattern-guide.md § Connection Handling](references/trigger-pattern-guide.md) and [§ Server-Side Filtering](references/trigger-pattern-guide.md) |
 | **Read or edit an existing `ui:TriggerScope` workflow** | XAML | [trigger-pattern-guide.md § Reading and Editing Existing TriggerScope XAML](references/trigger-pattern-guide.md) |
 | **Build/run/validate** | Both | [cli-reference.md](references/cli-reference.md) → [validation-guide.md](references/validation-guide.md) |
+| **Fix a workflow that is paused or suspended in a debug session** (broken selector, wrong expression, misconfigured property) | Both | [in-run-fix-retry-guide.md](references/in-run-fix-retry-guide.md) — edit the file, `debug apply-file-changes`, retry. Do NOT restart the session first: it discards the application state that reached the failure |
 | **Profile a slow workflow / verify UI automation correctness** | Both | [debugging.md § Profiling Workflow Performance](references/debugging.md) |
 | **Pack & publish project to Orchestrator** | Both | [publishing-guide.md](references/publishing-guide.md) |
 | **List project best-practice / analyzer rules** | Both | [cli-reference.md § analyzer-rules list](references/cli-reference.md) |

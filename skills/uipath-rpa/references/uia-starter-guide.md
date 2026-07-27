@@ -50,7 +50,16 @@ When a workflow fails at runtime with a selector error:
 2. **Identify the failing element** -- read the error to find which descriptor/element failed.
 3. **Read the window selector** -- from the Object Repository files, find the screen's selector that scopes the failing element.
 4. **Run the `uia-improve-selector` skill in recover mode.** Read the package's improve-selector guide (routed from the package guide § Documentation), pick the appropriate invocation form for this context, run the staging CLI command from that form, spawn a subagent with the Agent tool to run the skill in recover mode against the staged folder, then run the write-back CLI command from the same form to persist the recovered selector.
-5. **Clean up and re-run** -- follow the procedure above (stop, diff, close leaked windows, re-run).
+5. **Apply the fix to the paused session and retry** -- do NOT restart: point 1 is only true while the session lives, and a restart throws that app state away.
+
+   ```bash
+   uip rpa debug apply-file-changes \
+     --file-changes 'workflowFile=Main.xaml,activityIdRef=<FAILING_ACTIVITY_IDREF>,propertyName=Target' --output json
+   uip rpa debug continue-retry --output json
+   ```
+
+   `applied` non-empty and `rejected` empty means the recovered selector is live in the session and the retry re-runs the activity with it. See [in-run-fix-retry-guide.md](in-run-fix-retry-guide.md).
+6. **Only if the fix was rejected** (structural change, or no session left) -- clean up and re-run: follow the procedure above (stop, diff, close leaked windows, re-run).
 
 Repeat until the workflow completes successfully. Each failure advances the app to the next problematic state, making recovery self-correcting.
 
