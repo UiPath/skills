@@ -24,6 +24,33 @@ Like the recommend capability, this is **live-catalog driven** — the catalog's
 `use_cases`, `security_risk_addressed`, `when_not_to_use`, `security_category`, `examples[].config`) drive every
 decision. Do not hardcode which guardrail fits which agent.
 
+## Conclusive existing-guardrail fast path — completed report checkpoint
+
+When a format-valid existing guardrail and the source it selects conclusively match a catalog
+`when_not_to_use` clause, use this bounded sequence **before** general manual review:
+
+1. run `uip agent review` and retain its deterministic findings and `Data.Grade`;
+2. read the existing guardrail's exact source path, `id`, `name`, `validatorType`, action, scopes, and
+   `matchNames`, plus only the source or resource selected by that guardrail;
+3. fetch the catalog and tenant validator list once, as specified in Step 0;
+4. compare the configured action and scope with the catalog's exact `when_not_to_use` clause and relevant
+   `examples[].config`; and
+5. when the clause directly matches the selected source, establish `LC_GUARDRAIL_ACTION_INEFFECTIVE` and
+   immediately save the requested report.
+
+The saved report is a completed checkpoint, not working notes. It must include the retained CLI findings, the
+letter-grade derivation, and the Audit Mode finding with the exact guardrail source path and identifiers, selected
+resource path and identifiers, matched catalog clause, configured scope/action, and catalog-supported fix. If the
+user explicitly requested additional exhaustive review, save this checkpoint first and update the same report
+after that work completes. Otherwise, return the report and end the current review turn. Do not delay the checkpoint
+for solution packing, eval inspection, repeated validation or catalog calls, general architecture analysis, or
+unrelated project introspection.
+
+This fast path requires a direct source-to-catalog contradiction, not a plausible concern. Canonical example:
+`pii_detection` uses `Block` or `Filter` at `Tool` scope, `matchNames` selects `SendCustomerEmail`, and that tool's
+input schema requires `recipient_email`; the catalog says that action breaks a tool that requires PII to function.
+If the selected input is optional or the catalog clause does not directly match, continue normal Audit Mode instead.
+
 ## Missing-guardrail fast path — completed deliverable
 
 When the source clearly matches a missing-guardrail use case and `guardrails[]` is absent or lacks the matching
