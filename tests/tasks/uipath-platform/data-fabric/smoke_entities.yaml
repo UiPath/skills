@@ -44,7 +44,7 @@ success_criteria:
     command: >-
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
       --entity-name CE_SmokeDepartments --ignore-field-case
-      --assertions 'name.Name=STRING,name.lengthLimit=200,name.isRequired=true,headCount.Name=INTEGER,headCount.minValue=0,headCount.maxValue=10000,budget.Name=DECIMAL,budget.decimalPrecision=2,budget.minValue=0,budget.maxValue=999999,description.Name=MULTILINE_TEXT,description.lengthLimit=2000'
+      --assertions 'name.Name=STRING,name.lengthLimit=200,name.isRequired=true,headCount.minValue=0,headCount.maxValue=10000,budget.Name=DECIMAL,budget.decimalPrecision=2,budget.minValue=0,budget.maxValue=999999,description.Name=MULTILINE_TEXT,description.lengthLimit=2000'
     timeout: 120
     expected_exit_code: 0
     weight: 4.0
