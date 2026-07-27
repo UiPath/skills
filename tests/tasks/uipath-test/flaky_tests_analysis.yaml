@@ -9,6 +9,13 @@ description: >
   --output json. The
   skill — not the prompt — must teach the multi-execution analysis pattern
   and the --output json flag.
+  Fixture dependency: CLAIM's 'UAT Smoke Suite' (CLAIM:23) must hold >=3
+  FINISHED executions with intermittent per-testcase results. Seeded
+  2026-07-27 via `uip tm testsets run --execution-type manual` + `uip tm
+  testcaselog finish --result Passed|Failed --has-error <bool>
+  --executed-by <email>` per testcase (CLAIM:13 and CLAIM:19 flip results
+  across runs). If executions list --status finished returns <3, re-seed
+  the same way.
 tags: [uipath-test, integration, mode:operate, lifecycle:triage, feature:execution]
 
 run_limits:
@@ -24,7 +31,7 @@ success_criteria:
   - type: command_executed
     description: "Agent checked login status"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
+    command_pattern: '(uip|\$UIP)\s+login\s+status'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -32,7 +39,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed executions for a test set with --test-set-id"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions?\s+list\s+.*--test-set-id'
+    command_pattern: '(uip|\$UIP)\s+tm\s+executions?\s+list\s+.*--test-set-id'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -40,7 +47,7 @@ success_criteria:
   - type: command_executed
     description: "Agent retrieved testcase logs for at least one execution (--execution-id)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+(executions?\s+testcaselogs\s+list|execution\s+list-testcaselogs)\s+.*--execution-id'
+    command_pattern: '(uip|\$UIP)\s+tm\s+(executions?\s+testcaselogs\s+list|execution\s+list-testcaselogs)\s+.*--execution-id'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -48,7 +55,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched assertions for a failing testcase log (--test-case-log-id)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcaselog\s+list-assertions\s+.*--test-case-log-id'
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcaselog\s+list-assertions\s+.*--test-case-log-id'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
