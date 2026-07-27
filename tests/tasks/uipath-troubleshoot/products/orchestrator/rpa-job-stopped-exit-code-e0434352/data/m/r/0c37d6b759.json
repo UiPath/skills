@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobLogs",
-  "_doc": "Error logs for the failing job. The executor logs surface only the raw exit code 0xE0434352 because the exception escaped to the process boundary with no top-level handler. The real exception is captured in the execution traces, not here.",
   "Data": [
     {
       "Level": "Error",
@@ -11,7 +10,7 @@
     {
       "Level": "Error",
       "TimeStamp": "2026-06-22T06:00:39.700Z",
-      "Message": "[Robot] Executor process exited with code 0xE0434352 (CLR unhandled managed exception). No top-level handler caught it, so only the process exit code is logged here. Inspect execution traces for the managed exception detail."
+      "Message": "[Robot] Executor process exited with code 0xE0434352 (CLR unhandled managed exception). Inspect execution traces for the managed exception detail."
     }
   ]
 }

@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobTraces",
-  "_doc": "Execution traces for the failing job. These carry the REAL managed exception that the raw exit code 0xE0434352 hides: an unhandled System.Collections.Generic.KeyNotFoundException thrown at the 'Lookup region total' Assign while indexing a Dictionary with a key that was not present. No top-level Try/Catch caught it, so it escaped to the process boundary and collapsed to the CLR exit code. This is the payoff of the generic-exit-code playbook — recover the real exception from traces, do not stop at the code.",
   "Data": [
     {
       "Activity": "Main Sequence",
