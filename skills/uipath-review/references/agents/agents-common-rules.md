@@ -21,7 +21,7 @@ Companion files:
 
 - **Coded** — Read `entry-points.json` if present; else `uipath.json` → `.entryPoints[0].input` / `.entryPoints[0].output`. The finding's `file` points to whichever source was read.
 - **Low-code normalized** — Read the normalized JSON. Use `.input_schema` and `.output_schema`.
-- **Low-code agent-builder** — Read `entry-points.json`. Use `.entryPoints[0].input` and `.entryPoints[0].output`.
+- **Low-code agent-builder** — Read `agent.json`. Use `.inputSchema` and `.outputSchema`.
 
 Assess input and output schema independently — emit a separate finding per schema when each is weak.
 

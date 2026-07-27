@@ -17,7 +17,7 @@ Low-code agents exist in two layouts. Detect first, then apply the right `Read` 
 | Layout | Identifier | Key files |
 |---|---|---|
 | **Normalized** | A single JSON file with snake_case top-level keys (`system_prompt`, `tools`, `datasets`, `input_schema`, `output_schema`, `user_prompt`) | The single JSON file |
-| **Agent-builder** | `agent.json` at project root with camelCase keys + sibling `entry-points.json`, `project.uiproj`, `resources/<Name>/resource.json` | `agent.json`, `entry-points.json`, `resources/*/resource.json`, `evals/eval-sets/*.json`, `evals/evaluators/*.json` |
+| **Agent-builder** | `agent.json` at project root with camelCase keys + sibling `project.uiproj` and `resources/<Name>/resource.json` | `agent.json`, `resources/*/resource.json`, `evals/eval-sets/*.json`, `evals/evaluators/*.json` |
 
 Rules tagged `(agent-builder only)` skip silently on the normalized layout; `(normalized only)` skip on agent-builder. Untagged rules apply to both with layout-aware `detection_method`.
 
