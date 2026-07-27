@@ -1,7 +1,7 @@
 {
   "Result": "Success",
   "Code": "JobGet",
-  "_doc": "Failing ReportCompiler job. Info shows ONLY the raw CLR exit code 0xE0434352 (a managed .NET exception escaped the process). This is the generic-exit-code playbook: the code is a symptom, not the cause. The real exception must be recovered from job traces (see jobs-traces). The robot version (see machines list) is old and hides the managed exception behind the OS code.",
+  "_doc": "Failing ReportCompiler job. Info shows ONLY the raw CLR exit code 0xE0434352 (a managed .NET exception escaped the process). This is the generic-exit-code playbook: the code is a symptom, not the cause. The real exception must be recovered from job traces (see jobs-traces) — it collapsed to the exit code because no top-level handler caught it before the process boundary.",
   "Data": {
     "Key": "aacc44ee-55ff-66aa-77bb-88cc99001122",
     "StartTime": "2026-06-22T06:00:02.500Z",

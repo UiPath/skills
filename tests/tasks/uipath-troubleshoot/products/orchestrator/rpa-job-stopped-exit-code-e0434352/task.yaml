@@ -9,12 +9,11 @@ description: >
   (System.Collections.Generic.KeyNotFoundException — "the given key
   'EMEA-NORTH' was not present in the dictionary" at the "Lookup
   region total" Assign, unhandled, escaping to the process
-  boundary). The fix is to guard the dictionary lookup, add
+  boundary). The fix is to guard the dictionary lookup and add
   top-level exception handling so the real error is logged instead
-  of collapsing to an OS code, and upgrade the old robot (23.4.0)
-  that reports raw codes. This is the job-stopped-generic-exit-code
-  playbook (0xE0434352 branch) — distinct from the 0x40010004
-  external-kill playbook.
+  of collapsing to an OS code; the robot version is not the cause.
+  This is the job-stopped-generic-exit-code playbook (0xE0434352
+  branch) — distinct from the 0x40010004 external-kill playbook.
 
 tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose, lifecycle:discover]
 

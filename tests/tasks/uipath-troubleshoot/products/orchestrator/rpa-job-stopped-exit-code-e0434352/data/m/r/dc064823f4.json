@@ -1,7 +1,7 @@
 {
   "Result": "Success",
   "Code": "MachineList",
-  "_doc": "Machine hosting the failing job. The robot version (23.4.0) is old — old robots report raw OS/CLR exit codes (0xE0434352) instead of translating them to the managed exception. Upgrading the robot makes the real .NET exception surface directly in the job Info/logs.",
+  "_doc": "Machine hosting the failing job. The robot version (23.4.0) is checked to rule out a known robot-build defect; it is NOT the cause of this fault. The 0xE0434352 exit code is produced by the unhandled managed exception itself — recover it from job traces, not by upgrading the robot.",
   "Data": [
     {
       "Key": "f0e1d2c3-b4a5-6978-8c9d-0e1f2a3b4c5d",

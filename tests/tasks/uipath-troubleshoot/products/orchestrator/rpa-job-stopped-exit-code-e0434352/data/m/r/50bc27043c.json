@@ -1,7 +1,7 @@
 {
   "Result": "Success",
   "Code": "JobList",
-  "_doc": "Faulted ReportCompiler job. The Info carries only the raw OS/CLR exit code 0xE0434352 (managed CLR unhandled exception). The real underlying exception is NOT in the job Info or the error logs — it must be recovered from job traces. The host robot is an old version that surfaces the raw code instead of the managed exception.",
+  "_doc": "Faulted ReportCompiler job. The Info carries only the raw OS/CLR exit code 0xE0434352 (managed CLR unhandled exception). The real underlying exception is NOT in the job Info or the error logs — it must be recovered from job traces, because the exception escaped to the process boundary with no top-level handler.",
   "Data": [
     {
       "Key": "aacc44ee-55ff-66aa-77bb-88cc99001122",

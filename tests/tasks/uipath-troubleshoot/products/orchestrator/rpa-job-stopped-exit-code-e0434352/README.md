@@ -17,10 +17,9 @@ The real cause is recoverable only from execution traces.
 `System.Collections.Generic.KeyNotFoundException` ("the given key
 'EMEA-NORTH' was not present in the dictionary") at the "Lookup
 region total" Assign. With no top-level Try/Catch or Global
-Exception Handler, it reached the process boundary. The host robot
-(`23.4.0`) is an old build that reports the raw OS/CLR code instead
-of the managed exception — so the job Info and logs show only
-`0xE0434352`, and the real error lives in `uip or jobs traces`.
+Exception Handler, it reached the process boundary — so the job Info
+and error logs carry only the raw OS/CLR code `0xE0434352`, and the
+real error lives in `uip or jobs traces`.
 
 Maps to:
 `references/products/orchestrator/playbooks/job-stopped-generic-exit-code.md`
@@ -33,7 +32,7 @@ Maps to:
 |---|---|
 | `m/uip` + `m/uip.cmd` | shared from `../../../_shared/mock_template/` |
 | `process/` | minimal unattended UiPath project (LogMessage + Delay) |
-| `data/m/r/*.json` | **synthetic** canned `uip` responses (jobs get/list/logs, **jobs traces** carrying the real exception, machines list with old robot version) |
+| `data/m/r/*.json` | **synthetic** canned `uip` responses (jobs get/list/logs, **jobs traces** carrying the real exception, machines list) |
 | `data/m/r/manifest.json` | dispatch table mapping each command to its fixture |
 
 > Fixtures are authored from the playbook signature, not captured
@@ -57,6 +56,5 @@ Scores the **conclusion**, not the trajectory:
 - Agent invoked the `uipath-troubleshoot` skill.
 - Agent did NOT stop at the raw code or merely suggest a rerun — it
   recovered the real `KeyNotFoundException` (missing dictionary key)
-  from traces, and recommended guarding the lookup, adding top-level
-  exception handling, and upgrading the old robot so codes surface
-  as managed exceptions.
+  from traces, and recommended guarding the lookup and adding
+  top-level exception handling (not blaming the robot version).
