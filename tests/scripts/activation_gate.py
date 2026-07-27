@@ -18,11 +18,14 @@ import tempfile
 from pathlib import Path
 
 # Rounded recall.yes baseline (in %) per skill, measured 2026-06-17 over each
-# skill's FULL positive set on claude-sonnet-4-6 via Bedrock — the same model
-# and full-set measurement the gate itself runs, so baseline and gate stay
-# directly comparable. Nearest 5%. The gate fails a skill whose recall.yes
-# drops more than DROP_PP below its baseline. Re-baseline by re-running the
-# full activation positives and updating the values here.
+# skill's FULL positive set on claude-sonnet-4-6 via Bedrock at max_turns: 1 —
+# the same model and full-set measurement the gate itself runs. The gate task
+# pins run_limits.max_turns: 1 (task layer overrides the experiment's 3 via
+# per-key field-merge) so baseline and gate stay directly comparable; at 3
+# turns engagement is a monotone union over the trajectory, recall could only
+# rise, and every baseline would become an easier floor. Nearest 5%. The gate
+# fails a skill whose recall.yes drops more than DROP_PP below its baseline.
+# Re-baseline (at max_turns: 1) after a fresh full activation run.
 BASELINES_PCT: dict[str, int] = {
     "uipath-automation-discovery": 100,
     "uipath-troubleshoot": 100,
@@ -77,6 +80,12 @@ sandbox:
 dataset:
   paths:
     - {dataset}
+
+# Baselines were measured at max_turns: 1 — pin it here (task layer wins the
+# per-key merge over the experiment's 3) so the gate measures the same thing.
+# stop_early stays armed from the experiment defaults, hence stop_when below.
+run_limits:
+  max_turns: 1
 
 initial_prompt: "${{row.prompt}}"
 
@@ -140,15 +149,28 @@ def main() -> int:
             return 2
 
         data = json.loads(suite_json.read_text(encoding="utf-8"))
-        recall = next(
-            (agg["metrics"]["recall.yes"]
+        metrics = next(
+            (agg["metrics"]
              for agg in data.get("criterion_aggregates", [])
              if agg.get("criterion_type") == "skill_triggered"),
             None,
         )
+        recall = metrics.get("recall.yes") if metrics else None
         if recall is None:
             print("ERROR: recall.yes missing in suite.json", file=sys.stderr)
             return 2
+
+        # A timed-out/errored row has no criterion result and is EXCLUDED from
+        # recall's denominator, not counted as a miss — recall alone can look
+        # fine on a partial run. Require every row to have been scored.
+        completion = metrics.get("completion_rate")
+        if completion is not None and completion < 1.0:
+            print(
+                f"::error::activation-gate {skill}: completion_rate "
+                f"{completion * 100:.1f}% < 100% — rows dropped from the "
+                f"denominator (timeout/error); recall.yes is not trustworthy"
+            )
+            return 1
 
         recall_pct = recall * 100
         if recall < threshold:

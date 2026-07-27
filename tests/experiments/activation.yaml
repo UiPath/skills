@@ -5,7 +5,8 @@ description: >
   classification (precision / recall / F1) per skill.
 
 defaults:
-  # Activation is a one-shot decision per prompt — short timeouts are fine.
+  # Activation is a short recognition decision per prompt — task_timeout is
+  # sized to the turn budget (3 turns x 120s turn_timeout), not to a work loop.
   run_limits:
     # Activation is a recognition decision, not a work loop. We give the agent a
     # small turn budget (3) rather than a hard 1-turn cap, then arm early-stop on
@@ -28,7 +29,11 @@ defaults:
     # then pay the full max_turns: 3 on every row; verdicts are unchanged).
     max_turns: 3
     stop_early: true
-    task_timeout: 120
+    # Scaled with max_turns: a row that legitimately uses all 3 turns (a true
+    # negative, or an unarmed codex/antigravity run) must have wall-clock room
+    # for them — a task_timeout below max_turns x turn_timeout silently drops
+    # the row from every criterion denominator instead of grading it.
+    task_timeout: 360
     turn_timeout: 120
 
   agent:
