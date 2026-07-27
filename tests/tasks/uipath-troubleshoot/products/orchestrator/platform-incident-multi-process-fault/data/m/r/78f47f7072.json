@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobGet",
-  "_doc": "One of the affected jobs (NightlyBilling, Billing folder). Info is an infrastructure error (503 from Orchestrator), not an automation-logic exception. Combined with the same class of error across four other unrelated processes in the same window, this points at a platform incident.",
   "Data": {
     "Key": "ddff7788-99aa-00bb-11cc-22dd33445566",
     "StartTime": "2026-06-26T08:12:03.100Z",
