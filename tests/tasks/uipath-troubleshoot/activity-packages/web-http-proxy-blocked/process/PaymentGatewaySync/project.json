@@ -1,0 +1,25 @@
+{
+  "name": "PaymentGatewaySync",
+  "description": "Process",
+  "main": "Wf_PostPayment.xaml",
+  "dependencies": {
+    "UiPath.System.Activities": "[26.2.6]",
+    "UiPath.WebAPI.Activities": "2.4.0"
+  },
+  "schemaVersion": "4.0",
+  "projectVersion": "1.0.2",
+  "expressionLanguage": "CSharp",
+  "targetFramework": "Windows",
+  "entryPoints": [
+    {
+      "filePath": "Wf_PostPayment.xaml",
+      "input": [],
+      "output": [],
+      "uniqueId": "22222222-2222-2222-2222-222222222222"
+    }
+  ],
+  "designOptions": {
+    "outputType": "Process",
+    "fileInfoCollection": []
+  }
+}
