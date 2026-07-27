@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-07-20T13:02:42.500Z",
+      "Message": "CrmContactUpload execution ended"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-20T13:02:42.300Z",
+      "Message": "HTTP Request: The remote server returned an error: (415) Unsupported Media Type.\r\nin Wf_CreateContact.xaml\r\n    at HttpClient \"HTTP Request\"\r\n    at Sequence \"Create CRM Contact\"\r\n    at Wf_CreateContact \"Wf_CreateContact\"\r\n\r\n--- .NET stack trace ---\r\nSystem.Net.WebException\r\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-07-20T13:02:41.400Z",
+      "Message": "CrmContactUpload execution started"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "Name": "CustomerOrderReport",
+  "ProjectType": "Process",
+  "Description": "Builds a customer-orders report by running a SELECT over the Customers and Orders tables via Execute Query into a DataTable.",
+  "MainFile": "Main.xaml"
+}

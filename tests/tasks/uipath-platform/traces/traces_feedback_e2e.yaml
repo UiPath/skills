@@ -1,10 +1,11 @@
 task_id: skill-platform-traces-feedback-e2e
 description: >
   E2E test: agent uses the uipath-platform skill to run a full feedback
-  round-trip against a real trace. Starts a job from $TRACES_SMOKE_PROCESS_KEY,
-  extracts FolderKey and TraceId from the job/spans output, creates positive
-  feedback on that trace, then fetches the feedback by ID and verifies the
-  round-trip. No hardcoded IDs — all values derived at runtime.
+  round-trip against a real trace. Starts a job from the persistent traces
+  fixture process, extracts FolderKey and TraceId from the job/spans output,
+  creates positive feedback on that trace, then fetches the feedback by ID and
+  verifies the round-trip. FolderKey and TraceId are still derived at runtime —
+  only the fixture process key is fixed.
 tags: [uipath-platform, e2e, mode:diagnose, lifecycle:discover, traces, feedback]
 
 agent:
@@ -15,7 +16,7 @@ run_limits:
 
 initial_prompt: |
   Run a feedback round-trip on a real trace:
-  - Start a job for process `$TRACES_SMOKE_PROCESS_KEY` and save the result to job.json
+  - Start a job for process `bf544b24-9133-41b5-9361-4f9f75c64467` and save the result to job.json
   - Fetch the LLM trace spans for that job and save to spans.json
   - Create positive feedback on the trace and save the response to feedback_create.json
   - Fetch the feedback record back by ID and save to feedback_get.json
