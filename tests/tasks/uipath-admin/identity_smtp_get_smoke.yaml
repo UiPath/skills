@@ -23,9 +23,17 @@ success_criteria:
       d = json.load(open('smtp.json', encoding='utf-8-sig'))
       res = d.get('Result') if isinstance(d, dict) else None
       assert res in (None, 'Success'), f'SMTP retrieval not successful: Result={res}'
-      data = d['Data'] if isinstance(d, dict) and 'Data' in d else d
-      assert isinstance(data, dict) and len(data) >= 1, f'expected an SMTP settings object; got {type(data).__name__}'
-      print(f'OK: SMTP settings retrieved; keys={list(data)[:10]}')
+      def keys(o):
+          if isinstance(o, dict):
+              for k, v in o.items():
+                  yield k
+                  yield from keys(v)
+          elif isinstance(o, list):
+              for v in o: yield from keys(v)
+      sig = ('fromaddress', 'fromdisplayname', 'host', 'port', 'enablessl', 'smtp')
+      found = [k for k in keys(d) if any(s in k.lower().replace('_', '') for s in sig)]
+      assert found, f'no SMTP settings fields found in response; keys seen={list(keys(d))[:15]}'
+      print(f'OK: SMTP settings retrieved (found {found[0]})')
       "
     timeout: 15
     expected_exit_code: 0
