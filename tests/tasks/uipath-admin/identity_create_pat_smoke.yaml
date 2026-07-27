@@ -19,7 +19,7 @@ run_limits:
 
 initial_prompt: |
   Create a personal access token described exactly as "ce-identity-smoke-pat"
-  for CI/CD, with read access to Folders and Jobs, expiring January 15, 2027.
+  for CI/CD, with read access to Folders and Jobs, expiring one year from today.
 
   Do NOT prompt the user for confirmation — this is an automated test.
 

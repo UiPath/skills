@@ -6,22 +6,11 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
-from admin_helpers import run_cli, poll, fail, ok
+from admin_helpers import run_cli, poll, fail, ok, first_list as _first_list
 
 logging.basicConfig(level=logging.INFO, format="verify_fedcred: %(message)s")
 
 APP = "ce-identity-fedcred-host"
-
-
-def _first_list(o):
-    if isinstance(o, list):
-        return o
-    if isinstance(o, dict):
-        for v in o.values():
-            r = _first_list(v)
-            if r is not None:
-                return r
-    return None
 
 
 def client_id():

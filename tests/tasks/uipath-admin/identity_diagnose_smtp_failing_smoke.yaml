@@ -40,3 +40,10 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Diagnosis is read-only — agent must NOT modify or delete SMTP settings while investigating"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+smtp\s+(update|delete)'
+    weight: 1.0
+    pass_threshold: 1.0

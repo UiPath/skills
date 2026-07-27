@@ -4,6 +4,7 @@ PAT the agent will be asked to revoke. Records the created PAT id to a state fil
 so the verify step can prove the seed existed (and fail — not falsely pass — if
 it did not). Always exits 0 (best-effort seed)."""
 
+import datetime
 import logging
 import os
 import sys
@@ -38,9 +39,12 @@ def main():
                 if tid:
                     run_cli(["admin", "pat", "revoke", tid])
 
-    # Seed the PAT the agent will revoke.
+    # Seed the PAT the agent will revoke. Expiration is computed ~1 year out so
+    # the date never falls into the past (would fail create) and stays within any
+    # tenant PAT-lifetime cap.
+    expiration = (datetime.date.today() + datetime.timedelta(days=365)).isoformat()
     res = run_cli(["admin", "pat", "create", "--description", MARKER,
-                   "--scope", "OR.Folders.Read", "--expiration", "2027-01-15"])
+                   "--scope", "OR.Folders.Read", "--expiration", expiration])
     if not res or res.get("Result") != "Success":
         logger.warning("Seed PAT create failed (cap full of real PATs?): %s", res)
         return

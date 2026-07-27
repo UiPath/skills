@@ -16,23 +16,12 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
-from admin_helpers import run_cli, poll
+from admin_helpers import run_cli, poll, first_list as _first_list
 
 logging.basicConfig(level=logging.INFO, format="setup_fedcred_host: %(message)s")
 logger = logging.getLogger(__name__)
 
 HOST = "ce-identity-fedcred-host"
-
-
-def _first_list(o):
-    if isinstance(o, list):
-        return o
-    if isinstance(o, dict):
-        for v in o.values():
-            r = _first_list(v)
-            if r is not None:
-                return r
-    return None
 
 
 def find_host():

@@ -33,9 +33,10 @@ def main():
     tok = poll(find)
     if not tok:
         fail(f"no PAT with description '{MARKER}' found after retries — create may have failed")
-    if not tok.get("Scopes"):
+    scopes = tok.get("Scopes") or tok.get("scopes")
+    if not scopes:
         fail(f"PAT '{MARKER}' exists but carries no Scopes: {tok}")
-    ok(f"PAT '{MARKER}' created with scopes={tok.get('Scopes')} expiration={tok.get('Expiration')}")
+    ok(f"PAT '{MARKER}' created with scopes={scopes} expiration={tok.get('Expiration') or tok.get('expiration')}")
 
 
 main()

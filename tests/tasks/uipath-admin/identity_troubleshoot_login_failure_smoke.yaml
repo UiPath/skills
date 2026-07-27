@@ -53,3 +53,4 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b'
     weight: 2.0
+    pass_threshold: 1.0

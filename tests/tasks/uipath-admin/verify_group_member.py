@@ -6,7 +6,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
-from admin_helpers import run_cli, poll, fail, ok
+from admin_helpers import run_cli, poll, fail, ok, first_list as _first_list
 
 logging.basicConfig(level=logging.INFO, format="verify_group_member: %(message)s")
 
@@ -20,17 +20,6 @@ def find_group():
     for g in data.get("Data", []):
         if (g.get("Name") or g.get("name") or "") == GROUP:
             return g
-    return None
-
-
-def _first_list(o):
-    if isinstance(o, list):
-        return o
-    if isinstance(o, dict):
-        for v in o.values():
-            r = _first_list(v)
-            if r is not None:
-                return r
     return None
 
 
