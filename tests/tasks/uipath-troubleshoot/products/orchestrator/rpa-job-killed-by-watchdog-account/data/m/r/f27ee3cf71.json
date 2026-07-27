@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobHistory",
-  "_doc": "State transitions for the failing job. The presence of 'Killing' confirms an operator-initiated Kill — distinguishes from host-side termination (which goes Running → Faulted directly). The transition into Killing was triggered by the REST API (Source=API on the transition reason).",
   "Data": [
     {
       "State": "Pending",

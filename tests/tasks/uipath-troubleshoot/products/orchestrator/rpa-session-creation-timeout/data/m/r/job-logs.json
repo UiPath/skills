@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobLogs",
-  "_doc": "Error logs for the faulting job. The robot-service entry explicitly attributes the fault to a session-creation TIMEOUT (the create-session call did not complete within the 120s timeout) and notes LSA returned NO logon rejection — the defining contrast with a logon-failure (job-faulted-logon-failure). It also records Robot version 23.4.7, corroborating the < 23.10 known defect.",
   "Data": [
     {
       "Level": "Error",

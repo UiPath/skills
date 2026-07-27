@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobGet",
-  "_doc": "Failing job. The Info field carries the verbatim 'Could not start executor. Logon failed for user UIPATH\\\\USER1. (0x0000052E)' signature — the entry point into the job-faulted-logon-failure playbook. 0x0000052E is the Windows logon-failure code for 'unknown user name or bad password' — distinct from 0x00000775 (account locked) and 0x00000532 (password expired). Combined with the same-user persistent pattern in the broader jobs list and the AD/Orchestrator credential mismatch evidence below, this points at branch 3 (password mismatch / stale Orchestrator credential).",
   "Data": {
     "Key": "aabb1122-3344-5566-7788-99aabbccdd00",
     "StartTime": "2026-05-12T11:30:00.412Z",

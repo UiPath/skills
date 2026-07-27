@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobLogs",
-  "_doc": "Execution logs end abruptly mid-Delay — no Job Completed line. The last user-workflow message is the start of the long-running step. The Robot Service then logs the kill request and the abrupt exit.",
   "Data": [
     {
       "Level": "Error",

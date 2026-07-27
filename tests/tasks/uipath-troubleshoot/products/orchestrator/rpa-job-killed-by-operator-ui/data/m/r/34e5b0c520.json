@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "AuditTenantEvents",
-  "_doc": "Audit query returns the single Job.Stop event matching the failing job key. The actor is a named human user — jane.doe@acme.com — who issued Kill via the Orchestrator UI from a known IP. This is the operator-initiated-Kill signature.",
   "Data": {
     "auditEvents": [
       {

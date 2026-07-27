@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobGet",
-  "_doc": "Earlier AttendedReportJob run that was still Running when the failing job (c0a1b2c3) tried to start. By the time the diagnostic agent fetches this, the job has Completed normally (EndTime > failing job's StartTime).",
   "Data": {
     "Key": "b0a1b2c3-d4e5-4678-9012-3456789abcde",
     "StartTime": "2026-05-12T10:14:50.000Z",

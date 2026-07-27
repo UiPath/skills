@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "AuditTenantEvents",
-  "_doc": "Audit query returns the Job.Stop event matching the failing job key. The actor is a non-human service account — watchdog-svc@acme.com — that issued Kill via the REST API. clientInfo is absent (no browser session). eventDetails references a watchdog rule name 'HungJobReaper'.",
   "Data": {
     "auditEvents": [
       {

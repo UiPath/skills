@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobGet",
-  "_doc": "Earlier failed run, same user (RobotUser1), same machine, identical Logon-failed error 0x0000052E. Establishes the persistent same-user pattern; an admin who only saw a single failure might dismiss it as transient, but three identical failures within 35 minutes rule out 'flaky'. The state 0x0000052E (bad password) — not 0x00000775 (locked) — is what distinguishes branch 3 from branches 2/4.",
   "Data": {
     "Key": "aabb1100-3344-5566-7788-99aabbccdd11",
     "StartTime": "2026-05-12T11:15:00.211Z",

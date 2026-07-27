@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "MachineList",
-  "_doc": "machines list --all-fields. RECON-BOT-01 is the machine that ran the faulting job; its connected Robot is version 23.4.7 (robotVersions[].version) — earlier than 23.10, matching the known session-creation-timeout defect. The host is healthy (a runtime is connected and holds a slot); the fault is the Robot-version defect, not a missing host.",
   "Data": [
     {
       "licenseKey": "605b37db-dc58-460f-99ed-93fcfb2f2062",

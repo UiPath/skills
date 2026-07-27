@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobList",
-  "_doc": "Recent jobs in UnattendedDemo (broader history). RobotUser1 fails every attempt with the same 'Logon failed' error since 2026-05-12T10:55Z. RobotUser2 succeeded on the same machine (MOCK-HOST) at 2026-05-12T11:20Z — proves the machine itself is fine and isolates the problem to user RobotUser1's credential.",
   "Data": [
     {
       "Key": "aabb1122-3344-5566-7788-99aabbccdd00",

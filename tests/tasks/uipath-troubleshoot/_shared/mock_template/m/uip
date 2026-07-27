@@ -167,6 +167,31 @@ def _err(payload: dict, code: int) -> int:
     return code
 
 
+def _strip_doc_keys(text: str) -> str:
+    """Drop top-level `_`-prefixed annotation keys (e.g. `_doc`, `_comment`) from a
+    JSON fixture before it is emitted as `uip` stdout.
+
+    Fixtures carry maintainer annotations that often state the scenario's root
+    cause. The real CLI never emits such keys, and returning them verbatim would
+    leak the answer into the agent's evidence. Strip them so the mocked stdout
+    matches the shape of a real response.
+
+    Only re-serialize when such a key is actually present, so every other fixture
+    (and any non-JSON body) passes through byte-for-byte unchanged.
+    """
+    try:
+        doc = json.loads(text)
+    except (ValueError, TypeError):
+        return text
+    if not isinstance(doc, dict) or not any(
+        isinstance(k, str) and k.startswith("_") for k in doc
+    ):
+        return text
+    cleaned = {k: v for k, v in doc.items() if not (isinstance(k, str) and k.startswith("_"))}
+    trailing = "\n" if text.endswith("\n") else ""
+    return json.dumps(cleaned, indent=2, ensure_ascii=False) + trailing
+
+
 def _cache_key(args: str) -> str:
     return hashlib.md5(args.encode("utf-8")).hexdigest()[:16]
 
@@ -279,6 +304,7 @@ def main(argv: list[str]) -> int:
             text = raw.decode("utf-16")
         else:
             text = raw.decode("utf-8-sig", errors="replace")
+        text = _strip_doc_keys(text)
         sys.stdout.write(text)
         exit_code = int(rule.get("exit_code", 0))
         _log_call(args, rule, exit_code)

@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "UserGet",
-  "_doc": "RobotUser1 tenant user record. Shows LoginToConsole=true (rules out branch 1) AND surfaces the stored-credential metadata: PasswordLastSet is 2026-05-04T09:00:00Z (eight days ago) while the AD password was rotated 2026-05-11T07:14:00Z (yesterday) — the Orchestrator credential is stale by ~7 days. This is the core evidence for playbook branch 3 (password mismatch / stale credential).",
   "Data": {
     "Key": "c1d2e3f4-a5b6-c7d8-e9f0-1a2b3c4d5e6f",
     "UserName": "user1",

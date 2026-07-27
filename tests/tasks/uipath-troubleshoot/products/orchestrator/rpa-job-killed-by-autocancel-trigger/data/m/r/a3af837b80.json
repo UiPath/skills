@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobHistory",
-  "_doc": "State transitions for the failing job. Running for exactly 600s before transitioning to Killing — matches the configured auto-cancel trigger time budget. The Source field on the Killing transition is 'Trigger:kill-after-10min', identifying the system-initiated cancel.",
   "Data": [
     {
       "State": "Pending",
