@@ -87,7 +87,7 @@ uip admin audit tenant events --from-date 2026-04-22T00:00:00Z --to-date 2026-04
 | Flag | Required | Description |
 |---|---|---|
 | `--from-date <iso>` | no | Start of time interval, ISO 8601. Inclusive. Recommended on any non-trivial query. |
-| `--to-date <iso>` | no | End of time interval, ISO 8601. Inclusive **of the exact instant** — pass the start of the next day (e.g. `2026-02-01`) or `T23:59:59.999Z` to capture a full final day. See [workflow-guide gotchas](./audit-workflow-guide.md#common-gotchas). |
+| `--to-date <iso>` | no | End of time interval, ISO 8601. Inclusive **of the exact instant** — pass the start of the next day (e.g. `2026-02-01`) or `T23:59:59.999Z` to capture a full final day. **`events` only** — on `export` both bounds are whole-day inclusive and the next-day trick over-exports (see export section). See [workflow-guide gotchas](./audit-workflow-guide.md#common-gotchas). |
 | `--source <guid...>` | no | Filter by event source IDs. Repeatable. Discover with `sources`. |
 | `--target <guid...>` | no | Filter by event target IDs. Repeatable. |
 | `--type <guid...>` | no | Filter by event type IDs. Repeatable. |
@@ -138,21 +138,31 @@ uip admin audit tenant events --from-date 2026-04-22T00:00:00Z --to-date 2026-04
 
 ## uip admin audit `<scope>` export
 
-Export the long-term audit store covering `[--from-date, --to-date]` into a **base directory** (`--output-path`). Each run creates a uniquely-named output inside it — a folder of day-wise JSON files (default) or a single merged CSV — named `audit_<from>_<to>_<generated-at>` (generated-at to the second) so repeated exports of the same window never collide.
+Export the long-term audit store covering `[--from-date, --to-date]` (**whole UTC days, inclusive on both ends** — see the flags table) into a **base directory** (`--output-path`). Each run creates a uniquely-named output inside it — a folder of day-wise JSON files (default) or a single merged CSV — named `audit_<from>_<to>_<generated-at>` (generated-at to the second) so repeated exports of the same window never collide.
+
+> This is the organization/tenant audit **event store** (LTS-schema columns like `Identifier`, `DateCreatedUtc`, `ActorId`, `Action`, `Source`, `Category`) — the surface for compliance dumps, login history, and cross-platform "who did what where." It is **not** `uip or audit-logs list --export` (the uipath-platform skill), which exports a single Orchestrator tenant's operational actions with `Component,User,Action,Operation,Time` columns. Any audit-event or compliance export scoped to the org/tenant — as JSON files or a spreadsheet/Excel CSV, with a date window and an `--output-path` directory — belongs here.
 
 ```bash
-# Default (json) — creates ./audit-exports/audit_2026-01-01_2026-02-01_<generatedAt>/ with one JSON file per UTC day
+# Default (json) — all of January: creates ./audit-exports/audit_2026-01-01_2026-01-31_<generatedAt>/ with one JSON file per UTC day
 uip admin audit tenant export \
   --from-date 2026-01-01 \
-  --to-date 2026-02-01 \
+  --to-date 2026-01-31 \
   --output-path ./audit-exports \
   --output json
 
-# Single merged CSV — creates ./audit-exports/audit_2026-01-01_2026-02-01_<generatedAt>.csv
+# Single merged CSV — creates ./audit-exports/audit_2026-01-01_2026-01-31_<generatedAt>.csv
 uip admin audit tenant export \
   --from-date 2026-01-01 \
-  --to-date 2026-02-01 \
+  --to-date 2026-01-31 \
   --file-format csv \
+  --output-path ./audit-exports \
+  --output json
+
+# Single day (e.g. "yesterday") — same date for both bounds; resolve relative phrases with the real UTC clock
+day=$(date -u -d 'yesterday' +%F)   # macOS/BSD: date -u -v-1d +%F
+uip admin audit tenant export \
+  --from-date "$day" \
+  --to-date "$day" \
   --output-path ./audit-exports \
   --output json
 ```
@@ -163,8 +173,8 @@ uip admin audit tenant export \
 |---|---|---|
 | `--output-path <dir>` | **yes** | **Base directory** for the export (created if missing). **Pass a directory only — never a filename or extension**; the CLI generates the per-export name. A uniquely-named output is created inside it — a folder of day-wise JSON files (`json`) or a single `.csv` (`csv`), named `audit_<from>_<to>_<generated-at>` (generated-at to the second) so repeated exports never collide. Resolved to absolute internally. |
 | `--output-file <dir>` | no | **Deprecated** alias for `--output-path` (kept for backward compatibility; treated as a base directory, not a file). Prefer `--output-path` — using `--output-file` emits a deprecation warning. |
-| `--from-date <iso>` | **yes** | Start of time interval. Both bounds are required by Commander before any HTTP call. |
-| `--to-date <iso>` | **yes** | End of time interval. |
+| `--from-date <iso>` | **yes** | Start of time interval. Both bounds are required by Commander before any HTTP call. Interpreted as a **whole UTC day** — the server truncates any time component to the calendar day. |
+| `--to-date <iso>` | **yes** | End of time interval, **inclusive as a whole UTC day** (unlike `events`, where `--to-date` is instant-inclusive). `--from-date X --to-date X` exports the single day `X`; do **not** pass the next day to "capture the final day" — that exports an extra full day. |
 | `--file-format <json\|csv>` | no | Output shape. `json` (default) = a folder holding one `<YYYY-MM-DD>.json` file per UTC day. `csv` = every event merged into a single RFC 4180 CSV under a shared header. Invalid values fail before any HTTP call with `Invalid --file-format '<v>'. Use 'json' or 'csv'.` |
 | `--login-validity <minutes>` | no | Token-refresh hint. |
 | `--tenant-id <guid>` | no | **Tenant scope only.** Override the active tenant. |
@@ -176,7 +186,7 @@ uip admin audit tenant export \
 ```json
 // --file-format json (default) — Path is the generated folder under the base dir
 {
-  "Path": "C:\\absolute\\path\\to\\audit-exports\\audit_2026-01-01_2026-02-01_20260617T112630",
+  "Path": "C:\\absolute\\path\\to\\audit-exports\\audit_2026-01-01_2026-01-31_20260617T112630",
   "Format": "json",
   "Files": 27,
   "Bytes": 1841,
@@ -187,7 +197,7 @@ uip admin audit tenant export \
 
 // --file-format csv — Path is the generated .csv under the base dir
 {
-  "Path": "C:\\absolute\\path\\to\\audit-exports\\audit_2026-01-01_2026-02-01_20260617T112630.csv",
+  "Path": "C:\\absolute\\path\\to\\audit-exports\\audit_2026-01-01_2026-01-31_20260617T112630.csv",
   "Format": "csv",
   "Bytes": 98765,
   "Days": 31,
@@ -204,6 +214,7 @@ uip admin audit tenant export \
 - **CSV:** the same per-day JSON arrays are parsed and merged into **one** RFC 4180 CSV (CRLF line endings, header row first). Columns follow the long-term-store field order — `OrganizationId, TenantId, ActorId, ActorEmail, ActorDetails, EventDetails, Status, Identifier, DateCreatedUtc, User, Action, Source, Category, ClientInformation` — with any extra server fields appended (union across events) so no data is dropped. `Status` is the numeric enum (`0`=Success, `1`=Failure); nested objects (e.g. `ClientInformation`) are JSON-stringified into the cell. String cells beginning with `= + - @` (or TAB/CR) are prefixed with a single quote to neutralize spreadsheet formula injection.
 - On any single-day HTTP failure (or, for CSV, a day whose payload is not valid JSON), **nothing is written** — for `json` the output folder isn't even created — and the error message identifies which day failed. Earlier successful chunks are not preserved (atomic export).
 - `Days` reports the total number of UTC days requested; `NonEmptyDays` reports how many actually had data. A long export with `NonEmptyDays: 0` means the window was entirely idle, not that the export failed. For `json`, `Files` counts the day-wise files written; for `csv`, `Events: 0` yields a header-only file.
+- **LTS lag**: the long-term store trails the live `events` endpoint (typically by up to ~24–48 h). Exporting a window that includes today or yesterday succeeds, but those trailing days may come back empty even though `events` shows data for them. If completeness of recent days matters, tell the user and either end the window ≥2 days in the past or re-run the export later.
 
 ---
 

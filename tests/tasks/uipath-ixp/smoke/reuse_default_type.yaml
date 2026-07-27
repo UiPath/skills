@@ -12,7 +12,6 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  driver: tempdir
   mock_path_dirs: [mocks]
   template_sources:
     - {type: template_dir, path: ../_shared/mock_template}
@@ -32,17 +31,19 @@ success_criteria:
   # Primary: the field is added reusing the built-in "Monetary Quantity" type.
   # The skill teaches the six default types, so the agent uses it by name even
   # though the offline mock can't return the taxonomy.
-  - type: command_executed
-    description: 'Agent added "Freight Charge" reusing the default "Monetary Quantity" type via `fields add`'
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+fields\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["'']?Invoice Header)(?=.*--field\s+["'']?Freight Charge)(?=.*--type\s+["'']?Monetary Quantity).*'
-    min_count: 1
+  - type: file_matches_regex
+    description: "Agent added \"Freight Charge\" reusing the default \"Monetary Quantity\" type via `fields add`"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["']?Invoice Header)(?=.*--field\s+["']?Freight Charge)(?=.*--type\s+["']?Monetary Quantity).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_not_executed
+  - type: file_matches_regex
     description: "Agent did NOT invent a redundant custom data type (Critical Rule 17 — reuse defaults)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+data-types\s+add\b'
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+data-types\s+add\b)[^\r\n]*$
+    must_match: false
     weight: 3.0
     pass_threshold: 1.0

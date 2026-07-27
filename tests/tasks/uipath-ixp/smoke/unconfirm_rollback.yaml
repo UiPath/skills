@@ -11,7 +11,6 @@ description: >
 tags: [uipath-ixp, smoke, lifecycle:execute]
 
 sandbox:
-  driver: tempdir
   python: {}
   mock_path_dirs: [mocks]
   template_sources:
@@ -33,28 +32,30 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent invoked `uip ixp labellings unconfirm <project> <document>`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+unconfirm\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+["'']?doc-abc-123["'']?'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+unconfirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Unconfirm call targeted field f-001 via --fields"
-    tool_name: "Bash"
-    command_pattern: '--fields\s+[^|;&]*f-001'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+unconfirm\b(?=.*--fields\s+[^|;&]*f-001).*)[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
   # Anti-pattern: re-running `confirm` with a different --fields list
   # does NOT remove a prior annotation — the SDK preserves carry-forward
   # annotations. The agent must not reach for confirm to undo a confirm.
-  - type: command_not_executed
+  - type: file_matches_regex
     description: "Agent did NOT try to undo via labellings confirm"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+["'']?doc-abc-123["'']?'
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?)[^\r\n]*$
+    must_match: false
     weight: 1.5
     pass_threshold: 1.0

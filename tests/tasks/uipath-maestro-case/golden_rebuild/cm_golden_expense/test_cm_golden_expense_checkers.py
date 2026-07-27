@@ -27,8 +27,11 @@ def task(
     *,
     duration: str | None = None,
     run_once: bool = False,
+    outputs: list[dict] | None = None,
 ) -> dict:
     data = {"duration": duration} if duration else {}
+    if outputs:
+        data["outputs"] = outputs
     return {
         "id": task_id,
         "type": task_type,
@@ -109,7 +112,20 @@ def expected_caseplan() -> dict:
         ),
         stage(
             4,
-            [task("task-4-action", "action", "Rework Approval")],
+            [
+                task(
+                    "task-4-action",
+                    "action",
+                    "Rework Approval",
+                    outputs=[
+                        {
+                            "name": "Action",
+                            "id": "reworkActionOutput",
+                            "var": "reworkActionOutput",
+                        }
+                    ],
+                )
+            ],
             label="Stage 4 - return to origin",
             secondary=True,
             entry_conditions=[
@@ -168,7 +184,11 @@ def expected_caseplan() -> dict:
                 },
                 {
                     **condition(
-                        "selected-stage-completed", selectedStageId="stage-4"
+                        "selected-stage-completed",
+                        selectedStageId="stage-4",
+                        conditionExpression=(
+                            "=js:vars.reworkActionOutput === 'reject'"
+                        ),
                     ),
                     "marksCaseComplete": False,
                 },
@@ -226,6 +246,19 @@ class CMGoldenCheckerTests(unittest.TestCase):
         result = run_topology_checker(copy.deepcopy(expected_caseplan()))
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_topology_checker_rejects_ungated_stage4_case_exit(self) -> None:
+        plan = expected_caseplan()
+        lane_exit = plan["metadata"]["caseExitRules"][1]
+        lane_exit["rules"][0][0].pop("conditionExpression")
+
+        result = run_topology_checker(plan)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(
+            "must be gated on vars.reworkActionOutput === 'reject'",
+            result.stdout + result.stderr,
+        )
 
     def test_topology_checker_rejects_missing_stage(self) -> None:
         plan = expected_caseplan()

@@ -18,6 +18,7 @@ What this looks like:
 What can cause it:
 - Variable declared but never assigned (or assigned only in a conditional branch that wasn't taken)
 - Activity output was null and used directly without a null check (e.g., data table lookup with no match, JSON path that doesn't exist, regex with no match)
+- A `Get Asset` / `Get Orchestrator Asset` upstream completed without fault but returned null/empty. If the activity was copy-pasted from another sequence, or the output variable was created with `Ctrl+K` on `UiPath.System.Activities` 22.10.x (known activity bug) → [get-asset-activity-bug-silent-failure.md](../../activity-packages/system-activities/playbooks/get-asset-activity-bug-silent-failure.md). Otherwise the asset value is genuinely empty (unset per-robot value, empty asset in Orchestrator) — a data/config issue, not that bug
 - Queue item field missing or null (`TransactionItem.SpecificContent("fieldName")` with wrong field name)
 - External system returned null or empty response (HTTP Request, database query, SOAP call)
 - Collection used before initialization (array, List, DataTable)

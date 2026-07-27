@@ -22,7 +22,10 @@ run_limits:
 sandbox:
   driver: docker
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
+    - type: template_dir
+      path: ../_shared/live_calls_template
     - type: template_dir
       path: ../_shared/fixtures
 
@@ -61,59 +64,59 @@ initial_prompt: |
     reading metrics.
 
 success_criteria:
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent created an IXP project"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+create'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+create)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent imported the bundled taxonomy fixture"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+import-taxonomy'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+import-taxonomy)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent configured the model"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+configure-model'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+configure-model)[^\r\n]*$
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent fetched predictions"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+get-predictions'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+get-predictions)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent confirmed labellings"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+confirm'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent fetched metrics at least twice (baseline + improved)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+get-metrics'
-    min_count: 2
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+projects\s+get-metrics)[^\r\n]*$){2}
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent updated a field prompt"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+update-prompts'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts)[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
@@ -149,11 +152,11 @@ success_criteria:
     weight: 5.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent published the model"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+publish'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+publish)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 

@@ -20,7 +20,6 @@ run_limits:
   max_turns: 50
 
 sandbox:
-  driver: tempdir
   template_sources:
     - type: template_dir
       path: fixture
