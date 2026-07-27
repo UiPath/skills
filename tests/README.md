@@ -215,10 +215,11 @@ initial_prompt: |
 ## Lifecycle E2E tests (uipath-platform pattern)
 
 `tests/tasks/uipath-platform/{orchestrator,resources}/` and
-`tests/tasks/uipath-solution/` follow the same shape as `traces_e2e.yaml`:
-the agent receives a process key (and derived folder) via env var, exercises
-the operational scenario, and a `check_*.py` script verifies tenant state
-directly.
+`tests/tasks/uipath-solution/` follow the same shape as
+`orchestrator/job_run_logs_e2e.yaml`: the agent receives a process key (and
+derived folder) via env var, exercises the operational scenario, and a
+`check_*.py` script verifies tenant state directly. The traces e2e tasks are
+the exception — they inline their fixture key instead of reading an env var.
 
 ### Shape
 
@@ -237,7 +238,7 @@ writes `uuid8`.
 ### Tenant prerequisites
 
 Two pre-existing processes on the tenant, referenced by their keys via CI
-secrets (matches the existing `TRACES_SMOKE_PROCESS_KEY` pattern):
+secrets:
 
 | Secret | Purpose | Used by |
 |---|---|---|

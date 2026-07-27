@@ -26,7 +26,7 @@ What this looks like:
 
 What can cause it:
 
-- **Input method not honored by the target technology.** `InteractionMode = Simulate` (a.k.a. SimulateClick) or `SendWindowMessages` posts a message-level event that the target UI framework never processes. **`Simulate` / `SendWindowMessages` are not supported for Java, SAP, and some legacy Win32 / Citrix targets** — the event is posted, the activity reports success, and the control never reacts. Primary cause when the target app is Java/SAP.
+- **Input method did not actuate the control.** `InteractionMode = Simulate` acts through the element's control/accessibility API and IS supported for browsers, Java and SAP - it is the product's *recommended* mode for those technologies, and `Background` resolves to it - but only when the specific control implements the action. A control that accepts the API call without acting produces a silent miss. This is **per-element, not per-technology**: do NOT conclude it from `app='java.exe'` (or SAP) alone. A node that cannot take the control API at all fails loudly with `Cannot use UI_CONTROL_API on this UI node. Please use UI_HARDWARE_EVENTS method.` - that is an Error log, so it is not this family. Two Simulate limits independent of technology: only a **single left click with no key modifiers** is honored, and a click **offset** is honored only on Java targets (silently ignored elsewhere under Simulate, which is its own miss cause).
 - **Click intercepted by a covering element** — a transparent overlay, cookie/consent banner, modal, or tooltip sat on top of the target at action time; the event hit the overlay, not the control.
 - **Wrong target resolved** — the selector matched a duplicate / off-screen / ARIA-hidden / shadow-DOM element that looks right but is inert.
 - **Focus / activation lost** between activities — a prior step left focus on another window/tab, so the posted input went nowhere.
@@ -35,7 +35,7 @@ What can cause it:
 
 What to look for:
 
-- The activity's `InteractionMode` and the enclosing scope's **target technology** — these live only in the workflow source. Source-required.
+- The activity's `InteractionMode`, the click shape (`ClickType`, `MouseButton`, `KeyModifiers`, `PointOffset`), and the enclosing scope's **target technology** — these live only in the workflow source. Source-required. Technology alone does not confirm or eliminate the input-method branch.
 - Whether Verify Execution is configured with a **real verification target** (not just a `Mode`).
 - Runtime proof of no-effect in the Info-level logs or business output — needed to separate "silently did nothing" from "did the right thing and the user is mistaken".
 
@@ -50,7 +50,7 @@ Source-required — resolve the project per SKILL.md §5.4 before concluding.
    - `InteractionMode` (`Simulate` / `SendWindowMessages` / `HardwareEvents` / `ChromiumAPI` / `Background`).
    - `VerifyOptions` — is a verification `Target` set, or is it inert (`Mode` only, empty `Retry`/`Timeout`)?
 5. Open the enclosing scope (`NApplicationCard` / Use Application/Browser) and read its `TargetApp` **technology**: `app='java.exe'` / a `javastate` selector = Java; `app='saplogon.exe'` / `sapwnd` = SAP; a Chromium `app='chrome.exe'`/`'msedge.exe'` with an HTML selector = browser.
-6. Cross-check the input-method × target-technology support with docs when the pairing looks unsupported: `uip docsai ask "Is the Simulate / SendWindowMessages input method supported for Java (or SAP) applications in UiPath UI Automation?" --source docs`.
+6. Do NOT ask docs whether the input method is supported for the target technology - `Simulate` is documented as supported and recommended for browsers, Java and SAP, so a technology-level answer neither confirms nor eliminates branch **(A)**. What decides it is element-level: runtime proof of no-effect (step 3) plus a re-run on `HardwareEvents`.
 7. If HA was enabled, confirm the empty recovery archive — it is the expected "no fault, no trigger" state, not a separate defect to fix.
 
 ## Resolution
@@ -59,7 +59,7 @@ Source-required — resolve the project per SKILL.md §5.4 before concluding.
 
 Walk from the top; stop at the first branch that matches.
 
-1. **Is `InteractionMode = Simulate` or `SendWindowMessages` AND the target technology is Java, SAP, or legacy Win32/Citrix?** → branch **(A)**. Documented-unsupported pairing — the message-level event is never processed.
+1. **Is `InteractionMode = Simulate` / `SendWindowMessages` / `Background`, with runtime proof the control never acted and no `UI_CONTROL_API` Error log?** → branch **(A)**. The control accepted the API-level event without performing the action. Report it as the *likely* cause, confirmed only by a re-run on `HardwareEvents` - the target technology is not evidence either way.
 2. **Was a covering element present** (overlay / banner / modal detected in HA data or visible in the informative screenshot)? → branch **(B)**.
 3. **Did the selector resolve a duplicate / off-screen / hidden element** (multiple matches, `idx=`-positional, shadow/iframe)? → branch **(C)**.
 4. **Was focus/activation on the wrong window** at action time (prior activity left another app foreground; `ActivateBefore` not set)? → branch **(D)**.
@@ -69,7 +69,7 @@ In every branch, **also** close the detection gap (branch **(F)**) so a future m
 
 ### Branches
 
-- **(A) Input method unsupported for the target technology.** Change `InteractionMode` to one the target supports: for **Java / SAP / legacy Win32**, use **`HardwareEvents`** (drives the physical cursor/keyboard — works regardless of framework; requires an interactive session and the foreground). `ChromiumAPI` is browser-only; `Simulate`/`SendWindowMessages` stay valid for HTML and many WPF/WinForms targets but not Java/SAP. Fix at the acting activity's `InteractionMode`. Re-run and confirm the effect lands.
+- **(A) Control did not act on the API-level event.** Set the acting activity's `InteractionMode` to **`HardwareEvents`** (drives the physical cursor/keyboard — works regardless of framework; requires an interactive session and the foreground). This is the same remedy the driver itself names when a node rejects the control API. `ChromiumAPI` is browser-only. Re-run and confirm the effect lands; if it still misses, the cause is elsewhere (B)-(E). Note `HardwareEvents` gives up Simulate's background/out-of-focus execution, so state that trade-off when proposing it.
 - **(B) Covering element intercepted the event.** Add a deterministic dismiss/wait step before the action (close the banner, dismiss the modal, Check App State for the overlay to disappear). Inspect HA data / the informative screenshot for the intercepting element. See [interpretations/healing-agent-data.md](../interpretations/healing-agent-data.md).
 - **(C) Wrong element resolved.** Tighten the activity's `Target` selector to a stable, unique attribute; remove positional `idx=`; for shadow-DOM/iframe, scope to the correct frame. Do not loosen — the current selector matched something inert.
 - **(D) Focus/activation lost.** Set `ActivateBefore = True` on the activity, or add a Use Application / Activate step before it so the target window is foreground when the input is posted.

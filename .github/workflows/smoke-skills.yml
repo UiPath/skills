@@ -472,7 +472,6 @@ jobs:
         env:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
         run: |
           python - <<'PY'
           import os
@@ -482,7 +481,6 @@ jobs:
               "UIPATH_CLI_AUTH_TOKEN",
               "AWS_BEARER_TOKEN_BEDROCK",
               "ANTHROPIC_API_KEY",
-              "TRACES_SMOKE_PROCESS_KEY",
           )
           values = [os.environ[name] for name in names if len(os.environ.get(name, "")) >= 8]
           if not values:
