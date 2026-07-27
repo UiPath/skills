@@ -17,16 +17,21 @@ defaults:
     # expected skill is engaged — turn 1, with the exact verdict a max_turns:1
     # cap would have produced — while the extra headroom no longer truncates a
     # correct invocation the model emits after a brief reasoning turn. A
-    # wrong-skill misfire fail-stops on engagement; true negatives have no live
-    # event and run to the cap, so keep it small. (`decided` is invalid here:
-    # >= 0.8.10's any-engagement latch narrows each instance to ONE decidable
-    # polarity.) See coder_eval "early stop on criterion".
+    # negative row fail-stops on its first engagement; on a positive row a
+    # wrong-skill engagement alone does NOT stop it (fail-stop is deferred
+    # while the row's positive criterion is undecided), so misfire-only and
+    # no-engagement rows run to the cap — keep it small. (`decided` is invalid
+    # here: >= 0.8.10's any-engagement latch narrows each instance to ONE
+    # decidable polarity.) See coder_eval "early stop on criterion".
     #
     # HARNESS CONSTRAINT: cooperative early-stop is Claude Code-only. codex and
     # antigravity agents do not support it, and an armed run with such an agent
     # is a hard EarlyStopConfigError at resolution — runs using `--type codex`
-    # or `--type antigravity` MUST add `-D run_limits.stop_early=false` (they
-    # then pay the full max_turns: 3 on every row; verdicts are unchanged).
+    # or `--type antigravity` MUST add `-D run_limits.stop_early=false` (rows
+    # may then use up to max_turns: 3 — a cap, not a floor). Note: unarmed runs
+    # are the authoritative ones for precision — a pass-stop can hide a later
+    # distractor misfire, so armed-run precision is optimistic by comparison
+    # (recall.yes is unaffected; see tasks/activation/README.md).
     max_turns: 3
     stop_early: true
     # Scaled with max_turns: a row that legitimately uses all 3 turns (a true
