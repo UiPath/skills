@@ -1,7 +1,7 @@
 {
   "Result": "Success",
   "Code": "UserGet",
-  "_doc": "The DashboardSnapshotBot robot user. LoginToConsole=false and this is an unattended run with no RDP session established — so there is no live interactive desktop for the screenshot's CopyFromScreen to read. Enabling Login to Console gives the robot its own console session with a real desktop surface.",
+  "_doc": "The DashboardSnapshotBot robot user. LoginToConsole=true, so the robot attaches to the machine's single physical console session instead of creating its own RDP session. Unattended, with no interactive logon at that console, there is no rendered desktop for the screenshot's CopyFromScreen to read. Setting Login to Console to false makes the robot open its own RDP session with a real desktop surface.",
   "Data": {
     "Key": "bb22cc33-dd44-ee55-ff66-778899aabbcc",
     "UserName": "svcmonitor",
@@ -9,7 +9,7 @@
     "FullName": "Service Account Monitoring",
     "Type": "User",
     "UnattendedRobot": {
-      "ExecutionSettings": {"LoginToConsole": false, "RunOnlyOneJobAtATime": false, "ResolutionWidth": 1920, "ResolutionHeight": 1080, "ResolutionDepth": 32},
+      "ExecutionSettings": {"LoginToConsole": true, "RunOnlyOneJobAtATime": false, "ResolutionWidth": 1920, "ResolutionHeight": 1080, "ResolutionDepth": 32},
       "UserName": "UIPATH\\SVCMON",
       "CredentialStoreId": null,
       "CredentialType": "Default",

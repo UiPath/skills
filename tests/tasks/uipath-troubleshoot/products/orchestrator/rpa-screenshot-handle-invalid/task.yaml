@@ -5,11 +5,13 @@ description: >
   with "System.ComponentModel.Win32Exception (6): The handle is
   invalid. at System.Drawing.Graphics.CopyFromScreen(...)". The root
   cause is that the unattended run has no live interactive desktop to
-  capture: the robot user has LoginToConsole=false and no RDP session
-  was established, so CopyFromScreen has no valid device context. The
-  agent must recognize screen capture needs a live session and
-  recommend giving the robot one (enable Login to Console / keep an
-  interactive session), NOT treat it as a workflow-logic bug. Per the
+  capture: the robot user has LoginToConsole=true, so it attaches to
+  the machine's physical console (no rendered desktop when no one is
+  logged in there) instead of opening its own RDP session, and
+  CopyFromScreen has no valid device context. The agent must recognize
+  screen capture needs a live session and recommend giving the robot
+  its own one (set Login to Console = No / keep an interactive session
+  connected), NOT treat it as a workflow-logic bug. Per the
   screen-capture-handle-invalid playbook.
 
 tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose, lifecycle:discover]

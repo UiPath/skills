@@ -12,11 +12,13 @@ System.ComponentModel.Win32Exception (6): The handle is invalid.
 ## What this scenario uncovers
 
 **Root Cause:** `DashboardSnapshotBot` runs unattended with
-`LoginToConsole: false` and no RDP session, so `CopyFromScreen` has
-no desktop surface / device context. It works interactively (a real
-desktop exists) but fails as a scheduled unattended job. Fix: enable
-Login to Console (or keep an RDP session connected) so the robot has
-a live desktop.
+`LoginToConsole: true`, so the robot attaches to the machine's single
+physical console session instead of opening its own RDP session; with
+no interactive logon at that console there is no desktop for
+`CopyFromScreen`. It works when a human is logged in at the console (a
+real desktop exists) but fails as a scheduled unattended job. Fix: set
+Login to Console to No so the robot opens its own RDP session (or keep
+an RDP session connected) with a live desktop.
 
 Maps to:
 `references/products/orchestrator/playbooks/screen-capture-handle-invalid.md`.
@@ -27,7 +29,7 @@ Maps to:
 |---|---|
 | `m/uip` + `m/uip.cmd` | shared from `../../../_shared/mock_template/` |
 | `process/` | minimal unattended UiPath project (dashboard snapshot) |
-| `data/m/r/*.json` | **synthetic** canned `uip` responses — jobs get/list/logs, `jobs traces` (Take Screenshot faulted, prior succeeded), `users get` (LoginToConsole=false) |
+| `data/m/r/*.json` | **synthetic** canned `uip` responses — jobs get/list/logs, `jobs traces` (Take Screenshot faulted, prior succeeded), `users get` (LoginToConsole=true) |
 | `data/m/r/manifest.json` | dispatch table |
 
 > Fixtures authored from the playbook signature, not captured from a
@@ -35,11 +37,11 @@ Maps to:
 
 ## Distinguishing fingerprint
 
-The "works interactively, fails unattended" clue plus
-`LoginToConsole: false` and the `CopyFromScreen` failure point at a
+The "works when logged in at the console, fails unattended" clue plus
+`LoginToConsole: true` and the `CopyFromScreen` failure point at a
 missing interactive desktop surface, not a workflow-logic bug. The
-graded fix is giving the robot a live session (Login to Console), not
-editing the workflow.
+graded fix is giving the robot its own live session (set Login to
+Console to No), not editing the workflow.
 
 ## Success criteria
 
@@ -47,6 +49,7 @@ Scores the **conclusion**, not the trajectory:
 
 - Agent invoked the `uipath-troubleshoot` skill.
 - Agent identified the missing interactive desktop session
-  (LoginToConsole off, unattended) as the reason screen capture
-  fails, and recommended enabling Login to Console (or keeping an
-  RDP session connected) rather than changing the workflow logic.
+  (LoginToConsole on → attached to the physical console, unattended)
+  as the reason screen capture fails, and recommended setting Login
+  to Console to No so the robot opens its own RDP session (or keeping
+  an RDP session connected) rather than changing the workflow logic.
