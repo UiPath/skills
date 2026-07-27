@@ -10,7 +10,7 @@
     {
       "Level": "Error",
       "TimeStamp": "2026-06-18T09:12:01.090Z",
-      "Message": "[Robot] Cannot open a new interactive session for UIPATH\\SVCRENEW on MOCK-HOST: the workstation already has 2 active sessions and refused an additional concurrent connection. Credential validated successfully; this is a session-seating failure, not a logon failure."
+      "Message": "[Robot] Cannot open a new interactive session for UIPATH\\SVCRENEW on MOCK-HOST: the workstation already has 2 active sessions and refused an additional concurrent connection. Credential validated successfully."
     }
   ]
 }
