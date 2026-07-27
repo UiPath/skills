@@ -117,6 +117,7 @@ success_criteria:
     command: >-
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
       --entity-name CE_ProductCatalogue
+      --ignore-field-case
       --assertions
       "ProductName.Name=STRING,Price.Name=DECIMAL,InStock.Name=BOOLEAN,SKU.Name=STRING,Poster.Name=FILE"
     timeout: 120

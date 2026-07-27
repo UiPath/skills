@@ -1,5 +1,5 @@
 {
-  "displayName": "Smoke Employees",
+  "displayName": "Smoke Entity Employees",
   "description": "Temporary employee schema for the entity-management smoke test.",
   "fields": [
     {

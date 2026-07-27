@@ -8,7 +8,7 @@ run_limits:
   max_turns: 60
 
 initial_prompt: |
-  We already have a tenant-level `CE_SmokeEmployees` list in UiPath Data
+  We already have a tenant-level `CE_SmokeEntityEmployees` entity in UiPath Data
   Fabric. It holds first name, last name, and hire date.
 
   I approve creating
@@ -27,9 +27,9 @@ initial_prompt: |
           and $999,999
         - a description — free-form long text, up to 2000 characters
 
-    - Read `CE_SmokeEmployees` back so we know what's in it.
+    - Read `CE_SmokeEntityEmployees` back so we know what's in it.
 
-    - On `CE_SmokeEmployees`, add a salary — dollars and cents, never negative.
+    - On `CE_SmokeEntityEmployees`, add a salary — dollars and cents, never negative.
 
     - Rename the hire-date entry to "Date Hired" and make it required.
 
@@ -62,7 +62,7 @@ success_criteria:
     description: "Live Employees schema contains the requested salary and hire-date updates"
     command: >-
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
-      --entity-name CE_SmokeEmployees --ignore-field-case
+      --entity-name CE_SmokeEntityEmployees --ignore-field-case
       --assertions 'salary.Name=DECIMAL,salary.decimalPrecision=2,salary.minValue=0,HireDate.displayName=Date Hired,HireDate.isRequired=true'
     timeout: 120
     expected_exit_code: 0
@@ -94,12 +94,12 @@ pre_run:
     fail_on_error: false
   - command: >-
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py
-      --name-prefix CE_SmokeEmployees
+      --name-prefix CE_SmokeEntityEmployees
     timeout: 120
     fail_on_error: false
   - command: >-
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
-      --entity-name CE_SmokeEmployees
+      --entity-name CE_SmokeEntityEmployees
       --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_entity_employees.schema.json
     timeout: 240
 
@@ -110,5 +110,5 @@ post_run:
     timeout: 120
   - command: >-
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py
-      --name-prefix CE_SmokeEmployees
+      --name-prefix CE_SmokeEntityEmployees
     timeout: 120

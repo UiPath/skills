@@ -27,7 +27,8 @@ initial_prompt: |
   employee records in this run. Proceed without another confirmation and do
   not mutate any other Data Fabric resource.
 
-  Make an entity called `CE_EmployeeDirectory` with these fields:
+  Make an entity called `CE_EmployeeDirectory`, shown to users as
+  `E2E Employee Directory`, with these fields:
     - Full name — required, no longer than 200 characters
     - Department — required, no longer than 50 characters (one of:
       Engineering, Sales, Finance, HR)
@@ -200,10 +201,10 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_EmployeeDirectory"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_EmployeeDirectory --include-folders"
     timeout: 60
     fail_on_error: false
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_EmployeeDirectory"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_EmployeeDirectory --include-folders"
     timeout: 60

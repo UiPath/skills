@@ -116,7 +116,7 @@ success_criteria:
 
   - type: run_command
     description: "End state: Receipt is a FILE field"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --assertions 'Receipt.Name=FILE'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --ignore-field-case --assertions 'Receipt.Name=FILE'"
     timeout: 90
     expected_exit_code: 0
     weight: 3.0

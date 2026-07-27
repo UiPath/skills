@@ -66,7 +66,7 @@ Do not change field types, create federated entities, or write federated records
 
 7. **CSV headers must match `Fields[].DisplayName`** (case-sensitive), not internal `Name`. Discover via `entities get`. See [`bulk-import.md`](bulk-import.md).
 
-8. **Never create duplicate entities.** Always `entities list` first; reuse if it already exists.
+8. **Never create duplicate entities.** Always `entities list` first; reuse if it already exists. Entity and choice-set `displayName` values must also be unique. If the user does not provide one, derive a collision-resistant display name from the requested `Name`, not a generic label. On `409` / `RetryWillNotFix`, do not repeat the same create or treat an environment ID from the error as a resource ID; surface the conflict and ask for a different name or display name.
 
 9. **Only work with native entities.** Use `entities list --native-only` before any write. Federated entities are read-only.
 
