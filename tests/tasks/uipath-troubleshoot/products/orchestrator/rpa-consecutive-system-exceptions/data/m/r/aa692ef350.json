@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobGet",
-  "_doc": "Failing OrderReconciliation job. Info = 'The maximum number of consecutive system exceptions was reached. Consecutive retry number: 5.' This is the abort SYMPTOM. The root cause is the same System Exception recurring on every transaction — recover it from logs/traces (a SelectorNotFoundException on 'Click Submit'). Raising the threshold would only delay the abort.",
   "Data": {
     "Key": "ccee6677-88ff-99aa-00bb-11cc22334455",
     "StartTime": "2026-06-25T07:00:01.200Z",
