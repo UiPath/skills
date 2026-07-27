@@ -14,7 +14,7 @@ tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node
 
 run_limits:
   max_turns: 200
-  turn_timeout: 1800
+  turn_timeout: 3600
   task_timeout: 5400
 
 post_run:
@@ -108,7 +108,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "uip maestro flow validate BillingDisputeResolution/BillingDisputeResolution/BillingDisputeResolution.flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

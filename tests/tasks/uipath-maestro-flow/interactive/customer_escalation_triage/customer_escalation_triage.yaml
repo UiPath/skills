@@ -1,0 +1,103 @@
+task_id: skill-flow-interactive-customer-escalation-triage
+description: >
+  Interactive end-to-end Flow evaluation. A simulated support-operations
+  expert asks for a customer-escalation triage flow but withholds the company's
+  severity, engineering-handoff, and acknowledgement policies until the coding
+  agent asks relevant follow-up questions. The resulting flow must validate and
+  produce the correct business outputs for independently seeded Sev1 and Sev3
+  cases when the grader runs it.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:escalation, feature:conversational]
+
+run_limits:
+  expected_turns: 45
+  max_turns: 100
+  turn_timeout: 1200
+  task_timeout: 2400
+
+agent:
+  # allowed_tools uses replace semantics. Keep the default authoring tools and
+  # allow structured questions, while simulation also supports ordinary text
+  # questions from coding agents that do not expose AskUserQuestion.
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion"]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/customer_escalation_triage/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120
+
+# No initial_prompt: simulation mode generates the opening request from the
+# persona and goal. The policy facts below are intentionally withheld until the
+# agent asks about them, making the conversation necessary to pass the runtime
+# business-outcome checks.
+simulation:
+  enabled: true
+  persona: |
+    You are an experienced support-operations manager. You know the company's
+    customer-escalation policy in depth, but you do not know UiPath syntax or
+    implementation details. Give business answers and let the coding agent
+    choose the Flow design.
+  goal: |
+    Get a new UiPath Flow project named CustomerEscalationTriage, inside a
+    solution of the same name, that classifies an escalation and returns these
+    named outputs: severity, engineeringNeeded, responseMode, and caseKey.
+    The flow inputs are customerTier, productionDown, workaroundAvailable,
+    businessImpact, and correlationId. The completed flow must validate. Do not
+    ask the coding agent to run it; the grader supplies seeded cases and runs it.
+  constraints:
+    - "In the opening request, state the goal and input/output names, but do not volunteer any severity, engineering-handoff, or acknowledgement policy."
+    - "Only reveal a policy after the agent asks a relevant follow-up question."
+    - "Sev1 means an Enterprise customer has production unavailable and no workaround."
+    - "Sev2 means production is degraded or unavailable but a viable workaround exists."
+    - "Sev3 means informational or routine follow-up with no production impact."
+    - "Engineering is needed for Sev1 and Sev2, but not Sev3."
+    - "Customer acknowledgements must always be drafted for human review, never sent automatically; responseMode must therefore be Draft."
+    - "caseKey must preserve the incoming correlationId so downstream systems can correlate the run."
+    - "If asked a finite-choice question, choose the option matching these policies."
+    - "Keep each reply concise and internally consistent."
+    - "If asked for permission to run or debug the flow, decline and say the grader will execute it after validation."
+  max_turns: 10
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-flow skill"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent left execution to the grader instead of running flow debug"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the generated Flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Generated customer-escalation Flow validates without errors"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Seeded Sev1 and Sev3 runs produce the elicited severity, engineering, draft-response, and correlation outcomes"
+    command: "python3 $TASK_DIR/check_customer_escalation_triage.py"
+    timeout: 660
+    expected_exit_code: 0
+    weight: 8.0
+    pass_threshold: 1.0

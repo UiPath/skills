@@ -211,6 +211,69 @@ def test_v2_key_set_has_no_env_fields_or_legacy_session_id():
     assert "sessionSource" not in event
 
 
+# ── Autopilot / Delegate tool-name tests ───────────────────────────────────
+# UiPath Autopilot / Delegate honor hooks.json with the same envelope but rename
+# the shell and file tools (ExecuteBashCommand / ExecutePowershellCommand,
+# ReadFile / WriteFile / EditFile / LsDirectory). tool_input still carries
+# command / file_path, so attribution + derivation must fire on the renamed
+# names exactly as for Claude's Bash / Read / Write / Edit.
+
+
+def test_autopilot_execute_bash_command_uip_maps_to_tool_use():
+    event = run_hook(
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "ExecuteBashCommand",
+            "tool_input": {"command": "uip solution publish --output json"},
+            "tool_response": {"success": True},
+        }
+    )
+    assert event["eventName"] == "tool-use"
+    assert event["toolName"] == "ExecuteBashCommand"
+    assert event["uipSubcommand"] == "solution publish"
+    assert event["outcome"] == "ok"
+
+
+def test_autopilot_execute_powershell_command_uip_maps_to_tool_use():
+    event = run_hook(
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "ExecutePowershellCommand",
+            "tool_input": {"command": "uip pack --output json"},
+            "tool_response": {"success": True},
+        }
+    )
+    assert event["eventName"] == "tool-use"
+    assert event["uipSubcommand"] == "pack"
+
+
+def test_autopilot_write_file_uipath_ext_maps_to_tool_use():
+    event = run_hook(
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "WriteFile",
+            "tool_input": {"file_path": "/proj/Process/Main.xaml"},
+            "tool_response": {"success": True},
+        }
+    )
+    assert event["eventName"] == "tool-use"
+    assert event["toolName"] == "WriteFile"
+    assert event["fileExtension"] == ".xaml"
+
+
+def test_autopilot_read_file_agent_json_maps_to_tool_use():
+    event = run_hook(
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "ReadFile",
+            "tool_input": {"file_path": "/proj/agent.json"},
+            "tool_response": {"success": True},
+        }
+    )
+    assert event["eventName"] == "tool-use"
+    assert event["fileExtension"] == "agent.json"
+
+
 # ── drop-path tests ────────────────────────────────────────────────────────
 
 
@@ -221,6 +284,38 @@ def test_non_uipath_tool_call_is_dropped():
                 "hook_event_name": "PostToolUse",
                 "tool_name": "Bash",
                 "tool_input": {"command": "ls -la"},
+            },
+            expect_drop=True,
+        )
+        is None
+    )
+
+
+def test_autopilot_shell_without_uip_is_dropped():
+    """The `uip` matcher is anchored, NOT a bare substring — a command that
+    merely contains the letters 'uip' (e.g. 'equipment') must not attribute.
+    Guards against loosening the gate to a substring match, which would
+    over-attribute unrelated commands under the renamed Autopilot tools."""
+    assert (
+        run_hook(
+            {
+                "hook_event_name": "PostToolUse",
+                "tool_name": "ExecuteBashCommand",
+                "tool_input": {"command": "echo equipment inventory"},
+            },
+            expect_drop=True,
+        )
+        is None
+    )
+
+
+def test_autopilot_read_file_non_uipath_ext_is_dropped():
+    assert (
+        run_hook(
+            {
+                "hook_event_name": "PostToolUse",
+                "tool_name": "ReadFile",
+                "tool_input": {"file_path": "/proj/notes.txt"},
             },
             expect_drop=True,
         )

@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-16T11:03:48.080Z",
+      "Message": "Invoke GenerateReport: Validation Error: When TargetSession is set to a value other than Current, the invoked workflow must run isolated. TargetSession 'PictureInPicture' requires UnSafe (Isolated) = True.\r\nin Main.xaml\r\n    at InvokeWorkflowFile \"Invoke GenerateReport\"\r\n    at Sequence \"Main\"\r\n    at DynamicActivity \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.Activities.InvalidWorkflowException\r\n   at UiPath.Core.Activities.InvokeWorkflowFile.CacheMetadata(NativeActivityMetadata metadata)"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-07-16T11:03:47.760Z",
+      "Message": "ReportDispatch execution started"
+    }
+  ]
+}

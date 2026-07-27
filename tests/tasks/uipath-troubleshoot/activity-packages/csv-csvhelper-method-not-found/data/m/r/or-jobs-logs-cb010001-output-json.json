@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-13T08:02:14.240Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-13T08:02:15.560Z",
+      "Message": "[Read Range] Read 42 rows from data\\source.xlsx (Sheet1)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-13T08:02:16.420Z",
+      "Message": "[Append To CSV] Method not found: 'Void CsvHelper.CsvWriter..ctor(System.IO.TextWriter, CsvHelper.Configuration.CsvConfiguration)'."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-13T08:02:16.470Z",
+      "Message": "Append To CSV: Method not found: 'Void CsvHelper.CsvWriter..ctor(System.IO.TextWriter, CsvHelper.Configuration.CsvConfiguration)'.\r\nin Main.xaml\r\n    at AppendToCsvFile \"Append To CSV\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-13T08:02:16.520Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

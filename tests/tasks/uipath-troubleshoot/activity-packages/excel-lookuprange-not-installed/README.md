@@ -17,7 +17,7 @@ new robot" detail points at a host-environment cause, not a workflow
 defect.
 
 This maps to:
-`references/activity-packages/excel-activities/playbooks/lookup-range-excel-not-installed.md`
+`references/activity-packages/excel-activities/playbooks/excel-not-installed.md`
 
 The user is framed as **off-host**, so the correct agent behavior is to
 tie the HRESULT to a missing Excel install and recommend either
@@ -40,7 +40,7 @@ attempt host commands.
 ## Success criteria
 
 - Agent invoked the `uipath-troubleshoot` skill
-- Agent matched `lookup-range-excel-not-installed.md`
+- Agent matched `excel-not-installed.md` and used its Lookup Range discriminator
 - Agent identified "Excel not installed on the robot host" as the cause
   and recommended either installing Excel or migrating to Workbook
   Read Range + Lookup Data Table (either fix path scores full marks)

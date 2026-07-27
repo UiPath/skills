@@ -1,0 +1,6 @@
+{
+  "Name": "OrderNotifier",
+  "ProjectType": "Process",
+  "Description": "Broadcasts an order-ready signal on an IPC channel to a receiver process.",
+  "MainFile": "Main.xaml"
+}

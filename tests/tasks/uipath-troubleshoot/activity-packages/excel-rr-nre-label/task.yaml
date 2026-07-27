@@ -8,7 +8,7 @@ description: >
   for. The activity opens the file (no IOException), but parsing
   fails with NRE because the label-enforced encryption / policy
   blocks programmatic access. Agent must match the
-  activity-packages/excel-activities/playbooks/read-range-null-reference.md
+  activity-packages/excel-activities/playbooks/null-reference-from-activity.md
   playbook, identify the sensitivity-label branch from the workflow
   source + the job-log Trace entry naming the label, and recommend
   granting Robot user permission or removing the label.
@@ -25,7 +25,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir

@@ -24,6 +24,8 @@ Follow the pipeline in [connector-trigger-common.md § Planning Pipeline](../../
 
 ## tasks.md Entry Format
 
+Populate `outputs:` using the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list).
+
 ```markdown
 ## T<n>: Add connector-trigger task "<display-name>" to "<stage>"
 - type-id: <uiPathActivityTypeId>
@@ -34,6 +36,8 @@ Follow the pipeline in [connector-trigger-common.md § Planning Pipeline](../../
 - event-mode: <polling|webhooks>
 - input-values: {"eventParameters": {"parentFolderId": "AAMkADNm..."}}
 - filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"subject","operator":"Contains","value":{"isLiteral":true,"rawString":"\"urgent\"","value":"urgent"},"uiId":null}]}
+- outputs:                            # optional; omit only when the SDD declares none
+  - <SDD output row, copied verbatim>
 - isRequired: true
 - runOnlyOnce: false
 - order: after T<m>

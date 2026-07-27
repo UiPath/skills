@@ -1,0 +1,13 @@
+{
+  "Result": "Success",
+  "Code": "IsResourcesDescribe",
+  "Data": {
+    "name": "curated_create_issue",
+    "displayName": "Create Issue",
+    "elementKey": "uipath-atlassian-jira",
+    "availableOperations": [
+      { "name": "Create", "path": "/curated_create_issue", "method": "POST", "curated": "Create Issue" }
+    ],
+    "hint": "Use --operation Create to pull field metadata; for full schema run with -f fields.project.key=<key> -f fields.issuetype.id=<id>."
+  }
+}

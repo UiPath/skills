@@ -1,0 +1,6 @@
+{
+  "Name": "FeedDownloader",
+  "ProjectType": "Process",
+  "Description": "Downloads a partner data feed from an external URL.",
+  "MainFile": "Main.xaml"
+}

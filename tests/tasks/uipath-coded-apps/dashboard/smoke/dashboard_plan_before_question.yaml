@@ -12,7 +12,6 @@ description: >
 tags: [uipath-coded-apps, smoke, dashboard, feature:approval-gate, mode:build, lifecycle:generate]
 
 sandbox:
-  driver: tempdir
   node: {}
 
 initial_prompt: |

@@ -8,7 +8,7 @@ description: >
   designing schema, adding HITL node, wiring all handles, and validating the
   authored .flow file. Real business use case. Full Discover -> Plan -> Build -> Verify loop.
   Does not deploy or run the flow.
-tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back]
+tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back, path-to-ga]
 
 run_limits:
   expected_turns: 19

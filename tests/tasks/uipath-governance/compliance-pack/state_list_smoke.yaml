@@ -10,6 +10,12 @@ tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compl
 sandbox:
   python: {}
 
+# Safety net: smoke sandboxes have live tenant auth in CI, so an agent that
+# strays into apply flows really mutates the tenant. Clean up after.
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
+
 initial_prompt: |
   What compliance standards are currently configured on my tenant?
   Show me which compliance standards have been applied.

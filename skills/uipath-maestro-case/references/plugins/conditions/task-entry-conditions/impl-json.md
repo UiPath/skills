@@ -79,13 +79,13 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 
 **Rule output binding.** If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) **as the last step — after rule write, before root bindings**. `elementId` stays `<stageId>-<ruleId>` on every output entry. Skip when the rule has no `uipath.outputs[]` (stub placeholder).
 
-### runs-sequentially — sequential group with optional parallel siblings
+### runs-sequentially — sequential task chain
 
 ```json
 "rules": [[ { "id": "rxxxxxxxx", "rule": "runs-sequentially" } ]]
 ```
 
-**Lane semantics for this rule type:** Among tasks sharing a `runs-sequentially` task-entry condition, group members meant to run in **parallel** with each other MUST share the same `lane` in `stageNode.data.tasks[lane][index]` (shared lane = parallel siblings inside the sequential group, semantic — not just FE layout). Solo members of the group get their own lane. Tasks outside any `runs-sequentially` group still follow the default one-task-per-lane rule with layout-only semantics.
+**Frontend toggle semantics:** The sequential toggle writes this rule as the task's only entry condition. Preserve the task's order in the stage's `data.tasks` structure. On the first task in the chain, `runs-sequentially` means the current stage was entered; on subsequent tasks, it means the preceding task completed. Do not use lane-sharing, `selected-tasks-completed`, or an additional `current-stage-entered` rule to express this sequence.
 
 ## Rule-Type Catalog
 

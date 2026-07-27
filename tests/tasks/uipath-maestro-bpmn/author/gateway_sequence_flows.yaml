@@ -28,7 +28,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "BPMN source was created"
-    command: "find InvoiceTriageBpmn -maxdepth 1 -type f -name '*.bpmn' | grep -q ."
+    command: "find . -type f -name '*.bpmn' -path '*InvoiceTriageBpmn*' | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 1.0

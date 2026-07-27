@@ -1,0 +1,72 @@
+task_id: skill-bpmn-diagnose-validate-fix-loop
+description: >
+  Diagnose-and-repair loop for the uipath-maestro-bpmn skill. A pre-broken
+  Maestro BPMN file ships two blocking defects (an exclusive-gateway branch with
+  no condition expression, and a condition expression that references an
+  undeclared variable). The agent runs the bundled offline validator, reads the
+  reported findings, fixes the root causes in BPMN source, and re-validates
+  until the file is clean. Pure local — no cloud or mocked CLI.
+tags: [uipath-maestro-bpmn, integration, "mode:diagnose", "lifecycle:discover"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  A Maestro BPMN file `ExpenseApproval.bpmn` is in the working directory. It does
+  NOT currently pass validation.
+
+  Diagnose and repair it:
+  - Run the skill's bundled offline validator against the file to see the
+    findings (the validator lives under `validator/`; install its dependencies
+    with `npm install` first, then run `node validate-bpmn.mjs <file>`).
+  - Read the reported errors and fix the ROOT CAUSE of each in the BPMN source —
+    every non-default exclusive-gateway branch needs its own condition
+    expression, and every condition expression must reference a declared
+    process variable.
+  - Re-run the validator and keep fixing until it reports `VALID` (exit 0).
+
+  Make a surgical edit: preserve element ids, the uipath:* variable declarations,
+  and the diagram. Do not add a default flow to sidestep a missing condition —
+  give each branch a real condition. Do not upload, publish, deploy, debug, run,
+  or pack anything, and do not pause for approval.
+
+success_criteria:
+  - type: file_exists
+    description: "The BPMN file is still present after the repair"
+    path: "ExpenseApproval.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the bundled offline validator on the BPMN file"
+    tool_name: "Bash"
+    command_pattern: 'node\s+.*validate-bpmn\.mjs'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Repaired file carries an explicit condition on the previously bare branch"
+    path: "ExpenseApproval.bpmn"
+    includes:
+      - "conditionExpression"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Bundled validator now reports the BPMN file VALID (exit 0)"
+    command: "cd validator && npm install --silent && node validate-bpmn.mjs ../ExpenseApproval.bpmn"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

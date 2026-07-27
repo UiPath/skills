@@ -6,7 +6,7 @@ agent reached a verified resolution. The fixtures are the verbatim
 
 ## What the original session uncovered
 
-**Root Cause:** The "GitHub Desktop" Use Application/Browser scope in `DesktopApp.xaml` has a hard-coded `File path` pointing at a developer-machine install location — `C:\Users\original_user\AppData\Local\GitHubDesktop\app-3.5.12\githubdesktop2.exe` — that does not exist on the robot machine MOCK-HOST. Because the scope is set to open the app (no `Open` mode set, so it defaults to "If not open"), it tried to launch that exact executable, the file was not there, and the scope threw `ApplicationOpenException` before any activity inside it could run.
+**Root Cause:** The "GitHub Desktop" Use Application/Browser scope in `DesktopApp.xaml` has a hard-coded `File path` pointing at a developer-machine install location — `C:\Users\original_user\AppData\Local\GitHubDesktop\app-3.5.12\githubdesktop.exe` — that does not exist on the robot machine MOCK-HOST. Because the scope is set to open the app (no `Open` mode set, so it defaults to "If not open"), it tried to launch that exact executable, the file was not there, and the scope threw `ApplicationOpenException` before any activity inside it could run.
 
 ## How this test reproduces it
 

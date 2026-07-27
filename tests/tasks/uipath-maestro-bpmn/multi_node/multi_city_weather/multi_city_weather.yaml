@@ -1,0 +1,70 @@
+task_id: skill-bpmn-multi-city-weather
+description: >
+  Skill-guided evaluation (ported from the Flow multi_city_weather eval): agent
+  uses the uipath-maestro-bpmn skill to author a BPMN process that classifies a
+  list of cities using a PARALLEL multi-instance marker over a per-item script
+  task. Exercises the multi-instance / loop-characteristics registry gap
+  (parallel fan-out with a collection output). Authoring only — no cloud effects
+  and no live connector (the per-item work is a script task).
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:loop"]
+
+run_limits:
+  expected_turns: 22
+  max_turns: 75
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project named "MultiCityWeatherBpmn" with the main
+  file at `MultiCityWeatherBpmn/MultiCityWeatherBpmn.bpmn` for this process:
+  - Manual start with a `cities` variable holding ["Seattle", "Phoenix", "New
+    York"] and a `results` collection variable.
+  - A single script task that runs once per city under a PARALLEL multi-instance
+    marker: for each city it derives a temperature and classifies it as "warm"
+    (> 60F) or "cold", appending {city, temperature, verdict} to the results.
+  - A single end event.
+
+  Requirements:
+  - Model the per-item work as a script task (no live Integration Service
+    connector — keep it local and self-contained).
+  - Apply `bpmn:multiInstanceLoopCharacteristics` with `isSequential="false"` to
+    the script task, and bind the collection through the
+    `uipath:loopCharacteristics` extension (`inputCollection` and `inputElement`)
+    per the skill's structural reference — the registry serves no template for
+    this, author it from the canvas contract.
+  - Declare variables and author the script-task payload per the skill's
+    structural reference; do not hand-author uipath:* XML from prose.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback. Do NOT pause between planning and
+  implementation. Build the complete local project end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "MultiCityWeatherBpmn/MultiCityWeatherBpmn.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN uses a multi-instance loop marker"
+    path: "MultiCityWeatherBpmn/MultiCityWeatherBpmn.bpmn"
+    includes:
+      - "multiInstanceLoopCharacteristics"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN has a parallel multi-instance marker with a bound cities collection and valid DI"
+    command: "python3 $TASK_DIR/check_multi_city_weather.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -54,7 +54,7 @@ var result = RunWorkflow(workflowPath, new Dictionary<string, object>
 >
 > - **Single return value** (`public string Execute(int a, int b)`) — the result is stored under the key `"Output"`. Access it as `result["Output"]`.
 > - **Multiple outputs via tuple** (`public (string a, string b) Execute()`) — each tuple member becomes a separate key: `result["a"]`, `result["b"]`. These are Out arguments.
-> - **InOut arguments** — when a parameter name appears in both the input parameters and the return tuple, it is an InOut argument. Example: `public (string a, string b) Execute(string b, int c)` — `a` is Out, `b` is InOut (same name in input and output), `c` is In.
+> - **InOut arguments** — when a parameter name appears in both the input parameters and the return tuple, it is an InOut argument. Example: `public (string a, string b) Execute(string b, int c)` — `a` is Out, `b` is InOut (same name in input and output), `c` is In. The input and output types of an InOut argument must be identical — a mismatch fails analyzer rule ST-REL-001 (Error) at `analyze`/`build`/`pack`.
 >
 > For same-project workflows, prefer the type-safe `workflows.MyWorkflow()` property — it returns the declared return type directly and avoids this dictionary lookup.
 

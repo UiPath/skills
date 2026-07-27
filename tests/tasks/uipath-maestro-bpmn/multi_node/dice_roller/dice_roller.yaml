@@ -1,0 +1,56 @@
+task_id: skill-bpmn-dice-roller
+description: >
+  Skill-guided evaluation (ported from the Flow dice_roller eval): agent uses the
+  uipath-maestro-bpmn skill to author a BPMN process with a script task that
+  produces a random die value and an exclusive gateway that classifies the
+  result. Exercises script-task randomness and gateway-on-result routing.
+  Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 70
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project named "DiceRollerBpmn" with the main file
+  at `DiceRollerBpmn/DiceRollerBpmn.bpmn` for this process:
+  - Manual start.
+  - A script task that rolls a fair six-sided die (a random integer 1..6) into a
+    `roll` variable.
+  - An exclusive gateway that classifies the roll into a high branch (>= 4) and a
+    low branch, each reaching its own end event.
+
+  Requirements:
+  - Declare variables and author the script-task payload per the skill's
+    structural reference; do not hand-author uipath:* XML from prose. The script
+    runs under Jint.
+  - The gateway must have a condition on the non-default branch and exactly one
+    default flow.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback. Do NOT pause between planning and
+  implementation. Build the complete local project end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "DiceRollerBpmn/DiceRollerBpmn.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN has a randomness script task and an exclusive gateway on the result, with valid DI"
+    command: "python3 $TASK_DIR/check_dice_roller.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

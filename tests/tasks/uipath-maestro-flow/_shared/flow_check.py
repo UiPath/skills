@@ -39,6 +39,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from typing import Any, Iterable, Sequence
 
 
@@ -53,6 +54,34 @@ from typing import Any, Iterable, Sequence
 _LAST_DEBUG_RAW: str | None = None
 
 
+# A `uip maestro flow debug` run can die on a transient server-side error — a
+# gateway timeout / 5xx while polling the debug instance, which the CLI reports
+# as `Result:Failure`, `ErrorCode:server_error`, `Retry:RetryLater` (the CLI's
+# own Instructions say "retry once before reporting"). This is orchestration
+# infrastructure hiccuping mid-run, NOT the built flow being wrong: a single
+# 504 on GET /debug-instances/<id>/element-executions failed a whole seeded
+# check (customer-escalation-triage). Distinct from a real flow failure (a
+# `finalStatus` that completed-with-fault, or wrong outputs), which must fail
+# immediately. Retry ONLY on the transient markers below.
+_DEBUG_RETRY_MARKERS = ('"retry": "retrylater"', '"errorcode": "server_error"')
+
+
+def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
+    """True iff a failed ``flow debug`` invocation looks like a transient
+    server-side error (5xx / RetryLater) worth retrying, rather than a real
+    flow fault. Case-insensitive so CLI key casing can't slip past."""
+    if result.returncode == 0:
+        return False
+    blob = f"{result.stdout}\n{result.stderr}".lower()
+    if any(marker in blob for marker in _DEBUG_RETRY_MARKERS):
+        return True
+    # Fall back to an explicit 5xx HttpStatus in the error Context.
+    data = _parse_json(result.stdout)
+    status = _get_ci(data or {}, "Context", default={})
+    http = _get_ci(status if isinstance(status, dict) else {}, "HttpStatus")
+    return isinstance(http, int) and 500 <= http < 600
+
+
 # ── Public helpers ──────────────────────────────────────────────────────────
 
 
@@ -62,9 +91,17 @@ def run_debug(
     attachments: dict[str, str] | None = None,
     timeout: int = 240,
     project_glob: str = "**/project.uiproj",
+    retries: int = 3,
+    backoff_seconds: float = 5.0,
 ) -> dict:
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing.
+
+    Transient server-side errors (5xx / ``RetryLater`` while polling the debug
+    instance — see :func:`_is_transient_debug_error`) are retried up to
+    ``retries`` times with ``backoff_seconds`` between attempts. A real flow
+    fault (non-transient failure, or a run that completes with the wrong
+    ``finalStatus``) fails immediately without burning retries.
 
     ``attachments`` maps a file-typed input variable ``id`` to a local file path;
     each pair is passed as ``--attachment <id>=<path>`` (repeatable). The variable
@@ -76,9 +113,14 @@ def run_debug(
         cmd.extend(["--inputs", json.dumps(inputs)])
     for var_id, local_path in (attachments or {}).items():
         cmd.extend(["--attachment", f"{var_id}={local_path}"])
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     global _LAST_DEBUG_RAW
-    _LAST_DEBUG_RAW = r.stdout
+    for attempt in range(retries):
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        _LAST_DEBUG_RAW = r.stdout
+        if r.returncode == 0 or not _is_transient_debug_error(r):
+            break
+        if attempt + 1 < retries:
+            time.sleep(backoff_seconds)
     if r.returncode != 0:
         _fail(f"flow debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}")
     data = _parse_json(r.stdout)

@@ -7,7 +7,7 @@ description: >
   enumeration succeeds, but the named-range lookup fails with
   NullReferenceException because the named range in the workbook
   has a #REF! refers-to (points at a deleted sheet or cell). Agent
-  must match the activity-packages/excel-activities/playbooks/read-range-null-reference.md
+  must match the activity-packages/excel-activities/playbooks/null-reference-from-activity.md
   playbook, identify the broken-named-range branch from the workflow
   source + the job-log Trace entry showing the named range resolved
   to a broken reference, and recommend fixing the named range in
@@ -25,7 +25,6 @@ run_limits:
   turn_timeout: 5400
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir

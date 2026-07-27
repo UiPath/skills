@@ -98,7 +98,7 @@ Optional top-level `runtime`: a CLI-managed object that appears on some flows (e
 > [error] [(root)] Schema validation failed: Invalid input: expected object, received undefined
 > ```
 >
-> The error path is `(root)` and does NOT pinpoint which node or which field is missing. If you see this error after editing a `.flow` file, audit every node for a `display` block before doing anything else. (Improving the validator's path specificity is tracked in [MST-9368](https://uipath.atlassian.net/browse/MST-9368).)
+> The error path is `(root)` and does NOT pinpoint which node or which field is missing. If you see this error after editing a `.flow` file, audit every node for a `display` block before doing anything else.
 
 > **No instance `model` block.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`). This applies to every inline-agent-related node too: `uipath.agent.autonomous` plus every attached `uipath.agent.resource.*` node (tool, escalation, context) carries source identity at `inputs.source`. Their definitions declare `model.source: true`; flow-core hoists that identity onto each instance's `inputs.source`. Do not write a `"model": { "source": ... }` block on the instance.
 >

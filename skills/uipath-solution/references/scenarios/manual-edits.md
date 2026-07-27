@@ -64,7 +64,7 @@ Open the file. The shape is roughly:
 | `resource.runtimeDependencies` | Recomputed at every pack — manual edits lost on next pack |
 | `resource.files`, `resource.locks` | Managed; never appear in user-edit scenarios |
 | `resource.folders` | Moves the resource. For a *cloud-imported* resource the folder is `solution_folder` (placeholder) — editing it doesn't change cloud location, only confuses sync. For a *virtual* resource that you authored at a non-`solution_folder` folder, edit at the binding (`bindings_v2.json`) and let refresh re-create — don't edit the resource file directly |
-| `resource.spec.<reference-fields>` | E.g. `storageBucketReference`, `retentionBucketRef`. The SDK rewrites these when the target's link state changes; hand-edits get clobbered. (Also see [SOL-7051](https://uipath.atlassian.net/browse/SOL-7051) — the rewrite isn't always applied automatically; that's a known bug, not a license to hand-edit dependents arbitrarily) |
+| `resource.spec.<reference-fields>` | E.g. `storageBucketReference`, `retentionBucketRef`. The SDK rewrites these when the target's link state changes; hand-edits get clobbered. (Known bug: the rewrite isn't always applied automatically - that's not a license to hand-edit dependents arbitrarily) |
 
 ### Examples — safe edits
 
@@ -123,7 +123,7 @@ Same principle, looser rules. The deploy config is **per-deployment**, not per-s
 
 **Manual editing of the deploy config is not ideal** — there's no schema validation in the CLI, and a bad edit fails server-side at `deploy run` (often with a generic `ValidationFailed`). But it's the pragmatic escape hatch when:
 
-- You need to set a nested property `config set` doesn't expose (e.g. `configuration.storageBucketReference.key` to work around [SOL-7051](https://uipath.atlassian.net/browse/SOL-7051)).
+- You need to set a nested property `config set` doesn't expose (e.g. `configuration.storageBucketReference.key` to work around the reference-field rewrite bug noted above).
 - You're scripting a config transform (CI step injecting per-environment secrets, etc.) and want a single JSON-patch step instead of N CLI calls.
 - The CLI surface is missing a flag for the field you need.
 

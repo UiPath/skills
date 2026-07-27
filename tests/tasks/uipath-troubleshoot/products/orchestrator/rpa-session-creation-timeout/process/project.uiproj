@@ -1,0 +1,6 @@
+{
+  "Name": "NightlyReconciler",
+  "ProjectType": "Process",
+  "Description": "Background unattended worker; logs activity and exits. The failing process for the rpa-session-creation-timeout scenario (Robot version < 23.10 session-creation-timeout defect).",
+  "MainFile": "Main.xaml"
+}

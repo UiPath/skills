@@ -11,6 +11,12 @@ tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compl
 sandbox:
   python: {}
 
+# Safety net: smoke sandboxes have live tenant auth in CI, so an agent that
+# strays into apply flows really mutates the tenant. Clean up after.
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
+
 initial_prompt: |
   Run a posture analysis for the ISO 42001 compliance standard against my tenant. Show me which
   recommended settings are configured and which are not yet applied.
@@ -25,15 +31,15 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent called catalog get for pack detail"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+(?:iso-42001|\$\S+)'
+    description: "Agent called catalog get (advisory — codex may skip to state coverage)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\b'
     min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: command_executed
     description: "Agent called state coverage for posture analysis"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+)'
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

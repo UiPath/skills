@@ -130,9 +130,9 @@ For each interactive action, in order:
 
 3. **Ask via AskUserQuestion** — the exact apply/dismiss question, plus a project-path follow-up if the path is not already known.
 
-4. **On accept:** follow the playbook's linked procedure (e.g., `activity-packages/ui-automation/interpretations/healing-agent-data.md` § Applying `update-target` Fixes: prefer a package-provided skill like `uia-improve-selector` under `<PROJECT_DIR>/.local/docs/packages/`; otherwise edit the XAML activity matched by `ActivityRefId` with the playbook's XAML Selector Encoding rules; then validate with `uip rpa validate --file-path "<WORKFLOW_FILE>" --output json`). **After applying, the confirmation message must restate the confirmed root cause and the complete resolution** — it must stand alone as the investigation's summary for a user returning to only that message; never let it read as if the applied edit were the primary or only fix.
+4. **On accept: delegate the apply — never edit the artifact yourself.** Spawn a subagent that loads the artifact's owning skill (`.xaml`/`.cs`→`uipath-rpa`, which itself drives package-bundled selector recovery such as `uia-improve-selector`) and hand it the confirmed change: the workflow file, the activity matched by `ActivityRefId`, the before→after value, and `project_dir`. The delegate edits **in place at `project_dir`** (the user's real working copy — do NOT spawn it into a fresh isolated worktree, which forks a throwaway copy the edit never reaches), applies any XML encoding, and validates (`uip rpa validate --file-path "<WORKFLOW_FILE>" --output json`) — you run none of those steps and no write-back CLI. **After the delegate applies, the confirmation message must restate the confirmed root cause and the complete resolution** — it must stand alone as the investigation's summary for a user returning to only that message; never let it read as if the applied edit were the primary or only fix.
 
-5. **On decline or non-answer: do not modify files.** If AskUserQuestion is unavailable, present the proposed edit as plain text and stop — never fall through to editing.
+5. **On decline, non-answer, unavailable `AskUserQuestion`, no usable delegate, or a delegation that fails/errors: do not modify files.** Present the proposed edit as plain text and stop — a missing/failed approval or a failed delegation is never permission to edit the artifact yourself. If a delegation errored or was spawned more than once, verify whether the edit already landed by reading the target file before doing anything else; never self-edit to "finish" or redo a delegate's work.
 
 Pull every value from raw data. A required value missing (e.g., `recovered_partial_selector_xml`) → do NOT fabricate; surface the action as blocked, naming the missing evidence, and offer it as a follow-up.
 
@@ -140,4 +140,4 @@ Pull every value from raw data. A required value missing (e.g., `recovered_parti
 
 - Do NOT fabricate fix steps from undocumented field behavior — cite sources or flag `[Unverified]`.
 - `uip docsai ask` is the only CLI command this phase may add beyond what the playbook documents.
-- Diagnosis is autonomous; **mutation of user source files requires explicit in-channel approval** — no exceptions.
+- Diagnosis is autonomous; **you never mutate user source files yourself** — on approval the apply is delegated to the artifact's owning skill; without approval or a usable delegate it is recommendation-only. No exceptions.

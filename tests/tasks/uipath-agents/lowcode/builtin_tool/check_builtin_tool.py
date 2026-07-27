@@ -7,8 +7,9 @@ A. Some resources/*/resource.json is a built-in tool: $resourceType=tool,
    so toolType=analyze-attachments must be present.
 
 B. agent.json declares inputSchema.definitions["job-attachment"] (object),
-   at least one property uses $ref="#/definitions/job-attachment", and
-   every such input is referenced as {{input.<name>}} in messages[].content.
+   at least one top-level property is either a direct job-attachment reference
+   or an array whose items use that reference, and every such input is
+   referenced as {{input.<name>}} in messages[].content.
 """
 
 import json
@@ -16,6 +17,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from typing import Optional
 
 ROOT = Path(os.getcwd()) / "DocsSol" / "DocAnalystAgent"
 RESOURCES_DIR = ROOT / "resources"
@@ -29,6 +31,25 @@ BUILTIN_TOOL_TYPES = {
 }
 
 JOB_ATTACHMENT_REF = "#/definitions/job-attachment"
+
+
+def job_attachment_shape(prop: object) -> Optional[str]:
+    """Return the supported job-attachment field shape, if any."""
+    if not isinstance(prop, dict):
+        return None
+
+    if prop.get("$ref") == JOB_ATTACHMENT_REF:
+        return "single"
+
+    items = prop.get("items")
+    if (
+        prop.get("type") == "array"
+        and isinstance(items, dict)
+        and items.get("$ref") == JOB_ATTACHMENT_REF
+    ):
+        return "array"
+
+    return None
 
 
 def load(path: Path) -> dict:
@@ -125,23 +146,31 @@ def assert_job_attachment_input(agent: dict) -> None:
     print('OK: inputSchema.definitions["job-attachment"] is defined')
 
     props = schema.get("properties") or {}
-    refs = [
-        name
-        for name, prop in props.items()
-        if isinstance(prop, dict) and prop.get("$ref") == JOB_ATTACHMENT_REF
-    ]
-    if not refs:
+    attachment_inputs = {}
+    for name, prop in props.items():
+        shape = job_attachment_shape(prop)
+        if shape:
+            attachment_inputs[name] = shape
+
+    if not attachment_inputs:
         sys.exit(
-            f'FAIL: no inputSchema property uses $ref="{JOB_ATTACHMENT_REF}". '
-            "The agent has no file input — the Analyze Files tool would have "
-            "nothing to analyze."
+            "FAIL: no top-level inputSchema property accepts job attachments. "
+            f'Expected either {{"$ref": "{JOB_ATTACHMENT_REF}"}} or '
+            '{"type": "array", "items": {"$ref": '
+            f'"{JOB_ATTACHMENT_REF}"}}}}.'
         )
-    print(f"OK: input properties typed as job-attachment: {refs}")
+    print(
+        "OK: job-attachment inputs: "
+        + ", ".join(
+            f"{name} ({shape})"
+            for name, shape in attachment_inputs.items()
+        )
+    )
 
     messages = agent.get("messages") or []
     bodies = [m.get("content", "") for m in messages if isinstance(m, dict)]
     missing = []
-    for name in refs:
+    for name in attachment_inputs:
         # Match {{ input.<name> }} with any internal whitespace.
         pattern = re.compile(
             r"\{\{\s*input\." + re.escape(name) + r"\s*\}\}"
@@ -155,7 +184,10 @@ def assert_job_attachment_input(agent: dict) -> None:
             "Every attachment input must be wired into a prompt or the "
             "model never sees it."
         )
-    print(f"OK: all job-attachment inputs are referenced in messages: {refs}")
+    print(
+        "OK: all job-attachment inputs are referenced in messages: "
+        f"{list(attachment_inputs)}"
+    )
 
 
 def main() -> None:

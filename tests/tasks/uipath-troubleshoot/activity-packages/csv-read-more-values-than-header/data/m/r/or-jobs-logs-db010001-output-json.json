@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-14T08:12:03.240Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-14T08:12:04.510Z",
+      "Message": "[Read CSV] Reading data\\contacts.csv (Delimiter=Comma, AddHeaders=True, IgnoreQuotes=True)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-14T08:12:05.210Z",
+      "Message": "[Read CSV] Line 4 contains more values than the header line."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-14T08:12:05.270Z",
+      "Message": "Read CSV: Line 4 contains more values than the header line.\r\nin Main.xaml\r\n    at ReadCsvFile \"Read CSV\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-14T08:12:05.300Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

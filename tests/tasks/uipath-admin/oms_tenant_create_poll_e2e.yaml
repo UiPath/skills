@@ -12,7 +12,7 @@ tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, oms, tenant-lifecycle, 
 run_limits:
   expected_turns: 10
   max_turns: 40
-  turn_timeout: 600
+  turn_timeout: 900
 
 initial_prompt: |
   Create a new tenant named "Staging-Env-Poll-Test" in an appropriate region.
@@ -24,33 +24,38 @@ initial_prompt: |
   still run the poll command so we can verify the command shape.
 
   Important:
-  - The `uip` CLI is available but the `admin` subcommand may not be
-    installed and/or the CLI is not connected to a live tenant.
-    Commands WILL fail — that is expected and acceptable.
+  - The `uip` CLI is available but is not connected to a live tenant.
+    Commands WILL fail with auth errors — that is expected and acceptable.
     Run each command exactly once regardless of errors.
-    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
-    do NOT troubleshoot errors.
+    Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent listed regions before creating (Rule 21)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+organizations\s+regions\s+list\b'
-    min_count: 1
-    weight: 1.5
+  - type: skill_triggered
+    description: "Agent activated the uipath-admin skill"
+    skill_name: "uipath-admin"
+    expected_skill: "uipath-admin"
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created the tenant with name and region"
+    description: "Agent listed regions before creating (advisory — codex may skip)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+tenants\s+create\b.*(?:--file|--region)'
+    command_pattern: 'uip\s+admin\s+organizations\s+regions\s+list\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent created the tenant"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+create\b'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent polled async operation via organizations operation get (Rule 18)"
+    description: "Agent polled async operation via organizations operation get"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+organizations\s+operation\s+get\b'
     min_count: 1

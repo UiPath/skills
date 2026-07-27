@@ -12,7 +12,6 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  driver: tempdir
   mock_path_dirs: [mocks]
   template_sources:
     - {type: template_dir, path: ../_shared/mock_template}
@@ -20,8 +19,7 @@ sandbox:
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, create a new field group named
   "Subscriber information" with fields: surname, address, bank account, and
-  phone number. Pass all four fields inline in one batched call — do not load
-  the payload from a separate file.
+  phone number in one batched call.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant in
@@ -30,13 +28,10 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # Offline smoke (mock CLI, no tenant) can only grade the command text, so the prompt requires the fields
-  # inline: a `$(cat file)` / variable payload hides the field names from this pattern (a real run failed this
-  # way). Verifying the four field names is the point of the test — keep the per-field lookaheads.
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent created the group with multiple fields in one `groups add … --fields` call (batch)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+groups\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*Subscriber information)(?=.*--fields)(?=.*surname)(?=.*address)(?=.*bank account)(?=.*phone number).*'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+groups\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*Subscriber information)(?=.*--fields)(?=.*surname)(?=.*address)(?=.*bank account)(?=.*phone number).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0

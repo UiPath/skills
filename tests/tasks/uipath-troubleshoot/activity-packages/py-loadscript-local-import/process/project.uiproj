@@ -1,0 +1,6 @@
+{
+  "Name": "PyLedgerSync",
+  "ProjectType": "Process",
+  "Description": "PyLedgerSync automation project.",
+  "MainFile": "Main.xaml"
+}

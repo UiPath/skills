@@ -23,7 +23,7 @@ and throws `NullReferenceException` from inside the activity's
 range-resolution code.
 
 This maps to:
-`skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-null-reference.md`
+`skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/null-reference-from-activity.md`
 (the "Broken named range / formula reference" branch).
 
 ## How this test reproduces it

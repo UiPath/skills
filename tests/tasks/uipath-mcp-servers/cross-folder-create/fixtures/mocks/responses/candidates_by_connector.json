@@ -1,0 +1,13 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpToolsCandidates",
+  "Data": {
+    "items": [
+      { "objectName": "curated_create_issue", "methodName": "POST", "displayName": "Create Issue",        "curated": true },
+      { "objectName": "curated_add_comment",  "methodName": "POST", "displayName": "Add Comment to Issue", "curated": true },
+      { "objectName": "curated_get_issue",    "methodName": "GET",  "displayName": "Get Issue",            "curated": true },
+      { "objectName": "curated_search_issues","methodName": "GET",  "displayName": "Search Issues (JQL)",  "curated": true }
+    ],
+    "total": 4
+  }
+}

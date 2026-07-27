@@ -13,9 +13,10 @@ The agent's own `delete` step is the primary cleanup; this post_run is a safety
 net so a run that fails mid-flow never leaves an orphan policy on the tenant.
 Always exits 0 — failures here never affect pass/fail.
 
-The two kinds have different list/delete shapes:
-  access-policy  list -> Data.Results[], id field "Id",         delete <Id>
-  aops-policy    list -> Data.Result[],  id field "Identifier", delete <Identifier>
+The two kinds have different list/delete shapes AND different --offset semantics
+(verified against the live service):
+  access-policy  list -> Data.Results[], id field "Id",         delete <Id>,         --offset = ROW index
+  aops-policy    list -> Data.Result[],  id field "Identifier", delete <Identifier>, --offset = PAGE index
 """
 
 import json
@@ -27,10 +28,12 @@ import sys
 logging.basicConfig(level=logging.INFO, format="cleanup_policy: %(message)s")
 logger = logging.getLogger(__name__)
 
-# kind -> (list rows key under Data, id field on each row)
+# kind -> (list rows key under Data, id field on each row, offset step per page)
+# offset step: access-policy --offset counts ROWS (advance by page size);
+# aops-policy --offset counts PAGES (advance by 1).
 KINDS = {
-    "access-policy": ("Results", "Id"),
-    "aops-policy": ("Result", "Identifier"),
+    "access-policy": ("Results", "Id", 20),
+    "aops-policy": ("Result", "Identifier", 1),
 }
 
 
@@ -59,13 +62,15 @@ def main():
         )
         return
 
-    rows_key, id_field = KINDS[kind]
+    rows_key, id_field, offset_step = KINDS[kind]
 
     # The list endpoint caps page size (access-policy rejects --limit > 20), so
-    # page through with --offset until we've seen TotalCount rows.
+    # page through with --offset until we've seen TotalCount rows. Dedupe by id
+    # guards against overlap if a kind's offset semantics ever change.
     page = 20
     offset = 0
     all_rows = []
+    seen = set()
     while offset <= 1000:
         data = run_cli(["gov", kind, "list", "--limit", str(page), "--offset", str(offset)])
         if not data or data.get("Result") != "Success":
@@ -75,10 +80,12 @@ def main():
             break  # partial list is fine for best-effort cleanup
         payload = data.get("Data") or {}
         rows = payload.get(rows_key, []) or []
-        all_rows.extend(rows)
+        new_rows = [r for r in rows if r.get(id_field) not in seen]
+        seen.update(r.get(id_field) for r in new_rows)
+        all_rows.extend(new_rows)
         total = payload.get("TotalCount", len(all_rows))
-        offset += page
-        if not rows or offset >= total:
+        offset += offset_step
+        if not rows or not new_rows or len(all_rows) >= total:
             break
 
     matches = [r for r in all_rows if (r.get("Name") or "").startswith(name_prefix)]

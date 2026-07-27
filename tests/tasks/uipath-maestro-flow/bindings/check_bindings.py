@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate Connection-binding shape in produced .flow files.
 
-Regression coverage for MST-10236 / UiPath/cli#2197: `uip maestro flow node
+Regression coverage: `uip maestro flow node
 configure` previously appended brand-new Connection bindings instead of
 claiming the empty-keyed stubs that flow-core hoists at `node add` time.
 The produced .flow shipped with two binding rows per real connection;

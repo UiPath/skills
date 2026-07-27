@@ -1,0 +1,7 @@
+{
+  "Result": "Failure",
+  "Code": "AgentHubMcpToolsCandidates",
+  "Message": "IS-activity MCP tools are not yet available on cloud.uipath.com — the feature is rolling out and is currently enabled on alpha/staging only.",
+  "Reason": "IsActivityNotAvailable",
+  "Hint": "Author the tool as create-resource or create-raw instead, or use an alpha/staging tenant. If this tenant is enrolled in the rollout, re-run with --force."
+}

@@ -128,6 +128,27 @@ def main():
                 f"FAIL: task {name!r} task-entry rule should be {want!r}; got {got!r}"
             )
 
+    for name in ("First Step", "Second Step"):
+        task = expectations[name][0]
+        rules = [
+            (first_rule_of_condition(condition) or {}).get("rule")
+            for condition in (task.get("entryConditions") or [])
+        ]
+        if rules != ["runs-sequentially"]:
+            sys.exit(
+                f"FAIL: sequential task {name!r} must have only runs-sequentially; got {rules!r}"
+            )
+
+    adhoc_rules = [
+        (first_rule_of_condition(condition) or {}).get("rule")
+        for condition in (optional_audit.get("entryConditions") or [])
+    ]
+    if adhoc_rules != ["adhoc"] or optional_audit.get("isRequired") is not False:
+        sys.exit(
+            "FAIL: Optional Audit must be an adhoc-only, non-required task; "
+            f"rules={adhoc_rules!r}, isRequired={optional_audit.get('isRequired')!r}"
+        )
+
     # Region Check fires when the Finalize stage is entered. current-stage-entered
     # is the default task-entry rule and may be emitted explicitly or omitted.
     rc_rule = _task_entry_rule(region_check)
@@ -137,17 +158,15 @@ def main():
             f"'current-stage-entered' (or default); got {rc_rule!r}"
         )
 
-    # First Step and Second Step are parallel members of the same
-    # runs-sequentially group, so they MUST share one lane (shared lane =
-    # parallel siblings inside the sequential group, semantic — not the
-    # default one-task-per-lane FE layout).
+    # The frontend keeps tasks in an ordered structural set. The rule and
+    # declaration order, not the set/lane alone, express sequential behavior.
     first_step_lane = _stage_task_lane(process, "First Step")
     second_step_lane = _stage_task_lane(process, "Second Step")
     if first_step_lane != second_step_lane:
         sys.exit(
-            f"FAIL: 'First Step' and 'Second Step' are parallel members of the "
-            f"runs-sequentially group and must share the same lane in Process "
-            f"data.tasks; got lane {first_step_lane} and lane {second_step_lane}"
+            f"FAIL: 'First Step' and 'Second Step' must share the ordered task "
+            f"set in Process data.tasks; got set {first_step_lane} and set "
+            f"{second_step_lane}"
         )
 
     if optional_audit.get("type") != "process":
@@ -233,8 +252,8 @@ def main():
         "selected-tasks-completed→Done (marksStageComplete=false); Finalize "
         "entry selected-stage-completed; task-entry rules cover runs-sequentially/"
         "current-stage-entered/selected-tasks-completed/adhoc; First Step + "
-        f"Second Step share lane {first_step_lane} (parallel members of the "
-        "runs-sequentially group); First Step uses non-repeating timeDuration "
+        f"Second Step share task set {first_step_lane} (ordered by their "
+        "runs-sequentially entry rules); First Step uses non-repeating timeDuration "
         "PT2S; Second Step uses non-repeating timeDuration PT5S; Region Check fires on "
         "current-stage-entered; root variables 'region' (string) "
         "and 'priorityScore' (number); 'Optional Audit' is a process-typed "

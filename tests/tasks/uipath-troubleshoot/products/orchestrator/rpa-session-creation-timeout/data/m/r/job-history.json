@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "JobHistory",
+  "_doc": "State transitions for the faulting job: Pending -> Running -> Faulted. It DID enter Running (the Robot accepted the job and began session creation), then faulted ~120s later when session creation timed out. Proves this is not a stuck-Pending / no-host case.",
+  "Data": [
+    {
+      "State": "Pending",
+      "CreationTime": "2026-07-13T02:00:04.900Z",
+      "Reason": "Job created by schedule trigger 'NightlyReconciler-0200'."
+    },
+    {
+      "State": "Running",
+      "CreationTime": "2026-07-13T02:00:05.100Z",
+      "Reason": "Robot on RECON-BOT-01 accepted the job; starting executor."
+    },
+    {
+      "State": "Faulted",
+      "CreationTime": "2026-07-13T02:02:05.400Z",
+      "Reason": "Could not start executor. Creating user session timed out."
+    }
+  ]
+}

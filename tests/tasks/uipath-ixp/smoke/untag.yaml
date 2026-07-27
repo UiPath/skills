@@ -13,7 +13,6 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  driver: tempdir
   mock_path_dirs: [mocks]
   template_sources:
     - {type: template_dir, path: ../_shared/mock_template}
@@ -29,18 +28,20 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
+  - type: file_matches_regex
     description: "Agent removed the tag via `projects untag <Name> --tag live`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+untag\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--tag\s+live\b).*'
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+untag\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--tag\s+live\b).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
   # Anti-pattern guard: removing a tag is NOT unpublishing or deleting.
-  - type: command_not_executed
+  - type: file_matches_regex
     description: "Agent did NOT unpublish or delete (untag must not unpublish or destroy the version)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+(projects\s+unpublish|projects\s+delete)\b'
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+(projects\s+unpublish|projects\s+delete)\b)[^\r\n]*$
+    must_match: false
     weight: 1.0
     pass_threshold: 1.0

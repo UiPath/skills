@@ -19,7 +19,7 @@ and `HourlySalesB`) fire the same process every 30 minutes, offset by
 0 minutes — their Running windows always overlap.
 
 This maps to:
-`skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-file-locked.md`
+`skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/workbook-file-locked.md`
 (the "Concurrent Robot jobs racing on the same workbook" branch).
 
 ## How this test reproduces it

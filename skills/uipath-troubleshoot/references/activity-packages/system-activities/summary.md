@@ -2,6 +2,8 @@
 
 **Investigation guide:** [investigation_guide.md](./investigation_guide.md) — data correlation rules and testing prerequisites for System Activities investigations
 
+> **Activity-type tokens.** Classic `Get Asset` / `Get Robot Asset` compile to the `GetRobotAsset` activity type; classic `Get Credential` / `Get Robot Credential` compile to `GetRobotCredential`. Both read Orchestrator assets and share the `get-asset-*` failure families below — when the faulting activity is `GetRobotAsset` or `GetRobotCredential`, route by the error signal (error code / exception class), not by the type token.
+
 | Issue | Confidence | Description | Playbook |
 |-------|:---:|-------------|----------|
 | Get Asset — Wrong Activity for Asset Type | High | `Get Asset` used on a Credential or `Get Credential` used on a Text/Integer/Boolean asset | [get-asset-wrong-activity-type.md](./playbooks/get-asset-wrong-activity-type.md) |
@@ -13,3 +15,7 @@
 | Get Asset — External Credential Store Failure | Medium | External vault (CyberArk, Azure Key Vault, Thycotic) unreachable or misconfigured (error codes 2303, 2304) | [get-asset-external-vault-failure.md](./playbooks/get-asset-external-vault-failure.md) |
 | Get Asset — Activity Bug / Silent Failure | Medium | Activity completes without exception but output is null/zero/empty (copy-paste or package 22.10.x bug) | [get-asset-activity-bug-silent-failure.md](./playbooks/get-asset-activity-bug-silent-failure.md) |
 | Get Asset — Network or Connectivity Issue | Low | Network, TLS, proxy, or session expiry between robot and Orchestrator | [get-asset-network-connectivity.md](./playbooks/get-asset-network-connectivity.md) |
+| Compress / Extract Files Failed | Medium | `CompressionException` from `Compress/Zip` or `Extract/Unzip Files` — empty input, output exists (override off), duplicate entry, corrupt/unreadable archive, unsupported format, or output name collision | [compress-extract-files-failed.md](./playbooks/compress-extract-files-failed.md) |
+| Download File / Wait for Download Failed | Medium | `Download File from URL` rest-call/timeout failure, or `Wait for Download` no-file-detected / file-in-use in the watched folder | [download-file-failed.md](./playbooks/download-file-failed.md) |
+| File & Folder Operation Failed (modern) | Medium | `FileSystemException` from the modern StudioX `Copy/Move/Rename/Delete Folder`, `Copy/Rename/Delete File`, `Create Folder` — missing/null path, source not found, wrong path type, destination exists, illegal folder nesting, or a generic IO wrapper. (Classic `Rename/Move File` → classic-activities) | [file-folder-operation-failed.md](./playbooks/file-folder-operation-failed.md) |
+| Get Queue Item / Set Transaction Status Failed | Medium | Orchestrator queue activities: required input empty (`Queue Name is required`, `Reason is required when Status is Failed`), `Service URL is empty` (no Orchestrator connection), or an API error/timeout. (Classic `Add Queue Item` → classic-activities) | [queue-transaction-activity-failed.md](./playbooks/queue-transaction-activity-failed.md) |

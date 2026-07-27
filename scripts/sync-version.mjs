@@ -6,7 +6,7 @@
  * `package.json` `version` is authoritative. This script propagates it to:
  *
  *   - version-manifest.json        .skillsVersion + .targetCli
- *   - .claude-plugin/plugin.json   .version (major.minor only — see below)
+ *   - .claude-plugin/plugin.json   .version (== package.json base version)
  *   - .claude-plugin/marketplace.json  .plugins[0].version (== plugin.json)
  *   - .codex-plugin/plugin.json    .version (== plugin.json — Codex channel)
  *
@@ -15,23 +15,22 @@
  * with, so a given CLI release resolves to a compatible skills package and
  * the two never mismatch.
  *
- * The plugin manifests share `major.minor` with package.json but the patch is
- * an independent daily counter (advanced by --bump-patch from
- * daily-version-bump.yml to drive plugin auto-update). `.claude-plugin/plugin.json`
- * is the canonical plugin version; the marketplace and Codex manifests mirror
- * it. Rule enforced here:
- *   - plugin major.minor != package.json major.minor -> reset to `M.N.0`
- *     (errors out if package.json minor is BELOW the plugin minor — plugin
- *      auto-update never downgrades, so a lower version would freeze users)
- *   - plugin major.minor == package.json major.minor -> --bump-patch advances
- *     the patch by 1; without it the patch is left untouched
+ * The plugin manifests mirror package.json's base `M.N.P` version exactly —
+ * there is no independent plugin patch counter. Pre-release suffixes (the
+ * alpha stamp from publish.yml) are NOT propagated: plugin auto-update wants
+ * plain versions, and the plugin channel is a git ref, not the npm tarball.
+ * `.claude-plugin/plugin.json` is the canonical plugin version; the
+ * marketplace and Codex manifests mirror it. Rules enforced here:
+ *   - plugin version != package.json base version -> rewrite to the base
+ *     version (errors out if package.json's base version is BELOW the plugin
+ *     version — plugin auto-update never downgrades, so a lower version
+ *     would freeze users)
  *   - marketplace .plugins[0].version and .codex-plugin/plugin.json .version
  *     must always equal .claude-plugin/plugin.json .version
  * See docs/RELEASE.md.
  *
  * Usage:
  *   node scripts/sync-version.mjs               # rewrite derived manifests
- *   node scripts/sync-version.mjs --bump-patch  # also advance the plugin daily-counter patch
  *   node scripts/sync-version.mjs --check       # exit 1 if any are out of sync
  */
 
@@ -41,7 +40,14 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CHECK = process.argv.includes("--check");
-const BUMP_PATCH = process.argv.includes("--bump-patch");
+
+if (process.argv.includes("--bump-patch")) {
+  console.error(
+    "✗ --bump-patch was removed: the plugin version mirrors package.json " +
+      "exactly (no independent patch counter). Bump package.json and rerun.",
+  );
+  process.exit(1);
+}
 
 const PATHS = {
   pkg: join(ROOT, "package.json"),
@@ -66,18 +72,18 @@ function cliLine(version) {
   return `^${major}.${minor}.0`;
 }
 
-/** `1.196.4` -> `1.196`. */
-function minorLine(version) {
-  const [major, minor] = version.split(".");
-  return `${major}.${minor}`;
+/** `1.198.0-alpha.20260713.42` -> `1.198.0` (pre-release suffix stripped). */
+function baseVersion(version) {
+  return version.split("-")[0];
 }
 
-/** Compare two `M.N` lines numerically. Returns -1, 0, or 1. */
-function compareMinorLine(a, b) {
-  const [am, an] = a.split(".").map(Number);
-  const [bm, bn] = b.split(".").map(Number);
-  if (am !== bm) return am < bm ? -1 : 1;
-  if (an !== bn) return an < bn ? -1 : 1;
+/** Compare two base `M.N.P` versions numerically. Returns -1, 0, or 1. */
+function compareBaseVersion(a, b) {
+  const pa = baseVersion(a).split(".").map(Number);
+  const pb = baseVersion(b).split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    if (pa[i] !== pb[i]) return pa[i] < pb[i] ? -1 : 1;
+  }
   return 0;
 }
 
@@ -98,26 +104,19 @@ if (manifest.skillsVersion !== version || manifest.targetCli !== targetCli) {
   writes.push(() => writeJson(PATHS.manifest, manifest));
 }
 
-// .claude-plugin/plugin.json — canonical plugin version: shared major.minor
-// with package.json, independent daily-counter patch.
+// .claude-plugin/plugin.json — canonical plugin version: mirrors package.json's
+// base version exactly (pre-release suffix stripped).
 const plugin = readJson(PATHS.plugin);
-let pluginVersion = plugin.version;
-if (minorLine(pluginVersion) !== minorLine(version)) {
-  // Reset the patch counter onto package.json's minor line — but never
-  // downgrade. Plugin auto-update doesn't go backwards, so resetting to a
-  // lower minor (a bad manual edit / revert in package.json) would freeze
+const pluginVersion = baseVersion(version);
+if (compareBaseVersion(pluginVersion, plugin.version) < 0) {
+  // Never downgrade. Plugin auto-update doesn't go backwards, so writing a
+  // lower version (a bad manual edit / revert in package.json) would freeze
   // users on a version they can never leave. Fail loudly instead.
-  if (compareMinorLine(minorLine(version), minorLine(pluginVersion)) < 0) {
-    console.error(
-      `✗ package.json minor (${minorLine(version)}) is below the plugin minor ` +
-        `(${minorLine(pluginVersion)}). Refusing to downgrade .claude-plugin/plugin.json.`,
-    );
-    process.exit(1);
-  }
-  pluginVersion = `${minorLine(version)}.0`;
-} else if (BUMP_PATCH && !CHECK) {
-  const patch = Number(pluginVersion.split(".")[2]);
-  pluginVersion = `${minorLine(version)}.${patch + 1}`;
+  console.error(
+    `✗ package.json version (${pluginVersion}) is below the plugin version ` +
+      `(${plugin.version}). Refusing to downgrade .claude-plugin/plugin.json.`,
+  );
+  process.exit(1);
 }
 
 if (plugin.version !== pluginVersion) {

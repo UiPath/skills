@@ -17,9 +17,10 @@ defaults:
     turn_timeout: 120
 
   agent:
-    type: claude-code
+    # type omitted on purpose — the runner selects the harness via --type (codex/antigravity);
+    # coder-eval's baseline default experiment supplies claude-code otherwise.
     permission_mode: acceptEdits
-    model: claude-sonnet-4-6
+    model: claude-sonnet-5
     # Skill must be allowed so the agent can invoke a skill when it decides
     # to. Read/Write/Bash included so the agent isn't starved of basic tools
     # when it decides NOT to use Skill — removing them would bias the
@@ -30,11 +31,14 @@ defaults:
         path: $SKILLS_REPO_PATH
     ignore_patterns: []
 
-  # Drop <sandbox>/{node_modules,.npm-prefix} so preserved artifacts stay slim
+  # Drop <sandbox>/{node_modules,.npm-prefix,.venv} so preserved artifacts stay slim
   # and Node module resolution can't leak across concurrent sandboxes
-  # (mirrors coder_eval #253 / sandbox isolation in #250 — MST-9674).
+  # (mirrors coder_eval #253 / sandbox isolation in #250 — MST-9674). Also drop
+  # .agents: non-Claude harnesses (codex) stage the whole skills catalog there
+  # per task, so cleaning it after each row keeps the run dir from ballooning
+  # across the ~480-row activation sweep (no-op for claude, which never stages it).
   post_run:
-    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv -o -name .agents \\) -prune -exec rm -rf {} +"
       timeout: 30
 
 variants:

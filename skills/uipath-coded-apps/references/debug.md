@@ -4,13 +4,13 @@ Diagnoses and fixes failures in UiPath coded apps and coded action apps — auth
 
 **AUTONOMY PRINCIPLE**: Do everything you can with your tools. Only ask the user for things the agent physically cannot do: entering passwords or 2FA codes during login, confirming a destructive portal action. Never ask the user to "let you know" when something is done if you can detect it yourself.
 
-**Specifically, External Application configuration changes (adding scopes, adding redirect URIs) are automated by Playwright scripts in [oauth-client-setup.md](oauth-client-setup.md).** When a fix requires a portal change, run the script — do not:
-- Say *"I can't make that change from here"* (you can — the scripts launch Chrome and drive the portal UI)
+**Specifically, External Application configuration changes (adding scopes, adding redirect URIs) are one `uip admin external-apps update` CLI call — see [oauth-client-setup.md](oauth-client-setup.md).** When a fix requires an app change, run the CLI — do not:
+- Say *"I can't make that change from here"* (you can — the CLI updates the app directly)
 - Run `open <portal URL>` to hand the browser to the user
 - List manual click-through steps for the user to perform
 - Present "Option A: open the portal for you to click / Option B: try something else" menus
 
-The only time to fall back to manual is if Step 0b reports `chrome-missing` OR the script has failed after 2–3 attempts with a captured error.
+The only time to fall back to the [manual portal steps](oauth-client-setup.md#manual-portal-fallback) is when the CLI can't run — not authenticated, or the identity lacks external-app admin permission (`403`).
 
 **SDK-FIRST PRINCIPLE**: When fixing code, always check what methods `@uipath/uipath-typescript` already provides before writing custom code.
 
@@ -45,8 +45,11 @@ The reproduction script uses the system's real Chrome via Playwright CLI (same p
  || ls "/c/Program Files (x86)/Google/Chrome/Application/chrome.exe" 2>/dev/null) \
  && echo "chrome-found" || echo "chrome-missing"
 
-# Playwright — if not found, follow oauth-client-setup.md Step 2 (Setup B)
-# to install into ~/.uipath-skills/playwright/
+# Playwright — used only for the browser-based reproduction below.
+# If missing, install into a dedicated dir (not the user's app):
+#   mkdir -p ~/.uipath-skills/playwright && cd ~/.uipath-skills/playwright \
+#     && (test -f package.json || npm init -y >/dev/null) \
+#     && (test -e node_modules/playwright || npm install playwright)
 npx playwright --version 2>/dev/null || echo "playwright-missing"
 ```
 
@@ -54,7 +57,7 @@ If Chrome is missing, skip to Step 0d — ask the user to describe the failure (
 
 ### 0c — Run the reproduction script
 
-Write the following to `~/.uipath-skills/playwright/reproduce.mjs` (or your project root if Playwright is installed there — see [`oauth-client-setup.md` Step 2](oauth-client-setup.md#step-2-ensure-playwright-is-available)). Substitute `APP_URL` if the port isn't 5173. Run from the directory the script lives in:
+Write the following to `~/.uipath-skills/playwright/reproduce.mjs` (or your project root if Playwright is installed there — see the install snippet in Step 0b). Substitute `APP_URL` if the port isn't 5173. Run from the directory the script lives in:
 
 ```bash
 cd ~/.uipath-skills/playwright && node ./reproduce.mjs
@@ -258,7 +261,7 @@ Match the observation to the correct fix section. **Jump directly to the matchin
 
 Read the app's current configuration:
 
-1. **Find SDK config.** The app initializes the SDK with `new UiPath()` (no config) and reads everything from `<meta name="uipath:*">` tags injected at runtime. During local dev those tags come from **`uipath.json`** (committed, project root) — the single config source, holding `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` (the local dev URL). To change any of these, edit `uipath.json`. The remediation scripts (Playwright OAuth helpers, base-URL/scope rules) below operate on that file.
+1. **Find SDK config.** The app initializes the SDK with `new UiPath()` (no config) and reads everything from `<meta name="uipath:*">` tags injected at runtime. During local dev those tags come from **`uipath.json`** (committed, project root) — the single config source, holding `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` (the local dev URL). To change any of these, edit `uipath.json`. The remediation steps below operate on that file (and register matching redirect URIs / scopes on the External App via `uip admin external-apps update`).
 
 2. **Identify SDK services in use** — grep for `new Assets(`, `new Entities(`, `new Buckets(`, `new Processes(`, `new Tasks(`, `new Queues(`, `new MaestroProcesses(`, `new Cases(`, `new ConversationalAgent(` in `**/*.ts` and `**/*.tsx`.
 
@@ -276,7 +279,7 @@ Map each SDK service found in Step 1 to its required scopes using [oauth-scopes.
 
 If scopes are missing:
 1. Update the `scope` field in `uipath.json` to add the missing scopes.
-2. **Copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script) (one script for all ops), save to `~/.uipath-skills/playwright/uipath-oauth.mjs`, then run with `--op add-scopes` — substituting `--cloud-host`, `--org-name`, `--client-id` (from `uipath.json` → `clientId`), and `--scopes-by-resource` per the [mapping table](oauth-client-setup.md#scope--resource-mapping-reference). Do not rewrite the script or "mirror the pattern" — the selectors are battle-tested and rewriting drops the bug fixes. Do not ask the user to click through the portal manually. Only fall back to [manual instructions](oauth-client-setup.md#adding-scopes-to-an-existing-app) if Chrome isn't available.
+2. Register the scopes on the External App via CLI — see [Add scopes to an existing app](oauth-client-setup.md#add-scopes-to-an-existing-app). `update` replaces scopes, so read current scopes with `uip admin external-apps get <clientId> --output json` first, then pass the full union to `--user-scope`. Do not ask the user to click through the portal. Fall back to [manual steps](oauth-client-setup.md#add-scopes-to-an-existing-app-1) only if the CLI can't run (not authenticated / `403`).
 
 ### 2b — Base URL
 
@@ -297,7 +300,7 @@ The SDK reads the redirect URI from the `uipath:redirect-uri` meta tag — local
 - CRA default: `http://localhost:3000` (and `http://localhost:3000/`)
 - Custom port: check `vite.config.ts` for `server.port`, and set `redirectUri` in `uipath.json` to match
 
-If you see a `redirect_uri_mismatch` error, identify the actual URL the browser is on. Then **copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script), save to `~/.uipath-skills/playwright/uipath-oauth.mjs`, and run with `--op add-redirects` — passing `--cloud-host`, `--org-name`, `--client-id` (from `uipath.json`), and `--redirects` with both the failing URL and its trailing-slash variant. Do not rewrite the script or invent a different approach — rewrites drop the bug fixes (truncated column handling, pencil-Edit button) and the script fails. Do not ask the user to click through the portal.
+If you see a `redirect_uri_mismatch` error, identify the actual URL the browser is on, then register it on the External App via CLI — see [Add redirect URIs to an existing app](oauth-client-setup.md#add-redirect-uris-to-an-existing-app). `update` replaces the redirect list, so read current URIs with `uip admin external-apps get <clientId> --output json` first, then pass existing + the failing URL + its trailing-slash variant to `--redirect-uri`. Do not ask the user to click through the portal.
 
 ---
 
@@ -359,50 +362,54 @@ rm ~/.uipath-skills/playwright/clear-state.mjs 2>/dev/null
 
 **Cause:** The redirect URI the SDK sends (from the `uipath:redirect-uri` meta tag — locally the `redirectUri` in `uipath.json`) is not registered in the UiPath External Application, or does not match the URL the app is actually served from.
 
-> **You fix this yourself with Playwright.** Do not tell the user *"register the URI in UiPath Cloud"* and stop there. Do not run `open <portal URL>`. Do not present a bullet list of admin-portal clicks. The consolidated `uipath-oauth.mjs` script (in [`oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script)) launches Chrome and performs every one of those clicks automatically when run with `--op add-redirects`.
+> **You fix this yourself with the CLI.** Do not tell the user *"register the URI in UiPath Cloud"* and stop there. Do not run `open <portal URL>`. Do not present a bullet list of admin-portal clicks. `uip admin external-apps update` registers the redirect URI directly.
 
 **Fix (autonomous) — execute these steps yourself without deferring to the user:**
 1. Identify the URL the browser was sent to when login was triggered (e.g. `http://localhost:5173` or `http://localhost:5173/`). Step 0c's `finalUrl` usually shows it.
-2. **Copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script) into `~/.uipath-skills/playwright/uipath-oauth.mjs`. Do **not** rewrite or paraphrase — the selectors handle the portal's truncated Client-ID column and per-row pencil-Edit button.
-3. Run with `--op add-redirects` from the directory the script lives in (Setup B default below; for Setup A use the project root):
+2. Read the current redirect URIs (`update` replaces, not merges):
    ```bash
-   cd ~/.uipath-skills/playwright && node ./uipath-oauth.mjs --op add-redirects \
-     --cloud-host https://staging.uipath.com --org-name myorg \
-     --client-id <uuid> \
-     --redirects 'http://localhost:5173,http://localhost:5173/'
+   uip admin external-apps get <clientId> --output json
    ```
-4. Verify stdout contains `{"status":"ok"}`. Clear browser state (Step 3), re-run Step 0c to confirm the fix. On the app side, confirm the `redirectUri` in `uipath.json` matches the URL you just registered (and the URL the dev server serves).
+3. Update with existing + the failing URL + its trailing-slash variant:
+   ```bash
+   uip admin external-apps update <clientId> \
+     --redirect-uri "<existing_uris>,http://localhost:5173,http://localhost:5173/" \
+     --output json
+   ```
+4. Verify with `uip admin external-apps get <clientId> --output json`. Clear browser state (Step 3), re-run Step 0c to confirm the fix. On the app side, confirm the `redirectUri` in `uipath.json` matches the URL you just registered (and the URL the dev server serves).
 
-Fall back to [manual instructions](oauth-client-setup.md#adding-redirect-uris-to-an-existing-app) only if Step 0b reported `chrome-missing` or the script has genuinely failed after 2–3 runs with captured errors.
+Fall back to [manual steps](oauth-client-setup.md#add-redirect-uris-to-an-existing-app-1) only if the CLI can't run (not authenticated / `403`).
 
-> Production redirect URIs are registered automatically by `uip codedapp deploy`. If they're missing on the External Application after a deploy, the same script can add them.
+> Production redirect URIs are registered automatically by `uip codedapp deploy`. If they're missing on the External Application after a deploy, the same CLI update can add them.
 
 ### `invalid_scope` Error in Auth URL
 
 **Cause:** The External Application doesn't have the requested scopes enabled.
 
-> **You fix this yourself with Playwright.** Do not tell the user *"the External App needs the scope added in UiPath Cloud"* and stop there. Do not run `open <portal URL>`. Do not present a bullet list of admin-portal clicks. The consolidated `uipath-oauth.mjs` script (in [`oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script)) launches Chrome and performs every one of those clicks automatically when run with `--op add-scopes`.
+> **You fix this yourself with the CLI.** Do not tell the user *"the External App needs the scope added in UiPath Cloud"* and stop there. Do not run `open <portal URL>`. Do not present a bullet list of admin-portal clicks. `uip admin external-apps update --user-scope` registers the scopes directly.
 
 **Fix (autonomous) — execute these steps yourself without deferring to the user:**
 1. Read [oauth-scopes.md](oauth-scopes.md) and determine every scope the SDK services in use require.
 2. Update the `scope` field in `uipath.json` to list all required scopes (space-separated).
-3. **Copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script) into `~/.uipath-skills/playwright/uipath-oauth.mjs`. Do **not** rewrite the script.
-4. Run with `--op add-scopes` from the directory the script lives in (Setup B default below; for Setup A use the project root):
+3. Read the current scopes (`update` replaces, not merges):
    ```bash
-   cd ~/.uipath-skills/playwright && node ./uipath-oauth.mjs --op add-scopes \
-     --cloud-host https://staging.uipath.com --org-name myorg \
-     --client-id <uuid> \
-     --scopes-by-resource '{"Orchestrator":["OR.Tasks.Read"]}'
+   uip admin external-apps get <clientId> --output json
    ```
-   > Use the **shortest substring** that matches both the dropdown label and the attached-list label as the key (e.g. `"Orchestrator"`, not `"Orchestrator API Access"`). See the [mapping reference](oauth-client-setup.md#scope--resource-mapping-reference) for the safe key per resource — the long dropdown label fails when the resource is already attached because the attached-list shows a different label (`UiPath.Orchestrator`).
-5. Verify stdout contains `{"status":"ok"}`. Clear browser state (Step 3) and re-test.
+4. Update with the full union (existing + new), comma-separated:
+   ```bash
+   uip admin external-apps update <clientId> \
+     --user-scope "<existing_scopes>,OR.Tasks.Read" \
+     --output json
+   ```
+   > Scope names are flat and comma-separated — no portal resource grouping. Pick names from [oauth-scopes.md](oauth-scopes.md); `uip admin scopes list --output json` lists valid names.
+5. Verify with `uip admin external-apps get <clientId> --output json`. Clear browser state (Step 3) and re-test.
 
-Fall back to the [manual instructions](oauth-client-setup.md#adding-scopes-to-an-existing-app) only if Step 0b reported `chrome-missing` or the script has genuinely failed after 2–3 runs with captured errors.
+Fall back to the [manual steps](oauth-client-setup.md#add-scopes-to-an-existing-app-1) only if the CLI can't run (not authenticated / `403`).
 
 ### API Calls Fail with 401 After Login
 
 **Cause 1:** Token has the wrong scopes for the API being called.
-**Fix:** Update the `scope` field in `uipath.json` with the missing scope (see [oauth-scopes.md](oauth-scopes.md)), then run the [Add Scopes to an Existing App](oauth-client-setup.md#add-scopes-to-an-existing-app) script to register it on the External App. Clear browser storage (Step 3) and re-authenticate so the new token includes the added scope.
+**Fix:** Update the `scope` field in `uipath.json` with the missing scope (see [oauth-scopes.md](oauth-scopes.md)), then [add the scope to the External App](oauth-client-setup.md#add-scopes-to-an-existing-app) via `uip admin external-apps update`. Clear browser storage (Step 3) and re-authenticate so the new token includes the added scope.
 
 **Cause 2:** Token expired.
 **Fix:** Clear browser storage (Step 3) and re-authenticate.
@@ -443,7 +450,7 @@ if (!sdk.isAuthenticated()) {
 **Cause:** `sdk.initialize()` redirects the browser — if the redirect doesn't return to the app, the OAuth flow never completes.
 
 **Check:**
-1. Does the `redirectUri` in `uipath.json` (injected as the `uipath:redirect-uri` meta tag, e.g. `http://localhost:5173`) match the URL the app runs at **and** a redirect URI registered on the External Application? If not, fix `uipath.json` and/or run the [Add Redirect URIs to an Existing App](oauth-client-setup.md#add-redirect-uris-to-an-existing-app) script (include both with and without trailing slash).
+1. Does the `redirectUri` in `uipath.json` (injected as the `uipath:redirect-uri` meta tag, e.g. `http://localhost:5173`) match the URL the app runs at **and** a redirect URI registered on the External Application? If not, fix `uipath.json` and/or [add the redirect URI to the External App](oauth-client-setup.md#add-redirect-uris-to-an-existing-app) via `uip admin external-apps update` (include both with and without trailing slash).
 2. Is the dev server running on the expected port (default: 5173)?
 3. Clear browser storage and retry.
 
@@ -494,14 +501,14 @@ After fixing, rebuild (`npm run build`) and re-deploy (`uip codedapp deploy`). I
 
 ## External Application Setup
 
-For any create or update of an External Application (adding redirect URIs, adding scopes, creating a new app), use the automated scripts in [oauth-client-setup.md](oauth-client-setup.md). The file covers:
+For any create or update of an External Application (adding redirect URIs, adding scopes, creating a new app), use the `uip admin external-apps` CLI — see [oauth-client-setup.md](oauth-client-setup.md). The file covers:
 
-- [Create a new External Application](oauth-client-setup.md#step-3-write-the-automation-script)
-- [Add Redirect URIs to an Existing App](oauth-client-setup.md#add-redirect-uris-to-an-existing-app)
-- [Add Scopes to an Existing App](oauth-client-setup.md#add-scopes-to-an-existing-app)
-- Manual fallback steps for each operation, if Chrome isn't available
+- [Create an External Application](oauth-client-setup.md#create-an-external-application)
+- [Add redirect URIs to an existing app](oauth-client-setup.md#add-redirect-uris-to-an-existing-app)
+- [Add scopes to an existing app](oauth-client-setup.md#add-scopes-to-an-existing-app)
+- Manual portal fallback for each operation, when the CLI can't run
 
-Key constants to remember when filling in the scripts:
+Key constants to remember:
 - Dev redirect URIs: `http://localhost:5173` and `http://localhost:5173/` (register both)
 - Action apps redirect URI: `https://cloud.uipath.com/<orgName>/<tenantName>/actions_`
 - Production web-app URIs are registered automatically by `uip codedapp deploy` — do not add them manually.

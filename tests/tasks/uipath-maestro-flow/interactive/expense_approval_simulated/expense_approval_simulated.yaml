@@ -1,0 +1,107 @@
+task_id: skill-flow-expense-approval-simulated
+description: >
+  Expense-approval flow with an inline HITL review step (trigger → script →
+  HITL → script → end), driven by a simulated developer who describes the
+  outcome but withholds the schema details until asked. Tests whether the agent
+  elicits the field names/types/directions and approval outcomes before building.
+  Validate-only — inline HITL nodes block on human review and can't be flow-debugged.
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, e2e, mode:build, lifecycle:generate, devcon, simulation]
+
+run_limits:
+  # max_turns = simulation rounds x ~5 (~4 build turns/round + headroom)
+  max_turns: 90
+  task_timeout: 2400
+  turn_timeout: 1200
+
+# No initial_prompt — the simulator generates turn 1 from its persona + goal.
+
+simulation:
+  enabled: true
+
+  persona: |
+    You are a developer's non-technical manager sponsoring an automation. You
+    know the business process for expense approvals cold, but you have never
+    built a flow and you speak in plain English, never in code. You are friendly
+    but impatient: if the agent dithers, prod it to just build something. You
+    cannot read or write code — if the agent shows you code, say "I trust you,
+    just make it work."
+
+  goal: |
+    You ultimately want a UiPath Flow that routes employee expense reports to a
+    manager for approval and logs the outcome. You want it validated before you
+    accept it.
+
+    CRITICAL: do NOT volunteer these details up front. Reveal each fact ONLY if
+    the agent explicitly asks about it:
+      - The project name should be "ExpenseApproval" (in a solution of the same name).
+      - The steps are: pull the expense details (mock this with a script for now),
+        send it to a manager to approve or reject, then log the outcome in a
+        final script step.
+      - The details the manager should SEE (pulled from the first script): the
+        expense amount (a number), the submitter's name (text), the category
+        (text, e.g. "Travel" or "Equipment"), and an expense ID.
+      - What the manager FILLS IN: their decision (approved — yes or no), and an
+        optional reason if they reject.
+      - The approver group is "expense-approvers".
+      - The final script should log the decision and the rejection reason (it
+        reads what the manager entered).
+      - You want the flow validated before you sign off.
+      - You do not require the project to execute before signing off (a manager
+        has to review it live, so it can't be run automatically).
+
+    If the agent asks a clarifying question that covers several of these at
+    once, answer only what they asked — do not pre-empt the rest.
+
+  constraints:
+    - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
+    - "Do not mention 'HITL', 'schema', 'field', 'direction', 'outcome', 'node', 'script', or 'validate' unless the agent brings them up first."
+    - "Do not reveal which details the manager sees vs. fills in unless asked what the reviewer should see or enter."
+    - "Do not reveal the 'expense-approvers' group unless asked who approves."
+    - "Do not reveal the project name 'ExpenseApproval' unless asked what to name it."
+    - "You expect a UiPath Maestro Flow — i.e. a `.flow` file in the workspace. If the agent builds anything else (e.g. an API workflow), tell it you specifically want a Maestro Flow and are not satisfied until there is a `.flow` file."
+    - "When you are satisfied that the flow is built and validated, reply with exactly <<<END>>> on its own line."
+
+  max_turns: 18
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+  parallel_trials: true
+
+success_criteria:
+  # Name-agnostic: any .flow the agent built must validate. The exact project
+  # name is scored separately below so a working-but-misnamed flow still earns
+  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  - type: run_command
+    description: "uip flow validate passes (any .flow)"
+    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Mirrors the skills-repo check_devcon_expense_approval.py: exactly one inline
+  # HITL node whose schema has an amount(number) field, captures the manager
+  # decision (boolean output OR approve/reject outcomes), exposes a text reason
+  # output field, wires the completed handle, and is read downstream via
+  # $vars.<hitl>.output.
+  - type: run_command
+    description: "Flow has a correct inline HITL schema, decision capture, completed wiring, and downstream .output access"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/*.flow',recursive=True); assert flows,'No flow file'; f=json.load(open(flows[0])); nodes=f['nodes']; edges=f.get('edges',[]); hitl=[n for n in nodes if str(n.get('type','')).startswith('uipath.human-in-the-loop')]; assert len(hitl)==1,'need exactly 1 HITL node'; h=hitl[0]; hid=h.get('id'); schema=h.get('inputs',{}).get('schema',{}); fields=schema.get('fields',[]); outcomes=schema.get('outcomes',[]) or []; assert fields,'HITL needs fields'; ft=lambda fl,k:(fl.get(k) or '').lower() if isinstance(fl.get(k),str) else ''; assert any((ft(x,'id')=='amount' or 'amount' in ft(x,'label')) and x.get('type')=='number' for x in fields),'amount must be a number field'; dec=[x for x in fields if x.get('direction') in ('output','inOut') and any(k in ft(x,'id') for k in ('approval','approved','decision'))]; onames={str(o.get('name') or o.get('id') or '').lower() for o in outcomes}; okdec=any(x.get('type')=='boolean' for x in dec) or (any('approve' in o for o in onames) and any('reject' in o for o in onames)); assert okdec,'need boolean decision field or approve/reject outcomes'; rk=('reason','comment','explanation','justification','note'); assert any(x.get('direction') in ('output','inOut') and x.get('type') in ('text','string','textarea') and any(k in ft(x,'id') or k in ft(x,'label') for k in rk) for x in fields),'need a text reason output field'; assert any(e.get('sourceNodeId')==hid and e.get('sourcePort') in ('completed','outcome-completed') for e in edges),'HITL completed handle must be wired'; scripts=[str(n.get('inputs',{}).get('script','')) for n in nodes if n.get('type')=='core.action.script']; assert any((chr(36)+'vars.'+str(hid)+'.output') in s for s in scripts),'downstream script must read HITL output via vars.<hitl>.output'; print('OK')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  # The project name is a WITHHELD, COSMETIC requirement (persona reveals it only
+  # if asked what to name it) — the flow behaves identically whatever it's called.
+  # Non-gating: reports whether the agent elicited the exact name (score 1/0), but
+  # pass_threshold 0 keeps a cosmetic miss from failing the task and the low weight
+  # keeps it from dominating the score.
+  - type: run_command
+    description: "Project/flow is named ExpenseApproval (elicited from the user)"
+    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/ExpenseApproval.flow',recursive=True) else 'expected a flow named ExpenseApproval.flow')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

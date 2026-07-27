@@ -21,9 +21,7 @@ initial_prompt: |
   as `data/fixtures.json` containing `{"sample": "value"}`. The
   `data/` directory must NOT end up in the packaged output.
 
-  Take the function through scaffold → init → run locally → pack.
-  Configure `packOptions` so the `data/` directory is excluded from
-  the package. Do NOT publish, upload, or deploy.
+  Do NOT publish, upload, or deploy.
   Complete it in a single pass.
 
 success_criteria:
