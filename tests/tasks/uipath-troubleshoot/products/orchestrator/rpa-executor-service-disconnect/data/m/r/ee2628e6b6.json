@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "f4a40004-0000-4000-8000-000000000004",
+      "Name": "Batch Ops",
+      "Path": "Batch Ops",
+      "Description": "Overnight batch automations.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "c1d2e3f4-a5b6-4c78-9d0e-1f2a3b4c5d6f",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

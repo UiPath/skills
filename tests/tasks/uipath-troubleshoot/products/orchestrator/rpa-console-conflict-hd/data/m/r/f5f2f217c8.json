@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "b2820001-2222-4222-8222-222222222222",
+      "State": "Faulted",
+      "ProcessName": "ClaimsIntake",
+      "ReleaseName": "ClaimsIntake",
+      "StartTime": "2026-07-19T10:15:07.200Z",
+      "EndTime": "2026-07-19T10:15:08.050Z",
+      "CreationTime": "2026-07-19T10:15:06.600Z",
+      "HostMachineName": "HD-BOT-POOL",
+      "Type": "Unattended",
+      "Source": "Queue",
+      "Priority": null
+    }
+  ]
+}
