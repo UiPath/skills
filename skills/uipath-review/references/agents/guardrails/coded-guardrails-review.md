@@ -23,26 +23,35 @@ findings; the user (or the `uipath-agents` skill) applies them.
 > all, whether a decorator is wired where it will actually wrap the target, and whether a guardrail the agent should
 > have is missing. Never re-describe a CLI deterministic finding here.
 
-## Deterministic CLI checkpoint — before Step 0
+## Deterministic CLI fast path — completed deliverable before Step 0
 
 If `uip codedagent review` returns any `Data.Issues[]` entry whose `RuleId` starts with <!-- uip-check-skip -->
 `CODED_GUARDRAIL_`, **immediately create or update the requested review report before any catalog, validator-list,
-SDK-documentation, or package research**. The checkpoint is a valid in-progress report, not scratch notes, and
+SDK-documentation, package research, or general architecture analysis**. This report is the completed deliverable
+for the deterministic guardrail path, not an in-progress checkpoint, and
 contains at minimum:
 
 1. the project and review scope;
 2. the `uip codedagent review` command and `Data.Grade`; <!-- uip-check-skip -->
 3. every emitted `CODED_GUARDRAIL_*` issue with its `RuleId`, `Severity`, `Description`, `File`, and `SuggestedFix`
    copied verbatim; and
-4. an explicit note that judgment-only analysis is still in progress.
+4. an explicit note that the CLI finding is authoritative and the flagged guardrail was excluded from judgment
+   re-verification.
 
 The CLI description and suggested fix are authoritative. Do not re-verify, rename, reword, or supplement a
 deterministic finding by fetching SDK documentation, installing or inspecting packages, or probing framework APIs.
 Exclude every CLI-flagged guardrail from Step 0 class mapping and Audit Mode. Step 0 may still run **after the
-checkpoint** for a separate unflagged guardrail or a distinct missing-guardrail recommendation.
+report** only when source inspection has already identified a separate unflagged guardrail or distinct missing-
+guardrail recommendation.
 
-When the remaining review workflow finishes, update the same checkpoint into the complete Step 5 report and remove
-the in-progress note. Preserve the checkpointed deterministic fields verbatim.
+After saving this report, **return it immediately and end the current review turn**. Do not continue into catalog,
+validator-list, SDK-doc, dependency, general checklist, or architecture work merely to make the report broader.
+Continue beyond the deterministic report only when the user's initial request explicitly asks for an exhaustive
+review or names additional non-guardrail checks. Preserve the deterministic fields verbatim if a later request
+extends the report.
+
+If the CLI does not emit `Data.Issues[]`, do not invent a substitute `CODED_GUARDRAIL_*` rule ID. Report a
+source-observed problem as rule-ID-less prose and list the deterministic CLI rule as skipped.
 
 Like the recommend capability, this is **live-catalog driven** — the catalog's authored fields (`when_to_use`,
 `use_cases`, `security_risk_addressed`, `when_not_to_use`, `security_category`, `examples[].config`) drive every

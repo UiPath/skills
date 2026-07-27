@@ -24,6 +24,27 @@ Like the recommend capability, this is **live-catalog driven** — the catalog's
 `use_cases`, `security_risk_addressed`, `when_not_to_use`, `security_category`, `examples[].config`) drive every
 decision. Do not hardcode which guardrail fits which agent.
 
+## Missing-guardrail fast path — completed deliverable
+
+When the source clearly matches a missing-guardrail use case and `guardrails[]` is absent or lacks the matching
+validator, use this bounded sequence:
+
+1. run `uip agent review` and retain its deterministic findings and `Data.Grade`;
+2. read the system prompt, schema property names, tool/resource names, and existing `guardrails[]` from the target
+   agent source;
+3. fetch the catalog and tenant validator list once, as specified in Step 0;
+4. establish the `LC_GUARDRAIL_RECOMMENDED` finding using R2–R5; and
+5. immediately save the requested report with the rule ID exactly
+   `LC_GUARDRAIL_RECOMMENDED`, the exact source-evidence clause, and the R5 scope/action, then return it.
+
+The saved report is the completed deliverable for this guardrail path. After saving it, **end the current review
+turn**. Do not delay delivery for solution packing, eval inspection, repeated catalog/list calls, general
+architecture analysis, or unrelated project introspection. Continue beyond it only when the user's initial request
+explicitly asks for an exhaustive review or names additional non-guardrail checks.
+
+`LC_GUARDRAIL_PII_MISSING`, `LC_GUARDRAIL_MISSING`, and other descriptive variants are not valid rule IDs. When
+catalog evidence is unavailable, use rule-ID-less prose rather than inventing an identifier.
+
 ---
 
 ## Step 0 — Fetch Catalog and Available Validators
