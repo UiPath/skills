@@ -30,6 +30,10 @@ Unlike connection-based packages (O365's `Office365Exception`, Integration Servi
 - **Malformed payload** — `DeserializeJson` / `DeserializeJsonArray` throw `JsonReaderException`, `DeserializeXml` throws `XmlException`, when the input string is not valid JSON/XML. Frequently a **symptom of an upstream HTTP activity** that returned an HTML error page, an empty body, or a non-JSON error envelope.
 - **Type mismatch** — `DeserializeJson` throws `JsonSerializationException` when well-formed JSON does not match the target type `T`.
 - **Null/empty payload** — `DeserializeJson` throws `ArgumentNullException` (param `JSON string`); `DeserializeJsonArray` throws `NullReferenceException` for the same null input.
+- **Payload rejected (400/415)** — a `POST`/`PUT` body or attachment is refused on media type: `Content-Type` vs body mismatch (`BodyFormat` defaults to `application/xml`) or a file sent with the wrong shape (`multipart/form-data` vs JSON). Reached the server; not auth/path/transport.
+- **Proxy-blocked egress** — `StatusCode 0` / `NULL` / `(407)` / timeout, robot-only, when the environment's corporate proxy is not in the request path (the activities expose no proxy property).
+- **Design-time package/Studio mismatch** — `MissingMethodException` "Method not found: 'Void UiPath.Web.Activities...'" on open/validate/wizard when `UiPath.WebAPI.Activities` is incompatible with the installed Studio or skewed against `UiPath.System.Activities`. Not a runtime fault.
+- **Design-time ST-SEC-009** — Workflow Analyzer flags a `SecureString`→`String` conversion into an HTTP header (or over-wide `SecureString` scope). A secure-coding lint, not an activity fault.
 
 ## Package
 

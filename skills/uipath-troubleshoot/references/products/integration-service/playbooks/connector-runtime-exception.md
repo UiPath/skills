@@ -19,6 +19,8 @@ Which activities produce this:
 - **ConnectorActivity** — DAP-RT-1002, DAP-RT-1003, DAP-RT-1101.
 - **ConnectorTriggerActivity** — DAP-RT-1052 (and DAP-RT-1002 if the trigger has no connection).
 
+> Same `RuntimeException` class, different failure: a **`Response content too large`** message (the provider call succeeded but the response exceeded the 8 MB JSON limit — no provider status) is NOT one of these codes → [response-content-too-large.md](./response-content-too-large.md).
+
 What can cause it:
 - **1002:** activity dropped its connection binding (common after copy/paste between projects, or a deleted asset feeding `ConnectionId`).
 - **1003:** an input argument is empty because an upstream variable was null, or a mandatory field was left unmapped.

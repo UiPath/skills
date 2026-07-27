@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "d3e4f5a6-7182-4b93-9c4d-5e6f70819304",
+      "Name": "RPA Production",
+      "Path": "RPA Production",
+      "Description": "Production folder for the finance RPA portfolio.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "a1b2c3d4-5e6f-4071-8293-a4b5c6d7e8f9",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

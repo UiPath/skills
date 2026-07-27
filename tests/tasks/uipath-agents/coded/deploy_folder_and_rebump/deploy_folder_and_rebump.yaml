@@ -1,8 +1,11 @@
 task_id: skill-agent-coded-deploy-folder-and-rebump
 description: >
   Verifies the agent knows to bump the patch version in pyproject.toml
-  before redeploying to an Orchestrator folder. Project is pre-seeded at
+  before redeploying to the tenant package feed. Project is pre-seeded at
   version 0.0.1 (already deployed once); agent must bump and redeploy.
+  Targets --tenant, not --folder: `codedagent deploy --folder` matches
+  folder-scoped package feeds by name, and the run tenant's Shared folder
+  has no dedicated feed, so a folder deploy always fails at feed lookup.
 tags: [uipath-agents, integration, mode:build, coded, lifecycle:deploy, feature:deploy]
 
 run_limits:
@@ -19,16 +22,17 @@ pre_run:
 
 initial_prompt: |
   I've updated my `acme-echo` agent and need to redeploy it to the
-  `Shared` folder in Orchestrator. The project is already set up locally.
+  tenant package feed in Orchestrator. The project is already set up
+  locally.
 
   Bump the version and attempt the deploy — if the deploy fails due to a
   cloud error, that's fine, just move on. Do NOT scaffold a new project.
 
 success_criteria:
   - type: command_executed
-    description: "Agent deployed to the Shared folder"
+    description: "Agent deployed to the tenant package feed"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+(deploy|publish)\s+.*--folder\s+["'']?Shared'
+    command_pattern: 'uip\s+codedagent\s+(deploy|publish)\s+.*(--tenant\b|\s-t\b)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

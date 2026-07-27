@@ -1,0 +1,45 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "d4a40001-4444-4444-8444-444444444444",
+      "State": "Faulted",
+      "ProcessName": "NightlyPost",
+      "ReleaseName": "NightlyPost",
+      "StartTime": "2026-07-19T01:30:04.200Z",
+      "EndTime": "2026-07-19T01:31:12.600Z",
+      "CreationTime": "2026-07-19T01:30:03.700Z",
+      "HostMachineName": "BATCH-BOT-02",
+      "Type": "Unattended",
+      "Source": "Schedule",
+      "Priority": null
+    },
+    {
+      "Key": "d4a40002-5555-4555-8555-555555555555",
+      "State": "Successful",
+      "ProcessName": "NightlyPost",
+      "ReleaseName": "NightlyPost",
+      "StartTime": "2026-07-18T01:30:03.900Z",
+      "EndTime": "2026-07-18T01:52:20.400Z",
+      "CreationTime": "2026-07-18T01:30:03.400Z",
+      "HostMachineName": "BATCH-BOT-02",
+      "Type": "Unattended",
+      "Source": "Schedule",
+      "Priority": null
+    },
+    {
+      "Key": "d4a40003-6666-4666-8666-666666666666",
+      "State": "Successful",
+      "ProcessName": "NightlyPost",
+      "ReleaseName": "NightlyPost",
+      "StartTime": "2026-07-17T01:30:04.100Z",
+      "EndTime": "2026-07-17T01:49:58.900Z",
+      "CreationTime": "2026-07-17T01:30:03.600Z",
+      "HostMachineName": "BATCH-BOT-02",
+      "Type": "Unattended",
+      "Source": "Schedule",
+      "Priority": null
+    }
+  ]
+}

@@ -52,7 +52,7 @@ uip maestro bpmn registry get <extensionType> --output json
 | Field | Use |
 | --- | --- |
 | `xmlTemplate` | The literal node XML with `{placeholder}` slots. **Author from this; fill placeholders only.** |
-| `bpmnElement` | The host BPMN element the template uses (e.g. `bpmn:ServiceTask`). |
+| `bpmnElement` | The host BPMN element the template uses (for source files, normalize to lower-camel such as `bpmn:serviceTask`). |
 | `extensionTag` | `uipath:activity`, `uipath:event`, or `uipath:mapping`. |
 | `contextFields[]` | The `uipath:context` inputs; each may carry its own `bindingInfo`. |
 | `bindingInfo` | How the node binds to a resource (see §4). |
@@ -190,27 +190,38 @@ exact template for any of them with `registry get <type>`.
 
 | Extension type | Host element | Tag |
 | --- | --- | --- |
-| `Actions.HITL` | `bpmn:UserTask` | activity |
-| `Orchestrator.StartJob` | `bpmn:ServiceTask` | activity |
-| `Orchestrator.StartAgentJob` | `bpmn:ServiceTask` | activity |
-| `Orchestrator.BusinessRules` | `bpmn:BusinessRuleTask` | activity |
-| `Orchestrator.ExecuteApiWorkflowAsync` | `bpmn:ServiceTask` | activity |
-| `Orchestrator.CreateQueueItem` | `bpmn:SendTask` | activity |
-| `Orchestrator.CreateAndWaitForQueueItem` | `bpmn:ServiceTask` | activity |
-| `Orchestrator.StartAgenticProcess[Async]` | `bpmn:CallActivity` | activity |
-| `Orchestrator.StartCaseMgmtProcess[Async]` | `bpmn:CallActivity` | activity |
-| `Intsvc.ActivityExecution` | `bpmn:SendTask` | event/activity |
-| `Intsvc.HttpExecution` / `Intsvc.UnifiedHttpRequest` | `bpmn:SendTask` | activity |
-| `Intsvc.WaitForEvent` | `bpmn:ReceiveTask` | event |
-| `Intsvc.EventTrigger` | `bpmn:StartEvent` | event |
-| `Intsvc.TimerTrigger` | `bpmn:StartEvent` | activity |
-| `Intsvc.{Async,SyncAgent,AsyncAgent,SyncWorkflow,AsyncWorkflow}Execution` | `bpmn:ServiceTask` | activity |
-| `A2A.AgentExecution` | `bpmn:ServiceTask` | activity |
-| `BPMN.Variables` | `bpmn:Task` | mapping |
-| `BPMN.ScriptTask` | `bpmn:ScriptTask` | mapping |
-| `Maestro.ReceiveMessageEvent` | `bpmn:IntermediateCatchEvent` | event |
-| `Maestro.SendMessageEvent` | `bpmn:IntermediateThrowEvent` | event |
-| `Maestro.CaseRulesEvaluator` / `Maestro.CaseManagerGuardrails` | `bpmn:ServiceTask` | activity |
+| `Actions.HITL` | `bpmn:userTask` | activity |
+| `Orchestrator.StartJob` | `bpmn:serviceTask` | activity |
+| `Orchestrator.StartAgentJob` | `bpmn:serviceTask` | activity |
+| `Orchestrator.BusinessRules` | `bpmn:businessRuleTask` | activity |
+| `Orchestrator.ExecuteApiWorkflowAsync` | `bpmn:serviceTask` | activity |
+| `Orchestrator.CreateQueueItem` | `bpmn:sendTask` | activity |
+| `Orchestrator.CreateAndWaitForQueueItem` | `bpmn:serviceTask` | activity |
+| `Orchestrator.StartAgenticProcess[Async]` | `bpmn:callActivity` | activity |
+| `Orchestrator.StartCaseMgmtProcess[Async]` | `bpmn:callActivity` | activity |
+| `Intsvc.ActivityExecution` | `bpmn:sendTask` | activity |
+| `Intsvc.HttpExecution` / `Intsvc.UnifiedHttpRequest` | `bpmn:sendTask` | activity |
+| `Intsvc.WaitForEvent` | `bpmn:receiveTask` | event |
+| `Intsvc.EventTrigger` | `bpmn:startEvent` | event |
+| `Intsvc.TimerTrigger` | `bpmn:startEvent` | activity |
+| `Intsvc.{Async,SyncAgent,AsyncAgent,SyncWorkflow,AsyncWorkflow}Execution` | `bpmn:serviceTask` | activity |
+| `A2A.AgentExecution` | `bpmn:serviceTask` | activity |
+| `BPMN.Variables` | `bpmn:task` | mapping |
+| `BPMN.ScriptTask` | `bpmn:scriptTask` | mapping |
+| `Maestro.ReceiveMessageEvent` | `bpmn:intermediateCatchEvent` | event |
+| `Maestro.SendMessageEvent` | `bpmn:intermediateThrowEvent` | event |
+| `Maestro.CaseRulesEvaluator` / `Maestro.CaseManagerGuardrails` | `bpmn:serviceTask` | activity |
 
 This table is a discovery aid, not a substitute for `registry get` — always pull
 the live template before authoring.
+
+If a registry `xmlTemplate` returns a PascalCase BPMN host tag such as
+`bpmn:SendTask` or `bpmn:ReceiveTask`, normalize only the BPMN host element
+names to the serializer's lower-camel form (`bpmn:sendTask`,
+`bpmn:receiveTask`) when inserting it into a source file. Keep the
+`uipath:*` payload and its `uipath:type` value unchanged.
+
+Event types stay event-wrapped even when you place them on task-like BPMN
+hosts: `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,
+`Maestro.ReceiveMessageEvent`, and `Maestro.SendMessageEvent` use
+`uipath:event`, not `uipath:activity`.
