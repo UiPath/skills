@@ -14,6 +14,7 @@ initial_prompt: |
   multiple failed login attempts over the past week. Investigate the login
   history and save the retrieved audit events to ./login-events.json.
 
+  Login events are recorded at the ORGANIZATION scope, not the tenant scope.
   Do NOT use the uipath-troubleshoot skill.
 
   Do NOT prompt the user for confirmation — this is an automated test.
