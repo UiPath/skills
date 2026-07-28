@@ -10,7 +10,9 @@ description: >
 tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
-  max_turns: 30
+  turn_timeout: 1800
+  task_timeout: 2400
+  max_turns: 60
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_studio_web_workspace/setup_fixture.py"
