@@ -41,8 +41,20 @@ def task_section(plan: str, task_name: str) -> str:
     return match.group(0)
 
 
+def stage_section(sdd: str, stage_name: str) -> str:
+    heading = rf"^#{{2,4}}\s+(?:Secondary\s+Stage:\s*)?{re.escape(stage_name)}\b[^\n]*\n"
+    next_stage = r"^#{2,4}\s+(?:Stage\s+\d+|Secondary\s+Stage:)"
+    match = re.search(
+        rf"(?ims){heading}.*?(?={next_stage}|\Z)",
+        sdd,
+    )
+    if not match:
+        fail(f"missing SDD stage section for {stage_name!r}")
+    return match.group(0)
+
+
 def task_lane(section: str, task_name: str) -> int:
-    match = re.search(r"(?im)^-\s*lane:\s*(\d+)\b", section)
+    match = re.search(r"(?im)^-\s*[^\n]*\blane:\s*(\d+)\b", section)
     if not match:
         fail(f"missing lane for sequential task {task_name!r}")
     return int(match.group(1))
@@ -60,8 +72,11 @@ def main() -> None:
         if not has_near(sdd, stage, "Interrupting", 1200):
             fail(f"{stage!r} is not documented as an interrupting secondary stage")
 
-    if not has_near(sdd, "Withdrawn", "wait-for-connector", 900):
+    withdrawn_section = stage_section(sdd, "Withdrawn")
+    if "wait-for-connector" not in withdrawn_section.lower():
         fail("Withdrawn is not entered by the global supplier-portal event")
+    if not has_near(withdrawn_section, "Supplier Portal", "Withdraw", 500):
+        fail("Withdrawn connector rule does not preserve the supplier-portal withdrawal event")
 
     sequential_tasks = ("Verify Supplier Identity", "Set Supplier Record", "Invite Supplier")
     lanes: list[int] = []
