@@ -14,7 +14,7 @@ Phase 0 writes:
 
 - `sdd.md` — rendered once from the confirmed model, batched with the first build actions (or written and reported when the request was design-only).
 - `sdd-viewer.html` — optional, generated only on explicit request (§HTML preview).
-- `sdd.draft.md` — ONLY when the user explicitly asks for a draft to review; normal runs never create it. `tasks/registry-resolved.json` is a Phase 1 artifact — Phase 0 does not write it.
+- `sdd.draft.md` — ONLY when the user explicitly asks for a draft to review; normal runs never create it. If the request explicitly says to get/save the draft and stop, show the Case Review and write the draft in the same response instead of asking for another approval. `tasks/registry-resolved.json` is a Phase 1 artifact — Phase 0 does not write it.
 
 ## When Phase 0 runs
 
@@ -135,7 +135,7 @@ Use this exact section order:
 
 **Completeness gate.** The confirmation is incomplete unless it contains Case snapshot, Data contract, Stages list, Stage/task detail cards, Other Paths Considered, Rules / tiers, Resources & integrations, Decisions I made, Review flags, and Caller obligation when relevant. Do not ask `Build it...`, `Save...`, or any approval question until every section has been shown, even when a section says `None` or `Not used`. Do not replace this confirmation with a generic list of build steps, artifact names, output folder, validation commands, resource-placeholder caveats, or a summary that points to `sdd.md` for the missing detail.
 
-Confirmation question (AskUserQuestion): `Build it — straight through` / `Build it — pause at the build preview` / `Change something`. The build choice records the Rule 11 preference — never re-asked mid-build. When ⚠ flagged items exist, relabel the first option `Build despite N flagged items — straight through`. For a **design-only** request swap the build options for `Save the design`; for a **draft** request, `Save as draft`.
+Confirmation question (AskUserQuestion): `Build it — straight through` / `Build it — pause at the build preview` / `Change something`. The build choice records the Rule 11 preference — never re-asked mid-build. When ⚠ flagged items exist, relabel the first option `Build despite N flagged items — straight through`. For a **design-only** request swap the build options for `Save the design`; for a **draft** request, `Save as draft`. If the user's initial prompt already says to get/save a draft and stop, treat that as the `Save as draft` answer after the Case Review: write `sdd.draft.md` immediately and stop. The draft still uses SDD section/stage/task headings so a reviewer can inspect it directly.
 
 Corrections (`Change something` or any free text) update the model, re-run affected Finalization checks, and re-show ONLY the changed Case Review sections or rows: changed stage/task cards, data rows, rules, resources, other paths, review flags, and decision lines. A correction never restarts the walk. After showing the changed sections, include a short `Suggested next steps` line before the next confirmation prompt, e.g. `Suggested next steps: approve the updated design, choose preview pause if you want a visual checkpoint, or change another part of the case.`
 
@@ -153,7 +153,7 @@ Required shape:
 - Section 1 contains `### Case Metadata`, `### Case Triggers`, `### Case Exit Conditions`, and `### Case Variables`.
 - Every modeled primary stage has `### Stage {N}: {Stage Name}`; every modeled secondary stage has `### Secondary Stage: {Stage Name}`.
 - Every stage block contains `**Type:**`, `**Design Rationale:**`, `#### Stage Entry Conditions`, `#### Stage Exit Conditions`, and `#### Tasks`.
-- Every modeled task has `##### Task {N}.{M}: {Task Name}` with `**Type:**`, `**Activation Mode:**`, `**Design Rationale:**`, `**Entry Condition:**`, exact marker `**Task envelope**` (no colon), and the matching type-specific detail block.
+- Every modeled primary-stage task has `##### Task {N}.{M}: {Task Name}`; every modeled secondary-stage task has numeric secondary numbering `##### Task S{K}.{M}: {Task Name}` where `K` is the secondary-stage order. Do not preserve letter prefixes such as `R.1`, `W.1`, `CC.1`, or `ESC.1`. Each task block contains `**Type:**`, `**Activation Mode:**`, `**Design Rationale:**`, `**Entry Condition:**`, exact marker `**Task envelope**` (no colon), and the matching type-specific detail block.
 - Section 3 contains `### Personas` and `### Process App Views`.
 - Section 4 contains the integration/resource family headings needed by the modeled task types, or an explicit `> None.` for empty families.
 
@@ -174,6 +174,18 @@ On a Build answer:
 
 **Design-only request:** write `sdd.md`, report the path in one line, stop before Phase 1. **Draft request:** write `sdd.draft.md`, report, stop — never promote. **Free-text corrections stay first-class after the build starts:** treat one as a targeted edit to the affected artifact (model + `sdd.md` + downstream), narrate it in one line, continue.
 
+**No-build design + plan request:** when the prompt explicitly asks for `sdd.md` plus `tasks/tasks.md` and says to stop before creating `caseplan.json`, do not enter full Phase 1 and do not read `planning.md` or plugin planning references. After the Case Review is approved, write the full `sdd.md`, create `tasks/`, write a compact `tasks/tasks.md` directly from the same in-memory model, and stop. The compact plan is a review handoff for a later build run, so it omits registry-derived files and tenant evidence.
+
+Compact `tasks/tasks.md` contract for this no-build path:
+
+- Use T-numbered entries for the case root, triggers, variables/arguments, stages, tasks, entry/exit/condition rules, and SLA/escalation rules that matter to the design.
+- Stage entries include `stage-kind`, `entry-rule`, `exit-rule`, `interrupting`, `required`, `sla`, and `rationale`.
+- Task entries include `stage`, `type`, `activation-mode`, `entry-rule`, `lane`, `required`, `run-only-once`, `resource-intent`, `identity: resolve at build`, and `rationale`.
+- Sequential runs use consecutive single-task lane numbers; every task in the run has `activation-mode: sequential` and `entry-rule: runs-sequentially`.
+- Global event/exception entries name exactly one interrupting secondary stage and the rule type (`wait-for-connector` or `sla-status-change`); do not duplicate those events across every primary stage.
+- Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json`.
+- End the response with suggested next steps: review the SDD/plan, then run a later build to resolve tenant resources and create `caseplan.json`.
+
 ## HTML preview
 
 Optional, **on-request only** — never offered proactively. Available any time after the confirmation exists, including mid-build. Self-contained local HTML: Case Definition, collapsible Stages & Tasks with detail panels, Personas & App Views, Integrations; persona/type filters, unresolved-only and schema-view toggles, search, print stylesheet.
@@ -192,7 +204,7 @@ Generation: Read [`assets/templates/sdd-viewer.html`](../assets/templates/sdd-vi
 
 If the user explicitly asks to finalize the existing draft, choose `Use the draft — finalize and continue` by assumption and do not ask a redundant resumption question. If AskUserQuestion is unavailable, make the same assumption unless the user asked to discard or abort. Finalization stays inside this skill: render the final `sdd.md` from the Case Management template and run the template conformance gate; never route `sdd.draft.md` finalization to `uipath-planner`.
 
-**Direct finalize fast path:** for a request that says the draft design is settled and asks for final `sdd.md` only, read `sdd.draft.md`, this resumption/gate section, and `assets/templates/sdd-template.md`; do not read planning/plugin references, do not inspect tenant resources, and do not spawn subagents. Treat the draft's stages, tasks, variables, conditions, SLAs, personas, and integration intent as the design source. Normalize structure only: every existing task gets a full detail block, exact `**Task envelope**` marker followed by its Required/Run Only Once/Skip Condition table, and the matching type-specific detail block. Then write `sdd.md` and stop.
+**Direct finalize fast path:** for a request that says the draft design is settled and asks for final `sdd.md` only, read `sdd.draft.md`, this resumption/gate section, and `assets/templates/sdd-template.md`; do not read planning/plugin references, do not inspect tenant resources, and do not spawn subagents. Treat the draft's stages, tasks, variables, conditions, SLAs, personas, and integration intent as the design source. Normalize structure only: every existing task gets a full detail block, exact `**Task envelope**` marker followed by its Required/Run Only Once/Skip Condition table, and the matching type-specific detail block. Secondary-stage task headings must be normalized to `##### Task S{secondaryStageIndex}.{taskIndex}: {Task Name}`; never preserve draft letter prefixes like `R.1`, `W.1`, `CC.1`, or `ESC.1`. Then write `sdd.md` and stop.
 
 ## What to say while working
 

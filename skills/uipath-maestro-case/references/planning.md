@@ -90,7 +90,7 @@ Before resource resolution, seed TodoWrite with the items below to track Phase 1
 
 For every task, trigger, and condition in the sdd.md:
 
-If the plan-only / no-build exception is active, skip registry and schema discovery in this step and do not fan out through every plugin `planning.md`. Use the compact no-build shape below for the review plan: preserve SDD portable names, emit tenant identities as `resolve at build`, carry every rationale, and stop after `tasks/tasks.md`. The later build run owns authoritative resource resolution and regenerates any registry-derived fields before Phase 2.
+If the plan-only / no-build exception is active, skip registry and schema discovery in this step and do not fan out through every plugin `planning.md`. Use the compact no-build shape below for the review plan: preserve SDD portable names, emit tenant identities as `resolve at build`, carry every rationale, and stop after `tasks/tasks.md`. The compact no-build plan is exempt from the normal section-batched planning workflow because it is a review artifact, not a build handoff: create `tasks/` if needed and write the complete concise `tasks/tasks.md` with one direct Write, then stop. The later build run owns authoritative resource resolution and regenerates any registry-derived fields before Phase 2.
 
 **Compact no-build T-entry shape:** each declaration still gets a T-number, but the fields are intentionally review-oriented:
 
@@ -98,7 +98,7 @@ If the plan-only / no-build exception is active, skip registry and schema discov
 - Task entries: `stage`, `type`, `activation-mode`, `entry-rule`, `lane`, `required`, `run-only-once`, `resource-intent`, `identity: resolve at build`, `rationale`.
 - Trigger/condition/SLA entries: `rule-type`, `source/status`, `target stage/task`, `return-or-close behavior`, `rationale`.
 
-Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json` in this mode; those require tenant evidence and belong to the later build run.
+Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json` in this mode; those require tenant evidence and belong to the later build run. End the response with suggested next steps: review the SDD and plan, then run a later build to resolve tenant resources and create `caseplan.json`.
 
 When the plan-only / no-build exception is not active, continue with the normal build-planning path:
 

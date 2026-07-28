@@ -384,6 +384,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 | 1 | {task name} | {action \| process \| agent \| rpa \| api-workflow \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management} | {sequential \| parallel \| event-triggered \| adhoc \| fan-in \| conditional-gate} | {e.g. "sequential group: A → B → C", "stage enters", "after A+B", "connector event"} | {Yes \| No} | {Yes \| No} | {persona name or "—"} | {count unit or "—" (only for action tasks)} |
 
 > After the summary table, provide a detailed subsection for each task.
+> Primary-stage task headings use `##### Task {N}.{M}: {Task Name}`. Secondary-stage task headings use `##### Task S{K}.{M}: {Task Name}` where `K` is the secondary-stage order. Do not use lettered prefixes such as `R.1`, `W.1`, `CC.1`, or `ESC.1`.
 
 ---
 
