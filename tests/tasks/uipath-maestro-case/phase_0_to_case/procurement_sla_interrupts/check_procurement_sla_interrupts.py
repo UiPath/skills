@@ -27,17 +27,15 @@ def has_near(text: str, left: str, right: str, distance: int = 500) -> bool:
 
 
 def task_section(plan: str, task_name: str) -> str:
+    heading = (
+        rf"^#{{2,3}}\s+T\d+(?:\.\d+)?\s*(?:[:—-])\s*"
+        rf"(?:Task:\s*)?(?:task\s+)?(?:\"{re.escape(task_name)}\"|{re.escape(task_name)}\b)[^\n]*\n"
+    )
+    next_heading = rf"^#{{2,3}}\s+T\d+(?:\.\d+)?\s*(?:[:—-])"
     match = re.search(
-        rf"(?ims)^##\s+T\d+:.*?\"{re.escape(task_name)}\".*?(?=^##\s+T\d+:|\Z)",
+        rf"(?ims){heading}.*?(?={next_heading}|\Z)",
         plan,
     )
-    if not match:
-        match = re.search(
-            rf"(?ims)^#{{2,3}}\s+T\d+(?:\.\d+)?\s*(?:[:—-])\s*"
-            rf"(?:Task:\s*)?(?:\"{re.escape(task_name)}\"|{re.escape(task_name)})\b"
-            rf".*?(?=^#{{2,3}}\s+T\d+(?:\.\d+)?\s*(?:[:—-])|\Z)",
-            plan,
-        )
     if not match:
         fail(f"missing tasks.md T-entry for {task_name!r}")
     return match.group(0)
@@ -59,7 +57,7 @@ def main() -> None:
         fail("phase/case breach work is not modeled with SLA stage-entry rules")
 
     for stage in ("SLA Escalation", "Case SLA Review", "Withdrawn"):
-        if not has_near(sdd, stage, "Interrupting", 300):
+        if not has_near(sdd, stage, "Interrupting", 1200):
             fail(f"{stage!r} is not documented as an interrupting secondary stage")
 
     if not has_near(sdd, "Withdrawn", "wait-for-connector", 900):

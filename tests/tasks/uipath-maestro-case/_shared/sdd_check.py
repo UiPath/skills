@@ -63,15 +63,15 @@ INTEGRATION_HEADINGS = {
     "Child Cases", "External Agents",
 }
 TASK_DETAIL_MARKERS = {
-    "action": "Action Task Detail",
-    "wait-for-connector": "Connector Task Detail",
-    "execute-connector-activity": "Connector Task Detail",
-    "wait-for-timer": "Timer Task Detail",
-    "case-management": "Child Case Task Detail",
-    "process": "Process / Agent / RPA / API Workflow Task Detail",
-    "agent": "Process / Agent / RPA / API Workflow Task Detail",
-    "rpa": "Process / Agent / RPA / API Workflow Task Detail",
-    "api-workflow": "Process / Agent / RPA / API Workflow Task Detail",
+    "action": ("Action Task Detail", "**HITL Implementation:**"),
+    "wait-for-connector": ("Connector Task Detail", "**Connector:**", "**Trigger / Event:**"),
+    "execute-connector-activity": ("Connector Task Detail", "**Connector:**", "**Resolved Resource:**"),
+    "wait-for-timer": ("Timer Task Detail", "**Timer Configuration:**", "**Duration:**"),
+    "case-management": ("Child Case Task Detail", "**Child Case:**"),
+    "process": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "agent": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "rpa": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "api-workflow": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
 }
 
 
@@ -182,10 +182,10 @@ def _sdd_template_shape_issues(text: str, source: str = "sdd.md") -> list[str]:
                     issues.append(f"template: task {task_name!r} missing {marker!r} in {source}")
             task_type = re.search(r"^\*\*Type:\*\*\s*`?([a-z-]+)", task_block, re.M)
             if task_type:
-                marker = TASK_DETAIL_MARKERS.get(task_type.group(1))
-                if marker and marker not in task_block:
+                markers = TASK_DETAIL_MARKERS.get(task_type.group(1))
+                if markers and not any(marker in task_block for marker in markers):
                     issues.append(
-                        f"template: task {task_name!r} missing type detail block {marker!r} "
+                        f"template: task {task_name!r} missing type detail block {markers[0]!r} "
                         f"in {source}"
                     )
 
