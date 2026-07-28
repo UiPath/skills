@@ -16,7 +16,12 @@ about the environment that the agent does not control.
 Env:
   AUDIT_SOURCES_ORG_FILE     path the agent saved the org-scope JSON to
   AUDIT_SOURCES_TENANT_FILE  path the agent saved the tenant-scope JSON to
-At least one of the two is required.
+  AUDIT_REQUIRE_TYPE         case-insensitive event-type name the saved catalog
+                             must contain (e.g. "User Login"). Proves the agent
+                             retrieved a catalog deep enough to discover the type
+                             GUID its investigation needs, rather than a truncated
+                             or summarized copy.
+At least one of the two file paths is required.
 
 Logging: source names are catalog labels ("Identity", "Governance"), not PII, so
 they are safe to print. Ids are still truncated — they are tenant identifiers.
@@ -75,6 +80,43 @@ def live_sources(scope):
         return None
     records = find_records(unwrap(data), SOURCE_SIGNATURE)
     return records or None
+
+
+def nested_names(records):
+    """Every source / target / type name in the catalog, lowercased.
+
+    Catalog labels ("Identity", "User Login") are static taxonomy, not PII, so
+    they are safe to compare and report.
+    """
+    names = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            label = field(node, "Name")
+            if label:
+                names.add(str(label).lower())
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(records)
+    return names
+
+
+def check_required_type(saved, wanted):
+    """The saved catalog must expose the event type the investigation needs."""
+    needle = wanted.lower()
+    for scope, records in saved.items():
+        if any(needle in name for name in nested_names(records)):
+            logger.info("catalog exposes an event type matching %r at %s scope", wanted, scope)
+            return
+    fail(
+        f"no event source/target/type named like {wanted!r} appears in the saved catalog — "
+        "the retrieval was truncated or summarized rather than the full nested catalog "
+        "needed to discover the type GUID"
+    )
 
 
 def main():
@@ -140,6 +182,10 @@ def main():
                 "live org and tenant catalogs are identical on this tenant — "
                 "skipping the discriminating scope assertion"
             )
+
+    required_type = env_str("AUDIT_REQUIRE_TYPE")
+    if required_type:
+        check_required_type(saved, required_type)
 
     names = [str(field(r, "Name")) for r in saved[requested[0][0]][:4] if field(r, "Name")]
     ok(
