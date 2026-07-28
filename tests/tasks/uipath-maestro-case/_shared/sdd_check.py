@@ -206,11 +206,16 @@ def _tasks_frontend_issues(text: str, source: str) -> list[str]:
     escalation_names: dict[str, set[str]] = {}
     for block in blocks:
         header = re.match(r"##\s+T\d+[^\n]*", block)
-        if not header or not re.search(r"\bSLA\b|\bescalation\b", header.group(0), re.I):
+        if not header:
+            continue
+        is_escalation = bool(re.search(r"Add escalation rule for", header.group(0), re.I))
+        is_sla_entry = is_escalation or re.search(
+            r"Set default SLA for|Add conditional SLA rule for", header.group(0), re.I
+        )
+        if not is_sla_entry:
             continue
         target_match = re.search(r"^\s*-\s*target:\s*[\"']?([^\"'\n]+)", block, re.M | re.I)
         target = (target_match.group(1).strip() if target_match else "root")
-        is_escalation = bool(re.search(r"\bescalation\b", header.group(0), re.I))
         display_match = re.search(r"^\s*-\s*display-name:\s*(.*?)\s*$", block, re.M | re.I)
         display = _parse_value(display_match.group(1)) if display_match else ""
         names = escalation_names if is_escalation else rule_names
