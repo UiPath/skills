@@ -50,6 +50,8 @@ Build only within this matrix (✅ supported). The API *runs* some ❌ cells any
 
 Complex-field values: **Choice Set** — the integer `NumberId` (multi: `=` takes a sorted JSON-array string `"[1,3]"`, `contains` takes a bare id `"3"`). **Relationship** — the target record's UUID `Id`.
 
+**`MULTILINE_MAX` is outside the matrix entirely** — the Text / Multiline column does NOT cover it. No operator is supported (including is-empty), and no `sortOptions`: server rejects with 400 — *"Field '<name>' is of type MULTILINE_MAX and cannot be used in filters."* / *"Sort field '<name>' is of type MULTILINE_MAX and cannot be used for sorting."* Don't offer the field in filter/sort; if the user asks, surface the limitation and (only with their approval) fetch full values via `records get` and evaluate client-side.
+
 ## Unsupported operator, or missing value
 
 If a request needs an out-of-matrix operator/type combo (or an operator outside the list above — `BETWEEN`, regex, `like`), or an operator other than is-empty/not-empty has no value, **don't silently run it**. Ask the user to either **(a)** run the query without that filter, or **(b)** supply a supported one — then apply only their choice, never a default. Compositions often help: `BETWEEN x AND y` → `>=` + `<=` in one `queryFilters` (`logicalOperator: 0`); regex → `contains` / `startswith` / `endswith`.
