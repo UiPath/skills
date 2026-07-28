@@ -31,6 +31,9 @@ initial_prompt: |
 
   Do NOT prompt the user for confirmation — this is an automated test.
 
+  Run the export in the foreground and wait for it to finish before you reply —
+  do not run it as a background task.
+
 success_criteria:
   - type: run_command
     description: "./audit-org-yesterday holds a CLI-generated day-wise JSON export whose records are ORG-scope (no TenantId)"

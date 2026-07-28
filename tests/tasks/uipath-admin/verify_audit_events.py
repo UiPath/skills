@@ -164,33 +164,47 @@ def check_provenance(records, scope):
 def check_scope(records, scope):
     """Grade org-vs-tenant from the records themselves.
 
-    Org-scope audit events are not attached to any tenant and come back with a
-    null TenantId; tenant-scope events always carry one. Only assert when the
-    field is actually present on the payload, so a schema change degrades to a
-    logged note instead of a false failure.
+    Tenant-scope events always carry a populated TenantId. Org-scope events are
+    not attached to any tenant and, in practice, omit the field entirely rather
+    than returning null — so ABSENCE is the org signature and is treated as
+    confirmation, not as a reason to skip. An earlier version skipped whenever the
+    field was missing, which silently turned the assertion into a no-op for every
+    org-scope task; the check only has teeth if the org case asserts something.
     """
-    present = [r for r in records if "tenantid" in {k.lower().replace("_", "") for k in r}]
-    if not present:
-        logger.info("no TenantId field on these records — skipping intrinsic scope assertion")
+    with_tenant = [r for r in records if field(r, "TenantId")]
+    if scope == "tenant":
+        if not with_tenant:
+            fail(
+                f"none of the {len(records)} saved events carry a populated TenantId — these "
+                "look like ORG-scope events, but the request was for TENANT scope"
+            )
+        logger.info(
+            "intrinsic scope check passed: %d/%d events carry a TenantId, as tenant-scope "
+            "events do", len(with_tenant), len(records),
+        )
         return
-    with_tenant = [r for r in present if field(r, "TenantId")]
-    if scope == "org" and with_tenant:
+    if with_tenant:
         fail(
-            f"{len(with_tenant)}/{len(present)} saved events carry a TenantId — these are "
-            "TENANT-scope events, but the request was for ORG scope"
+            f"{len(with_tenant)}/{len(records)} saved events carry a populated TenantId — these "
+            "are TENANT-scope events, but the request was for ORG scope"
         )
-    if scope == "tenant" and not with_tenant:
-        fail(
-            f"none of the {len(present)} saved events carry a TenantId — these look like "
-            "ORG-scope events, but the request was for TENANT scope"
-        )
-    logger.info("intrinsic scope check passed for %s scope", scope)
+    logger.info(
+        "intrinsic scope check passed: none of the %d events carry a TenantId, as org-scope "
+        "events do not", len(records),
+    )
 
 
 def check_window(records, days):
     """No returned event may predate the requested window (plus grace)."""
     now = datetime.datetime.utcnow()
-    floor = now - datetime.timedelta(days=days + LOWER_GRACE_DAYS)
+    # Agents express windows as whole UTC days (`--from-date 2026-06-25`), so the
+    # floor is midnight of the earliest allowed day — not the current time-of-day
+    # N days back. Comparing a whole-day window against a time-of-day floor
+    # rejects events from the morning of the boundary day, which is boundary
+    # arithmetic the agent got right, not the unbounded query this check exists
+    # to catch.
+    floor_day = (now - datetime.timedelta(days=days + LOWER_GRACE_DAYS)).date()
+    floor = datetime.datetime(floor_day.year, floor_day.month, floor_day.day)
     ceiling = now + datetime.timedelta(days=UPPER_GRACE_DAYS)
     stamped = [(r, event_timestamp(r)) for r in records]
     undated = [r for r, ts in stamped if ts is None]

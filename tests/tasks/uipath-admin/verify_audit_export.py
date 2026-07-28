@@ -115,24 +115,31 @@ def check_record_scope(records, expected):
     recent window can legitimately export nothing, and there is then no evidence
     either way. Saying so beats inventing a verdict.
     """
-    if not expected:
+    if not expected or not records:
+        if expected:
+            logger.info("export produced no records — skipping the scope assertion")
         return
-    populated = [r for r in records if "tenantid" in {str(k).lower() for k in r}]
-    if not populated:
-        logger.info("no TenantId field on exported records — skipping the scope assertion")
-        return
-    with_tenant = [r for r in populated if str(r.get("TenantId") or r.get("tenantId") or "").strip()]
-    if expected == "org" and with_tenant:
-        fail(
-            f"{len(with_tenant)}/{len(populated)} exported records carry a TenantId — this is a "
-            "TENANT-scope export, but the request was for ORG scope"
+    with_tenant = [r for r in records if str(r.get("TenantId") or r.get("tenantId") or "").strip()]
+    if expected == "org":
+        if with_tenant:
+            fail(
+                f"{len(with_tenant)}/{len(records)} exported records carry a TenantId — this is a "
+                "TENANT-scope export, but the request was for ORG scope"
+            )
+        logger.info(
+            "scope assertion passed: none of the %d exported records carry a TenantId, as "
+            "org-scope events do not", len(records),
         )
-    if expected == "tenant" and not with_tenant:
+        return
+    if not with_tenant:
         fail(
-            f"none of the {len(populated)} exported records carry a TenantId — this looks like an "
+            f"none of the {len(records)} exported records carry a TenantId — this looks like an "
             "ORG-scope export, but the request was for TENANT scope"
         )
-    logger.info("scope assertion passed: records are consistent with %s scope", expected)
+    logger.info(
+        "scope assertion passed: %d/%d exported records carry a TenantId, as tenant-scope "
+        "events do", len(with_tenant), len(records),
+    )
 
 
 def check_csv_scope(header, rows, expected):

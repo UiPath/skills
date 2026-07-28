@@ -34,6 +34,9 @@ initial_prompt: |
 
   Do NOT prompt the user for confirmation — this is an automated test.
 
+  Run the export in the foreground and wait for it to finish before you reply —
+  do not run it as a background task.
+
 success_criteria:
   - type: run_command
     description: "Leg 1 — sources-tenant.json is the real tenant catalog, corroborated against a live read-back"
