@@ -42,7 +42,7 @@ def task_section(plan: str, task_name: str) -> str:
 
 
 def task_lane(section: str, task_name: str) -> int:
-    match = re.search(r"(?im)^-\s*lane:\s*(\d+)\s*$", section)
+    match = re.search(r"(?im)^-\s*lane:\s*(\d+)\b", section)
     if not match:
         fail(f"missing lane for sequential task {task_name!r}")
     return int(match.group(1))

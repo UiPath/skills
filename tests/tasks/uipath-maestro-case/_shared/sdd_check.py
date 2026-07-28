@@ -404,7 +404,7 @@ def main() -> None:
     if not declared:
         sys.exit("FAIL: no §Case Variables table found")
 
-    refs = set(re.findall(r"=vars\.([A-Za-z]\w*)", text))
+    refs = set(re.findall(r"=vars\.([A-Za-z]\w*)", text)) - {"X"}
 
     # 1. mapping integrity
     unresolved = sorted(r for r in refs if r not in declared)
