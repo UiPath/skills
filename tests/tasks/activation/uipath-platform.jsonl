@@ -134,6 +134,3 @@
 {"id": "uipath-data-fabric-048", "prompt": "Insert this loan application record from loan.json", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-049", "prompt": "Find all SystemUser records where Email endswith '@uipath.com'", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-050", "prompt": "Wipe all test records from my Sandbox entity (query then bulk delete)", "expected_skill": "uipath-platform"}
-{"id": "uipath-data-fabric-052", "prompt": "Our Expense Approval list has a tags dropdown. Show urgent expenses, expenses with exactly urgent and reimbursable, and a count for each tag combination", "expected_skill": "uipath-platform"}
-{"id": "uipath-data-fabric-055", "prompt": "Add a receipt attachment field to the Orders entity, upload a sample receipt to one record, download it, and remove it again", "expected_skill": "uipath-platform"}
-{"id": "uipath-data-fabric-058", "prompt": "Our Salesforce Contacts list appears in UiPath. Add a new contact row to it", "expected_skill": "uipath-platform"}
