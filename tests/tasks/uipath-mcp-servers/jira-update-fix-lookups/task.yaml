@@ -25,6 +25,7 @@ initial_prompt: |
     - connector: uipath-atlassian-jira
     - connection: conn-mock-jira-01
 
+  Save only the decoded `Data.Metadata` object at the document root.
   Save: current-metadata.json (the broken state), fixed-metadata.json (with
   populated designTimeLookups), update-command.sh (the --dry-run update),
   trajectory.md, summary.txt.
