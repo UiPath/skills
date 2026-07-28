@@ -14,14 +14,37 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 | `uip ixp projects import-taxonomy <project-name> <file> --output json` | Import taxonomy from a local JSON file. Accepts `{ field_types, label_group }` or `{ entity_defs, label_groups }` format. **Merges — it never replaces**: entries you omit are kept and a posted `field_id` is ignored, so it cannot remove, move, or replace anything (a re-imported edit returns `{"status":"ok"}` and silently leaves duplicates). Use it to seed a project that has no taxonomy; change an existing one with the targeted `groups`/`fields`/`data-types` commands. |
 | `uip ixp projects update-title <project-name> "<new-title>" --output json` | Update the display title of a project |
 | `uip ixp projects update-prompt <project-name> --prompt "<text>" --output json` | Update the project's **Overall extraction instructions** — the taxonomy-wide prompt the model sees on every extraction (the field at the top of the IXP UI's Manage Taxonomy page). Distinct from per-field-group prompts (`groups update-prompts`) and per-field prompts (`fields update-prompts`). Replaces the existing value. |
-| `uip ixp projects get-taxonomy <project-name> --output json` | Export the raw IXP taxonomy artifact. Data is `{ status, dataset: { entity_defs, label_groups } }` — read `entity_defs` and `label_groups` under `dataset`. Intended for re-import (see `import-taxonomy`), not a human-readable view. |
+| `uip ixp projects get-taxonomy <project-name> --output json` | Export the raw IXP taxonomy artifact. Data is `{ status, dataset: { entity_defs, label_groups } }` — read `entity_defs` and `label_groups` under `dataset`. Intended for re-import (see `import-taxonomy`), not a human-readable view. `dataset` also carries `_model_config`, the only read path for the configured extraction model and pre-processing — see [Reading the current model and pre-processing](#reading-the-current-model-and-pre-processing). |
 | `uip ixp projects get-metrics <project-name> [--model-version <N>] --output json` | Get validation metrics. **Validated model →** flat Data: `ProjectScore`, `ProjectScoreQuality`, `ValidatedDocuments`, `ModelVersion`, plus per-group `FieldGroups[]` (`FieldGroup`, `F1`, `Precision`, `Recall`, `ErrorRate`, `Documents`) and per-field `Fields[]` (`FieldGroup`, `FieldId`, `F1`, `Precision`, `Recall`, `ErrorRate`, `Documents`, `Annotations`, `Quality`). **Trained but not yet validated →** Data is `{ Metrics: null }` (not an error). **No trained model yet (e.g. a project with no confirmed labellings) →** the call returns a failure envelope `Result: Failure` with `ErrorCode: not_found` (no `Data`), NOT `{ Metrics: null }` — treat it as "no metrics yet". Defaults to the latest version; pass `--model-version <N>` (`-m`, `latest` or an integer) to scope to a specific trained version. |
-| `uip ixp projects configure-model <project-name> [options] --output json` | Configure extraction model. Options: `--model` (gemini_2_5_flash/gemini_2_5_pro/gpt_4o_2024_05_13) and `--preprocessing` (none/table_mini/table). |
-| `uip ixp projects list-models <project-name> --output json` | List all model versions and tags. Returns `Models[]` (`Version`, `ModelName`, `Pinned`, `TrainedTime`, `Description`), `Tags[]` (`Name`, `Version`, `UpdatedAt`), and `MaxPublished`. |
+| `uip ixp projects configure-model <project-name> [options] --output json` | Configure extraction model. Options: `--model` (gemini_2_5_flash/gemini_2_5_pro/gpt_4o_2024_05_13) and `--preprocessing` (none/table_mini/table). At least one is required. **Write-only, and a read-modify-write** — it merges what you pass into the current config and returns the merged result, so calling it to *find out* the current settings rewrites them. To read them, use [`get-taxonomy`](#reading-the-current-model-and-pre-processing). |
+| `uip ixp projects list-models <project-name> --output json` | List all model versions and tags. Returns `Models[]` (`Version`, `ModelName`, `Pinned`, `TrainedTime`, `Description`), `Tags[]` (`Name`, `Version`, `UpdatedAt`), and `MaxPublished`. `ModelName` is the trained labeller's **family** (e.g. `gemini_ixp`, `gemini_pro_ixp`) — it is never a `--model` value like `gemini_2_5_flash`, so it does not answer "which extraction model is configured" (see [Reading the current model and pre-processing](#reading-the-current-model-and-pre-processing)). |
 | `uip ixp projects publish <project-name> [--model-version <N>] [--tag <live\|staging>] --output json` | Publish a model version — defaults to the latest; pass `-m, --model-version <N>` to pick a specific one. `-d, --description "<text>"` sets a description; `--tag <live\|staging>` tags the published version. |
 | `uip ixp projects unpublish <project-name> --model-version <N> --output json` | Unpublish a model version — it stays trained and listable; only its published status is removed. `--model-version` is **required**. Errors if the version isn't found or isn't currently published. To change which version is live, `publish` a different one instead. |
 | `uip ixp projects untag <project-name> --tag <live\|staging> --output json` | Remove a tag by **name** (`--tag` is **required**; tag names are unique within a project, so this is unambiguous even when one version holds several tags). The version the tag pointed at stays published; only that tag is cleared. Errors if no version carries the tag. Only `untag` removes a tag — `publish` without `--tag` leaves the existing tag untouched. To switch `live`→`staging`, `publish --tag staging` instead. |
 | `uip ixp projects delete <project-name> -y --output json` | **Permanently** delete a project — its documents, taxonomy, and trained models. **Irreversible.** `-y, --yes` is **required**; the command refuses to run without it (the CLI never prompts). |
+
+### Reading the current model and pre-processing
+
+There is **no `get-model-config` command** — `configure-model` only writes. The configured extraction model and pre-processing are in the taxonomy artifact under `Data.dataset._model_config`:
+
+```bash
+uip ixp projects get-taxonomy <project-name> --output json
+```
+
+**Model** — `_model_config.model_version` holds the `--model` value verbatim (e.g. `gemini_2_5_flash`). Report that one. Do **not** report `list-models`' `ModelName`: that is the trained labeller's family (`gemini_ixp`) and carries no pre-processing information at all.
+
+**Pre-processing** — `_model_config.input_config` stores the underlying mode, not the `none|table_mini|table` token, so invert it:
+
+| `input_config` | `--preprocessing` |
+|----------------|-------------------|
+| `null` | never configured — report it as *not configured* (the project uses the IXP default), **not** as `none` |
+| `{"mode": "image_only"}` | `none` |
+| `{"mode": "text_plus_image", "text_config": {"kind": "uipath_cv_table_only"}}` | `table_mini` |
+| `{"mode": "text_plus_image", "text_config": {"kind": "gemini_table_only"}}` | `table` |
+
+The remaining `_model_config` keys (`kind`, `flags`, `attribution_method`, `temperature`, `top_p`, `seed`, `system_prompt_override`, `iterative_config`) have no `uip ixp` flag — mention them only if the user asks.
+
+`_model_config` reflects the project's **current** setting, not the setting a given trained version was built with — so report it as the project's configuration, not as a property of the published version.
 
 ## Documents
 
