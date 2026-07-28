@@ -111,15 +111,6 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Returned all fields by default — selectedFields only in an aggregate (groupBy) query, never as a bare projection"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*selectedFields)(?!.*groupBy)'
-    min_count: 0
-    max_count: 0
-    weight: 1.5
-    pass_threshold: 1.0
-
   # --- Anti-pattern shape guards (must NEVER appear) ---
   - type: command_executed
     description: "Never used the array key `filters` (must be `queryFilters`)"

@@ -114,9 +114,8 @@ def find_entity_id(entities: list[dict], name: str) -> str | None:
 def create_entity(name: str, schema: dict) -> str | None:
     """Create the entity and return its new ID, or None on failure.
 
-    `entities create` can be slow server-side and occasionally outlasts the
-    CLI timeout even though the entity is created. On timeout (exit 124),
-    re-list and look up by name as a fallback.
+    `entities create` can fail locally even though the entity was created
+    server-side. After any nonzero result, re-list and look up by name.
     """
     body = json.dumps(schema)
     code, out, err = run_uip(
@@ -134,13 +133,20 @@ def create_entity(name: str, schema: dict) -> str | None:
             return created.get("ID") or created.get("Id") or created.get("id")
         return None
 
-    if code == 124:
-        # CLI gave up but the create may have landed server-side. Look it up by name.
-        print(f"WARN: uip df entities create {name} timed out; checking if it landed server-side...", file=sys.stderr)
-        eid = find_entity_id(list_native_entities(), name)
-        if eid:
-            print(f"OK: entity {name} found after timeout ({eid}) — using it")
-            return eid
+    reason = (
+        f"timed out after {UIP_LONG_TIMEOUT_SECONDS}s"
+        if code == 124
+        else f"returned exit {code}"
+    )
+    print(
+        f"WARN: uip df entities create {name} {reason}; "
+        "checking if it landed server-side...",
+        file=sys.stderr,
+    )
+    eid = find_entity_id(list_native_entities(), name)
+    if eid:
+        print(f"OK: entity {name} found after create failure ({eid}) — using it")
+        return eid
 
     print(f"WARN: uip df entities create {name} failed (exit {code}): {err.strip()}", file=sys.stderr)
     return None
