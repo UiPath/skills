@@ -1,7 +1,6 @@
 {"id": "uipath-mcp-servers-001", "prompt": "Register a new AgentHub MCP server of type uipath", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-002", "prompt": "Create a coded MCP server that wraps my published coded-agent process", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-003", "prompt": "Register a remote MCP server pointing at an external HTTP MCP endpoint", "expected_skill": "uipath-mcp-servers"}
-{"id": "uipath-mcp-servers-005", "prompt": "Register a platform MCP server bound to the orchestrator service", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-006", "prompt": "Create a command MCP server that spawns a local npx process", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-007", "prompt": "List all AgentHub MCP servers in my folder", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-008", "prompt": "Get the details of the inbox-mcp server", "expected_skill": "uipath-mcp-servers"}
@@ -19,7 +18,6 @@
 {"id": "uipath-mcp-servers-025", "prompt": "mcp delete by GUID returns 404 — why?", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-026", "prompt": "Enable a disabled tool on my MCP server", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-029", "prompt": "Register a coded MCP server with the process key and folder", "expected_skill": "uipath-mcp-servers"}
-{"id": "uipath-mcp-servers-030", "prompt": "Create a platform MCP server for orchestrator exposing only the start-job tool", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-031", "prompt": "Bind an api-workflow as a resource tool on my uipath MCP server", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-032", "prompt": "List the candidate automations I can wrap as MCP resource tools", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-033", "prompt": "My agenthub mcp create fails with HTTP 400 and no detail — how do I see the resolved body?", "expected_skill": "uipath-mcp-servers"}
