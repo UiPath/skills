@@ -12,7 +12,8 @@ CANARIES = (
     "GENERATED_ONLY_CANARY_ALPHA_9F3C",
     "GENERATED_ONLY_CANARY_BETA_7D2A",
 )
-FORBIDDEN_REPORT_PATHS = (".agent-builder", ".local/build", ".local\\build")
+STALE_ENTRY_POINT_TOKENS = ("legacyrequest", "legacyresponse")
+FINDING_TAG = re.compile(r"\[[CWI](?:-[A-Z])?-\d+\]")
 MIN_REPORT_BYTES = 500
 
 
@@ -69,9 +70,22 @@ def check_report() -> None:
     surfaced_canaries = [canary for canary in CANARIES if canary in report]
     if surfaced_canaries:
         fail(f"report surfaced generated-only canaries: {surfaced_canaries}")
-    surfaced_paths = [path for path in FORBIDDEN_REPORT_PATHS if path in normalized]
-    if surfaced_paths:
-        fail(f"report cited generated runtime paths: {surfaced_paths}")
+    stale_tokens = [token for token in STALE_ENTRY_POINT_TOKENS if token in normalized]
+    if stale_tokens:
+        fail(
+            f"report cites pre-refresh entry-points.json fields {stale_tokens} — "
+            "refresh regenerates that file from agent.json, so a stale mismatch is not a defect"
+        )
+    cited_findings = [
+        line.strip()
+        for line in report.splitlines()
+        if "entry-points.json" in line and FINDING_TAG.search(line)
+    ]
+    if cited_findings:
+        fail(
+            "report files a finding against refresh-managed entry-points.json: "
+            f"{cited_findings[:2]}"
+        )
 
 
 def main() -> None:
