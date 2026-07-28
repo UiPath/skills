@@ -11,9 +11,12 @@ description: >
   When the window exports nothing there is no evidence either way, so the
   assertion is skipped and logged rather than guessed at.
 
-  Both ways of honoring the requested destination count — passing it to
-  `--output-path`, or exporting elsewhere and moving the generated output in — so
-  the flatter layout the old criterion credited via `mv` still passes.
+  The destination must hold the CLI-generated
+  `audit_<from>_<to>_<generatedAt>` output. `--output-path` already takes a base
+  directory, so passing the folder the user named is the natural way to satisfy
+  this; the old criterion's `mv` allowance is not carried over, because a
+  freely-named layout is indistinguishable from a hand-written one and nothing in
+  this tier re-queries the tenant.
 
   Org-level activity is sparse and the long-term store lags by up to ~48h, so an
   empty export is a real outcome; all assertions are structural.
@@ -37,7 +40,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "./audit-org-yesterday holds a CLI-generated day-wise JSON export whose records are ORG-scope (no TenantId)"
-    command: 'AUDIT_BASE_DIR=audit-org-yesterday AUDIT_FORMAT=json AUDIT_ALLOW_FLAT=1 AUDIT_MIN_DAYS=1 AUDIT_EXPECT_SCOPE=org python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
+    command: 'AUDIT_BASE_DIR=audit-org-yesterday AUDIT_FORMAT=json AUDIT_MIN_DAYS=1 AUDIT_EXPECT_SCOPE=org python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

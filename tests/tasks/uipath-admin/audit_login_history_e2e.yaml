@@ -33,6 +33,9 @@ initial_prompt: |
   Save the complete JSON result of the org sources call to ./sources-org.json and
   the complete JSON result of your org events query to ./events-org.json.
 
+  Save the raw JSON exactly as the command returns it — do not filter, reshape, or
+  summarize it.
+
   This is an automated run — do not stop to ask me for confirmation. If the user
   cannot be resolved in this org, follow the skill's documented fallback (query the
   User Login type over the date window and note the result is approximate) rather
@@ -42,7 +45,7 @@ success_criteria:
   - type: run_command
     description: "sources-org.json is the real org catalog (corroborated live) and exposes a User Login event type"
     command: 'AUDIT_SOURCES_ORG_FILE=sources-org.json AUDIT_REQUIRE_TYPE="User Login" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_sources.py''))"'
-    timeout: 150
+    timeout: 260
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -50,7 +53,7 @@ success_criteria:
   - type: run_command
     description: "events-org.json holds genuinely ORG-scope events (no TenantId) bounded to the 1-month window"
     command: 'AUDIT_FILE=events-org.json AUDIT_SCOPE=org AUDIT_WINDOW_DAYS=31 AUDIT_CORROBORATE_EMPTY=0 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_events.py''))"'
-    timeout: 200
+    timeout: 320
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

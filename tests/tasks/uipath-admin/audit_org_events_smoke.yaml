@@ -25,13 +25,16 @@ initial_prompt: |
   admin-role changes. Save the complete JSON result to ./events-org.json so I
   can review it.
 
+  Save the raw JSON exactly as the command returns it — do not filter, reshape, or
+  summarize it.
+
   Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
   - type: run_command
     description: "events-org.json holds real ORG-scope events (no TenantId) inside the 7d window, capped at 50"
     command: 'AUDIT_FILE=events-org.json AUDIT_SCOPE=org AUDIT_WINDOW_DAYS=7 AUDIT_MAX_COUNT=50 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_events.py''))"'
-    timeout: 200
+    timeout: 320
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

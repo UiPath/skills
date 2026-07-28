@@ -32,7 +32,7 @@ success_criteria:
   - type: run_command
     description: "Both saved catalogs hold real audit sources whose ids are corroborated against the live tenant, each matching its own scope"
     command: 'AUDIT_SOURCES_ORG_FILE=sources-org.json AUDIT_SOURCES_TENANT_FILE=sources-tenant.json python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_sources.py''))"'
-    timeout: 200
+    timeout: 320
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

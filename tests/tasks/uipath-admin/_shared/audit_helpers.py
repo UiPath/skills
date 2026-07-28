@@ -30,7 +30,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from admin_helpers import run_cli  # noqa: E402  (path set above)
+from admin_helpers import poll, run_cli  # noqa: E402  (path set above)
 
 # Signature keys that identify a record as a live `events` row vs an LTS export
 # row. Matched case-insensitively via `field()`.
@@ -115,30 +115,70 @@ def load_saved(path):
         fail(f"{path!r} could not be read ({exc.__class__.__name__})")
 
 
+def _find_failure(node):
+    """Locate a CLI failure envelope at ANY depth, or None.
+
+    Checking only the top level would let a saved error through whenever the
+    agent wrapped it (`{"output": {"Result": "Failure", ...}}`), and the nested
+    `Data: []` would then read as "the window is legitimately empty".
+    """
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if _norm(key) == "result" and isinstance(value, str) \
+                    and value.strip().lower() == "failure":
+                return node
+        for value in node.values():
+            found = _find_failure(value)
+            if found is not None:
+                return found
+    elif isinstance(node, list):
+        for item in node:
+            found = _find_failure(item)
+            if found is not None:
+                return found
+    return None
+
+
 def unwrap(saved):
     """Return the payload inside a `{Result, Data}` envelope, tolerating wrapping.
 
     Accepts the raw CLI envelope, a bare `Data`, or an agent-authored wrapper
-    around either. A `Result` of `Failure` anywhere is a hard failure — a saved
-    error envelope must never read as a successful retrieval.
+    around either. A `Result` of `Failure` at any depth is a hard failure — a
+    saved error must never read as a successful retrieval.
     """
-    result = field(saved, "Result") if isinstance(saved, dict) else None
-    if result is not None and str(result).lower() != "success":
-        message = field(saved, "Code") or field(saved, "Result")
-        fail(f"saved payload is a CLI failure envelope (Result={message!r})")
+    envelope = _find_failure(saved)
+    if envelope is not None:
+        # Prefer `Instructions`, which is static remediation text. `Message` can
+        # quote the request back and is not worth putting in a CI log.
+        hint = field(envelope, "Instructions") or field(envelope, "Code") or "no detail given"
+        fail(f"saved payload contains a CLI failure envelope (Result=Failure; {hint}) — "
+             "the retrieval did not succeed")
     data = field(saved, "Data") if isinstance(saved, dict) else None
     return data if data is not None else saved
 
 
-def _walk_lists(node):
-    """Yield every list nested anywhere inside dicts/lists, outermost first."""
+# Keys whose value may legitimately be an EMPTY collection of records, per schema.
+# An empty list under any other key is unrelated data, not "zero records" — see
+# find_records. Deliberately schema-specific: `sources: []` is a plausible empty
+# sources catalog but says nothing about events, so it must not satisfy an events
+# check.
+_GENERIC_CONTAINERS = {"data", "value", "items", "results"}
+EMPTY_CONTAINER_KEYS = {
+    EVENT_SIGNATURE: _GENERIC_CONTAINERS | {"auditevents", "events"},
+    LTS_SIGNATURE: _GENERIC_CONTAINERS | {"events", "auditevents"},
+    SOURCE_SIGNATURE: _GENERIC_CONTAINERS | {"sources"},
+}
+
+
+def _walk_lists(node, key=None):
+    """Yield (list, containing-key) for every list nested anywhere, outermost first."""
     if isinstance(node, list):
-        yield node
+        yield node, key
         for item in node:
-            yield from _walk_lists(item)
+            yield from _walk_lists(item, key)
     elif isinstance(node, dict):
-        for value in node.values():
-            yield from _walk_lists(value)
+        for child_key, value in node.items():
+            yield from _walk_lists(value, child_key)
 
 
 def find_records(payload, signature):
@@ -152,13 +192,17 @@ def find_records(payload, signature):
     Returns `[]` when a well-formed but empty collection exists, and `None` when
     no collection of that schema is present at all — the caller must treat those
     differently: empty is a legitimate outcome on a quiet tenant, missing is not.
+
+    An empty list only counts as "zero records" when it is the whole payload or
+    sits under a key that plausibly holds THIS schema's collection. Accepting any
+    empty list found anywhere previously let a summary object like
+    `{"summary": "none found", "sources": []}` satisfy an events check.
     """
+    allowed = EMPTY_CONTAINER_KEYS.get(tuple(signature), _GENERIC_CONTAINERS)
     empty_candidate = None
-    for candidate in _walk_lists(payload):
+    for candidate, key in _walk_lists(payload):
         if not candidate:
-            # Remember an empty list, but keep looking for a populated one whose
-            # signature we can actually confirm.
-            if empty_candidate is None:
+            if empty_candidate is None and (key is None or _norm(key) in allowed):
                 empty_candidate = candidate
             continue
         dicts = [item for item in candidate if isinstance(item, dict)]
@@ -224,19 +268,26 @@ def status_of(record):
     return None
 
 
-def live_query(scope, verb, extra_args=()):
+def live_query(scope, verb, extra_args=(), attempts=3):
     """Re-query the tenant directly so a check never trusts the agent's file.
 
     This is the anti-forgery lever for read-only audit: the agent's saved output
     is compared against what the harness itself reads back, so a fabricated or
     stale file cannot pass. `run_cli` builds argv explicitly (no shell), and
     `extra_args` is always author-supplied — never agent-controlled text.
+
+    Retried, because these checks gate the task: tasks run concurrently against a
+    shared tenant over a shared token cache, so a single 429 or token-refresh
+    blip must not read as "the data isn't there". The per-call timeout is kept
+    well under the criteria's own timeouts so a slow call still yields a readable
+    failure rather than being killed mid-run.
     """
     if scope not in ("org", "tenant"):
         fail(f"internal: bad scope {scope!r}")
     if verb not in ("sources", "events"):
         fail(f"internal: bad verb {verb!r}")
-    return run_cli(["admin", "audit", scope, verb, *extra_args], timeout=90)
+    args = ["admin", "audit", scope, verb, *extra_args]
+    return poll(lambda: run_cli(args, timeout=60), max_attempts=attempts, delay=5)
 
 
 def env_flag(name, default=False):

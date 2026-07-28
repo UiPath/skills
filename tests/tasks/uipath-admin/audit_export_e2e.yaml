@@ -32,6 +32,9 @@ initial_prompt: |
   Save the complete JSON result of the sources call to ./sources-tenant.json and
   of the events call to ./events.json so I can review them alongside the export.
 
+  Save the raw JSON exactly as the command returns it — do not filter, reshape, or
+  summarize it.
+
   Do NOT prompt the user for confirmation — this is an automated test.
 
   Run the export in the foreground and wait for it to finish before you reply —
@@ -41,7 +44,7 @@ success_criteria:
   - type: run_command
     description: "Leg 1 — sources-tenant.json is the real tenant catalog, corroborated against a live read-back"
     command: 'AUDIT_SOURCES_TENANT_FILE=sources-tenant.json python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_sources.py''))"'
-    timeout: 150
+    timeout: 260
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
@@ -49,14 +52,14 @@ success_criteria:
   - type: run_command
     description: "Leg 2 — events.json holds this tenant's tenant-scope events, all inside the 7d window"
     command: 'AUDIT_FILE=events.json AUDIT_SCOPE=tenant AUDIT_WINDOW_DAYS=7 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_events.py''))"'
-    timeout: 200
+    timeout: 320
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
     description: "Leg 3 — ./audit-last-7d holds a CLI-generated day-wise JSON export of tenant-scope events"
-    command: 'AUDIT_BASE_DIR=audit-last-7d AUDIT_FORMAT=json AUDIT_ALLOW_FLAT=1 AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
+    command: 'AUDIT_BASE_DIR=audit-last-7d AUDIT_FORMAT=json AUDIT_MIN_DAYS=5 AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 2.5

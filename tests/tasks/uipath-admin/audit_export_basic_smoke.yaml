@@ -8,9 +8,10 @@ description: >
   The old pair of regexes checked that `--from-date`/`--to-date`/`--output-path`
   appeared and that the path mentioned the requested folder. What actually
   matters to the user is that their events are in the folder they asked for, in
-  the shape they asked for. Both ways of honoring that count: passing the folder
-  to `--output-path`, or exporting elsewhere and moving the generated output in
-  (`AUDIT_ALLOW_FLAT`) — the CLI-generated naming still evidences a real export.
+  the shape they asked for. The CLI-generated `audit_<from>_<to>_<generatedAt>`
+  name is required, because it is the only evidence in this tier that a real
+  export ran — nothing here re-queries the tenant, so accepting a freely-named
+  layout would let a hand-written file pass.
 
   Deep record-schema assertions belong to the artifact-verify tier
   (audit_export_verify_e2e.yaml); this tier grades destination + shape only, so
@@ -36,7 +37,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "./audit-yesterday holds a CLI-generated day-wise JSON export of tenant-scope events"
-    command: 'AUDIT_BASE_DIR=audit-yesterday AUDIT_FORMAT=json AUDIT_ALLOW_FLAT=1 AUDIT_MIN_DAYS=1 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
+    command: 'AUDIT_BASE_DIR=audit-yesterday AUDIT_FORMAT=json AUDIT_MIN_DAYS=1 AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

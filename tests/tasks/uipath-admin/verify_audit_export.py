@@ -13,11 +13,18 @@ export actually produced:
   (nothing)                           -> the name/layout is CLI-generated, so the
                                          file was produced by a real export
 
-The generated-name check is the "a real export ran" signal: only the CLI produces
-`audit_<from>_<to>_<generatedAt>`, so a hand-written placeholder file at the right
-path does not pass. When a task credits moving the generated output to the
-requested name (`AUDIT_ALLOW_FLAT`), the day-file naming convention
-(`<YYYY-MM-DD>.json`) carries that signal instead.
+The generated-name check is the "a real export ran" signal, and it is the ONLY
+anti-forgery lever in this tier (unlike the sources/events verifiers, nothing here
+re-queries the tenant): only the CLI produces `audit_<from>_<to>_<generatedAt>`, so
+a hand-written placeholder at the right path does not pass.
+
+An earlier revision also accepted the generated output *moved* to the requested
+folder, on the theory that day-file naming (`<YYYY-MM-DD>.json`) carried the same
+signal. It does not — `touch 2026-07-27.json` satisfied it, which made every
+export smoke forgeable. That allowance is gone: `--output-path` already takes a
+base directory, so passing the folder the user named is the natural correct
+behavior, and a cross-agent run confirmed claude, codex and gemini all do exactly
+that. Requiring the generated name is both stronger and simpler.
 
 Deep mode (`AUDIT_DEEP=1`, the artifact-verify tier) adds record-level schema
 assertions and, for CSV, a spreadsheet-formula-injection guard: the CLI must
@@ -29,7 +36,6 @@ Env:
   AUDIT_BASE_DIR    directory the user asked the export to be saved in
   AUDIT_FORMAT      json | csv
   AUDIT_DEEP        1 to add record-level schema + CSV-injection assertions
-  AUDIT_ALLOW_FLAT  1 to also accept the generated output moved to the base dir
   AUDIT_MIN_DAYS    minimum number of whole UTC days the export must cover
   AUDIT_EXPECT_SCOPE  org | tenant — grade scope from the records themselves:
                       org-scope exports are not attached to a tenant and carry an
@@ -61,6 +67,7 @@ from audit_helpers import (  # noqa: E402  (path set above)
     env_int,
     env_str,
     fail,
+    field,
     keys_of,
     ok,
     parse_ts,
@@ -119,7 +126,7 @@ def check_record_scope(records, expected):
         if expected:
             logger.info("export produced no records — skipping the scope assertion")
         return
-    with_tenant = [r for r in records if str(r.get("TenantId") or r.get("tenantId") or "").strip()]
+    with_tenant = [r for r in records if str(field(r, "TenantId") or "").strip()]
     if expected == "org":
         if with_tenant:
             fail(
@@ -176,40 +183,42 @@ def require_base_dir(base):
         )
 
 
-def resolve_json_output(base, allow_flat):
+def newest(paths):
+    """Most recent of several generated outputs.
+
+    An agent that self-corrects — exports, notices the wrong format or window,
+    re-exports — legitimately leaves more than one generated output behind. The
+    last one written is its answer; failing on the presence of an earlier attempt
+    would punish the retry rather than the result.
+    """
+    return max(paths, key=os.path.getmtime)
+
+
+def resolve_json_output(base):
     """Return (directory holding day files, description) for a json export."""
     generated = sorted(
         p for p in glob.glob(os.path.join(base, "audit_*"))
         if os.path.isdir(p) and GENERATED_NAME.match(os.path.basename(p))
     )
-    if len(generated) > 1:
+    if not generated:
+        present = sorted(os.listdir(base))[:12]
         fail(
-            f"expected ONE generated export folder under {base!r}, found {len(generated)}: "
-            f"{[os.path.basename(p) for p in generated]} — repeated exports collided"
+            f"no CLI-generated json export found under {base!r} — expected an "
+            f"'audit_<from>_<to>_<generatedAt>' folder; contents={present}"
         )
-    if generated:
-        return generated[0], f"generated folder {os.path.basename(generated[0])!r}"
-    if allow_flat:
-        # The task credits moving the generated folder to the requested name, so
-        # the CLI-produced signal is the day-file naming instead.
-        day_files = [f for f in os.listdir(base) if DAY_FILE.match(f)]
-        if day_files:
-            return base, f"day files placed directly in {base!r}"
-        nested = sorted(p for p in glob.glob(os.path.join(base, "*")) if os.path.isdir(p))
-        for candidate in nested:
-            if any(DAY_FILE.match(f) for f in os.listdir(candidate)):
-                return candidate, f"day files under {os.path.basename(candidate)!r}"
-    present = sorted(os.listdir(base))[:12]
-    fail(
-        f"no CLI-generated json export found under {base!r} — expected an "
-        f"'audit_<from>_<to>_<generatedAt>' folder"
-        + (" or day-wise <YYYY-MM-DD>.json files" if allow_flat else "")
-        + f"; contents={present}"
-    )
+    if len(generated) > 1:
+        chosen = newest(generated)
+        logger.info(
+            "%d generated export folders present (agent retried); grading the newest %r",
+            len(generated), os.path.basename(chosen),
+        )
+    else:
+        chosen = generated[0]
+    return chosen, f"generated folder {os.path.basename(chosen)!r}"
 
 
-def check_json_export(base, deep, allow_flat, min_days):
-    directory, described = resolve_json_output(base, allow_flat)
+def check_json_export(base, deep, min_days, expect_scope=None):
+    directory, described = resolve_json_output(base)
     check_window_from_name(os.path.basename(directory), min_days)
     day_files = sorted(f for f in os.listdir(directory) if f.endswith(".json"))
     misnamed = [f for f in day_files if not DAY_FILE.match(f)]
@@ -260,48 +269,40 @@ def check_json_export(base, deep, allow_flat, min_days):
                 f"exported event is missing LTS-schema keys {missing}; "
                 f"keys present={keys_of(sample)}"
             )
-    check_record_scope(scope_sample, env_str("AUDIT_EXPECT_SCOPE"))
+    check_record_scope(scope_sample, expect_scope)
     ok(f"{described}: {len(day_files)} day file(s), {total} event(s), "
        f"{'LTS schema verified' if deep else 'structure verified'}")
 
 
-def resolve_csv_output(base, allow_flat):
+def resolve_csv_output(base):
     generated = sorted(
         p for p in glob.glob(os.path.join(base, "audit_*.csv"))
         if os.path.isfile(p) and GENERATED_NAME.match(os.path.basename(p))
     )
+    if not generated:
+        present = sorted(os.listdir(base))[:12]
+        fail(
+            f"no CLI-generated .csv found under {base!r} — expected "
+            f"'audit_<from>_<to>_<generatedAt>.csv'; contents={present}. A folder of per-day JSON "
+            "here would mean the CSV format was not selected."
+        )
     if len(generated) > 1:
-        fail(
-            f"expected ONE generated .csv under {base!r}, found {len(generated)}: "
-            f"{[os.path.basename(p) for p in generated]}"
+        chosen = newest(generated)
+        logger.info(
+            "%d generated .csv files present (agent retried); grading the newest %r",
+            len(generated), os.path.basename(chosen),
         )
-    if generated:
-        return generated[0]
-    if allow_flat:
-        any_csv = sorted(p for p in glob.glob(os.path.join(base, "*.csv")) if os.path.isfile(p))
-        if len(any_csv) == 1:
-            return any_csv[0]
-        if len(any_csv) > 1:
-            fail(f"expected ONE .csv under {base!r}, found {[os.path.basename(p) for p in any_csv]}")
-    present = sorted(os.listdir(base))[:12]
-    fail(
-        f"no CLI-generated .csv found under {base!r} — expected "
-        f"'audit_<from>_<to>_<generatedAt>.csv'; contents={present}. A folder of per-day JSON "
-        "here would mean the CSV format was not selected."
-    )
+        return chosen
+    return generated[0]
 
 
-def check_csv_export(base, deep, min_days=None):
-    path = resolve_csv_output(base, env_flag("AUDIT_ALLOW_FLAT"))
+def check_csv_export(base, deep, min_days=None, expect_scope=None):
+    # `resolve_csv_output` already fails when no generated .csv exists, which is
+    # what "the CSV format was not selected" looks like on disk. A json folder
+    # sitting alongside a real .csv is a self-corrected retry, not a wrong answer,
+    # so its presence is not itself a failure.
+    path = resolve_csv_output(base)
     check_window_from_name(os.path.basename(path), min_days)
-    # A json export must NOT also be present — that would mean the requested
-    # single-CSV shape was not what the agent actually produced.
-    stray = [p for p in glob.glob(os.path.join(base, "audit_*")) if os.path.isdir(p)]
-    if stray:
-        fail(
-            f"the CSV export is accompanied by a json export folder "
-            f"{[os.path.basename(p) for p in stray]} — the requested single-CSV shape is ambiguous"
-        )
     try:
         with open(path, newline="", encoding="utf-8-sig") as handle:
             rows = list(csv.reader(handle))
@@ -338,7 +339,7 @@ def check_csv_export(base, deep, min_days=None):
                     )
         logger.info("formula-injection guard passed across %d data row(s)", len(rows) - 1)
 
-    check_csv_scope(header, rows[1:], env_str("AUDIT_EXPECT_SCOPE"))
+    check_csv_scope(header, rows[1:], expect_scope)
     ok(f"{os.path.basename(path)}: {len(header)} columns, {len(rows) - 1} data row(s), "
        f"{'LTS schema + injection guard verified' if deep else 'structure verified'}")
 
@@ -350,13 +351,22 @@ def main():
         fail("internal: AUDIT_BASE_DIR is required")
     if fmt not in ("json", "csv"):
         fail(f"internal: AUDIT_FORMAT must be json or csv, got {fmt!r}")
+    # Validated rather than compared loosely: a typo like `Tenant` would silently
+    # match neither branch, disarming the scope assertion while still reporting
+    # success. A misconfigured check is worse than no check.
+    expect_scope = env_str("AUDIT_EXPECT_SCOPE")
+    if expect_scope is not None:
+        expect_scope = expect_scope.lower()
+        if expect_scope not in ("org", "tenant"):
+            fail(f"internal: AUDIT_EXPECT_SCOPE must be org or tenant, got {expect_scope!r}")
 
     require_base_dir(base)
     deep = env_flag("AUDIT_DEEP")
+    min_days = env_int("AUDIT_MIN_DAYS")
     if fmt == "json":
-        check_json_export(base, deep, env_flag("AUDIT_ALLOW_FLAT"), env_int("AUDIT_MIN_DAYS"))
+        check_json_export(base, deep, min_days, expect_scope)
     else:
-        check_csv_export(base, deep, env_int("AUDIT_MIN_DAYS"))
+        check_csv_export(base, deep, min_days, expect_scope)
 
 
 main()

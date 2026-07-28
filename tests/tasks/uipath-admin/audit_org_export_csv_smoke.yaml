@@ -33,7 +33,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "./audit-org-yesterday holds exactly one CLI-generated .csv with the LTS header, aligned rows, and ORG-scope records"
-    command: 'AUDIT_BASE_DIR=audit-org-yesterday AUDIT_FORMAT=csv AUDIT_ALLOW_FLAT=1 AUDIT_EXPECT_SCOPE=org python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
+    command: 'AUDIT_BASE_DIR=audit-org-yesterday AUDIT_FORMAT=csv AUDIT_EXPECT_SCOPE=org python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

@@ -13,8 +13,10 @@ assertion targets the *meaning* the old regex was standing in for:
   (nothing)                       -> the records are really from THIS tenant
 
 Scope is graded from an intrinsic property of the records rather than from the
-command: org-scope events have a null `TenantId` by construction, tenant-scope
-events always carry one. That cannot be faked by writing a different flag.
+command: tenant-scope events always carry a populated `TenantId`, while org-scope
+events are not attached to a tenant and omit the field. The backend enforces this
+at read time (org queries filter on `isnull(TenantId)`), so it cannot be faked by
+writing a different flag.
 
 Anti-forgery: the harness independently re-queries the tenant and requires the
 saved records to share its OrganizationId. `OrganizationId` is stable regardless
@@ -99,7 +101,7 @@ def window_args(days):
     """
     if days is None:
         return []
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
     start = now - datetime.timedelta(days=days)
     end = now + datetime.timedelta(minutes=5)
     return [
@@ -124,8 +126,9 @@ def live_extra_args():
 def live_organization_id(scope):
     """OrganizationId as seen by the harness, or None when unobtainable.
 
-    Read from a wide window so a quiet recent window does not leave us without a
-    corroboration anchor.
+    Deliberately unbounded — any recent event is a valid provenance anchor, and
+    reusing the task's window would leave us without one whenever that window is
+    quiet.
     """
     data = live_query(scope, "events", ["--limit", "5"])
     if not data or str(field(data, "Result")).lower() != "success":
@@ -196,7 +199,7 @@ def check_scope(records, scope):
 
 def check_window(records, days):
     """No returned event may predate the requested window (plus grace)."""
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
     # Agents express windows as whole UTC days (`--from-date 2026-06-25`), so the
     # floor is midnight of the earliest allowed day — not the current time-of-day
     # N days back. Comparing a whole-day window against a time-of-day floor
@@ -216,11 +219,14 @@ def check_window(records, days):
     too_old = [ts for _, ts in stamped if ts is not None and ts < floor]
     too_new = [ts for _, ts in stamped if ts is not None and ts > ceiling]
     if too_old:
-        oldest = min(too_old)
+        # Report how far past the boundary, not the timestamp itself: CreatedOn is
+        # a field value from an audit record, and this module's contract is that
+        # only counts, key names and truncated ids reach the log.
+        overshoot = (floor - min(too_old)).days
         fail(
             f"query was not bounded to the requested {days}-day window: {len(too_old)} event(s) "
-            f"predate it, oldest at {oldest.isoformat()}Z vs floor {floor.isoformat()}Z "
-            f"(includes {LOWER_GRACE_DAYS}d grace)"
+            f"predate it, the oldest by {overshoot} day(s) beyond a floor that already includes "
+            f"{LOWER_GRACE_DAYS}d of grace"
         )
     if too_new:
         fail(
@@ -248,25 +254,40 @@ def check_min_count(records, requested_min, scope, days):
     if live_count is None:
         logger.info("could not measure live volume — skipping the minimum-count assertion")
         return
-    effective = min(requested_min, live_count)
+    # The harness measures volume AFTER the agent's query, and this tenant is
+    # shared: concurrent tasks in the same run emit audit events, so the live
+    # count can only have grown. Demanding parity would fail the agent for events
+    # that did not exist when it looked. Allow headroom for that drift — the
+    # assertion is about a truncated retrieval, not an exact match.
+    drift_allowance = max(5, live_count // 20)
+    effective = min(requested_min, live_count - drift_allowance)
     if len(records) < effective:
         fail(
             f"saved only {len(records)} events; the tenant returns {live_count} for the same "
-            f"request, so at least {effective} were expected — the retrieval was truncated"
+            f"request, so at least {effective} were expected (allowing {drift_allowance} for "
+            "events created during the run) — the retrieval was truncated"
         )
-    if requested_min > SERVER_PAGE_CAP and effective > SERVER_PAGE_CAP:
-        # The point of the >200 case: a single server call cannot exceed the cap,
-        # so crossing it proves pagination happened.
-        if len(records) <= SERVER_PAGE_CAP:
-            fail(
-                f"saved {len(records)} events — at or below the {SERVER_PAGE_CAP}-record "
-                f"server page cap even though the tenant can return {live_count}; the "
-                "request did not paginate past a single page"
+    # The >200 case: a single server call cannot exceed the page cap, so crossing
+    # it proves pagination happened. Only assertable when the tenant is
+    # comfortably above the cap — right at it, the agent could legitimately come
+    # back with exactly one full page.
+    if requested_min > SERVER_PAGE_CAP:
+        if live_count >= SERVER_PAGE_CAP + 25:
+            if len(records) <= SERVER_PAGE_CAP:
+                fail(
+                    f"saved {len(records)} events — at or below the {SERVER_PAGE_CAP}-record "
+                    f"server page cap even though the tenant can return {live_count}; the "
+                    "request did not paginate past a single page"
+                )
+            logger.info(
+                "pagination confirmed: %d events exceeds the %d-record server page cap",
+                len(records), SERVER_PAGE_CAP,
             )
-        logger.info(
-            "pagination confirmed: %d events exceeds the %d-record server page cap",
-            len(records), SERVER_PAGE_CAP,
-        )
+        else:
+            logger.info(
+                "tenant holds only %d events for this window — too close to the %d-record page "
+                "cap to assert pagination", live_count, SERVER_PAGE_CAP,
+            )
     logger.info("count %d meets the effective minimum %d (live volume %d)",
                 len(records), effective, live_count)
 
@@ -348,7 +369,12 @@ def main():
         logger.info("all %d saved events have status %s", len(records), expected)
 
     max_sources = env_int("AUDIT_MAX_DISTINCT_SOURCES")
-    if max_sources is not None:
+    # Only meaningful on a result large enough for breadth to indicate an
+    # unfiltered scan. `--search <term>` is a legitimate server-side narrowing
+    # flag whose small result set can still span several sources, and penalizing
+    # that would grade the agent's choice of filter rather than whether it
+    # narrowed at all.
+    if max_sources is not None and len(records) > 10:
         # Source names are catalog labels ("Folders", "Identity"), not PII.
         distinct = sorted({str(field(r, "EventSource")) for r in records if field(r, "EventSource")})
         if len(distinct) > max_sources:

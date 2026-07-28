@@ -30,7 +30,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "./audit-yesterday holds exactly one CLI-generated .csv with the LTS header and aligned rows"
-    command: 'AUDIT_BASE_DIR=audit-yesterday AUDIT_FORMAT=csv AUDIT_ALLOW_FLAT=1 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
+    command: 'AUDIT_BASE_DIR=audit-yesterday AUDIT_FORMAT=csv AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

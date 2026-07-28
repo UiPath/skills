@@ -16,6 +16,10 @@ description: >
   per UTC day inside [--from-date, --to-date] and writes one <YYYY-MM-DD>.json
   file per day into the generated folder.
 
+  The requested "past week" is graded from the CLI-generated output name, which
+  carries the window bounds — so a single-day export cannot satisfy it even when
+  the long-term store returns no rows for the window.
+
   LTS lag note: the export reads from the long-term store, which lags the live
   `events` endpoint by up to ~48h. The customer-style "past week" prompt
   therefore includes trailing days that may come back empty; the assertions are
@@ -41,7 +45,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "./audit-window holds exactly one CLI-generated day-wise JSON export whose events carry the LTS schema and are tenant-scope"
-    command: 'AUDIT_BASE_DIR=audit-window AUDIT_FORMAT=json AUDIT_DEEP=1 AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
+    command: 'AUDIT_BASE_DIR=audit-window AUDIT_FORMAT=json AUDIT_DEEP=1 AUDIT_MIN_DAYS=5 AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 4.0
