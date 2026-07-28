@@ -116,16 +116,21 @@ def load_saved(path):
 
 
 def _find_failure(node):
-    """Locate a CLI failure envelope at ANY depth, or None.
+    """Locate a CLI non-success envelope at ANY depth, or None.
 
     Checking only the top level would let a saved error through whenever the
     agent wrapped it (`{"output": {"Result": "Failure", ...}}`), and the nested
     `Data: []` would then read as "the window is legitimately empty".
+
+    Matches anything that is not `Success` rather than only `Failure`: the CLI
+    also emits `ValidationError` (seen in a real run when an agent passed an
+    out-of-range `--limit`), and an allowlist of known error spellings would
+    silently pass the next one.
     """
     if isinstance(node, dict):
         for key, value in node.items():
             if _norm(key) == "result" and isinstance(value, str) \
-                    and value.strip().lower() == "failure":
+                    and value.strip().lower() != "success":
                 return node
         for value in node.values():
             found = _find_failure(value)
@@ -148,11 +153,15 @@ def unwrap(saved):
     """
     envelope = _find_failure(saved)
     if envelope is not None:
-        # Prefer `Instructions`, which is static remediation text. `Message` can
-        # quote the request back and is not worth putting in a CI log.
-        hint = field(envelope, "Instructions") or field(envelope, "Code") or "no detail given"
-        fail(f"saved payload contains a CLI failure envelope (Result=Failure; {hint}) — "
-             "the retrieval did not succeed")
+        # Report the enum-ish fields and the static remediation text. `Message` is
+        # deliberately omitted: it echoes the request, which for audit can include
+        # a `--search` term containing someone's email. The agent's full command
+        # is in the run transcript anyway.
+        result = field(envelope, "Result")
+        code = field(envelope, "ErrorCode") or field(envelope, "Code") or "no code"
+        hint = field(envelope, "Instructions") or "no instructions given"
+        fail(f"saved payload is a CLI error envelope (Result={result!r}, ErrorCode={code!r}; "
+             f"{hint}) — the retrieval did not succeed")
     data = field(saved, "Data") if isinstance(saved, dict) else None
     return data if data is not None else saved
 
