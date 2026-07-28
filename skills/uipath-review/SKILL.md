@@ -154,6 +154,14 @@ For **Solution / Multi-project scope**, record all projects in a table:
 | 4 | ./Orchestration.flow | Flow | — | — |
 ```
 
+**Step 1c — Inventory the authored files** for every project you will review. Run this instead of writing your own `find`, to avoid listing runtime artifacts:
+
+```bash
+find "<PROJECT_DIR>" \( -type d \( -name ".agent-builder" -o -path "*/.local/build" -o -name "node_modules" -o -name ".venv" -o -name "obj" -o -name "bin" \) \) -prune -o -type f -print 2>/dev/null | sort
+```
+
+The result is the authored-file set for Steps 2.5 and 3. Any path absent from it is out of scope: do not read it, cite it, or name it in the report.
+
 ### Step 2 — Run Automated Validation and Workflow Analyzer
 
 This step is **mandatory** and **non-negotiable**. You MUST run validation commands yourself (via Bash) before doing any manual review.
