@@ -238,6 +238,8 @@ Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for ev
 > **Gotcha**: `targetPort` is required. Omitting it produces `[error] [edges[N].targetPort] Invalid input: expected string, received undefined` at validate time.
 >
 > **Gotcha**: the source field is `sourcePort`, not `sourceHandle`. If you write `sourceHandle`, validation fails with `[error] [edges[N].sourcePort] Invalid input: expected string, received undefined` — the path identifies the offending edge entry exactly.
+>
+> **Gotcha — edge `id` MUST start with a letter (XML NCName).** Never use a bare UUID or any id with a leading digit (`"12bd09dd-…"`, `"1edge-start"`). Edge ids become BPMN `<bpmn:incoming>/<bpmn:outgoing>` IDREFs; a leading digit makes the converter silently drop those references while still emitting the `sequenceFlow`, so `flow validate` passes and upload succeeds — but the engine cannot traverse: the run reports **Completed having executed only the start node**, every output null. Use descriptive ids (`e-<source>-<target>`, e.g. `e-start-agent`); prefixing a letter (`e12bd09dd-…`) also works. Same rule applies to node ids.
 
 ## Definition entry
 
