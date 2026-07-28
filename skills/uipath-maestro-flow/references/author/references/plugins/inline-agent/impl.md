@@ -61,6 +61,17 @@ The three pieces — **Delivery** (node `agentInputVariables[]`), **Contract** (
 
 Each binding's source `$vars.<node>.output.<field>` must reference a real node `id` in the `.flow` file, with an edge path reaching the inline-agent node. See [../../../../shared/node-output-wiring.md](../../../../shared/node-output-wiring.md) for the full expression contract.
 
+### Passing Complex Objects
+
+Prefer scalar or string inputs in inline-agent prompt tokens. If an upstream node
+produces a complex object/array that the agent needs to inspect, add a script
+field that serializes the normalized package with `JSON.stringify(...)`, bind
+that string field with `agentInputVariables[]`, and reference the string token in
+the prompt. Do not rely on a single whole-object token such as
+`{{input.discrepancyScript__output}}`; current runtime paths can pass that
+through to the LLM as a placeholder-like `input.<key>` string even when the node
+has a `binding`.
+
 ### The `content` ↔ `contentTokens` mirror invariant
 
 `content` is the source of truth. **`uip agent refresh` regenerates `messages[].contentTokens` from `content`** (correct `simpleText`/`variable` types, brace-free `rawString`). So: author the prompt in `content`, run `refresh`, and **don't hand-author or hand-fix `contentTokens`**. `uip agent validate` is read-only — if it flags a token mismatch (`Expected type "simpleText"…`, `Expected "input.X" but got "{{input.X}}"`, or `contentTokens has N entries but content requires M`), **re-run `refresh`** to regenerate; don't edit `rawString`.

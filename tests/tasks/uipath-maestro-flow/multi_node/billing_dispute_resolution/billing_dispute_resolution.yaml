@@ -50,11 +50,24 @@ initial_prompt: |
        - ERP: query entity `BillingDisputeERP` where `invoiceNumber` equals the
          normalized invoice number — trim, uppercase, and prepend `MCS-` if the
          prefix is absent.
+     Configure each Data Service query filter with the connector's expected
+     field-name expression shape from `node configure` / connector metadata;
+     do not serialize the left-hand field name as a plain string literal.
   4. **Merge** — join the two lookup branches.
   5. **Discrepancy Detection (Script)** — compare the disputed line items
      (`$vars.start.output.webhookPayload.dispute.disputedLineItems`) against the
      ERP contract rows (the ERP lookup output), matching on `lineNumber`. Compute
      the per-line pricing mismatches, total overcharge, and total undercharge.
+     Live Data Service query outputs can return `Items: null` for no rows; before
+     any inline agent reads CRM or ERP data, normalize both lookup outputs so the
+     agent receives arrays/objects with `Items` defaulted to `[]`, not direct
+     nullable `$vars.<lookup>.output.Items` bindings. Because inline-agent prompt
+     variables do not reliably render a whole complex object token, also return a
+     JSON string field such as `agentDisputeDetailsJson =
+     JSON.stringify(<normalized dispute package>)`; bind that string into the
+     analyst agent and reference the string token in the agent prompt, rather
+     than prompting with a whole-object placeholder like
+     `{{input.discrepancyScript__output}}`.
   6. **Dispute Analyst Agent (inline `uipath.agent.autonomous`)** — embedded in
      the flow project (scaffold with `uip agent init --inline-in-flow`), grounded
      on the existing context index **"Billing Dispute SOP Index"** via its context
@@ -65,11 +78,11 @@ initial_prompt: |
          `autoResolutionEligible` (boolean), `creditAmount` (number),
          `confidence` (number), `rationale` (string).
   7. **Switch on `recommendedAction`**:
-       - `escalate_to_manager` → the **approval decision** node (step 8).
-       - `auto_resolve` → a small Script ("Log Credit Amount", returns
-         `$vars.<analyst>.output.creditAmount`) → the **financial posting** node
+      - `escalate_to_manager` → the **approval decision** node (step 8).
+      - `auto_resolve` → a small Script ("Log Credit Amount", returns
+        `$vars.<analyst>.output.creditAmount`) → the **financial posting** node
          (step 9).
-       - `reject` → **Return Rejection** end node (step 10).
+      - `reject` → **Return Rejection** end node (step 10).
   8. **Approval decision (`core.logic.decision`)** — represents the manager
      approval outcome. The human approval step has been removed, so evaluate the
      decision to **Approved** by default (expression `false`, with `trueLabel`

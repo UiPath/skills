@@ -25,6 +25,16 @@ initial_prompt: |
   storage bucket named: ReceiptBucket. Model used: Receipt Model. Each of
   the three script nodes logs OK when it receives its respective extraction
   result.
+  The checker expects the canonical solution/project layout exactly at
+  `ReceiptIntake/ReceiptIntake/ReceiptIntake.flow`, so create a solution named
+  `ReceiptIntake` first and initialize the Flow project inside it. Do not also
+  create `ReceiptIntakeSolution`.
+
+  When authoring the IxP node directly, include both `outputs.output` and
+  `outputs.error` on the node instance. Copy them from registry get when a real
+  IxP node exists; if falling back to `core.logic.mock`, still expose equivalent
+  `output` and `error` variables for downstream `$vars.<extractor>.output` and
+  `$vars.<extractor>.error` references.
 
   Important:
   - The `uip` CLI is already available.

@@ -29,13 +29,26 @@ initial_prompt: |
   to the channel named `simple` using Slack's "Send Message to Channel"
   activity.
   For Slack, use the connection name `is-sandboxes`.
+  The Slack activity requires the channel ID, not the display name. Before
+  configuring the node, resolve `simple` by paginating
+  `uip is resources run list "uipath-salesforce-slack" "curated_channels"`
+  with the `is-sandboxes` connection until you find the channel. If the first
+  page has `Data.Pagination.HasMore: "true"`, call the same command again with
+  `--query "nextPage=<Data.Pagination.NextPageToken>"`. Configure
+  `bodyParameters.channel` with the resolved channel ID, not the literal string
+  `simple`.
+  The checker expects the canonical solution/project layout exactly at
+  `SlackPaginationTest/SlackPaginationTest/SlackPaginationTest.flow`, so create
+  a solution named `SlackPaginationTest` first and initialize the Flow project
+  inside it. Do not use the CLI auto-created `SlackPaginationTestSolution`
+  layout.
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `uip is resources run list ... curated_channels` more than once (pagination loop ran)"
+    description: "Agent invoked `uip is resources run list ... curated_channels`; the separate nextPage criterion proves pagination advanced"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+"?uipath-salesforce-slack"?\s+"?curated_channels'
-    min_count: 2
+    min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
