@@ -6,11 +6,11 @@ description: >
   (list -> identify -> delete), not the command string. Complements the
   user-lifecycle e2e, which grades the update tail but exercises delete only as
   teardown — this smoke grades the delete deterministically.
-tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, identity, user-lifecycle]
+tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, identity, user-lifecycle, delete]
 
 pre_run:
   - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''setup_delete_user.py''))"'
-    timeout: 60
+    timeout: 90
 
 post_run:
   - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_delete_user.py''))"'
@@ -28,7 +28,7 @@ success_criteria:
   - type: run_command
     description: "The seeded marker user is gone from the tenant after deletion"
     command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_user_deleted.py''))"'
-    timeout: 40
+    timeout: 90
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

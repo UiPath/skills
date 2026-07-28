@@ -43,16 +43,18 @@ def main():
 
     # Primary signal: the seed id must vanish from the marker-scoped listing.
     # --search (not an unfiltered list) keeps this reliable against user-list
-    # pagination on a busy org. Poll to absorb delete propagation lag.
+    # pagination on a busy org. Poll generously to absorb delete-propagation lag
+    # (deletes are eventually-consistent, at least as slow as invites).
     present = None
-    for i in range(4):
-        data = run_cli(["admin", "users", "list", "--search", SEARCH])
+    for i in range(6):
+        data = run_cli(["admin", "users", "list", "--search", SEARCH], timeout=15)
         if not data or data.get("Result") != "Success":
             fail("could not list users to confirm deletion")
         present = id_present(data.get("Data", []), seed_id)
         if not present:
             break
-        time.sleep(5)
+        if i < 5:
+            time.sleep(5)
 
     if present:
         fail(f"seed user id={seed_id} still present — agent did not delete it")
@@ -60,10 +62,18 @@ def main():
     # Guard the one false-pass the search can't see: if the agent renamed the
     # user (changing the email out of the marker prefix) instead of deleting it,
     # the id drops from the search but the user still exists. A direct get-by-id
-    # confirms real deletion — a live record here means no delete happened.
-    got = run_cli(["admin", "users", "get", seed_id])
-    if got and got.get("Result") == "Success" and id_present(got, seed_id):
-        fail(f"seed user id={seed_id} still exists (get-by-id) — agent modified it, did not delete")
+    # confirms real deletion. Retry so a single transient CLI failure (which,
+    # like a genuine not-found, surfaces as None) cannot silently skip the guard:
+    # a live renamed user surfaces on a retry, while a real not-found stays None
+    # across all attempts (and the search above already proved the CLI is up).
+    for attempt in range(3):
+        got = run_cli(["admin", "users", "get", seed_id], timeout=15)
+        if got and got.get("Result") == "Success" and id_present(got, seed_id):
+            fail(f"seed user id={seed_id} still exists (get-by-id) — agent modified it, did not delete")
+        if got is not None:
+            break  # definitive response with no live record for the id → deleted
+        if attempt < 2:
+            time.sleep(3)
 
     ok(f"seed user id={seed_id} successfully deleted (absent from tenant)")
 

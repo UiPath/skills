@@ -2,12 +2,18 @@
 """Pre-run seed for the user-delete smoke: (re)invite the marker user the agent
 will be asked to delete. Records the created user's id to a state file so the
 verify step can prove the seed existed — otherwise a do-nothing agent would
-"pass" because the user is trivially absent. Always exits 0 (best-effort seed)."""
+"pass" because the user is trivially absent. Always exits 0 (best-effort seed).
+
+Assumes serial execution: the marker email and the state-file name are fixed
+(org-wide singletons), so two concurrent instances of this task on the same org
+would race the shared user record. This matches the repo's sequential-run rule
+and the other single-marker identity tests; salt both if parallelism is enabled."""
 
 import logging
 import os
 import sys
 import tempfile
+import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
 from admin_helpers import run_cli, poll
@@ -43,6 +49,13 @@ def main():
         uid = u.get("Id") or u.get("id")
         if uid:
             run_cli(["admin", "users", "delete", uid])
+            # Wait for the delete to propagate before re-inviting the same email
+            # — otherwise the invite can collide ("already exists") and the seed
+            # fails, which would false-FAIL a correct agent at verify time.
+            for _ in range(4):
+                if not find_user():
+                    break
+                time.sleep(3)
 
     res = run_cli(["admin", "users", "invite", "--email", MARKER_EMAIL,
                    "--name", "Test", "--surname", "DeleteUser"])
