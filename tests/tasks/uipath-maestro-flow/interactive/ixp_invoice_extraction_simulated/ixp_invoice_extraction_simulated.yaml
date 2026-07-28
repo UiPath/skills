@@ -36,21 +36,23 @@ simulation:
     should kick in by itself whenever a new PDF invoice arrives in your
     SharePoint folder; the invoice number, vendor, invoice date, total amount
     and line items all need to come off each invoice; and once they are read
-    they go over to SAP as a posted request to the endpoint that is already
-    configured. Say that it has to be built as a UiPath Maestro Flow — not an
-    API workflow, not a standalone script — and that you want it validated
-    before you sign off. Do not name files or paths and do not use technical
-    wording. Close by inviting the agent to ask you anything it needs before
-    it starts building. Keep the withheld items below to yourself until it
-    asks.
+    they get sent over to SAP by posting them to a web address IT gave you —
+    plain posting to that address, nothing fancier. Say that it has to be
+    built as a UiPath Maestro Flow — not an API workflow, not a standalone
+    script — and that you want it validated before you sign off. Say plainly
+    that IT has not hooked up the SharePoint or SAP accounts in this
+    environment yet, so nothing here can actually run: you want it built and
+    wired up correctly and validated, ready to go once IT flips the switch,
+    and the agent should not go hunting for live accounts or wait on IT. Do
+    not name files or paths and do not use technical wording. Close by
+    inviting the agent to ask you anything it needs before it starts
+    building. Keep the withheld items below to yourself until it asks.
 
     WITHHELD — reveal each of these ONLY if the agent asks about it:
       - The project name should be "InvoiceProcessing".
       - The SharePoint folder is called "New Vendor".
       - HOW to read the invoice data / which model: the IxP (intelligent
         document processing) "Invoice Model".
-      - You do not require the project to execute before signing off (there is no
-        live SharePoint/SAP connection to test against).
 
   constraints:
     - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
@@ -58,6 +60,8 @@ simulation:
     - "Do not reveal the folder name 'New Vendor' unless asked where the invoices come from."
     - "Do not reveal the IxP 'Invoice Model' unless asked how to read/extract the invoice data."
     - "Do not reveal the project name 'InvoiceProcessing' unless asked what to name it."
+    - "If the agent says it cannot finish because a live SharePoint or SAP account is missing, or asks you to go back to IT for one, repeat that nothing is connected yet and that you still want every step built and wired up: it should pick the closest thing available and carry on rather than stopping."
+    - "If the agent offers to leave the SAP hand-off out, or as a placeholder or stand-in step, say no — you want the real step that posts the invoice data to that web address sitting in the flow, even though it cannot be exercised yet."
     - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro Flow at all (e.g. an API workflow), tell it you specifically want a Maestro Flow — i.e. a `.flow` file in the workspace — and are not satisfied until there is one."
     - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
     - "The moment the agent reports it has built the flow, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
