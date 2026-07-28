@@ -278,6 +278,38 @@ def first_rule_of_condition(cond: dict | None) -> dict | None:
     return first_group[0]
 
 
+RETURN_TO_ORIGIN_COMPLETION_RULES = frozenset(
+    {"required-tasks-completed", "wait-for-connector"}
+)
+
+
+def partition_return_to_origin_conditions(
+    conditions: Iterable[dict],
+    *,
+    allowed_rules: frozenset[str] = RETURN_TO_ORIGIN_COMPLETION_RULES,
+) -> tuple[list[dict], list[dict]]:
+    """Return all return lanes and the subset with an invalid completion pairing."""
+    returns = [
+        condition
+        for condition in conditions
+        if condition.get("type") == "return-to-origin"
+    ]
+    invalid = []
+    for condition in returns:
+        rules = condition.get("rules")
+        has_single_rule = (
+            isinstance(rules, list)
+            and len(rules) == 1
+            and isinstance(rules[0], list)
+            and len(rules[0]) == 1
+            and isinstance(rules[0][0], dict)
+        )
+        rule = rules[0][0].get("rule") if has_single_rule else None
+        if condition.get("marksStageComplete") is not True or rule not in allowed_rules:
+            invalid.append(condition)
+    return returns, invalid
+
+
 def iter_stage_entry_conditions(node: dict):
     for cond in (node.get("data") or {}).get("entryConditions") or []:
         yield cond

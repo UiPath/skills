@@ -15,9 +15,12 @@ BPMN project, make the project executable and package-shaped before packing:
 
 - The root process must be `<bpmn:process ... isExecutable="true">`.
 - `project.uiproj` must use lowercase `"main"` pointing at the BPMN file.
-- `operate.json` must use `"main"` and `"contentType": "ProcessOrchestration"`.
+- `operate.json` must use `"main"` with the bare BPMN filename, not a
+  `/content/<file>.bpmn#<start-event-id>` entry-point path, plus
+  `"contentType": "ProcessOrchestration"`.
 - `package-descriptor.json` must use a top-level `"content"` array with
-  `content/<file>` entries. Do not use `contentFiles`.
+  `content/<file>` entries. Do not use `contentFiles` or a CLI scaffold
+  `"files"` mapping for synthetic local metadata.
 
 The minimal placeholder-safe JSON shape is shown below; keep it exact apart
 from project, file, and start event names.

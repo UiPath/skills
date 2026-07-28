@@ -17,6 +17,12 @@ Where the registry stops, the canvas serializer is authoritative. Each
 gap below is labelled **REGISTRY GAP** — the registry exposes no template for
 it, so author it from this reference.
 
+BPMN XML element names are case-sensitive. Use the exact lower-camel BPMN tag
+names the serializer emits, such as `<bpmn:startEvent>`,
+`<bpmn:intermediateCatchEvent>`, `<bpmn:scriptTask>`, and `<bpmn:endEvent>`.
+Do not use PascalCase variants like `<bpmn:IntermediateCatchEvent>`; XML accepts
+them syntactically, but BPMN tools do not treat them as the same elements.
+
 ## The document scaffold (REGISTRY GAP)
 
 The registry emits no `<bpmn:definitions>` / `<bpmn:process>` root and no
@@ -60,14 +66,14 @@ XML comments must not contain `--` (double-hyphen): it is invalid XML and the
 file will fail to parse. Never paste CLI commands or flags
 (`--output`, `--connection-id`) into `<!-- … -->`. Keep comments minimal.
 
-## A complete minimal file (author from this, not from fixtures)
+## A complete minimal file (author from this, not from examples)
 
 This is the whole shape — variables, an entry point, one node, a branch, and
 the diagram — in one valid file. Author from this skeleton plus the registry
-templates for your nodes. **Do not read the validator's `test/fixtures/` to
-infer the pattern**; those are validator test data, and reading them is the
-main reason authoring runs out of time. Swap the `scriptTask` payload for the
-registry `xmlTemplate` of whatever node you need.
+templates for your nodes. **Do not reverse-engineer the pattern from full
+example BPMN files** — it is the main reason authoring runs out of time. Swap
+the `scriptTask` payload for the registry `xmlTemplate` of whatever node you
+need.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -93,7 +99,7 @@ registry `xmlTemplate` of whatever node you need.
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
           <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
           <uipath:output name="tier" type="string" var="Var_Tier" source="=result.response" />
         </uipath:mapping>
       </bpmn:extensionElements>
@@ -137,6 +143,9 @@ the process via `extensionElements`, or use the canvas `<uipath:variables>`
 block directly. Variable bodies are CDATA. Reference variables in expressions as
 `vars.<id>` — see [expression-authoring.md](expression-authoring.md).
 Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
+For a value produced only by a task output, prefer root
+`<uipath:output id="..." name="..." type="..." />`; preserve the exact id and
+target that same id from `uipath:output var="..."`.
 
 ## Script tasks (`BPMN.ScriptTask`) — Jint runtime contract
 
@@ -152,10 +161,27 @@ template, but the runtime contract is fixed:
   `value="v2"`. For v2+ the script returns JSON under `response`.
 - Mapped `args` fields are read as **top-level identifiers** in the script body
   (`amount`, not `args.amount`); the input mapping itself stays `name="args"`
-  and maps each field by variable id (`=vars.Var_Amount`).
-- Map the return back through `source="=result.response"` (scalar) or
-  `source="=result.response.<field>"` (object field); `var` points at a declared
-  variable id (do not put the target id in `name`).
+  with `type="json"` and `target="bodyField"`, and maps each field by variable
+  id (`=vars.Var_Amount`). Include `<uipath:input name="args" type="json"
+  target="bodyField"><![CDATA[{}]]></uipath:input>` even when there are no
+  inputs; this is part of the `BPMN.ScriptTask` registry template.
+- Map the returned object's property back through `source="=result.response"`
+  (the conventional scalar property) or `source="=result.response.<field>"`
+  (another object field); `var` points at a declared variable id (do not put the
+  target id in `name`).
+- When the output mapping uses `source="=result.response"`, return an object
+  with a `response` property, such as `return { response: 6 * 7 };`. Do not
+  return the bare primitive `42` for that mapping shape; there is no
+  `response` property to bind, so the runtime variable stays empty.
+- Do not use `source="=result"` with a bare scalar return in live debug/runtime
+  BPMN. Studio Web can report `FinalStatus: Completed` while the target root
+  variable still reads back as `{}` or `null` from
+  `debug-instance variables-all`.
+- For live debug/runtime runs, never use `source="=this.result"` or
+  `<uipath:type value="BPMN.Variables" ...>` on a script task output mapping.
+  That older structural-test shape can pass local validation but leaves root
+  variables `null` or faults in Studio Web. Use the `BPMN.ScriptTask` mapping
+  with `source="=result.response"`.
 - Do not mutate `Globals.*`, `vars.*`, or process variables inside the script
   body. The supported path is: return a value from the script, then use a
   `uipath:output` mapping to write it to the declared variable. Direct mutation
@@ -167,7 +193,7 @@ template, but the runtime contract is fixed:
     <uipath:scriptVersion value="v3" />
     <uipath:mapping version="v1">
       <uipath:type value="BPMN.ScriptTask" version="v1" />
-      <uipath:input name="args"><![CDATA[{"amount":"=vars.Var_Amount","daysOverdue":"=vars.Var_DaysOverdue"}]]></uipath:input>
+      <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount","daysOverdue":"=vars.Var_DaysOverdue"}]]></uipath:input>
       <uipath:output name="riskScore" type="number" var="Var_RiskScore" source="=result.response" />
     </uipath:mapping>
   </bpmn:extensionElements>
@@ -245,6 +271,12 @@ Payload shapes the canvas serializes:
   Maestro internal-message events (`Maestro.ReceiveMessageEvent` /
   `Maestro.SendMessageEvent`) carry the `uipath:event` payload **and** a bare
   `<bpmn:messageEventDefinition />` (see their registry templates).
+  A mid-flow wait for an inbound message is a
+  `<bpmn:intermediateCatchEvent>` with incoming and outgoing sequence flows,
+  the registry-provided `Maestro.ReceiveMessageEvent` payload under
+  `bpmn:extensionElements`, and a sibling `<bpmn:messageEventDefinition />`.
+  Do not model a mid-flow receive as `bpmn:receiveTask`, `bpmn:serviceTask`, a
+  start event, or the PascalCase `bpmn:IntermediateCatchEvent`.
 - **Error**: `<bpmn:errorEventDefinition errorRef="Error_1" />` with a
   `<bpmn:error id="Error_1" name="…" errorCode="…"/>` at definitions level. An
   error end event with no `errorRef` fails to parse at runtime
@@ -399,9 +431,20 @@ unsupported for generation until current tooling confirms them.
     `Maestro.CaseRulesEvaluator`). Do **not** substitute the capital-`A`
     `<uipath:Activity>` element for a typed shell.
   - The capital-`A` `<uipath:Activity>` element is a **separate** generic
-    preserve-only payload (its own element, not a wrapper for typed shells).
+    preserve-only payload (its own element, not a wrapper for typed shells). If
+    a prompt asks for a generic unsupported `uipath:Activity`, preserve that
+    exact capitalized tag, for example:
+    `<uipath:Activity version="v1"><uipath:type value="uipath:Activity" version="v1" /></uipath:Activity>`.
+    Do not encode it as lowercase `<uipath:activity>` with
+    `<uipath:type value="uipath:Activity" />`; that misses the preserve-only
+    payload shape.
   - `uipath:caseManagement` is a versioned body-string element —
     `<uipath:caseManagement version="v1">…synthetic payload…</uipath:caseManagement>`.
+    If a prompt asks for case-management contract variants, preserve-only
+    case-management payloads, or case-plan/case-management wrappers, include an
+    actual lowercase `uipath:caseManagement` element with synthetic content. A
+    typed `Orchestrator.StartCaseMgmtProcess*` activity shell is not the same
+    payload and does not satisfy that preserve-only case-management shape.
   - `<uipath:scriptVersion value="v2" />` is legacy: author `v3` for new scripts,
     preserve `v2` where it already exists.
 
@@ -468,23 +511,24 @@ Re-check after any edit:
 
 ## Validation
 
-There is **no** `uip maestro bpmn validate` CLI command. The skill ships its own
-offline validator that reconstructs the PO.Frontend Node/Edge/CanvasState model
-from the parsed BPMN and runs **every** canvas validation rule — run it as the
-primary check:
+Validate with the CLI — it runs the full PO.Frontend canvas rule set offline
+(the same Node/Edge/CanvasState reconstruction and every canvas rule), plus the
+deploy-readiness checks:
 
 ```bash
-cd skills/uipath-maestro-bpmn/validator && npm install --silent
-node validate-bpmn.mjs <file.bpmn>   # prints VALID and exits 0, or prints errors and exits 1
+uip maestro bpmn validate <file.bpmn> --output json
 ```
 
-`VALID` / exit 0 means the document passes all rules. Any other output lists the
-blocking errors (gateway/condition, fake-join, superfluous-gateway, error
-end/boundary event, timer-duration, single-blank-start, variable-reference, and
-IS-connector checks). See [validator/README.md](../validator/README.md).
+Exit 0 means the document passes all rules. Exit 1 lists the blocking errors,
+each with its rule code (gateway/condition, fake-join, superfluous-gateway,
+error end/boundary event, timer-duration/required-field, single-blank-start,
+single-conditional-outgoing-flow, variable-reference, method-parentheses,
+input-type, event-object, and IS-connector checks). Warnings are reported but do
+not block. If `validate` is unknown or runs only deploy-readiness checks, update
+the CLI — see [cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).
 
-If Node is unavailable, fall back to a well-formed-XML parse plus the structural
-checklist below — it mirrors the same blocking rules:
+If the CLI is unavailable, fall back to a well-formed-XML parse plus the
+structural checklist below — it mirrors the same blocking rules:
 
 ```bash
 python3 -c "import xml.etree.ElementTree as ET; ET.parse('<file.bpmn>')"

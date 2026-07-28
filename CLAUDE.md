@@ -40,3 +40,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 ## When Writing or Modifying Tests
 
 Tests live in `tests/tasks/<skill-name>/` as coder_eval task YAMLs. Before authoring or editing a task, read [tests/README.md](tests/README.md) for the full framework: tag taxonomy, experiment configs, success-criteria types, weight guidance, and the `/generate-task` and `/test-coverage` slash commands. Repo-specific authoring constraints (workflow, required tags, sandbox rules, anti-patterns) are in [.claude/rules/test-writing.md](.claude/rules/test-writing.md).
+
+## Codereval Blob Results
+
+- Codereval dashboard results are stored in Azure Blob Storage account `coderevaltests`, container `runs`.
+- Run IDs are timestamped like `YYYY-MM-DD_HH-MM-SS`; list today's runs with prefix `YYYY-MM-DD`.
+- The run summary is `<run-id>/run.json`; per-task results live under `<run-id>/<variant>/<task-id>/<replicate>/task.json`.

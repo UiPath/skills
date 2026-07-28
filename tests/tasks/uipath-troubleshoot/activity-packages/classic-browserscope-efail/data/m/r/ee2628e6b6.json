@@ -1,0 +1,28 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "3a1e81c2-07ca-4d6b-bc07-7e0c7b94ea3a",
+      "Name": "original_email@test.com's workspace",
+      "Path": "original_email@test.com's workspace",
+      "Description": "",
+      "Type": "Personal",
+      "ParentKey": ""
+    },
+    {
+      "Key": "a2f9c1d4-6b08-4e17-9c3a-2d5e8f0b7143",
+      "Name": "Finance",
+      "Path": "Finance",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

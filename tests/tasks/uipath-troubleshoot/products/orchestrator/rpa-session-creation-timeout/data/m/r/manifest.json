@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the rpa-session-creation-timeout scenario (job-faulted-session-timeout playbook, cause 1 - known Robot defect on versions < 23.10). The agent derives keys by chaining: folders list -> jobs list --state Faulted -> jobs get -> jobs logs -> jobs history -> machines list. The Robot version 23.4.7 (< 23.10) on RECON-BOT-01 is the discriminating evidence; the 'Creating user session timed out' string (no logon-failure code) rules out job-faulted-logon-failure, and the Pending->Running->Faulted history rules out no-host/Pending. Specific rules precede generic ones so first-match-wins picks the narrower fixture.",
+  "_doc": "Synthetic fixture set for the rpa-session-creation-timeout scenario (job-faulted-session-timeout playbook). The agent derives keys by chaining: folders list -> jobs list --state Faulted -> jobs get -> jobs logs -> jobs history -> machines list. The discriminating evidence is the 'Creating user session timed out' string with NO logon-failure code (rules out job-faulted-logon-failure) plus a ~120s Running-then-Faulted history (rules out no-host/Pending) — a session-creation timeout from host latency. The Robot version 23.4.7 on RECON-BOT-01 is a data point, NOT the cause (no version-specific fix). Specific rules precede generic ones so first-match-wins picks the narrower fixture.",
   "rules": [
     {
       "match": "or folders list",

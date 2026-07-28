@@ -17,15 +17,15 @@ Compose the `slaRules[]` array for each target (root or stage) in one write. Gro
 | T-entry kind | Required fields | Notes |
 |---|---|---|
 | Default SLA | `target`, `count`, `unit`, `display-name` | One per target. Emitted as the `=js:true` entry, always last. |
-| Conditional rule | `target: "root"`, `condition` (natural-language), `count`, `unit`, `display-name` | Root-only. Translated to `=js:<expr>` at execution; see Expression Translation below. |
+| Conditional rule | `target: "root"` \| `"<stage-name>"`, `condition` (natural-language), `count`, `unit`, `display-name` | Translated to `=js:<expr>` at execution and prepended to the target's default; see Expression Translation below. |
 | Escalation | `target`, `attach-to: T<m>` \| `default`, `trigger-type`, `at-risk-percentage?`, `recipients[]`, `display-name` | `attach-to` points to the T-number of the parent rule (or the default). |
 
 ## ID generation
 
+- SLA rule (default and conditional): `sla_` + 8 chars.
 - Escalation: `esc_` + 6 chars. Per [`case-editing-operations.md § ID Generation`](../../case-editing-operations.md#id-generation).
-- Conditional SlaRuleEntry: **no `id` field**. Removal is by array index.
 
-Record every `T<n> → esc_xxxxxx` in `id-map.json` under `{kind: "escalation", ruleExpression: "<parent rule expression>", target: "root" | "<stageId>"}`.
+Step 9.9 preallocates these IDs before conditions so `sla-status-change` rules can reference them. Record every SLA T-entry under `{kind: "sla-rule", displayName: "<title>", target: "root" | "<stageId>"}` and every escalation T-entry under `{kind: "escalation", displayName: "<title>", parentSlaTask: "T<m>", target: "root" | "<stageId>"}`. Step 11 MUST reuse the preallocated IDs; never regenerate them while composing `slaRules[]`.
 
 ## Target resolution
 
@@ -33,6 +33,8 @@ Record every `T<n> → esc_xxxxxx` in `id-map.json` under `{kind: "escalation", 
 - `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules`
 - Accepted node types: `case-management:Stage` (a secondary/exception stage is the same node with `data.stageType === "secondary"`).
 - If the stage node isn't found, halt and AskUserQuestion with candidate stage labels + "Something else".
+
+> **Stage conditional rules are direct JSON only.** `uip maestro case sla rules add` exposes a root-only CLI surface; do not use it for a stage target. Compose the stage's complete conditional + default array here and write `node.data.slaRules`.
 
 ## Recipe — one target
 
@@ -43,6 +45,7 @@ After grouping T-entries by target, compose the `slaRules` array and write it in
 ```json
 [
   {
+    "id": "sla_aB3kL9Qx",
     "displayName": "SLA Rule 1",
     "expression": "=js:<translated-condition-1>",
     "count": <n>, "unit": "<min|h|d|w|m>",
@@ -50,6 +53,7 @@ After grouping T-entries by target, compose the `slaRules` array and write it in
   },
   { "...additional conditional rules in sdd order..." },
   {
+    "id": "sla_Np4rT7Vz",
     "displayName": "SLA Rule 2",
     "expression": "=js:true",
     "count": <default.count>, "unit": "<default.unit>",
@@ -84,7 +88,7 @@ Emission rules:
 
 1. **Conditional rules first, in T-entry order.** Priority = sdd order (top-most wins).
 2. **Default rule (`=js:true`) last.** Always emitted when any SLA T-entry targets this node — even escalation-only cases.
-3. **Escalation-only default rule is legal, but it still needs a title.** If a target has escalations but no default SLA T-entry, emit `{displayName:"SLA Rule 1", expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`.
+3. **Escalation-only default rule is legal, but it still needs an ID and title.** If a target has escalations but no default SLA T-entry, Step 9.9 preallocates a synthetic default SLA ID and Step 11 emits `{id:"sla_...", displayName:"SLA Rule 1", expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`.
 4. **Always emit `escalationRule` on every rule.** Use `"escalationRule": []` when a rule has no attached escalations. Never omit the key.
 5. **Omit `slaRules` key entirely** on targets with no SLA T-entries.
 
@@ -131,5 +135,5 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 - Confirm `metadata.slaRules` (root) or `node.data.slaRules` (stage) exists with the expected entries. Verify the root-target uses `metadata` — not `root.data` (which doesn't exist on disk).
 - Confirm the trailing entry's `expression === "=js:true"` when any SLA T-entry targeted this node.
-- Confirm every generated `esc_` ID appears in `id-map.json`.
+- Confirm every emitted `sla_` and `esc_` ID appears in `id-map.json`, and every `sla-status-change` rule references IDs emitted on the declared target.
 - Run `uip maestro case validate <file> --output json` after all SLA targets have been written (not per-target).

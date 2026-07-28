@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {"Level": "Error", "TimeStamp": "2026-06-27T05:00:02.740Z", "Message": "Job 'aabbccdd-1122-3344-5566-778899aabbcc' failed to start. Unable to retrieve credentials from Orchestrator Database credential store. Please check your connection settings and ensure the Orchestrator Database service is running."},
+    {"Level": "Error", "TimeStamp": "2026-06-27T05:00:02.500Z", "Message": "[Orchestrator] Credential store 'Orchestrator Database' read failed: unable to open a connection to the Orchestrator SQL database (timeout). No credential was retrieved; Windows logon was not attempted."}
+  ]
+}

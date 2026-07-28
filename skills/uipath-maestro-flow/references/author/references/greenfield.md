@@ -149,7 +149,7 @@ If `Data.SolutionRegistration.Status` is `Registered` or `AlreadyRegistered`, **
 **Fallback** — when `Status` is `Skipped` (ambiguous discovery — e.g. multiple `.uipx`), `Failed` (the `.uipx` write failed), or `NotInSolution` (rare — auto-scaffold did not run and no parent `.uipx` was found): wire the project manually.
 
 ```bash
-uip solution project add \
+uip solution projects add \
   <directory>/<SolutionName>/<ProjectName> \
   <directory>/<SolutionName>/<SolutionName>.uipx
 ```

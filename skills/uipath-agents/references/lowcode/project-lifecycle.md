@@ -190,7 +190,7 @@ Verify via `Data.SolutionRegistration.Status` in the `agent init` response. The 
 
 ```bash
 # Fallback — when Status is Skipped / Failed / NotInSolution (not needed for OptedOut or Registered).
-uip solution project add "<AGENT_PROJECT_DIR>" [solutionFile] --output json
+uip solution projects add "<AGENT_PROJECT_DIR>" [solutionFile] --output json
 ```
 
 Run from the solution directory. The first argument is the path to the agent project folder (positional, not `--project-path`). The optional second argument is the path to the `.uipx` solution file — if omitted, the CLI searches up from the project path to find the nearest `.uipx` automatically.
@@ -337,12 +337,12 @@ uip solution init "<SOLUTION_NAME>" --output json
 uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --output json
 # (fallback only — run if Data.SolutionRegistration.Status is `NotInSolution` / `Skipped` / `Failed`;
 #  `OptedOut` means `--skip-solution-registration` was passed and registration was skipped on purpose)
-# uip solution project add "<SOLUTION_NAME>/<AGENT_NAME>" --output json
+# uip solution projects add "<SOLUTION_NAME>/<AGENT_NAME>" --output json
 ```
 
 The explicit `uip solution init` is optional: running `uip agent init "<AGENT_NAME>"` alone outside any solution auto-scaffolds `<AGENT_NAME>Solution/<AGENT_NAME>/` and registers the project (response carries `Data.AutoCreatedSolution`). Keep the explicit `solution init` when you want a solution name distinct from the agent name.
 
-When the fallback is needed, `uip solution project add` automatically finds the nearest `.uipx` by searching up from the agent path.
+When the fallback is needed, `uip solution projects add` automatically finds the nearest `.uipx` by searching up from the agent path.
 
 ### Step 3 — Configure agent.json
 
@@ -428,7 +428,7 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Scaffold agent | `uip agent init "<NAME>" --output json` | Any directory (auto-scaffolds `<NAME>Solution/` if outside a solution) | — |
 | Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory | — |
 | Verify project registration | Check `Data.SolutionRegistration.Status` from `agent init` response (`Registered` / `AlreadyRegistered` = done; `OptedOut` = `--skip-solution-registration` passed) | Solution directory | — |
-| Register project (fallback) | `uip solution project add "<PATH>" --output json` — when `agent init` returned `Skipped` / `Failed` / `NotInSolution` | Solution directory | — |
+| Register project (fallback) | `uip solution projects add "<PATH>" --output json` — when `agent init` returned `Skipped` / `Failed` / `NotInSolution` | Solution directory | — |
 | Refresh + regenerate derived files | `uip agent refresh [path] --output json` | Agent dir or any with path | — |
 | Validate (strict read-only) | `uip agent validate [path] --output json` | Agent dir or any with path | — |
 | Debug / run end-to-end on Studio Web | `uip agent debug <AgentDir> --inputs '{...}' --output json` | Agent dir | `Successful`, `Faulted`, `Stopped` |

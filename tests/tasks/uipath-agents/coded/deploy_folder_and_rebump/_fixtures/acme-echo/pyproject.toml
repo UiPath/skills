@@ -1,10 +1,14 @@
 [project]
 name = "acme-echo"
 version = "0.0.1"
-description = "Minimal echo agent"
-authors = [{ name = "Test" }]
+description = "acme-echo"
+authors = [{ name = "John Doe", email = "john.doe@myemail.com" }]
+dependencies = [
+    "uipath-langchain[bedrock,vertex]>=0.10.0, <0.11.0",
+]
 requires-python = ">=3.11"
-dependencies = ["uipath"]
 
 [dependency-groups]
-dev = ["uipath-dev"]
+dev = [
+    "uipath-dev>=0.0.79",
+]

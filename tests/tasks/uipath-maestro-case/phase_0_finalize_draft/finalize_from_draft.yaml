@@ -16,20 +16,9 @@ tags:
   - mode:build
   - shape:multi-node
   - resource
-  - feature:phase-0
+  - feature:approval-gate
+  - feature:conversational
   - feature:registry
-  - feature:stages
-  - feature:case-exit
-  - feature:conditions
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite"]
-  # Cap per-turn extended thinking so finalization writes/edits rather than
-  # deliberating the whole document as thinking tokens.
-  sdk_options:
-    max_thinking_tokens: 10000
 
 run_limits:
   task_timeout: 3000
@@ -53,6 +42,11 @@ initial_prompt: |
   unresolved on purpose — leave them that way and preserve the agents' concrete
   intended resource names. I just need the finalized design for now, nothing
   built yet.
+
+  This is a Maestro case-management SDD finalization. Keep it inside the Case
+  Management SDD template; do not route it through cross-product planning.
+  Use the direct finalization path: read the draft and SDD template, write the
+  finalized `sdd.md`, and do not spawn subagents or inspect planning/plugin docs.
 
 success_criteria:
   - type: file_exists

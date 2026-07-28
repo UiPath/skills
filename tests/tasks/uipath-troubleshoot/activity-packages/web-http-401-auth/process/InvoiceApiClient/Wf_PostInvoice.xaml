@@ -1,0 +1,22 @@
+<Activity x:Class="Wf_PostInvoice" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Sequence DisplayName="Post Invoice">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="apiToken" />
+    </Sequence.Variables>
+    <Assign DisplayName="Read API token from environment">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[apiToken]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[System.Environment.GetEnvironmentVariable("VENDOR_API_TOKEN")]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:HttpClient DisplayName="HTTP Request" EndPoint="https://invoices.vendor.example/api/v1/invoices" Method="POST" BodyFormat="application/json" Body="{&quot;invoiceId&quot;:&quot;INV-4471&quot;,&quot;amount&quot;:1290.00}" TimeoutMS="30000">
+      <ui:HttpClient.Headers>
+        <scg:Dictionary x:TypeArguments="x:String, x:String">
+          <x:String x:Key="Authorization">[apiToken]</x:String>
+        </scg:Dictionary>
+      </ui:HttpClient.Headers>
+    </ui:HttpClient>
+  </Sequence>
+</Activity>

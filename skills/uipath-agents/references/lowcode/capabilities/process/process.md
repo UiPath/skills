@@ -155,7 +155,7 @@ Wrapper changes to `Code: "ResourceConfigurations"` with `Data.resources[]` cont
    - `resources/solution_folder/package/<PackageName>.json` (package declaration)
    - an entry in `userProfile/<userId>/debug_overwrites.json` with real `folderKey`, `folderFullyQualifiedName`, and `folderPath` so Studio Web can resolve the process at runtime. An entry missing `folderFullyQualifiedName` or `folderPath` will cause "Could not find process for tool '<name>'" — refresh from current uipcli populates both correctly.
 
-For in-solution agents already registered with the parent solution — auto-registered by `uip agent init` (when run from inside a solution directory; verify via `Data.SolutionRegistration.Status` = `Registered` / `AlreadyRegistered`) or via the `uip solution project add` fallback — the package + process declarations are pre-existing; refresh resolves the binding against them.
+For in-solution agents already registered with the parent solution — auto-registered by `uip agent init` (when run from inside a solution directory; verify via `Data.SolutionRegistration.Status` = `Registered` / `AlreadyRegistered`) or via the `uip solution projects add` fallback — the package + process declarations are pre-existing; refresh resolves the binding against them.
 
 **Type-to-directory mapping for process declarations:**
 
@@ -222,11 +222,11 @@ When two agent projects in the same solution call each other (parent-tool topolo
 # 2. Add a second agent. When run from inside the solution directory,
 #    `uip agent init` auto-registers the project with the parent `.uipx`
 #    (confirm via `Data.SolutionRegistration.Status` in the response).
-#    `uip solution project add` is the fallback when registration was
+#    `uip solution projects add` is the fallback when registration was
 #    `NotInSolution` / `Skipped` / `Failed` (not for `OptedOut`, which means
 #    `--skip-solution-registration` was passed and the skip was intentional).
 uip agent init "ToolAgent" --output json
-# (fallback) uip solution project add "ToolAgent" --output json
+# (fallback) uip solution projects add "ToolAgent" --output json
 # Either path creates resources/solution_folder/package/ToolAgent.json and
 # resources/solution_folder/process/agent/ToolAgent.json automatically.
 
@@ -244,7 +244,7 @@ uip agent refresh  ToolAgent --output json
 uip agent validate ToolAgent --output json
 ```
 
-UUID cross-references between `SolutionStorage.Projects[].ProjectId`, `package/<ToolAgent>.json.projectKey`, and `process/agent/<ToolAgent>.json.projectKey` are auto-managed by project registration (`uip agent init` auto-registration, or the `uip solution project add` fallback) and `uip agent refresh` — do not hand-edit. See [../../solution-resources.md](../../solution-resources.md) § UUID Cross-References.
+UUID cross-references between `SolutionStorage.Projects[].ProjectId`, `package/<ToolAgent>.json.projectKey`, and `process/agent/<ToolAgent>.json.projectKey` are auto-managed by project registration (`uip agent init` auto-registration, or the `uip solution projects add` fallback) and `uip agent refresh` — do not hand-edit. See [../../solution-resources.md](../../solution-resources.md) § UUID Cross-References.
 
 ## Gotchas
 

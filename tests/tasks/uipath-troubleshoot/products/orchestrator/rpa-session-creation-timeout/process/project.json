@@ -1,7 +1,7 @@
 {
   "name": "NightlyReconciler",
   "projectId": "5d0a7c31-6b2e-4f19-9a10-2c8eafe22b03",
-  "description": "Background unattended worker; logs activity and exits. The failing process for the rpa-session-creation-timeout scenario (Robot version < 23.10 session-creation-timeout defect).",
+  "description": "Background unattended worker; logs activity and exits.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.System.Activities": "[26.2.6]"

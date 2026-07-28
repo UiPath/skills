@@ -14,7 +14,7 @@ When editing `caseplan.json` directly, the agent is responsible for these mechan
 | ID generation | Generate IDs per the ID Generation section below using the `prefixedId(prefix, count)` algorithm |
 | `elementId` on tasks | Compute and write `${stageId}-${taskId}` on every task |
 | Stage data fields | Emit `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` on every new Stage node. Do NOT emit `style`, `measured`, `width`, `zIndex`, or `position` — see Layout fields below (Rule 18/19) |
-| Edges | Not authored — `schema.edges` stays `[]`. No edge handles, no edge objects, no cleanup needed on stage removal |
+| Edges | Not authored (Rule 20) — `schema.edges` stays `[]`; no cleanup needed on stage removal |
 | Root-level bindings cleanup | Prune entries from top-level `bindings` no longer referenced by any task |
 | Lane array expansion | Ensure `stageNode.data.tasks` is expanded to include `laneIndex` before pushing |
 | `id-map.json` sidecar | Initialize on T01 (case plugin); append per plugin as IDs are generated; flush to disk at end of run (or after each plugin for durability) |
@@ -23,13 +23,13 @@ When editing `caseplan.json` directly, the agent is responsible for these mechan
 
 ---
 
-## layout-strip (Rule 19)
+## layout-strip (Rule 18)
 
 The following Pre-flight Checklist items become **NOOPs** because layout state lives in top-level `layout`, not on each node:
 
 - **Item 3 (Stage render fields)** — do NOT emit `style`, `measured`, `width`, `zIndex` on Stage nodes. nodes carry `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` only.
 - **Item 4 (Position computation)** — do NOT compute or emit `position.x`, `position.y` on Stage nodes (or Trigger nodes). FE auto-layouts on canvas load.
-- **Edges** — none are authored (`schema.edges` stays `[]`), so there are no edge `data.waypoints` to emit; skill emits empty `layout: {}` regardless.
+- **Edges** — none authored (Rule 20), so no edge `data.waypoints` to emit; skill emits empty `layout: {}` regardless.
 
 Skill emits empty `layout: {}` at top level — never populates `layout.nodes` or `layout.edges`. Layout authoring is a canvas-time concern, not a skill concern.
 
@@ -52,13 +52,13 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 4. **Primary Stage vs Secondary Stage at creation time.** Both are `case-management:Stage` nodes; a secondary stage is distinguished by `data.stageType: "secondary"`. Primary stages (no `data.stageType`) are written without `entryConditions` / `exitConditions` keys. Secondary stages (`data.stageType: "secondary"`) initialize both as empty arrays at creation time. Primary stages acquire those keys later when the condition plugins write them. Do not emit empty arrays on primary Stage.
 
-5. **Edges are not authored (RETIRED).** `schema.edges` stays `[]` — do not construct edge handles or append edge objects. Stage transitions derive from entry/exit conditions.
+5. **Edges are not authored (Rule 20).** `schema.edges` stays `[]` — do not construct edge handles or append edge objects. Stage transitions derive from entry/exit conditions.
 
-6. **Edge type inference (RETIRED).** No edges are written, so there is no edge type to infer. (Was: Trigger source → `TriggerEdge`, else `Edge`.)
+6. **Edge type inference (RETIRED).** No edges are written (Rule 20), so there is no edge type to infer.
 
 7. **Every regular stage has at least one entry condition.** With edges retired, stage entry conditions are the sole reachability contract — orphan stages don't execute. The first stage carries `case-entered`; every other regular stage carries `selected-stage-completed` / `selected-stage-exited` naming a reachable predecessor. When adding a stage, also plan its entry condition (Step 10).
 
-8. **Preserve task structure and order.** Increment `laneIndex` per task only for the structural/layout array when needed. Sequence behavior comes from each task's `runs-sequentially` entry condition and its order in `stageNode.data.tasks`; lane-sharing does not express sequence.
+8. **Preserve task structure and order.** Increment `laneIndex` per task only for the structural/layout array when needed. A strict sequential chain uses consecutive single-task sets (`[[A], [B], [C]]`); only intentionally parallel siblings share a task set (`[[A, B], [C]]`). Sequence behavior comes from each task's `runs-sequentially` entry condition and its order in `stageNode.data.tasks`; lane-sharing does not express sequence.
 
 9. **Task `elementId` = `${stageId}-${taskId}`.** Compute and write this composite string on every new task.
 
@@ -172,7 +172,7 @@ This is a hard constraint — it keeps every mutation reviewable in the tool-cal
 
 Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issues.append(...)`, `existingTriggers = schema.nodes.filter(...)`, etc.) are **specifications of intent**, not commands to execute. Read them, apply the logic in-head, then use Read/Write/Edit to realize the mutation.
 
-**Bash is still used for**: UUID v4 generation only (`node -e "console.log(crypto.randomUUID())"` for `operate.json.projectId` and `entry-points.json` `uniqueId`; subprocess MUST NOT `require('fs')`, `require('child_process')`, or use any redirection operator), `uip solution init` / `uip solution project add` / `uip solution upload`, `uip maestro case validate`, `uip maestro case debug`, `uip maestro case registry` discovery, and read-only metadata fetches (`uip maestro case tasks describe`, `is resources describe`, `is triggers describe`). Never for file mutation.
+**Bash is still used for**: UUID v4 generation only (`node -e "console.log(crypto.randomUUID())"` for `operate.json.projectId` and `entry-points.json` `uniqueId`; subprocess MUST NOT `require('fs')`, `require('child_process')`, or use any redirection operator), `uip solution init` / `uip solution projects add` / `uip solution upload`, `uip maestro case validate`, `uip maestro case debug`, `uip maestro case registry` discovery, and read-only metadata fetches (`uip maestro case tasks describe`, `is resources describe`, `is triggers describe`). Never for file mutation.
 
 **Prefixed IDs (`Stage_`, `t`, `Rule_`, `Condition_`, `trigger_`, `c`, `r`, `b`, `esc_`, `StickyNote_`) are picked inline by the agent — no subprocess.** See § ID Generation algorithm above.
 
@@ -243,17 +243,17 @@ Rule_   + "jdBFrJ"  → "Rule_jdBFrJ"
 
 ### Add an edge — RETIRED
 
-The skill does not author edges. `schema.edges` stays `[]`. To make a stage reachable, add a `stage-entry-conditions` rule on the target stage (Step 10), not an edge.
+Not authored (Rule 20). To make a stage reachable, add a `stage-entry-conditions` rule on the target stage (Step 10), not an edge.
 
 ### Add a task to a stage
 
 1. Read `caseplan.json`.
 2. Locate the stage node by ID.
-3. Ensure `stageNode.data.tasks` exists; ensure `stageNode.data.tasks[laneIndex]` exists (expand with empty arrays if needed).
+3. Ensure `stageNode.data.tasks` exists. Use the task's activation mode and entry rule before honoring lane placement: strict sequential / `runs-sequentially`, adhoc, event-driven, fan-in, conditional-gate, and standalone tasks append as new single-task inner arrays. Reuse an existing `stageNode.data.tasks[laneIndex]` only for tasks explicitly planned as parallel siblings with same-lane intent and rationale.
 4. Generate a task ID.
 5. Compute `elementId = ${stageId}-${taskId}`.
 6. Build the task object per the plugin's JSON Recipe. Do NOT add `entryConditions` here — the task-entry-conditions plugin (Step 10) writes them from the SDD's authored rows, for every task type alike.
-7. Push onto `stageNode.data.tasks[laneIndex]`.
+7. Push onto `stageNode.data.tasks[laneIndex]` only for explicitly parallel siblings; otherwise write `[task]` as its own inner task set. If `laneIndex` conflicts with activation mode, activation mode wins and note the lane correction in the completion report.
 8. Edit — narrow slice targeting that stage node's `data.tasks[laneIndex]`. Never whole-file Write.
 
 ### Bind an input
@@ -267,7 +267,7 @@ Details per plugin — see [bindings-and-expressions.md](bindings-and-expression
 1. Read `caseplan.json`.
 2. Remove the node from `schema.nodes` by ID.
 3. **If the deleted node is a stage with successors, repoint them — do NOT skip.** Edges are retired, so a successor reaches only via an entry-condition rule naming the deleted stage in `selectedStageId`. Find every stage whose `data.entryConditions[].rules[][]` has a `selected-stage-completed` / `selected-stage-exited` rule with `selectedStageId == <removedStageId>`, and repoint each to a surviving predecessor (the deleted stage's own predecessor, or `case-entered` if the deleted stage was first). Leaving them unrepointed orphans every successor — the case can validate structurally yet the successors never execute. Inverse of § Insert a stage between two existing stages.
-4. Edges are not authored — `schema.edges` is `[]`, nothing to remove. (Defensive: if an imported file has a stray edge referencing the removed node's ID, drop it.)
+4. `schema.edges` is `[]` (Rule 20) — nothing to remove. Defensive: drop any stray edge referencing the removed node's ID.
 5. **If the deleted node is a Trigger, prune its `entry-points.json` entry.** Triggers live in `schema.nodes`, so trigger removal routes here — but every trigger plugin mandates a matching `entry-points.json` entry ([manual/impl-json.md § Recipe — entry-points.json](plugins/triggers/manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints), timer, event). Remove the entry whose `filePath` ends in `#<removedTriggerId>` from `entry-points.json.entryPoints`. Leaving it orphans a `#<triggerId>` fragment pointing at a node that no longer exists.
 6. **If the deleted node is a Trigger with In-args / trigger outputs, run the variable cascade.** An In-arg emits three entries keyed by the trigger ([global-vars/impl-json.md § In argument](plugins/variables/global-vars/impl-json.md)): the formal slot in `root.inputs[]` (`elementId == <triggerId>`), the companion in `root.inputOutputs[]` (`elementId == "root"`), and the bridge on `triggerNode.data.uipath.outputs[]`. The bridge dies with the node, but the formal slot and companion survive — leaving every `=vars.<name>` consumer reading undefined (`validate` does not catch dangling `=vars.*`). For the deleted trigger:
    - Prune `root.inputs[]` entries with `elementId == <removedTriggerId>`.
@@ -384,12 +384,12 @@ Relocate a task within the case. **Keep the task `id`** so conditions and cross-
    - the task itself: `elementId = ${destStageId}-${taskId}`
    - any `wait-for-connector` entry-condition rule on the task, and each entry in that rule's `uipath.outputs[]`: `elementId = ${destStageId}-${ruleId}`
    - (root `inputOutputs[]` companions are `elementId: "root"` — NOT stage-scoped, leave them.)
-3. Remove the task from the source `data.tasks[oldTaskSet]` and insert it into the destination task set in the preserved `data.tasks` order. Parallel task sets remain allowed; lane/task-set placement is structural, while `runs-sequentially` entry conditions carry sequencing.
+3. Remove the task from the source `data.tasks[oldTaskSet]` and insert it into the destination task set in the preserved `data.tasks` order. Parallel task sets remain allowed, but shared destination task sets are valid only for explicitly parallel siblings. For `runs-sequentially` or other non-parallel entry modes, insert the task as its own single-task set; lane/task-set placement is structural, while entry conditions carry sequencing.
 4. **Repoint cross-task bindings that consume this task's outputs.** Any other task input with `sourceTask == <taskId>` keeps `sourceTask`, but its `sourceStage` must change to `<destStageId>`. Confirm ordering still holds — a consumer can only read a task that runs before it; moving the task later in the flow can invalidate the binding.
 5. **Re-check the moved task's `entryConditions[]`:**
    - `current-stage-entered` — no change; it follows the task to the destination stage.
    - `selected-tasks-completed` — `selectedTasksIds` left behind in the source stage now gate across stages; repoint to a task in the destination or remove if the dependency no longer applies.
-   - `runs-sequentially` — the move splits the source group; re-evaluate lane membership (step 3) in both stages.
+   - `runs-sequentially` — the moved task must be in its own single-task set; re-evaluate lane membership (step 3) in both stages so strict sequential chains stay as consecutive single-task sets.
    - **Reverse sweep — tasks left behind in the source stage.** Any task remaining in the source stage whose `selected-tasks-completed.selectedTasksIds` names the moved task now gates *across stages* (the gater stayed put, the gated task left). Repoint each such reference to a surviving source-stage task, or remove it if the dependency no longer applies. This is the inverse of the moved task's own gater re-check above — easy to miss because step 5 otherwise looks only at the moved task.
 6. Update the task's `id-map.json` entry `stageId` if the sidecar is present.
 7. Edit — narrow slices for the source and destination `data.tasks`, the recomputed `elementId`s, and any consumer-binding slices. Never whole-file Write. Validate at the section boundary.

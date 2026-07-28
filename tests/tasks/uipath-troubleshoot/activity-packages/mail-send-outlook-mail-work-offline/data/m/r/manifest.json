@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Send Outlook Mail Message Work-Offline scenario; mock dispatcher only -- do not treat as investigation evidence. Same timeout signature as the security-prompt sibling, but the evidence (message queued in the Outbox, no security prompt) points to Work Offline. docsai proxied to the real CLI; the --level Error logs rule precedes the generic logs rule. Matching is token-aware (first match wins); patterns are quote-agnostic.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    },
+    {
+      "match": "or folders list",
+      "file": "ee2628e6b6.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "75949d659e.json"
+    },
+    {
+      "match": "or jobs logs --level Error",
+      "file": "d742317695.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "b8d18266dc.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "3db6b96527.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

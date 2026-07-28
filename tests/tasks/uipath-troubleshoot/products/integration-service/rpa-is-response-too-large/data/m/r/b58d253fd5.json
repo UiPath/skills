@@ -1,0 +1,24 @@
+{
+  "Result": "Success",
+  "Code": "ResourceMetadata",
+  "Data": {
+    "name": "incident",
+    "displayName": "Incident",
+    "availableOperations": [
+      "List",
+      "Retrieve",
+      "Create",
+      "Update",
+      "Delete"
+    ],
+    "files": {
+      "List": "~/.uipath/cache/integrationservice/uipath-servicenow/_static/incident.List.json",
+      "Retrieve": "~/.uipath/cache/integrationservice/uipath-servicenow/_static/incident.Retrieve.json",
+      "Create": "~/.uipath/cache/integrationservice/uipath-servicenow/_static/incident.Create.json",
+      "Update": "~/.uipath/cache/integrationservice/uipath-servicenow/_static/incident.Update.json",
+      "Delete": "~/.uipath/cache/integrationservice/uipath-servicenow/_static/incident.Delete.json"
+    },
+    "hint": "Use --operation <List|Retrieve|Create|Update|Delete> to see fields, or read the files directly for full details.",
+    "Warning": "Results may not include custom fields. Use --connection-id <id> for connection-specific metadata including custom objects and fields. Run 'is connections list <connector-key>' to get available connection IDs."
+  }
+}
