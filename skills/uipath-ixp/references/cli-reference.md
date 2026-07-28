@@ -11,7 +11,7 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 | `uip ixp projects list [-l <limit>] [--offset <n>] --output json` | List IXP projects — returns a paged envelope `Data: { Projects: [{ Id, Name, Title, CreatedAt }], Total, Offset, Limit }` (rows under `Projects`, **not** a bare array). `-l, --limit` defaults 50 (range 1-10000); `--offset` defaults 0 to page. |
 | `uip ixp projects get <project-name> --output json` | Get a project |
 | `uip ixp projects create "<name>" <folder-path> [-d "<description>"] [--skip-taxonomy] --output json` | Create project and upload supported docs in `<folder-path>` (top-level only — sub-folders are not scanned; see [Supported document files](#supported-document-files)). By default suggests+imports taxonomy. `-d` provides context for better taxonomy suggestion. Use `--skip-taxonomy` to create a blank project (import taxonomy separately). Use `ProjectName` from output. |
-| `uip ixp projects import-taxonomy <project-name> <file> --output json` | Import taxonomy from a local JSON file. Accepts `{ field_types, label_group }` or `{ entity_defs, label_groups }` format. |
+| `uip ixp projects import-taxonomy <project-name> <file> --output json` | Import taxonomy from a local JSON file. Accepts `{ field_types, label_group }` or `{ entity_defs, label_groups }` format. **Merges — it never replaces**: entries you omit are kept and a posted `field_id` is ignored, so it cannot remove, move, or replace anything (a re-imported edit returns `{"status":"ok"}` and silently leaves duplicates). Use it to seed a project that has no taxonomy; change an existing one with the targeted `groups`/`fields`/`data-types` commands. |
 | `uip ixp projects update-title <project-name> "<new-title>" --output json` | Update the display title of a project |
 | `uip ixp projects update-prompt <project-name> --prompt "<text>" --output json` | Update the project's **Overall extraction instructions** — the taxonomy-wide prompt the model sees on every extraction (the field at the top of the IXP UI's Manage Taxonomy page). Distinct from per-field-group prompts (`groups update-prompts`) and per-field prompts (`fields update-prompts`). Replaces the existing value. |
 | `uip ixp projects get-taxonomy <project-name> --output json` | Export the raw IXP taxonomy artifact. Data is `{ status, dataset: { entity_defs, label_groups } }` — read `entity_defs` and `label_groups` under `dataset`. Intended for re-import (see `import-taxonomy`), not a human-readable view. |
@@ -113,6 +113,20 @@ Structural edits to a field within an existing field group. For instruction-only
 | `uip ixp fields rename <project-name> --group <field-group-name> --field <name> --new-name <name> --output json` | Rename a field. Preserves `field_id` and existing annotations. |
 | `uip ixp fields change-type <project-name> --group <field-group-name> --field <name> --type <type-name> -y --output json` | Change a field's type. **IRREVERSIBLE** — the server creates a new field under the hood, so all existing annotations for that field are deleted. `-y, --yes` is **required** (the CLI never prompts). |
 | `uip ixp fields update-prompts <project-name> --updates <json> --output json` | Bulk-update per-field extraction instructions. `--updates` is a JSON array `[{"name":"<field>","instructions":"..."}]` matched by `moon_form` field name (across all field groups). Existing field definitions are preserved. Unmatched names are reported in the response without failing the command. |
+
+### Moving a field to a different field group
+
+There is **no move/reparent command**. Every field command takes its group as `--group`, which only addresses the field — it cannot change which group owns it. A move is two `fields` calls against the existing groups, in this order:
+
+1. `uip ixp projects get-taxonomy <project-name> --output json` — read the field's current `type` and `instructions` so they can be carried over. In `Data.dataset`, the field is a `moon_form` entry under its group's `label_def`; its type is the `entity_defs[]` entry whose `id` matches the entry's **`field_type_id`** (NOT its `field_id`, which is the field's own identity and matches no `entity_def`).
+2. `uip ixp fields add <project-name> --group <target-group> --field <name> --type <type-name> --instructions <text> --output json` — recreate it in the target group.
+3. `uip ixp fields delete <project-name> --group <source-group> --field <name> -y --output json` — remove it from the source group.
+
+Add before deleting: if the add fails, the field is still in its original group. Both groups must already exist — a move never creates one. Creating the target group first, if the user asked for a group that isn't there yet, is a separate `groups add` step you should confirm with them.
+
+**IRREVERSIBLE** — `fields add` mints a new `field_id`, so the field's confirmed labels do not follow it into the new group. Tell the user before starting; documents must be re-reviewed for that field.
+
+**Do NOT move a field by editing the taxonomy and re-importing it.** `projects import-taxonomy` **merges** — it does not replace. Fields you omit from a posted group are kept, and a posted `field_id` is ignored (the backend mints a new one), so the import returns `{"status":"ok"}` while leaving the field in **both** groups as two separate fields. Do not use `groups delete` + `groups add` either: that destroys every other field in the group along with its annotations.
 
 ## Labellings
 
