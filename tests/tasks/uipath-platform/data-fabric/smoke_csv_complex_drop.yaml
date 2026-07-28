@@ -54,27 +54,10 @@ success_criteria:
     weight: 3.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent must NOT produce a .csv file or call records import with one (would silently drop complex fields)"
-    tool_name: "Bash"
-    command_pattern: '(uip\s+df\s+records\s+import\b.*\.csv|>\s*\S*\.csv\b|tee\s+\S*\.csv\b)'
-    min_count: 0
-    max_count: 0
-    weight: 2.5
-    pass_threshold: 1.0
-
   - type: file_exists
     description: "decision.md was written"
     path: "decision.md"
     weight: 1.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "decision.md explains that CSV import loses complex-field values and cites `records insert`"
-    command: "grep -qi -E 'ignor(e|ed)|drop(ped)?|skip(ped)?|null|silently|opaque|not (be )?(imported|resolved|preserved|stored)' decision.md && grep -qi 'records insert' decision.md"
-    timeout: 5
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command

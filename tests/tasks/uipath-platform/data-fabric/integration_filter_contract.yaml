@@ -82,25 +82,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "Agent reported movies sorted by score from highest to lowest"
+    description: "Agent reported the sorted-score and grouped-count results"
     include_agent_output: true
     prompt: |
-      Check whether the final response says the score-descending search
-      succeeded and identifies the highest and lowest endpoints (a concise
-      "highest through lowest" summary is sufficient). Score 1.0 if so;
-      otherwise score 0.0.
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: llm_judge
-    description: "Agent reported the count grouped by active flag"
-    include_agent_output: true
-    prompt: |
-      Check whether the final response reports separate counts for active=true
-      and active=false, using `total` as the count label or an equivalent clear
-      presentation. Score 1.0 if both group counts are present and numeric;
-      otherwise score 0.0.
-    weight: 2.0
+      Score 1.0 only if the final response both:
+      - reports the score-descending search and identifies its highest and
+        lowest endpoints; and
+      - reports numeric counts for active=true and active=false, using `total`
+        or an equivalent clear label.
+      Otherwise score 0.0.
+    weight: 3.5
     pass_threshold: 1.0
 
   - type: command_executed

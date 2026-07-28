@@ -2,15 +2,15 @@ task_id: skill-datafabric-integration-large-pagination
 description: >
   Integration test: agent paginates through a pre-seeded 500-record entity —
   cursor walk (limit=60 → 9 pages, 500 unique IDs), offset jump to a specific
-  page (matches the cursor-walked slice), and filterGroup walk on Active=true
-  (5 pages, 300 IDs). Brownfield: pre_run seeds the 500 records once via
-  `seed_entity.py` and post_run restores the fixture. Focuses on pagination
-  correctness at scale; bulk-import coverage lives in integration_csv_import
-  and smoke_bulk_import.
+  page (matches the cursor-walked slice), filterGroup walk on Active=true
+  (5 pages, 300 IDs), and a short record CRUD sequence. Brownfield: pre_run
+  seeds the 500 records once via `seed_entity.py` and post_run restores the
+  fixture. Bulk-import coverage lives in integration_csv_import and
+  smoke_bulk_import.
 tags: [uipath-platform, data-fabric, integration, bulk-pagination, mode:operate, lifecycle:discover]
 run_limits:
-  expected_turns: 30
-  max_turns: 50
+  expected_turns: 35
+  max_turns: 60
   turn_timeout: 900
 
 pre_run:
@@ -41,6 +41,14 @@ initial_prompt: |
 
   3) Walk only Active=yes rows, 60 per page. Tell me the page and unique-row
      totals, plus any duplicates or gaps.
+
+  After those reads, exercise the same list rather than creating another one:
+
+  - Add three temporary rows in one batch: `Smoke-WriteTests` (score 501),
+    `Smoke-ReviewPR` (score 502), and `Smoke-Deploy` (score 503), all active.
+  - Pull `Smoke-WriteTests` back up by its row ID.
+  - Mark all three temporary rows inactive in one batch.
+  - Delete those three temporary rows when finished.
 
 success_criteria:
   - type: command_executed
@@ -117,9 +125,41 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent must NOT mutate the seed — no records insert / update / delete / import against the brownfield entity"
+    description: "Agent inserted the three temporary rows as a batch"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+(insert|update|delete|import)'
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*(?:\[|--file\s+\S+)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved a temporary row by ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+get\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated temporary rows with their Id values"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+update.*(?:\\?"Id\\?"\s*:|--file\s+\S+)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the three temporary rows, not the entity"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+delete'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did not use CSV import for the temporary CRUD sequence"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+import'
     min_count: 0
     max_count: 0
     weight: 3.0

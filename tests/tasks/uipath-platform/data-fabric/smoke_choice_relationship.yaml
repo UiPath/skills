@@ -1,8 +1,8 @@
 task_id: skill-datafabric-smoke-complex-fields
 description: >
-  Smoke test: agent uses the uipath-platform skill to build and use choice,
-  multi-choice, and relationship fields, including creating a requested
-  choice set.
+  Smoke test: agent uses the uipath-platform skill to ensure and use decimal,
+  file, choice, multi-choice, and relationship fields on a reusable expense
+  model.
 tags: [uipath-platform, data-fabric, smoke, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
@@ -15,7 +15,8 @@ run_limits:
 initial_prompt: |
   I have an employee directory called `CE_SmokeEmployees`, a projects list
   called `CE_SmokeProjects`, and dropdowns called `CE_SmokeCategories` and
-  `CE_SmokeTags`.
+  `CE_SmokeTags`. This expense setup may have been started before, so reuse
+  anything that is already correct and complete only what is missing.
 
   These changes are approved, so please proceed. When linked employees and
   projects are shown, I want to see their names.
@@ -23,27 +24,29 @@ initial_prompt: |
     - Show me what tenant-level entities and dropdowns are set up. Then
       pull up the options on `CE_SmokeCategories`.
 
-    - Add a new tenant-level entity called `CE_SmokeExpense` with these
-      columns:
-        - amount — dollars and cents, required
+    - Make sure there is a tenant-level entity called `CE_SmokeExpense` with
+      these columns:
+        - amount — dollars and cents, required, from $0 to $1,000,000
         - category — pick one from `CE_SmokeCategories`, required
         - tags — pick one or more from `CE_SmokeTags`
         - submitter — links to `CE_SmokeEmployees`, required
         - project — links to `CE_SmokeProjects`
+        - Receipt — an attachment slot
 
-    - On `CE_SmokeEmployees`, add a status column that lets you pick one from
-      `CE_SmokeTags`.
+    - Make sure `CE_SmokeEmployees` has a status column that lets you pick
+      one from `CE_SmokeTags`.
 
-    - Add one expense to `CE_SmokeExpense` — $250, category is travel,
-      tags are urgent and reimbursable, submitted by the existing employee.
+    - Make sure there is one expense in `CE_SmokeExpense` for $250, category
+      travel, tags urgent and reimbursable, submitted by the existing
+      employee. Reuse that matching expense if it is already there.
 
     - Show me the expenses in the travel category.
 
     - Show me the expenses submitted by that employee.
 
-    - Add a brand-new tenant-level dropdown called `CE_SmokePaymentState0726`
-      with values "paid", "unpaid", "refunded", and add it to
-      `CE_SmokeExpense` as a payment-status column.
+    - Make sure the tenant-level dropdown `CE_SmokePaymentState0726` has
+      values "paid", "unpaid", and "refunded", and that `CE_SmokeExpense`
+      has it as a payment-status column.
 
 success_criteria:
   - type: command_executed
@@ -71,11 +74,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Live Expense schema contains the requested choice and relationship field types"
+    description: "Live Expense schema contains all requested complex field types and amount constraints"
     command: >-
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
       --entity-name CE_SmokeExpense --ignore-field-case
-      --assertions 'category.Name=CHOICE_SET_SINGLE,tags.Name=CHOICE_SET_MULTIPLE,submitter.Name=RELATIONSHIP,project.Name=RELATIONSHIP,paymentStatus.Name=CHOICE_SET_SINGLE'
+      --assertions 'amount.Name=DECIMAL,amount.decimalPrecision=2,amount.minValue=0,amount.maxValue=1000000,category.Name=CHOICE_SET_SINGLE,tags.Name=CHOICE_SET_MULTIPLE,submitter.Name=RELATIONSHIP,project.Name=RELATIONSHIP,Receipt.Name=FILE,paymentStatus.Name=CHOICE_SET_SINGLE'
     timeout: 120
     expected_exit_code: 0
     weight: 4.0
@@ -105,11 +108,23 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent inserted the requested expense record"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+insert'
-    min_count: 1
+  - type: run_command
+    description: "The reusable payment-state dropdown contains all requested values"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_choice_set_values.py
+      --name CE_SmokePaymentState0726 --required paid,unpaid,refunded
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The reusable expense fixture contains exactly one matching working row"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py
+      --entity-name CE_SmokeExpense --expected 1
+    timeout: 120
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
@@ -139,10 +154,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent authored the PaymentStatus choice set via choice-sets create (CLI-supported per the skill)"
+    description: "Agent did not upload a receipt because only the attachment column was requested"
     tool_name: "Bash"
-    command_pattern: '(?i)uip\s+df\s+choice-sets\s+create[\s\S]*?CE_SmokePaymentState0726'
-    min_count: 1
+    command_pattern: 'uip\s+df\s+files\s+upload'
+    min_count: 0
+    max_count: 0
     weight: 2.5
     pass_threshold: 1.0
 
@@ -164,18 +180,6 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeExpense"
-    timeout: 120
-    fail_on_error: false
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeEmployees"
-    timeout: 120
-    fail_on_error: false
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeProjects"
-    timeout: 120
-    fail_on_error: false
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokePaymentState0726 --include-choice-sets"
-    timeout: 120
-    fail_on_error: false
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_choice_set.py --spec $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_categories.choice_set.json"
     timeout: 180
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_choice_set.py --spec $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_tags.choice_set.json"
@@ -184,13 +188,3 @@ pre_run:
     timeout: 240
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py --entity-name CE_SmokeProjects --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_projects.schema.json --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_projects.records.json"
     timeout: 240
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeExpense"
-    timeout: 120
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeEmployees"
-    timeout: 120
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeProjects"
-    timeout: 120
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokePaymentState0726 --include-choice-sets"
-    timeout: 120
