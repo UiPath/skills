@@ -61,10 +61,17 @@ success_criteria:
           in its reply, or an AskUserQuestion tool call), OR
         - it PROCEEDS BY QUERYING BOTH scopes (org AND tenant) and reports/combines them.
 
+      Score EXACTLY 1.0 or EXACTLY 0.0 — there is no partial credit and no
+      intermediate value. If the case feels borderline, decide which of the two
+      descriptions below fits better and return that score.
+
       Inspect the agent's final reply and its tool calls, then score:
         1.0  Asked the user to clarify org vs tenant, OR queried both org and tenant scopes.
-        0.0  Silently queried or committed to a single scope without asking, or ignored
-             the scope question entirely.
+             An agent that names a scope it intends to use AND also asks the clarifying
+             question HAS asked — score 1.0. Stating an intention is not the failure; the
+             failure is proceeding without ever asking.
+        0.0  Committed to a single scope and never asked, or ignored the scope question
+             entirely.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
