@@ -14,10 +14,10 @@ Per-project metadata. Read at every build start. Written by build script on succ
     "routingName": "operations-health-x7k2",
     "semver": "1.0.0"
   },
-  "env": "alpha",
+  "env": "cloud",
   "org": "appsdev",
   "tenant": "appsdevDefault",
-  "cloudUrl": "https://alpha.uipath.com",
+  "cloudUrl": "https://cloud.uipath.com",
   "timeRange": "30d",
   "widgets": {
     "MemoryCallsTrend": {

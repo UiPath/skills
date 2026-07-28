@@ -5,8 +5,8 @@ description: >
   Scope failure (BusinessException 'Error opening workbook. Make sure
   Excel is installed.', inner COMException 0x80040154 REGDB_E_CLASSNOTREG)
   on an unattended Robot host that has no Excel installed. Agent must
-  match the activity-packages/excel-activities/playbooks/excel-application-card-failures.md
-  playbook, identify the Excel-not-installed branch from the surface
+  match the activity-packages/excel-activities/playbooks/excel-not-installed.md
+  failure-mode playbook, identify the Classic-scope discriminator from the surface
   choice (Classic COM-only) + host install state in the job logs, and
   recommend a fix that recognizes the surface-vs-host fork: either
   install/repair Excel on the host (if the workflow needs COM features)
@@ -25,7 +25,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir
@@ -61,6 +60,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
+    include_dialog: true
     include_agent_output: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
@@ -93,4 +93,5 @@ simulation:
     - "Never invent or provide new factual data — you don't know any details beyond your initial report."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
+    - "If the agent offers or asks to apply/implement the fix itself (editing project files, or running validate/build/pack/publish), DECLINE: say you will apply the change yourself in Studio later, and ask only for the root cause and the exact fix steps. Never approve a source-file edit."
   max_turns: 6

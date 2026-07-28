@@ -11,6 +11,10 @@ What this looks like:
 - Error message: `Input collection for the marker element must not be null`
 - Sometimes seen alongside the related evaluation error `400008` (`BpmnMarkerInputEvaluationFailure`) — see [marker-invalid-cast](marker-invalid-cast.md) for the JS array cast bug
 
+Not this playbook:
+- Code `400008` / `Failed to evaluate the input collection variable for the marker element` (collection evaluated but failed, not null) → [marker-invalid-cast](marker-invalid-cast.md) if `InvalidCastException` + `ExpressionList`, else [multi-instance-parallel](multi-instance-parallel.md)
+- Codes `400300`/`400301`/`400302` or `Property 'X' not found against object of type ExpressionDictionary` (non-marker expression) → [expression-evaluation-errors](expression-evaluation-errors.md)
+
 What can cause it:
 - The variable referenced in the multi-instance marker's "Items" property is `null` at runtime (never assigned, or upstream task didn't produce the list)
 - A `NullReferenceException` in `BpmnExecution.cs` where a marker input was assumed non-null but the underlying success value was null (known internal bug; tracked historically — fix replaces `!` null-forgiving with `?? throw`)

@@ -47,7 +47,13 @@ If the requested validator has `Status != "Available"` → tell the user and sto
 
 **Skip this step only for deterministic guardrails** — they run locally with no backend dependency.
 
-> **LLM as Judge also requires LLM Gateway.** If the target is `llm_as_judge`, confirm with the user that a model is configured in their LLM Gateway before proceeding. Ask the user which model ID to use for the `model` parameter — the available values depend on the LLM Gateway configuration in their tenant.
+> **LLM as Judge also requires LLM Gateway.** If the target is `llm_as_judge`, discover the models available on this tenant — run:
+>
+> ```bash
+> uip agent guardrails llm-as-judge-models --output json
+> ```
+>
+> Use a `ModelId` from the returned list for the `model` parameter. Prefer a non-preview model; a small, fast model (Haiku / mini class) is a sound judge default. If the command returns no models or fails (no LLM Gateway access), tell the user and ask them to configure a model in their LLM Gateway or supply a model ID.
 
 ---
 

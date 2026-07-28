@@ -6,7 +6,7 @@ The agent writes the `uipath.human-in-the-loop.quick-form` node directly into th
 
 ## Step 1 — Extract the Schema Through Conversation
 
-Before designing the schema, ask these focused questions if the business description doesn't answer them. **Ask all missing ones in a single message — never one at a time.**
+Before designing the schema, ask these focused questions if the business description doesn't answer them. **Ask all missing ones in a single message — never one at a time.** **Running non-interactively (CI/headless — no user available to answer):** do not ask — infer the answers from the prompt and any upstream `.flow` data, and proceed to design the schema. Only stop and report the open decision if the request is too ambiguous to pick a sensible default.
 
 | What you need to know | Question to ask |
 |---|---|
@@ -93,7 +93,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 - `outcomes`: use domain-specific names (Approve/Reject, not just Submit)
 - Keep it focused — don't add fields the automation won't use
 
-**Show the designed schema to the user and confirm before writing the node.**
+**Show the designed schema to the user and confirm before writing the node.** **Running non-interactively (CI/headless — no user available to answer):** do not block — design the schema from the prompt and any upstream `.flow` data, write the node, and record the chosen schema prominently in the final report. Only stop and report the open decision if the request is too ambiguous to pick a sensible default. (A prompt that already specifies the fields, outcomes, and output shape is never too ambiguous.)
 
 ---
 

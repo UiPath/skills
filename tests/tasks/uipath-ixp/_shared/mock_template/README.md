@@ -14,24 +14,23 @@ sandbox:
 ```
 
 `mocks/uip` PATH-shadows the real CLI and fails offline with no network call, so
-grading sees the command shape while no real request is made. Each invocation is
-appended to `mocks/calls.log` (seeded in this template so it always exists; not
+grading sees the expanded invocation while no real request is made. Each invocation
+is appended to `mocks/calls.log` (seeded in this template so it always exists; not
 dot-prefixed so CI's `upload-artifact` — which skips hidden files — includes it
-in the eval-report artifact) —
-negative guards should assert on that log via `file_contains` `excludes:` rather
-than `command_not_executed` regexes over Bash text, which false-match commands
-merely QUOTED in heredocs, comments, or prose (a clarification question citing a
-candidate command, an explanatory `#` comment naming a forbidden flag).
+in the eval-report artifact). Embedded newlines in arguments are normalized to
+spaces, so JSON loaded with command substitution remains one log record.
 
-Log-based `excludes:` guards MUST pair with a positive control — an
-`includes:` on log lines a correct run is guaranteed to produce (e.g. the
-discovery reads the task requires) — otherwise re-pointing the mock's sink
-makes every excludes guard pass vacuously (the seeded file stays clean no
-matter what the agent executed). Only when no invocation is guaranteed in a
-correct run, fall back to a harness-integrity criterion asserting `mocks/uip`
-still contains `>> "$(dirname "$0")/calls.log"` (weaker: static text, and
-brittle against cosmetic mock refactors). `mocks/curl` does
-the same for raw `curl` (a smoke task may hint at a REST call the agent is graded
-for refusing — shadowing `curl` ensures even a disobedient agent can't reach the
-cloud with the harness-injected token). Integration/e2e tasks (which
-intentionally exercise the live API) do **not** use this.
+Grade CLI behavior from that log with the native `file_matches_regex` criterion,
+not regexes over agent-authored Bash text, which can false-match commands merely
+quoted in heredocs, comments, or prose.
+
+Log-based negative guards MUST pair with a positive control — a log line a
+correct run is guaranteed to produce — otherwise re-pointing the mock's sink
+makes every negative guard pass vacuously. Only when no invocation is guaranteed
+in a correct run, fall back to a harness-integrity criterion asserting `mocks/uip`
+still contains `>> "$(dirname "$0")/calls.log"` (weaker: static text, and brittle
+against cosmetic mock refactors). `mocks/curl` does the same for raw `curl`, so a
+disobedient agent cannot reach the cloud with the harness-injected token.
+
+Integration/e2e tasks use `live_calls_template`; its wrapper records the same log
+format and delegates unchanged to the real CLI.

@@ -1,0 +1,6 @@
+{
+  "Name": "PyForecast",
+  "ProjectType": "Process",
+  "Description": "PyForecast automation project.",
+  "MainFile": "Main.xaml"
+}

@@ -1,10 +1,5 @@
 # SDD — CandidateInterview
 
-> **⚠️ Generated lightweight; complexity exceeded thresholds.**
-> Counts at generation time: 7 primary stages (within), 31 tasks (exceeds 14), 4 integrations (exceeds 3),
-> 5 personas (exceeds 3), 0 child cases.
-> Review carefully before approving. Consider splitting into smaller cases or trimming scope.
-
 A Case Definition Blueprint for the Helix end-to-end candidate hiring process — from initial application receipt through recruiter screen, technical evaluation, onsite loop, debrief, offer, and final HRIS handoff to Workday.
 
 ---
@@ -182,6 +177,14 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
 | WHEN | IF |
 |------|-----|
 | `selected-tasks-completed("Sync Application from Greenhouse")` | — |
+
+###### Process / Agent / RPA / API Workflow Task Detail
+
+**Resolved Resource:** CandidateResumeScreeningPhase0ProbeQ91
+**Folder Path:** <UNRESOLVED>
+**Resource Identity:** <UNRESOLVED>
+**Binding Sub-Type:** Agent
+**Dispatch / Operation:** —
 
 **Inputs:**
 
@@ -785,6 +788,14 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
 | WHEN | IF |
 |------|-----|
 | `current-stage-entered` | — |
+
+###### Process / Agent / RPA / API Workflow Task Detail
+
+**Resolved Resource:** CandidateDebriefSummaryPhase0ProbeQ91
+**Folder Path:** <UNRESOLVED>
+**Resource Identity:** <UNRESOLVED>
+**Binding Sub-Type:** Agent
+**Dispatch / Operation:** —
 
 **Inputs:**
 
@@ -1585,3 +1596,10 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
 | Operation | Method | Input Fields | Output Fields |
 |-----------|--------|-------------|---------------|
 | Hire Employee | POST | firstName, email, jobTitle, department | employeeId |
+
+### Agents
+
+| Agent | Folder | Resource ID (+version) | Inputs → Outputs (or shared contract) | Used By Tasks |
+|-------|--------|------------------------|----------------------------------------|---------------|
+| CandidateResumeScreeningPhase0ProbeQ91 | <UNRESOLVED> | <UNRESOLVED> | candidateName, roleTitle, roleDepartment, roleLevel, applicationId → screeningResult, screeningNotes | Screen Resume |
+| CandidateDebriefSummaryPhase0ProbeQ91 | <UNRESOLVED> | <UNRESOLVED> | candidateName, roleTitle, resumeScreeningResult, technicalScreenScore, technicalScreenNotes, scorecard1Rating, scorecard2Rating, scorecard3Rating → debriefSummary | Prepare Debrief Summary |

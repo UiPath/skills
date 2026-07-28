@@ -1,0 +1,6 @@
+{
+  "Name": "BulkDownloader",
+  "ProjectType": "Process",
+  "Description": "Downloads a batch of files from a list of URLs.",
+  "MainFile": "Main.xaml"
+}

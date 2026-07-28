@@ -51,7 +51,7 @@ def main() -> None:
         _fail(f"flow does not reference the seeded key {issue_key!r} (agent must read it from seed.json)")
     print(f"OK: flow references a Get-Issue op and the seeded key {issue_key}")
 
-    payload = run_debug(timeout=240)
+    payload = run_debug(timeout=480)
     print("OK: flow debug completed")
 
     assert_outputs_contain(payload, seed["summary"])

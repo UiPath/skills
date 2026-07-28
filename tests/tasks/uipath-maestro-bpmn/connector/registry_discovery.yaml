@@ -4,7 +4,7 @@ description: >
   discover documented agent, queue, and connector wrapper types and to save
   public-safe CLI evidence for the skill's supported-element map without
   inventing private resource metadata. Requires the `uip` CLI on PATH.
-tags: [uipath-maestro-bpmn, integration, "lifecycle:inspect", connector, "feature:connections", resource]
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:inspect", connector, "feature:connections", resource]
 
 run_limits:
   expected_turns: 28

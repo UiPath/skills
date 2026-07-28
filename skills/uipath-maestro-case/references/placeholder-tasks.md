@@ -41,7 +41,7 @@ During **execution** (Phase 2, Step 9), for any `tasks.md` entry whose `taskType
 
 ## JSON Shape
 
-Placeholders occupy a `laneIndex` in `stageNode.data.tasks[laneIndex][]`, the same way full tasks do — default one task per lane for FE readability, lane is layout-only. **Exception:** when a placeholder participates in a `runs-sequentially` group and is meant to run in parallel with sibling tasks in that group, it shares the same `laneIndex` as those siblings (shared lane = parallel siblings inside the sequential group, semantic).
+Placeholders occupy a position in `stageNode.data.tasks`, the same way full tasks do. Preserve their order and retain any `runs-sequentially` entry condition from the task plan. A strict sequential placeholder chain still uses consecutive single-task sets; same-set grouping is only for explicitly parallel placeholder siblings.
 
 A placeholder task in `caseplan.json.nodes[<stage>].data.tasks[<lane>][]`:
 
@@ -155,7 +155,7 @@ Wire each input per the `io-binding` plugin — see [`plugins/variables/io-bindi
 
 1. Read `caseplan.json`; locate the task's `data.inputs[]` by input `name`.
 2. For literals/expressions from the `wiring notes` code block (`foo = =metadata.x`) — write the RHS string to `input.value`.
-3. For cross-task references (`foo <- "Stage"."Task".output`) — resolve the source task's output `var` from `caseplan.json`, then write `=vars.<var>` to the target input's `value`.
+3. For cross-task references (`foo <- "Stage"."Task".output`) — resolve the source output reference ID using [`io-binding/impl-json.md` § Output reference ID](plugins/variables/io-binding/impl-json.md#output-reference-id-authoritative), then write `=vars.<outputReferenceId>` to the target input's `value`.
 4. Write `caseplan.json` back.
 
 ### 6. Re-validate
@@ -214,4 +214,4 @@ The user uses the placeholder/external lists to drive external resource creation
 - **Do NOT create placeholders for timer tasks.** Timers have no registry dependency — use the full `wait-for-timer` plugin.
 - **Do NOT create a placeholder for an agent or API workflow the user chose to build inline.** It is built + bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a resolved task, not a placeholder.
 - **Do NOT build an agent or API workflow from SDD content alone.** Inline create runs only for resources the user explicitly selected at the Rule 17 gate. The built resource is an in-solution **sibling** that co-deploys with the case — never a separate tenant publish.
-- **Invoking `uipath-agents` / `uipath-api-workflow` for the inline build is sanctioned** — it is not a violation of the "don't auto-invoke other skills" anti-pattern, which still applies to every non-creatable kind (regular RPA process, action, connectors, agentic process) and to `uipath-planner`.
+- **Invoking `uipath-agents` / `uipath-api-workflow` for the inline build is sanctioned** — it is not a violation of the "don't auto-invoke other skills" anti-pattern, which still applies to every non-creatable kind (regular RPA process, action, case-management, connectors, agentic process) and to `uipath-planner`.

@@ -69,3 +69,11 @@
 {"id": "uipath-troubleshoot-069", "prompt": "The job that manages OneDrive folders and files through the Office 365 activities faulted again last night. Find out what went wrong.", "expected_skill": "uipath-troubleshoot"}
 {"id": "uipath-troubleshoot-070", "prompt": "My automation that updates a Google Sheet failed on its last run. Why?", "expected_skill": "uipath-troubleshoot"}
 {"id": "uipath-troubleshoot-071", "prompt": "Our Outlook automation that pulls a message and forwards it faulted in the Shared folder. What happened?", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-072", "prompt": "My deployed coded app keeps looping back to the login page — after I sign in, the UiPath page shows redirect_uri_mismatch. Find the cause.", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-073", "prompt": "My coded web app returns from login with error=invalid_scope in the URL and never finishes authenticating. Why?", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-074", "prompt": "My coded app loads fine, but the first SDK call to api.uipath.com fails with 401 Unauthorized after login. Diagnose this.", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-075", "prompt": "My coded app's browser console shows requests to UiPath \"blocked by CORS policy: No 'Access-Control-Allow-Origin' header\". What's going wrong?", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-076", "prompt": "My coded app worked under npm run dev but the deployed URL returns 404 after uip codedapp deploy. Find why.", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-077", "prompt": "My coded app authenticates but every call returns 403 Forbidden while another user's works — figure out why.", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-078", "prompt": "After signing in, my coded app comes back with ?code= in the URL but isAuthenticated() is still false and it loops to login. What's wrong?", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-079", "prompt": "My coded action app opens in Action Center but the form fields are blank — getTask returns nothing. Diagnose.", "expected_skill": "uipath-troubleshoot"}

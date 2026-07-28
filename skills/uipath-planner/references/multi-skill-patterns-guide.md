@@ -38,14 +38,14 @@ A request is **single-skill** when:
 
 ## Pattern 2 — Flow with local resources
 
-**When it applies:** Flow and the components it orchestrates are peer sibling projects under one `.uipx` solution at the current working directory. **Components here means separate buildable projects** (a standalone RPA `.xaml`/`.cs` process, a coded agent, a coded app) — each scaffolded as a distinct project routed to its own specialist. Inline flow nodes are **not** components (see the blockquote above); `uipath-maestro-flow` authors them itself in steps 1/4. Each component is scaffolded as part of this plan (or replaced by a placeholder contract when not built here). The flow runs locally / publishes to Studio Web per the plan's `Solution scope`.
+**When it applies:** Flow and the components it orchestrates are peer sibling projects under one `.uipx` solution at the current working directory. **Components here means separate buildable projects** (a standalone RPA `.xaml`/`.cs` process, a coded agent, a coded app) — each scaffolded as a distinct project routed to its own specialist. Inline flow nodes are **not** components (see the blockquote above); `uipath-maestro-flow` authors them itself in steps 1/4. Each component is scaffolded as part of this plan (or replaced by a placeholder contract when not built here). Where the flow is authored and published during the build is `uipath-maestro-flow`'s own workflow — not a plan field.
 
 ```
 1. uipath-maestro-flow   → create solution, init flow project
 2. <skill per component> → fan out: one task per component, routed by type
                            (rpa → uipath-rpa; agent → uipath-agents; app → uipath-coded-apps)
 3. <skill per component> → testing for each component (mandatory)
-4. uipath-maestro-flow   → wire all components, validate, finalize per `Solution scope`
+4. uipath-maestro-flow   → wire all components, validate, finalize
 5. uipath-maestro-flow   → testing for the flow (mandatory)
 ```
 
@@ -59,13 +59,15 @@ A request is **single-skill** when:
 1. <component skill>   → scaffold any unbuilt component
 2. <component skill>   → testing for the component (mandatory)
 3. uipath-solution     → deploy the component to Orchestrator via `uip solution` (RPA always needs uipath-solution; agents / coded-apps self-deploy)
-4. uipath-maestro-flow → design and wire the flow against the published components, validate, finalize per `Solution scope`
+4. uipath-maestro-flow → design and wire the flow against the published components, validate, finalize
 5. uipath-maestro-flow → testing for the flow (mandatory)
 ```
 
+> **BPMN is a peer orchestrator to Flow.** The same Pattern 2/3 structure applies to a Maestro BPMN process — swap `uipath-maestro-bpmn` for `uipath-maestro-flow`. As with Flow, inline `uipath:*` elements (scriptTask, businessRuleTask, connector, userTask/HITL) are authored by the BPMN specialist itself and are NOT separate components — only separate buildable projects (standalone RPA process, coded agent, coded app) fan out.
+
 ## Pattern 4 — Flow deploy to Orchestrator
 
-**When it applies:** the flow exists; user wants it deployed to Orchestrator (not Studio Web).
+**When it applies:** the flow exists; user wants it deployed to Orchestrator.
 
 ```
 1. uipath-maestro-flow → validate, `uip maestro flow pack`
@@ -73,7 +75,7 @@ A request is **single-skill** when:
 3. uipath-solution     → publish and deploy to Orchestrator via `uip solution`
 ```
 
-`uipath-maestro-flow` follows the plan's `Solution scope` (SW or local); Orchestrator deploy of the wrapping `.uipx` solution requires `uipath-solution`. For a non-solution single package (no `.uipx` wrapper), route the deploy step to `uipath-platform` instead.
+Orchestrator deploy of the wrapping `.uipx` solution requires `uipath-solution`. For a non-solution single package (no `.uipx` wrapper), route the deploy step to `uipath-platform` instead.
 
 ## Pattern 5 — Agent that uses RPA processes as tools
 
@@ -116,9 +118,12 @@ When deriving tasks from an SDD, the planner picks a pattern based on the SDD's 
 |---|---|
 | Single RPA project, no deploy mention | Pattern: simple `uipath-rpa` build + testing |
 | Single RPA project, deploy to Orchestrator | Pattern 1 |
+| Single-host SDD with absorbed components (e.g., RPA-primary consuming an IXP model, custom connector, or API Workflow in-process) | Leaf-first: build each consumed component via its skill (`uipath-ixp` / `uipath-connector-builder` / `uipath-api-workflow`) + testing, deploy leaves, then the host project per Pattern 1 — **no orchestrator task** |
 | RPA Master Project (multiple sub-projects, queue-connected) | Pattern 1 applied per sub-project, then cross-project deploy via `uipath-solution` (single `.uipx`) |
 | Solution with Flow + RPA + Agents, components built fresh in this session | Pattern 2 expanded across all included products |
 | Solution with Flow consuming pre-published Orchestrator resources | Pattern 3 |
+| BPMN orchestrating components built fresh in this session | Pattern 2 expanded, substituting `uipath-maestro-bpmn` for `uipath-maestro-flow` |
+| BPMN consuming pre-published Orchestrator resources | Pattern 3, substituting `uipath-maestro-bpmn` |
 | Solution overview SDD | Compose multiple patterns; respect cross-product integration order from §Cross-Project Data Flow |
 | API Workflow (single product) | `uipath-api-workflow` + `uipath-solution` for deploy + testing |
 | Agent with RPA tools in §3 Tools | Pattern 5 |
@@ -131,7 +136,7 @@ Cross-project integration order (general rule): **dependencies before dependents
 
 Solution-scope SDDs produce a unified project list. The planner walks the list and emits one pattern segment per project, then sequences them so that integrated components are built before their consumers:
 
-1. Build all leaf resources (libraries, callable API Workflows, RPA processes used as agent tools).
+1. Build all leaf resources (libraries, custom connectors, IXP models, Coded Functions, callable API Workflows, RPA processes used as agent tools).
 2. Run testing for each leaf.
 3. Deploy leaf resources to Orchestrator.
 4. Build orchestrators (Flows, parent agents, Cases) using the published leaf references.

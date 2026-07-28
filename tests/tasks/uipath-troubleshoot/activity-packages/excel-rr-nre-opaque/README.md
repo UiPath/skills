@@ -36,7 +36,7 @@ XLSX). The agent may name this as the most-likely candidate but
 should still recommend verification before committing.
 
 This maps to:
-`skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-null-reference.md`
+`skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/null-reference-from-activity.md`
 (collapsed branches 2/4/5 — opaque NRE / TIE).
 
 ## How this test reproduces it

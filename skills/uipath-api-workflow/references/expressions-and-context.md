@@ -9,7 +9,7 @@ API workflows use **JavaScript** for all expressions (`evaluate.language: "javas
 | `$workflow.input` | The workflow's input arguments (from `--input-arguments` JSON or caller). Constant for the entire run. | Workflow run |
 | `$workflow` | Workflow runtime info: `{ id, definition, input, startedAt }`. Use `$workflow.input` to read inputs. | Workflow run |
 | `$input` | The **current task's input** = the previous task's `$output`. **NOT the workflow's input arguments.** Only equals workflow input on the very first task. | Per-task |
-| `$context` | Mutable shared state: `$context.variables.<name>`, `$context.outputs.<TaskName>` | Workflow run |
+| `$context` | Mutable shared state: `$context.variables.<name>`, `$context.outputs.<Activity>` | Workflow run |
 | `$output` | The current task's raw output. | This task only |
 | Loop bindings | Whatever name you set in `for.each` / `for.at`, prefixed with `$`. Examples: `for.each: "currentItem"` → `${$currentItem}`, `for.each: "customer"` → `${$customer}`, `for.at: "idx"` → `${$idx}`. The `$` is a literal character in the identifier — the unprefixed name is NOT bound. | Inside the loop body |
 | Catch binding | `${$error}` — `catch.as: "error"` binds the global as `$error` (note the `$` prefix, same convention as loop iterators). Reference fields like `${$error.title}` / `${$error.detail}` / `${$error.originatingTaskName}`. | Inside `catch.do` |
@@ -263,7 +263,7 @@ Response_1          → reads any $context data, ends workflow
 
 - **Do NOT** use `$input.<name>` to read workflow inputs from non-first tasks — `$input` is the previous task's `$output`. Use `$workflow.input.<name>`.
 - **Do NOT** mutate `$context` directly inside a JS_Invoke script — return a new value and let `export.as` merge it.
-- **Do NOT** rely on `$output` two tasks later — it is overwritten by the next task. Always `export` to `$context.outputs.<TaskName>` if you need it.
+- **Do NOT** rely on `$output` two tasks later — it is overwritten by the next task. Always `export` to `$context.outputs.<Activity>` if you need it.
 - **Do NOT** use `var` inside JS_Invoke scripts — strict mode rejects implicit globals; use `const` / `let`.
 - **Do NOT** wrap loop variable names (`each`, `at`) in `${...}` — those fields take plain identifiers.
 - **Do NOT** mix `${...}` and string concatenation when a single expression form works: prefer `"${\"prefix-\" + $workflow.input.x}"` over splitting.

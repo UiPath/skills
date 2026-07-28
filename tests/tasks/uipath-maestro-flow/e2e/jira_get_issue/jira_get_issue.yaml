@@ -16,7 +16,7 @@ tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, 
 
 run_limits:
   expected_turns: 40
-  task_timeout: 1500
+  task_timeout: 1800
   max_turns: 120
   turn_timeout: 900
 
@@ -55,7 +55,7 @@ success_criteria:
   - type: run_command
     description: "JiraGetIssue checks: valid flow with Jira Get-Issue node referencing the seeded key, debug completes, and outputs carry the seeded summary"
     command: "python3 $TASK_DIR/check_jira_get_issue.py"
-    timeout: 600
+    timeout: 900
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

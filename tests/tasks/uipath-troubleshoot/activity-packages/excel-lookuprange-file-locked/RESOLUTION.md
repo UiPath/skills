@@ -75,7 +75,7 @@ Hand the user a host check plus the developer fix.
    the file. (On the modern surface, `Excel Process Scope`'s
    `KillExcelProcessesEachIteration` does this automatically.)
 - **Who:** RPA developer
-- **Source:** `excel-activities/playbooks/lookup-range-file-locked.md`
+- **Source:** `excel-activities/playbooks/workbook-file-locked.md`
 
 ### Fix path B -- serialize or relocate access
 - If a user or another job legitimately holds the file: schedule the run

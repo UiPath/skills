@@ -53,3 +53,5 @@ Branch by what the investigation identified:
 **Always:**
 - Enable Healing Agent on the process so future drift is captured automatically.
 - Note: Enabling HA does not fix wrong-page-scope defects — HA recovers selectors against the live page, but if the live page is the wrong page, HA has no correct target to recover toward.
+
+**Applying these fixes.** The workflow / Object Repository edits above change the project `.xaml` / descriptor — interactive: the troubleshooter never edits them itself; on the user's approval it delegates the apply, otherwise it recommends only. Enabling Healing Agent and any re-publish are Orchestrator / Studio actions for the user to perform — recommend them, do not execute.

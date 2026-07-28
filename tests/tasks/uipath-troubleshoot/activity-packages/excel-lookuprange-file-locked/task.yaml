@@ -7,7 +7,7 @@ description: >
   at open with System.IO.IOException ("The process cannot access the file ...
   because it is being used by another process"). The most likely unattended
   cause is an orphaned EXCEL.EXE from a prior undisposed run. Success = agent
-  matches the lookup-range-file-locked playbook AND recommends forcing a clean
+  matches the workbook-file-locked playbook AND recommends forcing a clean
   release (kill stray EXCEL.EXE + clean scope dispose) or serializing access,
   without fabricating host actions.
 tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
@@ -62,6 +62,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
+    include_dialog: true
     include_agent_output: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
@@ -95,4 +96,5 @@ simulation:
     - "Never invent or provide new factual data beyond your initial report."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
+    - "If the agent offers or asks to apply/implement the fix itself (editing project files, or running validate/build/pack/publish), DECLINE: say you will apply the change yourself in Studio later, and ask only for the root cause and the exact fix steps. Never approve a source-file edit."
   max_turns: 6

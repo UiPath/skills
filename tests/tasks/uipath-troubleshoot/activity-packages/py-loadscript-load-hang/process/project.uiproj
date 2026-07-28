@@ -1,0 +1,6 @@
+{
+  "Name": "PyBatchAggregate",
+  "ProjectType": "Process",
+  "Description": "PyBatchAggregate automation project.",
+  "MainFile": "Main.xaml"
+}

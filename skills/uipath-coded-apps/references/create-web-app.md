@@ -43,7 +43,7 @@ Please answer these questions to continue:
 
 **5. Client ID** — do you have an existing OAuth External Application client ID with the scopes above?
    - If yes, paste it
-   - If no, say **"create one"** and I'll set it up via browser automation
+   - If no, say **"create one"** and I'll create it via the `uip admin` CLI
 
 **6. Default UI styling** — apply UiPath's Apollo Vertex design system (`@uipath/apollo-wind` components, semantic tokens, and a light/dark theme toggle out of the box)?
    - `yes` *(recommended)* — apollo-wind + `next-themes` on top of Tailwind: Apollo Vertex design system, light/dark theme toggle out of the box
@@ -53,17 +53,19 @@ Please answer these questions to continue:
 
 **Wait for the user's reply before proceeding.**
 
-### Step 2.5 — Ensure Playwright CLI is available (only if user said "create one")
+### Step 2.5 — Create the External Application (only if user said "create one")
 
-Before running browser automation, check if Playwright is installed:
+Create it with the `uip admin external-apps` CLI — read [oauth-client-setup.md](oauth-client-setup.md) for prerequisites and full flags. Confirm `uip` is authenticated (`uip login status --output json`), then:
 
 ```bash
-npx playwright --version 2>/dev/null
+uip admin external-apps create "<app name>" \
+  --non-confidential \
+  --user-scope "<scopes from Step 1>" \
+  --redirect-uri "http://localhost:5173,http://localhost:5173/" \
+  --output json
 ```
 
-If the command fails or returns no output, follow [oauth-client-setup.md Step 2 (Setup B)](oauth-client-setup.md#step-2-ensure-playwright-is-available) to install Playwright into `~/.uipath-skills/playwright/`. Do **not** install into the user's app.
-
-Once confirmed available, read [oauth-client-setup.md](oauth-client-setup.md) and follow it exactly to create the External Application with the scopes from Step 1 and redirect URI `http://localhost:5173`. That reference has all the browser automation details.
+Parse `id` from the response — that is the Client ID. If the CLI returns `403` (no admin permission) or can't authenticate, use the [Manual portal fallback](oauth-client-setup.md#manual-portal-fallback).
 
 ### Step 3 — Resolve org name (if not provided)
 

@@ -39,3 +39,5 @@ What to look for:
 - **If the required .NET Desktop Runtime is missing:** install the .NET Desktop Runtime version the pack requires (per the Studio/runtime release) on the robot host from the Microsoft download portal, then re-run.
 
 After each change, re-open the scope (validate / run) to confirm the engine initializes. If the engine still won't start after `Target`, `Version`, `Library path`, and runtime all match the interpreter, capture a `Verbose` log and open a UiPath support case — residual cases are pack/runtime-version-specific.
+
+> **Related:** if the scope **hangs / freezes with no error** (Studio unresponsive, or a runtime job stuck with no Python traceback) rather than returning an engine-init error, the cause is usually a missing **.NET Desktop Runtime** on a `Windows`-target project — see [python-scope-hang-dotnet-runtime.md](./python-scope-hang-dotnet-runtime.md).

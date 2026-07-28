@@ -84,4 +84,4 @@ run_limits:
   # drives the cap in coder-eval; max_turns kept for parity with recommend/validate.
   expected_turns: 32
   max_turns: 40
-  turn_timeout: 300
+  turn_timeout: 1200

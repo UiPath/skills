@@ -86,20 +86,39 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "formatters.ts URL mapping handles the base case: api.uipath.com → cloud.uipath.com (test the pure logic — the module must export the function correctly)"
+    # Test BEHAVIOR, not source text. The old check grepped the source for the
+    # literals `staging`/`alpha`, which false-failed a correct GENERAL transform
+    # (strip `.api.uipath.com`, rebuild `<env>.uipath.com`, special-case
+    # api→cloud) — the exact non-shortcut solution the `.replace` guard above
+    # asks for. formatters.ts is self-contained (only `new URL`), so strip the
+    # TS types, eval, and assert all three prod/staging/alpha mappings resolve.
+    # Falls back to a structural check if the eval can't run.
+    description: "apiToCloudUrl maps api→cloud AND staging/alpha API hosts to their cloud hosts (behavioral)"
     command: |
       node -e "
-        const path = require('path');
-        const modulePath = path.resolve('src/utils/formatters.ts');
-        const src = require('fs').readFileSync(modulePath, 'utf-8');
-        // Verify the function references the base-case host mapping semantically
-        const okBase = /cloud\.uipath\.com/.test(src);
-        const okStaging = /staging\.uipath\.com|staging/.test(src);
-        const okAlpha = /alpha\.uipath\.com|alpha/.test(src);
-        if (!okBase || !okStaging || !okAlpha) {
-          console.error('Missing mappings: base=' + okBase + ' staging=' + okStaging + ' alpha=' + okAlpha);
-          process.exit(1);
+        const fs = require('fs');
+        const src = fs.readFileSync('src/utils/formatters.ts', 'utf-8');
+        const strip = s => s
+          .replace(/\bexport\b/g, '')
+          .replace(/:\s*[A-Za-z_\$][\w\$<>\[\].| ]*(?=\s*[,)])/g, '')
+          .replace(/\)\s*:\s*[A-Za-z_\$][\w\$<>\[\].| ]*(?=\s*\{)/g, ')');
+        let fn = null;
+        try { fn = (new Function(strip(src) + '; return apiToCloudUrl;'))(); } catch (e) { fn = null; }
+        if (typeof fn === 'function') {
+          const cases = [
+            ['https://api.uipath.com', 'cloud.uipath.com'],
+            ['https://staging.api.uipath.com', 'staging.uipath.com'],
+            ['https://alpha.api.uipath.com', 'alpha.uipath.com'],
+          ];
+          for (const [inp, exp] of cases) {
+            let out; try { out = fn(inp); } catch (e) { console.error('threw for', inp); process.exit(1); }
+            if (!String(out).includes(exp)) { console.error('bad mapping', inp, '->', out, 'want', exp); process.exit(1); }
+          }
+          process.exit(0);
         }
+        const base = /cloud\.uipath\.com/.test(src);
+        const envs = /\.api\.uipath\.com/.test(src) || (/staging/.test(src) && /alpha/.test(src));
+        process.exit(base && envs ? 0 : 1);
       "
     timeout: 15
     expected_exit_code: 0

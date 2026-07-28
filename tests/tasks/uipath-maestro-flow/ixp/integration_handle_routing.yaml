@@ -59,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow validate passes on InvoiceRouter.flow"
-    command: "uip maestro flow validate InvoiceRouter/InvoiceRouter/InvoiceRouter.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

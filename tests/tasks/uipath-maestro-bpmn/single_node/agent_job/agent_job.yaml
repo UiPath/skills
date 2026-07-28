@@ -1,0 +1,64 @@
+task_id: skill-bpmn-agent-job
+description: >
+  Resource-node eval: agent uses the uipath-maestro-bpmn skill to model a
+  low-code (Agent Builder) agent invocation as a bpmn:serviceTask with the
+  registry Orchestrator.StartAgentJob wrapper, binding job arguments as input and
+  capturing the agent response into a declared variable. Ports the Flow low-code
+  agent single-node test to BPMN. Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:single-node", resource]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 80
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a local BPMN project named "ApproverCountAgent" with the main file at
+  ApproverCountAgent/ApproverCountAgent.bpmn. Model this process:
+  manual start -> invoke a published low-code (Agent Builder) agent that counts
+  approvers in a sentence -> end.
+
+  Requirements:
+  - Discover the agent-job extension type via the registry and author its node
+    from the registry template. Do not hand-author uipath:* XML from prose.
+  - The agent is a published Agent Builder (low-code) resource, so model the
+    invocation as a bpmn:serviceTask using the documented
+    Orchestrator.StartAgentJob wrapper (not Orchestrator.StartJob, not an
+    Integration Service execution wrapper).
+  - Bind at least one job argument as the task's request input, and capture the
+    agent response into a declared process variable (BPMN.Variables).
+  - Use synthetic placeholder resource/binding values only. Do not invent or
+    paste real tenant URLs, folder keys, connection IDs, release keys, or agent
+    names.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+  - Do not upload, publish, deploy, debug, run, or pack anything, and do not
+    pause for approval or confirmation.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "ApproverCountAgent/ApproverCountAgent.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run any cloud-side Maestro BPMN lifecycle command"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(upload|publish|deploy|debug|run|pack)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent invocation uses Orchestrator.StartAgentJob with input and a declared output variable"
+    command: "python3 $TASK_DIR/check_agent_job.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

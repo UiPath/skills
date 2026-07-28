@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-24T11:20:07.060Z",
+      "Message": "Copy File: The file 'C:\\AutomationData\\Ledger\\archive\\ledger_2026.txt' already exists."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-24T11:20:07.090Z",
+      "Message": "The file 'C:\\AutomationData\\Ledger\\archive\\ledger_2026.txt' already exists.\r\nin Main.xaml\r\n    at CopyFile \"Copy File\"\r\n    at Sequence \"Main Sequence\"\r\n    at LedgerConsolidation \"LedgerConsolidation\"\r\n"
+    }
+  ]
+}

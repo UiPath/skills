@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-06-16T17:22:02.450Z",
+      "Message": "JiraEscalation execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-16T17:22:03.210Z",
+      "Message": "Jira Scope: session opened to https://acme.atlassian.net (Authentication Type: Api Token)"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-16T17:22:03.640Z",
+      "Message": "Get Transitions: fetching transitions with field metadata for issue OPS-2087"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T17:22:03.880Z",
+      "Message": "[Get Transitions] Error converting value \"add\" to type 'Atlassian.Jira.IssueFieldEditMetadataOperation'. Path 'fields.customfield_10044.operations[0]', line 1, position 842."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T17:22:03.950Z",
+      "Message": "Newtonsoft.Json.JsonSerializationException: Error converting value \"add\" to type 'Atlassian.Jira.IssueFieldEditMetadataOperation'.\r\nin Main.xaml\r\n    at JiraApplicationScope \"Jira Scope\"\r\n    at GetTransitions \"Get Transitions\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-06-16T17:22:04.010Z",
+      "Message": "JiraEscalation execution ended"
+    }
+  ]
+}

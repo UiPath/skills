@@ -9,6 +9,7 @@ By the time you read this you have already loaded all docs, checked state, and f
 3. **The build runs in a subagent when one is available, else inline (Phase 4).** After confirmation, the main thread prints one "Building…" line. **Best effort: if the host agent already provides a sub-task/subagent mechanism (the `Task` tool in Claude Code; the equivalent in Codex/Gemini/others), use it automatically** — spawn a build subagent so the build command, events, tsc/npm output, and retries stay hidden, then relay its returned milestone block. **If no such mechanism exists, fall back to running the same build steps inline in the main thread** — the build and its output are identical; only the noise-hiding is lost. Subagent use is an optimization, never a hard requirement.
 4. Never read `build-dashboard.mjs` — this file documents everything.
 5. Never run directory exploration via any shell — `ls`, `find`, `dir`, `Get-ChildItem`, `tree`.
+6. **A build is ALWAYS compiler-driven — never hand-roll.** Author `intent.json` (pure metadata) + one `metrics/<name>.ts` per metric, then run `build-dashboard.mjs intent.json`. NEVER hand-write `src/metrics/`, `src/dashboard/`, or a bespoke React app and `npm run build` it directly: a hand-rolled build authors no `intent.json`, so the compiler cannot edit/upgrade it and validation fails. This holds for EVERY build — including custom (T3) metrics, governance (`AgentTraces.getGovernance*`), job routing/classification (`ProcessType` filters), and detail-view / row-link dashboards. No metric is "too custom" for the compiler; express it as `intent.json` + a `metrics/*.ts` module. Hand-edited `src/` is valid ONLY in an already-**ejected** project (CAPABILITY.md § Regimes), never a fresh build.
 
 ---
 
@@ -240,7 +241,7 @@ Never re-ask for anything the user already provided. The same pattern applies to
 **Creating the OAuth app:** Run this single command. `--redirect-uri` takes **comma-separated** values — register BOTH the local dev server and the org portal base, so login works in dev and after deploy:
 
 - `http://localhost:25173` — local dev server
-- `<CLOUD_URL>/<ORG>/portal_` — deployed app base; `<CLOUD_URL>` and `<ORG>` are the `cloudUrl` (`Data.BaseUrl`) and `orgName` (`Data.Organization`) extracted in Phase 1, so they track the logged-in environment (e.g. `https://alpha.uipath.com/acme/portal_`)
+- `<CLOUD_URL>/<ORG>/portal_` — deployed app base; `<CLOUD_URL>` and `<ORG>` are the `cloudUrl` (`Data.BaseUrl`) and `orgName` (`Data.Organization`) extracted in Phase 1, so they track the logged-in environment (e.g. `https://cloud.uipath.com/acme/portal_`)
 
 ```bash
 uip admin external-apps create "UiPath Dashboard - <DASHBOARD_NAME>" \
@@ -348,6 +349,7 @@ Building **[Dashboard Name]**…
 The build subagent prompt:
 
 > You are the dashboard build executor. You NEVER surface raw output or file edits — your final message is the only thing shown.
+> 0. **Build ONLY via the compiler.** Author `intent.json` + `metrics/*.ts`, then run `build-dashboard.mjs intent.json`. NEVER hand-write `src/metrics/`/`src/dashboard/` or run your own bundler — even for custom (T3) metrics, governance, `ProcessType` routing, or detail-view/row-link features. A hand-rolled build authors no `intent.json` and fails validation.
 > 1. Read `<SKILL_BASE_DIR>/references/dashboards/plugins/build/impl.md` §§ "Phase 3.5" and "Build subagent — execution" and follow them exactly.
 > 2. All work happens inside the pre-warmed project folder `<ROUTING>`, which already exists in the current working directory. Reference it ONLY by this relative name — NEVER type an absolute `/tmp/…` path (a mistyped character silently builds a sibling project). Author `<ROUTING>/intent.json` (pure metadata — `schemaVersion: 2`, no `fnBody`, `"projectDir": "."`) and one `<ROUTING>/metrics/<name>.ts` per metric (`export const fetchData: MetricFn`), writing each module from the SDK references and applying the Phase 3.5 cross-check. Implement exactly this approved plan:
 >    - Project: dashboardName=`<NAME>`, routingName=`<ROUTING>`, projectDir=`"."`, orgName=`<ORG>`, tenantName=`<TENANT>`, cloudUrl=`<CLOUD_URL>`, apiUrl=`<API_URL>`, timeRange=`<RANGE>`, clientId=`<CLIENT_ID or empty>`

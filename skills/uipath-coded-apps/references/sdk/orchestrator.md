@@ -21,6 +21,15 @@ Assets, Queues, Buckets, and Processes are folder-scoped. Many methods require a
 
 `Assets.getByName` and `Processes.getByName` accept `FolderScopedOptions` — supply one of `folderId`, `folderKey`, or `folderPath` (e.g., `'Shared/Finance'`). If multiple are supplied, server precedence is `folderPath` > `folderKey` > `folderId`.
 
+## Folder scoping — the deploy folder is auto-injected; don't enumerate
+
+There is **no `Folders` service** — the SDK exposes no folder-listing or enumeration API (only the internal `FolderScopedService` base). Don't hunt for one.
+
+A deployed coded app is **automatically scoped to the folder it was deployed into**: the platform injects `<meta name="uipath:folder-key">` at deploy, the SDK reads it at init (`loadFromMetaTags()`), and every folder-scoped call falls back to it (as the `X-UIPATH-FolderKey` header) when the call passes no folder. So **by default you pass no folder and calls target the app's own folder**. This is invisible in the type surface — `folderKey` is deliberately kept off the public `UiPathConfig`, so you will not find it by reading the `.d.ts`.
+
+- **Target a different folder:** pass an explicit `folderId` / `folderKey` / `folderPath` on the call — it takes precedence over the injected fallback. Methods taking `FolderScopedOptions` (`Assets.getByName`, `Buckets.getByName`, `Processes.getByName`) accept these directly; to bridge a `folderKey` (GUID) to the `folderId` (number) some methods require, see [Bridging folderKey ↔ folderId](#bridging-folderkey--folderid).
+- **No injected meta tag** (e.g. some local dev setups): there is no fallback folder, so pass an explicit folder on folder-scoped calls.
+
 ## Types to Import
 
 ```typescript

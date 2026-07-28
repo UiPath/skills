@@ -1,0 +1,130 @@
+task_id: skill-sdd-integration-need-driven-selection
+description: >
+  Skill-guided evaluation: agent uses the uipath-planner skill to analyze a
+  PDD saturated with "AI"/"smart" keywords whose decisions are all
+  rule-expressible. Tests the determinism gate and need-driven Level 1
+  selection: the SDD must land on RPA (deterministic primary), not Agents —
+  keywords are evidence, the need decides.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+initial_prompt: |
+  Analyze the following Process Design Document and generate a Solution Design
+  Document (SDD). Use Autonomous mode — do not pause for checkpoints. Assume
+  UiPath Automation Cloud as the delivery model.
+
+  For any [SME REVIEW] items, use industry-standard defaults and proceed.
+
+  --- BEGIN PDD ---
+
+  # Process Design Document: Smart Invoice Validation
+
+  ## Process Overview
+  - **Process Name:** Smart Invoice Validation
+  - **Department:** Finance / Accounts Payable
+  - **Objective:** AI-powered intelligent automation that validates vendor
+    invoices against purchase orders and posts approved invoices into the ERP.
+  - **Volume:** ~900 invoices per day, peak at month-end
+
+  ## In Scope
+  - Download invoice batch (CSV export) from the finance shared drive
+  - Smart matching of each invoice line to its purchase order line
+  - Intelligent validation rules (see Business Rules)
+  - Posting approved invoices into the ERP desktop application
+  - Writing rejected invoices to an exceptions spreadsheet with a reason code
+
+  ## Out of Scope
+  - Invoices without a purchase order (manual handling)
+  - Payment execution
+
+  ## Business Rules
+  | Rule | Logic |
+  |------|-------|
+  | Amount match | Invoice total must equal PO total within 0.5% tolerance |
+  | Vendor allowlist | Vendor ID must exist in the approved-vendor table |
+  | Three-way check | Invoice, PO, and goods-receipt quantities must be equal |
+  | High-value routing | Amount > 10,000 EUR → route to the HighValue queue |
+  | Duplicate check | Same vendor + invoice number seen before → reject, code DUP-01 |
+
+  ## Applications
+  | Application | Type | Access |
+  |-------------|------|--------|
+  | LegacyERP 6.2 | Desktop application | UI only — no API available |
+  | Finance shared drive | Network folder | File system |
+  | Excel | Desktop application | File-based |
+
+  ## Exceptions
+  | Scenario | Action |
+  |----------|--------|
+  | ERP session timeout | Re-login and retry the transaction once |
+  | CSV missing mandatory column | Stop batch, notify AP mailbox |
+  | PO not found | Reject invoice with code PO-404 |
+
+  --- END PDD ---
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "SDD file was created"
+    path: "smart-invoice-validation-sdd.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Determinism gate held: SDD carries the RPA application inventory, NOT the Agent template, despite 'AI'/'smart' keywords"
+    path: "smart-invoice-validation-sdd.md"
+    includes:
+      - "Application Inventory"
+    excludes:
+      - "Agent Framework"
+      - "Agent Overview"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD uses RPA template sections (deterministic primary)"
+    path: "smart-invoice-validation-sdd.md"
+    includes:
+      - "Process Map"
+      - "Business Rules"
+      - "Application Inventory"
+      - "Planner Handoff"
+    weight: 2.0
+    pass_threshold: 0.75
+
+  - type: file_contains
+    description: "Recommended Scope block carries the need profile line (need → product reasoning persisted)"
+    path: "smart-invoice-validation-sdd.md"
+    includes:
+      - "Recommended Scope"
+      - "Need profile"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Autonomous-mode SDD carries the ## Decisions Made block"
+    path: "smart-invoice-validation-sdd.md"
+    includes:
+      - "Decisions Made"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Scope stayed single-product: no Solution overview SDD was written"
+    command: "test -z \"$(find . -maxdepth 1 -name '*-solution-sdd.md' -print -quit)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 16
+  # Full Phase D SDD authoring runs in one unbroken autonomous turn. Raise BOTH
+  # caps like product_selection.yaml: task_timeout for end-to-end wall clock,
+  # turn_timeout for the long authoring turn.
+  task_timeout: 2700
+  turn_timeout: 1800

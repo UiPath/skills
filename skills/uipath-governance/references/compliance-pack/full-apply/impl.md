@@ -158,7 +158,8 @@ Note: compliance status is determined by your auditor, not this tool.
 | Error | Action |
 |---|---|
 | Any compliance-packs call → **403 / Forbidden** | Org not enrolled in the Compliance Standards preview — stop, do not retry, run no further compliance commands. Show the opt-in message. See [preview-gate.md](../preview-gate.md). |
-| `state enable` → 4xx (non-403) | Halt. Report error verbatim. Do NOT retry. |
+| `state enable` → **409** with `"Retry": "RetryAfter10Seconds"` | Another operation holds the per-pack lock (e.g. a concurrent enable/disable) — transient. Wait ~10 seconds and retry, up to 3 attempts. Halt and report only if it persists. |
+| `state enable` → 4xx (non-403, non-409) | Halt. Report error verbatim. Do NOT retry. |
 | `state enable` → 5xx AND `"Retry": "RetryWillNotFix"` | Halt. Report error verbatim. Do NOT retry — the server explicitly flagged retrying as futile. |
 | `state enable` → 5xx (transient, no `RetryWillNotFix`) | Retry once after a short pause. If it fails again, halt and report. |
 | `Data.active != true` after enable | Unexpected — ask user to run `state get` manually and report the output. |

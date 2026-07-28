@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "_doc": "Mock dispatch table. docsai proxied to the real CLI; job/folder lookups return canned Successful-job fixtures (the fault is a silent wrong-branch, not an exception); any other uip call returns an empty array. Matching is plain substring (first match wins); patterns are quote-agnostic.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    },
+    {
+      "match": "or folders list",
+      "file": "ee2628e6b6.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "75949d659e.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "b8d18266dc.json"
+    },
+    {
+      "match": "or jobs history",
+      "file": "701433db1c.json"
+    },
+    {
+      "match": "or jobs traces",
+      "file": "b49ae1b1b0.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "3db6b96527.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore without aborting."
+  }
+}

@@ -81,6 +81,11 @@ Fetch the deployed BPMN asset when local source may differ. Compare:
 uip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
 
+For failed-run triage, always run this deployed asset command before the final
+diagnosis, even when earlier incident and variable reads already explain the
+failure. The deployed asset proves which BPMN definition actually ran and keeps
+the priority ladder observable in command logs.
+
 Use the incident's faulting element ID to locate the BPMN element in the deployed asset first, then compare to local
 `.bpmn`.
 If they differ, diagnose what actually ran and treat local edits as a future fix, not as the executed definition.

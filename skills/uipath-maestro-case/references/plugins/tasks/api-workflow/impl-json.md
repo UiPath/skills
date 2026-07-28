@@ -53,7 +53,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 3. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
 
    **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is the `tasks describe` output (Step 0 above).
-4. Append to target stage's `tasks[laneIndex][]`
+4. Append to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. If the task is `sequential` or its entry rule is `runs-sequentially`, append it as a new single-task inner array in planned order. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks also get their own single-task inner array. Only `activation-mode: parallel` tasks with explicit same-lane intent and rationale may share `tasks[laneIndex][]`; if `lane` conflicts with mode, mode wins.
 
 > Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
 

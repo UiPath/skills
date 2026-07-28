@@ -66,6 +66,36 @@ From `agent.json`, extract:
 
 Also read `resources/` to list all tool names (needed for Tool-scope recommendations).
 
+### Exact Named-Tool Deterministic Rules — before catalog ranking
+
+When the request gives both a named Tool and an exact mechanical predicate on
+its input or output (literal word/phrase, regex, number, boolean, or always),
+use the custom deterministic recipe below. This decision happens before
+built-in catalog candidate ranking:
+
+1. Treat quoted text and a distinct all-caps token such as `CONFIDENTIAL` as
+   an exact literal predicate, even when the surrounding request is phrased
+   semantically (for example, "worried it might publish CONFIDENTIAL content"
+   or "what guardrails should I add?"). Do not broaden that literal into a
+   semantic confidentiality classification.
+2. Read the Tool's `resource.json.name` and use that exact value as the only
+   entry in `selector.matchNames`.
+3. Set `$guardrailType: "custom"` and `selector.scopes: ["Tool"]`. This branch
+   does not use a `builtInValidator` or `validatorParameters`.
+4. For a literal word or phrase, use `$ruleType: "word"`,
+   `operator: "contains"`, and preserve the exact requested literal as `value`.
+   Use the matching custom rule type when the user explicitly requests a
+   regex, number, boolean, or always condition.
+5. Use a blocking action when the request says to prevent the Tool operation,
+   then build the complete object from [guardrails.md](guardrails.md).
+
+Broad semantic threats without an exact mechanical predicate continue through
+the built-in catalog ranking in Step 2.
+
+Once this deterministic branch matches, the catalog/list calls remain
+mandatory discovery steps but cannot replace or override the custom rule with
+`llm_as_judge`, PII detection, or any other built-in validator.
+
 ### Step 2 — Catalog-Driven Recommendation Analysis
 
 For **each entry** in the catalog (`guardrails[]` array from the cached JSON):
@@ -156,6 +186,13 @@ Write the new guardrail blocks to `agent.json`'s `guardrails[]` array. Then run:
 uip agent validate "<AgentName>" --output json
 ```
 
+**Deterministic completion gate:** when the request matched the exact
+named-Tool branch, re-read `agent.json` before validation and confirm the
+written entry has `$guardrailType: "custom"`, Tool scope, the exact Tool name,
+and the requested custom rule type/value. If a built-in validator was written,
+replace it with the required custom rule before running validation or
+reporting completion.
+
 Report to the user:
 - What was added (by name)
 - Why it was recommended (cite the catalog's `when_to_use` or a specific `use_cases` item that matched the agent's context)
@@ -179,8 +216,8 @@ Run `uip agent guardrails list --output json` (from Step 0) and find the matchin
 | CLI field | What to check |
 |-----------|---------------|
 | `Required: true` | Parameter must be present in `validatorParameters` |
-| `Type` | Must match `$parameterType` — `"enum-list"`, `"map-enum"`, or `"number"` |
-| `Options` | For `enum-list`: every value must be in this list; array must be non-empty |
+| `Type` | Must match `$parameterType` — `"enum-list"`, `"map-enum"`, `"number"`, `"enum"`, `"text"`, or `"text-list"` |
+| `Options` | For `enum-list`: every value must be in this list; array must be non-empty. For a scalar `enum` (e.g. `model` on `llm_as_judge`) whose `Options` is **empty**, the values come from LLM Gateway, not the catalog — run `uip agent guardrails llm-as-judge-models --output json` and use a `ModelId`; do **not** treat empty `Options` as invalid in that case |
 | `KeySource` | For `map-enum`: keys must **exactly** match the values of the `Options`-sourced parameter named by `KeySource` — no extra, no missing keys |
 | `Min` / `Max` | For `number` and `map-enum`: values must fall within this range |
 | `Step` | For `number` and `map-enum`: values must be multiples of Step (e.g. Step=2, Min=0, Max=6 → valid values are 0, 2, 4, 6) |

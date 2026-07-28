@@ -16,7 +16,6 @@ tags:
   - connector
   - uipath-salesforce-slack
   - feature:records
-  - path-to-ga
 
 run_limits:
   expected_turns: 30
@@ -29,7 +28,6 @@ initial_prompt: |
   trigger. It should send a Slack message saying "hello from coder-eval"
   to the channel named `simple` using Slack's "Send Message to Channel"
   activity.
-  Wire the trigger to the Slack node and validate the final flow file.
   For Slack, use the connection name `is-sandboxes`.
 
 success_criteria:

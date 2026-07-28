@@ -116,6 +116,7 @@ tests/tasks/uipath-troubleshoot/
 ├── products/
 │   ├── orchestrator/            <scenario>/ …
 │   ├── integration-service/     <scenario>/ …
+│   ├── agents/                  <scenario>/ …
 │   └── maestro/                 <scenario>/ …
 ├── runtime-exceptions/          <scenario>/ …
 └── cross-system/                <scenario>/ …   # root cause spans ≥2 systems
@@ -128,6 +129,7 @@ tests/tasks/uipath-troubleshoot/
 | An activity package (Word, Excel, Python, Mail/Outlook, O365, GSuite, Web, CV, System, UI Automation, Classic, Database) | `activity-packages` | `word-` `excel-` `py-` `mail-` `o365-` `gsuite-` `web-` `cv-` `sys-` `uia-` `classic-` `db-` |
 | Orchestrator-only (job/robot/queue/licensing/logon state, no single activity) | `products/orchestrator` | — |
 | Integration Service connectors / connections | `products/integration-service` | — |
+| Agents runtime, agent definitions, agent capabilities | `products/agents` | — |
 | Maestro / BPMN instances | `products/maestro` | — |
 | Generic .NET workflow exception (null-ref, argument-null) not tied to a package | `runtime-exceptions` | — |
 | Root cause genuinely spans ≥2 systems (e.g. an Excel activity failing on an IS connection) | `cross-system` | — |
@@ -209,7 +211,7 @@ Must include `uipath-troubleshoot` AND at least one product/domain tag from this
 | `api-workflow` | API workflow artifacts |
 | `orchestrator` | Orchestrator control-plane failures — job/robot lifecycle (pending, faulted, killed, foreground-slot), logon/credentials, queues, licensing, machine state — diagnosed via `uip or`. Not tied to a single activity package. Add `rpa` too when an RPA process's execution is directly involved (e.g. foreground-slot, job-killed). |
 
-**Tag ↔ group agreement.** The domain tag MUST match the [group folder](#scenario-grouping): every `activity-packages/*` scenario carries `rpa`; `products/orchestrator` → `orchestrator`; `products/integration-service` → `integration-service`; `products/maestro` → `maestro`. `--group` adds the matching tag automatically.
+**Tag ↔ group agreement.** The domain tag MUST match the [group folder](#scenario-grouping): every `activity-packages/*` scenario carries `rpa`; `products/orchestrator` → `orchestrator`; `products/integration-service` → `integration-service`; `products/agents` → `agents`; `products/maestro` → `maestro`. `--group` adds the matching tag automatically.
 
 **Multiple tags are encouraged.** A scenario that touches more than one domain carries a tag for each — this is required for `cross-system/` scenarios (e.g. an Excel activity faulting on an IS connection gets `rpa` AND `integration-service`). Add the extra tags by hand after generation; `--group` only seeds the primary one.
 
@@ -271,6 +273,7 @@ Every `llm_judge` criterion across all troubleshoot tasks uses the **same** prom
   weight: 3.0
   pass_threshold: 0.7
   include_reference: true
+  include_dialog: true
   include_agent_output: true
   prompt: |
     Grade the agent's final answer against the attached RESOLUTION.md.
@@ -287,12 +290,15 @@ Every `llm_judge` criterion across all troubleshoot tasks uses the **same** prom
     Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 ```
 
-**What the judge sees** (both flags MUST be `true`):
+**What the judge sees** (all three flags MUST be `true`):
 
 - `include_reference: true` — passes `RESOLUTION.md` (the file named under `reference:` at the task root)
+- `include_dialog: true` — passes the full user<->agent dialog, every turn
 - `include_agent_output: true` — passes the agent's final user-facing response
 
-That is **all** the context the judge gets. The contract: agent's final answer vs. RESOLUTION.md → score. Tool calls are deliberately excluded — the judge grades the presented diagnosis, not how it was reached.
+That is **all** the context the judge gets. The contract: agent's diagnosis (wherever it appears in the dialog) vs. RESOLUTION.md → score. Tool calls are deliberately excluded — the judge grades the presented diagnosis, not how it was reached.
+
+`include_dialog` is what makes "wherever it appears in the dialog" true. Without it the judge receives only the final turn, and the simulator keeps talking past the diagnosis — so the graded turn is an acknowledgement ("Will do.", "You're welcome.") and a correct investigation scores `0.00`. Six scenarios failed this way in the 2026-07-28 nightly. `scripts/check-judge-dialog.py` (CI: `judge-dialog-gate.yml`) blocks a PR that reintroduces it.
 
 **Forbidden on `llm_judge`:**
 
@@ -319,6 +325,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
+    include_dialog: true
     include_agent_output: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.

@@ -1,3 +1,21 @@
-get exit=0
-logs exit=0
-history exit=0
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "b7974725-4438-4315-a9cc-9ec41f8acd62",
+    "StartTime": "2026-06-09T10:49:38.483Z",
+    "EndTime": "2026-06-09T10:50:41.847Z",
+    "State": "Faulted",
+    "Source": "Agent",
+    "SourceType": "Agent",
+    "Info": "Get Email List: Authentication failed while resolving mail folder 'Inbox'.\n\nSystem.TimeoutException: The client did not complete the authentication after 30 seconds, and as a result the operation was canceled. Authentication type: InteractiveToken.\n   at UiPath.MicrosoftOffice365.Services.GraphClientServiceFactory.LoginWithInteractiveTokenAsync()\n   at UiPath.MicrosoftOffice365.Services.GraphClientServiceFactory.ResolveAccessTokenAsync()\n   at UiPath.MicrosoftOffice365.Services.GraphClientServiceFactory.AuthenticateAsync()\n   at Microsoft.Graph.AuthenticationHandler.SendAsync()\n   at Microsoft.Graph.UserMailFoldersCollectionRequest.GetAsync()\n   at UiPath.MicrosoftOffice365.Services.GraphServiceClientProxy.GetMailFolderByPathAsync()\n   at UiPath.MicrosoftOffice365.Activities.Mail.BaseMailFolderArgument.ResolveAsync()\n   at UiPath.MicrosoftOffice365.Activities.Mail.GetEmailListConnections.SafeExecuteAsync()\n   at UiPath.Shared.Activities.Utilities.TaskExtensions.TimeoutAfter()",
+    "ReleaseName": "ERN",
+    "Type": "Attended",
+    "RuntimeType": "StudioPro",
+    "RequiresUserInteraction": true,
+    "EntryPointPath": "Main.xaml",
+    "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+    "ErrorCode": "Robot",
+    "TraceId": "b797472544384315a9cc9ec41f8acd62"
+  }
+}

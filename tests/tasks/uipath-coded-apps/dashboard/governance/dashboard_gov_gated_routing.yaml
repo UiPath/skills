@@ -9,7 +9,6 @@ description: >
 tags: [uipath-coded-apps, integration, dashboard, feature:compliance, mode:build, lifecycle:generate]
 
 sandbox:
-  driver: tempdir
   node: {}
 
 # Reclaim the build's node_modules before artifact preservation. The build

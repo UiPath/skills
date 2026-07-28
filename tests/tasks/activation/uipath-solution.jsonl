@@ -22,3 +22,4 @@
 {"id": "uipath-solution-022", "prompt": "Bump the version and repack my solution", "expected_skill": "uipath-solution"}
 {"id": "uipath-solution-023", "prompt": "Pack my solution with a dry run to validate the structure first", "expected_skill": "uipath-solution"}
 {"id": "uipath-solution-024", "prompt": "Bundle my RPA process and agent projects into one solution and deploy it", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-025", "prompt": "I added a project to my solution and ran uip solution resources refresh, but it imported 0 bindings with no errors. Why did refresh import nothing?", "expected_skill": "uipath-solution"}

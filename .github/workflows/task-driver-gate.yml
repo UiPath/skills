@@ -1,0 +1,40 @@
+name: Task Driver Gate
+
+# Fails the build if any coder-eval task YAML pins `sandbox.driver: tempdir`.
+#
+# The sandbox driver is chosen by the run environment, never by the task:
+#   - Linux nightly slice  -> `driver: docker` (skills-image bakes the uip CLI
+#     + every tool plugin), set in tests/experiments/nightly.yaml.
+#   - Windows slice        -> selected by the `windows` tag and forced onto
+#     `--driver tempdir` on the CLI (wins over YAML).
+# A task that pins `driver: tempdir` runs on the toolless host and breaks any
+# tool-backed command (e.g. `uip maestro flow validate`). See
+# scripts/check-task-driver.py for the full rationale.
+#
+# No `paths:` filter so this can be wired as a required check — it is a
+# sub-second full scan that always reports a definitive pass/fail.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: task-driver-gate-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    name: No task pins sandbox.driver tempdir
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - name: Install PyYAML
+        run: pip install --quiet pyyaml
+      - name: Check task drivers
+        run: python3 scripts/check-task-driver.py tests/tasks

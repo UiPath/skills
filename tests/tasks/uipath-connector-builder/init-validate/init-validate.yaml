@@ -1,0 +1,67 @@
+task_id: skill-connector-builder-init-validate
+description: >
+  Scaffold a new Integration Service connector shell offline and validate it.
+  Covers the builder init + validate happy path and asserts the generated
+  element.json carries the derived design element key — the minimum a real
+  build must produce.
+tags: [uipath-connector-builder, smoke, 'mode:build', 'lifecycle:generate']
+
+initial_prompt: |
+  Build the shell of a NEW UiPath Integration Service connector on disk for a
+  fictional REST API. This is an OFFLINE build — do not log in; pass the
+  organization explicitly so the element key can be derived without a session.
+
+  Before starting, load the uipath-connector-builder skill and follow its
+  workflow. Do NOT ask for approval, confirmation, or feedback. Do NOT pause
+  between steps.
+
+  Connector spec:
+    - Display name: Acme Widgets
+    - Organization slug: acme
+    - Base URL: https://api.acme.example.com
+    - Category: Developer
+
+  After scaffolding, run the connector-builder validate step and make sure it
+  passes with 0 errors.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran builder init"
+    tool_name: Bash
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran builder validate"
+    tool_name: Bash
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+validate'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Outcome check (not just that validate ran): re-run validate at grade time
+  # and require exit 0. The command exits non-zero when the connector is invalid
+  # (valid = errors.length === 0), so this fails a scaffold that has errors even
+  # if the agent invoked validate and the files exist.
+  - type: run_command
+    description: "validate re-run confirms a valid connector (exit 0, 0 errors)"
+    command: "uip is connectors builder validate --connector-dir periodic-design-acme-acmewidgets"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "element.json scaffolded under the derived design connector dir"
+    path: periodic-design-acme-acmewidgets/app/element/element.json
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "element.json carries the derived design element key"
+    path: periodic-design-acme-acmewidgets/app/element/element.json
+    includes: ["design-acme-acmewidgets"]
+    weight: 1.5
+    pass_threshold: 1.0

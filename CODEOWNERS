@@ -100,8 +100,8 @@
 /tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
 
 # Case Management skill
-/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @jundayin
-/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @jundayin
+/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @jundayin
+/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @jundayin
 /tests/tasks/uipath-maestro-case/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
 # Coded Apps skill
@@ -136,6 +136,8 @@
 /tests/tasks/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /tests/tasks/activation/uipath-troubleshoot.jsonl @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /skills/uipath-troubleshoot/references/products/agents/ @UiPath/llmops-team @andreibalas-uipath
+# Assistant desktop diagnostics domain (diagnostic archives — combined.log / Robot.log)
+/skills/uipath-troubleshoot/references/products/assistant/ @vasyop @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 
 # Governance skill
 /skills/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath

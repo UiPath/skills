@@ -1,0 +1,11 @@
+{
+  "instanceId": "inst-triage-001",
+  "total": 2,
+  "firstFaultElementId": "ServiceTask_FetchInvoice",
+  "firstFaultCategory": "BindingResolution",
+  "byCategory": [
+    { "category": "BindingResolution", "count": 1, "earliestSequence": 1 },
+    { "category": "UpstreamDependencyFailed", "count": 1, "earliestSequence": 2 }
+  ],
+  "note": "UpstreamDependencyFailed incidents are downstream consequences of the first fault."
+}

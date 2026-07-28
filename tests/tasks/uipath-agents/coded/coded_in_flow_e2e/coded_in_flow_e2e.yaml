@@ -39,7 +39,7 @@ success_criteria:
     command_pattern: 'uip\s+solution\s+init'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: command_executed
     description: "Agent scaffolded the coded agent project with uip codedagent new"
@@ -60,10 +60,10 @@ success_criteria:
   - type: command_executed
     description: "Agent registered the coded agent in the solution"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+project\s+add'
+    command_pattern: 'uip\s+solution\s+projects?\s+add\b(?!\s+(?:--help|-h)\b)'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0  # advisory: registration is outcome-checked via Projects[] below; init auto-registers (CLI #2470), so `project add` is optional
 
   - type: command_executed
     description: "Agent validated the flow"

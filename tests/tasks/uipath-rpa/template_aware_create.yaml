@@ -14,50 +14,12 @@ run_limits:
   task_timeout: 900
 
 initial_prompt: |
-  I want to create a new UiPath REFramework project called "InvoiceREF"
-  in the current directory.
+  I want to create a new UiPath automation called "InvoiceREF" in the
+  current directory, as a REFramework project.
 
   Studio Desktop is NOT available in this sandbox — DO NOT actually run
   `uip rpa init`. Instead, decide which template-related flags
   you would pass and write a report.
-
-  Try running `uip rpa templates search --query "REFramework" --output json`
-  to discover the available templates. **If that command fails in this sandbox**
-  (no NuGet feed access, missing dotnet SDK, etc.), assume the result is:
-
-      {
-        "Result": "Success",
-        "Code": "ToolResult",
-        "Data": [
-          {
-            "packageId": "UiPath.Template.REFramework",
-            "version": "25.10.1",
-            "title": "NewBusinessProcessProjectTemplateTitle",
-            "description": "NewBusinessProcessProjectTemplateDescription",
-            "authors": "UiPath",
-            "source": "Official",
-            "tags": ["UiPathStudioTemplate", "UiPathStudioProcess"]
-          },
-          {
-            "packageId": "Enhanced.REFrameWork",
-            "version": "1.0.1",
-            "title": "Enhanced REFrameWork",
-            "description": "...",
-            "authors": "Internal Labs",
-            "source": "Marketplace",
-            "tags": ["UiPathStudioTemplate"]
-          },
-          {
-            "packageId": "Lite.ReFrameWork",
-            "version": "1.1.1",
-            "title": "Lite ReFrameWork",
-            "description": "...",
-            "authors": "Internal Labs",
-            "source": "Marketplace",
-            "tags": ["UiPathStudioTemplate"]
-          }
-        ]
-      }
 
   Note: the user said "REFramework" (no "Enhanced"/"Lite" qualifier) — so the
   selection rule should auto-pick the single Official match.

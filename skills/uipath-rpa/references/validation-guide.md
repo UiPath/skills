@@ -50,7 +50,7 @@ PHASE 2 — build-clean (per-project, once per edit session):
     3. EXIT to Smoke Test
 ```
 
-**Why both phases.** `validate` is static analysis: catches structural XAML, missing references, analyzer rules, schema violations. `build` is the compiler: catches **unknown member names** (e.g. `NGetText.Value` when the property is `Text`), **invalid enum values** (e.g. `Operator="StartsWith"` when the enum has no such member), **member resolution / CacheMetadata failures**, and attribute-form C# expression JIT failures. `validate` returns "no diagnostics found" for these; `build` flags them at compile time. Per-file `validate` plus one end-of-session `build` covers both error classes — trusting only `validate` ships broken workflows.
+**Why both phases.** `validate` is static analysis: catches structural XAML, missing references, analyzer rules, schema violations. `build` is the compiler: catches **unknown member names** (e.g. `NGetText.Value` when the output member is `TextString` (or legacy `Text`)), **invalid enum values** (e.g. `Operator="StartsWith"` when the enum has no such member), **member resolution / CacheMetadata failures**, and attribute-form C# expression JIT failures. `validate` returns "no diagnostics found" for these; `build` flags them at compile time. Per-file `validate` plus one end-of-session `build` covers both error classes — trusting only `validate` ships broken workflows.
 
 **Target the specific file:** `validate --file-path` validates only the file you changed (faster than whole-project). `build` is project-scoped (no `--file-path`); when it errors, the output names the offending file — re-run `validate --file-path` on it as part of Phase 2's fix loop.
 
@@ -80,7 +80,7 @@ uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 
 | Error class | Example | Why `validate` misses it |
 |-------------|---------|----------------------------|
-| Unknown member name | `<uix:NGetText Value="[x]" />` (correct: `Text`) | `validate` does not resolve property names against activity assemblies |
+| Unknown member name | `<uix:NGetText Value="[x]" />` (correct: `TextString`) | `validate` does not resolve property names against activity assemblies |
 | Invalid enum value | `Operator="StartsWith"` on `VerifyExpressionWithOperator` (enum has no such member) | Enum membership is checked at CacheMetadata / compile time, not static parse |
 | CacheMetadata / member resolution | Required-extension misses, type-mismatch on `InArgument<T>` | Surfaces only when the runtime instantiates the activity |
 | Attribute-form C# expressions | `Value="x + y"` in `expressionLanguage: CSharp` projects | JIT compiler needs the expression in element form — see [xaml/csharp-expression-pitfalls.md](xaml/csharp-expression-pitfalls.md) |

@@ -20,7 +20,6 @@ run_limits:
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
   python: {}
 
 initial_prompt: |

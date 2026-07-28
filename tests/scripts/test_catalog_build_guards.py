@@ -111,11 +111,32 @@ def test_max_drop_frac_out_of_range_is_rejected(bad):
     assert "between 0 and 1" in (proc.stderr + proc.stdout)
 
 
+# --- dist-tag derivation ----------------------------------------------------
+
+@pytest.mark.parametrize("version,expected", [
+    ("1.199.0-dev.7923", "dev"),           # GitHub Packages dev train (cli/main)
+    ("1.199.0-dev.20260716.25", "dev"),    # rpa-tool's date-stamped dev build
+    ("1.198.0-preview.84", "preview"),     # npmjs preview train (release/*)
+    ("1.197.1", None),                     # plain release -> npm `latest`
+    ("1.197.0", None),
+    ("unknown", None),                     # uip not found -> no tag
+])
+def test_tool_dist_tag_from_cli_version(monkeypatch, version, expected):
+    """Tools install at the CLI's own prerelease train so they version-match it:
+    -dev.* -> dev, -preview.* -> preview, a plain release -> None (npm latest).
+    cli PR #2650 made `dev` a publish dist-tag (not a release channel), so
+    `uip tools install` can't resolve it — we npm-install at this tag instead."""
+    monkeypatch.setattr(build, "get_cli_version", lambda: version)
+    assert build.tool_dist_tag() == expected
+
+
 # --- install_all_tools all-fail fatal path (#1203 prevention) ----------------
 
 def test_install_all_tools_exits_when_every_install_fails(monkeypatch):
-    """Tools were found but every `uip tools install` failed → abort rather
-    than build a base-CLI-only catalog (the #1203 collapse)."""
+    """Tools were found but every `npm install -g` failed → abort rather than
+    build a base-CLI-only catalog (the #1203 collapse)."""
+    monkeypatch.setattr(build, "get_cli_version", lambda: "1.199.0-dev.7923")
+
     def fake_run_uip(argv):
         if argv == ["tools", "list"]:
             return {"Data": []}
@@ -133,16 +154,15 @@ def test_install_all_tools_exits_when_every_install_fails(monkeypatch):
 
 
 def test_install_all_tools_ok_when_nothing_to_install(monkeypatch):
-    """Empty search (nothing to install) must NOT exit — distinguishes 'tried
-    and all failed' from 'nothing to do'."""
-    def fake_run_uip(argv):
-        return {"Data": []}
-    monkeypatch.setattr(build, "run_uip", fake_run_uip)
+    """Empty search (nothing to install) must NOT run any install —
+    distinguishes 'tried and all failed' from 'nothing to do'."""
+    monkeypatch.setattr(build, "get_cli_version", lambda: "1.199.0-dev.7923")
+    monkeypatch.setattr(build, "run_uip", lambda argv: {"Data": []})
 
-    def boom(*a, **k):
-        raise AssertionError("subprocess.run should not be called")
+    def boom(argv, *a, **k):
+        raise AssertionError(f"subprocess.run should not be called, got {argv}")
     monkeypatch.setattr(build.subprocess, "run", boom)
-    build.install_all_tools()  # no SystemExit
+    build.install_all_tools()  # no SystemExit, no npm install
 
 
 # --- PascalCase tool-name handling (#1203 real root cause) ------------------
@@ -172,9 +192,12 @@ def test_ci_reads_pascalcase_and_lowercase():
 
 def test_install_all_tools_handles_pascalcase_names(monkeypatch):
     """The exact #1203 break: `uip tools search` returns tool names under
-    `Name` (PascalCase). install_all_tools must still attempt to install every
-    discovered tool — reading lowercase `name` skipped them all and collapsed
-    the catalog to 31 base verbs."""
+    `Name` (PascalCase). install_all_tools must still install every discovered
+    tool — reading lowercase `name` skipped them all and collapsed the catalog
+    to 31 base verbs. Tools install via `npm install -g <scoped>@<dist-tag>`,
+    not `uip tools install` (which can't resolve a -dev tool; see #2650)."""
+    monkeypatch.setattr(build, "get_cli_version", lambda: "1.199.0-dev.7923")
+
     def fake_run_uip(argv):
         if argv == ["tools", "list"]:
             return {"Data": []}                       # fresh: nothing installed
@@ -192,13 +215,15 @@ def test_install_all_tools_handles_pascalcase_names(monkeypatch):
 
     build.install_all_tools()
 
-    attempted = [c[3] for c in installs if c[:3] == ["uip", "tools", "install"]]
-    assert attempted == ["@uipath/solution-tool", "@uipath/df-tool"]
+    specs = [c[3] for c in installs if c[:3] == ["npm", "install", "-g"]]
+    assert specs == ["@uipath/solution-tool@dev", "@uipath/df-tool@dev"]
 
 
 def test_install_all_tools_skips_already_installed_pascalcase(monkeypatch):
     """`tools list` is also PascalCase; an already-installed tool (matched on
     short name) is not reinstalled."""
+    monkeypatch.setattr(build, "get_cli_version", lambda: "1.199.0-dev.7923")
+
     def fake_run_uip(argv):
         if argv == ["tools", "list"]:
             return {"Data": [{"Name": "solution-tool"}]}   # already installed
@@ -214,5 +239,5 @@ def test_install_all_tools_skips_already_installed_pascalcase(monkeypatch):
             returncode=0, stdout="{}", stderr=""),
     )
     build.install_all_tools()
-    attempted = [c[3] for c in installs if c[:3] == ["uip", "tools", "install"]]
-    assert attempted == ["@uipath/df-tool"]            # solution-tool skipped
+    specs = [c[3] for c in installs if c[:3] == ["npm", "install", "-g"]]
+    assert specs == ["@uipath/df-tool@dev"]            # solution-tool skipped

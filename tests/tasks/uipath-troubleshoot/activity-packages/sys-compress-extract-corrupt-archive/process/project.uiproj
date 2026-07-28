@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceIntake",
+  "ProjectType": "Process",
+  "Description": "Extracts an incoming invoice archive and ingests the invoices.",
+  "MainFile": "Main.xaml"
+}

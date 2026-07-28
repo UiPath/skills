@@ -10,7 +10,6 @@ agent:
   type: claude-code
   allowed_tools: [Skill, Bash, Read, Write]
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
   - {type: template_dir, path: ../_shared/mock_template}

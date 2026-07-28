@@ -817,7 +817,7 @@ When the user asks to change a value, add a field, or copy a stubbed activity to
 
 2. **Stub doesn't validate `--inputs` against the IS schema.** Field names not in `requestFields` / `parameters` are silently dropped on the way through `pickFields`. Check `Data.ResponseFields` and the IS schema if a value goes missing.
 
-3. **Subsequent designer saves can re-introduce mangling** of the Response activity (issue **SW-28452** / [UiPath/cli#1537](https://github.com/UiPath/cli/issues/1537)). See [troubleshooting.md](troubleshooting.md#object-valued-response-gets-corrupted-fields-evaluate-to-literal-expression-text-sw-28452--cli1537) — defending against the Response corruption is independent of the connector-activity discovery flow.
+3. **Subsequent designer saves can re-introduce mangling** of the Response activity. See [troubleshooting.md](troubleshooting.md#object-valued-response-gets-corrupted-fields-evaluate-to-literal-expression-text) — defending against the Response corruption is independent of the connector-activity discovery flow.
 
 4. **Login is required for `resolve` and `stub`.** Both hit live tenant endpoints (TypeCache and IS Elements). `uip api-workflow run --no-auth` still works for the resulting workflow if it only uses Http kind with `ImplicitConnection`; IntSvc kind always needs auth at run time.
 

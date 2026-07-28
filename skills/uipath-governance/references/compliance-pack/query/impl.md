@@ -51,7 +51,7 @@ For each matched clause:
 └──────────────────────────────┴─────────────────────────┴────────┴──────────────────────────────────────┘
 [repeat per matched clause]
 
-Current posture on <tenantName>: <inPlaceCount> / <totalCount> settings Applied
+Current posture on <tenantName>: <appliedControlCount> / <checkableControlCount> settings Applied
 → 'Check my ISO 42001 posture'  to see all gaps
 → 'Apply <clauseName> settings'  to configure these
 ```
@@ -61,7 +61,7 @@ Current posture on <tenantName>: <inPlaceCount> / <totalCount> settings Applied
 - `controls[].recommendedSetting` → Recommendation column
 - `controls[].impact` → Impact column
 - `controls[].configLocation` → Where to configure column
-- Current posture line: read from `SESSION_TEMP/coverage.json` **only if it already exists** (written by a prior `state coverage` call this session) — parse `Data.Summary.InPlaceCount` / `DeploymentPolicyCount`. If the file does not exist, omit the posture line entirely. **Never run `state coverage` or any other `state` command here.**
+- Current posture line: read from `SESSION_TEMP/coverage.json` **only if it already exists**. Sum `Data.Clauses[].controls[]` where `status == "deployed"` over the count of all `controls[]` entries (checkable settings). If `controls[]` is absent (older CLI), fall back to counting `Data.Clauses[]` where `Status == "fully-deployed"` over total clauses, and label it "clauses" not "settings". Never run `state coverage` here. If the file does not exist, omit the posture line entirely.
 
 **Terminology:** "settings" for configured items. Plain-English clause name in headline, clause ID as secondary reference in parentheses.
 

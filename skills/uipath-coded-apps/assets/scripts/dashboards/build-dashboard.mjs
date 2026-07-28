@@ -121,8 +121,8 @@ const REGISTRY = JSON.parse(readFileSync(resolve(__dirname, 'capability-registry
  * @property {string}        routingName - Permanent URL slug (e.g. "agent-health-x7k2")
  * @property {string}        orgName
  * @property {string}        tenantName
- * @property {string}        cloudUrl    - e.g. https://alpha.uipath.com
- * @property {string}        apiUrl      - e.g. https://alpha.api.uipath.com
+ * @property {string}        cloudUrl    - e.g. https://cloud.uipath.com
+ * @property {string}        apiUrl      - e.g. https://api.uipath.com
  * @property {string}        [clientId]  - External OAuth app client ID
  */
 

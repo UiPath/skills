@@ -21,10 +21,11 @@ Returns `Data: [{ Key, Title, Version, Authors }]`. `Key` is `PackageId:Version`
 | `--limit <N>` | Items per call (default 50). Use 500 to cover most tenants in one call. |
 | `--offset <N>` | Pagination offset. Use only if `Data.length == --limit`. |
 | `--sort-by "<field> <asc\|desc>"` | Sort. Default `Id desc`. |
-| `--output-filter "<JMESPath>"` | Global filter, evaluated client-side after the API returns. |
+| `--output-filter "<JMESPath>"` | Client-side filter — the only way to OR multiple keywords in one call. |
+| `-s, --search <term>` | Server-side contains match on name — single term only (CLI ≥1.196). |
 | `-t, --tenant <name>` | Override default tenant. |
 
-There is **no `--search` flag** and **no `--feed-id` flag** on `libraries list`. Filter via `--output-filter`.
+Flags drift across CLI versions (`--search` / `--feed-id` are absent on older CLIs). On `unknown option`, run `uip or libraries list --help` and use what the installed CLI supports — never guess. Multi-keyword OR always goes through `--output-filter`.
 
 ## JMESPath filter recipe
 
@@ -61,6 +62,7 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
 1. **Auth preflight (never blocks SDD output).** Run a benign call once: `uip or libraries list --limit 1 --output json`. If it errors or returns `Result == "Failure"` with an auth-related message: do NOT retry, and do NOT troubleshoot auth mid-generation. Then branch by mode:
    - **Autonomous mode** — skip tenant library discovery entirely: proceed with public NuGet only and record the reuse mandate as a forward note in §16 (equivalent to fallback option 1). Do not pause.
    - **Interactive mode** — surface the failure and switch to the manual fallback (below).
+   - **`unknown command` / `unknown option`** — CLI version drift, not an auth failure. Discover the installed surface with `uip or --help`; if no library verb exists, fall back to `uip or packages list` against the libraries feed (`--feed-id`) or the Orchestrator API (`GET /odata/Libraries`) using the existing authenticated context — discover, never invent a verb. If no fallback works, treat as the auth-failure branch above.
 
    Also skip this step (autonomous: public NuGet only) when the user's prompt forbids running `uip` commands.
 2. **Extract keywords** from the source (PDD Application Inventory, user prompt, project intent). Cap at 6:
@@ -101,8 +103,8 @@ If `uip` is unauthenticated, ask the legacy question:
 ## Anti-patterns
 
 1. **Searching the local filesystem first.** Tenant is authoritative; local matches do not indicate org adoption.
-2. **Using `--search`.** That flag does not exist on `uip or libraries list`. Filter via `--output-filter`.
-3. **Using `--feed-id`.** That flag does not exist on `uip or libraries list` (it does on `uip or packages list` — different command). The libraries command always targets the default tenant feed.
+2. **Inventing a verb or flag after a CLI rejection.** The surface drifts across versions (`--search` / `--feed-id` exist only on newer CLIs; older CLIs may lack `or libraries` entirely). On `unknown command` / `unknown option`, discover with `--help` and use the preflight's fallback chain (packages feed / Orchestrator API) — never guess.
+3. **Using `--search` for multi-keyword scans.** `--search` takes one term; one call per keyword violates anti-pattern 7. Multi-keyword OR goes through `--output-filter`.
 4. **Calling `contains(Title, ...)` without `Title != null` guard.** Tenants commonly hold packages with null Title — the call fails fast with `Invalid type: contains() expected ... received type null`.
 5. **Listing all libraries with no `--limit` bump, or paginating past the end.** Default 50 truncates large tenants and silently misses candidates. Use `--limit 500` for a one-shot scan; paginate via `--offset` only if `Data.length == 500`. If `Data.length < --limit` on a paginated call, you have seen the entire feed — stop searching, do not run more filtered queries hoping for hidden matches.
 6. **Auto-selecting a candidate.** Library selection drives §14 Packages and project compilability — always confirm via `AskUserQuestion`.

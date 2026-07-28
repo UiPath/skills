@@ -1,0 +1,89 @@
+task_id: skill-case-athena-cm-event
+description: >
+  STRUCTURAL BUILD — build the Athena event-directed case from a
+  staged approved SDD. The fixture defines an external case identifier and
+  event payload, and the Stage A/B/C seven-task topology with its task and
+  stage rules. The caseplan must validate and pass deterministic fixture and
+  structure graders. No deploy or debug.
+tags: [uipath-maestro-case, integration, lifecycle:generate, mode:build, shape:multi-node, feature:trigger]
+
+run_limits:
+  task_timeout: 3600
+  max_turns: 200
+  turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I have an approved SDD for an AthenaCMEventCase case-management solution —
+  it is saved as `sdd.md` in this folder. Build a UiPath Case Management
+  solution named "AthenaCMEventCase" containing a project also named
+  "AthenaCMEventCase" from this SDD.
+
+  Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0,
+  do not re-interview me, and do not redesign the process. The document's
+  fixture is limited to the supported caseplan topology; generate only the
+  case plan.
+
+  Important:
+  - The `uip` CLI is already available and authenticated in the environment.
+  - Treat all hard stops after the supplied SDD as pre-approved, including
+    Phase 1 planning approval and Phase 2 publish-for-review. Choose the
+    continue / skip-publish path and keep going.
+  - Do NOT call AskUserQuestion — it is not available in this harness.
+  - If the registry does not contain one of the named process resources, use
+    the skill's placeholder fallback; never fabricate tenant IDs or bindings.
+  - Skip Phase 5 and Phase 6. Do NOT run `uip maestro case debug` and do NOT
+    publish to Studio Web.
+  - The task is NOT complete until
+    `uip maestro case validate AthenaCMEventCase/AthenaCMEventCase/caseplan.json --output json`
+    passes.
+
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran case validation (advisory; outcome is graded below)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+validate[^\n]*AthenaCMEventCase/AthenaCMEventCase/caseplan\.json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the generated AthenaCMEventCase caseplan"
+    command: "uip maestro case validate AthenaCMEventCase/AthenaCMEventCase/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "staged sdd.md retains the Athena caseplan topology contract"
+    command: "python3 $TASK_DIR/check_athena_cm_event_sdd.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "generated caseplan preserves the Athena stage/task rules, external identity, and event trigger"
+    command: "python3 $TASK_DIR/check_athena_cm_event_case.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

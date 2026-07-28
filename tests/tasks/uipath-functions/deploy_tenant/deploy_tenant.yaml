@@ -8,7 +8,7 @@ description: >
   non-interactive tenant-feed publish (pending uipath/cli#2778), so
   requiring an interactive `publish` made this task nondeterministic
   (the agent either fumbled the feed picker or exhausted its turns).
-tags: [uipath-functions, e2e, mode:build, feature:deploy, path-to-ga]
+tags: [uipath-functions, e2e, mode:build, feature:deploy]
 max_iterations: 1
 
 initial_prompt: |
@@ -21,9 +21,7 @@ initial_prompt: |
   as `data/fixtures.json` containing `{"sample": "value"}`. The
   `data/` directory must NOT end up in the packaged output.
 
-  Take the function through scaffold → init → run locally → pack.
-  Configure `packOptions` so the `data/` directory is excluded from
-  the package. Do NOT publish, upload, or deploy.
+  Do NOT publish, upload, or deploy.
   Complete it in a single pass.
 
 success_criteria:

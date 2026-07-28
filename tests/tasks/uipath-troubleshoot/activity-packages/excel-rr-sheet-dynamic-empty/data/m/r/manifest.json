@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Excel Read Range sheet-not-found (dynamic SheetName resolved empty) scenario; mock dispatcher only - do not treat as investigation evidence. docsai proxied to the real CLI; job/folder lookups return a canned Faulted-job fixture. Matching is token-aware (first match wins); patterns are quote-agnostic.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    },
+    {
+      "match": "or folders list",
+      "file": "78f94b6048.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "6059da6ae1.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "e2a5346a88.json"
+    },
+    {
+      "match": "or jobs history",
+      "file": "244ab94cfe.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "464db476bb.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore without aborting."
+  }
+}
