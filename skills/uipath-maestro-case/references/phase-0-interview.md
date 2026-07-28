@@ -16,6 +16,8 @@ Phase 0 writes:
 - `sdd-viewer.html` — optional, generated only on explicit request (§HTML preview).
 - `sdd.draft.md` — ONLY when the user explicitly asks for a draft to review; normal runs never create it. If the request explicitly says to get/save the draft and stop, show the Case Review and write the draft in the same response instead of asking for another approval. `tasks/registry-resolved.json` is a Phase 1 artifact — Phase 0 does not write it.
 
+**Fast path — no-build design + plan.** If the opening request explicitly asks to produce `sdd.md` plus `tasks/tasks.md` and stop before `caseplan.json`, follow §Build start's **No-build design + plan request** path immediately after sketching the case. This path is self-contained: do not read `planning.md`, plugin planning references, tenant registry/cache files, or the full `sdd-generation-rules.md` checklist. Read this file plus `assets/templates/sdd-template.md` only as needed, compose a concise full-template SDD, write `sdd.md`, create `tasks/`, write the compact plan, and stop. Keep the artifacts bounded: one short rationale paragraph per stage/task/SLA/exception choice is enough; do not expand optional examples, source-ledger prose, registry audit detail, or build-phase validation notes.
+
 ## When Phase 0 runs
 
 Strict binary trigger. Look for an `.md` file at the resolved path whose basename (case-insensitive) contains `sdd`. Examples that count: `sdd.md`, `loan-sdd.md`, `case_demo_sdd.md`, `./specs/onboarding-sdd.md`. Plain `.md` references without `sdd` in the name don't count.
@@ -175,6 +177,8 @@ On a Build answer:
 **Design-only request:** write `sdd.md`, report the path in one line, stop before Phase 1. **Draft request:** write `sdd.draft.md`, report, stop — never promote. **Free-text corrections stay first-class after the build starts:** treat one as a targeted edit to the affected artifact (model + `sdd.md` + downstream), narrate it in one line, continue.
 
 **No-build design + plan request:** when the prompt explicitly asks for `sdd.md` plus `tasks/tasks.md` and says to stop before creating `caseplan.json`, do not enter full Phase 1 and do not read `planning.md` or plugin planning references. If the same prompt already says to produce those artifacts and stop, treat it as the save instruction: show the Case Review, then write the full `sdd.md`, create `tasks/`, write compact `tasks/tasks.md`, and stop in the same response without asking for another approval. If the user only asked to review the plan first, wait for approval before writing. The compact plan is a review handoff for a later build run, so it omits registry-derived files and tenant evidence.
+
+For this no-build path, prefer progress over exhaustive internal auditing: once the case model covers the stated stages, tasks, global interrupts, SLAs, variables, resources, and rationales, write the artifacts. Do not run the full Finalization checklist, do not inspect schema/planning references, and do not spend a separate turn refining optional SDD prose. The artifact contract below plus the template conformance shape are the gate.
 
 Compact `tasks/tasks.md` contract for this no-build path:
 
