@@ -2,7 +2,7 @@ task_id: skill-admin-identity-scopes-list-smoke
 description: >
   Smoke test: agent retrieves the available OAuth2 scopes and saves the JSON.
   Graded on the scope catalog read back from the tenant, not the command string.
-tags: [uipath-admin, smoke, mode:operate, lifecycle:discover]
+tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, identity]
 
 run_limits:
   expected_turns: 6

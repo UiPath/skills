@@ -3,7 +3,7 @@ description: >
   Smoke test: agent retrieves the organization's identity users and saves the
   JSON. Graded on the user records read back from the live tenant (Id + Email),
   not the command string.
-tags: [uipath-admin, smoke, mode:operate, lifecycle:discover]
+tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, identity]
 
 run_limits:
   expected_turns: 4
