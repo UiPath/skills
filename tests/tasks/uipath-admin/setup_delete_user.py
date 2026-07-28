@@ -10,7 +10,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
-from admin_helpers import run_cli
+from admin_helpers import run_cli, poll
 
 logging.basicConfig(level=logging.INFO, format="setup_delete_user: %(message)s")
 logger = logging.getLogger(__name__)
@@ -50,8 +50,10 @@ def main():
         logger.warning("Seed user invite failed: %s", res)
         return
 
-    # Resolve the invited user's id and record it as authoritative proof of the seed.
-    u = find_user()
+    # Resolve the invited user's id and record it as authoritative proof of the
+    # seed. User provisioning is eventually-consistent — poll so a listing lag
+    # does not leave verify with no state file (which would fail a correct agent).
+    u = poll(find_user)
     seed_id = (u.get("Id") or u.get("id")) if u else None
     if seed_id:
         with open(STATE_FILE, "w") as f:

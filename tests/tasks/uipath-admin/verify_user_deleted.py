@@ -22,25 +22,49 @@ SEARCH = "ce-identity-delete"
 STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_delete_user_seed.txt")
 
 
+def id_present(o, sid):
+    """True if any record anywhere in o carries Id/id == sid (shape-tolerant)."""
+    if isinstance(o, dict):
+        if (o.get("Id") or o.get("id")) == sid:
+            return True
+        return any(id_present(v, sid) for v in o.values())
+    if isinstance(o, list):
+        return any(id_present(v, sid) for v in o)
+    return False
+
+
 def main():
     if not os.path.exists(STATE_FILE):
         fail("seed user was never created (no state file) — cannot validate deletion")
-    seed_id = open(STATE_FILE).read().strip()
+    with open(STATE_FILE) as f:
+        seed_id = f.read().strip()
     if not seed_id:
         fail("seed user id missing — cannot validate deletion")
 
+    # Primary signal: the seed id must vanish from the marker-scoped listing.
+    # --search (not an unfiltered list) keeps this reliable against user-list
+    # pagination on a busy org. Poll to absorb delete propagation lag.
     present = None
     for i in range(4):
         data = run_cli(["admin", "users", "list", "--search", SEARCH])
         if not data or data.get("Result") != "Success":
             fail("could not list users to confirm deletion")
-        present = any((u.get("Id") or u.get("id")) == seed_id for u in data.get("Data", []))
+        present = id_present(data.get("Data", []), seed_id)
         if not present:
             break
         time.sleep(5)
 
     if present:
         fail(f"seed user id={seed_id} still present — agent did not delete it")
+
+    # Guard the one false-pass the search can't see: if the agent renamed the
+    # user (changing the email out of the marker prefix) instead of deleting it,
+    # the id drops from the search but the user still exists. A direct get-by-id
+    # confirms real deletion — a live record here means no delete happened.
+    got = run_cli(["admin", "users", "get", seed_id])
+    if got and got.get("Result") == "Success" and id_present(got, seed_id):
+        fail(f"seed user id={seed_id} still exists (get-by-id) — agent modified it, did not delete")
+
     ok(f"seed user id={seed_id} successfully deleted (absent from tenant)")
 
 
