@@ -44,8 +44,8 @@
 
 | SLA Status | Threshold | Action |
 |------------|-----------|--------|
-| At-Risk | 70% of SLA duration | Notify: AP Team Leads |
-| Breached | 100% of SLA duration | Notify: Finance Leadership |
+| At-Risk | 70% of SLA duration | Notify: UserGroup: AP Team Leads |
+| Breached | 100% of SLA duration | Notify: UserGroup: Finance Leadership |
 
 ### Case Triggers
 
@@ -100,7 +100,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 5 | m | 70% | Notify: AP Intake | Notify: AP Intake |
+| 15 | m | 70% | Notify: UserGroup: AP Intake | Notify: UserGroup: AP Intake |
 
 #### Tasks
 
@@ -203,7 +203,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 5 | m | 70% | Notify: AP Clerk | Notify: AP Team Lead |
+| 15 | m | 70% | Notify: UserGroup: AP Clerk | Notify: UserGroup: AP Team Lead |
 
 #### Tasks
 
@@ -281,7 +281,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 5 | m | 70% | Notify: AP Clerk | Notify: AP Team Lead |
+| 15 | m | 70% | Notify: UserGroup: AP Clerk | Notify: UserGroup: AP Team Lead |
 
 #### Tasks
 
@@ -421,7 +421,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 5 | m | 70% | Notify: AP Team Lead | Notify: Finance Operations |
+| 15 | m | 70% | Notify: UserGroup: AP Team Lead | Notify: UserGroup: Finance Operations |
 
 #### Tasks
 
@@ -475,7 +475,7 @@
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 5 | m | 70% | Notify: Automation Support | Notify: Automation CoE |
+| 15 | m | 70% | Notify: UserGroup: Automation Support | Notify: UserGroup: Automation CoE |
 
 #### Tasks
 
