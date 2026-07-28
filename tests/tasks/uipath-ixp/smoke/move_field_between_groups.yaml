@@ -8,7 +8,7 @@ description: >
   Anti-patterns, both of which duplicate taxonomy: editing a get-taxonomy
   dump and re-importing it (`import-taxonomy` MERGES — the field ends up in
   BOTH groups), and `groups delete`/`groups add` (destroys every other field
-  in the group). Critical Rule 18.
+  in the group).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -58,8 +58,8 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # The duplicating path (Critical Rule 18): import-taxonomy MERGES, so a
-  # hand-edited dump leaves the field in both groups.
+  # The duplicating path: import-taxonomy MERGES, so a hand-edited dump
+  # leaves the field in both groups.
   - type: file_matches_regex
     description: "Agent did NOT move the field by re-importing an edited taxonomy"
     path: "mocks/calls.log"
