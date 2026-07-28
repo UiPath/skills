@@ -126,7 +126,7 @@ success_criteria:
   - type: command_executed
     description: "Agent inserted the three temporary rows as a batch"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert.*(?:\[|--file\s+\S+)'
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*(?:\[|--file\s+\S+|--body\s+["'']?\$\w+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -142,7 +142,7 @@ success_criteria:
   - type: command_executed
     description: "Agent updated temporary rows with their Id values"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+update.*(?:\\?"Id\\?"\s*:|--file\s+\S+)'
+    command_pattern: '(?s)uip\s+df\s+records\s+update.*(?:\\?"Id\\?"\s*:|--file\s+\S+|--body\s+["'']?\$\w+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

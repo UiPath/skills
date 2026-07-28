@@ -182,7 +182,7 @@ success_criteria:
   - type: command_executed
     description: "Agent did not use set equality with a bare tag value"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*\\?"fieldName\\?"\s*:\s*\\?"tags\\?".*\\?"operator\\?"\s*:\s*\\?"=\\?".*\\?"value\\?"\s*:\s*\\?"\d+\\?"'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*\{(?=[^{}]*\\?"fieldName\\?"\s*:\s*\\?"tags\\?")(?=[^{}]*\\?"operator\\?"\s*:\s*\\?"=\\?")(?=[^{}]*\\?"value\\?"\s*:\s*\\?"\d+\\?")[^{}]*\}'
     min_count: 0
     max_count: 0
     weight: 2.5

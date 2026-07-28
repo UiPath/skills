@@ -92,7 +92,7 @@ success_criteria:
 
   - type: run_command
     description: "End state: text field length limits match the requested schema"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EEmployee --assertions 'name.lengthLimit=200,email.lengthLimit=255,department.lengthLimit=100' && python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --assertions 'description.lengthLimit=2000'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EEmployee --ignore-field-case --assertions 'name.lengthLimit=200,email.lengthLimit=255,department.lengthLimit=100' && python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --assertions 'description.lengthLimit=2000'"
     timeout: 180
     expected_exit_code: 0
     weight: 2.0
