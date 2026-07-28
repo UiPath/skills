@@ -1,6 +1,6 @@
 ---
 name: uipath-mcp-servers
-description: "UiPath AgentHub MCP server registration + tool authoring via `uip agenthub mcp` (six server types: uipath / coded / command / remote / platform / swagger) and `uip agenthub mcp-tools` (three tool kinds: is-activity / resource / raw on `uipath`-type servers). For Integration Service activity authoring→load `references/is-activity-workflow.md`. For Python MCP servers / coded-agent integration→uipath-agents. For raw IS CLI→uipath-platform."
+description: "UiPath AgentHub MCP server registration + tool authoring via `uip agenthub mcp` (six server types: uipath / coded / command / remote / platform / swagger) and `uip agenthub mcp-tools` (two tool kinds: resource / raw on `uipath`-type servers). For Python MCP servers / coded-agent integration→uipath-agents. For raw IS CLI→uipath-platform."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -13,8 +13,7 @@ Register AgentHub MCP servers via `uip agenthub mcp`. Author tools on `uipath`-t
 ## When to Use This Skill
 
 - Create / update / delete / refresh / list / get an AgentHub MCP server (any of: `uipath`, `coded`, `command`, `remote`, `swagger`, `platform`).
-- Author / list / get / enable / disable / delete tools on a `uipath`-type server (`is-activity`, `resource`, `raw`).
-- **For `is-activity` tools (Integration Service connector activities), load [references/is-activity-workflow.md](references/is-activity-workflow.md) end-to-end before authoring.** It owns the Pre-flight, cascade, `designTimeLookups`, `ActivityMetadata` schema, and connector-specific troubleshooting.
+- Author / list / get / enable / disable / delete tools on a `uipath`-type server (`resource`, `raw`).
 - Skip: Python MCP server implementation (FastMCP / `@uipath/mcp`) → `uipath-agents`. Raw IS CLI outside MCP tooling → `uipath-platform`.
 
 ## Trust the CLI
@@ -23,8 +22,8 @@ The CLI is the source of truth for shapes and flags. Use it instead of guessing:
 
 - `uip agenthub mcp create <type> --print-schema --output json` — payload shape for any server type.
 - `uip agenthub mcp template <type> --output json` — ready-to-edit `--file` skeleton.
-- `uip agenthub mcp-tools template <kind> --output json` — tool payload skeleton (is-activity / resource / raw).
-- `uip agenthub mcp-tools candidates --category <kind> --output json` — discover bindable targets. `<kind>` ∈ `automation | agent | agentic-process | api-workflow | is-activity`.
+- `uip agenthub mcp-tools template <kind> --output json` — tool payload skeleton (`resource` / `raw`).
+- `uip agenthub mcp-tools candidates --category <kind> --output json` — discover bindable targets. `<kind>` ∈ `automation | agent | agentic-process | api-workflow`.
 - `--output-filter <JMESPath>` on every command — extract specific fields without walking JSON by hand (e.g. `--output-filter "Data.items[].slug" --output plain`).
 - `--dry-run` on every mutating call — resolve and inspect the body before POST. Note: `--dry-run` skips some server-side validation, so a clean dry-run is not a guaranteed real POST.
 
@@ -44,8 +43,6 @@ These are the things the CLI does not advertise in `--help`.
    - `uipath` / `selfhosted` — rejected locally; tools are manually authored via `mcp-tools create-*`. CLI emits a `NextCommand` hint to author instead.
 
 5. **`mcp delete` looks up by slug, not GUID.** Passing a GUID returns 404.
-
-6. **For any `is-activity` tool, read [references/is-activity-workflow.md](references/is-activity-workflow.md) end-to-end before any CLI call.** It owns the cascade-asking gate, the action-triggered platform-IS reads, the `ActivityMetadata` schema, and the `inputSchema` / `designTimeLookups` rules. IS metadata authored from memory passes `--dry-run` but fails at runtime — do not skip the reference.
 
 ## Server Types
 
@@ -68,11 +65,10 @@ Headers/auth on `remote` and `swagger` are payload fields, not scalar flags. Rea
 
 ## Tool Kinds (`uipath`-type servers only)
 
-`uip agenthub mcp-tools create-{is-activity | resource | raw}`. Shared flags: `--mcp <slug>` (parent server), `--name`, `--description`, `--target-identifier <guid>` / `--target-name <name>` (resolve target via RCS — only for non-`activity` categories), `--folder-key <guid>` / `--folder-path <name>` (folder context; the CLI derives the target's folder from `--target-identifier`, so there is **no** `--target-folder-key` flag — do not invent one), `--category`, `--input-schema`, `--output-schema`, `--metadata`, `--continue-on-error` (default) / `--fail-fast`, `--file`/`--body`, `--dry-run`. Differ in metadata shape, discovery path, and validation strictness.
+`uip agenthub mcp-tools create-{resource | raw}`. Shared flags: `--mcp <slug>` (parent server), `--name`, `--description`, `--target-identifier <guid>` / `--target-name <name>` (resolve target via RCS), `--folder-key <guid>` / `--folder-path <name>` (folder context; the CLI derives the target's folder from `--target-identifier`, so there is **no** `--target-folder-key` flag — do not invent one), `--category`, `--input-schema`, `--output-schema`, `--metadata`, `--continue-on-error` (default) / `--fail-fast`, `--file`/`--body`, `--dry-run`. Differ in metadata shape, discovery path, and validation strictness.
 
 | Kind | Discovery | Validation | When to use |
 |------|-----------|------------|-------------|
-| `is-activity` | `mcp-tools candidates --category is-activity` + `is resources describe` | Connector schema | Wrap an Integration Service connector activity as an MCP tool. **Load [references/is-activity-workflow.md](references/is-activity-workflow.md) end-to-end** — extra Critical Rules, Pre-flight, `ActivityMetadata` schema, and IS-specific troubleshooting apply. |
 | `resource`    | `mcp-tools candidates --category <kind>` (kind ∈ `automation` / `agent` / `agentic-process` / `api-workflow`) | Resource schema | Bind an Orchestrator resource. Pass `--target-identifier <resource-id>`. Read metadata shape from `mcp-tools template resource --output json`. |
 | `raw`         | None | None | Free-form JSON tool — caller owns correctness end-to-end. No discovery, no schema validation, no reference-value labeling. Read the skeleton from `mcp-tools template raw --output json`. |
 
@@ -89,5 +85,3 @@ Other `mcp-tools` verbs (`list --mcp <slug>`, `get`, `enable`, `disable`, `delet
 - **Slug rejected with validation error** — backend enforces `^[a-z0-9-]+$`, length 3-50 (Critical Rule 1).
 - **`mcp delete <guid>` returns 404** — `mcp delete` looks up by slug, not GUID (Critical Rule 5).
 - **`refresh-tools` returns 202 with a runtime id** — `coded` / `command` refreshes are async (Critical Rule 4). Surface the runtime id; verify via follow-up `mcp-tools list --mcp <slug>`.
-
-Tool-kind-specific troubleshooting lives with the workflow that owns it — IS-activity troubleshooting is in [references/is-activity-workflow.md](references/is-activity-workflow.md).
