@@ -196,6 +196,38 @@ Resource body shape is identical to the standalone-agent docs — only the folde
 - **`inputSchema.properties`**: Must include `"guardrails": { "type": "array" }` alongside the tool arguments — the runtime expects it.
 - **All fields from the template in [../process/process.md](../process/process.md) are required** — especially `$resourceType: "tool"`, `guardrail`, `properties.processName`, `properties.exampleCalls`, `isEnabled`, and `argumentProperties`. A `resource.json` missing `$resourceType` will not be recognized by `uip agent validate` (the tool reports `"resources": 0`); `uip agent refresh` will then write an empty `bindings_v2.json`.
 
+## Inline-in-Flow IS Connector Tool resource.json
+
+The `resource.json` for IS connector tools inside an inline-in-flow agent uses the **same format** as IS tools in standalone agents. See [../integration-service/integration-service.md](../integration-service/integration-service.md) for the full resource.json shape, properties, and field reference.
+
+**Path:** `<FlowProjectDir>/<projectId>/resources/<RES_UUID>/resource.json`
+
+**Auto-generation by `uip agent refresh --inline-in-flow`:** When the parent `.flow` file contains IS connector tool nodes wired to this agent via `tool` artifact edges, `uip agent refresh --inline-in-flow` automatically discovers them and generates the corresponding `resource.json` files. This means you do **not** need to hand-author IS tool resource.json files — just configure the connector tool node in the flow (via `uip maestro flow node configure`), then run refresh. `uip agent validate --inline-in-flow` is read-only: it checks the expected `resource.json` files exist and reports drift pointing back to refresh.
+
+The auto-generation:
+1. Navigates up from the inline agent directory to find the parent `.flow` file
+2. Finds all `uipath.agent.resource.tool.connector.*` nodes connected to this agent's `tool` port
+3. Reads each node's `inputs.detail` (connectionId, connectionFolderKey, endpoint, method, the `bodyParameters` / `queryParameters` / `pathParameters` request buckets, `multipartParameters`, `inputMetadata`) and its definition
+4. **Fetches the typed IS object metadata** for the connector (transiently, via the connection) to recover field types, enum members, and the output schema — `inputs.detail` only carries the configured VALUES, not types/enums/output. (Offline / no connection → falls back to a value-only untyped build.)
+5. Generates a `resource.json` with `type: "integration"` in `<projectDir>/resources/<UUID>/resource.json` by joining the metadata (types/enums/output) with the `inputs.detail` values
+6. Skips nodes whose on-disk `resource.json` already matches (idempotent; overwrites on drift)
+
+Additional notes for inline-in-flow IS tools:
+- **`type`**: Always `"integration"` (not `"process"`)
+- **`location`**: Always `"external"` for IS connector tools
+- **`id`**: The generated UUID for the resource directory name
+- **`properties.connection`**: Populated from `inputs.detail.connectionId`, `inputs.detail.connectionFolderKey`, and the connector key from the definition's `model.context[]`
+- **`properties.parameters`** and **`inputSchema`**: field set + types/enums come from the fetched IS metadata; VALUES come from `inputs.detail` (`bodyParameters` → `fieldLocation: "body"`, `queryParameters` → `"query"`, `pathParameters` → `"path"`, `multipartParameters` → `"multipart"`). A `{{prompt: "..."}}` chip → `fieldVariant: "dynamic"` (agent-decided); a concrete value (e.g. `send_as=bot`) → `fieldVariant: "static"`.
+- **`outputSchema`**: built (nested) from the metadata's response fields.
+- **Enum fields**: `enum`/`oneOf` are emitted in `inputSchema` **only for dynamic fields**. A *static* field carrying an enum breaks the agent runtime's model build (`` `<Tool>` is not fully defined; __Dynamictype… ``). At configure, a **single-value enum** body field is written as a **static** constant (the agent can't be trusted to echo an exact obscure value like `GoogleCustomSearch`); a **multi-value enum** stays **dynamic** so the agent picks from the enum.
+- **Dotted body fields are nested in `inputSchema`**: a field named `fields.project.key` becomes a nested object (`fields` → `project` → `key`), not a flat property keyed `"fields.project.key"`. The LLM's tool-call arguments follow `inputSchema`, so a flat key makes it emit `{"fields.project.key": "..."}` and the IS request body is malformed (e.g. Jira Create Issue fails with "Specify a valid project ID or key"). `parameters[]` keep the flat dotted `name` + `fieldLocation` — only `inputSchema` nests.
+- **`bodyStructure`**: `{contentType:"multipart", jsonBodySection:<name>}` when `inputs.detail.inputMetadata.type === "multipart"` (e.g. Outlook Send Email), else `{contentType:"json"}`.
+- **No `fieldsContainer`**: the CLI never writes `fieldsContainer` on the node; the typed metadata is fetched at refresh instead.
+- **`iconUrl`**: Taken from the definition's `display.icon` (the type-cache URL)
+- No `referenceKey` or `argumentProperties` (those are process-tool-only fields)
+- **bindings_v2.json**: When using `--bindings-target`, refresh generates a `resource: "connection"` binding entry for the IS tool's connection (with `metadata.connector` set to the connector key)
+- **Solution-level resources**: `uip solution resources refresh` creates `resources/solution_folder/connection/<connector-key>/<connection-name>.json` for IS tools (not `process/` + `package/` like RPA tools)
+
 ## Flow Node Structure
 
 ### Node type
