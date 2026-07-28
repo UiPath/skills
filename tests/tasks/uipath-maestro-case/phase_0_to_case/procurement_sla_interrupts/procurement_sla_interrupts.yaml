@@ -26,7 +26,8 @@ initial_prompt: |
   This is a plan-only/no-build design exercise: do not query tenant registry,
   connections, schemas, or users. Use concrete intended resource and system
   names, mark identities `resolve at build`, and defer authoritative tenant
-  resolution to the later build run.
+  resolution to the later build run. After approval, use the compact no-build
+  planning shape for `tasks/tasks.md`; do not inspect plugin planning docs.
 
   The primary stages are Intake, Supplier Setup, Compliance Review, Decision,
   and Close. In Supplier Setup, Verify Supplier Identity, then Set Supplier

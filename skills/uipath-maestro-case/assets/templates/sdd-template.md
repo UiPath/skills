@@ -408,7 +408,9 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 
-**Task envelope** (every task — render after the Entry Condition table):
+**Task envelope**
+
+> Render the heading above exactly, with no colon. Every task includes this block after the Entry Condition table.
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|

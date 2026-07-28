@@ -40,6 +40,8 @@ initial_prompt: |
 
   This is a Maestro case-management SDD finalization. Keep it inside the Case
   Management SDD template; do not route it through cross-product planning.
+  Use the direct finalization path: read the draft and SDD template, write the
+  finalized `sdd.md`, and do not spawn subagents or inspect planning/plugin docs.
 
 success_criteria:
   - type: file_exists

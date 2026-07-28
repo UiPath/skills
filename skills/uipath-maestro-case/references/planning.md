@@ -90,7 +90,17 @@ Before resource resolution, seed TodoWrite with the items below to track Phase 1
 
 For every task, trigger, and condition in the sdd.md:
 
-If the plan-only / no-build exception is active, skip registry and schema discovery in this step. Still consult the relevant plugin `planning.md` files for declarative field shape, but preserve SDD portable names and emit unresolved identities as `resolve at build`; the later build run owns authoritative resource resolution before Phase 2.
+If the plan-only / no-build exception is active, skip registry and schema discovery in this step and do not fan out through every plugin `planning.md`. Use the compact no-build shape below for the review plan: preserve SDD portable names, emit tenant identities as `resolve at build`, carry every rationale, and stop after `tasks/tasks.md`. The later build run owns authoritative resource resolution and regenerates any registry-derived fields before Phase 2.
+
+**Compact no-build T-entry shape:** each declaration still gets a T-number, but the fields are intentionally review-oriented:
+
+- Stage entries: `stage-kind`, `entry-rule`, `exit-rule`, `interrupting`, `required`, `sla`, `rationale`.
+- Task entries: `stage`, `type`, `activation-mode`, `entry-rule`, `lane`, `required`, `run-only-once`, `resource-intent`, `identity: resolve at build`, `rationale`.
+- Trigger/condition/SLA entries: `rule-type`, `source/status`, `target stage/task`, `return-or-close behavior`, `rationale`.
+
+Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json` in this mode; those require tenant evidence and belong to the later build run.
+
+When the plan-only / no-build exception is not active, continue with the normal build-planning path:
 
 1. **Identify the plugin** by matching the sdd.md component description to an entry in the catalogs below (§3.1–§3.3).
 2. **Load the plugin's `planning.md`** — it lists the exact fields to resolve from sdd.md, the cache file(s) to consult, and any discovery steps required.

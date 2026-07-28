@@ -31,7 +31,7 @@ If the user prompt names no `.md` reference, default candidate is `./sdd.md` —
 
 ## Entry
 
-**If the user's request already describes the case** (any stages, work, trigger, domain, or attached docs), skip every entry prompt: print the roadmap from `SKILL.md § User-facing roadmap` and go straight to work — the request IS the first Listen input. **Only a bare request** ("create a case" with nothing else) gets the Listen opener after the roadmap. There is no entry menu; a user who has an `sdd.md` will say so, and abort is always a free-text away.
+**If the user's request already describes the case** (any stages, work, trigger, domain, or attached docs), skip every entry prompt: print the roadmap from `SKILL.md § User-facing roadmap` and go straight to work — the request IS the first Listen input. **Only a bare request** ("create a case" with nothing else) gets the Listen opener after the roadmap. There is no entry menu; a user who has an `sdd.md` will say so, and abort is always a free-text away. If the same request also asks for `tasks.md`, do not read planning/plugin references yet; first show the Phase 0 Case Review and get the Build / Save approval.
 
 **No tenant work at Entry.** Nothing about the tenant is a prerequisite for designing the case — do not run login or `registry pull` up front. Grounding starts only when the case shows it needs it (§Tenant grounding).
 
@@ -153,7 +153,7 @@ Required shape:
 - Section 1 contains `### Case Metadata`, `### Case Triggers`, `### Case Exit Conditions`, and `### Case Variables`.
 - Every modeled primary stage has `### Stage {N}: {Stage Name}`; every modeled secondary stage has `### Secondary Stage: {Stage Name}`.
 - Every stage block contains `**Type:**`, `**Design Rationale:**`, `#### Stage Entry Conditions`, `#### Stage Exit Conditions`, and `#### Tasks`.
-- Every modeled task has `##### Task {N}.{M}: {Task Name}` with `**Type:**`, `**Activation Mode:**`, `**Design Rationale:**`, `**Entry Condition:**`, `**Task envelope**`, and the matching type-specific detail block.
+- Every modeled task has `##### Task {N}.{M}: {Task Name}` with `**Type:**`, `**Activation Mode:**`, `**Design Rationale:**`, `**Entry Condition:**`, exact marker `**Task envelope**` (no colon), and the matching type-specific detail block.
 - Section 3 contains `### Personas` and `### Process App Views`.
 - Section 4 contains the integration/resource family headings needed by the modeled task types, or an explicit `> None.` for empty families.
 
@@ -191,6 +191,8 @@ Generation: Read [`assets/templates/sdd-viewer.html`](../assets/templates/sdd-vi
 | `Abort` | Exit. No file changes. |
 
 If the user explicitly asks to finalize the existing draft, choose `Use the draft — finalize and continue` by assumption and do not ask a redundant resumption question. If AskUserQuestion is unavailable, make the same assumption unless the user asked to discard or abort. Finalization stays inside this skill: render the final `sdd.md` from the Case Management template and run the template conformance gate; never route `sdd.draft.md` finalization to `uipath-planner`.
+
+**Direct finalize fast path:** for a request that says the draft design is settled and asks for final `sdd.md` only, read `sdd.draft.md`, this resumption/gate section, and `assets/templates/sdd-template.md`; do not read planning/plugin references, do not inspect tenant resources, and do not spawn subagents. Treat the draft's stages, tasks, variables, conditions, SLAs, personas, and integration intent as the design source. Normalize structure only: every existing task gets a full detail block, exact `**Task envelope**` marker followed by its Required/Run Only Once/Skip Condition table, and the matching type-specific detail block. Then write `sdd.md` and stop.
 
 ## What to say while working
 
