@@ -32,6 +32,7 @@ import sys
 import time
 
 UIP_TIMEOUT_SECONDS = 60
+TENANT_SCOPE = "00000000-0000-0000-0000-000000000000"
 
 
 def run_uip(*args: str) -> tuple[int, str, str]:
@@ -45,6 +46,17 @@ def run_uip(*args: str) -> tuple[int, str, str]:
     except FileNotFoundError:
         return 127, "", "uip CLI not on PATH"
     return r.returncode, r.stdout, r.stderr
+
+
+def entity_folder_key(entity: dict) -> str:
+    folder_key = (
+        entity.get("FolderKey")
+        or entity.get("folderKey")
+        or entity.get("FolderId")
+        or entity.get("folderId")
+        or ""
+    )
+    return "" if str(folder_key).lower() == TENANT_SCOPE else str(folder_key)
 
 
 def find_entity_id(name: str) -> tuple[str | None, str | None]:
@@ -67,7 +79,7 @@ def find_entity_id(name: str) -> tuple[str | None, str | None]:
             if isinstance(e, dict) and (e.get("Name") or e.get("name")) == name:
                 return (
                     e.get("ID") or e.get("Id") or e.get("id"),
-                    e.get("FolderKey") or e.get("folderKey") or "",
+                    entity_folder_key(e),
                 )
         if attempt >= 1:
             time.sleep(2)

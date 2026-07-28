@@ -44,6 +44,15 @@ initial_prompt: |
 
     - Show me the expenses submitted by that employee.
 
+    - Show me the expenses tagged urgent.
+
+    - Show me the expenses tagged exactly urgent and reimbursable together,
+      with no other tags.
+
+    - Show me the expenses that aren't tagged client.
+
+    - Show me how many expenses fall under each unique tag combination.
+
     - Make sure the tenant-level dropdown `CE_SmokePaymentState0726` has
       values "paid", "unpaid", and "refunded", and that `CE_SmokeExpense`
       has it as a payment-status column.
@@ -150,6 +159,41 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(?is)uip\s+df\s+records\s+query[\s\S]*submitter'
     min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent reported the four requested multi-choice query outcomes coherently"
+    include_agent_output: true
+    prompt: |
+      The reusable expense fixture contains one $250 expense tagged urgent
+      and reimbursable, but not client. The agent was asked for:
+        1. expenses containing urgent;
+        2. expenses whose complete tag set is urgent + reimbursable;
+        3. expenses not containing client; and
+        4. counts grouped by unique tag combination.
+
+      Score 1.0 if all four outcomes are reported coherently. Score 0.5 if
+      three are reported. Score 0.0 if two or more are missing or
+      contradicted.
+    weight: 4.0
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent did not use set equality with a bare tag value"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*\\?"fieldName\\?"\s*:\s*\\?"tags\\?".*\\?"operator\\?"\s*:\s*\\?"=\\?".*\\?"value\\?"\s*:\s*\\?"\d+\\?"'
+    min_count: 0
+    max_count: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did not use contains with a bracketed tag value"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*\{(?=[^{}]*\\?"fieldName\\?"\s*:\s*\\?"tags\\?")(?=[^{}]*\\?"operator\\?"\s*:\s*\\?"contains\\?")(?=[^{}]*\\?"value\\?"\s*:\s*\\?"\[)[^{}]*\}'
+    min_count: 0
+    max_count: 0
     weight: 2.5
     pass_threshold: 1.0
 

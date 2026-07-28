@@ -5,8 +5,7 @@ description: >
   page (matches the cursor-walked slice), filterGroup walk on Active=true
   (5 pages, 300 IDs), and a short record CRUD sequence. Brownfield: pre_run
   seeds the 500 records once via `seed_entity.py` and post_run restores the
-  fixture. Bulk-import coverage lives in integration_csv_import and
-  smoke_bulk_import.
+  fixture. Bulk-import coverage lives in integration_csv_import.
 tags: [uipath-platform, data-fabric, integration, bulk-pagination, mode:operate, lifecycle:discover]
 run_limits:
   expected_turns: 35

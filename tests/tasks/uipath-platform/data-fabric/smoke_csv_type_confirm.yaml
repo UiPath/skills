@@ -14,12 +14,12 @@ run_limits:
 initial_prompt: |
   Consider this CSV content (header + 3 sample rows):
 
-      order_id,placed_at,total_amount,is_paid,customer_uuid
+      orderId,placedAt,totalAmount,isPaid,customerUuid
       ORD-001,2026-04-12T09:15:00Z,142.50,1,3f8d2a1e-9e0c-4b88-b9a5-2d8a5e1f0a11
       ORD-002,2026-04-13T14:02:30Z,89.00,0,12c6c4a2-3f5b-4d2e-b6c7-22ab9f0d3e88
       ORD-003,2026-04-14T18:47:11Z,1024.99,1,3f8d2a1e-9e0c-4b88-b9a5-2d8a5e1f0a11
 
-  Goal: create a Data Fabric entity named "Order" from this CSV so the
+  Goal: create a Data Fabric entity named "OrderImport" from this CSV so the
   columns map to fields.
 
   Before creating anything, show me the proposed field type for every
@@ -40,8 +40,8 @@ success_criteria:
     description: "Agent proposed every column, surfaced ambiguity, and paused for confirmation"
     include_agent_output: true
     prompt: |
-      The user supplied five CSV columns: order_id, placed_at, total_amount,
-      is_paid, and customer_uuid. The agent must propose a Data Fabric type
+      The user supplied five CSV columns: orderId, placedAt, totalAmount,
+      isPaid, and customerUuid. The agent must propose a Data Fabric type
       for every column, identify plausible ambiguity for the timestamp,
       decimal precision, 0/1 flag, and UUID-shaped customer value, use only
       UI-compatible field types, and wait for confirmation before creating
