@@ -4,7 +4,7 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 
 > **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip this planning pipeline — see [brownfield.md](brownfield.md).
 
-> **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file. When SLA escalations are present, also `tasks/recipients-resolved.json` — see [`plugins/sla/planning.md` § Identity Resolution](plugins/sla/planning.md#identity-resolution).
+> **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file. When SLA escalations are present, also `tasks/recipients-resolved.json` — see [`plugins/sla/planning.md` § Identity Resolution](plugins/sla/planning.md#identity-resolution). Explicit plan-only / no-build runs stop at `tasks/tasks.md` and skip registry-derived audit files because tenant lookup is deferred to the later build run.
 >
 > **Exit:** Auto-proceeds to Phase 2 — plan treated as approved, no prompt by default. Stops after `tasks.md` only when the request explicitly asked for a plan-only / review-first run. Re-read `tasks.md` before execution.
 
@@ -44,7 +44,9 @@ If `npm install -g` fails with a permission error, prompt the user to re-run it 
 
 ## Step 1 — HARD GATE: check login and pull registry
 
-Registry discovery happens during planning, so login is required first. This gate runs on every Phase 1 run — including SDD-only handoffs and runs with a staged `tasks/registry-resolved.json` — **with one exception (same-session fast path, SKILL.md Rule 3):** when Phase 0's `registry pull` already succeeded in THIS session and `sdd.md` was just rendered from the confirmed in-memory model, reuse that cache and skip the re-pull. Any doubt (user-provided SDD, cross-session resume, context compaction, failed or never-run Phase 0 pull, missing cache files) runs the gate in full.
+Registry discovery happens during build planning, so login is required first. This gate runs on every Phase 1 build run — including SDD-only handoffs and runs with a staged `tasks/registry-resolved.json` — **with two exceptions:** the same-session fast path, and the explicit plan-only / no-build path in SKILL.md Rule 3. For the same-session fast path, when Phase 0's `registry pull` already succeeded in THIS session and `sdd.md` was just rendered from the confirmed in-memory model, reuse that cache and skip the re-pull. Any doubt in a build run (user-provided SDD, cross-session resume, context compaction, failed or never-run Phase 0 pull, missing cache files) runs the gate in full.
+
+**Plan-only / no-build exception:** when the request explicitly asks to stop at `tasks.md` and not create `caseplan.json`, do not run login, registry, connection, schema, or user-discovery commands. Generate `tasks/tasks.md` from the SDD's concrete intended resource/system names, mark tenant identities `resolve at build`, omit registry-derived audit files, and state that the later build run must rerun this hard gate before caseplan execution.
 
 ```bash
 uip login status --output json
@@ -87,6 +89,8 @@ Before resource resolution, seed TodoWrite with the items below to track Phase 1
 9. Finalize tasks.md, auto-proceed to Phase 2 (Step 5)
 
 For every task, trigger, and condition in the sdd.md:
+
+If the plan-only / no-build exception is active, skip registry and schema discovery in this step. Still consult the relevant plugin `planning.md` files for declarative field shape, but preserve SDD portable names and emit unresolved identities as `resolve at build`; the later build run owns authoritative resource resolution before Phase 2.
 
 1. **Identify the plugin** by matching the sdd.md component description to an entry in the catalogs below (§3.1–§3.3).
 2. **Load the plugin's `planning.md`** — it lists the exact fields to resolve from sdd.md, the cache file(s) to consult, and any discovery steps required.

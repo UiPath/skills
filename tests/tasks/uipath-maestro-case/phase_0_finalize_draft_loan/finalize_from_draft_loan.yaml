@@ -38,6 +38,9 @@ initial_prompt: |
   me. The connector IDs in the draft are placeholders on purpose — leave them as
   they are. I just need the finalized design for now, nothing built yet.
 
+  This is a Maestro case-management SDD finalization. Keep it inside the Case
+  Management SDD template; do not route it through cross-product planning.
+
 success_criteria:
   - type: file_exists
     description: "Finalization produced the approved sdd.md"
