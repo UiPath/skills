@@ -1,0 +1,61 @@
+task_id: skill-ixp-query-model-preprocessing-smoke
+description: >
+  Smoke: agent reports which extraction model and pre-processing a project is
+  configured with. There is no `get-model-config` command — the settings live in
+  the taxonomy artifact under `Data.dataset._model_config` (`model_version` +
+  `input_config`), so `projects get-taxonomy` is the only read.
+
+  Two anti-patterns, both of which the missing read invites: calling
+  `configure-model` to find out the current values (it is a read-modify-write,
+  so probing rewrites the project's configuration), and answering from
+  `list-models`' `ModelName` — the labeller family (`gemini_ixp`), never a
+  `--model` value, and silent about pre-processing.
+
+  The read side of the model config. change_model_variant, pick_capable_model,
+  and preprocessing_by_doc_shape all grade a `configure-model` WRITE; this is
+  the only one that must produce no write at all.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 4
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
+initial_prompt: |
+  Which extraction model and pre-processing is the IXP project
+  my_invoices-f1afa9ef-ixp currently configured with?
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # Positive control: the only command whose response carries _model_config.
+  - type: file_matches_regex
+    description: "Agent read the configured model + pre-processing via `projects get-taxonomy`"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-taxonomy\b(?=.*my_invoices-f1afa9ef-ixp).*)[^\r\n]*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The destructive probe: configure-model merges what it is given into the
+  # current config and returns the merged result, so using it as a read
+  # rewrites the settings being asked about. A read-only question must not
+  # produce a write.
+  - type: file_matches_regex
+    description: "Agent did NOT call `configure-model` to read the current settings"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+configure-model\b)[^\r\n]*$
+    must_match: false
+    weight: 3.0
+    pass_threshold: 1.0
