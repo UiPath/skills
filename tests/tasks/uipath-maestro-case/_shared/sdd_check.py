@@ -8,6 +8,8 @@ separately by the ``llm_judge`` criterion; this script is the deterministic
 "rules and mappings" half.
 
 Checks (domain-agnostic):
+  0. Template shape — the document is a full SDD template render, not a prose
+     summary or build note.
   1. Mapping integrity — every ``=vars.<name>`` resolves to a §Case Variables row.
   2. Lineage closure  — every consumed variable is produced before use (In /
      Default / sourceTriggers / task Output ``-> name`` / button ``name = ...``).
@@ -41,7 +43,7 @@ TASK_TYPES = {
 
 # Legal rule types per gate (mirrors case-tool schema-helpers VALID_*_RULE_TYPES).
 STAGE_ENTRY = {"case-entered", "selected-stage-completed", "selected-stage-exited",
-               "wait-for-connector", "user-selected-stage"}
+               "wait-for-connector", "user-selected-stage", "sla-status-change"}
 STAGE_COMPLETION = {"required-tasks-completed", "wait-for-connector"}   # Marks: Yes
 STAGE_EXIT = {"selected-tasks-completed", "wait-for-connector"}          # Marks: No
 TASK_ENTRY = {"current-stage-entered", "selected-tasks-completed",
@@ -52,6 +54,25 @@ CASE_EXIT = {"selected-stage-completed", "selected-stage-exited",
 EXIT_TYPES = {"exit-only", "wait-for-user", "return-to-origin"}
 RETURN_TO_ORIGIN_COMPLETION = {"required-tasks-completed", "wait-for-connector"}
 KNOWN_RULES = STAGE_ENTRY | STAGE_COMPLETION | STAGE_EXIT | TASK_ENTRY | CASE_COMPLETION | CASE_EXIT
+SUMMARY_ONLY_HEADINGS = {
+    "Source", "Case Objective", "Actors And Systems", "Case Trigger", "Stages",
+    "Business Rules", "Task Plan", "Resource Resolution", "Acceptance Scenarios",
+}
+INTEGRATION_HEADINGS = {
+    "Integration Service Connectors", "API Workflows", "Agents", "Processes & RPA",
+    "Child Cases", "External Agents",
+}
+TASK_DETAIL_MARKERS = {
+    "action": "Action Task Detail",
+    "wait-for-connector": "Connector Task Detail",
+    "execute-connector-activity": "Connector Task Detail",
+    "wait-for-timer": "Timer Task Detail",
+    "case-management": "Child Case Task Detail",
+    "process": "Process / Agent / RPA / API Workflow Task Detail",
+    "agent": "Process / Agent / RPA / API Workflow Task Detail",
+    "rpa": "Process / Agent / RPA / API Workflow Task Detail",
+    "api-workflow": "Process / Agent / RPA / API Workflow Task Detail",
+}
 
 
 def _find_sdd() -> str:
@@ -77,6 +98,103 @@ def _return_to_origin_pairing_issue(
         "rule: return-to-origin requires 'required-tasks-completed' or "
         f"'wait-for-connector' with Marks=Yes ({where})"
     )
+
+
+def _has_heading(text: str, heading: str) -> bool:
+    return re.search(rf"^{re.escape(heading)}\s*$", text, re.M) is not None
+
+
+def _sdd_template_shape_issues(text: str, source: str = "sdd.md") -> list[str]:
+    """Require the full SDD template shape, not a compact design summary."""
+    issues: list[str] = []
+    first = next((line.strip() for line in text.splitlines() if line.strip()), "")
+    if not first.startswith("# SDD — "):
+        issues.append(f"template: first heading must be '# SDD — {{Case Name}}' at {source}")
+
+    required_headings = [
+        "## Table of Contents",
+        "## Section 1: Case Definition",
+        "### Case Metadata",
+        "### Case Triggers",
+        "### Case Exit Conditions",
+        "### Case Variables",
+        "## Section 2: Stages & Tasks",
+        "## Section 3: Personas & App Views",
+        "### Personas",
+        "### Process App Views",
+        "## Section 4: Integrations",
+    ]
+    for heading in required_headings:
+        if not _has_heading(text, heading):
+            issues.append(f"template: missing required heading {heading!r} in {source}")
+
+    for heading in sorted(SUMMARY_ONLY_HEADINGS):
+        if _has_heading(text, f"## {heading}"):
+            issues.append(f"template: summary-only heading '## {heading}' is not a template SDD")
+
+    if re.search(r"(?im)^(Source|Build mode|Output folder)\s*:", text):
+        issues.append(f"template: source/build narration belongs in chat, not {source}")
+    if re.search(r"(?i)generated from (the )?(requirements|source) file", text):
+        issues.append(f"template: generation-source narration belongs in chat, not {source}")
+
+    stage_matches = list(
+        re.finditer(r"^###\s+(Stage\s+\d+|Secondary Stage):\s*(.+?)\s*$", text, re.M)
+    )
+    if not stage_matches:
+        issues.append(f"template: no Stage/Secondary Stage detail blocks found in {source}")
+    section3 = re.search(r"^## Section 3: Personas & App Views\s*$", text, re.M)
+    doc_end = section3.start() if section3 else len(text)
+
+    for index, match in enumerate(stage_matches):
+        end = stage_matches[index + 1].start() if index + 1 < len(stage_matches) else doc_end
+        block = text[match.start():end]
+        stage_name = match.group(2).strip()
+        for marker in (
+            "**Type:**",
+            "**Design Rationale:**",
+            "#### Stage Entry Conditions",
+            "#### Stage Exit Conditions",
+            "#### Tasks",
+        ):
+            if marker not in block:
+                issues.append(f"template: stage {stage_name!r} missing {marker!r} in {source}")
+
+        task_matches = list(re.finditer(r"^#####\s+Task\s+(?:S)?\d+\.\d+:\s*(.+?)\s*$", block, re.M))
+        if not task_matches:
+            issues.append(f"template: stage {stage_name!r} has no task detail blocks in {source}")
+            continue
+        for task_index, task_match in enumerate(task_matches):
+            task_end = (
+                task_matches[task_index + 1].start()
+                if task_index + 1 < len(task_matches)
+                else len(block)
+            )
+            task_block = block[task_match.start():task_end]
+            task_name = task_match.group(1).strip()
+            for marker in (
+                "**Type:**",
+                "**Activation Mode:**",
+                "**Design Rationale:**",
+                "**Entry Condition:**",
+                "**Task envelope**",
+            ):
+                if marker not in task_block:
+                    issues.append(f"template: task {task_name!r} missing {marker!r} in {source}")
+            task_type = re.search(r"^\*\*Type:\*\*\s*`?([a-z-]+)", task_block, re.M)
+            if task_type:
+                marker = TASK_DETAIL_MARKERS.get(task_type.group(1))
+                if marker and marker not in task_block:
+                    issues.append(
+                        f"template: task {task_name!r} missing type detail block {marker!r} "
+                        f"in {source}"
+                    )
+
+    if _has_heading(text, "## Section 4: Integrations"):
+        has_family_heading = any(_has_heading(text, f"### {heading}") for heading in INTEGRATION_HEADINGS)
+        if not has_family_heading and "> None." not in text:
+            issues.append(f"template: Section 4 needs integration family headings or '> None.' in {source}")
+
+    return issues
 
 
 def _sdd_frontend_issues(text: str, source: str = "sdd.md") -> list[str]:
@@ -208,9 +326,10 @@ def _tasks_frontend_issues(text: str, source: str) -> list[str]:
         header = re.match(r"##\s+T\d+[^\n]*", block)
         if not header:
             continue
-        is_escalation = bool(re.search(r"Add escalation rule for", header.group(0), re.I))
-        is_sla_entry = is_escalation or re.search(
-            r"Set default SLA for|Add conditional SLA rule for", header.group(0), re.I
+        header_text = header.group(0)
+        is_escalation = bool(re.search(r"Add escalation rule for", header_text, re.I))
+        is_sla_entry = is_escalation or bool(
+            re.search(r"Set default SLA for|Add conditional SLA rule for", header_text, re.I)
         )
         if not is_sla_entry:
             continue
@@ -239,7 +358,7 @@ def _tasks_frontend_issues(text: str, source: str) -> list[str]:
             if unit == "min" and not 15 <= count <= 1000:
                 issues.append(f"sla: minute count must be between 15 and 1000 at {source}")
 
-        if re.search(r"conditional SLA rule", header.group(0), re.I):
+        if re.search(r"conditional SLA rule", header_text, re.I):
             condition = re.search(r"^\s*-\s*(?:condition|expression):\s*(.*?)\s*$", block, re.M | re.I)
             if not condition or not _parse_value(condition.group(1)):
                 issues.append(f"sla: conditional rule requires an expression at {source}")
@@ -258,6 +377,7 @@ def main() -> None:
     path = _find_sdd()
     text = open(path, encoding="utf-8").read()
     issues: list[str] = []
+    issues.extend(_sdd_template_shape_issues(text, path))
     issues.extend(_sdd_frontend_issues(text, path))
 
     # When Phase 1 has already generated tasks.md next to the SDD, validate its

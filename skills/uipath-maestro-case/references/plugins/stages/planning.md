@@ -33,7 +33,7 @@ When ambiguous, use **AskUserQuestion** with both options + "Something else".
 No stage of either variant has edges. Reachability is expressed entirely through stage entry/exit conditions:
 
 - **Regular stage** — reached via a **non-interrupting** entry condition: `case-entered` for the first stage, or `selected-stage-completed` / `selected-stage-exited` naming a predecessor. Every regular stage MUST have ≥1 entry condition, or it is orphaned and unreachable. See [stage-entry-conditions plugin](../conditions/stage-entry-conditions/planning.md).
-- **Secondary stage** — reached via an **interrupting** entry condition (fires on case state). Returning lanes exit via `return-to-origin`; terminal lanes exit via `exit-only` plus a case-exit row. See [stage-exit-conditions plugin](../conditions/stage-exit-conditions/planning.md).
+- **Secondary stage** — reached via an **interrupting** entry condition. Global external events use one `wait-for-connector` entry; global case/stage SLA events that require case work use one `sla-status-change` entry (warning-only escalation stays a notification). Neither needs duplicated exit rules on every possible origin stage. Returning lanes exit via `return-to-origin`; terminal lanes exit via `exit-only` plus a case-exit row. See [stage-entry-conditions](../conditions/stage-entry-conditions/planning.md) and [stage-exit-conditions](../conditions/stage-exit-conditions/planning.md).
 
 Do NOT create edges for any stage. If the sdd.md describes a stage "connected via an arrow / edge" to another, model it as the target stage's entry condition (plus a source-stage exit condition when the source diverges). Onward flow from a secondary stage uses `return-to-origin`, letting the origin stage's own entry/exit conditions carry the case forward.
 
@@ -43,6 +43,7 @@ Do NOT create edges for any stage. If the sdd.md describes a stage "connected vi
 |-------|--------|-------|
 | `label` | sdd.md stage name | Shown in the UI. |
 | `type` | sdd.md intent | `stage` (default) or `secondary` — see above |
+| `rationale` | sdd.md Design Rationale | Required reviewer context explaining the stage-kind and routing choice. A global-event secondary stage states why one interrupting entry replaces per-stage duplication. Not emitted into caseplan JSON. |
 | `description` | sdd.md stage description | Optional. |
 | `isRequired` | sdd.md (default `true` for regular, `false` for secondary) | **Planning-only metadata.** See note below. |
 
@@ -73,6 +74,7 @@ Stages are created **after** the root case (T01) and **before** any tasks or con
 ```markdown
 ## T<n>: Create stage "<label>"
 - type: stage
+- rationale: "<why this is a primary stage and how it is reached/exited>"
 - description: "<description from sdd.md>"
 - isRequired: <true|false from sdd.md; false if unspecified>
 - order: after T<m>
@@ -84,6 +86,7 @@ Secondary variant:
 ```markdown
 ## T<n>: Create secondary stage "<label>"
 - type: secondary
+- rationale: "<why this is interrupting and which global/conditional event it handles>"
 - description: "<description from sdd.md>"
 - isRequired: <true|false from sdd.md; false if unspecified>
 - order: after T<m>

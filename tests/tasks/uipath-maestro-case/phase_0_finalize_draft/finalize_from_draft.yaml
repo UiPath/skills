@@ -16,16 +16,9 @@ tags:
   - mode:build
   - shape:multi-node
   - resource
-  - feature:phase-0
+  - feature:approval-gate
+  - feature:conversational
   - feature:registry
-  - feature:stages
-  - feature:case-exit
-  - feature:conditions
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
   task_timeout: 3000
