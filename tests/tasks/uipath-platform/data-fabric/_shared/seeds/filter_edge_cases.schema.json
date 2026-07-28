@@ -1,0 +1,20 @@
+{
+  "displayName": "Filter Edge Test",
+  "fields": [
+    {
+      "fieldName": "Title",
+      "type": "STRING",
+      "isRequired": true,
+      "lengthLimit": 200
+    },
+    {
+      "fieldName": "Score",
+      "type": "DECIMAL",
+      "decimalPrecision": 0
+    },
+    {
+      "fieldName": "Notes",
+      "type": "MULTILINE_TEXT"
+    }
+  ]
+}

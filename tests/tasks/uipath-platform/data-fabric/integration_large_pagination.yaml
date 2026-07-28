@@ -4,7 +4,7 @@ description: >
   cursor walk (limit=60 → 9 pages, 500 unique IDs), offset jump to a specific
   page (matches the cursor-walked slice), and filterGroup walk on Active=true
   (5 pages, 300 IDs). Brownfield: pre_run seeds the 500 records once via
-  `seed_entity.py` and post_run leaves them in place. Focuses on pagination
+  `seed_entity.py` and post_run restores the fixture. Focuses on pagination
   correctness at scale; bulk-import coverage lives in integration_csv_import
   and smoke_bulk_import.
 tags: [uipath-platform, data-fabric, integration, bulk-pagination, mode:operate, lifecycle:discover]
@@ -124,3 +124,11 @@ success_criteria:
     max_count: 0
     weight: 3.0
     pass_threshold: 1.0
+
+post_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_LargePaginationTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.records.json
+    timeout: 300

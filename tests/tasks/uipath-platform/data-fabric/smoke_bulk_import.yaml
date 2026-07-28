@@ -10,19 +10,18 @@ run_limits:
   max_turns: 30
 
 initial_prompt: |
-  We already have a Products UiPath Data Fabric entity. Each row holds a ProductName, a
-  UnitPrice, and an InStock flag.
+  We already have a tenant-level `CE_SmokeBulkImport` UiPath Data Fabric
+  entity. Each row holds a ProductName, a UnitPrice, and an InStock flag.
 
-  Treat Products as tenant-scoped. I explicitly approve the requested
-  three-row import. Proceed without another
-  confirmation; do not attempt any other mutation.
+  I explicitly approve the requested three-row import. Proceed without
+  another confirmation; do not attempt any other mutation.
 
   Could you load these three into it from a spreadsheet:
     - Product A — $9.99, in stock
     - Product B — $24.50, not in stock
     - Product C — $4.99, in stock
 
-  Save the spreadsheet as `products.csv` and load it into Products.
+  Save the spreadsheet as `products.csv` and load it into that entity.
 
 success_criteria:
   # Advisory `entities get` check removed — schema is given inline in the
@@ -72,6 +71,7 @@ success_criteria:
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
     tool_name: "Bash"
@@ -80,3 +80,14 @@ success_criteria:
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeBulkImport"
+    timeout: 120
+    fail_on_error: false
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py --entity-name CE_SmokeBulkImport --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_bulk_import.schema.json --reset"
+    timeout: 300
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeBulkImport"
+    timeout: 120

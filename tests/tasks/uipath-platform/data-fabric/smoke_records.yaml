@@ -8,7 +8,7 @@ run_limits:
   max_turns: 50
 
 initial_prompt: |
-  We already have a tenant-level `CE_LargePaginationTest` list in UiPath Data
+  We already have a tenant-level `CE_SmokeRecordsTest` list in UiPath Data
   Fabric. Each row has a name, score, and active flag.
 
   I approve all record inserts, updates, and the final deletion described
@@ -84,15 +84,15 @@ success_criteria:
   - type: command_executed
     description: "Agent paged forward via --cursor or --offset (either satisfies smoke; integration_large_pagination tests cursor specifically)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+list\s+.*(--cursor|--offset|-o\s+\d+)'
+    command_pattern: '(?s)uip\s+df\s+records\s+(list|query)\s+.*(--cursor|--offset|-o\s+\d+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent jumped to a page using -o/--offset on records list"
+    description: "Agent jumped to a page using -o/--offset"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+list\s+.*(-o\s+\d+|--offset\s+\d+)'
+    command_pattern: '(?s)uip\s+df\s+records\s+(list|query)\s+.*(-o\s+\d+|--offset\s+\d+)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -165,9 +165,9 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py --entity-name CE_LargePaginationTest --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.schema.json --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.records.json --reset"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py --entity-name CE_SmokeRecordsTest --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.schema.json --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.records.json --reset"
     timeout: 300
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py --entity-name CE_LargePaginationTest --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.schema.json --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.records.json"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py --entity-name CE_SmokeRecordsTest --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.schema.json --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.records.json"
     timeout: 300
