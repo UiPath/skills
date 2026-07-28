@@ -60,4 +60,4 @@ Properties `FilePath` and `PathResource` are mutually exclusive.
 
 ## Legacy `AppendCsvFile`
 
-`UiPath.CSV.Activities.AppendCsvFile` is the superseded append-only activity (undocumented; properties `DataTable`, `FilePath`, `Delimitator` only — no `CsvAction`, `AddHeaders`, `ShouldQuote`, `PathResource`, or `Encoding`). On encountering it in an existing project, replace with `AppendWriteCsvFile` + `CsvAction="Append"` to gain header control, quoting, encoding, and resource-file input.
+`UiPath.CSV.Activities.AppendCsvFile` is the superseded append-only activity (properties `DataTable`, `FilePath`, `Delimitator`, and `Encoding` only — no `CsvAction`, `AddHeaders`, `ShouldQuote`, or `PathResource`). On encountering it in an existing project, replace with `AppendWriteCsvFile` + `CsvAction="Append"` to gain header control, quoting, and resource-file input.
