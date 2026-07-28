@@ -115,7 +115,7 @@ Matching `agent.json` — `inputSchema` keys mirror the bindings; the prompt use
 ]
 ```
 
-Keep the flow-node `systemPrompt` / `userPrompt` as short generic placeholders — the canonical prompt lives in `agent.json messages[]`, and that system prompt should be a real structured one (see `agent-prompting-guide.md`), not a bare blob.
+Keep the flow-node `systemPrompt` / `userPrompt` as short generic placeholders — the canonical prompt lives in `agent.json messages[]`, and that system prompt should be a real structured one (see `autonomous-agent-prompting-guide.md`), not a bare blob.
 
 ### When the source field name is unknown at authoring time
 
