@@ -9,7 +9,9 @@ description: >
 tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl, simulation]
 
 run_limits:
-  # max_turns = simulation rounds x ~5 (~4 build turns/round + headroom)
+  # Ceiling on agent turns across the whole dialog, with generous headroom so a
+  # long build is never truncated mid-flow. The dialog length itself is bounded
+  # by simulation.max_turns below.
   max_turns: 80
   task_timeout: 2400
   turn_timeout: 1200
@@ -28,38 +30,38 @@ simulation:
     just make it work."
 
   goal: |
-    You ultimately want a UiPath Flow that presents a purchase order to you for
-    review and routes it based on your decision. The review is time-sensitive, so
-    it must be treated as urgent / high priority. You want it validated before you
-    accept it.
+    You want a UiPath Flow that presents a purchase order to you for review
+    and routes it based on your decision.
 
-    CRITICAL: do NOT volunteer these details up front. Reveal each fact ONLY if
-    the agent explicitly asks about it:
+    OPENING MESSAGE: open the way you would to a colleague — a short paragraph
+    covering the outcome you want plus the details that matter to you: the
+    review is time-sensitive, so it has to be treated as urgent, high
+    priority; you need to see the PO number, the vendor name and the total
+    amount, and you must not be able to change any of them; what you fill in
+    is your decision, Approve or Reject, plus optional notes, with Approve as
+    the main button; if you approve, a step logs "PO approved", and if you
+    reject, the flow just ends. Say that it has to be built as a UiPath
+    Maestro Flow — not an API workflow, not a standalone script — and that you
+    want it validated before you sign off. Do not name files or paths and do
+    not use technical wording. Close by inviting the agent to ask you anything
+    it needs before it starts building. Keep the withheld items below to
+    yourself until it asks.
+
+    WITHHELD — reveal each of these ONLY if the agent asks about it:
       - The project name should be "VendorPOReview".
-      - The flow: a manual start, a step that fetches the PO data (mock it — just
-        set some values), a review step for you, then it should route on your
-        decision.
-      - What you need to SEE but NOT change (read-only): the PO number, the vendor
-        name, and the total amount.
-      - What you FILL IN: your decision (Approve or Reject) and optional notes.
-      - The buttons: Approve (the main/primary one) and Reject.
-      - Routing: if you Approve, a step logs "PO approved"; if you Reject, the
-        flow just ends.
-      - You want the flow validated before you sign off.
-
-    If the agent asks a clarifying question that covers several of these at
-    once, answer only what they asked — do not pre-empt the rest.
+      - Where the PO data comes from: nowhere real yet — mock it, just set some
+        values.
+      - The flow should start manually.
 
   constraints:
     - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
-    - "Do not mention 'HITL', 'quickform', 'schema', 'field', 'direction', 'outcome', 'node', or 'validate' unless the agent brings them up first."
-    - "Do not reveal which items are read-only vs. fill-in unless asked what you should see versus enter."
-    - "If the agent has not set the review to High priority, tell it explicitly to make it High priority before you sign off."
+    - "Do not mention 'HITL', 'quickform', 'schema', 'field', 'direction', 'outcome', or 'node' unless the agent brings them up first."
+    - "If the agent describes its plan BEFORE building and has not treated the review as High priority, remind it then — but never after it has built."
     - "Do not reveal the project name 'VendorPOReview' unless asked what to name it."
-    - "You expect a UiPath Maestro Flow — i.e. a `.flow` file in the workspace. If the agent builds anything else (e.g. an API workflow), tell it you specifically want a Maestro Flow and are not satisfied until there is a `.flow` file."
-    - "When you are satisfied that the flow is built and validated, reply with exactly <<<END>>> on its own line."
-
-  max_turns: 16
+    - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro Flow at all (e.g. an API workflow), tell it you specifically want a Maestro Flow — i.e. a `.flow` file in the workspace — and are not satisfied until there is one."
+    - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
+    - "The moment the agent reports it has built the flow, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
+  max_turns: 8
   stop_token: "<<<END>>>"
   stop_on_criteria_pass: false
   check_criteria: end_of_dialog
