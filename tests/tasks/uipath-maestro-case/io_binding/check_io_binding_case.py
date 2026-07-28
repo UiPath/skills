@@ -347,13 +347,15 @@ def assert_tasks_md() -> None:
         r"copiedResult\s*=\s*=vars\.renamedResult",
         r"computedResult\s*=\s*=js:vars\.\$xref\('Binding Matrix','Echo literal','APIOutput1'\)\s*\+\s*'-computed'",
         r"metadataResult\s*=\s*=metadata\.ExternalId",
-        r"APIInput1\s*<-\s*\"Binding Matrix\"\.\"Lookup colliding same name\"\.estimatedAge",
+        r"APIInput1:?\s*<-\s*\"Binding Matrix\"\.\"Lookup colliding same name\"\.estimatedAge",
         r"collisionCopy\s*=\s*=js:vars\.\$xref\('Binding Matrix','Lookup colliding same name','estimatedAge'\)\s*\+\s*0",
-        r"APIInput1\s*<-\s*\"Binding Matrix\"\.\"Consume colliding output\"\.collisionCopy",
+        r"APIInput1:?\s*<-\s*\"Binding Matrix\"\.\"Consume colliding output\"\.collisionCopy",
         r"customReferenceCopy\s*=\s*=js:vars\.\$xref\('Binding Matrix','Consume colliding output','collisionCopy'\)\s*\+\s*0",
     )
     for pattern in expected_rows:
-        if not re.search(rf"^\s*-\s*(?:outputs:\s*)?{pattern}\s*$", text, re.MULTILINE):
+        if not re.search(
+            rf"^\s*-\s*(?:(?:inputs|outputs):\s*)?{pattern}\s*$", text, re.MULTILINE
+        ):
             fail(f"tasks.md did not preserve row matching {pattern!r}")
 
     bare = re.compile(r"^\s*-\s*(?:outputs:\s*)?APIOutput1\s*$", re.MULTILINE)
