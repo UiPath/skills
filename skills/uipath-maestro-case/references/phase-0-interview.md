@@ -174,7 +174,7 @@ On a Build answer:
 
 **Design-only request:** write `sdd.md`, report the path in one line, stop before Phase 1. **Draft request:** write `sdd.draft.md`, report, stop — never promote. **Free-text corrections stay first-class after the build starts:** treat one as a targeted edit to the affected artifact (model + `sdd.md` + downstream), narrate it in one line, continue.
 
-**No-build design + plan request:** when the prompt explicitly asks for `sdd.md` plus `tasks/tasks.md` and says to stop before creating `caseplan.json`, do not enter full Phase 1 and do not read `planning.md` or plugin planning references. After the Case Review is approved, write the full `sdd.md`, create `tasks/`, write a compact `tasks/tasks.md` directly from the same in-memory model, and stop. The compact plan is a review handoff for a later build run, so it omits registry-derived files and tenant evidence.
+**No-build design + plan request:** when the prompt explicitly asks for `sdd.md` plus `tasks/tasks.md` and says to stop before creating `caseplan.json`, do not enter full Phase 1 and do not read `planning.md` or plugin planning references. If the same prompt already says to produce those artifacts and stop, treat it as the save instruction: show the Case Review, then write the full `sdd.md`, create `tasks/`, write compact `tasks/tasks.md`, and stop in the same response without asking for another approval. If the user only asked to review the plan first, wait for approval before writing. The compact plan is a review handoff for a later build run, so it omits registry-derived files and tenant evidence.
 
 Compact `tasks/tasks.md` contract for this no-build path:
 

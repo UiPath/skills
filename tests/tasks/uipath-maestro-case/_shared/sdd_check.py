@@ -66,7 +66,7 @@ TASK_DETAIL_MARKERS = {
     "action": ("Action Task Detail", "**HITL Implementation:**"),
     "wait-for-connector": ("Connector Task Detail", "**Connector:**", "**Trigger / Event:**"),
     "execute-connector-activity": ("Connector Task Detail", "**Connector:**", "**Resolved Resource:**"),
-    "wait-for-timer": ("Timer Task Detail", "**Timer Configuration:**", "**Duration:**"),
+    "wait-for-timer": ("Timer Task Detail", "**Timer Configuration:**", "**Duration:**", "**Timer:**"),
     "case-management": ("Child Case Task Detail", "**Child Case:**"),
     "process": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "agent": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
