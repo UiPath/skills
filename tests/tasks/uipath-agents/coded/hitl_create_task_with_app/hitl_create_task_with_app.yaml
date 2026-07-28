@@ -15,8 +15,9 @@ initial_prompt: |
   Can you build me a uipath coded agent in LangGraph for handling refunds?
   Call it refund-gate, put it in a refund-gate folder. The idea: anything
   over $500 needs a human to sign off first. Someone on the Compliance team
-  reviews it in their RefundReview app (that's in the Compliance folder) -
-  show them the customer, the amount, and why the refund's being asked for.
+  reviews it in their RefundReview app (that's in the
+  Shared/uipath-agents/RefundReview folder) - show them the customer, the
+  amount, and why the refund's being asked for.
   Once they decide, carry on with their call and whatever note they left.
   Anything $500 or under just goes through. And please make sure the
   RefundReview app is actually hooked up, otherwise it can't send them the
@@ -50,7 +51,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "LangGraph config, interrupt(CreateTask) shape (not CreateEscalation), correct app targeting, RefundReview/Compliance app binding"
+    description: "LangGraph config, interrupt(CreateTask) shape (not CreateEscalation), correct app targeting, RefundReview app binding in Shared/uipath-agents/RefundReview"
     command: "python3 $TASK_DIR/check_hitl_create_task_with_app.py"
     timeout: 30
     expected_exit_code: 0

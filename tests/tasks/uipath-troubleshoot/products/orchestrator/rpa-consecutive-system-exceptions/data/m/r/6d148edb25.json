@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobTraces",
+  "Data": [
+    {"Activity": "Process Transaction (txn 1)", "Status": "Faulted", "Error": {"Type": "UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException", "Activity": "Click Submit", "Message": "Could not find the UI element for 'Click Submit'."}},
+    {"Activity": "Process Transaction (txn 2)", "Status": "Faulted", "Error": {"Type": "UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException", "Activity": "Click Submit", "Message": "Could not find the UI element for 'Click Submit'."}},
+    {"Activity": "Process Transaction (txn 3)", "Status": "Faulted", "Error": {"Type": "UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException", "Activity": "Click Submit", "Message": "Could not find the UI element for 'Click Submit'."}},
+    {"Activity": "Process Transaction (txn 4)", "Status": "Faulted", "Error": {"Type": "UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException", "Activity": "Click Submit", "Message": "Could not find the UI element for 'Click Submit'."}},
+    {"Activity": "Process Transaction (txn 5)", "Status": "Faulted", "Error": {"Type": "UiPath.UIAutomationNext.Exceptions.SelectorNotFoundException", "Activity": "Click Submit", "Message": "Could not find the UI element for 'Click Submit'."}}
+  ]
+}

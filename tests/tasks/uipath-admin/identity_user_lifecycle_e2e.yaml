@@ -1,64 +1,39 @@
 task_id: skill-admin-identity-user-lifecycle-e2e
 description: >
-  End-to-end test: full user lifecycle — invite a user, search to
-  confirm the invite, update user details, then delete. Tests the
-  identity CRUD tail (update/delete) that is currently untested, plus
-  Rule 5 (resolve before high-risk ops) and Rule 10 (confirm before
-  delete).
+  End-to-end test (outcome-graded): the marker user is pre-seeded (invited with
+  surname "LifecycleUser") in pre_run; the agent UPDATES the surname to
+  "UpdatedUser". Graded by reading the user back from the live tenant with the
+  changed surname — which proves a real update ran (the agent cannot satisfy it by
+  folding an invite, since it does not invite). invite (pre_run) and delete
+  (post_run) are exercised via the harness as teardown/seed, not graded — a single
+  read-back cannot grade both the updated state and a subsequent delete (the delete
+  erases the evidence), so this e2e grades the update tail deterministically.
+tags: [uipath-admin, e2e, mode:build, lifecycle:setup, identity, user-lifecycle]
 
-  Command-construction only — no live tenant. What matters is correct
-  command sequencing and flag usage across the full lifecycle.
-tags: [uipath-admin, e2e, mode:build, lifecycle:edit, identity, user-lifecycle]
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''setup_lifecycle_user.py''))"'
+    timeout: 30
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_lifecycle_user.py''))"'
+    timeout: 30
 
 run_limits:
-  expected_turns: 12
+  expected_turns: 10
   max_turns: 40
   turn_timeout: 600
 
 initial_prompt: |
-  Onboard a test user with email "lifecycle-test@example.com", name "Test",
-  surname "LifecycleUser". After inviting, search for the user to confirm
-  they exist. Then update the user's surname to "UpdatedUser". Finally,
-  delete the user to clean up.
+  Update the existing user "ce-identity-lifecycle@example.com" in my UiPath
+  organization: change their surname to "UpdatedUser".
 
-  Important:
-  - The `uip` CLI is available but the `admin` subcommand may not be
-    installed and/or the CLI is not connected to a live tenant.
-    Commands WILL fail — that is expected and acceptable.
-    Run each command exactly once regardless of errors.
-    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
-    do NOT troubleshoot errors.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent invited the user with email, name, and surname"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+users\s+invite\b.*--email\s+\S*lifecycle-test'
-    min_count: 1
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent searched/listed users to find the new user"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+users\s+list\b'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent updated the user (positional id + changed field)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+users\s+update\b'
-    min_count: 1
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent deleted the user (positional id)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+users\s+delete\b'
-    min_count: 1
-    weight: 3.0
+  - type: run_command
+    description: "The pre-seeded user's surname was changed to UpdatedUser on the tenant (proves a real update)"
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_user_updated.py''))"'
+    timeout: 40
+    expected_exit_code: 0
+    weight: 5.0
     pass_threshold: 1.0

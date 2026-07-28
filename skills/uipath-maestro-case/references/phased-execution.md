@@ -85,6 +85,8 @@ uip maestro case validate "<caseplan.json path>" --skeleton --output json
 
 The Phase 4 retry-cap, Phase 5 debug-consent, and Phase 6 publish stops below are independent of this preference and are never bypassed.
 
+**Next-step rule.** Every user-visible stop or handoff after build progress must include a short `Suggested next steps` line before the prompt or final exit. Do this after straight-through completion reports, pause-at-preview summaries, published preview URLs, debug results, publish completion, and abort/done exits. Keep it concrete: inspect the preview, continue implementation, run debug, publish, fix listed placeholders/connections, or edit the named artifact and re-run.
+
 #### Summary content
 
 Print (before the prompt on the pause branch; as the continuation line otherwise):
@@ -92,6 +94,9 @@ Print (before the prompt on the pause branch; as the continuation line otherwise
 1. Counts: stages / primary stages / secondary stages / triggers / tasks total / placeholder tasks / unresolved resources.
 2. Validate result (placeholder-profile): `<N> errors, <M> warnings` — remaining errors are structural (unreachable/orphan stage, missing trigger, duplicate names) and actionable. Surfacing counts is enough; do not dump full error list unless user asks.
 3. Paths: `caseplan.json`, `tasks.md`, `registry-resolved.json`.
+4. Suggested next steps:
+   - Straight-through: `Suggested next steps: I'll continue wiring the implementation now; say stop if you want to inspect the skeleton first.`
+   - Pause-at-preview: `Suggested next steps: publish the skeleton for visual review, continue locally without preview, or abort and inspect the files.`
 
 Do not enumerate every task. Studio Web visualization fills that role after publish.
 
@@ -110,7 +115,8 @@ Use **AskUserQuestion** with three options:
 3. **MUST emit DesignerUrl as plain-text output to user BEFORE invoking AskUserQuestion**, on its own line:
    `Skeleton published. Review at: <DesignerUrl>`
    Never bundle URL only into question body — some renderers display question before surrounding prose, leaving user without URL until after they answer.
-4. Only after URL line emitted, invoke **AskUserQuestion** (second prompt): `Continue to implementation` / `Abort`.
+4. Print `Suggested next steps: inspect the skeleton in Studio Web, then continue implementation here or abort and keep the artifacts for manual review.`
+5. Only after URL line and suggested next steps are emitted, invoke **AskUserQuestion** (second prompt): `Continue to implementation` / `Abort`.
 
 If `DesignerUrl` missing from response, dump full upload response to `tasks/upload-response.json`, print path, continue to prompt — user can recover URL from file.
 
@@ -124,7 +130,8 @@ Proceed directly to Phase 3.
 
 1. Dump in-memory issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md).
 2. Print paths of `caseplan.json`, `tasks.md`, `registry-resolved.json`, and solution directory.
-3. Exit skill.
+3. Print `Suggested next steps: inspect tasks/build-issues.md and the generated artifacts, then rerun after editing the design or plan.`
+4. Exit skill.
 
 Do **not** delete artifacts. User may want to inspect them, or re-run skill later (regenerates `tasks.md` from scratch per Rule 6).
 
@@ -150,14 +157,15 @@ After re-entry:
 
 1. **Connector task detail** — for each connector task in `tasks.md`, run plugin's `impl-json.md` detail steps: `case spec --type {activity,trigger} --input-details`, then mint `data.context[]` / `data.inputs[]` / `data.outputs[]` from the populated `caseShape` (placeholder substitution + var/id minting).
 2. **Task I/O value binding (all task classes)** — per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). Applies to both non-connector and connector tasks. For each task's inputs in `tasks.md` order, write literal, expression, or cross-task reference (resolved to `=vars.<outputReferenceId>` through the common `.id`-based resolver) into `task.data.inputs[i].value`. Connector tasks have `data.inputs[]` schema written in step 1; value binding happens here in step 2, same as non-connector tasks.
-3. **Conditions** — per-scope plugin `impl-json.md`:
+3. **SLA/escalation ID preallocation** — Step 9.9 allocates every `sla_`/`esc_` ID in `id-map.json` before conditions. This lets `sla-status-change` stage-entry rules reference the exact SLA + escalation objects that Step 11 emits.
+4. **Conditions** — per-scope plugin `impl-json.md`:
    - Stage entry conditions
    - Stage exit conditions
    - Task entry conditions (depends on TaskIds from Phase 2)
    - Case exit conditions
-4. **SLA + escalation** — per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Group `tasks.md §4.8` by target (root or stage); write full `slaRules[]` in one mutation per target.
-5. **In-expression marker resolution** — per [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md). After all outputs are minted/deduped and bindings/conditions/SLA are written, resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` to bare `vars.<outputReferenceId>` through the same resolver in one sink-blind whole-file pass (input payloads, conditions, SLA, connector bodies). Unresolved triple or reference ID → ERROR.
-6. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-7 (=vars.X resolution, Out-arg producer presence, type mismatch, surviving `$xref` markers, resolved-resource I/O completeness, entry-point schema parity, bindings sidecar parity). AskUserQuestion for unresolved references (incl. `$xref` markers), pure orphan Out-args, and unbound required inputs / phantom output fields; option (c)/(d) "continue with best-effort emit" preserves forward progress. Checks 6-7 are non-interactive: on mismatch auto re-run/regenerate once; Check 6 logs if still divergent, Check 7 halts before Phase 4 if still divergent. Never HALT otherwise.
+5. **SLA + escalation** — per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Group `tasks.md §4.8` by target (root or stage); write full `slaRules[]` in one mutation per target, reusing Step 9.9 IDs.
+6. **In-expression marker resolution** — per [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md). After all outputs are minted/deduped and bindings/conditions/SLA are written, resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` to bare `vars.<outputReferenceId>` through the same resolver in one sink-blind whole-file pass (input payloads, conditions, SLA, connector bodies). Unresolved triple or reference ID → ERROR.
+7. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-7 (=vars.X resolution, Out-arg producer presence, type mismatch, surviving `$xref` markers, resolved-resource I/O completeness, entry-point schema parity, bindings sidecar parity). AskUserQuestion for unresolved references (incl. `$xref` markers), pure orphan Out-args, and unbound required inputs / phantom output fields; option (c)/(d) "continue with best-effort emit" preserves forward progress. Checks 6-7 are non-interactive: on mismatch auto re-run/regenerate once; Check 6 logs if still divergent, Check 7 halts before Phase 4 if still divergent. Never HALT otherwise.
 
 Phase 3 produces a `caseplan.json` that should pass authoritative validation. No hard stop (no AskUserQuestion gate) on Phase 3 exit — agent proceeds directly to Phase 4. Sole blocker: Check 7 parity still divergent after regeneration (halt per [`implementation.md § Step 12`](implementation.md)).
 
@@ -207,6 +215,7 @@ After debug completes, return to Phase 5 prompt so user can re-run or move on. P
 3. Validation status — `validate` pass / remaining warnings.
 4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. Also list **agents / API workflows built inline** (built as in-solution siblings, already bound) and any **built but unreferenced** (reject case) separately — they need no user action. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
 5. Missing connections — connector tasks needing IS connections that don't exist yet.
+6. Suggested next steps — one short line before the prompt, e.g. `Suggested next steps: run a debug session if you are ready to exercise the case, or skip to publish if validation is enough for now.` If placeholders or missing connections exist, mention fixing/registering those before publish.
 
 ### Debug notes
 
@@ -220,6 +229,8 @@ After Phase 5 (whether debugged or skipped), prompt via **AskUserQuestion**:
 
 - `Publish to Studio Web` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Print returned `DesignerUrl` on its own line. Exit skill.
 - `Done` — exit skill without publishing.
+
+Before this prompt, include `Suggested next steps: publish to Studio Web when you want a designer-visible version, or stop here and use the local artifacts for review/editing.` After a successful publish, print `Suggested next steps: open the Designer URL, verify resources and connections, then run any tenant-side smoke checks you need.` On `Done`, print `Suggested next steps: review caseplan.json/tasks.md locally or update sdd.md and re-run when you want changes.`
 
 ### Publish notes
 

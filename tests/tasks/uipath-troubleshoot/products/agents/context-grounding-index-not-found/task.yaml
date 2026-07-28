@@ -44,6 +44,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
+    include_dialog: true
     include_agent_output: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
@@ -72,4 +73,5 @@ simulation:
     - "If the agent asks whether it can run mutating repair commands, say no and ask for the commands instead."
     - "If the agent asks whether to expand investigation scope, answer yes."
     - "Keep replies short and do not invent new facts."
+    - "If the agent offers or asks to apply/implement the fix itself (editing project files, or running validate/build/pack/publish), DECLINE: say you will apply the change yourself in Studio later, and ask only for the root cause and the exact fix steps. Never approve a source-file edit."
   max_turns: 6

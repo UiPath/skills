@@ -1,0 +1,9 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {"Key": "b2c8cb22-2ebc-4c27-87f3-05efe701af1c", "Name": "original_email@test.com's workspace", "Path": "original_email@test.com's workspace", "Type": "Personal", "ParentKey": ""},
+    {"Key": "e5c5d6e7-f8a9-0123-4567-89abcdef1234", "Name": "SecureOps", "Path": "SecureOps", "Description": "Folder hosting portal automations that use the Orchestrator credential store.", "Type": "Standard", "ParentKey": ""},
+    {"Key": "e0772cbe-c19c-4d5f-926c-043c2d2d300a", "Name": "Shared", "Path": "Shared", "Type": "Standard", "ParentKey": ""}
+  ]
+}

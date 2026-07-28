@@ -1,9 +1,9 @@
 name: Skill Activation Gate
 
 # When a SKILL.md frontmatter changes, run the activation eval restricted to
-# that one skill's positives and fail if recall.yes drops more than 15pp
-# below the rounded 2026-05-08 baseline. Cross-fire and negatives stay
-# covered by the manual full run.
+# that one skill's positives and fail if recall.yes drops more than DROP_PP
+# (10pp — see tests/scripts/activation_gate.py) below the rounded 2026-06-17
+# baseline. Cross-fire and negatives stay covered by the manual full run.
 
 concurrency:
   group: activation-gate-${{ github.head_ref || github.ref }}
