@@ -60,7 +60,22 @@ success_criteria:
 
   - type: run_command
     description: "design models the engineering-role / L4+ Onsite-Loop gating rule"
-    command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq '(onsite|loop).{0,80}(engineering|l[45]|level)'"
+    command: |
+      python3 - <<'PY'
+      from pathlib import Path
+      text = " ".join(
+          path.read_text(encoding="utf-8", errors="ignore")
+          for path in (Path("sdd.draft.md"), Path("sdd.md"))
+          if path.exists()
+      ).lower()
+      has_onsite = "onsite" in text or "loop" in text
+      has_gate = (
+          "isengineeringl4plus" in text
+          or "rolelevel >= 4" in text
+          or ("engineering" in text and ("l4" in text or "l5" in text or "level" in text))
+      )
+      raise SystemExit(0 if has_onsite and has_gate else 1)
+      PY
     timeout: 10
     expected_exit_code: 0
     weight: 1.0

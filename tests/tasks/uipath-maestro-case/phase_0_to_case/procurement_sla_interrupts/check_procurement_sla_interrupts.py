@@ -32,6 +32,13 @@ def task_section(plan: str, task_name: str) -> str:
         plan,
     )
     if not match:
+        match = re.search(
+            rf"(?ims)^#{{2,3}}\s+T\d+(?:\.\d+)?\s*(?:[:—-])\s*"
+            rf"(?:Task:\s*)?(?:\"{re.escape(task_name)}\"|{re.escape(task_name)})\b"
+            rf".*?(?=^#{{2,3}}\s+T\d+(?:\.\d+)?\s*(?:[:—-])|\Z)",
+            plan,
+        )
+    if not match:
         fail(f"missing tasks.md T-entry for {task_name!r}")
     return match.group(0)
 

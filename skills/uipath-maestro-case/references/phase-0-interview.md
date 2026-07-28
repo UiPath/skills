@@ -179,6 +179,7 @@ On a Build answer:
 Compact `tasks/tasks.md` contract for this no-build path:
 
 - Use T-numbered entries for the case root, triggers, variables/arguments, stages, tasks, entry/exit/condition rules, and SLA/escalation rules that matter to the design.
+- Use machine-scannable task headings in the plan: `## T{N}: task "{Task Name}"`. Do not hide task T-entries under dotted subheadings such as `### T12.1`; nested prose is allowed under the H2, but the task entry itself uses a plain integer T-number and quotes the task name.
 - Stage entries include `stage-kind`, `entry-rule`, `exit-rule`, `interrupting`, `required`, `sla`, and `rationale`.
 - Task entries include `stage`, `type`, `activation-mode`, `entry-rule`, `lane`, `required`, `run-only-once`, `resource-intent`, `identity: resolve at build`, and `rationale`.
 - Sequential runs use consecutive single-task lane numbers; every task in the run has `activation-mode: sequential` and `entry-rule: runs-sequentially`.
