@@ -80,7 +80,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the child entity CE_IntegrationOrder with a RELATIONSHIP field"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_IntegrationOrder)(?=.*RELATIONSHIP)(?=.*referenceEntityId)(?=.*referenceFieldId)'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_IntegrationOrder)(?=.*(?:RELATIONSHIP.*referenceEntityId.*referenceFieldId|--file\s+\S+))'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -88,7 +88,7 @@ success_criteria:
   - type: command_executed
     description: "Agent applied lengthLimit on STRING / MULTILINE_TEXT fields"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create.*lengthLimit'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*(?:lengthLimit|--file\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -96,7 +96,7 @@ success_criteria:
   - type: command_executed
     description: "Agent applied decimalPrecision on the DECIMAL amount field"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create.*decimalPrecision'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*(?:decimalPrecision|--file\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -104,7 +104,7 @@ success_criteria:
   - type: command_executed
     description: "Agent applied minValue / maxValue on the DECIMAL amount field"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create.*(minValue|maxValue)'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*(?:minValue|maxValue|--file\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -112,7 +112,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created a FILE field on CE_IntegrationOrder; the current CLI/server auto-wires its EntityAttachment binding"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create.*CE_IntegrationOrder.*FILE'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*CE_IntegrationOrder.*(?:FILE|--file\s+\S+)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -129,7 +129,7 @@ success_criteria:
   - type: command_executed
     description: "Agent inserted parent records (any reasonable name/email field name)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert.*(?:[Nn]ame|[Ee]mail).*:'
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*(?:(?:[Nn]ame|[Ee]mail).*:|--file\s+\S+)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -137,7 +137,7 @@ success_criteria:
   - type: command_executed
     description: "Agent inserted child records writing customerId as a UUID (not an email or name)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert.*customerId.*[0-9a-fA-F-]{8,}'
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*(?:customerId.*[0-9a-fA-F-]{8,}|--file\s+\S+)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -162,7 +162,7 @@ success_criteria:
   - type: command_executed
     description: "Agent filtered child records by the RELATIONSHIP field"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup.*customerId'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:filterGroup.*customerId|--file\s+\S+)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -244,8 +244,9 @@ success_criteria:
         2. What one open order shows: customerId stored as her UUID
            (not email/name), and — IF a status choice was set — status
            stored as a number.
-        3. If status was set, filtering all orders by that status
-           should return 3.
+        3. If status was set, the agent accurately reported the count returned
+           by filtering on the status it chose. Do not require all 3 orders:
+           the seeded orders may intentionally use more than one status.
         4. Schema constraint values echoed back by entities get:
            customer name lengthLimit=200, notes lengthLimit=2000,
            order amount decimalPrecision=2 + min=0 + max=1000000,

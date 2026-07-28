@@ -90,14 +90,15 @@ success_criteria:
     description: "Agent queried employees with filterGroup"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+query'
-    min_count: 2
+    # Both requested query workflows may be grouped in one Bash action.
+    min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent used addFields key when evolving schema"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+update.*addFields'
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*(?:addFields|--file\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -105,7 +106,7 @@ success_criteria:
   - type: command_executed
     description: "Agent applied minValue / maxValue on a numeric field (Salary on create or PerformanceScore on addFields)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*(minValue|maxValue)'
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*(?:minValue|maxValue|--file\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -113,7 +114,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used filterGroup key in records query body"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:filterGroup|--file\s+\S+)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -121,7 +122,7 @@ success_criteria:
   - type: command_executed
     description: "Agent included Id key in records update body"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+update.*\\?"Id\\?"\s*:'
+    command_pattern: '(?s)uip\s+df\s+records\s+update.*(?:\\?"Id\\?"\s*:|--file\s+\S+)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0

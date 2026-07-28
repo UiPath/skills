@@ -58,18 +58,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent attempted several inserts (the 23 rows may be batched into fewer CLI calls if the agent uses array bodies)"
+    description: "Agent attempted the supplied rows (they may be batched or looped in one Bash action)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+insert'
-    min_count: 2
+    min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent must NOT retry a failed insert with substituted values (allow batched inserts up to ~3 retries' worth)"
+    description: "Agent must NOT retry failed inserts excessively or with substituted values"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+insert'
-    min_count: 2
+    min_count: 1
     max_count: 50
     weight: 2.0
     pass_threshold: 1.0

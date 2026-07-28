@@ -45,9 +45,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inspected the entity schema before writing (entities get, or a schema-exposing entities list --output-filter)"
+    description: "Agent inspected the entity schema before writing (entities get or the schema-bearing entities list)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+(?:get\s+\S+|list[^\n]*--output-filter)'
+    command_pattern: 'uip\s+df\s+entities\s+(?:get|list)\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -123,7 +123,7 @@ pre_run:
       --entity-name CE_IntegrationInventory
       --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_inventory.schema.json
     timeout: 180
-    fail_on_error: false
+    fail_on_error: true
 
 post_run:
   # Schema-only revert: wipes whatever the agent imported. No records to re-insert.

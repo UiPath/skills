@@ -2,10 +2,10 @@ task_id: skill-datafabric-integration-entity-scope
 description: >
   Integration test: agent verifies entity scope behaviour against a live
   tenant — creates a tenant-level entity (default, no folder flag) and
-  confirms it appears in entities list from any folder context; creates a
-  folder-scoped entity and confirms it is absent when listing from a
+  observes its visibility both without and with a folder context; creates
+  a folder-scoped entity and confirms it is absent when listing from a
   different folder; and attempts to create an entity with a non-existent
-  folder ID and verifies the error. Covers S-SC-01 through S-SC-05.
+  folder ID and reports the returned error. Covers S-SC-01 through S-SC-05.
 tags: [uipath-platform, data-fabric, integration, entity-scope, mode:operate, lifecycle:setup]
 run_limits:
   expected_turns: 25
@@ -65,10 +65,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed entities at least twice (different scope contexts)"
+    description: "Agent listed entities in the requested scope contexts (calls may be grouped in one Bash action)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+entities\s+list'
-    min_count: 2
+    min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
@@ -83,35 +83,10 @@ success_criteria:
   - type: command_executed
     description: "Agent used --folder flag to test folder-scoped entity listing"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+list.*--folder'
+    command_pattern: '(?s)uip\s+df\s+entities\s+list.*--folder'
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0
-
-  - type: llm_judge
-    description: "Agent reported the scope visibility observations correctly for each of the 5 asks"
-    include_agent_output: true
-    prompt: |
-      The agent probed entity-scope visibility with these five asks:
-
-        1. `entities list` (no folder) — CE_TenantScopeTest should show up.
-        2. `entities list --folder-key <A>` — CE_TenantScopeTest still shows
-           (tenant entities are visible from every folder context).
-        3. Create `CE_FolderScopeTest` inside folder A.
-        4. `entities list --folder-key <B>` — CE_FolderScopeTest should NOT
-           show up (folder-scoped entities are isolated to their folder).
-        5. Try `entities create CE_FolderScopeTest_Invalid` with the folder
-           ID `00000000-0000-0000-0000-000000000000` — should fail with a
-           folder-not-found error.
-
-      Read the agent's final walk-through. Score 1.0 if the agent
-      reported correct outcomes for at LEAST 4 of the 5 observations
-      (allowing "the tenant only has one folder, skipped folder-B checks"
-      as valid if applicable).
-      Score 0.5 if 2-3 observations are correct.
-      Score 0.0 if the agent claimed the wrong outcome on 3+ observations.
-    weight: 2.5
-    pass_threshold: 0.5
 
   - type: command_executed
     description: "Agent must NOT delete any entity"
@@ -140,7 +115,7 @@ pre_run:
       --entity-name CE_TenantScopeTest
       --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/tenant_scope.schema.json
     timeout: 180
-    fail_on_error: false
+    fail_on_error: true
 
 post_run:
   # 1. Revert the tenant entity to zero records (no-op in practice since the

@@ -117,15 +117,17 @@ def create_choice_set(name: str, display_name: str, description: str) -> str | N
     return d.get("Id") or d.get("ID") or d.get("id")
 
 
-def create_value(cs_id: str, value_name: str, display_name: str | None = None) -> None:
+def create_value(cs_id: str, value_name: str, display_name: str | None = None) -> bool:
     args = ["df", "choice-set-values", "create", cs_id, value_name]
     if display_name:
         args += ["--display-name", display_name]
     code, _, err = run_uip(*args)
     if code == 0:
         print(f"OK: added value {value_name!r} to {cs_id}")
+        return True
     else:
         print(f"WARN: choice-set-values create {value_name!r} failed (exit {code}): {err.strip()[:200]}", file=sys.stderr)
+        return False
 
 
 def load_spec(spec: dict, cli_args: argparse.Namespace) -> tuple[str, str, str, list[str]]:

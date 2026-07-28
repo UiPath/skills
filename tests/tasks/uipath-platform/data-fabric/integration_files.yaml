@@ -216,7 +216,7 @@ pre_run:
       --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_assets.schema.json
       --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_assets.records.json
     timeout: 180
-    fail_on_error: false
+    fail_on_error: true
 
 post_run:
   - command: >-

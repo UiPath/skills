@@ -30,7 +30,7 @@ success_criteria:
   - type: command_executed
     description: "Agent must NOT invoke a real `entities create` before user confirmation (--help lookups OK)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+create\s+(?!--help)\S+.*--body'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create\s+(?!--help)\S+.*--body'
     min_count: 0
     max_count: 0
     weight: 3.0

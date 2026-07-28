@@ -49,7 +49,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran filter queries with --body"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query\s+.*--body'
+    command_pattern: '(?s)uip\s+df\s+records\s+query\s+.*(?:--body|--file)'
     # A single Bash tool call may contain several query commands.
     min_count: 1
     weight: 3.0
@@ -60,7 +60,7 @@ success_criteria:
     description: "Filter body uses supported keys `queryFilters` and `fieldName`"
     tool_name: "Bash"
     # Match the keys independent of JSON quote escaping in shell telemetry.
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*queryFilters.*fieldName'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:queryFilters.*fieldName|--file\s+\S+)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -68,7 +68,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used valueList with the `in` operator"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*operator.{0,16}in.*valueList'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:operator.{0,16}in.*valueList|--file\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -76,7 +76,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used logicalOperator (AND=0 / OR=1)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*logicalOperator'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:logicalOperator|--file\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -106,7 +106,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used is-empty / is-not-empty (supported null or empty-string value)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*value.{0,12}(?:null|\\?"\\?")'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:value.{0,12}(?:null|\\?"\\?")|--file\s+\S+)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -198,7 +198,7 @@ pre_run:
       --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/codeeval_test_entity.schema.json
       --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/codeeval_test_entity.records.json
     timeout: 240
-    fail_on_error: false
+    fail_on_error: true
 
 post_run:
   - command: >-

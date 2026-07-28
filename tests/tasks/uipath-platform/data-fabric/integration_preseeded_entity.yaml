@@ -81,24 +81,25 @@ success_criteria:
   - type: command_executed
     description: "Agent paginated through records with --limit"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+(list|query)\s+.*--limit'
-    min_count: 3
+    command_pattern: '(?s)uip\s+df\s+records\s+(list|query)\s+.*--limit'
+    # A loop can walk every page from one Bash action.
+    min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent updated a record and verified with records get"
+    description: "Agent performed the requested record updates (calls may be grouped in one Bash action)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+update'
-    min_count: 2
+    min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent verified updates with records get"
+    description: "Agent read back the requested update states (calls may be grouped in one Bash action)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+get'
-    min_count: 2
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
@@ -174,7 +175,7 @@ pre_run:
       --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/codeeval_test_entity.schema.json
       --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/codeeval_test_entity.records.json
     timeout: 240
-    fail_on_error: false
+    fail_on_error: true
 
 post_run:
   - command: >-

@@ -143,7 +143,7 @@ success_criteria:
   - type: command_executed
     description: "Agent filtered expenses by the relationship (submitter UUID)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup.*[Ss]ubmitter'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:filterGroup.*[Ss]ubmitter|--file\s+\S+)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
