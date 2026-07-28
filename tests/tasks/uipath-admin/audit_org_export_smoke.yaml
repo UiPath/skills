@@ -26,7 +26,7 @@ run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  Can you export yesterday's full organization-level Admin audit trail as
+  Can you export yesterday's full organization-level audit trail as
   JSON files for compliance archival? I want the whole day of org-scope
   activity (memberships, license changes, tenant lifecycle, and everything
   else at org level) — a straight export, not a category-filtered slice.

@@ -20,7 +20,7 @@ run_limits:
   expected_turns: 8
 
 initial_prompt: |
-  Show me the 50 most recent organization-level Admin audit events from the
+  Show me the 50 most recent organization-level audit events from the
   last 7 days — I want to see who joined the org and any recent
   admin-role changes. Save the complete JSON result to ./events-org.json so I
   can review it.

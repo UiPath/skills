@@ -71,6 +71,7 @@ from audit_helpers import (  # noqa: E402  (path set above)
     keys_of,
     ok,
     parse_ts,
+    wait_for,
 )
 
 logging.basicConfig(level=logging.INFO, format="verify_audit_export: %(message)s")
@@ -175,7 +176,11 @@ def check_csv_scope(header, rows, expected):
 
 
 def require_base_dir(base):
-    if not os.path.isdir(base):
+    # Waited on rather than checked once: an agent may drive the export through a
+    # background runner and end its turn before the CLI finishes writing. The
+    # assertion is that the export produced the artifact, not that it beat the
+    # turn boundary.
+    if not wait_for(lambda: os.path.isdir(base)):
         siblings = sorted(p for p in glob.glob("*") if os.path.isdir(p))[:10]
         fail(
             f"the export destination {base!r} does not exist — the export did not land where "
@@ -194,12 +199,16 @@ def newest(paths):
     return max(paths, key=os.path.getmtime)
 
 
-def resolve_json_output(base):
-    """Return (directory holding day files, description) for a json export."""
-    generated = sorted(
+def _generated_dirs(base):
+    return sorted(
         p for p in glob.glob(os.path.join(base, "audit_*"))
         if os.path.isdir(p) and GENERATED_NAME.match(os.path.basename(p))
     )
+
+
+def resolve_json_output(base):
+    """Return (directory holding day files, description) for a json export."""
+    generated = wait_for(lambda: _generated_dirs(base) or None) or []
     if not generated:
         present = sorted(os.listdir(base))[:12]
         fail(
@@ -274,11 +283,15 @@ def check_json_export(base, deep, min_days, expect_scope=None):
        f"{'LTS schema verified' if deep else 'structure verified'}")
 
 
-def resolve_csv_output(base):
-    generated = sorted(
+def _generated_csvs(base):
+    return sorted(
         p for p in glob.glob(os.path.join(base, "audit_*.csv"))
         if os.path.isfile(p) and GENERATED_NAME.match(os.path.basename(p))
     )
+
+
+def resolve_csv_output(base):
+    generated = wait_for(lambda: _generated_csvs(base) or None) or []
     if not generated:
         present = sorted(os.listdir(base))[:12]
         fail(

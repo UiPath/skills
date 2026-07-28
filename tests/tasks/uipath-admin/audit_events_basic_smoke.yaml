@@ -20,8 +20,9 @@ run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  Can you pull the 25 most recent tenant Admin audit events from the last
-  24 hours? Save the complete JSON result to ./events.json so I can review it.
+  Can you pull the 25 most recent audit events from this tenant's audit trail,
+  from the last 24 hours? I want them across all event sources — don't narrow to
+  any one source. Save the complete JSON result to ./events.json so I can review it.
 
   Save the raw JSON exactly as the command returns it — do not filter, reshape, or
   summarize it.

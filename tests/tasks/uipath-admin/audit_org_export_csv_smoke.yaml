@@ -20,7 +20,7 @@ run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  I need all of yesterday's organization-level Admin audit events (things like
+  I need all of yesterday's organization-level audit events (things like
   memberships, license changes, and tenant lifecycle) as a single CSV I
   can open in Excel for a compliance review. Save it in a folder called
   audit-org-yesterday.

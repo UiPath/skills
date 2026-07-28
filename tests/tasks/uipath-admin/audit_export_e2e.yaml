@@ -25,9 +25,10 @@ max_iterations: 2
 
 initial_prompt: |
   I'm doing a security review of this tenant and want the last 7 days of
-  Admin audit history. Show me what audit event sources are being captured, let
-  me see the most recent events for context, and export the whole week as
-  JSON files for offline review into a folder called audit-last-7d.
+  audit history. Show me what audit event sources are being captured, let
+  me see the most recent events for context — across all event sources, not
+  narrowed to any one of them — and export the whole week as JSON files for
+  offline review into a folder called audit-last-7d.
 
   Save the complete JSON result of the sources call to ./sources-tenant.json and
   of the events call to ./events.json so I can review them alongside the export.

@@ -28,6 +28,7 @@ import datetime
 import json
 import os
 import sys
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from admin_helpers import poll, run_cli  # noqa: E402  (path set above)
@@ -98,21 +99,62 @@ def ok(message):
     print(f"OK: {message}")
 
 
-def load_saved(path):
+def wait_for(predicate, timeout=90, interval=3):
+    """Poll `predicate` until it returns a truthy value, or give up after `timeout`.
+
+    Some agents run a long CLI call through a background runner and end their turn
+    before it finishes, so an artifact can still be materializing when grading
+    starts. These checks assert that the command produced the right result, not
+    that it did so before the turn ended, so a bounded wait is the honest
+    behavior — it removes a race without excusing an agent that never ran it.
+    """
+    deadline = time.time() + timeout
+    while True:
+        value = predicate()
+        if value:
+            return value
+        if time.time() >= deadline:
+            return None
+        time.sleep(interval)
+
+
+def load_saved(path, timeout=90):
     """Load a JSON file the agent was asked to save. Fails the check if unusable.
 
     `utf-8-sig` because a PowerShell-redirected or BOM-prefixed save is a
     save-shape variance, not a real failure.
+
+    Retries both the existence and the parse: a multi-megabyte redirect that is
+    still flushing parses as truncated JSON, which is a race, not a wrong answer.
+    Only the final attempt's error is reported.
     """
-    if not os.path.exists(path):
-        fail(f"expected the agent to save {path!r} — file not found (cwd={os.getcwd()})")
-    try:
-        with open(path, encoding="utf-8-sig") as handle:
-            return json.load(handle)
-    except json.JSONDecodeError as exc:
-        fail(f"{path!r} is not valid JSON ({exc.__class__.__name__}: line {exc.lineno})")
-    except OSError as exc:
-        fail(f"{path!r} could not be read ({exc.__class__.__name__})")
+    last_error = None
+
+    def readable():
+        nonlocal last_error
+        if not os.path.exists(path):
+            last_error = "file not found"
+            return None
+        try:
+            with open(path, encoding="utf-8-sig") as handle:
+                # Wrap in a 1-tuple so a legitimately falsy payload (`[]`, `{}`)
+                # is not mistaken for "not ready yet".
+                return (json.load(handle),)
+        except json.JSONDecodeError as exc:
+            last_error = f"invalid JSON ({exc.msg} at line {exc.lineno} col {exc.colno})"
+            return None
+        except OSError as exc:
+            last_error = f"unreadable ({exc.__class__.__name__})"
+            return None
+
+    result = wait_for(readable, timeout=timeout)
+    if result is None:
+        size = os.path.getsize(path) if os.path.exists(path) else 0
+        fail(
+            f"expected the agent to save valid JSON at {path!r} — {last_error} after waiting "
+            f"{timeout}s (size={size} bytes, cwd={os.getcwd()})"
+        )
+    return result[0]
 
 
 def _find_failure(node):

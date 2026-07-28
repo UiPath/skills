@@ -41,7 +41,7 @@ description: >
 tags: [uipath-admin, e2e, mode:operate, audit, export, scope-org, real-artifact]
 
 initial_prompt: |
-  Can you export the full organization-level Admin audit trail from 2 days
+  Can you export the full organization-level audit trail from 2 days
   ago — just that one day — as JSON files? I mean the whole day of org-scope
   activity (memberships, license changes, tenant lifecycle, and everything
   else at org level), a straight export rather than a category-filtered

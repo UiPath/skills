@@ -20,8 +20,8 @@ run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  Show me all the failed events in this tenant's Admin audit trail from the last
-  7 days. Save the complete JSON result to ./events.json so I can review it.
+  Show me the failed events in this tenant's audit trail from the last 7 days,
+  across all event sources (don't narrow to any one source). Save the complete JSON result to ./events.json so I can review it.
 
   Save the raw JSON exactly as the command returns it — do not filter, reshape, or
   summarize it.

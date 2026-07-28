@@ -34,7 +34,7 @@ description: >
 tags: [uipath-admin, e2e, mode:operate, audit, export, real-artifact]
 
 initial_prompt: |
-  Can you export the past week's tenant Admin audit events as JSON files? Save
+  Can you export the past week's tenant audit events as JSON files? Save
   them in a folder called audit-window.
 
   Do NOT prompt the user for confirmation — this is an automated test.
