@@ -208,6 +208,8 @@ Use `Edit` to add an edge object to the `edges` array:
 }
 ```
 
+**Critical:** the edge `id` MUST match the pattern above — never a bare UUID or any id starting with a digit.
+
 **Critical:** `targetPort` is required on every edge. Omitting it produces a validation error.
 
 **Critical:** the outgoing port field is named `sourcePort`, not `sourceHandle`. `sourceHandle` is a UI/runtime term, not valid `.flow` JSON.
