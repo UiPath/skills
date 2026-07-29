@@ -9,8 +9,8 @@ description: >
   the testcases add command for assigning testcases to a set.
   Deliberate trap: "disbursement" is mid-name (CLAIM:19/CLAIM:20 are
   "Claim Payout - … Disbursement") and `--filter` is a PREFIX match, so
-  the filtered call returns zero — the skill must teach the re-list +
-  client-side match fallback instead of stopping to ask.
+  the filtered call returns zero — the skill must teach the prefix-retry
+  fallback (broader prefix, then unfiltered re-list) instead of stopping.
 tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:test-set]
 
 run_limits:
@@ -59,7 +59,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created a test set with --project-key"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+tm\s+testsets?\s+create\s+.*--project-key|(uip|\$UIP)\s+tm\s+testsets?\s+create'
+    command_pattern: '(uip|\$UIP)\s+tm\s+testsets?\s+create\s+(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key|(uip|\$UIP)\s+tm\s+testsets?\s+create'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -67,7 +67,7 @@ success_criteria:
   - type: command_executed
     description: "Agent added testcases to the new test set with --test-set-key + --test-case-keys"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+tm\s+testcases?\s+add\s+.*--test-set-key.*--test-case-keys|(uip|\$UIP)\s+tm\s+testsets?\s+add-testcases\s+.*--test-set-key'
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases?\s+add\s+(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-set-key(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-keys|(uip|\$UIP)\s+tm\s+testsets?\s+add-testcases\s+(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-set-key'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

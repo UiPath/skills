@@ -55,7 +55,7 @@ success_criteria:
   - type: command_executed
     description: "Complete create command: `uip tm customfield create --project-key HEALTH --name \"Eval Def Reviewer\" --data-type Text --object-type Requirement --output json`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name\s+["\x27]?Eval Def Reviewer)(?=.*--data-type\s+Text)(?=.*--object-type\s+Requirement)(uip|\$UIP)\s+tm\s+customfield\s+create'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--name\s+["\x27]?Eval Def Reviewer)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--data-type\s+Text)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--object-type\s+Requirement)(uip|\$UIP)\s+tm\s+customfield\s+create'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -63,7 +63,7 @@ success_criteria:
   - type: command_executed
     description: "Complete list command: `uip tm customfield list --project-key HEALTH`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(uip|\$UIP)\s+tm\s+customfield\s+list\s'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(uip|\$UIP)\s+tm\s+customfield\s+list\s'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -71,15 +71,15 @@ success_criteria:
   - type: command_executed
     description: "Complete rename command: `uip tm customfield update --project-key HEALTH --rename-to \"Eval Def Rev Team\" --output json`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--rename-to\s+["\x27]?Eval Def Rev Team)(uip|\$UIP)\s+tm\s+customfield\s+update'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--rename-to\s+["\x27]?Eval Def Rev Team)(uip|\$UIP)\s+tm\s+customfield\s+update'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete delete command: `uip tm customfield delete --project-key HEALTH (--field-ids <uuid> | --name \"Eval Def Rev Team\" --object-type Requirement) --output json`"
+    description: "Complete delete command: `uip tm customfield delete --project-key HEALTH (--field-ids <uuid> | --name \"Eval Def Rev...\") --output json`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*(--field-ids\s+\S+|--object-type\s+Requirement))(uip|\$UIP)\s+tm\s+customfield\s+delete'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*(--field-ids\s+\S+|--name\s+["\x27]?Eval Def Rev))(uip|\$UIP)\s+tm\s+customfield\s+delete'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

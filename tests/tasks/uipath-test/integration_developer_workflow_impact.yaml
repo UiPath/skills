@@ -49,24 +49,24 @@ success_criteria:
   - type: command_executed
     description: "Agent looked up Shipment Routing project with `project list --filter`"
     tool_name: "Bash"
-    command_pattern: '(?i)(uip|\$UIP)\s+tm\s+project\s+list\s+.*--filter\s+\S*ship|(uip|\$UIP)\s+tm\s+project\s+list\s+.*--filter\s+\S*ship'
+    command_pattern: '(?i)(uip|\$UIP)\s+tm\s+project\s+list\s+(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--filter\s+\S*ship|(uip|\$UIP)\s+tm\s+project\s+list\s+(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--filter\s+\S*ship'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent discovered test-set scope — `testsets list --project-key` (testset-first) or `testcases list-testsets --project-key --test-case-key` (testcase-first)"
+    description: "Agent listed test sets scoped to project (`testsets list --project-key`; the inverse `testcases list-testsets` is excluded until the CLI SDK regression is fixed)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+tm\s+testsets\s+list\s+.*--project-key|(?=.*--project-key)(?=.*--test-case-key)(uip|\$UIP)\s+tm\s+testcases?\s+list-testsets'
+    command_pattern: '(uip|\$UIP)\s+tm\s+testsets\s+list\s+(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key'
     require_success: true
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent mapped test-set membership — `testsets list-testcases --project-key --test-set-key`, or the inverse `testcases list-testsets --project-key --test-case-key`"
+    description: "Agent mapped test-set membership (`testsets list-testcases --project-key --test-set-key`)"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key)(?=.*--test-set-key)(uip|\$UIP)\s+tm\s+testsets\s+list-testcases|(?=.*--project-key)(?=.*--test-case-key)(uip|\$UIP)\s+tm\s+testcases?\s+list-testsets'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-set-key)(uip|\$UIP)\s+tm\s+testsets\s+list-testcases'
     require_success: true
     min_count: 1
     weight: 1.5
@@ -75,7 +75,7 @@ success_criteria:
   - type: command_executed
     description: "Agent retrieved execution history (`executions list --project-key`)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+tm\s+executions\s+list\s+.*--project-key'
+    command_pattern: '(uip|\$UIP)\s+tm\s+executions\s+list\s+(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

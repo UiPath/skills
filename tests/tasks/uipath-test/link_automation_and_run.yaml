@@ -48,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Agent discovered folder key with `folders list -n <folder-name> --all`"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+folders\s+list\s+.*(-n|--name)\s+\S+'
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+folders\s+list\s+(?:[^&;|\r\n\\]|\\\r?\n|\\.)*(-n|--name)\s+\S+'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -64,7 +64,7 @@ success_criteria:
   - type: command_executed
     description: "Agent linked automation using link-automation with --project-key"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+tm\s+testcases?\s+link-automation\s+.*--project-key'
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases?\s+link-automation\s+(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -72,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran the testcase successfully with --test-case-id (UUID), --execution-type automated, and the required --name (not --test-case-key)"
     tool_name: "Bash"
-    command_pattern: '(?=[^&;\r\n]*--test-case-id\s+\S+)(?=[^&;\r\n]*--execution-type\s+automated)(?=[^&;\r\n]*--name\s+\S)(uip|\$UIP)\s+tm\s+(testcases?\s+run|testcase\s+execute)\b'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-id\s+\S+)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-type\s+automated)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--name\s+\S)(uip|\$UIP)\s+tm\s+(testcases?\s+run|testcase\s+execute)\b'
     require_success: true
     min_count: 1
     weight: 3.0
