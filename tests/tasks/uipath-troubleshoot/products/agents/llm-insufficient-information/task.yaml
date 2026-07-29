@@ -72,4 +72,5 @@ simulation:
     - "If the agent asks whether it can run uip agent debug, say no and ask it to provide the command instead."
     - "If the agent asks whether to expand investigation scope, answer yes."
     - "Keep replies short and do not invent new facts."
+    - "If the agent offers or asks to apply/implement the fix itself (editing project files, or running validate/build/pack/publish), DECLINE: say you will apply the change yourself in Studio later, and ask only for the root cause and the exact fix steps. Never approve a source-file edit."
   max_turns: 6

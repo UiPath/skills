@@ -49,7 +49,7 @@ Fire all of these simultaneously. Use multiple tool calls in one response — do
 | `references/dashboards/aesthetic/layout-patterns.md` *(from skill root)* | Layout rules |
 | `references/dashboards/aesthetic/charting.md` *(from skill root)* | Chart-type selection, colour tokens, delta polarity |
 | `assets/scripts/dashboards/capability-registry.json` *(from skill root)* | Metric catalog (T1/T2 display hints) |
-| `references/sdk/agents.md` *(from skill root)* | Agents + Agent Memory (Insights RTM, SDK ≥ 1.4.1) — validate agent/memory metrics |
+| `references/sdk/agents.md` *(from skill root)* | Agents + Agent Memory (Insights RTM) — validate agent/memory metrics |
 | `references/sdk/orchestrator.md` *(from skill root)* | Jobs/Queues/Processes methods — validate job/process metrics |
 
 **Conditional reads (add to the same parallel message if the request mentions these):**
@@ -60,7 +60,7 @@ Fire all of these simultaneously. Use multiple tool calls in one response — do
 | cases, process instances, Maestro, SLA, top/slowest/failing processes or cases, element stats | `references/sdk/maestro.md` *(from skill root)* |
 | traces, spans, trace-level errors/latency/units | `references/sdk/traces.md` *(from skill root)* |
 | governance, policy, compliance, denials, blocked actions, allow/deny, enforcement | `references/sdk/governance.md` *(from skill root)* — Insights-API governance (`policy-denials`, `governance-verdicts`) |
-| **EXPLICIT runtime compliance / a standard or pack / ISO clause / "rule(s) violated"** (agent runs checked against standards) | `references/sdk/governance-traces.md` *(from skill root)* — gated, org-admin (`AgentTraces` governance decisions, SDK ≥ 1.5.1). Generic "governance/policy" stays on the row above |
+| **EXPLICIT runtime compliance / a standard or pack / ISO clause / "rule(s) violated"** (agent runs checked against standards) | `references/sdk/governance-traces.md` *(from skill root)* — gated, org-admin (`AgentTraces` governance decisions). Generic "governance/policy" stays on the row above |
 
 **1 blocking command (instant, local — routes build vs edit, so the plan needs it):**
 

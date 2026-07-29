@@ -40,6 +40,7 @@ build the case in the Case Designer without guessing.
    - `adhoc` — ad-hoc / manually triggered task entry
    - `runs-sequentially` — runs sequentially
    - `user-selected-stage` - target of an upstream `wait-for-user` exit
+   - `sla-status-change` — a referenced case/stage SLA escalation changed status (stage entry only)
 
 4. **Exit conditions:** Every exit condition MUST specify:
    - **Exit Type:** `exit-only` | `return-to-origin` | `wait-for-user`
@@ -58,7 +59,7 @@ build the case in the Case Designer without guessing.
    - `Marks Case Complete: Yes` → WHEN MUST be `required-stages-completed` or `wait-for-connector`. **NEVER** `selected-stage-completed(...)` / `selected-stage-exited(...)`.
    - `Marks Case Complete: No` (case exits without closing — rare) → WHEN may be `selected-stage-completed(...)`, `selected-stage-exited(...)`, or `wait-for-connector`.
 
-5. **Descriptions are mandatory:** Every case, stage, and task MUST have a prose description. No empty or placeholder descriptions.
+5. **Descriptions and rationale are mandatory:** Every case, stage, and task MUST have a prose description. Every stage/task and configured case/stage SLA MUST also preserve a concrete Design Rationale explaining the selected kind/type, activation/sequencing, and routing/threshold choices. No empty or placeholder descriptions/rationales.
 
 6. **Entry/exit conditions use WHEN + IF format:**
    - **WHEN** = the rule type (event that triggers evaluation, e.g., `selected-stage-completed("Intake")`)
@@ -108,6 +109,8 @@ build the case in the Case Designer without guessing.
 - **Entity fields:** camelCase (e.g., `applicantName`)
 
 ### Output Structure
+
+The rendered `sdd.md` must preserve this structure. Do not replace it with a summary, build plan, source trace, or abbreviated stage/task list; every section and every modeled stage/task detail block below is part of the authoring contract.
 
 The generated SDD must start with:
 
@@ -170,6 +173,8 @@ The generated SDD must start with:
 > **Case App validation contract:** Stage names must be non-empty, unique, and contain no `:`. Task names must contain no `:`. Every SLA rule and escalation needs a non-empty, target-unique title/display name with no `:`. SLA durations must be positive; minute-based SLAs must be 15–1000 minutes. Non-default SLA rows need an expression; escalations need a recipient, and at-risk escalations need a percentage.
 
 ### Case-Level SLA Escalation Rules
+
+**Design Rationale:** {Why this target, at-risk threshold, recipients, and breach behavior fit the case requirement; name any interrupting secondary stage entered through `sla-status-change`.}
 
 | SLA Status | Threshold | Action |
 |------------|-----------|--------|
@@ -317,13 +322,14 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 **Type:** Stage
 **Stage Kind:** {primary \| secondary} _(secondary stages use the `### Secondary Stage:` heading AND set `secondary`; primary stages use `### Stage {N}:` and OMIT this line — default = primary)_
+**Design Rationale:** {Why this stage is primary/secondary and why its entry/exit behavior fits. For a global-event secondary stage, name the event and explain that one interrupting entry replaces per-primary-stage tasks/exits.}
 **Description:** {Prose description of what this stage accomplishes in the case lifecycle}
 **Required for Case Completion:** {Yes \| No}
 **Interrupting:** Yes _(secondary stages only — i.e. Stage Kind: secondary; omit for primary)_
 
 #### Stage Entry Conditions
 
-> **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (event-driven entry / interrupt). Other rule types from Key Rule 3 are NOT valid here.
+> **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (external/global event interrupt), `sla-status-change("<SLA display name>","<Escalation display name>")` (case/stage SLA at-risk or breach interrupt). Other rule types from Key Rule 3 are NOT valid here.
 >
 > **Interrupting column:** `Yes` lets the condition fire while another stage is active and interrupt it. Use `Yes` on every secondary-stage entry row. Use `No` only for normal entry on regular stages; if the work should not interrupt, it is not a secondary stage.
 >
@@ -331,9 +337,11 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 | WHEN | IF | Interrupting | Display Name |
 |------|-----|-------------|--------------|
-| {one of: `case-entered` \| `selected-stage-completed("StageName")` \| `selected-stage-exited("StageName")` \| `user-selected-stage` \| `wait-for-connector`} | {conditionExpression, or "—" if none} | {Yes \| No} | {optional label, or "—" → defaults to `Entry Rule {N}`} |
+| {one of: `case-entered` \| `selected-stage-completed("StageName")` \| `selected-stage-exited("StageName")` \| `user-selected-stage` \| `wait-for-connector` \| `sla-status-change("<SLA>","<Escalation>")`} | {conditionExpression, or "—" if none} | {Yes \| No} | {optional label, or "—" → defaults to `Entry Rule {N}`} |
 
 > If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
+>
+> A global `wait-for-connector` / `sla-status-change` entry on an interrupting secondary stage applies regardless of which primary stage is active. Do not repeat the event as a task or exit rule on every primary stage.
 
 #### Stage Exit Conditions
 
@@ -352,6 +360,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > Stage SLA supports the same conditional + default `slaRules[]` model as the case root. For `condition-based`, keep the default row below and add one or more Stage Variable SLA Rules before it.
 
+**Design Rationale:** {Why this target, duration, at-risk threshold, recipients, and breach behavior fit the stage requirement; name any interrupting escalation stage entered through `sla-status-change`.}
 **SLA Type:** {time-based | condition-based}
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
@@ -370,17 +379,20 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > Tasks are listed in the order provided by the source spec / interview answers. Do not add, split, merge, or rename tasks; do not infer new tasks from context.
 
-| # | Task Name | Type | Required | Run Only Once | Persona | SLA |
-|---|-----------|------|----------|---------------|---------|-----|
-| 1 | {task name} | {action \| process \| agent \| rpa \| api-workflow \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management} | {Yes \| No} | {Yes \| No} | {persona name or "—"} | {count unit or "—" (only for action tasks)} |
+| # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
+|---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
+| 1 | {task name} | {action \| process \| agent \| rpa \| api-workflow \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management} | {sequential \| parallel \| event-triggered \| adhoc \| fan-in \| conditional-gate} | {e.g. "sequential group: A → B → C", "stage enters", "after A+B", "connector event"} | {Yes \| No} | {Yes \| No} | {persona name or "—"} | {count unit or "—" (only for action tasks)} |
 
 > After the summary table, provide a detailed subsection for each task.
+> Primary-stage task headings use `##### Task {N}.{M}: {Task Name}`. Secondary-stage task headings use `##### Task S{K}.{M}: {Task Name}` where `K` is the secondary-stage order. Do not use lettered prefixes such as `R.1`, `W.1`, `CC.1`, or `ESC.1`.
 
 ---
 
 ##### Task {N}.{M}: {Task Name}
 
 **Type:** {exact task type from schema}
+**Activation Mode:** {sequential | parallel | event-triggered | adhoc | fan-in | conditional-gate}
+**Design Rationale:** {Why this task type fits the actor/work and why this activation mode fits. For a sequential task, name the stated order/dependency; for a parallel task, state why it is independent.}
 **Description:** {What this task does and why it exists in the case plan}
 
 **Entry Condition:**
@@ -389,7 +401,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 >
 > Each row is a separate entry condition. List multiple rows when a task can be entered through more than one path. Author a `current-stage-entered` row for any ungated task — including connector tasks (`execute-connector-activity`, `wait-for-connector`) — that should start when its stage is entered.
 >
-> **Sequential normalization:** for a plain top-to-bottom task run, write `runs-sequentially` as the only Entry Condition row on every task in that run, including the first task. Do not model the run as `current-stage-entered` plus `selected-tasks-completed("<previous>")`; Studio Web classifies that as condition/event-driven, not Sequential.
+> **Sequential normalization:** when the requirement states order/dependency (`then`, `after`, `before`, `in order`, or an upstream prerequisite), write `runs-sequentially` as the only Entry Condition row on every task in that run, including the first task. Do not turn an explicitly ordered run into parallel stage-start tasks merely because no data binding is present. Use `current-stage-entered` in parallel only for explicitly independent work; use `selected-tasks-completed` for fan-in or a non-immediate dependency.
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
@@ -397,7 +409,9 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 
-**Task envelope** (every task — render after the Entry Condition table):
+**Task envelope**
+
+> Render the heading above exactly, with no colon. Every task includes this block after the Entry Condition table.
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|

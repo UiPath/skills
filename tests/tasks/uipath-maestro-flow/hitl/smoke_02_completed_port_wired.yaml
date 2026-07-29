@@ -8,7 +8,11 @@ tags: [uipath-maestro-flow, uipath-human-in-the-loop, smoke, mode:build, lifecyc
 run_limits:
   expected_turns: 24
   max_turns: 105
-  turn_timeout: 600
+  # 600s was too tight for this multi-node HITL build on Bedrock: one
+  # over-exploring turn hit 604s (commands ~38s; the rest was model latency)
+  # and ERRORed before criteria ran. 900 matches sibling
+  # smoke_03_multi_outcome_routing and the experiment default.
+  turn_timeout: 900
 
 initial_prompt: |
   Build a UiPath Flow named "PurchaseApproval" with this structure:
