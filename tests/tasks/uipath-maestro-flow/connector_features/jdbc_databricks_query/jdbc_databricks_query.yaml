@@ -56,11 +56,10 @@ initial_prompt: |
   Do NOT pause between planning and implementation.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent loaded the uipath-maestro-flow skill"
-    tool_name: "Skill"
-    command_pattern: "uipath-maestro-flow"
-    min_count: 1
+  - type: skill_triggered
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
+    description: "Agent invoked the uipath-maestro-flow Skill"
     weight: 1.0
     pass_threshold: 1.0
 
