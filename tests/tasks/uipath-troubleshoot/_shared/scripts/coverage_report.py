@@ -7,6 +7,7 @@ Reads:
       (legacy artifacts used plain `.calls.jsonl`; both are handled)
   - <run_dir>/<NN>/artifacts/<task_id>/m/r/manifest.json
       the manifest's `expected_calls` declares minimum-coverage patterns
+      (on sealed runs `r/` is gone; the manifest is read from `m/.store`)
 
 Writes per replicate:
   - <run_dir>/<NN>/coverage.json         structured comparison
@@ -65,9 +66,14 @@ def _find_call_log(sandbox: Path) -> Path | None:
 
 
 def _load_manifest(sandbox: Path) -> dict | None:
+    """Load the manifest from `m/r/` (unsealed) or the sealed `m/.store`."""
     manifest_path = sandbox / "m" / "r" / "manifest.json"
     if manifest_path.is_file():
         return json.loads(manifest_path.read_text(encoding="utf-8"))
+    store_path = sandbox / "m" / ".store"
+    if store_path.is_file():
+        blob = json.loads(zlib.decompress(base64.b64decode(store_path.read_bytes())).decode("utf-8"))
+        return blob.get("manifest")
     return None
 
 
