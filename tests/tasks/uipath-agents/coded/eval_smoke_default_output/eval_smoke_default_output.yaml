@@ -16,10 +16,10 @@ run_limits:
 
 initial_prompt: |
   I've got chunks of text I want boiled down to a short paragraph each. Can you
-  build me a small coded agent for that — call it `summarizer`, takes some text
-  in and hands back a one-paragraph summary. Once it's running, set up a quick
-  eval with a couple of test cases so I can sanity-check it locally. No need to
-  deploy it anywhere.
+  build me a small LangGraph coded agent for that — call it `summarizer`, takes
+  some text in and hands back a one-paragraph summary. Once it's running, set up
+  a quick eval with a couple of test cases so I can sanity-check it locally. No
+  need to deploy it anywhere.
 
 success_criteria:
   - type: command_executed

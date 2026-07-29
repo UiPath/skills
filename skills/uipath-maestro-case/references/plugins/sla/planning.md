@@ -17,7 +17,7 @@ Pick this plugin whenever the sdd.md mentions deadlines, service-level agreement
 |--------|---------|
 | **Default SLA** | The time-based catch-all SLA. One per target (root or stage). Written into the SLA rules array with `expression: "=js:true"`. See [impl-json.md § Target resolution](impl-json.md) for the destination paths. |
 | **Conditional SLA rules** | Expression-driven SLA overrides. Supported on root and stage targets. Prepended to the target's SLA rules array ahead of the default. |
-| **Escalation rules** | Notifications triggered at-risk or on breach. Attached to a specific rule via `escalationRule[]`. |
+| **Escalation rules** | Status markers and notifications triggered at-risk or on breach. Attached to a specific rule via `escalationRule[]`; their IDs may also drive an interrupting secondary-stage `sla-status-change` entry. |
 
 ## Applying SLA at Root vs Stage
 
@@ -42,6 +42,7 @@ Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage >
 | `unit` | sdd.md duration unit | `min` \| `h` \| `d` \| `w` \| `m` |
 | `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
 | `display-name` | sdd.md or generated fallback | Required non-empty SLA title, unique within the target, and MUST NOT contain `:`. If the SDD has no title, ask for one or use the deterministic fallback `SLA Rule {N}` and record it. |
+| `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context for the target, duration, threshold, and escalation behavior. |
 
 ### Conditional SLA rule
 
@@ -51,6 +52,7 @@ Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage >
 | `expression` | sdd.md condition | Natural-language in planning; the execution phase translates. **Do not fabricate syntax during planning.** |
 | `count`, `unit` | sdd.md duration for this condition | Same units as default |
 | `display-name` | sdd.md or generated fallback | Required non-empty unique title, no `:`; use `SLA Rule {N}` only when the author supplied no title. |
+| `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context; not emitted into JSON. |
 
 Rules are evaluated in insertion order — first truthy expression wins. The default SLA acts as the fallback.
 
@@ -66,6 +68,7 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 | `display-name` | sdd.md or generated fallback | Required non-empty escalation title, unique across the target, and MUST NOT contain `:`. If omitted, use `Escalation Rule {N}` and record the fallback. |
 | `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
 | `attach-to` | sdd.md | `default` (attach to the `=js:true` rule) or `T<m>` pointing to the conditional-rule T-entry the escalation fires under. |
+| `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context. If this escalation enters a secondary stage, name that lane and why it is global/interrupting. |
 
 ## Identity Resolution
 
@@ -146,6 +149,7 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 ## T<n>: Set default SLA for "<target>" to <duration>
 - target: "<root>" | "<stage-name>"
 - display-name: "SLA Rule 1"              # required; use authored title or SLA Rule {N}
+- rationale: "<why this SLA target and duration fit>"
 - count: 5
 - unit: d
 - order: after T<m>
@@ -158,6 +162,7 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 ## T<n>: Add conditional SLA rule for "<target>" — <condition summary>
 - target: "root" | "<stage-name>"
 - display-name: "Urgent SLA"              # required; target-unique, no ':'
+- rationale: "<why this condition changes the SLA>"
 - condition: "<natural-language condition from sdd.md>"
 - count: 30
 - unit: min
@@ -171,6 +176,7 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 ## T<n>: Add escalation rule for "<target>" — <trigger summary>
 - target: "<root>" | "<stage-name>"
 - attach-to: default | T<m>
+- rationale: "<why this threshold/recipient/action fits; name any interrupting secondary stage>"
 - trigger-type: at-risk
 - at-risk-percentage: 80
 - recipients:

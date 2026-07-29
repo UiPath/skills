@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobHistory",
-  "_doc": "State transitions for the faulting job: Pending -> Running -> Faulted. It DID enter Running (the Robot accepted the job and began session creation), then faulted ~120s later when session creation timed out. Proves this is not a stuck-Pending / no-host case.",
   "Data": [
     {
       "State": "Pending",

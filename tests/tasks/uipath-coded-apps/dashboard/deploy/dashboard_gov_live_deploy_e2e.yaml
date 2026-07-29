@@ -71,15 +71,30 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # Order/variable-tolerant: agents commonly bind the folder name to a shell var
-  # (FOLDER_NAME="codedapp-govtest-…"; node …/setup-admin-folder.mjs "$FOLDER_NAME"),
-  # so the literal appears BEFORE the script name. Two lookaheads (DOTALL) just
-  # require both tokens present in the same command, in any order.
-  - type: command_executed
-    description: "Governance provisioning ran against a DISPOSABLE codedapp-govtest-* folder, not the real AdminDashboards"
-    tool_name: "Bash"
-    command_pattern: '(?=.*setup-admin-folder\.mjs)(?=.*codedapp-govtest-)'
-    min_count: 1
+  # Grade the OUTCOME the provisioning script records, not the command string.
+  # The two tokens (setup-admin-folder.mjs + codedapp-govtest-<epoch>) need not
+  # co-occur in one command: agents bind the name to a shell var OR stash it in a
+  # temp file and read it back (`FOLDER=$(cat /tmp/name)`; node …/setup-admin-folder.mjs
+  # "$FOLDER"), so no command-string regex reliably sees both. Instead check what
+  # setup-admin-folder.mjs itself writes: updateState() records the provisioned
+  # folder into .dashboard/state.json as deployment.folderName + folderKey. pre_run
+  # seeds both as null, so a populated codedapp-govtest-* name with a real key can
+  # only come from the script actually provisioning a disposable folder this run —
+  # variable/idiom-immune, and not a self-report (the script writes it, not the agent).
+  - type: run_command
+    description: "Governance provisioning created a DISPOSABLE codedapp-govtest-* folder (recorded in .dashboard/state.json), not the real AdminDashboards"
+    command: |
+      python3 -c "
+      import json
+      dep = json.load(open('.dashboard/state.json')).get('deployment', {})
+      name = dep.get('folderName') or ''
+      key  = dep.get('folderKey') or ''
+      assert name.startswith('codedapp-govtest-'), f'folderName is not a disposable govtest folder: {name!r}'
+      assert key, 'no folderKey recorded — folder was not actually provisioned'
+      print(f'OK: provisioned disposable folder {name} (key {key})')
+      "
+    timeout: 15
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 

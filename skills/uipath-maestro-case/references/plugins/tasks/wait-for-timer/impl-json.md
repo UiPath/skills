@@ -32,7 +32,7 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
 
 1. Generate task ID: `t` + 8 alphanumeric chars (unique across all tasks)
 2. Generate elementId: `<stageId>-<taskId>`
-3. Write the task with `"data": {}` to the target stage's `tasks[]` array (in its own task set)
+3. Write the task with `"data": {}` to the target stage's `data.tasks` structure using the common placement contract: sequential / `runs-sequentially`, adhoc, event-driven, fan-in, conditional-gate, and standalone timers get their own single-task inner array; only explicitly parallel timers may share an inner array.
 
 ```json
 {

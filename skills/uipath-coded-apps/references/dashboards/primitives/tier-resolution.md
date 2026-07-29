@@ -106,19 +106,19 @@ The build type-checks all `metrics/*.ts` modules in isolation (Stage A) before g
 
 The registry entry describes the metric and expected SDK call. Use it as your guide, then write the correct `metrics/<name>.ts` module from the SDK documentation.
 
-| Metric name | What it shows | Registry template | SDK hint (≥ 1.4.1) |
+| Metric name | What it shows | Registry template | SDK hint |
 |-------------|--------------|-------------------|--------------------|
 | `active-agents-kpi` | Count of active agents | `kpi-card` | `Agents.getAll(start, end)` → `{ items }`; return `[{ count: items.length }]` |
-| `agent-consumption` | Agents ranked by AGU/PLTU | `ranked-table` | **(≥1.5.0)** `Agents.getTopConsumption(start, end, { limit: 10 })` → `{ agents: [{ agentName, consumedAGUQuantity, consumedPLTUQuantity }] }`; module returns `.agents` |
+| `agent-consumption` | Agents ranked by AGU/PLTU | `ranked-table` | `Agents.getTopConsumption(start, end, { limit: 10 })` → `{ agents: [{ agentName, consumedAGUQuantity, consumedPLTUQuantity }] }`; module returns `.agents` |
 | `agent-health` | Agents ranked by health score | `ranked-table` | `Agents.getAll(start, end, { orderBy: { column: AgentListSortColumn.HealthScore } })` → `{ items }` (healthScore 0–100, lastIncidentType) |
 | `agent-error-timeline` | Agent errors over time | `area-chart` | `Agents.getErrorsTimeline(start, end)` → BARE `[{ name, value, date }]`; module sums `value` per `date` |
 | `agent-latency-timeline` | P50/P95 latency over time | `multi-line-chart` | `Agents.getLatencyTimeline(start, end)` → BARE `[{ name:'P50'\|'P95', value (ms), date }]`; module pivots to `[{ date, P50, P95 }]` |
 | `agent-consumption-timeline` | AGU consumed over time | `area-chart` | `Agents.getConsumptionTimeline(start, end)` → BARE `[{ timeSlice, aguConsumption }]` (native shape) |
 | `agent-errors` | Error classes ranked | `ranked-table` | `Agents.getErrors(start, end, { orderBy: { column: AgentErrorSortColumn.ExecutionCount, desc: true } })` → `{ items }` |
-| `agents-by-errors` | Agents ranked by error count | `ranked-table` | **(≥1.5.0)** `Agents.getTopErrorCount(start, end, { limit: 10 })` → `{ data: [{ name, count }] }`; module returns `data.map(a => ({ name: a.name, value: a.count }))` |
-| `agent-incident-distribution` | Errors vs escalations vs policy | `donut-chart` | **(≥1.5.0)** `Agents.getIncidentDistribution(start, end)` → `{ errorCount, escalationCount, policyCount }`; module → 3 `[{ name, value }]` rows |
-| `agent-success-rate` | Job success rate + delta | `kpi-card` | **(≥1.5.0)** `Agents.getSummary(start, end, { lookbackPeriodAnalysis: true })`; return `[{ value: currentPeriodSummary.successRate, previous: lookbackPeriodSummary?.successRate }]` |
-| `agent-unit-consumption-summary` | Total AGU consumed + delta | `kpi-card` | **(≥1.5.0)** `Agents.getUnitConsumptionSummary(start, end, { lookbackPeriodAnalysis: true })`; sum `totalAgentUnitConsumption.{completeJobs,incompleteJobs}` for value + previous |
+| `agents-by-errors` | Agents ranked by error count | `ranked-table` | `Agents.getTopErrorCount(start, end, { limit: 10 })` → `{ data: [{ name, count }] }`; module returns `data.map(a => ({ name: a.name, value: a.count }))` |
+| `agent-incident-distribution` | Errors vs escalations vs policy | `donut-chart` | `Agents.getIncidentDistribution(start, end)` → `{ errorCount, escalationCount, policyCount }`; module → 3 `[{ name, value }]` rows |
+| `agent-success-rate` | Job success rate + delta | `kpi-card` | `Agents.getSummary(start, end, { lookbackPeriodAnalysis: true })`; return `[{ value: currentPeriodSummary.successRate, previous: lookbackPeriodSummary?.successRate }]` |
+| `agent-unit-consumption-summary` | Total AGU consumed + delta | `kpi-card` | `Agents.getUnitConsumptionSummary(start, end, { lookbackPeriodAnalysis: true })`; sum `totalAgentUnitConsumption.{completeJobs,incompleteJobs}` for value + previous |
 | `trace-error-timeline` | Trace errors over time | `area-chart` | `AgentTraces.getErrorsTimeline({ startTime, endTime })` → BARE `[{ name, value, date }]` (see `sdk/traces.md`) |
 | `trace-latency-timeline` | Trace latency over time | `area-chart` | `AgentTraces.getLatencyTimeline({ startTime, endTime })` → BARE `[{ name, value (s), date }]`; module averages per date |
 | `agent-unit-consumption` | AGU/PLTU per agent | `ranked-table` | `AgentTraces.getUnitConsumption({ startTime, endTime })` → BARE `[{ agentId, agentUnitsConsumed, platformUnitsConsumed }]` |
@@ -396,7 +396,7 @@ export const fetchDetail: MetricFn = async (sdk) => {
 A dedicated capability for **agent governance/compliance violations against standards** (catalog keys
 `agent-governance-violations`, `violations-by-standard`, `violations-by-rule`, `violations-by-hook`,
 `matched-rules-by-action`, `agents-by-violations`, `recent-violations`, `agent-compliance-report`,
-`rule-evaluations-by-outcome`, `rule-evaluations-by-hook`, `rule-compliance`). Backed by the SDK ≥ 1.5.1
+`rule-evaluations-by-outcome`, `rule-evaluations-by-hook`, `rule-compliance`). Backed by the SDK
 Insights endpoints `AgentTraces.getGovernanceDecisions` / `getGovernanceSummary` — full contract + module
 patterns in [`sdk/governance-traces.md`](../../sdk/governance-traces.md). **Org-admin required** (403 for
 other callers — surface it, EmptyState the widget, build the rest). Widgets honor the dashboard time range
@@ -448,10 +448,10 @@ Full method signatures, response types, and field names live in `references/sdk/
 
 | Domain | Reference file | Key service classes |
 |--------|---------------|---------------------|
-| Agents + Agent Memory (Insights RTM, ≥ 1.4.1) | `sdk/agents.md` *(from skill root)* | `Agents`, `AgentMemory` |
-| Agent Traces (Insights RTM, ≥ 1.4.1) | `sdk/traces.md` *(from skill root)* | `AgentTraces` |
-| Governance (Insights RTM, ≥ 1.4.1) | `sdk/governance.md` *(from skill root)* | `Governance` |
-| Agent runtime-governance decisions (GATED, org-admin, ≥ 1.5.1) | `sdk/governance-traces.md` *(from skill root)* | `AgentTraces.getGovernanceDecisions` / `getGovernanceSummary` |
+| Agents + Agent Memory (Insights RTM) | `sdk/agents.md` *(from skill root)* | `Agents`, `AgentMemory` |
+| Agent Traces (Insights RTM) | `sdk/traces.md` *(from skill root)* | `AgentTraces` |
+| Governance (Insights RTM) | `sdk/governance.md` *(from skill root)* | `Governance` |
+| Agent runtime-governance decisions (GATED, org-admin) | `sdk/governance-traces.md` *(from skill root)* | `AgentTraces.getGovernanceDecisions` / `getGovernanceSummary` |
 | Jobs, Queues, Processes, Assets | `sdk/orchestrator.md` *(from skill root)* | `Jobs`, `Queues`, `Processes`, `Assets` |
 | Tasks | `sdk/action-center.md` *(from skill root)* | `Tasks` |
 | Cases, Process Instances, Maestro Insights/SLA | `sdk/maestro.md` *(from skill root)* | `Cases`, `CaseInstances`, `MaestroProcesses` |
@@ -461,14 +461,14 @@ Full method signatures, response types, and field names live in `references/sdk/
 
 **Calling conventions — don't mix them up:**
 - `Agents.getAll / getErrors / getErrorsTimeline / getConsumptionTimeline / getLatencyTimeline(startTime, endTime, options?)` — positional `Date` args. `getAll`/`getErrors` return rows on `.items`; the three timeline methods return a **bare array**
-- **(≥1.5.0)** `Agents.getSummary / getTopErrorCount / getTopConsumption / getIncidentDistribution / getUnitConsumptionSummary(startTime, endTime, options?)` — positional `Date` args; see `sdk/agents.md § Insights aggregates`. `getSummary` / `getUnitConsumptionSummary` accept `{ lookbackPeriodAnalysis: true }` to return the prior window for a delta in ONE call
+- `Agents.getSummary / getTopErrorCount / getTopConsumption / getIncidentDistribution / getUnitConsumptionSummary(startTime, endTime, options?)` — positional `Date` args; see `sdk/agents.md § Insights aggregates`. `getSummary` / `getUnitConsumptionSummary` accept `{ lookbackPeriodAnalysis: true }` to return the prior window for a delta in ONE call
 - `AgentTraces.getErrorsTimeline / getLatencyTimeline / getUnitConsumption({ startTime?, endTime?, … })` — ONE options object, dates inside, returns a **bare array** (see `sdk/traces.md`)
 - `AgentMemory.getTimeline({ startTime?, endTime?, … })` — ONE options object, dates inside, returns a **bare array**
 - `Governance.getPolicyTraces(startTime, options?)` — required positional `startTime`, rest in options, rows on `.items`; `getOperationSummary` returns a **single object** (wrap into rows in the module)
-- **(≥1.5.1)** `AgentTraces.getGovernanceDecisions(startTime, options?)` — required positional `startTime`, rows on `.items`, paginated; `AgentTraces.getGovernanceSummary(startTime, options?)` — returns a **single object** (`byAction`/`byMode` empty unless `sections` opts in). Both org-admin (see `sdk/governance-traces.md`)
+- `AgentTraces.getGovernanceDecisions(startTime, options?)` — required positional `startTime`, rows on `.items`, paginated; `AgentTraces.getGovernanceSummary(startTime, options?)` — returns a **single object** (`byAction`/`byMode` empty unless `sections` opts in). Both org-admin (see `sdk/governance-traces.md`)
 - `Cases` / `MaestroProcesses.getTopRunCount / getTopFaultedCount / getTopExecutionDuration / getTopElementFailedCount / getInstanceStatusTimeline(start, end, options?)` — positional `Date`s, **bare array**; `getElementStats(processKey, packageId, start, end, version)` all positional, bare array (see `sdk/maestro.md`)
 - `CaseInstances.getSlaSummary({ startTimeUtc?, endTimeUtc?, … })` — options object, rows on `.items`; `getStagesSlaSummary(options?)` — **bare array**. SLA methods need `PIMS` on top of the Insights scopes
 
 **Non-Insights services:** access items via `result?.items ?? result?.value ?? []`
 
-**OData filters (≥1.5.0):** `filter` / `orderby` / `select` / `expand` now accept **SDK field names** (the camelCase TS property names, e.g. `processType`, `state`) in addition to the wire/API names (`ProcessType`, `State`). Existing wire-name filters like `"ProcessType eq 'Agent'"` / `"State eq 'Faulted'"` still work — no migration needed; prefer whichever reads clearer.
+**OData filters:** `filter` / `orderby` / `select` / `expand` now accept **SDK field names** (the camelCase TS property names, e.g. `processType`, `state`) in addition to the wire/API names (`ProcessType`, `State`). Existing wire-name filters like `"ProcessType eq 'Agent'"` / `"State eq 'Faulted'"` still work — no migration needed; prefer whichever reads clearer.
