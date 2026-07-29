@@ -21,7 +21,7 @@ When using the literal/expression mode, the `--value` string can start with one 
 
 | Prefix | Meaning | Example |
 |--------|---------|---------|
-| `=metadata.` | Case metadata field | `=metadata.amount` |
+| `=metadata.` | Case metadata field — closed schema, see [case-schema.md § 1](case-schema.md#1-top-level--metadata). NOT for arbitrary SDD "Case Metadata" business fields (e.g. Priority) — those are case variables, use `=vars.<id>` | `=metadata.ExternalId` |
 | `=js:` | Inline JavaScript expression | `=js:new Date().toISOString()` |
 | `=vars.` | Case-level variable | `=vars.inbox_config` |
 | `=bindings.` | Resource binding (connection, queue, trigger) | `=bindings.slackConnection` |
@@ -75,6 +75,8 @@ SDD IF columns and `tasks.md` conditions use natural shorthand — `approved == 
 ### Conservative rule for `=metadata.X`
 
 The lookup-path resolver has NO `=metadata.` branch — plain `=metadata.X` is NOT resolved at runtime. **Always wrap as `=js:metadata.X`** (or `=js:(metadata.X)` if the sink requires parens). The FE design-time picker may classify `=metadata.X` as "variable" type, but that's a UI hint, not a runtime contract.
+
+`metadata.X` is a **closed field set** — see [case-schema.md § 1](case-schema.md#1-top-level--metadata) for the full list (`caseIdentifier`, `slaRules`, `caseExitRules`, …) plus the platform-only runtime field `metadata.ExternalId`. It is NOT a namespace for arbitrary business data. A field the SDD's "Case Metadata" table lists for human-readability (e.g. `Priority`) is authored as a **case variable**, not a `metadata` key — reference it as `=js:vars.priority`, never `=js:metadata.priority` (which resolves to `undefined`).
 
 ### Planner-emit form
 
