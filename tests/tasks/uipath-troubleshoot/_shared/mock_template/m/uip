@@ -62,6 +62,7 @@ passthrough rule with `match: "docsai ask"` is the typical way to proxy
 open-ended natural-language commands.
 """
 
+import base64
 import hashlib
 import json
 import os
@@ -69,13 +70,49 @@ import shutil
 import subprocess
 import sys
 import time
+import zlib
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 RESPONSES_DIR = SCRIPT_DIR / "r"
 MANIFEST_PATH = RESPONSES_DIR / "manifest.json"
 CALL_LOG_PATH = SCRIPT_DIR / ".calls.jsonl"
-CACHE_DIR = RESPONSES_DIR / "_cache"
+# Passthrough (docsai) cache. Canonical location is beside the shim so it
+# survives `m/seal` removing `r/`; fall back to the legacy `r/_cache` for
+# unsealed local runs that shipped committed caches under `r/`.
+CACHE_DIR = SCRIPT_DIR / "_cache"
+LEGACY_CACHE_DIR = RESPONSES_DIR / "_cache"
+
+# Sealed fixture store (written by `m/seal`). When present, the manifest and
+# every response fixture are read from here — decoded in memory — and the
+# readable `r/` directory no longer exists. Opaque on disk (zlib+base64), so
+# `cat`-ing it reveals no evidence. `None` until first access; then either the
+# decoded dict `{"manifest": ..., "files": {name: rawbytes}}` or the sentinel
+# `_NO_STORE` (unsealed run → fall back to `r/`).
+STORE_PATH = SCRIPT_DIR / ".store"
+_NO_STORE = object()
+_STORE: object = None
+
+
+def _get_store():
+    """Load and cache the sealed store, or ``_NO_STORE`` if unsealed.
+
+    Decoded once per process. Returns a dict with ``manifest`` (dict) and
+    ``files`` (name → raw ``bytes``), or ``_NO_STORE`` when there is no
+    ``.store`` (the shim then reads ``r/`` as before).
+    """
+    global _STORE
+    if _STORE is not None:
+        return _STORE
+    if not STORE_PATH.is_file():
+        _STORE = _NO_STORE
+        return _STORE
+    blob = json.loads(zlib.decompress(base64.b64decode(STORE_PATH.read_bytes())).decode("utf-8"))
+    _STORE = {
+        "manifest": blob["manifest"],
+        "files": {name: base64.b64decode(b64) for name, b64 in blob.get("files", {}).items()},
+    }
+    return _STORE
 
 
 def _log_call(args: str, rule: dict | None, exit_code: int, error: str | None = None) -> None:
@@ -173,13 +210,15 @@ def _cache_key(args: str) -> str:
 
 def _load_cache(args: str) -> dict | None:
     """Return cached `{stdout, exit_code, args, cached_at}` or None."""
-    path = CACHE_DIR / f"{_cache_key(args)}.json"
-    if not path.is_file():
-        return None
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
+    key = f"{_cache_key(args)}.json"
+    for path in (CACHE_DIR / key, LEGACY_CACHE_DIR / key):
+        if not path.is_file():
+            continue
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+    return None
 
 
 def _save_cache(args: str, stdout: str, exit_code: int) -> None:
@@ -256,11 +295,16 @@ def main(argv: list[str]) -> int:
 
     args = " ".join(argv[1:])
 
-    if not MANIFEST_PATH.is_file():
+    # Prefer the sealed store (fixtures decoded in memory, `r/` removed); fall
+    # back to the readable `r/` directory for unsealed local runs.
+    store = _get_store()
+    if store is not _NO_STORE:
+        manifest = store["manifest"]
+    elif MANIFEST_PATH.is_file():
+        manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    else:
         _log_call(args, None, 2, error="manifest_missing")
         return _err({"error": "manifest.json missing", "path": str(MANIFEST_PATH)}, 2)
-
-    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 
     # 1. First matching rule wins.
     arg_tokens = set(_tokenize(args))
@@ -269,12 +313,19 @@ def main(argv: list[str]) -> int:
             continue
         if rule.get("passthrough"):
             return _passthrough(args, argv, rule)
-        response_file = RESPONSES_DIR / rule["file"]
-        if not response_file.is_file():
-            _log_call(args, rule, 2, error="fixture_missing")
-            return _err({"error": "response file missing", "path": str(response_file)}, 2)
+        # Fetch the fixture bytes from the sealed store or the `r/` directory.
+        if store is not _NO_STORE:
+            raw = store["files"].get(rule["file"])
+            if raw is None:
+                _log_call(args, rule, 2, error="fixture_missing")
+                return _err({"error": "response file missing", "path": rule["file"]}, 2)
+        else:
+            response_file = RESPONSES_DIR / rule["file"]
+            if not response_file.is_file():
+                _log_call(args, rule, 2, error="fixture_missing")
+                return _err({"error": "response file missing", "path": str(response_file)}, 2)
+            raw = response_file.read_bytes()
         # Tolerate fixtures written by PowerShell (UTF-16 LE BOM) or UTF-8.
-        raw = response_file.read_bytes()
         if raw.startswith(b"\xff\xfe") or raw.startswith(b"\xfe\xff"):
             text = raw.decode("utf-16")
         else:
