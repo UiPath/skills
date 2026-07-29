@@ -27,6 +27,14 @@ sandbox:
   # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
   mock_path_dirs: ["m"]
 
+pre_run:
+  # Seal the mock store before the agent starts: packs m/r/ into an opaque
+  # m/.store and removes m/r/, so the agent cannot read the recorded uip
+  # outputs and reach the diagnosis without investigating.
+  - command: "python m/seal"
+    timeout: 60
+    fail_on_error: true
+
 reference:
   file: RESOLUTION.md
 
@@ -82,4 +90,5 @@ simulation:
     - "Never invent or provide new factual data — you don't know any details beyond your initial report."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
+    - "If the agent offers or asks to apply/implement the fix itself (editing project files, or running validate/build/pack/publish), DECLINE: say you will apply the change yourself in Studio later, and ask only for the root cause and the exact fix steps. Never approve a source-file edit."
   max_turns: 6

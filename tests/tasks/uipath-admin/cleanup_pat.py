@@ -22,8 +22,10 @@ def main():
         return
 
     for t in data.get("Data", []):
-        if (t.get("description") or "") == "e2e-test-pat":
-            token_id = t.get("id")
+        # Records use PascalCase Description/Id; tolerate camelCase too.
+        desc = t.get("Description") or t.get("description") or ""
+        if desc == "e2e-test-pat":
+            token_id = t.get("Id") or t.get("id")
             if not token_id:
                 continue
             logger.info("Revoking PAT (id=%s)", token_id)

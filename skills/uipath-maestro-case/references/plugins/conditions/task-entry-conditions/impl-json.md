@@ -85,7 +85,7 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 "rules": [[ { "id": "rxxxxxxxx", "rule": "runs-sequentially" } ]]
 ```
 
-**Frontend toggle semantics:** The sequential toggle writes this rule as the task's only entry condition. Preserve the task's order in the stage's `data.tasks` structure. On the first task in the chain, `runs-sequentially` means the current stage was entered; on subsequent tasks, it means the preceding task completed. Do not use lane-sharing, `selected-tasks-completed`, or an additional `current-stage-entered` rule to express this sequence.
+**Frontend toggle semantics:** The sequential toggle writes this rule as the task's only entry condition. Preserve the task's order in the stage's `data.tasks` structure. A strict chain uses consecutive single-task inner arrays (`[[A], [B], [C]]`); only explicitly parallel siblings share an inner array (`[[A, B], [C]]`). On the first task in the chain, `runs-sequentially` means the current stage was entered; on subsequent tasks, it means the preceding task set completed. Do not use lane-sharing, `selected-tasks-completed`, or an additional `current-stage-entered` rule to express this sequence.
 
 ## Rule-Type Catalog
 

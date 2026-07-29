@@ -6,11 +6,12 @@ Asserts:
   2. `main.py` imports `CreateTask` from `uipath.platform.common`.
   3. At least one `interrupt(CreateTask(...))` call site exists.
   4. The `CreateTask` call targets `app_name="RefundReview"`,
-     `app_folder_path="Compliance"`.
+     `app_folder_path="Shared/uipath-agents/RefundReview"` (where the app
+     is deployed on the codereval tenant).
   5. `main.py` does NOT use `CreateEscalation` (that's a different pattern
      covered by hitl_create_task — keep them disjoint).
   6. `bindings.json` declares the `app` resource for `RefundReview` /
-     `Compliance`.
+     `Shared/uipath-agents/RefundReview`.
   7. A top-level `graph =` variable is exported.
   8. `langgraph.json` exists at the resolved project root and points at
      the exported graph.
@@ -37,6 +38,9 @@ from _shared.bindings_assertions import (  # noqa: E402
 )
 
 ROOT = find_project_root("refund-gate")
+
+APP_NAME = "RefundReview"
+APP_FOLDER = "Shared/uipath-agents/RefundReview"
 
 
 def fail(msg: str) -> None:
@@ -127,14 +131,14 @@ def main() -> None:
 
     consts = module_constants(tree)
     kwargs = {kw.arg: kw.value for kw in call.keywords if kw.arg is not None}
-    expected = {"app_name": "RefundReview", "app_folder_path": "Compliance"}
+    expected = {"app_name": APP_NAME, "app_folder_path": APP_FOLDER}
     for kw, want in expected.items():
         if kw not in kwargs:
             fail(f"`CreateTask(...)` is missing `{kw}=`")
         got = resolve_kwarg(kwargs[kw], consts)
         if got != want:
             fail(f"`CreateTask({kw}=...)` resolves to {got!r}, expected {want!r}")
-    print('OK: CreateTask targets app_name="RefundReview" / app_folder_path="Compliance"')
+    print(f'OK: CreateTask targets app_name="{APP_NAME}" / app_folder_path="{APP_FOLDER}"')
 
     if not re.search(r"^\s*graph\s*=\s*", text, re.M):
         fail("main.py does not export a top-level `graph =` variable")
@@ -148,12 +152,12 @@ def main() -> None:
     print("OK: no module-level UiPath* construction")
 
     doc = load_bindings(ROOT / "bindings.json")
-    entry = find_resource(doc, resource="app", key="RefundReview.Compliance")
-    assert_value_field(entry, field="name", expected="RefundReview")
-    assert_value_field(entry, field="folderPath", expected="Compliance")
+    entry = find_resource(doc, resource="app", key=f"{APP_NAME}.{APP_FOLDER}")
+    assert_value_field(entry, field="name", expected=APP_NAME)
+    assert_value_field(entry, field="folderPath", expected=APP_FOLDER)
     assert_metadata_field(entry, field="ActivityName", expected="create_async")
-    assert_metadata_field(entry, field="DisplayLabel", expected="RefundReview")
-    print("OK: bindings.json declares the RefundReview/Compliance `app` resource")
+    assert_metadata_field(entry, field="DisplayLabel", expected=APP_NAME)
+    print(f"OK: bindings.json declares the {APP_NAME}/{APP_FOLDER} `app` resource")
 
 
 if __name__ == "__main__":

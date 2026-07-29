@@ -127,7 +127,7 @@ jobs:
           SKIP_INFRA_TRIGGER=false
           echo "$PR_LABELS" | grep -qw 'ci:skip-infra-trigger' && SKIP_INFRA_TRIGGER=true
 
-          if [ "$SKIP_INFRA_TRIGGER" = "false" ] && echo "$CHANGED" | grep -qE '^tests/experiments/smoke\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-skills\.yml$'; then
+          if [ "$SKIP_INFRA_TRIGGER" = "false" ] && echo "$CHANGED" | grep -qE '^tests/experiments/smoke\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^tests/\.coder-eval-version$|^\.github/workflows/smoke-skills\.yml$'; then
             shopt -s globstar nullglob
             GLOBS=""
             for f in tests/tasks/**/*.yaml; do
@@ -472,7 +472,6 @@ jobs:
         env:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
         run: |
           python - <<'PY'
           import os
@@ -482,7 +481,6 @@ jobs:
               "UIPATH_CLI_AUTH_TOKEN",
               "AWS_BEARER_TOKEN_BEDROCK",
               "ANTHROPIC_API_KEY",
-              "TRACES_SMOKE_PROCESS_KEY",
           )
           values = [os.environ[name] for name in names if len(os.environ.get(name, "")) >= 8]
           if not values:

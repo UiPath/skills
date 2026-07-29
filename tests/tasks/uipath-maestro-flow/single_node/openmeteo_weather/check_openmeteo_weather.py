@@ -4,9 +4,10 @@
 Structural pre-checks fail fast and prevent gaming, then a live `flow debug`
 proves the connector actually called Open-Meteo and returned a temperature:
 
-1. A connector node targets the Open-Meteo connector
-   (`custom-codereval-openmeteoapis`) using the curated `getcurrentweather`
-   activity — NOT a `core.action.http.v2` proxy and NOT a `core.logic.mock`.
+1. A connector node targets the Open-Meteo connector — any
+   `uipath.connector.custom-codereval-openmeteoapis.*` activity (curated
+   `getcurrentweather` or the generic `get-record` over `V1Forecast` both
+   count) — NOT a `core.action.http.v2` proxy and NOT a `core.logic.mock`.
 2. That node is configured for the current weather at a location: its
    `inputs.detail.queryParameters` carry `latitude`, `longitude`, and a truthy
    `current_weather` flag.
@@ -38,7 +39,10 @@ from _shared.flow_check import (  # noqa: E402
 )
 
 CONNECTOR_KEY = "custom-codereval-openmeteoapis"
-OPERATION = "getcurrentweather"
+# Any activity of the custom connector counts (curated getcurrentweather,
+# generic get-record, ...) — the run 2026-07-28_04-39-07 false failure showed
+# agents legitimately reach the same API via the generic activity flavor.
+NODE_TYPE_PREFIX = f"uipath.connector.{CONNECTOR_KEY}."
 
 # Plausible current-temperature band. Wide enough to span °C and °F so the test
 # never flakes on the unit the agent picked, narrow enough to exclude obvious
@@ -99,13 +103,12 @@ def _assert_structure() -> None:
     weather_nodes = [
         n
         for n in nodes
-        if CONNECTOR_KEY in str(n.get("type", "")).lower()
-        and OPERATION in str(n.get("type", "")).lower()
+        if str(n.get("type", "")).lower().startswith(NODE_TYPE_PREFIX)
     ]
     if not weather_nodes:
         types = sorted({str(n.get("type", "")) for n in nodes})
         _fail(
-            f"No Open-Meteo {OPERATION!r} connector node found. "
+            f"No Open-Meteo connector node ({NODE_TYPE_PREFIX}*) found. "
             f"Node types seen: {types}"
         )
 
@@ -126,9 +129,9 @@ def _assert_structure() -> None:
             )
             return
     _fail(
-        f"Open-Meteo {OPERATION} node found but its queryParameters do not carry "
-        f"latitude, longitude, and a truthy current_weather flag. The curated "
-        f"activity must be configured for the current weather at a location."
+        "Open-Meteo connector node found but its queryParameters do not carry "
+        "latitude, longitude, and a truthy current_weather flag. The activity "
+        "must be configured for the current weather at a location."
     )
 
 

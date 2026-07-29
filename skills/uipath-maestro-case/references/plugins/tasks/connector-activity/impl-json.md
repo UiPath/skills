@@ -205,7 +205,7 @@ Generate the task skeleton:
 }
 ```
 
-Append the task to the target stage's `data.tasks` structure in its planned order. Lane placement is structural/layout state; it does not express sequencing. Add `runs-sequentially` to the task's entry conditions when the frontend toggle is selected.
+Append the task to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. If the task is `sequential` or its entry rule is `runs-sequentially`, append it as a new single-task inner array in planned order. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks also get their own single-task inner array. Only `activation-mode: parallel` tasks with explicit same-lane intent and rationale may share an inner array. Add `runs-sequentially` to the task's entry conditions when the frontend toggle is selected; if `lane` conflicts with mode, mode wins.
 
 ### Step 9 — Append root-level bindings
 

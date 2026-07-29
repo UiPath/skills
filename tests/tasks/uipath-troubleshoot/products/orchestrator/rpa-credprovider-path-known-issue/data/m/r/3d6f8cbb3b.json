@@ -1,7 +1,6 @@
 {
   "Result": "Success",
   "Code": "JobGet",
-  "_doc": "Failing LedgerPostingBot job. Info = 'Could not start executor. Could not find a part of the path C:\\Windows\\TEMP\\UiPath\\CredProvider.' This is a KNOWN Robot defect (ROBO-4022) fixed in 23.10.9 — NOT a permissions/missing-folder problem to fix by hand. The host Robot version (see machines list) predates the fix. Correct action: upgrade the Robot to >= 23.10.9.",
   "Data": {
     "Key": "bbccddee-2233-4455-6677-8899aabbccdd",
     "StartTime": "2026-06-28T06:00:01.400Z",

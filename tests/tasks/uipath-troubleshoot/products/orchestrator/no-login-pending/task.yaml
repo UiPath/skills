@@ -28,6 +28,14 @@ sandbox:
       path: data
   mock_path_dirs: ["m"]
 
+pre_run:
+  # Seal the mock store before the agent starts: packs m/r/ into an opaque
+  # m/.store and removes m/r/, so the agent cannot read the recorded uip
+  # outputs and reach the diagnosis without investigating.
+  - command: "python m/seal"
+    timeout: 60
+    fail_on_error: true
+
 reference:
   file: RESOLUTION.md
 
@@ -46,6 +54,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
+    include_dialog: true
     include_agent_output: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
@@ -84,4 +93,5 @@ simulation:
     - "If the agent asks how to proceed when some data is missing, tell it to proceed with best-effort findings from the evidence it already gathered."
     - "Never volunteer new factual data beyond your initial report and the answers above. Keep replies short (one sentence)."
     - "Never instruct the agent to stop, abort, or skip phases."
+    - "If the agent offers or asks to apply/implement the fix itself (editing project files, or running validate/build/pack/publish), DECLINE: say you will apply the change yourself in Studio later, and ask only for the root cause and the exact fix steps. Never approve a source-file edit."
   max_turns: 10

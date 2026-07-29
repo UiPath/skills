@@ -84,7 +84,7 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 
 ## Completion Output
 
-Report: file path edited, what changed (nodes/tasks/conditions added/removed/modified), validation status, any placeholder tasks still unresolved, any connector connections the user must create, and a **freshness note** — whether the local copy was pulled from Studio Web first (so re-publish reflects current server state) or is a local-only project not synced from SW (re-publish overwrites whatever is on the server). Then AskUserQuestion "What's next":
+Report: file path edited, what changed (nodes/tasks/conditions added/removed/modified), validation status, any placeholder tasks still unresolved, any connector connections the user must create, and a **freshness note** — whether the local copy was pulled from Studio Web first (so re-publish reflects current server state) or is a local-only project not synced from SW (re-publish overwrites whatever is on the server). Then include `Suggested next steps` in one short line before AskUserQuestion "What's next": run debug if the edit changes runtime behavior, publish when ready to update Studio Web, or stop and inspect the local diff.
 
 | Option | What it does |
 |---|---|
