@@ -49,7 +49,7 @@ success_criteria:
   - type: command_executed
     description: "Agent scaffolded the Coded Function project (uip function/codedagent new or uipath new)"
     tool_name: "Bash"
-    command_pattern: '(uip\s+(functions|codedagent)\s+new\s+(?!-{1,2}help)\S+|uipath\s+new\s+(?!-{1,2}help)\S+)'
+    command_pattern: '(uip\s+(functions?|codedagent)\s+new\s+(?!-{1,2}help)\S+|uipath\s+new\s+(?!-{1,2}help)\S+)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -57,7 +57,7 @@ success_criteria:
   - type: command_executed
     description: "Agent generated entry-points.json (uip function/codedagent init or uipath init)"
     tool_name: "Bash"
-    command_pattern: '(uip\s+(functions|codedagent)\s+init|uipath\s+init)'
+    command_pattern: '(uip\s+(functions?|codedagent)\s+init|uipath\s+init)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
