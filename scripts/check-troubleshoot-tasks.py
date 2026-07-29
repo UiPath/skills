@@ -164,6 +164,11 @@ def _check(doc: dict, text: str, path: Path, contract: dict, locate: bool = True
         fail(r"^task_id:", "no `success_criteria`", "Add the skill_triggered + llm_judge criteria.")
         crit = []
     sc = contract["success_criteria"]
+    # A non-mapping entry must be its own violation: silently dropping it here
+    # would bypass the type whitelist below.
+    for entry in crit:
+        if not isinstance(entry, dict):
+            fail(r"success_criteria:", f"success_criteria entry is not a mapping (found {entry!r})", "Each criterion is a mapping with a `type` key.")
     types = [c.get("type") for c in crit if isinstance(c, dict)]
 
     for req in sc["required_types"]:

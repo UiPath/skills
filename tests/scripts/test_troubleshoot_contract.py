@@ -125,6 +125,16 @@ def test_skill_name_drift_is_caught(tmp_path):
     assert "skill_triggered.skill_name" in out
 
 
+def test_non_mapping_criterion_entry_is_caught(tmp_path):
+    """A scalar entry must be a violation, not silently dropped from every rule."""
+    directory = _scenario(
+        tmp_path, lambda t: t.replace("success_criteria:\n", "success_criteria:\n  - malformed-scalar\n", 1)
+    )
+    code, out = _run(directory)
+    assert code == 1
+    assert "not a mapping" in out
+
+
 def test_unvetted_criterion_type_is_caught(tmp_path):
     extra = '  - type: run_command\n    description: "x"\n    command: "true"\n    weight: 1.0\n\n'
     directory = _scenario(tmp_path, lambda t: t.replace("success_criteria:\n", "success_criteria:\n" + extra, 1))
