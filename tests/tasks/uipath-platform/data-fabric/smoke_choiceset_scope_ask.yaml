@@ -15,7 +15,6 @@ run_limits:
 initial_prompt: |
   Create a choice set called "Demo45" with two values: A and B.
   I have not decided whether it belongs at tenant level or in a folder.
-  Ask me before creating it.
 
 success_criteria:
   - type: command_executed
@@ -31,9 +30,9 @@ success_criteria:
     description: "Agent paused and asked the user to choose tenant or folder scope"
     include_agent_output: true
     prompt: |
-      The user asked to create a Data Fabric choice set but explicitly said
-      its scope was undecided. The correct response is to ask whether it
-      belongs at tenant level or in a folder and not claim it was created.
-      Score 1 only if both behaviors are present; otherwise score 0.
+      The user asked to create a Data Fabric choice set but said its scope
+      was undecided. Score 1.0 if the response asks the user to choose tenant
+      or folder scope and does not claim the choice set was created. Score
+      0.0 otherwise.
     weight: 3.0
     pass_threshold: 1.0

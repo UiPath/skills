@@ -16,14 +16,13 @@ run_limits:
 initial_prompt: |
   We're setting up a small folder-scoped UiPath Data Fabric entity for a regional-reports test.
 
-  I explicitly approve creating `CE_FolderRecordsTest` in the derived
-  folder A and inserting the three requested records there. Derive folders A
-  and B exactly as instructed, proceed without another confirmation, and do
-  not mutate any unrelated Data Fabric resource.
+  I explicitly approve creating `CE_FolderRecordsTest` in the `Shared`
+  folder and inserting the three requested records there. Proceed without
+  another confirmation, and do not mutate any unrelated Data Fabric resource.
 
-  First, take a look at the folders on the tenant. If there are at least
-  two, call the first one folder A and the second folder B. If there's
-  only one, note that and stop — this test needs two folders.
+  First, find the `Shared` folder and one other visible folder. Call `Shared`
+  folder A and the other one folder B. If either is unavailable, stop and
+  tell me.
 
   Create an entity called `CE_FolderRecordsTest` scoped to folder A, with
   two columns:
@@ -102,7 +101,7 @@ success_criteria:
   - type: run_command
     description: "End state (deterministic): CE_FolderRecordsTest has exactly 3 records — the R1/R2/R3 seeds landed"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_FolderRecordsTest --expected 3"
-    timeout: 60
+    timeout: 240
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
@@ -127,11 +126,11 @@ success_criteria:
 
 pre_run:
   # Sweep any leftover folder-scoped entities from prior runs.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderRecordsTest --first-folder"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderRecordsTest --include-folders"
     timeout: 120
     fail_on_error: false
 
 post_run:
   # Cleanup the folder-scoped entity + any siblings created during the run.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderRecordsTest --first-folder"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderRecordsTest --include-folders"
     timeout: 120

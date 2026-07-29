@@ -38,10 +38,10 @@ Records file format (passed verbatim as the body of `uip df records insert`):
       ...
     ]
 
-Auth: uses the active `uip` login. If `uip` calls fail, prints WARN and
-exits 0 — pre-seed must never block a test from running.
+Auth: uses the active `uip` login.
 
-Exit 0 on success or skip; exit 1 only on argument errors.
+Exit 0 on success or skip; exit 1 when validation or a required Data Fabric
+operation fails.
 """
 
 import argparse
@@ -162,7 +162,7 @@ def insert_records(entity_id: str, records: list[dict]) -> bool:
     return True
 
 
-def wipe_records(entity_id: str) -> None:
+def wipe_records(entity_id: str) -> bool:
     """Page through and delete every record on the entity.
 
     Uses --limit 200 batches. Continues on per-batch failures so a transient
@@ -173,12 +173,12 @@ def wipe_records(entity_id: str) -> None:
         code, out, err = run_uip("df", "records", "list", entity_id, "--limit", "200")
         if code != 0 or not out.strip():
             print(f"WARN: uip df records list during wipe failed (exit {code}): {err.strip()}", file=sys.stderr)
-            return
+            return False
         try:
             data = json.loads(out)
         except json.JSONDecodeError:
             print("WARN: could not parse records list output during wipe", file=sys.stderr)
-            return
+            return False
         records_body = (data.get("Data") if isinstance(data, dict) else None) or {}
         records = (
             records_body.get("Items")
@@ -198,7 +198,7 @@ def wipe_records(entity_id: str) -> None:
         )
         if del_code != 0:
             print(f"WARN: uip df records delete batch failed (exit {del_code}): {del_err.strip()}", file=sys.stderr)
-            return
+            return False
         deleted += len(ids)
         if not records_body.get("HasNextPage"):
             # No more pages — but more records may exist if delete shifted pagination.
@@ -206,6 +206,7 @@ def wipe_records(entity_id: str) -> None:
             continue
     if deleted:
         print(f"OK: wiped {deleted} record(s) from entity {entity_id}")
+    return True
 
 
 def load_json(path: Path) -> dict | list:
@@ -276,20 +277,23 @@ def main() -> None:
             f"(expected {len(records)}); wiping and re-seeding",
             file=sys.stderr,
         )
-        wipe_records(entity_id)
+        if not wipe_records(entity_id):
+            sys.exit(1)
 
     elif entity_id is None:
         entity_id = create_entity(args.entity_name, schema)
         if entity_id is None:
-            sys.exit(0)
+            sys.exit(1)
         print(f"OK: created entity {args.entity_name} ({entity_id})")
     else:
         # --reset path: wipe whatever the agent left behind.
-        wipe_records(entity_id)
+        if not wipe_records(entity_id):
+            sys.exit(1)
 
     if records:
-        if insert_records(entity_id, records):
-            print(f"OK: seeded {len(records)} record(s) into {args.entity_name}")
+        if not insert_records(entity_id, records):
+            sys.exit(1)
+        print(f"OK: seeded {len(records)} record(s) into {args.entity_name}")
     else:
         print(f"OK: no seed records configured for {args.entity_name} (schema-only)")
     sys.exit(0)

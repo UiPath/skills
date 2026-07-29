@@ -6,7 +6,7 @@ description: >
   target requires `referenceFolderKey` even when the parent and target sit
   in the same folder (omitting it fails with a misleading tenant-level
   error), and folder-to-tenant / tenant-to-folder bindings are rejected
-  outright (CHOICE_SET / RELATIONSHIP / FILE fields need same scope class).
+  outright for CHOICE_SET / RELATIONSHIP fields.
   Exercises the negative + positive paths the agent must learn to surface
   rather than swallow.
 tags: [uipath-platform, data-fabric, integration, entity-scope, complex-fields, mode:diagnose, lifecycle:setup]
@@ -21,12 +21,11 @@ initial_prompt: |
   I explicitly approve all mutations requested below against only
   `CE_FolderBindEmployee`, `CE_FolderBindExpense`, and
   `CE_FolderBindTenantTarget`, including the two intentional invalid
-  relationship attempts. Derive folder A exactly as instructed and proceed
+  relationship attempts. Use the `Shared` folder and proceed
   without another confirmation.
 
-  First, take a look at the folders on the tenant. Pick the first folder
-  returned and call it folder A — that's where these entities will live. If
-  the tenant has no folders, stop and tell me.
+  First, find the `Shared` folder — that's where these entities will live. If
+  it is unavailable, stop and tell me.
 
   Create two entities both scoped to folder A:
     - `CE_FolderBindEmployee` — one Name column (required text, up to
@@ -123,7 +122,7 @@ success_criteria:
   - type: run_command
     description: "End state (deterministic): the `manager` field on CE_FolderBindExpense ended up correctly bound to CE_FolderBindEmployee (scenario 2 succeeded and left the correct schema behind)"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_binding.py --entity-name CE_FolderBindExpense --field-name manager --target-entity-name CE_FolderBindEmployee"
-    timeout: 60
+    timeout: 240
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
@@ -131,7 +130,7 @@ success_criteria:
   - type: run_command
     description: "End state (deterministic): 2 Employee rows landed in CE_FolderBindEmployee"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_FolderBindEmployee --expected 2"
-    timeout: 60
+    timeout: 240
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -139,7 +138,7 @@ success_criteria:
   - type: run_command
     description: "End state (deterministic): 1 Expense row landed in CE_FolderBindExpense"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_FolderBindExpense --expected 1"
-    timeout: 60
+    timeout: 240
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -164,10 +163,10 @@ success_criteria:
 
 pre_run:
   # Child first so its relationship does not block deleting the target.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindExpense --first-folder"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindExpense --include-folders"
     timeout: 120
     fail_on_error: false
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindEmployee --first-folder"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindEmployee --include-folders"
     timeout: 120
     fail_on_error: false
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindTenantTarget"
@@ -176,9 +175,9 @@ pre_run:
 
 post_run:
   # Child (Expense) first so any relationship references are dropped before targets.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindExpense --first-folder"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindExpense --include-folders"
     timeout: 120
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindEmployee --first-folder"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindEmployee --include-folders"
     timeout: 120
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindTenantTarget"
     timeout: 120

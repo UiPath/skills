@@ -99,13 +99,7 @@ def first_folder_key() -> str:
     if not folders:
         return ""
     folder = folders[0]
-    return str(
-        folder.get("Key")
-        or folder.get("key")
-        or folder.get("Id")
-        or folder.get("id")
-        or ""
-    )
+    return str(folder.get("Key") or folder.get("key") or "")
 
 
 def match_by_prefix(entities: list[dict], prefix: str) -> list[tuple[str, str, str]]:

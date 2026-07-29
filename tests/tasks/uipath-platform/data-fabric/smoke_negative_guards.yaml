@@ -1,10 +1,10 @@
 task_id: skill-datafabric-smoke-negative-guards
 description: >
-  Smoke test: agent is presented with four requests for operations that the
-  uipath-platform skill explicitly prohibits —
-  changing a field's data type, writing records to a federated entity, and
-  creating an entity with a reserved name — plus a complex-field CSV import
-  that requires a safer loading path.
+  Smoke test: agent is presented with three operations that the
+  uipath-platform skill explicitly prohibits — changing a field's data type,
+  writing records to a federated entity, and creating an entity with a
+  reserved name — plus a complex-field CSV import that requires a safer
+  loading path.
   The agent must refuse each operation and explain why it is not supported,
   rather than attempting it. Grading is via command-shape (no forbidden
   CLI verb fired) plus an llm_judge on the agent's final response for

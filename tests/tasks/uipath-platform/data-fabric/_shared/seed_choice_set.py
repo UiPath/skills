@@ -11,7 +11,7 @@ Behavior:
   - If the choice set does not exist, create it at tenant level and add each
     value.
 
-Never fails the test — WARN + exit 0 on any uip error.
+Exits nonzero when the choice set or any required value cannot be seeded.
 
 Usage:
     seed_choice_set.py --name CE_SmokeCategories \\
@@ -165,19 +165,27 @@ def main() -> None:
     if not cs_id:
         cs_id = create_choice_set(name, display_name, description)
         if not cs_id:
-            print(f"WARN: could not create choice set {name}; skipping value seed", file=sys.stderr)
-            sys.exit(0)
+            print(f"FAIL: could not create choice set {name}", file=sys.stderr)
+            sys.exit(1)
         print(f"OK: created choice set {name} ({cs_id})")
     else:
         print(f"OK: choice set {name} already present ({cs_id})")
 
     existing = list_value_names(cs_id)
+    failures: list[str] = []
     for v in values:
         if v.lower() in existing:
             print(f"OK: value {v!r} already on {name}")
         else:
-            create_value(cs_id, v, display_name=v.capitalize())
+            if not create_value(cs_id, v, display_name=v.capitalize()):
+                failures.append(v)
 
+    if failures:
+        print(
+            f"FAIL: could not seed value(s) on {name}: {', '.join(failures)}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     sys.exit(0)
 
 

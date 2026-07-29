@@ -113,22 +113,64 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "End state: the catalogue contains the requested field types"
+    description: "End state: product-name field is text"
     command: >-
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
-      --entity-name CE_ProductCatalogue
-      --ignore-field-case
-      --assertions
-      "ProductName.Name=STRING,Price.Name=DECIMAL,InStock.Name=BOOLEAN,SKU.Name=STRING,Poster.Name=FILE"
-    timeout: 120
+      --entity-name CE_ProductCatalogue --ignore-field-case
+      --assertions "ProductName.Name=STRING"
+    timeout: 180
     expected_exit_code: 0
-    weight: 3.0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: price field is decimal"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      --entity-name CE_ProductCatalogue --ignore-field-case
+      --assertions "Price.Name=DECIMAL"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: stock field is boolean"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      --entity-name CE_ProductCatalogue --ignore-field-case
+      --assertions "InStock.Name=BOOLEAN"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: SKU field is text"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      --entity-name CE_ProductCatalogue --ignore-field-case
+      --assertions "SKU.Name=STRING"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: Poster field is a file attachment"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      --entity-name CE_ProductCatalogue --ignore-field-case
+      --assertions "Poster.Name=FILE"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "End state (deterministic): all 15 product records landed in CE_ProductCatalogue"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_ProductCatalogue --expected 15"
-    timeout: 60
+    timeout: 240
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -175,10 +217,10 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue --include-folders"
     timeout: 60
     fail_on_error: false
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue --include-folders"
     timeout: 60

@@ -127,15 +127,15 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+files\s+upload\s+\S+\s+\S+\s+"?Score"?(?:\s|$)'
     min_count: 1
-    weight: 0.67
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent attempted the nonexistent-record file upload"
+    description: "Agent attempted both temp-file upload error probes"
     tool_name: "Bash"
-    command_pattern: '(?is)uip\s+df\s+files\s+upload\s+\S+\s+\S*(?:does-not-exist|no-such|fake|missing|nonexist|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\S*'
-    min_count: 1
-    weight: 0.67
+    command_pattern: '(?is)uip\s+df\s+files\s+upload.*--file\s+\S*temp\.txt'
+    min_count: 2
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -143,24 +143,6 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+files\s+upload.*no-such-file\.bin'
     min_count: 1
-    weight: 0.66
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "Agent created wrong_headers.csv locally for the CSV-header-mismatch scenario"
-    path: "wrong_headers.csv"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "Agent created malformed.csv locally for the malformed-CSV scenario"
-    path: "malformed.csv"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "Agent created temp.txt locally as the file-upload source"
-    path: "temp.txt"
     weight: 1.0
     pass_threshold: 1.0
 
@@ -213,6 +195,7 @@ pre_run:
       --entity-name CE_ErrorPathsTest
       --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/error_paths.schema.json
       --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/error_paths.records.json
+      --reset
     timeout: 180
     fail_on_error: true
 

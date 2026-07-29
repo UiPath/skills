@@ -67,7 +67,14 @@ def list_entities_including_folders() -> list[dict]:
                 data = json.loads(out)
             except json.JSONDecodeError:
                 continue
-            items = data.get("Data") if isinstance(data.get("Data"), list) else []
+            inner = data.get("Data") if isinstance(data, dict) else None
+            items = (
+                inner
+                if isinstance(inner, list)
+                else (inner or {}).get("Records")
+                or (inner or {}).get("records")
+                or []
+            )
             if items:
                 return items
     return []

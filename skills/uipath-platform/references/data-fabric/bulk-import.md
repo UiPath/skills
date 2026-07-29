@@ -33,7 +33,7 @@ uip df entities get <entity-id> --output json
   header `Stock-Keeping Unit`; `SKU` is rejected as an invalid header.
 - Use `uip df entities get <entity-id> --output json` to discover exact
   `Fields[].DisplayName` values before importing
-- System fields (`Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`) must NOT appear in the CSV
+- System fields (`Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`, `RecordOwner`) must NOT appear in the CSV
 
 ### Example CSV
 

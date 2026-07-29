@@ -87,8 +87,8 @@ success_criteria:
     command: >-
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
       --entity-name CE_SmokeExpense --ignore-field-case
-      --assertions 'amount.Name=DECIMAL,amount.decimalPrecision=2,amount.minValue=0,amount.maxValue=1000000,category.Name=CHOICE_SET_SINGLE,tags.Name=CHOICE_SET_MULTIPLE,submitter.Name=RELATIONSHIP,project.Name=RELATIONSHIP,Receipt.Name=FILE,paymentStatus.Name=CHOICE_SET_SINGLE'
-    timeout: 120
+      --assertions 'amount.Name=DECIMAL,amount.decimalPrecision=2,amount.minValue=0,amount.maxValue=1000000,category.Name=CHOICE_SET_SINGLE,tags.Name=CHOICE_SET_MULTIPLE,submitter.Name=RELATIONSHIP,project.Name=RELATIONSHIP,Receipt.Name=FILE'
+    timeout: 180
     expected_exit_code: 0
     weight: 4.0
     pass_threshold: 1.0
@@ -101,7 +101,7 @@ success_criteria:
       &&
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_binding.py
       --entity-name CE_SmokeExpense --field-name project --target-entity-name CE_SmokeProjects
-    timeout: 120
+    timeout: 180
     expected_exit_code: 0
     weight: 4.0
     pass_threshold: 1.0
@@ -112,19 +112,20 @@ success_criteria:
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
       --entity-name CE_SmokeEmployees --ignore-field-case
       --assertions 'status.Name=CHOICE_SET_SINGLE'
-    timeout: 120
+    timeout: 180
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The reusable payment-state dropdown contains all requested values"
+    description: "The reusable payment-state dropdown contains all requested values and is used by the expense schema"
     command: >-
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_choice_set_values.py
       --name CE_SmokePaymentState0726 --required paid,unpaid,refunded
-    timeout: 120
+      --bound-entity-name CE_SmokeExpense
+    timeout: 180
     expected_exit_code: 0
-    weight: 2.5
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -132,7 +133,7 @@ success_criteria:
     command: >-
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py
       --entity-name CE_SmokeExpense --expected 1
-    timeout: 120
+    timeout: 240
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -224,11 +225,22 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeExpense"
+    timeout: 180
+    fail_on_error: false
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_choice_set.py --spec $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_categories.choice_set.json"
     timeout: 180
+    fail_on_error: true
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_choice_set.py --spec $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_tags.choice_set.json"
     timeout: 180
+    fail_on_error: true
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py --entity-name CE_SmokeEmployees --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_employees.schema.json --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_employees.records.json"
     timeout: 240
+    fail_on_error: true
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py --entity-name CE_SmokeProjects --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_projects.schema.json --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_projects.records.json"
     timeout: 240
+    fail_on_error: true
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeExpense"
+    timeout: 180

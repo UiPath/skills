@@ -210,7 +210,7 @@ uip df entities update <entity-id> \
 | Folder | Tenant user-authored entity / choice set | ❌ | n/a — not supported | n/a — not supported |
 | Tenant | Folder | ❌ | n/a — not supported | n/a — not supported |
 
-Surface this constraint to the user **before** invoking `entities create` / `addFields` whenever the proposed parent and target sit on opposite sides of the tenant ↔ folder boundary AND the target is not a system entity. Do not silently fall back to a different field type — see Rule 18 (no silent substitution).
+Surface this constraint to the user **before** invoking `entities create` / `addFields` whenever the proposed parent and target sit on opposite sides of the tenant ↔ folder boundary. Do not silently fall back to a different field type — see Rule 18 (no silent substitution).
 
 ### FILE Fields
 
@@ -328,7 +328,7 @@ uip df entities update <entity-id> \
 
 ## System Fields
 
-Every entity has auto-created system fields: `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`. These are read-only and must not be included in field definitions or CSV imports.
+Every entity has auto-created system fields: `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`, `RecordOwner`. These are read-only and must not be included in field definitions or CSV imports.
 
 ## Listing and Inspecting Entities
 

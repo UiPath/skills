@@ -37,15 +37,33 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "Agent proposed every column, surfaced ambiguity, and paused for confirmation"
+    description: "Agent proposed a field type for every CSV column"
     include_agent_output: true
     prompt: |
       The user supplied five CSV columns: orderId, placedAt, totalAmount,
-      isPaid, and customerUuid. The agent must propose a Data Fabric type
-      for every column, identify plausible ambiguity for the timestamp,
-      decimal precision, 0/1 flag, and UUID-shaped customer value, use only
-      UI-compatible field types, and wait for confirmation before creating
-      the entity. Score 1 only if all five columns are covered, the four
-      ambiguities are surfaced, and the response clearly pauses; otherwise 0.
-    weight: 4.0
+      isPaid, and customerUuid. Score 1.0 if the response proposes a Data
+      Fabric field type for all five columns, 0.5 if four are covered, and
+      0.0 otherwise.
+    weight: 2.0
+    pass_threshold: 0.5
+
+  - type: llm_judge
+    description: "Agent surfaced the ambiguous CSV inferences"
+    include_agent_output: true
+    prompt: |
+      Check whether the response surfaces plausible alternatives for the
+      timestamp-shaped placedAt value, decimal precision for totalAmount,
+      the 0/1 representation of isPaid, and whether customerUuid is plain
+      text or a relationship. Score 1.0 if all four are discussed, 0.5 if
+      three are discussed, and 0.0 otherwise.
+    weight: 2.0
+    pass_threshold: 0.5
+
+  - type: llm_judge
+    description: "Agent paused for confirmation before creating anything"
+    include_agent_output: true
+    prompt: |
+      Score 1.0 if the response clearly asks the user to confirm the proposed
+      schema and does not claim the entity was created. Score 0.0 otherwise.
+    weight: 2.0
     pass_threshold: 1.0

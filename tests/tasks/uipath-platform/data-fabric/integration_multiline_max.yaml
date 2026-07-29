@@ -42,7 +42,7 @@ success_criteria:
   - type: run_command
     description: "End state: Body is actually a MULTILINE_MAX field (not a substituted text type)"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_MultilineMaxTest --assertions Body.Name=MULTILINE_MAX"
-    timeout: 60
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -66,7 +66,7 @@ success_criteria:
   - type: run_command
     description: "End state: CE_MultilineMaxTest holds exactly one record"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_MultilineMaxTest --min 1 --max 1"
-    timeout: 60
+    timeout: 240
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

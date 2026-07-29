@@ -25,10 +25,10 @@ import subprocess
 import sys
 import time
 
-UIP_TIMEOUT_SECONDS = 60
-ENTITY_LOOKUP_ATTEMPTS = 3
+UIP_TIMEOUT_SECONDS = 30
+ENTITY_LOOKUP_ATTEMPTS = 2
 ENTITY_LOOKUP_RETRY_SECONDS = 2
-COUNT_ATTEMPTS = 3
+COUNT_ATTEMPTS = 2
 COUNT_RETRY_SECONDS = 3
 TENANT_SCOPE = "00000000-0000-0000-0000-000000000000"
 
@@ -61,10 +61,15 @@ def find_entity_id(name: str) -> tuple[str | None, str | None]:
     """Return (entity_id, folder_key) — folder_key is empty string for tenant-scoped."""
     # Try with --include-folders first (sees both tenant and folder-scoped entities).
     # If the CLI version doesn't support the flag, fall back to plain --native-only.
+    include_folders_supported = True
     for attempt in range(ENTITY_LOOKUP_ATTEMPTS):
-        for extra in (["--include-folders"], []):
+        extras = (["--include-folders"], []) if include_folders_supported else ([],)
+        for extra in extras:
             code, out, err = run_uip("df", "entities", "list", "--native-only", *extra)
             if code != 0 or not out.strip():
+                detail = f"{out}\n{err}".lower()
+                if extra and ("unknown option" in detail or "unknown argument" in detail):
+                    include_folders_supported = False
                 continue
             try:
                 data = json.loads(out)

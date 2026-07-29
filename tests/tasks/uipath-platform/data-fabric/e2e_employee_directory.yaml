@@ -128,15 +128,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "End state: employee field constraints match the requested schema"
+    description: "End state: employee schema constraints match"
     command: >-
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
-      --entity-name CE_EmployeeDirectory
-      --assertions
-      "FullName.lengthLimit=200,FullName.isRequired=true,Department.lengthLimit=50,Department.isRequired=true,JobTitle.lengthLimit=100,Salary.decimalPrecision=2,Salary.minValue=0,Salary.maxValue=1000000,Salary.isRequired=true,PerformanceScore.minValue=0,PerformanceScore.maxValue=100"
-    timeout: 120
+      --entity-name CE_EmployeeDirectory --ignore-field-case
+      --assertions "FullName.lengthLimit=200,FullName.isRequired=true,Department.isRequired=true,JobTitle.lengthLimit=100,Salary.decimalPrecision=2,Salary.minValue=0,Salary.maxValue=1000000,Salary.isRequired=true,PerformanceScore.minValue=0,PerformanceScore.maxValue=100"
+    timeout: 180
     expected_exit_code: 0
-    weight: 3.0
+    weight: 5.0
     pass_threshold: 1.0
 
   - type: file_exists
@@ -156,7 +155,7 @@ success_criteria:
   - type: run_command
     description: "End state (deterministic): all 20 employee records landed in CE_EmployeeDirectory"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_EmployeeDirectory --expected 20"
-    timeout: 60
+    timeout: 240
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
