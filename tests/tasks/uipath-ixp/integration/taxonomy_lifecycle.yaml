@@ -29,7 +29,7 @@ sandbox:
 initial_prompt: |
   I want to set up an invoice project, reshape its taxonomy, then undo the reshaping.
   Use the tenant I'm already signed into (check I'm logged in; don't re-authenticate).
-  Create the project from the invoices in `./fixtures/` and let IXP auto-suggest the
+  Create the project from the invoices in the working directory and let IXP auto-suggest the
   taxonomy — I only care about the taxonomy structure here, so don't label or train.
   Use a unique project title `codereval-integ-taxonomy-<random-suffix>` so concurrent runs
   don't collide. Save the suggested taxonomy to `taxonomy_initial.json`.
