@@ -1,0 +1,127 @@
+# Playwright First Mile — Pack, Ingest, and Run on Serverless
+
+End-to-end pipeline: take a Playwright test suite from a repo to executed results in UiPath Test Manager, using only `uip` commands. This flow is **Playwright-specific** — the pack command, the auto-created test cases, the `PW_*` labels, and the per-project run selection below do NOT apply to UiPath Studio/RPA packages. For Studio test automation use [publish-and-link-guide.md](publish-and-link-guide.md) instead; never mix the two pipelines.
+
+## Pipeline
+
+```
+uip tm pack --type playwright        → .nupkg with embedded test metadata
+uip or packages upload               → package on the Orchestrator feed
+(Test Manager ingestion, automatic)  → test cases auto-create, PW_* labels applied
+uip tm testsets create               → empty test set
+uip tm testcases add --labels        → fill it by label
+uip tm testsets playwright-context   → probe: is this a Playwright test set? which projects?
+uip tm testsets run [--playwright-projects <names...>] → execute on serverless
+uip tm wait / report / result        → outcome
+```
+
+The key difference from the RPA pipeline: there is **no link step**. Uploading the package is enough — ingestion creates one Test Manager test case per discovered Playwright test, already bound to the package, and labels each with:
+
+- `PW_Tag_<tag>` — one per Playwright tag (`@smoke` → `PW_Tag_smoke`)
+- `PW_Project_<name>` — one per Playwright project the test runs in
+- `PW_Suite_<name>` — describe-block grouping
+- `PW_File_<path>` — the spec file
+
+> **Do NOT run `uip tm testcases link-automation` on Playwright test cases.** They are linked by ingestion; manual linking is the RPA pipeline and will corrupt the association.
+
+> **Hidden commands.** `uip tm testsets playwright-context` and the `--playwright-projects` flag on `uip tm testsets run` are intentionally hidden from `--help` until the capability is broadly available — they are functional. Do not conclude they don't exist because help doesn't list them; trust this guide and probe by running them.
+
+## Prerequisites
+
+- A recent `@uipath/cli` — this flow's commands (`tm pack --type playwright`, `testcases add --labels`, `testsets playwright-context`, `run --playwright-projects`) do not exist on older CLIs and have no pre-rename fallback. If `uip tm pack --help` does not show `--type`, upgrade the CLI before anything else.
+- Logged in: `uip login status --output json`. If not, `uip login`.
+- A Test Manager project to land the test cases in: `uip tm project list --filter <name> --output json`, or create one with `uip tm project create`. Capture the project key.
+- The tenant's Test Manager must have Playwright support enabled (a server-side feature flag). If ingestion never produces test cases (Step 3), this is the first thing to suspect — stop and ask the user.
+- The Playwright project directory must contain:
+  - `package.json` with `@playwright/test` installed (discovery shells out to the project's own `playwright test --list`; no browsers needed),
+  - a **lockfile** (`package-lock.json` / `yarn.lock` / `pnpm-lock.yaml` / `bun.lock`) — serverless does a deterministic install,
+  - a `playwright.config` file.
+
+## Step 1 — Pack
+
+```bash
+uip tm pack --project-path <dir> --type playwright \
+    --project-key <PROJECT_KEY> --name <PackageName> \
+    --package-version 1.0.0 -o <out-dir> --output json
+```
+
+- `--project-key` is **required** by default because test-case auto-creation is on; pass `--no-create-test-cases` to pack without it (label metadata stays embedded for later use).
+- Preview with `--dry-run` (writes nothing).
+- Capture `Data.Output` (the `.nupkg` path) and `Data.TestCount` from the JSON output. `TestCount` is the number of test cases ingestion will create — remember it for Step 3.
+- Pack fails loudly when the lockfile or `@playwright/test` is missing — fix the project, do not improvise around it.
+
+## Step 2 — Upload to Orchestrator
+
+```bash
+uip or packages upload "<out-dir>/<PackageName>.1.0.0.nupkg" --output json
+```
+
+Each re-upload needs a **new `--package-version`** at pack time — Orchestrator feeds reject an existing version.
+
+## Step 3 — Wait for ingestion
+
+Ingestion is asynchronous and automatic. Poll until the auto-created test cases appear:
+
+```bash
+uip tm testcases list --project-key <PROJECT_KEY> --filter <PackageName> --output json
+```
+
+- Expect exactly `TestCount` test cases (from Step 1), typically within 1–2 minutes.
+- Poll every ~10 seconds, up to ~3 minutes. If nothing appears by then, STOP and report — the likely causes are the Playwright feature flag being off for the tenant or a wrong `--project-key`; both need the user, not retries.
+- Verify the labels landed: `uip tm objectlabel list --project-key <PROJECT_KEY> --object-type TestCase --filter PW_ --output json`.
+
+## Step 4 — Create a test set and fill it by label
+
+```bash
+uip tm testsets create --project-key <PROJECT_KEY> --name "PW Smoke" --output json
+uip tm testcases add --test-set-key <TEST_SET_KEY> --labels PW_Tag_smoke PW_Project_chromium --output json
+```
+
+- Capture `TestSetKey` from the create output (e.g. `DEMO:10`).
+- `--labels` is variadic and space-separated (quote names that contain spaces). Matching is **OR across labels, exact, and case-sensitive** — discover the real names first with `uip tm objectlabel list` rather than guessing.
+- `--labels` works with any object label; the `PW_*` labels are simply what ingestion applies.
+- Mutually exclusive with `--test-case-keys`; pass exactly one of the two.
+- **Keep one test set = one Playwright package.** Per-project selection (Step 6) requires every test case in the set to come from a single Playwright package; label-filling across packages produces a set that cannot be project-scoped.
+
+## Step 5 — Probe the Playwright context (recommended)
+
+Before deciding whether `--playwright-projects` applies, ask the server:
+
+```bash
+uip tm testsets playwright-context --test-set-key <TEST_SET_KEY> --output json
+```
+
+- `Data.IsPlaywright: true` → the set resolves to one Playwright package; `AvailablePlaywrightProjects` lists the only valid `--playwright-projects` values, and `SelectedPlaywrightProjects` shows any selection already stored on the test set.
+- `Data.IsPlaywright: false` → RPA, mixed, manual, or multi-package test set — run it **without** `--playwright-projects`.
+- The server never errors on type here, so this is the safe discriminator for automation: probe first, branch on `IsPlaywright`.
+
+## Step 6 — Run, optionally per Playwright project
+
+The project needs a default Orchestrator folder before any run (Critical Rule #10): `uip tm project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY> --output json` (folder keys via `uip or folders list -n <folder-name> --all --output json`).
+
+```bash
+uip tm testsets run --test-set-key <TEST_SET_KEY> \
+    --playwright-projects chromium firefox --wait --output json
+```
+
+`--playwright-projects` semantics (all enforced with clear errors, nothing is silently ignored):
+
+- Space-separated, case-sensitive names from the package's `playwright.config`. Unknown names **fail fast, before anything is persisted**, listing the available projects.
+- Valid only when every test case in the set comes from one single Playwright package (see Step 4); fails for Studio/RPA test sets — run those without the flag.
+- The selection **persists on the test set** and applies to later runs until changed; omit the flag to reuse the stored selection (or the config's defaults if none was ever stored).
+- On a Test Manager without Playwright support the command fails with instructions rather than running incorrectly.
+
+Omit `--playwright-projects` entirely for a plain run (all config-default projects).
+
+## Step 7 — Results
+
+- `--wait` on the run blocks until terminal; without it, use `uip tm wait --execution-id <EXECUTION_ID> --output json`.
+- Summary: `uip tm report get --execution-id <EXECUTION_ID> --output json`.
+- Per-test detail: `uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json`.
+- JUnit export: `uip tm result download --execution-id <EXECUTION_ID> --result-path <dir> --output json`.
+
+Execution happens on UiPath serverless cloud runtimes — no robot, machine, or folder package deployment is needed beyond the upload in Step 2.
+
+## Iterating on the suite
+
+Re-running after test changes is the same pipeline with a bumped version: pack with a new `--package-version`, upload, wait for ingestion to sync. Ingestion **updates** existing test cases (matched per test), creates new ones, and unlinks removed ones — test sets keep their membership for surviving test cases; re-run `uip tm testcases add --labels` if new tests should join a set.
