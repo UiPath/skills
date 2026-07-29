@@ -1,0 +1,837 @@
+"""Adversarial unit tests for the interactive escalation structure grader."""
+
+from __future__ import annotations
+
+import importlib.util
+import json
+import re
+import sys
+import tempfile
+import unittest
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+
+CHECKER_PATH = Path(__file__).with_name("check_customer_escalation_structure.py")
+SPEC = importlib.util.spec_from_file_location("customer_escalation_checker", CHECKER_PATH)
+assert SPEC and SPEC.loader
+checker = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = checker
+SPEC.loader.exec_module(checker)
+
+
+class raises:
+    """Small stdlib-only equivalent of pytest.raises for terse negative cases."""
+
+    def __init__(self, exception: type[BaseException], match: str) -> None:
+        self.exception = exception
+        self.pattern = re.compile(match)
+
+    def __enter__(self) -> None:
+        return None
+
+    def __exit__(
+        self,
+        exception_type: type[BaseException] | None,
+        exception: BaseException | None,
+        traceback: object,
+    ) -> bool:
+        if exception_type is None or exception is None:
+            raise AssertionError(f"expected {self.exception.__name__}")
+        if not issubclass(exception_type, self.exception):
+            return False
+        if not self.pattern.search(str(exception)):
+            raise AssertionError(
+                f"{exception!r} does not match {self.pattern.pattern!r}"
+            )
+        return True
+
+
+def variable(name: str, variable_id: str, variable_type: str = "string") -> ET.Element:
+    return ET.Element(
+        checker.q(checker.UIPATH_NS, "inputOutput"),
+        {"name": name, "id": variable_id, "type": variable_type},
+    )
+
+
+def normalization_fixture() -> tuple[
+    ET.Element, dict[str, ET.Element], dict[str, str]
+]:
+    variables = {
+        "customerTier": variable("customerTier", "input-tier-a91"),
+        "serviceState": variable("serviceState", "input-state-b82"),
+        "duplicateIssueKey": variable("duplicateIssueKey", "input-duplicate-c73"),
+        "correlationId": variable("correlationId", "input-correlation-d64"),
+        "caseKey": variable("caseKey", "output-case-e55"),
+        "tierNormalized": variable("tierNormalized", "internal-tier-f46"),
+        "stateNormalized": variable("stateNormalized", "internal-state-g37"),
+        "duplicateNormalized": variable(
+            "duplicateNormalized", "internal-duplicate-h28"
+        ),
+        "scriptResponse": variable(
+            "scriptResponse", "normalize-response-r11", "jsonSchema"
+        ),
+        "Error": variable("Error", "normalize-error-r12", "jsonSchema"),
+    }
+    ids_to_names = {
+        item.attrib["id"]: name for name, item in variables.items()
+    }
+    script = ET.fromstring(
+        f"""
+        <bpmn:scriptTask xmlns:bpmn="{checker.BPMN_NS}"
+                         xmlns:uipath="{checker.UIPATH_NS}"
+                         id="normalize-any-id" scriptFormat="JavaScript">
+          <bpmn:extensionElements>
+            <uipath:mapping version="v1">
+              <uipath:type value="BPMN.Variables" version="v1" />
+              <uipath:context>
+                <uipath:inputSchema type="jsonSchema">{{
+                  "type":"object",
+                  "properties":{{
+                    "vars":{{"type":"object"}},
+                    "metadata":{{"type":"object"}}
+                  }}
+                }}</uipath:inputSchema>
+              </uipath:context>
+              <uipath:input name="args" type="json" target="bodyField"
+                value="{{&quot;vars&quot;:&quot;=vars&quot;,&quot;metadata&quot;:&quot;=metadata&quot;}}" />
+              <uipath:output name="scriptResponse" type="jsonSchema"
+                 var="normalize-response-r11" source="=result.response" />
+              <uipath:output name="Error" type="jsonSchema"
+                 var="normalize-error-r12" source="=Error" />
+              <uipath:output name="tierNormalized" type="string"
+                 var="internal-tier-f46"
+                 source="=vars.normalize-response-r11.tier" custom="true" />
+              <uipath:output name="stateNormalized" type="string"
+                 var="internal-state-g37"
+                 source="=vars.normalize-response-r11.state" custom="true" />
+              <uipath:output name="duplicateNormalized" type="string"
+                 var="internal-duplicate-h28"
+                 source="=vars.normalize-response-r11.duplicate" custom="true" />
+              <uipath:output name="caseKey" type="string"
+                 var="output-case-e55"
+                 source="=vars.normalize-response-r11.caseKey" custom="true" />
+            </uipath:mapping>
+            <uipath:scriptVersion value="v3" />
+          </bpmn:extensionElements>
+          <bpmn:script><![CDATA[
+            return {{
+              tier: (vars.input-tier-a91 || "").toLowerCase(),
+              state: (vars.input-state-b82 || "").toLowerCase(),
+              duplicate: (vars.input-duplicate-c73 || "").trim(),
+              caseKey: vars.input-correlation-d64
+            }};
+          ]]></bpmn:script>
+        </bpmn:scriptTask>
+        """
+    )
+    return script, variables, ids_to_names
+
+
+def add_decision_variable(
+    script: ET.Element,
+    variables: dict[str, ET.Element],
+    ids_to_names: dict[str, str],
+) -> None:
+    decision = variable("failureReason", "output-failure-i17")
+    variables["failureReason"] = decision
+    ids_to_names[decision.attrib["id"]] = "failureReason"
+    mapping = script.find(
+        f"./{checker.q(checker.BPMN_NS, 'extensionElements')}//"
+        f"{checker.q(checker.UIPATH_NS, 'mapping')}"
+    )
+    assert mapping is not None
+    ET.SubElement(
+        mapping,
+        checker.q(checker.UIPATH_NS, "output"),
+        {
+            "name": "failureReason",
+            "type": "string",
+            "var": decision.attrib["id"],
+            "source": '=""',
+        },
+    )
+
+
+def gateway_scope(condition: str) -> tuple[ET.Element, dict[str, ET.Element]]:
+    scope = ET.fromstring(
+        f"""
+        <bpmn:subProcess xmlns:bpmn="{checker.BPMN_NS}"
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                         id="scope-arbitrary">
+          <bpmn:exclusiveGateway id="decision-random" default="flow-default">
+            <bpmn:incoming>flow-in</bpmn:incoming>
+            <bpmn:outgoing>flow-guarded</bpmn:outgoing>
+            <bpmn:outgoing>flow-default</bpmn:outgoing>
+          </bpmn:exclusiveGateway>
+          <bpmn:sequenceFlow id="flow-guarded"
+             sourceRef="decision-random" targetRef="target-yes">
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+              >{condition}</bpmn:conditionExpression>
+          </bpmn:sequenceFlow>
+          <bpmn:sequenceFlow id="flow-default"
+             sourceRef="decision-random" targetRef="target-no" />
+        </bpmn:subProcess>
+        """
+    )
+    flows = {
+        item.attrib["id"]: item
+        for item in scope.findall(f"./{checker.q(checker.BPMN_NS, 'sequenceFlow')}")
+    }
+    return scope, flows
+
+
+def attachment_fixture(
+    marker_script: str = "return { name: iterator.item.name };",
+) -> tuple[
+    list[ET.Element], dict[str, ET.Element], dict[str, str]
+]:
+    variables = {
+        "attachments": variable("attachments", "input-attachments-z19", "array"),
+        "lastAttachmentName": variable(
+            "lastAttachmentName", "output-last-y28"
+        ),
+    }
+    ids_to_names = {
+        item.attrib["id"]: name for name, item in variables.items()
+    }
+    marker = ET.fromstring(
+        f"""
+        <bpmn:scriptTask xmlns:bpmn="{checker.BPMN_NS}"
+                         xmlns:uipath="{checker.UIPATH_NS}"
+                         id="iterate-arbitrary" scriptFormat="JavaScript">
+          <bpmn:extensionElements>
+            <uipath:mapping version="v1">
+              <uipath:type value="BPMN.Variables" version="v1" />
+              <uipath:output name="scriptResponse" type="jsonSchema"
+                 var="iteration-response" source="=result.response" />
+              <uipath:output name="Error" type="jsonSchema"
+                 var="iteration-error" source="=Error" />
+            </uipath:mapping>
+            <uipath:scriptVersion value="v3" />
+          </bpmn:extensionElements>
+          <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+            <bpmn:extensionElements>
+              <uipath:loopCharacteristics
+                 inputCollection="=vars.input-attachments-z19"
+                 version="v1" />
+            </bpmn:extensionElements>
+          </bpmn:multiInstanceLoopCharacteristics>
+          <bpmn:script>{marker_script}</bpmn:script>
+        </bpmn:scriptTask>
+        """
+    )
+    reducer = ET.fromstring(
+        f"""
+        <bpmn:scriptTask xmlns:bpmn="{checker.BPMN_NS}"
+                         xmlns:uipath="{checker.UIPATH_NS}"
+                         id="reduce-arbitrary" scriptFormat="JavaScript">
+          <bpmn:extensionElements>
+            <uipath:mapping version="v1">
+              <uipath:type value="BPMN.Variables" version="v1" />
+              <uipath:output name="scriptResponse" type="string"
+                 var="output-last-y28" source="=result.response" />
+              <uipath:output name="Error" type="jsonSchema"
+                 var="reducer-error" source="=Error" />
+            </uipath:mapping>
+            <uipath:scriptVersion value="v3" />
+          </bpmn:extensionElements>
+          <bpmn:script>
+            return vars.input-attachments-z19[
+              vars.input-attachments-z19.length - 1
+            ].name;
+          </bpmn:script>
+        </bpmn:scriptTask>
+        """
+    )
+    return [marker, reducer], variables, ids_to_names
+
+
+def test_normalization_accepts_semantic_mapping_with_arbitrary_ids() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    checker.require_script_runtime_contract(script)
+    targets = checker.require_normalization_script(
+        script, variables, ids_to_names, []
+    )
+    assert targets == {
+        "normalize-response-r11",
+        "normalize-error-r12",
+        "internal-tier-f46",
+        "internal-state-g37",
+        "internal-duplicate-h28",
+        "output-case-e55",
+    }
+
+
+def test_registry_evidence_is_discovered_by_content_not_filename() -> None:
+    payload = {
+        "Result": "Success",
+        "Data": {
+            "ExtensionType": {
+                "ExtensionType": "BPMN.Variables",
+                "BpmnElement": "bpmn:Task",
+            }
+        },
+    }
+    with tempfile.TemporaryDirectory() as directory:
+        evidence = Path(directory)
+        (evidence / "get-BPMN.Variables.json").write_text(
+            json.dumps(payload),
+            encoding="utf-8",
+        )
+        (evidence / "unrelated.json").write_text("{}", encoding="utf-8")
+        matches = checker.find_registry_evidence(
+            "BPMN.Variables",
+            evidence,
+        )
+
+    assert len(matches) == 1
+    assert matches[0][0].name == "get-BPMN.Variables.json"
+    assert matches[0][1] == payload
+
+
+def test_script_registry_accepts_variables_mapping_template() -> None:
+    checker.require_usable_registry_template(
+        "BPMN.ScriptTask",
+        {
+            "XmlTemplate": (
+                '<bpmn:scriptTask><uipath:mapping>'
+                '<uipath:type value="BPMN.Variables" version="v1" />'
+                "</uipath:mapping></bpmn:scriptTask>"
+            )
+        },
+        Path("BPMN.ScriptTask.json"),
+    )
+
+
+def test_script_registry_retains_stale_live_mapping_template() -> None:
+    checker.require_usable_registry_template(
+        "BPMN.ScriptTask",
+        {
+            "XmlTemplate": (
+                '<bpmn:ScriptTask><uipath:mapping>'
+                '<uipath:type value="BPMN.ScriptTask" version="v1" />'
+                "</uipath:mapping></bpmn:ScriptTask>"
+            )
+        },
+        Path("BPMN.ScriptTask.json"),
+    )
+
+
+def test_normalization_accepts_following_variables_extraction() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    mapping = script.find(
+        f"./{checker.q(checker.BPMN_NS, 'extensionElements')}//"
+        f"{checker.q(checker.UIPATH_NS, 'mapping')}"
+    )
+    assert mapping is not None
+    for output in list(mapping.findall(f"./{checker.q(checker.UIPATH_NS, 'output')}")):
+        if output.attrib.get("name") not in {"scriptResponse", "Error"}:
+            mapping.remove(output)
+    extraction = ET.fromstring(
+        f"""
+        <bpmn:task xmlns:bpmn="{checker.BPMN_NS}"
+                   xmlns:uipath="{checker.UIPATH_NS}"
+                   id="extract-normalized">
+          <bpmn:extensionElements>
+            <uipath:mapping version="v1">
+              <uipath:type value="BPMN.Variables" version="v1" />
+              <uipath:output name="tierNormalized" type="string"
+                 var="internal-tier-f46"
+                 source="=vars.normalize-response-r11.tier" />
+              <uipath:output name="stateNormalized" type="string"
+                 var="internal-state-g37"
+                 source="=vars.normalize-response-r11.state" />
+              <uipath:output name="duplicateNormalized" type="string"
+                 var="internal-duplicate-h28"
+                 source="=vars.normalize-response-r11.duplicate" />
+              <uipath:output name="caseKey" type="string"
+                 var="output-case-e55"
+                 source="=vars.normalize-response-r11.caseKey" />
+            </uipath:mapping>
+          </bpmn:extensionElements>
+        </bpmn:task>
+        """
+    )
+
+    targets = checker.require_normalization_script(
+        script, variables, ids_to_names, [extraction]
+    )
+    assert {
+        "internal-tier-f46",
+        "internal-state-g37",
+        "internal-duplicate-h28",
+        "output-case-e55",
+    } <= targets
+
+
+def variables_extraction_with_direct_case_copy(
+    case_source: str,
+) -> tuple[ET.Element, dict[str, ET.Element], dict[str, str], ET.Element]:
+    script, variables, ids_to_names = normalization_fixture()
+    mapping = script.find(
+        f"./{checker.q(checker.BPMN_NS, 'extensionElements')}//"
+        f"{checker.q(checker.UIPATH_NS, 'mapping')}"
+    )
+    assert mapping is not None
+    for output in list(
+        mapping.findall(f"./{checker.q(checker.UIPATH_NS, 'output')}")
+    ):
+        if output.attrib.get("name") not in {"scriptResponse", "Error"}:
+            mapping.remove(output)
+    body = script.find(f"./{checker.q(checker.BPMN_NS, 'script')}")
+    assert body is not None
+    body.text = """
+      return {
+        tier: (vars.input-tier-a91 || "").toLowerCase(),
+        state: (vars.input-state-b82 || "").toLowerCase(),
+        duplicate: (vars.input-duplicate-c73 || "").trim()
+      };
+    """
+    extraction = ET.fromstring(
+        f"""
+        <bpmn:task xmlns:bpmn="{checker.BPMN_NS}"
+                   xmlns:uipath="{checker.UIPATH_NS}"
+                   id="apply-normalization">
+          <bpmn:extensionElements>
+            <uipath:mapping version="v1">
+              <uipath:type value="BPMN.Variables" version="v1" />
+              <uipath:output name="tierNormalized" type="string"
+                 var="internal-tier-f46"
+                 source="=vars.normalize-response-r11.tier" />
+              <uipath:output name="stateNormalized" type="string"
+                 var="internal-state-g37"
+                 source="=vars.normalize-response-r11.state" />
+              <uipath:output name="duplicateNormalized" type="string"
+                 var="internal-duplicate-h28"
+                 source="=vars.normalize-response-r11.duplicate" />
+              <uipath:output name="caseKey" type="string"
+                 var="output-case-e55" source="{case_source}" />
+            </uipath:mapping>
+          </bpmn:extensionElements>
+        </bpmn:task>
+        """
+    )
+    return script, variables, ids_to_names, extraction
+
+
+def test_normalization_accepts_visible_exact_correlation_copy() -> None:
+    script, variables, ids_to_names, extraction = (
+        variables_extraction_with_direct_case_copy(
+            "=vars.input-correlation-d64"
+        )
+    )
+    targets = checker.require_normalization_script(
+        script, variables, ids_to_names, [extraction]
+    )
+    assert "output-case-e55" in targets
+
+
+def test_normalization_tolerates_other_scripts_same_named_errors() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    variables["Error"] = variable(
+        "Error", "other-script-scoped-error", "jsonSchema"
+    )
+    ids_to_names["other-script-scoped-error"] = "Error"
+    targets = checker.require_normalization_script(
+        script, variables, ids_to_names, []
+    )
+    assert "normalize-error-r12" in targets
+
+
+def test_normalization_rejects_transformed_visible_correlation_copy() -> None:
+    script, variables, ids_to_names, extraction = (
+        variables_extraction_with_direct_case_copy(
+            "=js:vars.input-correlation-d64.trim()"
+        )
+    )
+    with raises(SystemExit, match="copy correlationId exactly"):
+        checker.require_normalization_script(
+            script, variables, ids_to_names, [extraction]
+        )
+
+
+def test_normalization_accepts_typed_structured_result_consumed_by_gateways() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    mapping = script.find(
+        f"./{checker.q(checker.BPMN_NS, 'extensionElements')}//"
+        f"{checker.q(checker.UIPATH_NS, 'mapping')}"
+    )
+    assert mapping is not None
+    for output in list(mapping.findall(f"./{checker.q(checker.UIPATH_NS, 'output')}")):
+        if output.attrib.get("name") not in {"scriptResponse", "Error", "caseKey"}:
+            mapping.remove(output)
+
+    response = variables["scriptResponse"]
+    response.attrib["type"] = "object"
+    response.text = json.dumps(
+        {
+            "type": "object",
+            "properties": {
+                "normalizedTier": {"type": "string"},
+                "normalizedServiceState": {"type": "string"},
+                "normalizedDuplicateKey": {"type": "string"},
+                "caseKey": {"type": "string"},
+            },
+        }
+    )
+
+    targets = checker.require_normalization_script(
+        script, variables, ids_to_names, []
+    )
+    assert "normalize-response-r11" in targets
+    conditions = """
+      =vars.normalize-response-r11.normalizedTier == "enterprise"
+      =vars.normalize-response-r11.normalizedServiceState == "unavailable"
+      =vars.normalize-response-r11.normalizedDuplicateKey != ""
+    """
+    assert checker.structured_normalization_roles_in_conditions(
+        "normalize-response-r11", conditions
+    ) == {"tier", "serviceState", "duplicateIssueKey"}
+
+
+def test_normalization_accepts_exact_correlation_through_local_alias() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    working_case = variable("workingCaseKey", "working-case-e56")
+    variables["workingCaseKey"] = working_case
+    ids_to_names[working_case.attrib["id"]] = working_case.attrib["name"]
+
+    case_output = next(
+        output
+        for output in script.findall(
+            f"./{checker.q(checker.BPMN_NS, 'extensionElements')}//"
+            f"{checker.q(checker.UIPATH_NS, 'output')}"
+        )
+        if output.attrib.get("name") == "caseKey"
+    )
+    case_output.attrib["name"] = "workingCaseKey"
+    case_output.attrib["var"] = working_case.attrib["id"]
+    body = script.find(f"./{checker.q(checker.BPMN_NS, 'script')}")
+    assert body is not None
+    body.text = """
+      var caseKey = vars.input-correlation-d64;
+      return {
+        tier: (vars.input-tier-a91 || "").toLowerCase(),
+        state: (vars.input-state-b82 || "").toLowerCase(),
+        duplicate: (vars.input-duplicate-c73 || "").trim(),
+        caseKey: caseKey
+      };
+    """
+
+    targets = checker.require_normalization_script(
+        script, variables, ids_to_names, []
+    )
+    assert working_case.attrib["id"] in targets
+
+
+def test_normalization_accepts_semantic_correlation_result_property() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    case_output = next(
+        output
+        for output in script.findall(
+            f"./{checker.q(checker.BPMN_NS, 'extensionElements')}//"
+            f"{checker.q(checker.UIPATH_NS, 'output')}"
+        )
+        if output.attrib.get("name") == "caseKey"
+    )
+    case_output.attrib["source"] = (
+        "=vars.normalize-response-r11.preservedCorrelation"
+    )
+    body = script.find(f"./{checker.q(checker.BPMN_NS, 'script')}")
+    assert body is not None
+    body.text = (body.text or "").replace(
+        "caseKey: vars.input-correlation-d64",
+        "preservedCorrelation: vars.input-correlation-d64",
+    )
+
+    targets = checker.require_normalization_script(
+        script, variables, ids_to_names, []
+    )
+    assert "output-case-e55" in targets
+
+
+def test_normalization_accepts_string_identity_empty_fallback() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    body = script.find(f"./{checker.q(checker.BPMN_NS, 'script')}")
+    assert body is not None
+    body.text = (body.text or "").replace(
+        "caseKey: vars.input-correlation-d64",
+        "caseKey: correlationValue",
+    )
+    body.text = (
+        "var correlationValue = vars.input-correlation-d64 || '';\n"
+        + body.text
+    )
+
+    targets = checker.require_normalization_script(
+        script, variables, ids_to_names, []
+    )
+    assert "output-case-e55" in targets
+
+
+def test_normalization_rejects_business_routing_hidden_in_script() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    body = script.find(f"./{checker.q(checker.BPMN_NS, 'script')}")
+    assert body is not None
+    body.text = (body.text or "") + '\nvar route = "ManualReview";'
+    with raises(SystemExit, match="hides business decisions"):
+        checker.require_normalization_script(script, variables, ids_to_names, [])
+
+
+def test_normalization_rejects_business_output_initialization() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    add_decision_variable(script, variables, ids_to_names)
+    with raises(SystemExit, match="must not initialize or assign"):
+        checker.require_normalization_script(script, variables, ids_to_names, [])
+
+
+def test_gateway_rejects_unprefixed_javascript_operator() -> None:
+    scope, flows = gateway_scope("=vars.any-id === 1")
+    with raises(SystemExit, match="without '=js:'"):
+        checker.require_gateway_contract(scope, flows)
+
+
+def test_gateway_accepts_prefixed_javascript_with_arbitrary_ids() -> None:
+    scope, flows = gateway_scope("=js:vars.any-id === 1")
+    assert checker.require_gateway_contract(scope, flows) == [
+        "=js:vars.any-id === 1"
+    ]
+
+
+def test_gateway_allows_no_root_decision_when_optional() -> None:
+    scope = ET.Element(checker.q(checker.BPMN_NS, "process"), {"id": "root"})
+    assert checker.require_gateway_contract(
+        scope, {}, require_diverging=False
+    ) == []
+
+
+def jira_intent_task(source: str) -> ET.Element:
+    return ET.fromstring(
+        f"""
+        <bpmn:task xmlns:bpmn="{checker.BPMN_NS}"
+                   xmlns:uipath="{checker.UIPATH_NS}">
+          <bpmn:extensionElements>
+            <uipath:mapping version="v1">
+              <uipath:type value="BPMN.Variables" version="v1" />
+              <uipath:output name="jiraAction" type="string"
+                 var="jira-action-id" source="{source}" />
+            </uipath:mapping>
+          </bpmn:extensionElements>
+        </bpmn:task>
+        """
+    )
+
+
+def test_jira_workstream_accepts_material_route_assignments() -> None:
+    checker.require_material_jira_intent(
+        [
+            jira_intent_task("UpdateExisting"),
+            jira_intent_task("CreateIssue"),
+            jira_intent_task("NoAction"),
+        ],
+        {"jira-action-id": "jiraAction"},
+    )
+
+
+def test_jira_workstream_rejects_noop_self_assignment() -> None:
+    with raises(SystemExit, match="no-op self-assignment"):
+        checker.require_material_jira_intent(
+            [
+                jira_intent_task("=vars.jira-action-id"),
+                jira_intent_task("UpdateExisting"),
+                jira_intent_task("CreateIssue"),
+                jira_intent_task("NoAction"),
+            ],
+            {"jira-action-id": "jiraAction"},
+        )
+
+
+def test_assessment_rejects_downstream_intent_assignment() -> None:
+    subprocess = ET.fromstring(
+        f"""
+        <bpmn:subProcess xmlns:bpmn="{checker.BPMN_NS}"
+                         xmlns:uipath="{checker.UIPATH_NS}">
+          <bpmn:task id="premature-jira-intent">
+            <bpmn:extensionElements>
+              <uipath:mapping version="v1">
+                <uipath:type value="BPMN.Variables" version="v1" />
+                <uipath:output name="jiraAction" type="string"
+                   var="jira-action-id" source="NoAction" />
+              </uipath:mapping>
+            </bpmn:extensionElements>
+          </bpmn:task>
+        </bpmn:subProcess>
+        """
+    )
+    with raises(SystemExit, match="precomputes outputs"):
+        checker.forbid_downstream_intents_in_assessment(
+            subprocess,
+            {"jira-action-id": "jiraAction"},
+        )
+
+
+def test_condition_variable_ids_do_not_prefix_match() -> None:
+    assert checker.referenced_variable_ids(
+        '=vars.Var_customerTierNormalized == "enterprise"'
+    ) == {"Var_customerTierNormalized"}
+
+
+def test_subprocess_propagation_accepts_descriptive_mapping_name() -> None:
+    output = ET.Element(
+        checker.q(checker.UIPATH_NS, "output"),
+        {
+            "name": "routeFinal",
+            "type": "string",
+            "var": "root-route-id",
+            "source": "=vars.assessed-route-id",
+        },
+    )
+    assert checker.mapping_propagates_semantic(
+        output,
+        {"root-route-id": "route"},
+        "route",
+        "string",
+    )
+
+
+def test_subprocess_propagation_rejects_unrelated_target() -> None:
+    output = ET.Element(
+        checker.q(checker.UIPATH_NS, "output"),
+        {
+            "name": "routeFinal",
+            "type": "string",
+            "var": "root-severity-id",
+            "source": "=vars.assessed-route-id",
+        },
+    )
+    assert not checker.mapping_propagates_semantic(
+        output,
+        {"root-severity-id": "severity"},
+        "route",
+        "string",
+    )
+
+
+def test_attachment_loop_accepts_arbitrary_variable_ids() -> None:
+    elements, variables, ids_to_names = attachment_fixture()
+    checker.require_sequential_attachment_loop(elements, variables, ids_to_names)
+
+
+def test_attachment_loop_rejects_non_iterator_script() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        "return { name: vars.someOtherValue };"
+    )
+    with raises(SystemExit, match="must read iterator.item"):
+        checker.require_sequential_attachment_loop(elements, variables, ids_to_names)
+
+
+def test_attachment_loop_rejects_parallel_iteration() -> None:
+    elements, variables, ids_to_names = attachment_fixture()
+    marker = elements[0].find(
+        f"./{checker.q(checker.BPMN_NS, 'multiInstanceLoopCharacteristics')}"
+    )
+    assert marker is not None
+    marker.attrib["isSequential"] = "false"
+    with raises(SystemExit, match="exactly one sequential"):
+        checker.require_sequential_attachment_loop(elements, variables, ids_to_names)
+
+
+def test_attachment_loop_rejects_task_input_element_alias() -> None:
+    elements, variables, ids_to_names = attachment_fixture()
+    loop = elements[0].find(
+        f"./{checker.q(checker.BPMN_NS, 'multiInstanceLoopCharacteristics')}/"
+        f"{checker.q(checker.BPMN_NS, 'extensionElements')}/"
+        f"{checker.q(checker.UIPATH_NS, 'loopCharacteristics')}"
+    )
+    assert loop is not None
+    loop.attrib["inputElement"] = "item"
+    with raises(SystemExit, match="must omit inputElement"):
+        checker.require_sequential_attachment_loop(
+            elements,
+            variables,
+            ids_to_names,
+        )
+
+
+class StructureCheckerTests(unittest.TestCase):
+    def test_registry_filename_is_not_prescribed(self) -> None:
+        test_registry_evidence_is_discovered_by_content_not_filename()
+
+    def test_script_registry_variables_mapping_is_current(self) -> None:
+        test_script_registry_accepts_variables_mapping_template()
+
+    def test_script_registry_stale_live_shape_is_valid_evidence(self) -> None:
+        test_script_registry_retains_stale_live_mapping_template()
+
+    def test_following_variables_extraction_is_valid(self) -> None:
+        test_normalization_accepts_following_variables_extraction()
+
+    def test_visible_exact_correlation_copy_is_valid(self) -> None:
+        test_normalization_accepts_visible_exact_correlation_copy()
+
+    def test_other_scoped_errors_do_not_confuse_normalization(self) -> None:
+        test_normalization_tolerates_other_scripts_same_named_errors()
+
+    def test_visible_transformed_correlation_copy_is_rejected(self) -> None:
+        test_normalization_rejects_transformed_visible_correlation_copy()
+
+    def test_local_correlation_alias_is_valid(self) -> None:
+        test_normalization_accepts_exact_correlation_through_local_alias()
+
+    def test_semantic_correlation_result_property_is_valid(self) -> None:
+        test_normalization_accepts_semantic_correlation_result_property()
+
+    def test_string_identity_empty_fallback_is_valid(self) -> None:
+        test_normalization_accepts_string_identity_empty_fallback()
+
+    def test_arbitrary_normalization_ids(self) -> None:
+        test_normalization_accepts_semantic_mapping_with_arbitrary_ids()
+
+    def test_hidden_routing_rejected(self) -> None:
+        test_normalization_rejects_business_routing_hidden_in_script()
+
+    def test_business_output_initialization_rejected(self) -> None:
+        test_normalization_rejects_business_output_initialization()
+
+    def test_unprefixed_javascript_rejected(self) -> None:
+        test_gateway_rejects_unprefixed_javascript_operator()
+
+    def test_prefixed_javascript_accepted(self) -> None:
+        test_gateway_accepts_prefixed_javascript_with_arbitrary_ids()
+
+    def test_root_gateway_is_optional(self) -> None:
+        test_gateway_allows_no_root_decision_when_optional()
+
+    def test_material_jira_assignments_are_valid(self) -> None:
+        test_jira_workstream_accepts_material_route_assignments()
+
+    def test_jira_self_assignment_is_rejected(self) -> None:
+        test_jira_workstream_rejects_noop_self_assignment()
+
+    def test_assessment_cannot_own_downstream_intent(self) -> None:
+        test_assessment_rejects_downstream_intent_assignment()
+
+    def test_variable_references_are_exact(self) -> None:
+        test_condition_variable_ids_do_not_prefix_match()
+
+    def test_descriptive_subprocess_mapping_name(self) -> None:
+        test_subprocess_propagation_accepts_descriptive_mapping_name()
+
+    def test_subprocess_mapping_target_must_match(self) -> None:
+        test_subprocess_propagation_rejects_unrelated_target()
+
+    def test_arbitrary_attachment_ids(self) -> None:
+        test_attachment_loop_accepts_arbitrary_variable_ids()
+
+    def test_non_iterator_script_rejected(self) -> None:
+        test_attachment_loop_rejects_non_iterator_script()
+
+    def test_parallel_attachment_loop_rejected(self) -> None:
+        test_attachment_loop_rejects_parallel_iteration()
+
+    def test_task_input_element_alias_rejected(self) -> None:
+        test_attachment_loop_rejects_task_input_element_alias()
+
+
+if __name__ == "__main__":
+    unittest.main()
