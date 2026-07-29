@@ -179,7 +179,9 @@ def _check(doc: dict, text: str, path: Path, contract: dict) -> list[Violation]:
                 # A missing key has no line of its own — anchor on the criterion.
                 fail(rf"{key}:|-\s*type:\s*llm_judge", f"`llm_judge.{key}` must be true", f"Set `{key}: true` — {JUDGE_FLAG_HINTS.get(key, 'required by the contract')}.")
         for key in jc["forbidden_keys"]:
-            if judge.get(key):
+            # Presence, not truthiness: `files: []` and `files: null` are still
+            # the forbidden key.
+            if key in judge:
                 fail(rf"^\s+{key}:", f"`llm_judge.{key}` is forbidden", "The judge grades the presented diagnosis, not internal artifacts.")
         for key in ("weight", "pass_threshold"):
             if judge.get(key) != jc[key]:
