@@ -176,7 +176,7 @@ Test runs require valid `uip` auth on the host (set via `.env` or environment) f
 
 Every new scenario's `task.yaml` MUST satisfy the following.
 
-The machine-checkable subset lives in [`_shared/scenario-contract.yaml`](./_shared/scenario-contract.yaml) — required simulation constraints, required/forbidden success-criteria types, the canonical `llm_judge` shape, structural keys. `scripts/check-troubleshoot-tasks.py` enforces it against every scenario AND against the generator template (CI gate: `troubleshoot-task-contract.yml`). Run it before opening a PR:
+The machine-checkable subset lives in [`tests/contracts/troubleshoot-scenario-contract.yaml`](../../contracts/troubleshoot-scenario-contract.yaml) — required simulation constraints, required/forbidden success-criteria types, the canonical `llm_judge` shape, structural keys. `scripts/check-troubleshoot-tasks.py` enforces it against every scenario AND against the generator template (CI gate: `troubleshoot-task-contract.yml`). Run it before opening a PR:
 
 ```bash
 python3 scripts/check-troubleshoot-tasks.py
@@ -304,7 +304,7 @@ Every `llm_judge` criterion across all troubleshoot tasks uses the **same** prom
 
 That is **all** the context the judge gets. The contract: agent's diagnosis (wherever it appears in the dialog) vs. RESOLUTION.md → score. Tool calls are deliberately excluded — the judge grades the presented diagnosis, not how it was reached.
 
-`include_dialog` is what makes "wherever it appears in the dialog" true. Without it the judge receives only the final turn, and the simulator keeps talking past the diagnosis — so the graded turn is an acknowledgement ("Will do.", "You're welcome.") and a correct investigation scores `0.00`. Six scenarios failed this way in the 2026-07-28 nightly. The flag is a required rule in [`_shared/scenario-contract.yaml`](./_shared/scenario-contract.yaml), so `scripts/check-troubleshoot-tasks.py` (CI: `troubleshoot-task-contract.yml`) blocks a PR that reintroduces it.
+`include_dialog` is what makes "wherever it appears in the dialog" true. Without it the judge receives only the final turn, and the simulator keeps talking past the diagnosis — so the graded turn is an acknowledgement ("Will do.", "You're welcome.") and a correct investigation scores `0.00`. Six scenarios failed this way in the 2026-07-28 nightly. The flag is a required rule in [`tests/contracts/troubleshoot-scenario-contract.yaml`](../../contracts/troubleshoot-scenario-contract.yaml), so `scripts/check-troubleshoot-tasks.py` (CI: `troubleshoot-task-contract.yml`) blocks a PR that reintroduces it.
 
 **Forbidden on `llm_judge`:**
 

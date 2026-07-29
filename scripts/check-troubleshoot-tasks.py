@@ -8,7 +8,7 @@ rather than loud: the 2026-07-28 nightly spent 126 extra minutes because 39
 scenarios let the simulated user approve fix application, sending runs into an
 edit + validate/build/pack loop that no criterion grades.
 
-The contract lives in ``tests/tasks/uipath-troubleshoot/_shared/scenario-contract.yaml``
+The contract lives in ``tests/contracts/troubleshoot-scenario-contract.yaml``
 (required simulation constraints, required/forbidden criteria types, canonical
 llm_judge shape, structural keys). This script enforces it against every
 scenario AND against the generator template, so the two cannot diverge.
@@ -35,7 +35,7 @@ except ImportError:  # pragma: no cover
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SUITE_ROOT = REPO_ROOT / "tests" / "tasks" / "uipath-troubleshoot"
-CONTRACT_PATH = SUITE_ROOT / "_shared" / "scenario-contract.yaml"
+CONTRACT_PATH = REPO_ROOT / "tests" / "contracts" / "troubleshoot-scenario-contract.yaml"
 
 # What each required llm_judge flag buys, quoted back to the author on failure.
 JUDGE_FLAG_HINTS = {

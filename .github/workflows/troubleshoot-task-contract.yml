@@ -1,7 +1,7 @@
 name: Troubleshoot Task Contract
 
 # Fails the build if any uipath-troubleshoot scenario task YAML drifts from the
-# suite contract in tests/tasks/uipath-troubleshoot/_shared/scenario-contract.yaml
+# suite contract in tests/contracts/troubleshoot-scenario-contract.yaml
 # (required simulation constraints, required/forbidden success-criteria types,
 # canonical llm_judge shape, structural keys). The generator template in
 # _shared/scripts/generate_scenario.py is validated as a synthetic scenario in
