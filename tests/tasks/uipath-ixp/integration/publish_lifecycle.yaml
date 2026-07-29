@@ -6,11 +6,14 @@ description: >
   the published flag / tag pointer actually moved (wire-effect), not just command
   shape.
 
-  Version numbers come from `list-models`, never from training order: what a
-  retrain numbers a version is not guaranteed, and publishing a guessed number
-  returns "model version not found". An agent that guesses and then stops is
-  behaving correctly, so the prompt makes the read explicit rather than leaving
-  the numbering to be inferred.
+  Ordering matters and the prompt pins it: the first version is published BEFORE
+  the retrain that produces the second. Publishing pins a version; an unpublished
+  one is discarded when the next trains, leaving a single version and no distinct
+  V_OLD to tag or move. Measured over 10 live runs — every run that published
+  before its final retrain passed, every run that retrained first found one
+  version left and could not complete the sequence.
+
+  Version numbers also come from `list-models`, never from training order.
 tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
@@ -35,8 +38,13 @@ initial_prompt: |
   signed into (check I'm logged in; don't re-authenticate): start a project from
   the files in `./fixtures/` (give it a unique title
   `codereval-integ-publish-<random-suffix>` so concurrent runs don't collide) — import the taxonomy, upload one of the invoices —
-  and let it train. I want two trained versions to tag, so once the first has
-  trained, tweak the "Total Amount" field's instruction to retrain a second.
+  and let it train.
+
+  Once that first version has trained, put it on staging right away — before you
+  retrain. An unpublished version is discarded when the next one trains, so
+  publishing it is what keeps two versions around to tag. Then tweak the
+  "Total Amount" field's instruction to retrain a second version.
+
   Work only on the project you create; other runs share this tenant, so never
   list, read, or modify any other project.
 
@@ -46,14 +54,14 @@ initial_prompt: |
   only once training has completed; if it's still training after 5 checks, stop
   and report rather than waiting longer.
 
-  Take the two version numbers you tag from `list-models` — read them off its
-  output rather than assuming what a retrain numbered them. If a publish reports
-  the version was not found, re-read `list-models` and use the numbers it
-  reports; don't stop on the first rejection.
+  Take every version number you use from `list-models` — read it off that output
+  rather than assuming what a retrain numbered it. If the two versions you need
+  are not both there, stop and report; do not tag one version twice to finish the
+  sequence.
 
   Then, saving the model list after each step so I can see the state move
-  (call the older of the two versions V_OLD and the newer V_NEW):
-  - Put V_OLD on staging and V_NEW on live → save to `models_tagged.json`.
+  (V_OLD = the version you put on staging, V_NEW = the one trained after it):
+  - Put V_NEW on live → save to `models_tagged.json`.
   - Move the live tag over to V_OLD → save to `models_after_move.json`.
   - Take the tags off V_OLD → save to `models_after_untag.json`.
   - Unpublish V_NEW → save to `models_after_unpublish.json`.
