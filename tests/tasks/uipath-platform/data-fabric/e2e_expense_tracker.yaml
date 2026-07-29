@@ -86,35 +86,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "End state: text field length limits match the requested schema"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EEmployee --ignore-field-case --assertions 'name.lengthLimit=200,email.lengthLimit=255,department.lengthLimit=100' && python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --ignore-field-case --assertions 'description.lengthLimit=2000'"
+    description: "End state: Employee and Expense field constraints match the requested schemas"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EEmployee --ignore-field-case --assertions 'name.lengthLimit=200,email.lengthLimit=255,department.lengthLimit=100' && python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --ignore-field-case --assertions 'description.lengthLimit=2000,amount.decimalPrecision=2,amount.minValue=0,amount.maxValue=100000,Receipt.Name=FILE'"
     timeout: 180
     expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "End state: amount supports cents"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --ignore-field-case --assertions 'amount.decimalPrecision=2'"
-    timeout: 180
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "End state: amount limits match the requested range"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --ignore-field-case --assertions 'amount.minValue=0,amount.maxValue=100000'"
-    timeout: 180
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "End state: Receipt is a FILE field"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --ignore-field-case --assertions 'Receipt.Name=FILE'"
-    timeout: 180
-    expected_exit_code: 0
-    weight: 3.0
+    weight: 9.0
     pass_threshold: 1.0
 
   - type: command_executed

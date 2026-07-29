@@ -84,16 +84,16 @@ def count_records(entity_id: str) -> int:
     return int(tc) if isinstance(tc, int) else -1
 
 
-def list_native_entities() -> list[dict]:
+def list_native_entities() -> list[dict] | None:
     code, out, err = run_uip("df", "entities", "list", "--native-only")
     if code != 0 or not out.strip():
         print(f"WARN: uip df entities list failed (exit {code}): {err.strip()}", file=sys.stderr)
-        return []
+        return None
     try:
         data = json.loads(out)
     except json.JSONDecodeError as e:
         print(f"WARN: could not parse entities list output: {e}", file=sys.stderr)
-        return []
+        return None
     inner = data.get("Data") if isinstance(data, dict) else None
     if isinstance(inner, dict):
         return inner.get("Records") or inner.get("records") or []
@@ -143,7 +143,8 @@ def create_entity(name: str, schema: dict) -> str | None:
         "checking if it landed server-side...",
         file=sys.stderr,
     )
-    eid = find_entity_id(list_native_entities(), name)
+    entities = list_native_entities()
+    eid = find_entity_id(entities, name) if entities is not None else None
     if eid:
         print(f"OK: entity {name} found after create failure ({eid}) — using it")
         return eid
@@ -256,6 +257,13 @@ def main() -> None:
             sys.exit(1)
 
     entities = list_native_entities()
+    if entities is None:
+        print(
+            "FAIL: could not determine whether the seed entity exists; "
+            "refusing to create or reset it",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     entity_id = find_entity_id(entities, args.entity_name)
 
     # Decide whether to seed:

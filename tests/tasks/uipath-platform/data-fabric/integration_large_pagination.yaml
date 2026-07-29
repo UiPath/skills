@@ -160,7 +160,7 @@ success_criteria:
   - type: command_executed
     description: "Agent batch-updated three record IDs to inactive"
     tool_name: "Bash"
-    command_pattern: '(?is)uip\s+df\s+records\s+update.*Active.{0,20}false'
+    command_pattern: '(?is)(?=.*uip\s+df\s+records\s+update)(?=.*(?:Active.{0,20}false|--file\s+\S+))'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

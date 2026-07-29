@@ -15,25 +15,24 @@ run_limits:
   max_turns: 30
 
 initial_prompt: |
-  I have four quick asks. For each one, either do it, or tell me plainly
-  why you can't. Please don't push through if it's not the right way —
-  I'd rather know.
+  Before I plan some Data Fabric changes, review these four requests and
+  tell me which approaches are supported. This is advice only: do not inspect
+  my live environment and do not make any changes.
 
-    1. Our Orders UiPath Data Fabric entity has an Amount column that's currently stored as
-       text. Could you change it to a decimal number so we can add up
-       the totals?
+    1. Our Orders entity has an Amount column that's currently stored as text.
+       Could it be changed to a decimal number so we can add up the totals?
 
-    2. Add a new row to the SalesforceContacts entity. (Heads-up — that
-       entity is one we pull from Salesforce, not one we own directly.)
+    2. Could we add a new row to SalesforceContacts? That entity is pulled
+       from Salesforce rather than owned directly in Data Fabric.
 
-    3. Create a tenant-level entity named `Order` with a required title.
+    3. Could we create a tenant-level entity named `Order` with a required
+       title?
 
-    4. I have an expenses entity where category is a dropdown, tags can have
+    4. For an expenses entity where category is a dropdown, tags can have
        several selections, customer links to our customer list, and receipt
-       is an attachment. Can I safely bulk-load all those values from a CSV?
-       Explain the right loading approach, but don't load anything yet.
+       is an attachment, can all those values be safely bulk-loaded from CSV?
 
-  Walk me through what you did or didn't do, and why.
+  For anything unsupported, explain the supported alternative.
 
 success_criteria:
   - type: command_executed
