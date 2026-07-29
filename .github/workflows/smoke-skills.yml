@@ -580,8 +580,9 @@ jobs:
         if: always()
         env:
           PASS_RATE_THRESHOLD: "0.95"
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
         run: |
-          if [ "${{ steps.smoke.outcome }}" = "cancelled" ]; then
+          if [ "$SMOKE_OUTCOME" = "cancelled" ]; then
             echo "::error::Smoke step cancelled (timeout) — failing without rate check"
             exit 1
           fi
@@ -593,6 +594,17 @@ jobs:
           passed = sum(1 for d in results if d.get('final_status') == 'SUCCESS')
           n = len(results)
           if n == 0:
+              # Zero results is legitimate only when the run itself succeeded and
+              # had nothing smoke-tagged to do. The run step is
+              # `continue-on-error`, so a crash before any task.json is written
+              # (bad glob, config/schema error, auth bootstrap, feed outage) would
+              # otherwise land here and report this REQUIRED check green with no
+              # smoke coverage at all. smoke-rpa-skills.yml guards the same way.
+              if os.environ.get('SMOKE_OUTCOME') != 'success':
+                  print('::error::Smoke step outcome was '
+                        f"'{os.environ.get('SMOKE_OUTCOME')}' and it produced no results "
+                        '— nothing to gate, so failing instead of passing vacuously')
+                  sys.exit(1)
               print('No smoke-tagged tasks matched — skipping rate check')
               sys.exit(0)
           rate = passed / n
