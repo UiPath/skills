@@ -1,7 +1,9 @@
 # Agent Governance Decisions (Insights RTM)
 
-> Requires `@uipath/uipath-typescript` **≥ 1.5.1**. Scopes: `Insights Insights.RealTimeData OR.Folders.Read` (all in `DASHBOARD_SCOPES`). Subpath: `@uipath/uipath-typescript/traces` (the `AgentTraces` service).
-> **Org-admin required.** Both methods 403 for non-admin callers (SDK throws `AuthorizationError`). On 403: tell the user their account lacks governance access, render the widget's EmptyState, build the rest of the dashboard. Do not retry.
+Signatures/params/examples: `dist/traces/index.d.ts` (the `AgentTraces` service). Per-method scopes: shipped `docs/oauth-scopes.md`. This file covers only what neither can express.
+
+> Subpath: `@uipath/uipath-typescript/traces`.
+> **Org-admin required** (both methods 403 otherwise — see the JSDoc `@remarks`). On 403: tell the user their account lacks governance access, render the widget's EmptyState, build the rest of the dashboard. Do not retry. Never fabricate data.
 
 First-class Insights endpoints for **agentic runtime governance** — every policy check an agent run went through (allow/deny per hook) plus an aggregated posture summary. These widgets honor the dashboard time range like any other metric.
 
@@ -13,60 +15,10 @@ First-class Insights endpoints for **agentic runtime governance** — every poli
 > a different domain (platform policy enforcement). When unsure which the user means, ASK. Never add these
 > widgets to a plain agent-health/ops dashboard.
 
-```typescript
-import { AgentTraces, AgentGovernanceVerdict, AgentGovernanceSection } from '@uipath/uipath-typescript/traces'
-const svc = new AgentTraces(sdk)
-```
+## Semantics the JSDoc lacks
 
-Both methods take a **required positional `startTime: Date`** first (same convention as `Governance.getPolicyTraces`); everything else lives in options.
-
-## getGovernanceSummary(startTime, options?) — breakdowns in ONE call
-
-Returns a **single object — not an array**. Options: `{ endTime?, topN?, packName?, sections? }`.
-
-**Example response** (grounded in SDK test fixtures):
-
-```json
-{
-  "total": 26, "violations": 3,
-  "byHook":   [{ "key": "BEFORE_MODEL", "name": null, "count": 12, "violationCount": 2 }],
-  "byAgent":  [{ "key": "af12…", "name": "customer-care-assistant-for-acmecare", "count": 20, "violationCount": 1 }],
-  "byPolicy": [{ "key": "ISO42001-guardrail-prompt-injection", "name": "AI system impact assessment", "count": 2, "violationCount": 0 }],
-  "byPack":   [{ "key": "ISO/IEC 42001:2023 Runtime", "name": null, "count": 26, "violationCount": 3 }],
-  "byAction": [], "byMode": []
-}
-```
-
-Semantics:
-- `violations` / `violationCount` = **Deny verdicts**; `count`/`total` = all checks. Violation widgets read `violationCount`; all-checks widgets read `count`.
-- **`byAction` and `byMode` are EMPTY unless opted in** via `sections: [AgentGovernanceSection.Action]` / `[…Mode]`. Forgetting `sections` is the compiles-green-renders-empty trap here.
-- `name` is populated for `byPolicy`/`byAgent`; render `name ?? key`.
-- `topN` caps each breakdown; `packName` scopes totals + breakdowns to one pack.
-
-## getGovernanceDecisions(startTime, options?) — the record grain
-
-One row per policy check. Paginated; rows on `.items`. Options: `{ endTime?, hook?, evaluatorResult?, policyId?, agentId?, violationsOnly?, pageSize?, cursor? }`.
-
-**Example response** (`.items` — grounded in SDK test fixtures):
-
-```json
-{
-  "items": [{
-    "startTime": "2026-06-28T14:03:22Z", "endTime": "2026-06-28T14:03:24Z",
-    "traceId": "3f9c…", "jobKey": "8a1d…", "folderKey": "f-1001", "source": "10",
-    "policyId": "ISO42001-guardrail-prompt-injection", "policyName": "AI system impact assessment",
-    "packName": "ISO/IEC 42001:2023 Runtime", "hook": "BEFORE_MODEL",
-    "mode": "ENFORCE", "actionApplied": "BLOCK", "evaluatorResult": "DENY",
-    "reason": "Prompt injection was detected with a probability of 0.97.",
-    "agentId": "af12…", "agentName": "customer-care-assistant-for-acmecare"
-  }]
-}
-```
-
-Semantics — the traps:
-- **`evaluatorResult === AgentGovernanceVerdict.Deny` IS the violation.** `mode` (`AUDIT`/`ENFORCE`) says whether it was enforced; `actionApplied` is the enforcement action string (`null` in audit mode). Compare enum fields with the imported enums — `d.evaluatorResult === 'DENY'` is a tsc error.
-- **No server-side `traceId` filter.** Per-run views fetch the window and filter client-side on the row's `traceId`. `agentId` (agent project key) IS a server-side filter.
-- `violationsOnly: true` → Deny rows only. Use for violation tables and violation drill-downs.
+- Widget routing: violation widgets read `violationCount` / `violations`; all-checks widgets read `count` / `total`.
+- **No server-side `traceId` filter** on `getGovernanceDecisions`. Per-run views fetch the window and filter client-side on the row's `traceId`.
 - One agent run = one `traceId` (with its `jobKey`); group rows by `traceId` for run-level rollups.
 - Rows are TS interfaces — project with `.map(x => ({ ...x }))`, never `as` casts.
 - User vocabulary maps onto the response fields: "rule" → **policy** (`policyId`/`policyName`), "standard" → **pack** (`packName`), "violation" → **Deny verdict**, "enforcement action" → **actionApplied**, "audit vs enforce" → **mode**.
