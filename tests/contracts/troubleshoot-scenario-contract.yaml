@@ -78,7 +78,9 @@ success_criteria:
 pre_run:
   # Steps that must run before the agent starts. Each fingerprint below must
   # appear as a pre_run step with the exact `command`; extra staging steps are
-  # allowed.
+  # allowed. This guards against DROPPING a required step, not against
+  # neutralizing it - an extra step that unpacked m/.store again would pass
+  # the gate. PR review is the defense for adversarial steps.
   required_steps:
     - id: seal-mock-store
       command: "python m/seal"
