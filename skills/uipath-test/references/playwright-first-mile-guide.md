@@ -19,7 +19,7 @@ The key difference from the RPA pipeline: there is **no link step**. Uploading t
 
 - `PW_Tag_<tag>` — one per Playwright tag (`@smoke` → `PW_Tag_smoke`)
 - `PW_Project_<name>` — one per Playwright project the test runs in
-- `PW_Suite_<name>` — describe-block grouping
+- `PW_Suite_<name>` / `PW_Path_<chain>` — describe-block grouping (name and full chain)
 - `PW_File_<path>` — the spec file
 
 > **Do NOT run `uip tm testcases link-automation` on Playwright test cases.** They are linked by ingestion; manual linking is the RPA pipeline and will corrupt the association.
@@ -63,10 +63,12 @@ Each re-upload needs a **new `--package-version`** at pack time — Orchestrator
 Ingestion is asynchronous and automatic. Poll until the auto-created test cases appear:
 
 ```bash
-uip tm testcases list --project-key <PROJECT_KEY> --filter <PackageName> --output json
+uip tm testcases list --project-key <PROJECT_KEY> --output json
 ```
 
-- Expect exactly `TestCount` test cases (from Step 1), typically within 1–2 minutes.
+- Poll **unfiltered** and count. Do NOT pass `--filter <PackageName>` — the auto-created test case *names* are `"<suite> > <test title>"`; the package name appears only in the description, which `--filter` does not search, so a package-name filter stays empty forever and reads as a false "ingestion never happened".
+- Expect exactly `TestCount` new test cases (from Step 1), typically within 1–2 minutes. `TestCount` is one per Playwright **test**, NOT multiplied by the number of Playwright projects (2 tests × 2 projects → 2 test cases).
+- Ingested test cases show `IsAutomated: false` in list output — that is normal and does not mean ingestion failed; the package linkage is real (their execution logs carry `HasLinkedAutomation: true` and Orchestrator job keys).
 - Poll every ~10 seconds, up to ~3 minutes. If nothing appears by then, STOP and report — the likely causes are the Playwright feature flag being off for the tenant or a wrong `--project-key`; both need the user, not retries.
 - Verify the labels landed: `uip tm objectlabel list --project-key <PROJECT_KEY> --object-type TestCase --filter PW_ --output json`.
 
@@ -91,7 +93,7 @@ Before deciding whether `--playwright-projects` applies, ask the server:
 uip tm testsets playwright-context --test-set-key <TEST_SET_KEY> --output json
 ```
 
-- `Data.IsPlaywright: true` → the set resolves to one Playwright package; `AvailablePlaywrightProjects` lists the only valid `--playwright-projects` values, and `SelectedPlaywrightProjects` shows any selection already stored on the test set.
+- `Data.IsPlaywright: true` → the set resolves to one Playwright package; `AvailablePlaywrightProjects` holds the only valid `--playwright-projects` values, and `SelectedPlaywrightProjects` shows any selection already stored on the test set. Both are **comma-joined strings** (`"chromium, firefox"`), not arrays — split on `", "` when scripting; no stored selection is `""`.
 - `Data.IsPlaywright: false` → RPA, mixed, manual, or multi-package test set — run it **without** `--playwright-projects`.
 - The server never errors on type here, so this is the safe discriminator for automation: probe first, branch on `IsPlaywright`.
 
@@ -113,6 +115,8 @@ uip tm testsets run --test-set-key <TEST_SET_KEY> \
 
 Omit `--playwright-projects` entirely for a plain run (all config-default projects).
 
+With `--wait`, the execution id is printed **early, in a progress log line** (`Starting execution for test set …`) — the JSON envelope only arrives at terminal state. If you abort the wait, recover the id from that log line or with `uip tm executions list --project-key <PROJECT_KEY> --output json`. `--wait` polls every 60 s with a default timeout of 30 minutes.
+
 ## Step 7 — Results
 
 - `--wait` on the run blocks until terminal; without it, use `uip tm wait --execution-id <EXECUTION_ID> --output json`.
@@ -121,6 +125,13 @@ Omit `--playwright-projects` entirely for a plain run (all config-default projec
 - JUnit export: `uip tm result download --execution-id <EXECUTION_ID> --result-path <dir> --output json`.
 
 Execution happens on UiPath serverless cloud runtimes — no robot, machine, or folder package deployment is needed beyond the upload in Step 2.
+
+### If the execution stays `Pending`
+
+A run that never leaves `Pending` almost always means dispatch worked but nothing is executing the jobs — the tenant has no serverless Playwright runtime (or no capacity). Triage before waiting out the full 30-minute timeout:
+
+1. `uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json` — test case logs carrying Orchestrator `JobKey` values prove dispatch happened; the problem is downstream of Test Manager.
+2. Still all-`Pending` with JobKeys after ~5 minutes → STOP and report that the tenant lacks a serverless Playwright runtime. This needs the user/platform team; retrying, re-running, or re-uploading will not help.
 
 ## Iterating on the suite
 
