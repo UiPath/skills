@@ -61,4 +61,11 @@ jobs:
           echo "Changed troubleshoot task YAMLs: ${files:-<none>}"
 
       - name: Check judge dialog inputs
-        run: python3 scripts/check-judge-dialog.py ${{ steps.changed.outputs.files }}
+        env:
+          # Pass via env (not direct ${{ }} interpolation in run:) - the paths come
+          # from a PR-controlled diff, and `${{ }}` is substituted before the shell
+          # parses the script, so a crafted directory name could inject code.
+          FILES: ${{ steps.changed.outputs.files }}
+        # $FILES unquoted on purpose: word-splitting turns it into one argument per
+        # file. Empty (PR touches no task YAMLs) means no arguments, which exits 0.
+        run: python3 scripts/check-judge-dialog.py $FILES
