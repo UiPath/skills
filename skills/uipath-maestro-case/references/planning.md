@@ -98,6 +98,8 @@ If the plan-only / no-build exception is active, skip registry and schema discov
 - Stage entries: `stage-kind`, `entry-rule`, `exit-rule`, `interrupting`, `required`, `sla`, `rationale`.
 - Task entries: `stage`, `type`, `activation-mode`, `entry-rule`, `lane`, `required`, `run-only-once`, `resource-intent`, `identity: resolve at build`, `rationale`.
 - Trigger/condition/SLA entries: `rule-type`, `source/status`, `target stage/task`, `return-or-close behavior`, `rationale`.
+- Preserve the SDD's Task-Set Map, SLA Response Map, Rule Firing Map, and Re-entry Loop Map as compact review sections. They are planning inputs, not decorative prose.
+- A stage-SLA breach that stays in the same stage is non-interrupting. If the SDD says it interrupts a same-stage task, stop and ask for correction; do not translate it into a task-entry rule.
 
 Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json` in this mode; those require tenant evidence and belong to the later build run. End the response with suggested next steps: review the SDD and plan, then run a later build to resolve tenant resources and create `caseplan.json`.
 
@@ -303,13 +305,13 @@ Every task entry includes at least:
 
 - **taskTypeId** — resolved from the registry in Step 3
 - **rationale** — copied from the SDD; explains the task-type and activation/sequencing choice
-- **activation-mode** — required on every task. One of `sequential`, `parallel`, `event-triggered`, `adhoc`, `fan-in`, or `conditional-gate`. This is the user-visible task mode decision, not layout state.
-- **entry-rule** — required on every task; mirrors the planned task-entry condition rule. Sequential tasks MUST say `runs-sequentially`, event-triggered tasks normally say `wait-for-connector`, adhoc tasks say `adhoc`, parallel stage-start tasks say `current-stage-entered`, and fan-in / non-immediate gates say `selected-tasks-completed`.
+- **activation-mode** — required on every task. One of `sequential`, `parallel`, `parallel-after-predecessor`, `event-triggered`, `adhoc`, `fan-in`, or `conditional-gate`. This is the user-visible task mode decision, not layout state.
+- **entry-rule** — required on every task; mirrors the planned task-entry condition rule. Sequential tasks MUST say `runs-sequentially`, event-triggered tasks normally say `wait-for-connector`, adhoc tasks say `adhoc`, parallel stage-start tasks say `current-stage-entered`, parallel siblings after an immediate predecessor say `runs-sequentially`, and fan-in / non-immediate gates say `selected-tasks-completed`.
 - **inputs** / **outputs** — see [bindings-and-expressions.md](bindings-and-expressions.md) for the two input modes (literal/expression and cross-task reference)
-- **runOnlyOnce** — from sdd.md (default `true` if not specified)
+- **runOnlyOnce** — from sdd.md (default `false` if not specified). Phase 0-generated SDDs should always state `Run Only Once: Yes/No`; when a user-authored SDD omits it, use the frontend/default-new-task behavior (`false`) and do not infer `true` from task type.
 - **isRequired** — from sdd.md (default `true` if not specified)
 - **order** — authoring order in `tasks.md` (`after T05`, etc.). It is not allowed to carry execution semantics by itself; execution is carried by `activation-mode` + `entry-rule`.
-- **lane** — integer task-set index, default increments per task within the stage starting at 0 for structural/layout compatibility. Lane does not express sequencing by itself; it controls the inner `data.tasks[lane][]` grouping only after `activation-mode` and `entry-rule` are decided. For a strict sequential chain, use consecutive single-task lanes (`[[A], [B], [C]]`) and never reuse a lane. Reuse the same lane only for tasks intentionally modeled as parallel siblings (`activation-mode: parallel`, `entry-rule: current-stage-entered`, same lane, and rationale says why they run together as `[[A, B], [C]]`).
+- **lane** — integer task-set index, default increments per task within the stage starting at 0 for structural/layout compatibility. Lane does not express sequencing by itself; it controls the inner `data.tasks[lane][]` grouping only after `activation-mode` and `entry-rule` are decided. For a strict sequential chain, use consecutive single-task lanes (`[[A], [B], [C]]`) and never reuse a lane. Reuse the same lane only for tasks intentionally modeled as parallel siblings: stage-start siblings use `activation-mode: parallel`, `entry-rule: current-stage-entered`, same lane; siblings after an immediate predecessor use `activation-mode: parallel-after-predecessor`, `entry-rule: runs-sequentially`, same next lane.
 - **verify** — what the execution phase should check after running
 
 Additional fields are plugin-specific; read the plugin's `planning.md` before filling the entry.
@@ -317,12 +319,13 @@ Additional fields are plugin-specific; read the plugin's `planning.md` before fi
 > **Activation-mode audit before writing §4.7.** After §4.6 is drafted and before any condition T-entry is written, scan every stage's task list and make the task mode visible in the plan:
 >
 > - Contiguous ordered work in one stage (`then`, `after`, `before`, `in order`, direct previous-step wording, or an upstream prerequisite) → every task in that ordered run gets `activation-mode: sequential` and `entry-rule: runs-sequentially`, including the first task.
+> - Multiple independent tasks that start after the same immediate predecessor task or predecessor task set → same next lane/task set, `activation-mode: parallel-after-predecessor`, `entry-rule: runs-sequentially`, and rationale explaining independence. Do not create duplicate event-triggered tasks with identical `selected-tasks-completed("<previous>")` rules.
 > - Independent work that starts with the stage → `activation-mode: parallel`, `entry-rule: current-stage-entered`, and rationale says why the tasks are independent.
 > - Connector/event callback wait → `activation-mode: event-triggered`, usually `entry-rule: wait-for-connector`.
 > - User-launched optional work → `activation-mode: adhoc`, `entry-rule: adhoc`, `isRequired: false`.
 > - Branch convergence, fan-in, decision-result routing, or a non-immediate dependency → `activation-mode: fan-in` or `conditional-gate`, `entry-rule: selected-tasks-completed`, with the selected tasks named.
 >
-> A task whose only reason for `selected-tasks-completed` is "it follows the immediately previous task" is a planning defect. Convert that contiguous run to `runs-sequentially` instead. `selected-tasks-completed` remains correct for fan-in, branch convergence, non-immediate dependencies, and stage-exit routing conditions.
+> A task whose only reason for `selected-tasks-completed` is "it follows the immediately previous task" is a planning defect. Convert that contiguous run to `runs-sequentially` instead. If two or more tasks share the same immediate predecessor and are independent, convert them into one parallel-after-predecessor task set rather than keeping duplicated selected-task gates. `selected-tasks-completed` remains correct for fan-in, branch convergence, non-immediate dependencies, and stage-exit routing conditions.
 > Before leaving §4.6, audit each stage's planned lanes: sequential tasks that form a strict chain MUST NOT share a lane with each other or with adhoc/event-driven/parallel work. If `activation-mode`/`entry-rule` conflicts with `lane`, the mode wins and the lane must be corrected. Same-lane grouping is reserved for intentionally parallel siblings, and the rationale must say why they run in parallel.
 
 > **Outputs are a lossless handoff, not a discovered-name summary.** Project each SDD Outputs table row through the common grammar in [`plugins/variables/io-binding/planning.md` § SDD table → `tasks.md` projection](plugins/variables/io-binding/planning.md#sdd-table-to-tasksmd-projection-mandatory), then preserve the resulting list item exactly. Schema discovery may add truly undeclared fields as bare items, but it must not rewrite an SDD row. An explicit equal-name extract such as `greeting -> greeting` stays exactly that; collapsing it to bare `greeting` changes the binding from "write the existing case variable" to "auto-mint a task output." Before the Step 5 approval gate, compare every SDD Outputs row to its task T-entry and fix any missing or changed operator/operand or leaked table placeholder.
@@ -356,9 +359,17 @@ For per-scope fields, consult the corresponding condition plugin:
 
 Every condition T-entry includes `rationale:` copied from the SDD choice it implements. For global events, state why one interrupting secondary-stage entry replaces per-primary-stage exits/tasks.
 
+Before writing any §4.7 T-entry, run the producer/reference audit from the SDD Rule Firing Map:
+
+- `user-selected-stage` requires a matching upstream `wait-for-user` stage exit. If absent, ask; for deterministic approval/rejection/send-back routes, rewrite only after user correction because Phase 1 otherwise trusts `sdd.md`.
+- `sla-status-change` requires `sla-target`, `sla-display-name`, status, and `escalation-display-name`. Bare status changes are not plannable.
+- `selected-tasks-completed` may select only existing non-adhoc sibling tasks in the same stage. If it selects an `adhoc` task, ask whether to make that upstream human work a regular required `action` task or remove the dependency.
+- Connector-bound `wait-for-connector` rules require Connector Rule Detail. Bare connector waits are not plannable.
+- Stage SLA breach must not be translated into an interrupting same-stage task. Use the SDD's notify-only row, non-interrupting local follow-up, or different-stage response.
+
 ### 4.8 Set SLA and escalation rules
 
-SLA comes last. Consult [`plugins/sla/planning.md`](plugins/sla/planning.md) for the three sub-operations (default SLA, conditional SLA rules, escalation rules) and per-target ordering. Root rules target `metadata.slaRules[]`; stage rules target that stage's `data.slaRules[]`. Every SLA/escalation T-entry includes `rationale:` copied from the SDD's case/stage SLA rationale.
+SLA comes last. Consult [`plugins/sla/planning.md`](plugins/sla/planning.md) for the three sub-operations (default SLA, conditional SLA rules, escalation rules) and per-target ordering. Root rules target `metadata.slaRules[]`; stage rules target that stage's `data.slaRules[]`. Every SLA/escalation T-entry includes `rationale:` copied from the SDD's case/stage SLA rationale. Preserve the SDD's SLA Response Map intent in each SLA/escalation and related condition T-entry. Notify-only rows emit SLA/escalation T-entries only; they do not create stage/task/condition work. Graph-changing `sla-status-change` rows must be traceable to an SLA T-entry and an escalation T-entry so Phase 3 can preallocate and resolve `slaId` and `escalationId`.
 
 ### 4.9 Not Covered section
 

@@ -24,7 +24,7 @@ build the case in the Case Designer without guessing.
 
 ### Key Rules
 
-1. **SLA placement:** SLA is supported on the **case**, on **stages**, and on **`action` tasks only**. Do NOT put SLA on `process`, `agent`, `rpa`, `api-workflow`, `wait-for-timer`, `wait-for-connector`, `execute-connector-activity`, or `case-management` tasks.
+1. **SLA placement and response:** SLA is supported on the **case**, on **stages**, and on **`action` tasks only**. Do NOT put SLA on `process`, `agent`, `rpa`, `api-workflow`, `wait-for-timer`, `wait-for-connector`, `execute-connector-activity`, or `case-management` tasks. Separate the SLA clock from its response: notify-only stays in escalation actions; graph-changing case/stage SLA responses must be explicit in the SLA Response Map. A stage SLA breach must not be modeled as an interrupting task inside that same stage.
 
 2. **No skip conditions:** Stage skip conditions are NOT supported in the schema. Do not generate them. Use task-level `shouldRunOnlyOnce` for re-entry behavior.
 
@@ -107,6 +107,8 @@ build the case in the Case Designer without guessing.
 - **Workflows/Processes:** PascalCase (e.g., `ValidateEligibility`)
 - **Entity names:** PascalCase (e.g., `LoanApplication`)
 - **Entity fields:** camelCase (e.g., `applicantName`)
+- **Case Designer display names:** stages, tasks, condition rule names, SLA rule titles, and escalation titles use only letters, numbers, spaces, hyphen (`-`), and underscore (`_`). Do not generate colons, periods, slashes, backslashes, quotes, parentheses, ampersands, commas, semicolons, emoji, or other symbols. Normalize unsafe display punctuation to spaces, collapse spaces, and disclose any changed display names in the Case Review.
+- **External lookup names:** do not normalize deployed resource names, connector names, Action App titles, API/process/agent names, queue names, or bucket names used for tenant lookup. Keep a separate safe Case Designer display name when an external lookup name contains punctuation.
 
 ### Output Structure
 
@@ -170,7 +172,7 @@ The generated SDD must start with:
 | Task-output passing | {Direct \| Shared} — `caseDirectlyPassTaskOutputs` (Direct = a task's outputs flow straight to downstream tasks; default Direct) |
 | Case Identifier source | {`=metadata.ExternalId` (platform-generated — the default) \| custom} — what every `caseId` task input binds to |
 
-> **Case App validation contract:** Stage names must be non-empty, unique, and contain no `:`. Task names must contain no `:`. Every SLA rule and escalation needs a non-empty, target-unique title/display name with no `:`. SLA durations must be positive; minute-based SLAs must be 15–1000 minutes. Non-default SLA rows need an expression; escalations need a recipient, and at-risk escalations need a percentage.
+> **Case App validation contract:** Stage names must be non-empty, unique, and safe for Case Designer display. Task names and condition display names must be safe. Every SLA rule and escalation needs a non-empty, target-unique safe title/display name. Safe display characters are letters, numbers, spaces, hyphen, and underscore. SLA durations must be positive; minute-based SLAs must be 15–1000 minutes. Non-default SLA rows need an expression; escalations need a recipient, and at-risk escalations need a percentage.
 
 ### Case-Level SLA Escalation Rules
 
@@ -180,6 +182,22 @@ The generated SDD must start with:
 |------------|-----------|--------|
 | At-Risk | {percentage}% of SLA duration | {Notify: recipient or group} |
 | Breached | 100% of SLA duration | {Notify: recipient or group} |
+
+### SLA Response Map
+
+> Required whenever any case, stage, or action-task SLA exists. This table separates the clock from the response. Notify-only rows do not create stages or tasks. A graph-changing response must identify its target rule/stage/task and whether it interrupts active work. For stage SLA rows, never use "interrupt same-stage task"; choose notify-only, non-interrupting local follow-up tied to pending stage work, a different secondary stage, or an exit.
+
+| Scope | SLA | Status | Response | Target | Interrupting | Rationale |
+|-------|-----|--------|----------|--------|--------------|-----------|
+| {Case \| Stage: <stage> \| Action task: <task>} | {SLA display name} | {At-Risk \| Breached} | {Notify only \| Enter stage \| Exit stage \| Exit case \| Task-local timer \| Non-interrupting follow-up} | {recipient, stage, exit, case, task, or "—"} | {Yes \| No \| N/A} | {why this is the least graph-changing faithful response} |
+
+### Rule Firing Map
+
+> Required for every non-start entry or exit rule. Each row identifies what concrete event/fact makes the rule eligible to fire. Use this to prevent dangling `user-selected-stage`, bare `sla-status-change`, and invalid ad-hoc task dependencies.
+
+| Target | Rule | Producer / Reference | IF | Lifecycle Effect |
+|--------|------|----------------------|----|------------------|
+| {stage/task/case target} | {rule type and display name} | {source stage, source task, connector detail, paired wait-for-user exit, or SLA scope + display name + escalation} | {conditionExpression or "—"} | {starts task, enters stage, exits stage, exits case, notification only} |
 
 ### Variable SLA Rules
 
@@ -312,6 +330,22 @@ If neither holds, the io-binding validator surfaces the misalignment.
 
 The runtime engine resolves the binding when the task completes, writing the resolved value into the named case variable's slot.
 
+### Task-Set Map
+
+> Required for every stage. This table records the intended `data.tasks` grouping before individual task-entry rules are written. A strict sequence uses consecutive single-task sets. Independent tasks that start after the same immediate predecessor share the same next set. Race branches such as confirmation vs deadline must start while the obligation is pending.
+
+| Stage | Set | Tasks | Starts When | Relationship | Decision |
+|-------|-----|-------|-------------|--------------|----------|
+| {stage name} | {1..N} | {task names separated by `;`} | {stage entered, after task/set, connector event, user trigger, condition} | {sequential step \| parallel siblings \| parallel-after-predecessor \| fan-in \| race branch \| adhoc} | {why this grouping is correct} |
+
+### Re-entry Loop Map
+
+> Required when any stage can be re-entered through `return-to-origin`, correction, send-back, retry, or resubmission. Omit only when no re-entry loop exists. Classify the loop before choosing `Run Only Once`.
+
+| Loop | Type | Tasks That Rerun | Tasks Run Once | State Reset / Attempt Fact | Risk |
+|------|------|------------------|----------------|----------------------------|------|
+| {origin -> lane -> origin} | {New attempt \| Re-evaluate existing fact \| Optional repeat work} | {task names or "—"} | {task names or "—"} | {variables reset to pending, attempt-scoped variable, or preserved fact} | {stale decision / duplicate work risk and mitigation} |
+
 > Repeat the following structure for each stage in the case plan. Number stages sequentially.
 
 ---
@@ -322,14 +356,14 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 **Type:** Stage
 **Stage Kind:** {primary \| secondary} _(secondary stages use the `### Secondary Stage:` heading AND set `secondary`; primary stages use `### Stage {N}:` and OMIT this line — default = primary)_
-**Design Rationale:** {Why this stage is primary/secondary and why its entry/exit behavior fits. For a global-event secondary stage, name the event and explain that one interrupting entry replaces per-primary-stage tasks/exits.}
+**Design Rationale:** {Why this stage is primary/secondary and why its entry/exit behavior fits. For a global-event secondary stage, name the event and explain that one interrupting entry replaces per-primary-stage tasks/exits. For stage-SLA breach handling, state whether it is notify-only, routes/exits the stage, or enters a different secondary stage; do not describe it as interrupting a task in the same stage.}
 **Description:** {Prose description of what this stage accomplishes in the case lifecycle}
 **Required for Case Completion:** {Yes \| No}
 **Interrupting:** Yes _(secondary stages only — i.e. Stage Kind: secondary; omit for primary)_
 
 #### Stage Entry Conditions
 
-> **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (external/global event interrupt), `sla-status-change("<SLA display name>","<Escalation display name>")` (case/stage SLA at-risk or breach interrupt). Other rule types from Key Rule 3 are NOT valid here.
+> **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (external/global event interrupt), `sla-status-change("<SLA display name>","<Escalation display name>")` (case/stage SLA at-risk or breach response that enters a stage). Other rule types from Key Rule 3 are NOT valid here.
 >
 > **Interrupting column:** `Yes` lets the condition fire while another stage is active and interrupt it. Use `Yes` on every secondary-stage entry row. Use `No` only for normal entry on regular stages; if the work should not interrupt, it is not a secondary stage.
 >
@@ -341,7 +375,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 >
-> A global `wait-for-connector` / `sla-status-change` entry on an interrupting secondary stage applies regardless of which primary stage is active. Do not repeat the event as a task or exit rule on every primary stage.
+> A global `wait-for-connector` / graph-changing `sla-status-change` entry on an interrupting secondary stage applies regardless of which primary stage is active. Do not repeat the event as a task or exit rule on every primary stage. `user-selected-stage` requires a paired upstream `wait-for-user` exit. `sla-status-change` requires concrete SLA scope, SLA display name, status, and escalation display name; do not author a bare status-change rule. A stage SLA breach must not interrupt a task inside the same stage.
 
 #### Stage Exit Conditions
 
@@ -360,7 +394,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > Stage SLA supports the same conditional + default `slaRules[]` model as the case root. For `condition-based`, keep the default row below and add one or more Stage Variable SLA Rules before it.
 
-**Design Rationale:** {Why this target, duration, at-risk threshold, recipients, and breach behavior fit the stage requirement; name any interrupting escalation stage entered through `sla-status-change`.}
+**Design Rationale:** {Why this target, duration, at-risk threshold, recipients, and breach behavior fit the stage requirement; name any escalation stage entered through `sla-status-change`. If the breach response is local to this same stage, state that it is non-interrupting and tied to pending stage work.}
 **SLA Type:** {time-based | condition-based}
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
@@ -381,7 +415,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | {task name} | {action \| process \| agent \| rpa \| api-workflow \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management} | {sequential \| parallel \| event-triggered \| adhoc \| fan-in \| conditional-gate} | {e.g. "sequential group: A → B → C", "stage enters", "after A+B", "connector event"} | {Yes \| No} | {Yes \| No} | {persona name or "—"} | {count unit or "—" (only for action tasks)} |
+| 1 | {task name} | {action \| process \| agent \| rpa \| api-workflow \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management} | {sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate} | {e.g. "sequential group: A -> B -> C", "stage enters", "after A+B", "connector event"} | {Yes \| No} | {Yes \| No} | {persona name or "—"} | {count unit or "—" (only for action tasks)} |
 
 > After the summary table, provide a detailed subsection for each task.
 > Primary-stage task headings use `##### Task {N}.{M}: {Task Name}`. Secondary-stage task headings use `##### Task S{K}.{M}: {Task Name}` where `K` is the secondary-stage order. Do not use lettered prefixes such as `R.1`, `W.1`, `CC.1`, or `ESC.1`.
@@ -391,7 +425,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 ##### Task {N}.{M}: {Task Name}
 
 **Type:** {exact task type from schema}
-**Activation Mode:** {sequential | parallel | event-triggered | adhoc | fan-in | conditional-gate}
+**Activation Mode:** {sequential | parallel | parallel-after-predecessor | event-triggered | adhoc | fan-in | conditional-gate}
 **Design Rationale:** {Why this task type fits the actor/work and why this activation mode fits. For a sequential task, name the stated order/dependency; for a parallel task, state why it is independent.}
 **Description:** {What this task does and why it exists in the case plan}
 
@@ -401,7 +435,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 >
 > Each row is a separate entry condition. List multiple rows when a task can be entered through more than one path. Author a `current-stage-entered` row for any ungated task — including connector tasks (`execute-connector-activity`, `wait-for-connector`) — that should start when its stage is entered.
 >
-> **Sequential normalization:** when the requirement states order/dependency (`then`, `after`, `before`, `in order`, or an upstream prerequisite), write `runs-sequentially` as the only Entry Condition row on every task in that run, including the first task. Do not turn an explicitly ordered run into parallel stage-start tasks merely because no data binding is present. Use `current-stage-entered` in parallel only for explicitly independent work; use `selected-tasks-completed` for fan-in or a non-immediate dependency.
+> **Sequential normalization:** when the requirement states order/dependency (`then`, `after`, `before`, `in order`, or an upstream prerequisite), write `runs-sequentially` as the only Entry Condition row on every task in that ordered task-set run, including the first task. Do not turn an explicitly ordered run into parallel stage-start tasks merely because no data binding is present. Use `current-stage-entered` in parallel only for explicitly independent stage-start work. When multiple independent tasks start after the same immediate predecessor, place them in the same next Task-Set Map row, mark `Activation Mode: parallel-after-predecessor`, and give each `runs-sequentially` instead of duplicate `selected-tasks-completed("<previous>")` entries. Use `selected-tasks-completed` only for fan-in, branch convergence, condition-result routing, or a non-immediate dependency. It must select only non-adhoc sibling tasks in the same stage.
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
@@ -417,7 +451,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 |----------|---------------|----------------|
 | {Yes \| No} | {Yes \| No} | {`=js:` expression that skips the task when truthy, or `—`} |
 
-> `Required: Yes` means the task counts toward the stage's `required-tasks-completed` exit — **at least one task per stage MUST be `Required: Yes`**, or the stage can never complete. `Skip Condition` is the task-level `skipCondition` envelope field (sibling of `data`); use it for "run this task only when X" gating that is not expressible as a task-entry `IF`.
+> `Required: Yes` means the task counts toward the stage's `required-tasks-completed` exit — **at least one task per stage MUST be `Required: Yes`**, or the stage can never complete. `Run Only Once` is a re-entry decision, not a task-type default: use `No` for request/review/decision/validation tasks that must rerun after corrections or resubmission; use `Yes` only for immutable setup or a documented re-evaluate-existing-fact return. `Skip Condition` is the task-level `skipCondition` envelope field (sibling of `data`); use it for "run this task only when X" gating that is not expressible as a task-entry `IF`.
 
 ---
 

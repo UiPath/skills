@@ -84,7 +84,7 @@ Resolve the T-entry's `(sla-target, sla-display-name)` and `(sla-target, escalat
 ]]
 ```
 
-The referenced escalation's `trigger-type` determines whether the emitted runtime condition is `AtRisk` or `Breached`. Use separate entry-condition rows when the same secondary stage handles both statuses. Set the containing condition's `isInterrupting` to `true`.
+The referenced escalation's `trigger-type` determines whether the emitted runtime condition is `AtRisk` or `Breached`. Use separate entry-condition rows when the same stage handles both statuses. Set the containing condition's `isInterrupting` from the T-entry. Secondary-stage SLA responses must be interrupting; a non-interrupting SLA response should target a regular/non-secondary path. A stage SLA breach must not be represented as an interrupting task inside the same stage.
 
 > **Global scope.** This one entry rule can fire while any stage covered by the referenced SLA is active. Do not add matching stage-exit conditions or duplicate escalation tasks on every primary stage.
 
@@ -109,4 +109,4 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 
 ## Post-Write Verification
 
-Confirm target stage's `data.entryConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Entry Rule {N}` default), `isInterrupting` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. For `sla-status-change`, verify `slaId` and `escalationId` both resolve to objects on the declared SLA target and the condition is interrupting. For `wait-for-connector`: verify `rule.uipath.serviceType` is `"Intsvc.WaitForEvent"`, `rule.uipath.context[]` is populated (placeholders substituted), inputs/outputs `elementId` is `<stageId>-<ruleId>`, and the ConnectionId + FolderKey root bindings exist. Full `validate` flags a missing `rule.uipath`/`context` (`connector activity missing`) but not its internals (a wrong `serviceType` passes) — confirm the connector resolves in Studio Web.
+Confirm target stage's `data.entryConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Entry Rule {N}` default), `isInterrupting` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. For `sla-status-change`, verify `slaId` and `escalationId` both resolve to objects on the declared SLA target and `isInterrupting` matches the declared response. For `wait-for-connector`: verify `rule.uipath.serviceType` is `"Intsvc.WaitForEvent"`, `rule.uipath.context[]` is populated (placeholders substituted), inputs/outputs `elementId` is `<stageId>-<ruleId>`, and the ConnectionId + FolderKey root bindings exist. Full `validate` flags a missing `rule.uipath`/`context` (`connector activity missing`) but not its internals (a wrong `serviceType` passes) — confirm the connector resolves in Studio Web.

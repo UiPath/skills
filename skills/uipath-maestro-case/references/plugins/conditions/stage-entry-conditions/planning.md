@@ -44,7 +44,9 @@ Allowed `ruleType` values and when to pick each:
 
 `is-interrupting: true` means the condition can fire **while another stage is active** and will interrupt it. Use it on every secondary-stage entry row. If a candidate secondary stage would use `is-interrupting: false`, it is misclassified: use a regular stage/path or an `adhoc` task instead.
 
-> **Global-event rule.** A connector event or SLA status change that can happen during any primary stage and requires case work/routing is declared once on the destination secondary stage with `is-interrupting: true`. Do not generate the same task or stage-exit rule on every primary stage. `wait-for-connector` covers the external event; `sla-status-change` covers at-risk/breached SLA events. A warning-only SLA escalation remains a notification and needs no stage entry.
+> **Producer/reference audit.** `user-selected-stage` is valid only when a separate upstream stage has a `wait-for-user` exit that exposes this stage to the picker. Deterministic rejection, approval, send-back, cancellation, and SLA routes should use decision facts plus guarded `selected-stage-*` or exit rules instead. `sla-status-change` must carry `sla-target`, `sla-display-name`, and `escalation-display-name`; the design must also say which status/intent the escalation represents so Step 9.9 can resolve `slaId` and `escalationId`. A bare status-change rule is not plannable.
+
+> **Global-event rule.** A connector event that can happen during any primary stage and requires case work/routing is declared once on the destination secondary stage with `is-interrupting: true`. A graph-changing SLA status change uses `sla-status-change` on the destination stage; make it interrupting only when it diverts active work. Warning-only SLA escalation remains a notification and needs no stage entry. A stage SLA breach must not be represented as an interrupting task inside the same stage; use notify-only, non-interrupting same-stage follow-up tied to pending work, or an interrupting entry into a different secondary stage.
 
 > **First-stage start — `case-entered` is the case-start signal (Rule 20).** The case begins at the stage whose entry condition is `case-entered`, not a Trigger→first-stage edge. **At least one regular stage must carry `case-entered`**, or the case can never start. The sdd.md's first stage normally declares it — emit it verbatim. If NO stage declares `case-entered`, flag to the user via AskUserQuestion; do NOT silently inject one (Rule 2 — trust the sdd.md, no gap-fill). The reachability walk in [`sdd-generation-rules.md` § Logical integrity](../../../sdd-generation-rules.md) treats a case with no `case-entered` stage as a blocking orphan.
 
@@ -83,3 +85,5 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 - order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```
+
+Do not use this example for local same-stage breach handling. Same-stage stage-SLA responses are non-interrupting and must be modeled outside an interrupting secondary-stage entry.

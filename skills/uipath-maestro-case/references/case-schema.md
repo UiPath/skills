@@ -190,7 +190,7 @@ No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node l
 | `parentElement` | `{id,type}` | Always `{ id: "root", type: "case-management:root" }`. The literal `"root"` is canvas-side — there is no `"root"` node on disk. |
 | `isInvalidDropTarget` | boolean | Always `false` (UI drag-drop flag) |
 | `isPendingParent` | boolean | Always `false` (UI drag-drop flag) |
-| `tasks` | Task[][] | 2D structural array. Preserve the task order used by the frontend. A strict sequential chain is consecutive single-task inner arrays (`[[A], [B], [C]]`) plus `runs-sequentially` on each task. Only intentionally parallel siblings share an inner array (`[[A, B], [C]]`). Empty array `[]` when no tasks yet. |
+| `tasks` | Task[][] | 2D structural array. Preserve the task order used by the frontend. A strict sequential chain is consecutive single-task inner arrays (`[[A], [B], [C]]`) plus `runs-sequentially` on each task. Intentionally parallel siblings share an inner array, either at stage start (`[[A, B], [C]]`) or after an immediate predecessor (`[[A], [B, C], [D]]` with `runs-sequentially` on B and C). Empty array `[]` when no tasks yet. |
 | `slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for this stage. Every rule has a non-empty target-unique `displayName` without `:`; default SLA is the trailing `"=js:true"` entry. Escalations nest inside each rule. See §6. |
 | `entryConditions` | EntryCondition[]? | See §3. Not initialized on primary Stage creation — added later by the conditions plugins. (A secondary stage initializes these at creation — see §2c.) |
 | `exitConditions` | ExitCondition[]? | See §3. Not initialized on primary Stage creation — added later by the conditions plugins. (A secondary stage initializes these at creation — see §2c.) |
@@ -461,7 +461,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 > { "displayName": "Hold", "skipCondition": "=js:vars.skip === true", "data": { "timerType": "timeDuration", "timeDuration": "PT1H" } }
 > ```
 
-**Positioning:** tasks have no `x`/`y`. They live in the stage's `data.tasks` 2D structural array. Do not infer execution order from lane-sharing. For a strict sequential chain, preserve declaration order as consecutive single-task sets and put `runs-sequentially` as the only entry rule on each task in the chain.
+**Positioning:** tasks have no `x`/`y`. They live in the stage's `data.tasks` 2D structural array. Do not infer execution order from lane-sharing alone. For a strict sequential chain, preserve declaration order as consecutive single-task sets and put `runs-sequentially` as the only entry rule on each task in the chain. For independent siblings after one predecessor, place those siblings in the same next task set and put `runs-sequentially` on each sibling.
 
 **Task type catalog** (full shape in each plugin's `impl-json.md`):
 

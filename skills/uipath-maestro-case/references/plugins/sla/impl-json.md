@@ -12,6 +12,8 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../cas
 
 Compose the `slaRules[]` array for each target (root or stage) in one write. Group all SLA T-entries by target and emit the full array in a single mutation.
 
+SLA implementation writes clocks and escalation actions only. Notification-only SLA responses stop here. Graph-changing responses are separate condition T-entries that reference the preallocated SLA/escalation IDs; never create those condition rows from an escalation T-entry alone.
+
 ## Input spec (from `tasks.md §4.8`)
 
 | T-entry kind | Required fields | Notes |

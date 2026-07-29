@@ -30,7 +30,7 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | Rule type | Meaning | Extra fields |
 |-----------|---------|--------------|
 | `current-stage-entered` | Fires when the containing stage is entered | — |
-| `selected-tasks-completed` | Fires when specific sibling tasks in the same stage complete | `selectedTasksIds` |
+| `selected-tasks-completed` | Fires when specific non-adhoc sibling tasks in the same stage complete | `selectedTasksIds` |
 | `wait-for-connector` | Waits for a connector event (binds an IS connector trigger under `uipath`) | connector fields; `conditionExpression` optional |
 | `adhoc` | Ad hoc tasks run only when a user triggers them from the case app. This controls task activation only; choose the task type separately from what the task does. | `conditionExpression` (optional) |
 | `runs-sequentially` | Sequential tasks run in the order they appear in the stage from top to bottom. The frontend toggle writes this rule as the task's entry condition. | `conditionExpression` (optional) |
@@ -41,13 +41,13 @@ The Case App selector has three distinct modes:
 
 | UI mode | JSON/task-entry meaning | Required behavior |
 |---|---|---|
-| Sequential | `runs-sequentially` only | Preserve the frontend's ordered `data.tasks` structure. A strict chain is consecutive single-task sets (`[[A], [B], [C]]`); only explicit parallel siblings share an inner set (`[[A, B], [C]]`). The first sequential task starts when the stage is entered, and later sequential tasks use the upstream-task-set completion trigger represented by the preserved task-set/order structure. |
+| Sequential | `runs-sequentially` only | Preserve the frontend's ordered `data.tasks` structure. A strict chain is consecutive single-task sets (`[[A], [B], [C]]`); explicit parallel siblings after the same predecessor share one later set (`[[A], [B, C], [D]]`) and each member of that set also uses `runs-sequentially` so it starts when the previous task set completes. The first sequential task starts when the stage is entered, and later sequential tasks use the upstream-task-set completion trigger represented by the preserved task-set/order structure. |
 | Event-triggered | An authored event/condition, normally `wait-for-connector` for an external event | Do not add `runs-sequentially`. A stage-entered task is not automatically an event-triggered task; retain the explicit event rule and its connector configuration. |
 | Manually-triggered (adhoc) | `adhoc` only | Set `isRequired: false`; the user launches it from the Case App. Do not add another entry event or treat it as sequential. Do not change the task type merely because it is manual. |
 
 `adhoc` is task-entry-only. It is never a stage entry rule, never a case trigger, never a substitute for `wait-for-connector`, and never the way to model a user-selected interrupting lane. Use a secondary stage with `user-selected-stage` for that.
 
-For generated SDDs, any requirement that says `then`, `after`, `before`, `in order`, or otherwise declares an immediate dependency should already be authored as `runs-sequentially` on every task in that run. Do not convert it to parallel `current-stage-entered` tasks merely because no data binding links them. Use parallel mode only when the SDD rationale states that the tasks are independent. If a task row says `selected-tasks-completed("<previous task>")`, preserve it only when the SDD is intentionally expressing a condition/event-driven sibling gate, branch convergence, or non-immediate dependency.
+For generated SDDs, any requirement that says `then`, `after`, `before`, `in order`, or otherwise declares an immediate dependency should already be authored as `runs-sequentially` on every task in that run. Do not convert it to parallel `current-stage-entered` tasks merely because no data binding links them. Use stage-start parallel mode only when the SDD rationale states that the tasks are independent and start when the stage enters. If multiple independent tasks start after the same immediate predecessor, preserve them as one next task set (`activation-mode: parallel-after-predecessor`, same lane, `rule-type: runs-sequentially`) instead of duplicate `selected-tasks-completed("<previous task>")` gates. If a task row says `selected-tasks-completed("<previous task>")`, preserve it only when the SDD is intentionally expressing a condition/event-driven sibling gate, branch convergence, or non-immediate dependency.
 
 ## Phase 1 Plan Presentation Contract
 
@@ -63,19 +63,22 @@ For every task-entry-condition T-entry, verify the task's `activation-mode` and 
 | activation-mode | Allowed rule-type |
 |---|---|
 | `sequential` | `runs-sequentially` |
-| `parallel` | `current-stage-entered` |
+| `parallel` | `current-stage-entered` for stage-start siblings; `runs-sequentially` for parallel siblings in a later task set after an immediate predecessor |
+| `parallel-after-predecessor` | `runs-sequentially` |
 | `event-triggered` | `wait-for-connector` or another explicitly authored event/condition rule |
 | `adhoc` | `adhoc` |
 | `fan-in` | `selected-tasks-completed` with multiple selected tasks or an explicit convergence rationale |
 | `conditional-gate` | `selected-tasks-completed` with a branch/non-immediate dependency rationale, or the explicitly authored gate rule |
 
-If the selected task is the immediately previous task in the same stage and there is no fan-in, branch, event, or non-immediate dependency rationale, `selected-tasks-completed` is a planning error. Rewrite the ordered run as `activation-mode: sequential` with `rule-type: runs-sequentially` on every task in the run. This is required even when all tasks are placeholders.
+If the selected task is the immediately previous task in the same stage and there is no fan-in, branch, event, or non-immediate dependency rationale, `selected-tasks-completed` is a planning error. Rewrite a strict ordered run as `activation-mode: sequential` with `rule-type: runs-sequentially` on every task in the run. Rewrite independent siblings after the same predecessor as `activation-mode: parallel-after-predecessor`, same lane/task set, and `rule-type: runs-sequentially` on each sibling. This is required even when all tasks are placeholders.
+
+Before writing a `selected-tasks-completed` condition, verify every selected task is in the same stage and has no `adhoc` entry rule. The frontend excludes ad-hoc/manual tasks from selected-task and required-task dependency pickers. If required downstream flow must wait for a human task, the upstream task is not ad-hoc; model it as a regular `action` task with `Required: Yes` and the appropriate activation mode.
 
 ## Ordering
 
 Task entry conditions are created **after** all tasks in the stage have been added (so `selected-tasks-ids` can resolve).
 
-For sequential tasks, preserve the frontend's ordered `data.tasks` structure, including any explicitly parallel sibling sets; do not flatten the stage into one global chain and do not group a strict chain into one inner array. Add one `runs-sequentially` entry condition to each sequential task. The first task uses the rule as its stage-entry trigger; later tasks use it as the upstream-task-set-completed trigger. Do not add a separate `current-stage-entered` condition to the first sequential task. Lane or task-set placement is structural; the entry rule carries the sequential intent.
+For sequential tasks and parallel siblings after a predecessor, preserve the frontend's ordered `data.tasks` structure, including any explicitly parallel sibling sets; do not flatten the stage into one global chain and do not group a strict chain into one inner array. Add one `runs-sequentially` entry condition to each task in the ordered structure. The first task set uses the rule as its stage-entry trigger; later task sets use it as the upstream-task-set-completed trigger, and all siblings in the same later set start together. Do not add a separate `current-stage-entered` condition to the first sequential task. Lane or task-set placement is structural; the entry rule carries the ordered-task-set intent.
 
 ## tasks.md Entry Format
 
@@ -83,7 +86,7 @@ For sequential tasks, preserve the frontend's ordered `data.tasks` structure, in
 ## T<n>: Add task-entry condition for "<task>" in "<stage>" — <summary>
 - target-stage: "<stage-name>"
 - target-task: "<task-name>"
-- activation-mode: sequential | parallel | event-triggered | adhoc | fan-in | conditional-gate
+- activation-mode: sequential | parallel | parallel-after-predecessor | event-triggered | adhoc | fan-in | conditional-gate
 - rationale: "<why this activation/sequencing mode fits>"
 - display-name: "<name>"                  # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry Rule {N}"
 - rule-type: selected-tasks-completed

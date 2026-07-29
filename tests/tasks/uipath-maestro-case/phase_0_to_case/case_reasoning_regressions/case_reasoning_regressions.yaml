@@ -1,0 +1,132 @@
+task_id: skill-case-phase-0-case-reasoning-regressions
+description: >
+  Phase 0 through compact no-build planning for a case that combines the known
+  case-reasoning regressions: stage SLA same-stage handling, parallel tasks
+  after a predecessor, payment obligation racing, invalid selected adhoc
+  dependencies, deterministic rejection routing, concrete SLA status references,
+  and send-back re-entry state reset.
+tags:
+  - uipath-maestro-case
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+  - feature:approval-gate
+  - feature:conversational
+  - feature:escalation
+
+run_limits:
+  task_timeout: 3300
+  max_turns: 150
+  turn_timeout: 2700
+
+initial_prompt: |
+  Design a "CaseReasoningRegression" Maestro case and produce `sdd.md` plus
+  the implementation plan at `tasks/tasks.md`. Stop before creating
+  caseplan.json. This is a plan-only/no-build design exercise: do not query
+  tenant registry, connections, schemas, or users. Use concrete intended
+  resource and system names, mark identities `resolve at build`, and defer
+  authoritative tenant resolution to the later build run. After approval, use
+  the compact no-build planning shape for `tasks/tasks.md`; do not inspect
+  plugin planning docs.
+
+  Primary stages are Intake, Issuing Permit, Buyer Review, Corrections, and
+  Close.
+
+  Intake receives a permit application and reviews it. If the reviewer rejects
+  the application, route deterministically to an Application Rejected terminal
+  outcome. Do not make the worker choose the rejected stage manually.
+
+  In Issuing Permit, Collect Fees runs first. After Collect Fees completes,
+  Wait for Payment Confirmation listens for a Payment Gateway confirmation
+  event while Payment Deadline tracks the payment obligation deadline. Those two
+  are independent and must start in parallel after Collect Fees while payment is
+  pending. Generate Permit starts only after payment confirmation succeeds. If
+  the payment obligation breaches, route to a Deadline Intervention secondary
+  stage.
+
+  The Issuing Permit stage also has a 10-day Issuing Permit SLA. At-risk and
+  breached status should notify Permit Operations. A stage SLA breach must not
+  interrupt a task inside Issuing Permit. If you include same-stage follow-up,
+  it must be non-interrupting and tied to the pending stage work.
+
+  Internal Notes is optional worker-launched side work in Issuing Permit.
+  Nothing required should depend on Internal Notes completing.
+
+  In Buyer Review, send a buyer review request, then capture Buyer Decision. If
+  Buyer Decision is SendBack, enter Corrections and then return to Buyer Review
+  after corrections. On re-entry, Send Buyer Review Request and Buyer Decision
+  must run again, and buyerDecision must be reset to Pending or attempt-scoped
+  so the stale SendBack value cannot immediately re-route the case.
+
+  Use safe Case Designer display names for stages, tasks, rule display names,
+  SLA names, and escalation names: letters, numbers, spaces, hyphen, and
+  underscore only.
+
+success_criteria:
+  - type: run_command
+    description: "SDD and implementation plan were produced without building the case"
+    command: "test -f sdd.md && test -f tasks/tasks.md && test -z \"$(find . -name caseplan.json -print -quit)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Known case-reasoning invariants are represented in sdd.md and tasks/tasks.md"
+    command: "python3 \"$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/phase_0_to_case/case_reasoning_regressions/check_case_reasoning_regressions.py\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The design reasons from case semantics instead of phrase-to-rule translation"
+    files:
+      - sdd.md
+      - tasks/tasks.md
+    max_file_chars: 180000
+    include_agent_output: false
+    prompt: |
+      Review the CaseReasoningRegression SDD and implementation plan.
+
+      Score 1.0 only when:
+      - The Issuing Permit stage SLA breach is not modeled as an interrupting
+        task inside Issuing Permit. Notify-only or non-interrupting local
+        follow-up is acceptable; an interrupting route must enter a different
+        stage.
+      - Payment Deadline and Wait for Payment Confirmation start while payment
+        is pending after Collect Fees. They are represented as a parallel
+        after-predecessor group, not as duplicate event-triggered tasks gated
+        by selected-tasks-completed("Collect Fees").
+      - Generate Permit depends on successful payment confirmation, not on the
+        payment deadline branch completing.
+      - selected-tasks-completed never selects the optional Internal Notes
+        adhoc task.
+      - Application Rejected is deterministic routing from the review decision,
+        not a dangling user-selected-stage without a wait-for-user exit.
+      - Every sla-status-change row has enough concrete SLA and escalation
+        information for build-time slaId/escalationId resolution.
+      - The Buyer Review send/request and decision tasks rerun after SendBack
+        correction, and buyerDecision is reset or attempt-scoped on re-entry.
+      - Safe display names are used for generated case-designer artifacts.
+
+      Score 0.5 for one minor omission that does not break the case graph.
+      Score 0.0 for any same-stage stage-SLA interrupt, duplicate immediate
+      selected-task gates, dangling user-selected-stage, bare sla-status-change,
+      required dependency on Internal Notes, or stale Buyer Decision loop.
+    weight: 3.0
+    pass_threshold: 0.8
+
+simulation:
+  enabled: true
+  persona: |
+    You are the operations owner who supplied the complete requirements in the
+    opening message.
+  goal: |
+    Get an approved sdd.md and tasks/tasks.md, then stop before implementation.
+  constraints:
+    - "Answer concisely and accept reasonable defaults that do not change the stated stages, tasks, routes, deadlines, or re-entry behavior."
+    - "When shown the design confirmation, approve it and ask the assistant to continue through implementation planning only."
+    - "Do not authorize creating caseplan.json, running, publishing, or deploying."
+  max_turns: 35

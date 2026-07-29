@@ -85,7 +85,7 @@
         "Shows the high-level journey first: reads the request and makes the design calls, one review packet with every decision for confirmation, then build and validate without interruptions, pausing only before any run or publish",
         "Does not expose internal Phase 0 through Phase 6 labels in the user-facing roadmap",
         "Asks the Listen opener once, then fills every open field by best assumption — no per-dimension question walk about trigger, task types, exits, or SLAs",
-        "Presents ONE Case Review with the required sections: Case snapshot, Data contract, Primary path, Stage/task detail cards, Other Paths Considered, Rules / tiers, Resources & integrations, Decisions I made, Review flags, and Caller obligation when relevant",
+        "Presents ONE Case Review with the required sections: Case snapshot, Data contract, Primary path, Stage/task detail cards, Task-set map, SLA Response Map, Rule Firing Map, Re-entry Loop Map when relevant, Other Paths Considered, Rules / tiers, Resources & integrations, Decisions I made, Review flags, and Caller obligation when relevant",
         "The Case Review names every stage and every task at least once, with task type, activation mode, required/optional status, persona or resource, routing/exit behavior, and SLA context in scan-friendly tables or cards",
         "The confirmation includes a complete Decisions-I-made block with a plain-language source per assumption",
         "A manually triggered task is presented as optional adhoc worker-launched work without exposing schema mechanics",
@@ -116,7 +116,7 @@
       "expectations": [
         "Keeps the design in session memory — no sdd.draft.md or checkpoint files are written during the interview",
         "Runs the finalization checks against the in-memory model before presenting the confirmation, fixing failures silently",
-        "Shows one Case Review with case snapshot, data contract, primary path, stage/task cards, interrupting secondary stages, other paths, rules/tiers, resources, review flags, and a complete Decisions-I-made block",
+        "Shows one Case Review with case snapshot, data contract, primary path, stage/task cards, task-set map, SLA Response Map, Rule Firing Map, Re-entry Loop Map when relevant, interrupting secondary stages, other paths, rules/tiers, resources, review flags, and a complete Decisions-I-made block",
         "Because the user explicitly asked to approve first, an explicit approval prompt follows the confirmation — no file is created before it",
         "On correction, updates the model, re-runs affected checks, and re-shows only the changed rows",
         "On approval, writes sdd.md and proceeds directly to Phase 1 without asking the user to review the SDD document"
@@ -128,7 +128,7 @@
       "expected_output": "Skill designs by best assumption, confirms once (capturing the straight-through choice), then writes sdd.md batched with the first build actions and runs Phase 1 through Phase 4 automatically, pausing next at the debug gate",
       "expectations": [
         "The single Case Review carries the build continuation choice: build straight through vs pause at the build preview",
-        "The Case Review is complete enough to approve without opening sdd.md: it includes case snapshot, data contract, primary path, stage/task cards, other paths, rules/tiers, resources, decisions, and review flags",
+        "The Case Review is complete enough to approve without opening sdd.md: it includes case snapshot, data contract, primary path, stage/task cards, task-set map, SLA Response Map, Rule Firing Map, Re-entry Loop Map when relevant, other paths, rules/tiers, resources, decisions, and review flags",
         "The confirmation's Decisions-I-made block discloses every assumption with a plain-language source",
         "On the Build answer, the transition line is announced and sdd.md is written in the same batch as the first build actions — never as a standalone blocking turn",
         "One line reports the design doc path as a reference artifact",
@@ -157,7 +157,7 @@
       "expectations": [
         "Skips the entry menu — the request already describes the case, so the doc is read immediately",
         "Asks at most one batched clarifying call, and only for genuine contradictions in the spec — everything the doc covers is assumed, not re-confirmed",
-        "The Case Review includes case snapshot, data contract, primary path, stage/task detail cards, Other Paths Considered, Rules / tiers, Resources & integrations, Review flags, and a complete Decisions-I-made block with plain-language sources",
+        "The Case Review includes case snapshot, data contract, primary path, stage/task detail cards, Task-set map, SLA Response Map, Rule Firing Map, Re-entry Loop Map when relevant, Other Paths Considered, Rules / tiers, Resources & integrations, Review flags, and a complete Decisions-I-made block with plain-language sources",
         "The confirmation options carry the build continuation choice",
         "On the Build answer: no re-summary — transition line, then sdd.md batched with the first build actions and one artifact line",
         "The confirmation question anchors to the Case Review tables/cards"
@@ -170,7 +170,7 @@
       "expectations": [
         "Doc-read lines and inference one-liners narrate the design as it forms — decisions are informed, not asked",
         "No draft or checkpoint files are written while designing; the model lives in session memory",
-        "The confirmation shows the whole case in an SDD-shaped Case Review: case snapshot, data contract, stages, tasks with activation, resolved resources or resolve-at-build inline, exceptions, rules, review flags, and the decisions block",
+        "The confirmation shows the whole case in an SDD-shaped Case Review: case snapshot, data contract, stages, tasks with activation, task-set map, SLA Response Map, Rule Firing Map, Re-entry Loop Map when relevant, resolved resources or resolve-at-build inline, exceptions, rules, review flags, and the decisions block",
         "Corrections re-show only the changed Case Review sections or rows",
         "On the Build answer, sdd.md is written batched with the first build actions and reported in one line as a reference artifact",
         "High-severity review items still require the explicit build-despite opt-in"
@@ -179,13 +179,30 @@
     {
       "id": 14,
       "prompt": "Design a supplier application case. Withdrawal can arrive from the supplier portal at any point. Each phase warns handlers at 70% of its SLA and, on breach, interrupts into an escalation lane that creates an operations-lead task and sends the supplier a delay note. The case has a 15-day SLA whose breach interrupts into a director-review lane before closure. In Supplier Setup, verify identity, then set the supplier record, then invite the supplier. Preserve why every stage kind, task type, activation/sequence, SLA, and routing choice was made in the SDD and implementation plan.",
-      "expected_output": "Skill models global withdrawal/SLA events as interrupting secondary-stage entries, preserves explicit sequential work with runs-sequentially, and carries durable design rationale into tasks.md",
+      "expected_output": "Skill models global withdrawal/SLA events with scope-aware interrupting entries, preserves explicit sequential work with runs-sequentially, and carries durable design rationale into tasks.md",
       "expectations": [
         "Withdrawal is one interrupting secondary stage entered by the supplier-portal wait-for-connector event; the skill does not repeat withdrawal tasks or exits on every primary stage",
         "The 70% at-risk warning is an SLA escalation notification; phase/case breach work uses sla-status-change entry rules on interrupting secondary stages that reference the intended SLA and escalation rules",
+        "A stage SLA breach is never modeled as an interrupting task inside the same active stage; if it interrupts, it enters a different secondary stage",
         "The explicitly ordered Supplier Setup tasks each use runs-sequentially, are not emitted as parallel current-stage-entered tasks, and are laid out as consecutive single-task data.tasks sets rather than one parallel inner array",
         "The SDD stores design rationale for stage kind/routing, task type/activation/sequencing, and SLA behavior instead of leaving the reasons only in chat",
         "tasks.md preserves the SDD rationale on the matching stage, task, condition, and SLA T-entries"
+      ]
+    },
+    {
+      "id": 15,
+      "prompt": "Design a CaseReasoningRegression case and produce sdd.md plus tasks/tasks.md only. It includes a deterministic rejected outcome, a payment confirmation versus deadline obligation, a stage SLA that must not interrupt same-stage work, optional Internal Notes, and a Buyer Review SendBack loop.",
+      "expected_output": "Skill produces a no-build design and plan that expose Task-set Map, SLA Response Map, Rule Firing Map, and Re-entry Loop Map, while preserving stage-SLA same-stage constraints, concrete SLA references, safe names, parallel-after-predecessor grouping, and re-entry reset semantics.",
+      "expectations": [
+        "The Case Review and SDD include Task-set Map, SLA Response Map, Rule Firing Map, and Re-entry Loop Map when relevant",
+        "The Issuing Permit stage SLA breach is notify-only or non-interrupting local follow-up, or interrupts only by entering a different stage; it is not an interrupting task inside Issuing Permit",
+        "Payment confirmation and payment deadline/deadline tracking start while payment is pending after Collect Fees, not after Generate Permit or after successful payment",
+        "Independent tasks that start after the same immediate predecessor are modeled as one parallel-after-predecessor task set with runs-sequentially, not duplicate selected-tasks-completed gates",
+        "selected-tasks-completed does not reference optional adhoc Internal Notes",
+        "Application Rejected is reached through deterministic decision routing, not user-selected-stage without a wait-for-user exit",
+        "Each sla-status-change row has concrete SLA scope/name/status/escalation intent so build can resolve slaId and escalationId",
+        "Buyer Review request and decision tasks rerun after SendBack correction and buyerDecision is reset or attempt-scoped",
+        "Generated Case Designer display names use only letters, numbers, spaces, hyphen, and underscore"
       ]
     }
   ]

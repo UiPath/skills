@@ -17,7 +17,7 @@ Pick this plugin whenever the sdd.md mentions deadlines, service-level agreement
 |--------|---------|
 | **Default SLA** | The time-based catch-all SLA. One per target (root or stage). Written into the SLA rules array with `expression: "=js:true"`. See [impl-json.md § Target resolution](impl-json.md) for the destination paths. |
 | **Conditional SLA rules** | Expression-driven SLA overrides. Supported on root and stage targets. Prepended to the target's SLA rules array ahead of the default. |
-| **Escalation rules** | Status markers and notifications triggered at-risk or on breach. Attached to a specific rule via `escalationRule[]`; their IDs may also drive an interrupting secondary-stage `sla-status-change` entry. |
+| **Escalation rules** | Status markers and notifications triggered at-risk or on breach. Attached to a specific rule via `escalationRule[]`; their IDs may also drive a graph-changing `sla-status-change` stage-entry rule. |
 
 ## Applying SLA at Root vs Stage
 
@@ -31,6 +31,16 @@ Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage >
 > **Secondary-stage SLA is supported.** Author it the same way as a regular Stage SLA — write `data.slaRules[]` on the `case-management:Stage` node (the secondary stage, i.e. `data.stageType: "secondary"`). See [`impl-json.md`](impl-json.md).
 
 > **Per-conditional-rule escalations are supported.** Attach an escalation rule to any entry in `slaRules[]`, not only the default `"=js:true"` rule.
+
+## SLA Response Contract
+
+The SLA plugin creates clocks and escalation actions. It does not by itself create stages, tasks, or exits. Preserve the SDD's SLA Response Map:
+
+- Notify-only rows emit only SLA/escalation T-entries. Do not add a `sla-status-change` condition just to represent a notification.
+- Graph-changing rows emit SLA/escalation T-entries plus the corresponding condition T-entry. The condition must reference the same target scope, SLA display name, status, and escalation display name so Phase 3 can resolve `slaId` and `escalationId`.
+- Case SLA breach can be interrupting or non-interrupting based on the response.
+- Stage SLA breach can interrupt into a different stage, route/exit the current stage, or remain notify-only/non-interrupting local follow-up. It must not be represented as an interrupting task inside the same stage.
+- Action-task due dates are task-local first. Add graph behavior only when the missed action changes the broader case flow.
 
 ## Required Fields from sdd.md
 
@@ -68,7 +78,7 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 | `display-name` | sdd.md or generated fallback | Required non-empty escalation title, unique across the target, and MUST NOT contain `:`. If omitted, use `Escalation Rule {N}` and record the fallback. |
 | `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
 | `attach-to` | sdd.md | `default` (attach to the `=js:true` rule) or `T<m>` pointing to the conditional-rule T-entry the escalation fires under. |
-| `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context. If this escalation enters a secondary stage, name that lane and why it is global/interrupting. |
+| `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context. If this escalation enters another stage, name that target and why it is interrupting or non-interrupting. For stage SLA same-stage follow-up, state why it is non-interrupting. |
 
 ## Identity Resolution
 

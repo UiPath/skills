@@ -57,7 +57,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 ]]
 ```
 
-`selectedTasksIds` is a JSON string array.
+`selectedTasksIds` is a JSON string array. Resolve only tasks in the same stage whose entry conditions are not `adhoc`. If a selected task is ad-hoc/manual, stop and repair the plan: required downstream flow cannot depend on optional user-launched work.
 
 ### adhoc — expression gate
 
@@ -85,7 +85,7 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 "rules": [[ { "id": "rxxxxxxxx", "rule": "runs-sequentially" } ]]
 ```
 
-**Frontend toggle semantics:** The sequential toggle writes this rule as the task's only entry condition. Preserve the task's order in the stage's `data.tasks` structure. A strict chain uses consecutive single-task inner arrays (`[[A], [B], [C]]`); only explicitly parallel siblings share an inner array (`[[A, B], [C]]`). On the first task in the chain, `runs-sequentially` means the current stage was entered; on subsequent tasks, it means the preceding task set completed. Do not use lane-sharing, `selected-tasks-completed`, or an additional `current-stage-entered` rule to express this sequence.
+**Frontend toggle semantics:** The sequential/ordered-task-set rule is the task's only entry condition for strict sequences and for parallel siblings that start after an immediate predecessor. Preserve the task's order in the stage's `data.tasks` structure. A strict chain uses consecutive single-task inner arrays (`[[A], [B], [C]]`); explicitly parallel siblings after the same predecessor share one later inner array (`[[A], [B, C], [D]]`) and each sibling carries `runs-sequentially`. On the first task set, `runs-sequentially` means the current stage was entered; on subsequent task sets, it means the preceding task set completed. Do not use `selected-tasks-completed` or an additional `current-stage-entered` rule to express immediate-predecessor sequencing.
 
 ## Rule-Type Catalog
 
