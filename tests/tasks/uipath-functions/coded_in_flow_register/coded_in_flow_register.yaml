@@ -5,7 +5,7 @@ description: >
   synced as a local resource in the solution. Two distinct steps verified:
   (1) the function PROJECT is registered in the .uipx Projects manifest —
   written either by explicit `uip solution project add` or by the
-  auto-registration `uip functions init` performs in a parent solution; and
+  auto-registration `uip function init` performs in a parent solution; and
   (2) syncing resources (`uip solution resources refresh`, or a pack) mints a
   process resource file with a `resource.key` UUID under
   `resources/solution_folder/process/` and surfaces it via
@@ -47,7 +47,7 @@ success_criteria:
     pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: command_executed
-    description: "Agent scaffolded the Coded Function project (uip functions/codedagent new or uipath new)"
+    description: "Agent scaffolded the Coded Function project (uip function/codedagent new or uipath new)"
     tool_name: "Bash"
     command_pattern: '(uip\s+(functions|codedagent)\s+new\s+(?!-{1,2}help)\S+|uipath\s+new\s+(?!-{1,2}help)\S+)'
     min_count: 1
@@ -55,7 +55,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent generated entry-points.json (uip functions/codedagent init or uipath init)"
+    description: "Agent generated entry-points.json (uip function/codedagent init or uipath init)"
     tool_name: "Bash"
     command_pattern: '(uip\s+(functions|codedagent)\s+init|uipath\s+init)'
     min_count: 1
@@ -83,7 +83,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Local resource file (resource.key) was minted during solution registration — explicit `uip solution project add` or `uip functions init` auto-registration (accepts agent/ or function/ subdirectory)"
+    description: "Local resource file (resource.key) was minted during solution registration — explicit `uip solution project add` or `uip function init` auto-registration (accepts agent/ or function/ subdirectory)"
     command: |
       python3 -c "
       import os, json, sys
