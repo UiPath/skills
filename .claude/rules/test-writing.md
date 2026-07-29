@@ -55,6 +55,8 @@ Weight: `1.0` supporting · `1.5` core command/artifact · `2.0` artifact conten
 
 When criteria parse CLI output, steer the prompt toward `--output json`, but grade the **outcome** (the parsed value, via `run_command` / `file_check`), NOT the literal flag. Never add a gating `command_executed` check on `(uip|\$UIP)\s+.*--output\s+json`: the flag is outcome-invisible (often the CLI default), so gating on it docks agents that reach the same result without typing it. To record convention adherence, use an advisory check (`pass_threshold: 0`).
 
+Never gate on `command_executed` with `min_count: 2+` to mean "did this N times". `min_count` counts matching **tool calls**, not command occurrences — the regex yields at most one match per call, so an agent that batches N invocations into one `bash -lc "cmd1; cmd2; …"` scores 1/N and fails despite correct behavior. Gate `min_count: 1` (the command was used), prove the N operations with behavioral criteria (one `file_exists`/`json_check`/`run_command` per expected outcome), and make any `min_count: N` shape check advisory (`weight: 0`, `pass_threshold: 0`). See tests/README.md §`command_executed`.
+
 ## Prompts
 
 Minimal. State the goal and the success bar ("not complete until `uip ... validate` passes"). Do not enumerate CLI flags — the skill teaches those.
@@ -62,6 +64,8 @@ Minimal. State the goal and the success bar ("not complete until `uip ... valida
 ## Anti-patterns
 
 - Pinning `@uipath/cli` in `sandbox.node.env_packages` (see Sandbox Configuration above)
+- Gating a `command_executed` criterion on `min_count: 2+` (counts tool calls, not occurrences — batching agents fail; see Success Criteria above)
+- Grading a multi-step task *only* on `command_executed` counters with no behavioral criterion proving the outcome
 - Copying the full `agent:` block instead of inheriting
 - Tagging `connector:slack` / `resource:rpa` — `connector` and `resource` are flat boolean markers; the specific value is in the path/`task_id`/body
 - Inventing `feature:` leaf names that duplicate the file path

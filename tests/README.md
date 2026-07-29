@@ -384,10 +384,32 @@ Verify the agent ran a specific CLI command (matched by regex). From `init_valid
   description: "Agent created a solution with uip solution new"
   tool_name: "Bash"
   command_pattern: 'uip\s+solution\s+new'
-  min_count: 1          # minimum times the command must appear
+  min_count: 1          # minimum number of matching TOOL CALLS (see warning)
   weight: 1.5           # scoring weight
   pass_threshold: 1.0   # fraction of min_count required to pass
 ```
+
+> **`min_count` counts matching tool calls, not command occurrences.** The regex
+> is applied once per tool call and yields at most one match per call. An agent
+> that batches N invocations into a single `bash -lc "cmd1; cmd2; …"` call scores
+> **1**, not N — even though the shell ran the command N times.
+
+Consequence: `min_count: N` gating a criterion requires the agent to make N
+*separate* tool calls. Batching is normal, correct agent behavior (some models do
+it by default), so a high `min_count` reliably produces false negatives.
+
+Do NOT gate on `min_count: 2+` to mean "did this N times". Instead:
+
+1. Gate on `min_count: 1` — proves the command was used at all.
+2. Prove the N operations with **behavioral** criteria (`file_exists`,
+   `file_contains`, `json_check`, `run_command`) — one per expected outcome.
+   These cannot be satisfied without the work actually happening, and they are
+   indifferent to how the agent packaged its shell calls.
+3. If the "once per item" shape is still worth recording, add the `min_count: N`
+   check as advisory (`weight: 0`, `pass_threshold: 0`) so it never docks score.
+
+See `tests/tasks/uipath-api-workflow/operate/run_execute/run_execute.yaml` for
+this pattern applied.
 
 ### `file_exists`
 

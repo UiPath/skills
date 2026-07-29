@@ -48,7 +48,7 @@ For each target task file:
 
 ## Phase 3 — Apply the Rubric
 
-Evaluate the task against seven axes. Each axis can produce zero or more issues, each tagged with a severity. When raising an issue, refer to the axis by its human-readable title (e.g. "Self-report anti-pattern", "Prompt over-specification") — do not use letter labels.
+Evaluate the task against the axes below. Each axis can produce zero or more issues, each tagged with a severity. When raising an issue, refer to the axis by its human-readable title (e.g. "Self-report anti-pattern", "Prompt over-specification") — do not use letter labels.
 
 ### Self-report anti-pattern
 
@@ -58,6 +58,21 @@ Evaluate the task against seven axes. Each axis can produce zero or more issues,
 2. One or more `success_criteria` entries (`file_contains`, `file_check`, `json_check`, `file_matches_regex`) reads that same file as their evidence.
 
 **Why it's broken:** the test should check what the agent *did* (commands run, artifacts produced) using deterministic criteria, not what the agent *claims* it did in a self-written summary. The agent grades its own homework, the result is hallucination-prone, and the deterministic criteria coder-eval was built for are bypassed.
+
+### Batch-hostile command counting
+
+Inspect every `command_executed` criterion with `min_count: 2` or higher.
+
+`min_count` counts matching **tool calls**, not command occurrences — the regex is applied once per tool call and yields at most one match per call. An agent that batches N invocations into a single `bash -lc "cmd1; cmd2; …"` call scores 1, not N. Batching is normal, correct agent behavior (some models do it by default), so these criteria produce false negatives on agents that did the work correctly.
+
+**Raise an issue for each `command_executed` criterion with `min_count >= 2` and `pass_threshold >= 1.0`** (i.e. gating):
+
+- **Critical** — `min_count >= 4`, or the task has **no** behavioral criteria at all (`file_exists` / `file_contains` / `json_check` / `run_command` / `file_check`), so the counter is the only evidence and there is no way for a batching agent to recover the score
+- **High** — `min_count` of 2–3 and the task does have behavioral criteria covering the same operations (the counter is redundant *and* harmful)
+
+**Fix to recommend:** gate on `min_count: 1` (proves the command was used), prove the N operations with one behavioral criterion per expected outcome, and if the "one call per item" shape is still worth recording, re-add the `min_count: N` check as advisory (`weight: 0`, `pass_threshold: 0`). Point to `tests/tasks/uipath-api-workflow/operate/run_execute/run_execute.yaml` as the reference pattern.
+
+Do **not** raise this for criteria already advisory (`weight: 0` / `pass_threshold: 0`) — that is the recommended shape.
 
 ### Prompt over-specification
 
