@@ -273,7 +273,7 @@ If the probe in Rule #2 shows singular subjects, the CLI predates the closed-ver
   For more authentication details, run `/uipath-platform`.
 
 ### Confirm project scope
-  Ask the user for the project name or key before any Test Manager call. For multi-project scenarios, collect ALL names or keys in one prompt. Resolve each to a `PROJECT_KEY`:
+  Ask the user for the project name or key before any Test Manager call (unless the task already names one or authorizes creating a new project). For multi-project scenarios, collect ALL names or keys in one prompt. Resolve each to a `PROJECT_KEY`:
   ```bash
   uip tm project list --filter <NAME_OR_KEY> --output json
   ```
@@ -320,6 +320,8 @@ If the probe in Rule #2 shows singular subjects, the CLI predates the closed-ver
 | **Publish a project and link it to a Test Manager test case** (Studio/RPA) | [references/publish-and-link-guide.md](references/publish-and-link-guide.md) |
 | **Pack, ingest, and run a Playwright suite on serverless** (pack → upload → labels → run) | [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md) |
 
+
+> **Known CLI quirk:** a command can emit its JSON envelope and then sit for a while before exiting (`[Telemetry] flush timed out` warnings). If you have the JSON, the command succeeded — don't let a slow exit be mistaken for a hang by your own timeouts; cap per-command wall time modestly and move on once the envelope is in hand.
 
 ## Anti-patterns
 

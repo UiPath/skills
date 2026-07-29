@@ -123,9 +123,9 @@ uip tm testsets run --test-set-key <TEST_SET_KEY> \
 
 Omit `--playwright-projects` entirely for a plain run (all config-default projects).
 
-With `--wait`, the execution id is printed **early, in a progress log line** (`Starting execution for test set …`) — the JSON envelope only arrives at terminal state. If you abort the wait, recover the id from that log line or with `uip tm executions list --project-key <PROJECT_KEY> --output json`. `--wait` polls every 60 s with a default timeout of 30 minutes.
+With `--wait`, the execution id is printed **early, in a progress log line** — take it from the `Execution started: <id> (Pending)` line, NOT from `Starting execution for test set …` (that line's UUID is the *test set* id). The JSON envelope only arrives at terminal state. If you abort the wait, recover the id from that log line or with `uip tm executions list --project-key <PROJECT_KEY> --output json`. `--wait` polls every 60 s with a default timeout of 30 minutes.
 
-**Agent-friendly waiting:** a single `--wait` call can sit silent for many minutes, which trips agent-harness watchdogs and shell timeouts. When running as an agent, prefer starting the run **without** `--wait`, then poll in bounded chunks: `uip tm wait --execution-id <EXECUTION_ID> --timeout 120 --output json` in a loop (or `uip tm executions get-stats` every 30–60 s), so every call returns quickly and progress stays visible.
+**Agent-friendly waiting:** a single `--wait` call can sit silent for many minutes, which trips agent-harness watchdogs and shell timeouts. When running as an agent, prefer starting the run **without** `--wait`, then poll in bounded chunks: `uip tm wait --execution-id <EXECUTION_ID> --timeout 120 --output json` in a loop (or `uip tm executions get-stats` every 30–60 s), so every call returns quickly and progress stays visible. A `wait` that hits its `--timeout` returns a Failure envelope with `Retry: "RetryWillNotFix"` — for a non-terminal execution that just means "still running"; keep polling, don't treat it as fatal.
 
 ## Step 7 — Results
 
@@ -135,6 +135,12 @@ With `--wait`, the execution id is printed **early, in a progress log line** (`S
 - JUnit export: `uip tm result download --execution-id <EXECUTION_ID> --result-path <dir> --output json`.
 
 Execution happens on UiPath serverless cloud runtimes — no robot, machine, or folder package deployment is needed beyond the upload in Step 2.
+
+### If the execution Finishes with `Passed: 0 / Failed: 0 / None: N`
+
+`None` means the pod ran but its **results were never uploaded** to Test Manager — check the test case logs' Info ("pod terminated before results could be uploaded") and `uip or jobs list` (jobs `Faulted` *with* a `HostMachineName`). The tests themselves may even have passed; their outcomes were lost in the runner→Test Manager upload leg (storage/network on the tenant side). Two warnings:
+- `report get` counts `None` results as **`Skipped`** — a 0% pass rate here means "results lost", not "tests skipped".
+- Retrying re-runs the tests but will keep faulting until the upload path is fixed. Apply the retry cap (Critical Rule #4), then stop and report to the platform team.
 
 ### If the execution stays `Pending`
 
