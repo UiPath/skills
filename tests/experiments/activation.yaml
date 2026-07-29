@@ -24,12 +24,8 @@ defaults:
     # here: >= 0.8.10's any-engagement latch narrows each instance to ONE
     # decidable polarity.) See coder_eval "early stop on criterion".
     #
-    # HARNESS CONSTRAINT: cooperative early-stop is Claude Code-only. codex and
-    # antigravity agents do not support it, and an armed run with such an agent
-    # is a hard EarlyStopConfigError at resolution — runs using `--type codex`
-    # or `--type antigravity` MUST add `-D run_limits.stop_early=false` (rows
-    # may then use up to max_turns: 3 — a cap, not a floor). Note: unarmed runs
-    # are the authoritative ones for precision — a pass-stop can hide a later
+    # Note: unarmed runs (`-D run_limits.stop_early=false`) are the
+    # authoritative ones for precision — a pass-stop can hide a later
     # distractor misfire, so armed-run precision is optimistic by comparison
     # (recall.yes is unaffected; see tasks/activation/README.md).
     max_turns: 3
