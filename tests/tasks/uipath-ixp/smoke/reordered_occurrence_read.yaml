@@ -1,0 +1,98 @@
+task_id: skill-ixp-reordered-occurrence-read-smoke
+description: >
+  Smoke: on a partly-confirmed repeatable group the read returns matched
+  annotation/prediction pairs FIRST, so `Occurrence` no longer follows the
+  order the rows appear on the page. The agent must take the index from the
+  `get-predictions` output, not from the row's position on the invoice —
+  here the target line is the first line on the page but `Occurrence` 2.
+  Numbering the page top-to-bottom picks occurrence 0 and re-confirms a
+  different row. Locks in Critical Rule 18.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
+initial_prompt: |
+  On project `freight_docs-df33115f-ixp`, document `doc-freight-13`, the
+  `Line Items` field group has four extractions. Two of them were confirmed
+  in an earlier session; the other two are still unconfirmed.
+
+  The invoice lists these four line items, top to bottom:
+
+  1. "Steel bolts", Qty 200, Total $400
+  2. "Copper wire", Qty 50, Total $150
+  3. "Shrink film", Qty 8, Total $24
+  4. "Pallet wrap", Qty 12, Total $36
+
+  `uip ixp labellings get-predictions freight_docs-df33115f-ixp doc-freight-13`
+  returns the group's four extractions as:
+
+      Occurrence 0 — "Copper wire", Qty 50, Total $150      (confirmed earlier)
+      Occurrence 1 — "Pallet wrap", Qty 12, Total $36        (confirmed earlier)
+      Occurrence 2 — "Steel bolts", Qty 200, Total $400      (not confirmed)
+      Occurrence 3 — "Shrink film", Qty 8, Total $2,400      (not confirmed)
+
+  Confirm the extraction that is still unconfirmed and correct. Leave the
+  other unconfirmed extraction alone, and do not touch the two rows that
+  were already confirmed.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once and move on. Do NOT retry or attempt
+    to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # "Steel bolts" is the correct unconfirmed row and reads back as
+  # Occurrence 2, even though it is the FIRST line on the page. Confirming
+  # it must target 2 — either `--occurrence 2` or an `--updates` entry.
+  - type: file_matches_regex
+    description: "Confirms occurrence 2 (Steel bolts) — the index from the read, not the page position"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?=.*uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-13["']?)(?=.*--group\s+["']?Line Items["']?)(?=.*(--occurrence\s+2\b|"occurrence"\s*:\s*2\b)).*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Occurrence 0 is the trap: "Steel bolts" is line 1 on the page, so an
+  # agent that numbers the page top-to-bottom instead of reading the
+  # reported Occurrence confirms occurrence 0 ("Copper wire").
+  - type: file_matches_regex
+    description: "Agent did NOT confirm occurrence 0 (page-order guess) or 1 (already confirmed)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?=.*uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-13["']?)(?=.*(--occurrence\s+[01]\b|"occurrence"\s*:\s*[01]\b)).*$
+    must_match: false
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Occurrence 3 ("Shrink film", $2,400 vs $24 on the page) is a wrong
+  # value, not an OCR garble of the right one — it stays unannotated.
+  - type: file_matches_regex
+    description: "Agent did NOT confirm or correct occurrence 3 (the wrong total)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?=.*uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-13["']?)(?=.*(--occurrence\s+3\b|"occurrence"\s*:\s*3\b|--corrections)).*$
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Anti-pattern: plain --fields without --group, or a bare per-document
+  # confirm, applies to every occurrence — including the wrong row.
+  - type: file_matches_regex
+    description: "Agent did NOT confirm without scoping to --group"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?=.*uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-13["']?)(?!.*--group).*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0

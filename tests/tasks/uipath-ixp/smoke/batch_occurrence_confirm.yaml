@@ -5,8 +5,9 @@ description: >
   be ONE `--group + --updates` call, not a chain of `--occurrence` calls —
   a confirm re-orders the group's occurrences on the next read (matched
   annotation/prediction pairs sort first), so every index in a chain after
-  the first one addresses a row the caller never read. Locks in Critical
-  Rule 18.
+  the first one addresses a row the caller never read. Grades the batching
+  half of Critical Rule 18; reordered_occurrence_read grades the index
+  derivation itself.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
