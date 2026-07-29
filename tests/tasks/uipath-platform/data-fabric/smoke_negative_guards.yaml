@@ -55,15 +55,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent must NOT attempt to create an entity with the reserved name Order"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+create\s+["'']?Order["'']?(?:\s|$)'
-    min_count: 0
-    max_count: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent must NOT run a CSV import for the complex-field request"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+import'

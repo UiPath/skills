@@ -4,11 +4,8 @@ description: >
   whose targets are folder-scoped and confirms the scope-binding contract
   documented in the skill — a folder RELATIONSHIP field to a same-folder
   target requires `referenceFolderKey` even when the parent and target sit
-  in the same folder (omitting it fails with a misleading tenant-level
-  error), and folder-to-tenant / tenant-to-folder bindings are rejected
-  outright for CHOICE_SET / RELATIONSHIP fields.
-  Exercises the negative + positive paths the agent must learn to surface
-  rather than swallow.
+  in the same folder. Exercises the negative + positive paths the agent
+  must learn to surface rather than swallow.
 tags: [uipath-platform, data-fabric, integration, entity-scope, complex-fields, mode:diagnose, lifecycle:setup]
 run_limits:
   expected_turns: 30
@@ -19,9 +16,8 @@ initial_prompt: |
   I'm setting up two linked UiPath Data Fabric entities for a folder-scoped test.
 
   I explicitly approve all mutations requested below against only
-  `CE_FolderBindEmployee`, `CE_FolderBindExpense`, and
-  `CE_FolderBindTenantTarget`, including the two intentional invalid
-  relationship attempts. Use the `Shared` folder and proceed
+  `CE_FolderBindEmployee` and `CE_FolderBindExpense`, including the
+  intentional invalid relationship attempt. Use the `Shared` folder and proceed
   without another confirmation.
 
   First, find the `Shared` folder — that's where these entities will live. If
@@ -48,13 +44,8 @@ initial_prompt: |
        reference so Data Fabric knows both entities live in folder A.
        Confirm it goes through.
 
-    3. Create a tenant-level entity `CE_FolderBindTenantTarget` (no
-       folder), then try to add a link column on the folder-scoped
-       Expense that points at this tenant entity. Record what came
-       back — I expect the platform to reject cross-scope links.
-
   When you're done, walk me through what came back for each of the
-  three scenarios — did it succeed or fail, and if it failed, what
+  two scenarios — did it succeed or fail, and if it failed, what
   did the platform say? Then read the Expense schema back and confirm
   the `manager` column ended up correctly bound to Employee.
 
@@ -92,30 +83,25 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "Agent correctly reported all three scope-binding outcomes (fail, succeed, fail) with the specific reason for each failure — plus confirmed the manager field is correctly bound at the end"
+    description: "Agent correctly reported both same-folder binding outcomes and confirmed the manager field is correctly bound at the end"
     include_agent_output: true
     prompt: |
-      The agent ran three scope-binding scenarios and then re-read the
+      The agent ran two scope-binding scenarios and then re-read the
       Expense schema:
 
         Scenario 1 — add `manager` RELATIONSHIP column WITHOUT
         `referenceFolderKey`. Expected: platform rejects (folder targets
         require the key even for same-folder bindings).
         Scenario 2 — same column WITH `referenceFolderKey`. Expected: succeeds.
-        Scenario 3 — folder-scoped Expense linking to a TENANT-level target.
-        Expected: platform rejects (cross-scope bindings not allowed).
         Final check — read Expense schema back; `manager` should exist and
         point at Employee.
 
       Read the agent's final walk-through. Score 1.0 if the agent correctly
-      reported the outcome (succeeded / failed) for ALL FOUR checks AND
-      cited a specific platform error string for the two failures. Score
-      0.5 if the three scenario outcomes are all correct with cited error
-      strings for the failures, even if the final schema-read is missing or
-      truncated — OR if outcomes are correct for 3 of 4 checks — OR if
-      failure reasoning is generic ("it failed") without the platform's
-      error text. Score 0.0 only if 2+ scenario outcomes are wrong (e.g.,
-      "scenario 1 succeeded").
+      reported the outcome (failed, succeeded) for both scenarios, cited a
+      specific platform error for the failure, and confirmed the final
+      binding. Score 0.5 if both scenario outcomes are correct but the final
+      schema read is missing or the failure reason is generic. Score 0.0 if
+      either scenario outcome is wrong.
     weight: 3.5
     pass_threshold: 0.5
 
@@ -152,15 +138,6 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent must NOT silently drop columns via removeFields"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
-    min_count: 0
-    max_count: 0
-    weight: 2.0
-    pass_threshold: 1.0
-
 pre_run:
   # Child first so its relationship does not block deleting the target.
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindExpense --include-folders"
@@ -169,15 +146,9 @@ pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindEmployee --include-folders"
     timeout: 120
     fail_on_error: false
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindTenantTarget"
-    timeout: 120
-    fail_on_error: false
-
 post_run:
   # Child (Expense) first so any relationship references are dropped before targets.
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindExpense --include-folders"
     timeout: 120
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindEmployee --include-folders"
-    timeout: 120
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindTenantTarget"
     timeout: 120

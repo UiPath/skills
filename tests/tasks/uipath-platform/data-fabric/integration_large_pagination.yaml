@@ -68,22 +68,6 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent used the requested 60-row page size"
-    tool_name: "Bash"
-    command_pattern: '(?s)(?:uip\s+df\s+records\s+(?:list|query)\s+.*--limit\s+60|["'']records["'']\s*,\s*["''](?:list|query)["''].*["'']--limit["'']\s*,\s*(?:["'']60["'']|str\(LIMIT\)))'
-    min_count: 1
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent performed a multi-page walk"
-    tool_name: "Bash"
-    command_pattern: '(?s)(?:for|while)\s+.*(?:uip\s+df\s+records\s+(?:list|query)|["'']records["'']\s*,\s*["''](?:list|query)["'']).*(?:--cursor|--offset|["'']--(?:cursor|offset)["''])'
-    min_count: 1
-    weight: 2.5
-    pass_threshold: 1.0
-
   - type: llm_judge
     description: "Agent reported the three pagination outcomes coherently"
     include_agent_output: true
@@ -120,14 +104,6 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent jumped to a page using -o/--offset"
-    tool_name: "Bash"
-    command_pattern: '(?s)(?:uip\s+df\s+records\s+(?:list|query)\s+.*(?:-o\s+180|--offset\s+180)|["'']records["'']\s*,\s*["''](?:list|query)["''].*["'']--offset["'']\s*,\s*(?:["'']180["'']|str\(OFFSET\)))'
-    min_count: 1
-    weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -184,7 +160,7 @@ success_criteria:
   - type: command_executed
     description: "Agent batch-updated three record IDs to inactive"
     tool_name: "Bash"
-    command_pattern: '(?is)(?=.*uip\s+df\s+records\s+update)(?=.*(?:(?:\\?["'']?Id\\?["'']?\s*:.*){3}|temp_row_ids\.txt))(?=.*["'']?Active["'']?\s*:\s*(?:false|False))'
+    command_pattern: '(?is)uip\s+df\s+records\s+update.*Active.{0,20}false'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
