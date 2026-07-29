@@ -6,6 +6,8 @@ Resets an already-active compliance standard's policies back to the values the s
 
 Use this when the user wants to undo changes made to a configured standard, or after a `coverage` posture check shows drift (`Data.deploymentPolicies[].driftedControls`).
 
+`<packName>` below = the standard's display name (e.g. "ISO 42001") — from the user's request or `Data.packs[].packName` in `catalog list`.
+
 ## Check current state first
 
 ```bash
@@ -14,14 +16,14 @@ uip gov compliance-packs state get tenant $TENANT_ID <packId> --output json
 ```
 
 Decide from the `state get` result:
-- **Not active** — a successful response with `Data.active == false`, or a 404: the standard isn't configured, so there is nothing to restore. Reply "ISO 42001 is not currently configured on this tenant — enable it first with `state enable`." and stop.
+- **Not active** — a successful response with `Data.active == false`, or a 404: the standard isn't configured, so there is nothing to restore. Reply "<packName> is not currently configured on this tenant — enable it first with `state enable`." and stop.
 - **Active** — `Data.active == true`: proceed.
 - **State could not be read** — `state get` failed with an auth/connection error (401 / 5xx) so `active` is unknown: do NOT claim a state. Proceed to the restore step and report whatever error that call surfaces. (A **403** → preview gate: see [preview-gate.md](../preview-gate.md).)
 
 ## Confirmation
 
 ```
-This will reset all ISO 42001 recommended settings on <tenantName> back to the values the standard recommends, overwriting any local changes to those policies.
+This will reset all <packName> recommended settings on <tenantName> back to the values the standard recommends, overwriting any local changes to those policies.
 
 Are you sure? (y/n)
 ```
@@ -42,4 +44,4 @@ On failure, read the status the error carries:
 
 Success returns the full state detail (`Data.active`, `Data.policies[]`). Report:
 
-"ISO 42001 recommended settings on `<tenantName>` reset to the standard's suggested values."
+"<packName> recommended settings on `<tenantName>` reset to the standard's suggested values."
