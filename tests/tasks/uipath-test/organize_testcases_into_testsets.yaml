@@ -32,7 +32,7 @@ initial_prompt: |
 # which set was canonical.
 post_run:
   - command: |
-      uip tm testsets list --project-key CLAIM --filter "Disbursement" --output json 2>/dev/null \
+      uip tm testsets list --project-key CLAIM --filter "Disbursement - " --output json 2>/dev/null \
         | python3 -c "import json,sys; s=sys.stdin.read(); d=json.loads(s[s.index('{'):]); print('\n'.join(t['TestSetKey'] for t in d.get('Data',[])))" \
         | while read -r key; do
             [ -n "$key" ] && uip tm testsets delete --test-set-key "$key" --yes --output json || true

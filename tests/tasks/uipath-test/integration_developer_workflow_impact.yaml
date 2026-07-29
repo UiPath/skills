@@ -58,6 +58,7 @@ success_criteria:
     description: "Agent discovered test-set scope — `testsets list --project-key` (testset-first) or `testcases list-testsets --project-key --test-case-key` (testcase-first)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+tm\s+testsets\s+list\s+.*--project-key|(?=.*--project-key)(?=.*--test-case-key)(uip|\$UIP)\s+tm\s+testcases?\s+list-testsets'
+    require_success: true
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -66,6 +67,7 @@ success_criteria:
     description: "Agent mapped test-set membership — `testsets list-testcases --project-key --test-set-key`, or the inverse `testcases list-testsets --project-key --test-case-key`"
     tool_name: "Bash"
     command_pattern: '(?=.*--project-key)(?=.*--test-set-key)(uip|\$UIP)\s+tm\s+testsets\s+list-testcases|(?=.*--project-key)(?=.*--test-case-key)(uip|\$UIP)\s+tm\s+testcases?\s+list-testsets'
+    require_success: true
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
