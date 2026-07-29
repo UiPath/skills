@@ -125,6 +125,8 @@ Omit `--playwright-projects` entirely for a plain run (all config-default projec
 
 With `--wait`, the execution id is printed **early, in a progress log line** (`Starting execution for test set …`) — the JSON envelope only arrives at terminal state. If you abort the wait, recover the id from that log line or with `uip tm executions list --project-key <PROJECT_KEY> --output json`. `--wait` polls every 60 s with a default timeout of 30 minutes.
 
+**Agent-friendly waiting:** a single `--wait` call can sit silent for many minutes, which trips agent-harness watchdogs and shell timeouts. When running as an agent, prefer starting the run **without** `--wait`, then poll in bounded chunks: `uip tm wait --execution-id <EXECUTION_ID> --timeout 120 --output json` in a loop (or `uip tm executions get-stats` every 30–60 s), so every call returns quickly and progress stays visible.
+
 ## Step 7 — Results
 
 - `--wait` on the run blocks until terminal; without it, use `uip tm wait --execution-id <EXECUTION_ID> --output json`.
