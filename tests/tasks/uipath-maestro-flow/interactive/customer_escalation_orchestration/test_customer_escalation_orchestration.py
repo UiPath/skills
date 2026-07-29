@@ -51,6 +51,24 @@ class CustomerEscalationOrchestrationTests(unittest.TestCase):
             self.assertNotIn("SEV", key.upper())
             self.assertNotIn("DUPLICATE", key.upper())
 
+    def test_simulation_stops_after_the_first_completed_build(self) -> None:
+        task = (HERE / "customer_escalation_orchestration.yaml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("max_turns: 8", task)
+        self.assertIn('stop_token: "<<<END>>>"', task)
+        self.assertIn("stop_on_criteria_pass: false", task)
+        self.assertIn("check_criteria: end_of_dialog", task)
+        self.assertIn("If it reports a completed Maestro Flow build", task)
+        self.assertIn("Opening facts: exact-one Salesforce match", task)
+        self.assertIn("Opening facts: a Jira match returns DuplicateEscalation", task)
+        self.assertIn("CustomerEscalationOrchestration", task)
+        self.assertIn("test `$vars.<terminal>.output`", task)
+        self.assertIn("`($vars.salesforce.output || {}).valid === true`", task)
+        self.assertIn("variables.nodes output wiring", task)
+        self.assertIn("literal words Human review", task)
+
     def test_named_comparison_accepts_boolean_variants(self) -> None:
         checker.assert_named_equals(
             _payload(engineeringHandoff="yes"), "engineeringHandoff", True
