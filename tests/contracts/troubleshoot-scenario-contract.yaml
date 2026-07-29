@@ -30,11 +30,25 @@ simulation:
         must take the fix steps and end the dialog.
 
 success_criteria:
+  # Each required type must appear EXACTLY once. A duplicate is how the shape
+  # rules get bypassed: a second llm_judge carrying include_dialog: false is
+  # still graded by the harness, so checking only the first criterion of a type
+  # lets the defect this contract exists to block ship green.
   required_types:
     - skill_triggered
     - llm_judge
-  # Grading investigation bookkeeping (which files were written, which CLI
-  # route was taken) false-fails agents that reach the right conclusion by a
+  # Whitelist — anything outside this list is a violation, so a criterion type
+  # nobody has vetted (run_command, json_check, ...) cannot slip in.
+  # command_not_executed is allowed because one scenario asserts the agent
+  # performed no mutation under a read-only instruction: that grades a
+  # behavioural side effect, not investigation bookkeeping.
+  allowed_types:
+    - skill_triggered
+    - llm_judge
+    - command_not_executed
+  # Called out separately from the whitelist only to give these a sharper
+  # message: grading investigation bookkeeping (which files were written, which
+  # CLI route was taken) false-fails agents that reach the right conclusion by a
   # different valid path.
   forbidden_types:
     - file_exists

@@ -94,11 +94,14 @@ def _iter_scenarios(args: list[str], exempt: list[str]) -> list[Path]:
     return [f for f in files if not _rel(f).endswith(exempt_suffixes)]
 
 
-def _criterion(doc: dict, ctype: str) -> dict | None:
-    for c in doc.get("success_criteria") or []:
-        if isinstance(c, dict) and c.get("type") == ctype:
-            return c
-    return None
+def _criteria(doc: dict, ctype: str) -> list[dict]:
+    """EVERY criterion of `ctype`. Validating only the first lets a duplicate
+    carrying a violation ride along unchecked."""
+    return [
+        c
+        for c in doc.get("success_criteria") or []
+        if isinstance(c, dict) and c.get("type") == ctype
+    ]
 
 
 def _check(doc: dict, text: str, path: Path, contract: dict) -> list[Violation]:
@@ -142,26 +145,35 @@ def _check(doc: dict, text: str, path: Path, contract: dict) -> list[Violation]:
     types = [c.get("type") for c in crit if isinstance(c, dict)]
 
     for req in sc["required_types"]:
-        if req not in types:
+        count = types.count(req)
+        if count == 0:
             fail(r"success_criteria:", f"missing required criterion `type: {req}`", f"Add the canonical `{req}` criterion.")
-    for forb in sc["forbidden_types"]:
-        if forb in types:
+        elif count > 1:
             fail(
-                rf"type:\s*{forb}",
-                f"forbidden criterion `type: {forb}`",
-                "Scenarios grade the presented diagnosis, not the investigation path.\n"
-                "    Move the requirement into RESOLUTION.md and let the judge grade it.",
+                rf"type:\s*{req}",
+                f"criterion `type: {req}` appears {count} times, must appear exactly once",
+                "Every copy is graded by the harness. Delete the duplicate — keep one canonical criterion.",
             )
+    for extra in dict.fromkeys(t for t in types if t not in sc["allowed_types"]):
+        if extra in sc["forbidden_types"]:
+            hint = (
+                "Scenarios grade the presented diagnosis, not the investigation path.\n"
+                "    Move the requirement into RESOLUTION.md and let the judge grade it."
+            )
+        else:
+            hint = (
+                f"`{extra}` is not in the contract's allowed_types. Add it there with a\n"
+                "    rationale if it genuinely belongs, or move the requirement into RESOLUTION.md."
+            )
+        fail(rf"type:\s*{extra}", f"criterion `type: {extra}` is not allowed", hint)
 
-    st = _criterion(doc, "skill_triggered")
-    if st is not None:
-        want = sc["skill_triggered"]["expected_skill"]
+    want = sc["skill_triggered"]["expected_skill"]
+    for st in _criteria(doc, "skill_triggered"):
         if st.get("expected_skill") != want:
             fail(r"expected_skill:", f"`skill_triggered.expected_skill` must be {want!r} (found {st.get('expected_skill')!r})", f"Set `expected_skill: \"{want}\"`.")
 
-    judge = _criterion(doc, "llm_judge")
-    if judge is not None:
-        jc = sc["llm_judge"]
+    jc = sc["llm_judge"]
+    for judge in _criteria(doc, "llm_judge"):
         for key in jc["require_true"]:
             if judge.get(key) is not True:
                 # A missing key has no line of its own — anchor on the criterion.
