@@ -5,6 +5,12 @@ description: >
   staging/live, moving a tag to another version, unpublish, and untag — asserting
   the published flag / tag pointer actually moved (wire-effect), not just command
   shape.
+
+  Version numbers come from `list-models`, never from training order: what a
+  retrain numbers a version is not guaranteed, and publishing a guessed number
+  returns "model version not found". An agent that guesses and then stops is
+  behaving correctly, so the prompt makes the read explicit rather than leaving
+  the numbering to be inferred.
 tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
@@ -40,22 +46,31 @@ initial_prompt: |
   only once training has completed; if it's still training after 5 checks, stop
   and report rather than waiting longer.
 
-  Then, saving the model list after each step so I can see the state move:
-  - Put the first trained version on staging and the second on live → save to
-    `models_tagged.json`.
-  - Move the live tag over to the first version → save to `models_after_move.json`.
-  - Take the tags off the first version → save to `models_after_untag.json`.
-  - Unpublish the second version → save to `models_after_unpublish.json`.
+  Take the two version numbers you tag from `list-models` — read them off its
+  output rather than assuming what a retrain numbered them. If a publish reports
+  the version was not found, re-read `list-models` and use the numbers it
+  reports; don't stop on the first rejection.
+
+  Then, saving the model list after each step so I can see the state move
+  (call the older of the two versions V_OLD and the newer V_NEW):
+  - Put V_OLD on staging and V_NEW on live → save to `models_tagged.json`.
+  - Move the live tag over to V_OLD → save to `models_after_move.json`.
+  - Take the tags off V_OLD → save to `models_after_untag.json`.
+  - Unpublish V_NEW → save to `models_after_unpublish.json`.
 
   Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
 
 success_criteria:
+  # Shape only — the log records the invocation whether or not the server
+  # accepted it, so a rejected `publish` still matches here. The wire effect is
+  # owned by check_tags.py below; keep this at supporting weight so a run that
+  # only *attempted* the tagging cannot bank most of the score.
   - type: file_matches_regex
-    description: "Published with a tag (staging/live)"
+    description: "Issued two tagged publishes (staging/live) — command shape"
     path: "mocks/calls.log"
     pattern: >-
       (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+projects\s+publish\b.*--tag\s+(live|staging))[^\r\n]*$){2}
-    weight: 2.0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: file_matches_regex
@@ -82,12 +97,33 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_matches_regex
-    description: "Re-read list-models after each step (one snapshot per transition)"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+projects\s+list-models)[^\r\n]*$){4}
-    weight: 2.0
+  # One snapshot per transition, graded as the four artifacts rather than as a
+  # count of `list-models` calls: the agent legitimately polls `list-models`
+  # while waiting for training, so a call count reaches 4 without any transition
+  # having been snapshotted. These are also check_tags.py's inputs — asserting
+  # them here turns a missing file into a named failure instead of a traceback.
+  - type: file_exists
+    description: "Snapshot after tagging (models_tagged.json)"
+    path: "models_tagged.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Snapshot after moving the live tag (models_after_move.json)"
+    path: "models_after_move.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Snapshot after untagging (models_after_untag.json)"
+    path: "models_after_untag.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Snapshot after unpublishing (models_after_unpublish.json)"
+    path: "models_after_unpublish.json"
+    weight: 0.5
     pass_threshold: 1.0
 
   - type: file_exists
