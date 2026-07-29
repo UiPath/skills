@@ -77,8 +77,16 @@ uip tm testcases list --project-key <PROJECT_KEY> --output json
 Set the project's default Orchestrator folder FIRST — both the Step 5 probe and the Step 6 run resolve packages through it (Critical Rule #10):
 
 ```bash
-uip or folders list -n <folder-name> --all --output json   # Key field = folder key
+uip or folders list --output json    # WITHOUT --all: only folders you are a member of
 uip tm project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY> --output json
+```
+
+- Pick the folder from the **unflagged** `folders list` — `--all` returns every folder *visible* to you, including ones where you have no rights; choosing one of those fails later with `folderNotFoundOrNoAccess`.
+- **The folder must have a Cloud Robots – Serverless machine assigned** or the run's job creation 500s and the execution is instantly `Cancelled`. Check with `uip or machines list --folder-key <FOLDER_KEY> --output json`; if none, create and assign one (one serverless machine per folder):
+
+```bash
+uip or machines create -n <name> --serverless --testing-slots 2 --output json
+uip or machines assign <name> --folder-key <FOLDER_KEY> --output json
 ```
 
 ```bash
@@ -134,13 +142,17 @@ With `--wait`, the execution id is printed **early, in a progress log line** —
 - Per-test detail: `uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json`.
 - JUnit export: `uip tm result download --execution-id <EXECUTION_ID> --result-path <dir> --output json`.
 
-Execution happens on UiPath serverless cloud runtimes — no robot, machine, or folder package deployment is needed beyond the upload in Step 2.
+Execution happens on UiPath serverless cloud runtimes — no robot or package deployment into the folder is needed beyond the upload in Step 2, but the folder does need its serverless machine assignment (Step 4).
 
 ### If the execution Finishes with `Passed: 0 / Failed: 0 / None: N`
 
-`None` means the pod ran but its **results were never uploaded** to Test Manager — check the test case logs' Info ("pod terminated before results could be uploaded") and `uip or jobs list` (jobs `Faulted` *with* a `HostMachineName`). The tests themselves may even have passed; their outcomes were lost in the runner→Test Manager upload leg (storage/network on the tenant side). Two warnings:
+`None` means the run terminated without per-test results reaching Test Manager. Read the test case logs' Info for the actual cause — seen in the wild: "pod terminated before results could be uploaded" (runner→TM upload leg: storage/network) and `Serverless.Runtime.CannotIssueUserTokenDueToUserNotPartOfOrg` (tenant identity fault — the job never really started). Don't rely on `HostMachineName` to distinguish these. Two warnings:
 - `report get` counts `None` results as **`Skipped`** — a 0% pass rate here means "results lost", not "tests skipped".
 - Retrying re-runs the tests but will keep faulting until the upload path is fixed. Apply the retry cap (Critical Rule #4), then stop and report to the platform team.
+
+### If the execution is instantly `Cancelled`
+
+A run that dies within seconds with the test case logs pointing at `CreateTestAutomationJobs` / `InternalServerError` almost always means the default folder has **no serverless machine assigned** (Step 4) — fix the machine assignment and re-run.
 
 ### If the execution stays `Pending`
 
