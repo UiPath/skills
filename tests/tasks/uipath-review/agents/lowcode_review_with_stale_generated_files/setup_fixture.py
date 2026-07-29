@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path.cwd()
-SOLUTION = ROOT / "StudioWebSol"
+SOLUTION = ROOT / "SupportSol"
 PROJECT = SOLUTION / "SupportAgent"
 ENTRY_POINT_ID = "33333333-3333-4333-8333-333333333333"
 SYSTEM_PROMPT = (

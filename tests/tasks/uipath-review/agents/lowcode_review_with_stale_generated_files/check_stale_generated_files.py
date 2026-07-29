@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 ROOT = Path.cwd()
-PROJECT = ROOT / "StudioWebSol" / "SupportAgent"
+PROJECT = ROOT / "SupportSol" / "SupportAgent"
 REPORT = ROOT / "_review_report.md"
 CANARIES = (
     "GENERATED_ONLY_CANARY_ALPHA_9F3C",
