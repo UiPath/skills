@@ -18,9 +18,9 @@ sandbox:
     - {type: template_dir, path: ../_shared/mock_template}
 
 initial_prompt: |
-  The InvoiceNumber field on IXP project `my_invoices-f1afa9ef-ixp` is
+  The `Invoice Number` field on IXP project `my_invoices-f1afa9ef-ixp` is
   scoring poorly. Validation shows the model is confusing the Purchase
-  Order (PO) number with the Invoice Number. Update the field instruction
+  Order (PO) number with the invoice number. Update the field instruction
   to clarify:
 
     "Extract the unique invoice identifier from the document header.
@@ -43,18 +43,27 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
+  # Quote runs are `(?:\\?["'])*`, not `["']?`: this criterion reads raw Bash
+  # text, and an agent harness that wraps commands in `/bin/bash -lc "…"`
+  # backslash-escapes the inner quotes, so `--updates "$(cat …)"` is recorded as
+  # `--updates \""'$(cat …)"`. Matching one bare optional quote passed under
+  # claude-code and failed under codex for the same correct command.
   - type: command_executed
     description: "Agent passed the heredoc file to `fields update-prompts --updates`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+fields\s+update-prompts\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+.*--updates\s+["'']?\$\(cat\s+/tmp/ixp/my_invoices-f1afa9ef-ixp/prompts/[^\s]+\.json\)'
+    command_pattern: 'uip\s+ixp\s+fields\s+update-prompts\s+(?:\\?["''])*my_invoices-f1afa9ef-ixp(?:\\?["''])*\s+.*--updates\s+(?:\\?["''])*\$\(cat\s+/tmp/ixp/my_invoices-f1afa9ef-ixp/prompts/[^\s]+\.json\)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
+  # The name must be the field's exact taxonomy name — `update-prompts` matches
+  # by name and reports an unmatched one WITHOUT failing, so a reworded name is
+  # a silent no-op. `Invoice Number` is the name in _shared/fixtures/taxonomy.json
+  # and in the skill's own examples; keep the prompt and this pattern on it.
   - type: file_matches_regex
-    description: "CLI received the structured InvoiceNumber update with the requested instruction"
+    description: "CLI received the structured `Invoice Number` update with the requested instruction"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\s+["']?my_invoices-f1afa9ef-ixp["']?\s+(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*\}\s*\])(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*"name"\s*:\s*"InvoiceNumber")(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*"instructions"\s*:\s*"[^"\r\n]*Extract the unique invoice identifier[^"\r\n]*Do NOT use the Purchase Order[^"\r\n]*")(?=[^\r\n]*--output\s+json(?:\s|$))[^\r\n]*)$
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\s+["']?my_invoices-f1afa9ef-ixp["']?\s+(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*\}\s*\])(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*"name"\s*:\s*"Invoice Number")(?=[^\r\n]*--updates\s+\[\s*\{[^}\r\n]*"instructions"\s*:\s*"[^"\r\n]*Extract the unique invoice identifier[^"\r\n]*Do NOT use the Purchase Order[^"\r\n]*")(?=[^\r\n]*--output\s+json(?:\s|$))[^\r\n]*)$
     weight: 2.5
     pass_threshold: 1.0
