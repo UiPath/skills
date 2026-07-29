@@ -14,37 +14,37 @@ What this looks like:
 - Crucially, there is **NO** Windows logon-failure/locked/RDP-refused signature: no `Logon failed for user`, no `account is locked`, no `RDP connection failed`, no `0x0000052E` / `0x00000775` / `0x00000532` / `Last error: 131092`. A pure timeout, not an LSA verdict.
 - Often intermittent — a re-run of the same job on the same machine may succeed.
 
-What can cause it (pick the branch from evidence):
+What can cause it — session creation legitimately took longer than the timeout window. Common drivers:
 
-1. **Known Robot defect on versions earlier than 23.10** (primary documented cause) — a session-creation defect in the Robot times out even on a healthy host; the fix shipped in the Robot 23.10 release. Fingerprint: the executing Robot's version is **< 23.10** AND the host is otherwise healthy (no resource saturation, interactive logon is not abnormally slow). Confirm the exact fixed version against the KB (see Investigation step 5) — the minor-version threshold can move.
-2. **Slow interactive Windows logon on the host** — a heavy roaming/mandatory profile, synchronous GPO processing, logon scripts, or real-time AV scanning delays session creation past the timeout. Fingerprint: Robot version **≥ 23.10**, and interactive logon on the host is observably slow for humans too.
-3. **Host resource exhaustion** — CPU/RAM/session saturation on the target machine prevents timely session creation. Fingerprint: host metrics show saturation around the fault time.
+1. **Slow interactive Windows logon on the host** — a heavy roaming/mandatory profile, synchronous GPO processing, logon scripts, or real-time AV scanning delays session creation past the timeout. Interactive logon on the host is observably slow for humans too.
+2. **Host resource exhaustion** — CPU/RAM/session saturation on the target machine prevents timely session creation; host metrics show saturation around the fault time.
+3. **Infrastructure / network latency** — slow domain-controller reachability, profile-share latency, or general network/server performance between the Robot and the resources session creation needs.
+
+> **Not a Robot-version defect.** There is no documented Robot version that "fixes" this error and no version below which it is inherent — the UiPath KB attributes it to host resources, Robot/Orchestrator configuration, and infrastructure latency, and it is reported across current Robot versions. Do NOT diagnose it as "upgrade the Robot to version X." Check the Robot version only as general hygiene, never as the cause.
 
 What to look for:
 - Exact `Info` / robot-log wording — `Creating user session timed out` with NO logon-failed/locked/RDP-failed code (this is what separates it from `job-faulted-logon-failure.md`).
 - Job entered **Running** and then Faulted after ~the timeout window (separates it from Pending / no-host).
-- The Robot version installed on the executing machine (`machines list` → `robotVersions[].version`).
-- Whether the host is healthy — other jobs/users create sessions on the same machine around the same time.
-
-**Discriminator vs [job-faulted-logon-failure.md](./job-faulted-logon-failure.md):** both start with `Could not start executor`. That playbook covers an active LSA **rejection** — a Windows code (`0x000005..`), `Logon failed`, `account is locked`, or `RDP connection failed`. This playbook is the **timeout** case: `Creating user session timed out` with none of those codes. If the log carries a `0x000005..` code or `Logon failed`, route to `job-faulted-logon-failure.md`, not here.
+- Host health — CPU/RAM/session pressure at the fault time, and whether interactive logon on the host is slow for humans too.
+- Whether the failure is intermittent (a retry sometimes succeeds) — consistent with a host/latency margin problem, not a hard fault.
 
 ## Investigation
 
 1. **Get the faulted job** — `uip or jobs get <job-key> --output json`. Capture `State`, `Info`, `StartTime`, `EndTime` (duration ≈ session-creation timeout), `HostMachineName`, `RuntimeType`. Confirm `Info` contains `Could not start executor. Creating user session timed out.` and carries **no** logon-failure code.
 2. **Get error logs** — `uip or jobs logs <job-key> --level Error --output json`. Confirm the robot-service entry attributes the fault to a session-creation timeout, not an LSA logon rejection.
 3. **Confirm it entered Running** — `uip or jobs history <job-key> --output json`. A Pending → Running → Faulted transition rules out the no-host / stuck-Pending playbooks (the job was dispatched and started; session creation is what timed out).
-4. **Identify the Robot version on the executing machine** — `uip or machines list --output json` (add `--all-fields` if the version is not in the default projection). Read `robotVersions[].version` for the machine/template that ran the job (correlate on `HostMachineName`).
-   - Version **< 23.10** AND host otherwise healthy → **cause 1** (known Robot defect). Stop.
-   - Version **≥ 23.10** → the version defect is ruled out; investigate host-side session latency (cause 2) or resource exhaustion (cause 3) from host logs/metrics. These are host evidence outside the `uip` surface — report what the runtime data supports and hand the host checks to the user.
-5. **(Optional) Corroborate the known issue** — `uip docsai ask "Could not start executor Creating user session timed out Robot version" --source technical_solution_articles`. Use to confirm the exact fixed Robot version and any documented workaround. An empty KB result is not disconfirming — the version evidence in step 4 is load-bearing.
+4. **Assess host health and logon latency** — the root sub-cause lives on the host, outside the `uip` surface. Establish from the host/customer: CPU/RAM/session saturation around the fault time, whether interactive logon for a human on that host is abnormally slow (heavy profile / GPO / logon scripts / AV), and any network / DC / profile-share latency. Correlate `HostMachineName` with `uip or machines list --output json` only to identify the host and confirm the Robot is on a supported version (hygiene) — the version is **not** the cause.
+5. **(Optional) Corroborate the remediation** — `uip docsai ask "Could not start executor Creating user session timed out UIPATH_SESSION_TIMEOUT" --source technical_solution_articles`. Confirms the documented `UIPATH_SESSION_TIMEOUT` workaround and the host-side causes. An empty KB result is not disconfirming.
 
 ## Resolution
 
-Map the branch from Investigation to the fix:
+Two parts: give session creation enough time, and remove the host-side latency that pushed it past the limit.
 
-- **Cause 1 — Robot version < 23.10:**
-  - Upgrade the Robot on the executing machine(s) to **23.10 or later** (the release that fixes the session-creation-timeout defect). Verify the exact fixed version via the KB (Investigation step 5) before committing the target version.
-  - Interim mitigation: **re-run the job** — the timeout is intermittent on the affected versions, so a retry often succeeds while the upgrade is scheduled.
-  - Prevention: keep unattended Robots on a supported/patched version; standardize the Robot version across the machine template so one stale host cannot reintroduce the defect.
-- **Cause 2 — Slow interactive logon:** reduce logon latency on the host — trim the roaming/mandatory profile, make GPO/logon-script processing lighter or asynchronous, exclude the Robot working directories from synchronous AV scanning. Where supported, raise the session-creation timeout to cover a legitimately slow logon.
-- **Cause 3 — Host resource exhaustion:** relieve CPU/RAM/session pressure on the target machine (reduce concurrent slots, add capacity, or move the workload) so the session can be created within the timeout.
+- **Raise the session-creation timeout — set the `UIPATH_SESSION_TIMEOUT` environment variable** on the Robot host to a higher value in seconds (the documented workaround; e.g. `300`–`500`), so a legitimately slow session creation completes instead of being cut off. This is the direct remediation for the timeout itself.
+- **Reduce interactive-logon latency on the host** — trim the roaming/mandatory profile, make GPO/logon-script processing lighter or asynchronous, and exclude the Robot working directories from synchronous AV scanning.
+- **Relieve host resource pressure** — reduce concurrent slots, add CPU/RAM/capacity, or move the workload so the session can be created within the window; use the `Kill Processes` activity to close leftover apps that accumulate and saturate the host.
+- **Address infrastructure latency** — check domain-controller reachability, profile-share performance, and network health between the Robot and the resources session creation needs.
+- **Interim:** a re-run sometimes succeeds when the host is momentarily less loaded — a stopgap only; raising `UIPATH_SESSION_TIMEOUT` and relieving the host is the durable fix.
+- Do **not** treat this as a Robot-version defect — upgrading the Robot is not the documented fix and will not resolve a host-latency / resource cause.
+
+Source: UiPath KB — "How To Troubleshoot The Error 'Could Not Start Executor. Creating User Session Timed Out'" (host resources / Robot-Orchestrator configuration / infrastructure latency; `UIPATH_SESSION_TIMEOUT` workaround, `Kill Processes`, RDS session-limit GPO).

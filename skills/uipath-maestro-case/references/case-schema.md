@@ -190,7 +190,7 @@ No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node l
 | `parentElement` | `{id,type}` | Always `{ id: "root", type: "case-management:root" }`. The literal `"root"` is canvas-side — there is no `"root"` node on disk. |
 | `isInvalidDropTarget` | boolean | Always `false` (UI drag-drop flag) |
 | `isPendingParent` | boolean | Always `false` (UI drag-drop flag) |
-| `tasks` | Task[][] | 2D structural array. Preserve the task order used by the frontend. The `runs-sequentially` task-entry rule, not lane-sharing, expresses sequential execution. Empty array `[]` when no tasks yet. |
+| `tasks` | Task[][] | 2D structural array. Preserve the task order used by the frontend. A strict sequential chain is consecutive single-task inner arrays (`[[A], [B], [C]]`) plus `runs-sequentially` on each task. Only intentionally parallel siblings share an inner array (`[[A, B], [C]]`). Empty array `[]` when no tasks yet. |
 | `slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for this stage. Every rule has a non-empty target-unique `displayName` without `:`; default SLA is the trailing `"=js:true"` entry. Escalations nest inside each rule. See §6. |
 | `entryConditions` | EntryCondition[]? | See §3. Not initialized on primary Stage creation — added later by the conditions plugins. (A secondary stage initializes these at creation — see §2c.) |
 | `exitConditions` | ExitCondition[]? | See §3. Not initialized on primary Stage creation — added later by the conditions plugins. (A secondary stage initializes these at creation — see §2c.) |
@@ -322,6 +322,7 @@ Rules = Rule[][]
 | `required-stages-completed` | `id?`, `conditionExpression?` | All required stages have completed |
 | `current-stage-entered` | `id?`, `conditionExpression?` | The current stage was just entered |
 | `user-selected-stage` | `id?`, `conditionExpression?` | Fires when a user manually selects/routes to this stage |
+| `sla-status-change` | `id?`, `slaId?`, `escalationId?`, `conditionExpression?` | Fires when the referenced case/stage SLA reaches the referenced at-risk or breached escalation; stage-entry scope |
 | `adhoc` | `id?`, `conditionExpression?` | Ad-hoc expression-based condition |
 | `runs-sequentially` | `id?`, `conditionExpression?` | Sequential tasks run in the order they appear in the stage from top to bottom | 
 
@@ -333,8 +334,11 @@ Not every rule type is valid at every level — see each condition plugin's `imp
 { "rule": "case-entered", "id": "<id>" }
 { "rule": "selected-stage-completed", "id": "<id>", "selectedStageId": "<stageId>" }
 { "rule": "selected-tasks-completed", "id": "<id>", "selectedTasksIds": ["<taskId1>", "<taskId2>"] }
+{ "rule": "sla-status-change", "id": "<id>", "slaId": "<slaId>", "escalationId": "<escalationId>" }
 { "rule": "adhoc", "id": "<id>", "conditionExpression": "=js:vars.score > 700" }
 ```
+
+An interrupting secondary-stage `sla-status-change` entry is global to the referenced SLA scope: it can exit whichever covered stage is active. Do not pair it with duplicated per-stage exit rules.
 
 ### Connector-bound `wait-for-connector` rule
 
@@ -366,12 +370,15 @@ All SLA data on a target (root or stage) lives in a single `slaRules[]` array. T
 ```json
 "slaRules": [
   {
+    "id": "sla_Ur7pL2Qx",
+    "displayName": "Urgent SLA",
     "expression": "=js:vars.priority === 'Urgent'",
     "count": 30,
     "unit": "min",
     "escalationRule": [
       {
         "id": "esc_aB3kL9",
+        "displayName": "Urgent SLA breached",
         "triggerInfo": { "type": "sla-breached" },
         "action": {
           "type": "notification",
@@ -383,6 +390,8 @@ All SLA data on a target (root or stage) lives in a single `slaRules[]` array. T
     ]
   },
   {
+    "id": "sla_Df4nV8Ks",
+    "displayName": "Default SLA",
     "expression": "=js:true",
     "count": 5,
     "unit": "d",
@@ -411,6 +420,7 @@ Escalation `action.recipients[].scope`: `"User"` or `"UserGroup"`. `target` is t
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Stable `sla_` identifier. Required when a `sla-status-change` rule references this SLA. |
 | `displayName` | string | Required, target-unique SLA title; must not contain `:`. |
 | `expression` | string | Rule predicate. `"=js:true"` marks the default / fallback rule. Non-default rules require a non-empty expression. |
 | `count` | number? | SLA duration count (optional — a bare escalation-only rule may omit this). |
@@ -451,7 +461,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 > { "displayName": "Hold", "skipCondition": "=js:vars.skip === true", "data": { "timerType": "timeDuration", "timeDuration": "PT1H" } }
 > ```
 
-**Positioning:** tasks have no `x`/`y`. They live in the stage's `data.tasks` 2D structural array. Do not infer execution order from lane-sharing. For a sequential chain, preserve declaration order and put `runs-sequentially` as the only entry rule on each task in the chain.
+**Positioning:** tasks have no `x`/`y`. They live in the stage's `data.tasks` 2D structural array. Do not infer execution order from lane-sharing. For a strict sequential chain, preserve declaration order as consecutive single-task sets and put `runs-sequentially` as the only entry rule on each task in the chain.
 
 **Task type catalog** (full shape in each plugin's `impl-json.md`):
 

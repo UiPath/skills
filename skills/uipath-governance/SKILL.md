@@ -107,7 +107,7 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 | **Apply full compliance pack** | Run coverage first, then [`references/compliance-pack/full-apply/impl.md`](./references/compliance-pack/full-apply/impl.md) |
 | **Apply specific controls / clauses** | [`references/compliance-pack/partial-apply/planning.md`](./references/compliance-pack/partial-apply/planning.md) |
 | **Remove compliance standard settings** | [`references/compliance-pack/disable/impl.md`](./references/compliance-pack/disable/impl.md) |
-| **Query — what does a clause / control recommend?** | [`references/compliance-pack/query/impl.md`](./references/compliance-pack/query/impl.md) |
+| **Query — what does a clause / control recommend?** | `uip gov compliance-packs catalog get <packId> --output json` (e.g. `iso-42001-2023`), then [`references/compliance-pack/query/impl.md`](./references/compliance-pack/query/impl.md) |
 | **Preview disclaimer + 403 opt-in gate (all compliance flows)** | [`references/compliance-pack/preview-gate.md`](./references/compliance-pack/preview-gate.md) |
 
 ## Anti-patterns

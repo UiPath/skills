@@ -3,15 +3,15 @@ description: >
   UiPath diagnostic agent must diagnose a faulted unattended job whose
   robot-service log shows "Could not start executor. Creating user session
   timed out." The job enters Running and then faults ~120s later — a
-  session-creation TIMEOUT, not a logon rejection. The executing Robot on
-  RECON-BOT-01 is version 23.4.7 (< 23.10), which carries a known
-  session-creation-timeout defect fixed in Robot 23.10. The agent must match
-  the orchestrator/job-faulted-session-timeout playbook (cause 1 — known
-  Robot defect < 23.10) and NOT job-faulted-logon-failure (no logon-failure
-  code; LSA returned no rejection) and NOT a no-host / stuck-Pending case
-  (jobs history shows Pending -> Running -> Faulted, runtime connected). The
-  fix is to upgrade the Robot to >= 23.10, with a re-run as interim
-  mitigation.
+  session-creation TIMEOUT, not a logon rejection. Session creation exceeded
+  the timeout window because of host-side latency (slow interactive logon,
+  host resource saturation, or network/infrastructure latency). The agent must
+  match the orchestrator/job-faulted-session-timeout playbook and NOT
+  job-faulted-logon-failure (no logon-failure code; LSA returned no rejection)
+  and NOT a no-host / stuck-Pending case (jobs history shows Pending -> Running
+  -> Faulted, runtime connected). The fix is to raise UIPATH_SESSION_TIMEOUT
+  and reduce host logon/resource latency; a Robot-version upgrade is NOT the
+  fix (no version-specific fix exists). A re-run is only an interim mitigation.
 
 tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
 
@@ -41,9 +41,8 @@ reference:
 initial_prompt: |
   My NightlyReconciler process in the UnattendedOps folder has been
   faulting in Orchestrator on every scheduled run since midnight — each
-  job starts, runs for about two minutes, then dies. The project source is
-  in the current working directory. Can you investigate why and tell me how
-  to fix it?
+  job starts, runs for about two minutes, then dies. Can you investigate
+  why and tell me how to fix it?
 
 success_criteria:
   - type: skill_triggered
@@ -57,6 +56,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
+    include_dialog: true
     include_agent_output: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
@@ -92,4 +92,5 @@ simulation:
     - "If the agent asks how to proceed when some data is missing, tell it to proceed with best-effort findings from the evidence it already gathered."
     - "Never invent or provide new factual data beyond your initial report and the answers above. Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
+    - "If the agent offers or asks to apply/implement the fix itself (editing project files, or running validate/build/pack/publish), DECLINE: say you will apply the change yourself in Studio later, and ask only for the root cause and the exact fix steps. Never approve a source-file edit."
   max_turns: 8

@@ -11,14 +11,14 @@ description: >
   up. Tests the Web-app lifecycle with deep SDK integration that no smoke
   or integration test covers.
 tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
-# max_turns 65→85: run 28935883495 exhausted 65 with all lifecycle criteria
-# already passed — ~14 turns went to TaskCreate/TaskUpdate ceremony and a
-# post-deploy nupkg inspection detour, and report.json (the last step) was
-# the casualty. The prompt now writes the report immediately after deploy
-# and bans task-tracking ceremony; the bump is headroom for verbose agents.
+# max_turns 85→110, expected_turns 45→90: a clean full-lifecycle run is ~88
+# turns, so the old 85 cap clipped a well-behaved run's last step. 110 = ~88
+# baseline + margin for deploy retries. Turns are not the fix — the spiral is
+# fixed at the skill level (SKILL.md Rule 19 + orchestrator.md folder-scoping).
+# Re-run on Sonnet 5 and right-size from the measured clean count.
 run_limits:
-  expected_turns: 45
-  max_turns: 85
+  expected_turns: 90
+  max_turns: 110
   turn_timeout: 1200
 
 initial_prompt: |
@@ -27,13 +27,13 @@ initial_prompt: |
 
   Business requirements:
 
-  - Two panels:
-    1. **Jobs** — list the currently-running jobs in the active folder
-       (use the SDK's Jobs service). Show one row per job with the
-       process name, started-at timestamp, and status.
-    2. **Queues** — list every queue in the active folder (use the SDK's
-       Queues service). Show one row per queue with the queue name and
-       the number of new + in-progress items.
+  - Two panels, both scoped to the folder the app is deployed into.
+    1. **Jobs** — list the running jobs in that folder (use the SDK's
+       Jobs service). Show one row per job with the process name,
+       started-at timestamp, and status.
+    2. **Queues** — list the queues in that folder (use the SDK's Queues
+       service). Show one row per queue with the queue name plus whatever
+       item-count fields the Queues response exposes.
   - Both panels use the `@uipath/uipath-typescript` SDK from a Web App
     (the SDK is initialized at app startup via OAuth — this is a Web app,
     not an Action app).

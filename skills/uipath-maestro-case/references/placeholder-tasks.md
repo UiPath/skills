@@ -41,7 +41,7 @@ During **execution** (Phase 2, Step 9), for any `tasks.md` entry whose `taskType
 
 ## JSON Shape
 
-Placeholders occupy a position in `stageNode.data.tasks`, the same way full tasks do. Preserve their order and retain any `runs-sequentially` entry condition from the task plan; lane-sharing does not express sequence.
+Placeholders occupy a position in `stageNode.data.tasks`, the same way full tasks do. Preserve their order and retain any `runs-sequentially` entry condition from the task plan. A strict sequential placeholder chain still uses consecutive single-task sets; same-set grouping is only for explicitly parallel placeholder siblings.
 
 A placeholder task in `caseplan.json.nodes[<stage>].data.tasks[<lane>][]`:
 

@@ -1,23 +1,30 @@
 #!/usr/bin/env python3
 """OpenAI Agents agent project-shape check.
 
-The factory-function pattern (`def main() -> Agent`) is the load-bearing
-invariant for this framework — without it, `UiPathChatOpenAI(...)` and
+The factory-function pattern (a function that returns an `Agent`, e.g.
+`def main() -> Agent`) is the load-bearing invariant for this framework
+— without it, `UiPathChatOpenAI(...)` and
 `_openai_shared.set_default_openai_client(...)` execute at module
 import time and `uip codedagent init` blows up before it can introspect
-the agent.
+the agent. The skill guide
+(`references/coded/frameworks/openai-agents-integration.md`) documents
+the mapping as `<file>:<symbol>` where the symbol may be any variable
+or "function that returns an Agent" — so the factory's NAME is free;
+what matters is that the symbol is a function, not a module-level
+variable.
 
 Checks performed:
 
-  1. `triage-bot/pyproject.toml` declares `uipath-openai-agents`, has
+  1. `triage-agent/pyproject.toml` declares `uipath-openai-agents`, has
      `[project]` with `authors`, no `[build-system]`.
-  2. `openai_agents.json` exists with an `agents` mapping pointing at
-     `main.py:main` (factory pattern) — pointing at a top-level
-     `agent` variable would mean module-level `Agent[...]`
-     construction, which fails because the agent context type
-     resolution itself can pull in the LLM client.
-  3. `main.py` defines a `def main()` factory, declares a
-     `CustomerInput` Pydantic model with `customer_id`, has the
+  2. `openai_agents.json` exists with an `agents` mapping whose target
+     `<file>:<symbol>` resolves (AST) to a top-level FUNCTION in that
+     file (factory pattern, any name) — pointing at a top-level
+     variable would mean module-level `Agent[...]` construction,
+     which fails because the agent context type resolution itself can
+     pull in the LLM client.
+  3. `main.py` declares a `CustomerInput` Pydantic model with
+     `customer_id`, has the
      `_openai_shared.set_default_openai_client(...)` call INSIDE the
      factory, configures three agents (`triage`, `billing`,
      `technical`) with at least one `handoffs=` list, and has NO
@@ -44,7 +51,7 @@ from _shared.bindings_assertions import load_bindings  # noqa: E402
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
 from _shared.project_root import find_project_root  # noqa: E402
 
-ROOT = find_project_root("triage-bot")
+ROOT = find_project_root("triage-agent")
 
 
 def _read_text(path: Path) -> str:
@@ -79,25 +86,58 @@ def check_pyproject() -> None:
     print("OK: pyproject.toml is hygienic and declares uipath-openai-agents")
 
 
-def check_openai_agents_json() -> None:
+def check_openai_agents_json() -> tuple[Path, str]:
+    """Validate the agents mapping and return (factory_file, factory_symbol).
+
+    The skill guide allows `<file>:<symbol>` where the symbol is a variable
+    OR a function that returns an Agent. Only the function form preserves
+    the lazy-LLM-init invariant, so require the symbol to resolve to a
+    top-level function def — under any name (`main`, `agent`, ...).
+    """
     doc = _load_json(ROOT / "openai_agents.json")
     agents = doc.get("agents") or {}
     if not agents:
         sys.exit("FAIL: openai_agents.json has no `agents` mapping")
     target = next(iter(agents.values()))
-    if not isinstance(target, str) or ":main" not in target:
+    if not isinstance(target, str) or ":" not in target:
         sys.exit(
-            f'FAIL: openai_agents.json should point at the factory function '
-            f'(`<file>:main`), got {target!r}. Pointing at a top-level '
-            f'variable would break the lazy-LLM-init invariant.'
+            f"FAIL: openai_agents.json agent target must be `<file>:<symbol>`, "
+            f"got {target!r}"
         )
-    print(f"OK: openai_agents.json registers an agent -> {target!r} (factory pattern)")
+    file_part, symbol = target.split(":", 1)
+    factory_path = ROOT / file_part
+    tree = ast.parse(_read_text(factory_path), filename=str(factory_path))
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == symbol:
+            print(
+                f"OK: openai_agents.json registers an agent -> {target!r} "
+                f"(factory function `{symbol}`)"
+            )
+            return factory_path, symbol
+    assigned = {
+        t.id
+        for node in tree.body
+        if isinstance(node, (ast.Assign, ast.AnnAssign))
+        for t in (node.targets if isinstance(node, ast.Assign) else [node.target])
+        if isinstance(t, ast.Name)
+    }
+    if symbol in assigned:
+        sys.exit(
+            f"FAIL: openai_agents.json points at {target!r}, a top-level "
+            f"variable — module-level `Agent[...]` construction breaks the "
+            f"lazy-LLM-init invariant. Point at a factory function that "
+            f"returns the Agent instead."
+        )
+    sys.exit(
+        f"FAIL: openai_agents.json points at {target!r} but {file_part} "
+        f"defines no top-level function or variable named `{symbol}`."
+    )
 
 
-def check_main_py() -> None:
+def check_main_py(factory_symbol: str) -> None:
     main_path = ROOT / "main.py"
     text = _read_text(main_path)
-    for needle in ("CustomerInput", "customer_id", "def main", "handoffs"):
+    for needle in ("CustomerInput", "customer_id", "handoffs"):
         if needle not in text:
             sys.exit(f"FAIL: main.py is missing `{needle}`")
     if "set_default_openai_client" not in text:
@@ -137,9 +177,9 @@ def check_main_py() -> None:
             if isinstance(func, ast.Attribute) and func.attr == "set_default_openai_client":
                 sys.exit(
                     f"FAIL: main.py:{node.lineno} `set_default_openai_client(...)` "
-                    "is at module level — it must run inside the factory "
-                    "function body to defer authentication until the runtime "
-                    "calls main()."
+                    "is at module level — it must run inside a function body "
+                    "(the factory or a hook) to defer authentication until "
+                    f"the runtime resolves `{factory_symbol}()`."
                 )
     print("OK: set_default_openai_client(...) is inside the factory body")
 
@@ -172,8 +212,8 @@ def main() -> None:
     if not ROOT.is_dir():
         sys.exit(f"FAIL: project directory {ROOT} does not exist")
     check_pyproject()
-    check_openai_agents_json()
-    check_main_py()
+    _, factory_symbol = check_openai_agents_json()
+    check_main_py(factory_symbol)
     check_entry_points()
     check_bindings()
     check_run()
