@@ -211,6 +211,31 @@ jobs:
             -f tests/docker/Dockerfile \
             .
 
+      # Grader `run_command` checks run on the host after the Docker-sandboxed
+      # agent completes. Install the CLI + Maestro plugin there too; the image
+      # above only makes them available to the agent inside the sandbox.
+      - name: Install host UiPath CLI for grader checks
+        env:
+          CLI_VERSION:    ${{ inputs.cli_version }}
+          NPM_AUTH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          set -euo pipefail
+          case "$CLI_VERSION" in
+            *-*)    TOOL_TAG="${CLI_VERSION#*-}"; TOOL_TAG="${TOOL_TAG%%.*}" ;;
+            [0-9]*) TOOL_TAG="latest" ;;
+            *)      TOOL_TAG="$CLI_VERSION" ;;
+          esac
+          tmp_npmrc="$(mktemp)"
+          trap 'rm -f "$tmp_npmrc"' EXIT
+          cat > "$tmp_npmrc" <<EOF
+          @uipath:registry=https://npm.pkg.github.com/
+          //npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}
+          EOF
+          NPM_CONFIG_USERCONFIG="$tmp_npmrc" npm install -g \
+            "@uipath/cli@${CLI_VERSION}" \
+            "@uipath/maestro-tool@${TOOL_TAG}"
+          uip maestro flow --help >/dev/null
+
       # ROPC bot-user auth via this repo's vendored script (mirrors the VM
       # cron's ROPC flow). Required because `uip flow debug` needs a real user
       # `sub` claim — s2s/client_credentials tokens lack one. Writes
