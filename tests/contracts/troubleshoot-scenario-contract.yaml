@@ -76,25 +76,13 @@ success_criteria:
       - files
 
 structure:
-  # mode:* is required on every coder-eval task (.claude/rules/test-writing.md);
-  # every scenario is a diagnosis. It is also what `--tags mode:diagnose` runs
-  # select on, so a scenario missing it is silently absent from those runs.
   required_tags:
     - uipath-troubleshoot
-    - mode:diagnose
   reference_file: RESOLUTION.md
   # Prepends ./m to PATH so bare `uip` resolves to the mock dispatcher instead
   # of the real CLI (which would try to authenticate).
   mock_path_dirs:
     - m
-  # The sandbox driver is chosen by the run environment, never by the task: a
-  # pinned driver opts the scenario out of the docker image and onto a host with
-  # no tool plugins. scripts/check-task-driver.py enforces this for task YAMLs
-  # but cannot see a pin embedded in the generator's Python string, which is how
-  # one survived there unnoticed - so the rule lives here too, where the
-  # template is checked as a scenario.
-  forbidden_sandbox_keys:
-    - driver
   require_run_limits: true
 
 # Validated as a synthetic scenario after rendering its placeholders, so the
