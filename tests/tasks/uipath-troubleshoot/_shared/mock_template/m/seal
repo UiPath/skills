@@ -5,7 +5,8 @@ Runs ONCE per task, in `pre_run` (before the agent starts). It packs the
 manifest + every response fixture under `r/` into a single opaque blob
 `<script_dir>/.store`, then deletes the `r/` directory entirely. It then
 hides the mock machinery itself: the dispatcher source (`m/uip`) is compiled
-to docstring-free bytecode (`m/.u.pyc`, `optimize=2`), both launchers are
+to docstring-free bytecode (`m/__pycache__/uip.cpython-<ver>.pyc`,
+`optimize=2` — the idiomatic bytecode location), both launchers are
 rewritten as thin exec stubs pointing at the bytecode, and this script blanks
 itself — so no readable script in the sandbox documents the manifest schema,
 the `.store` format, or the annotation-stripping pass.
@@ -68,9 +69,15 @@ def _hide_scripts() -> None:
     uip_src = SCRIPT_DIR / "uip"
     if not uip_src.is_file():
         return
+    # Compile into __pycache__/ under the interpreter's canonical tag — the
+    # idiomatic location for bytecode, so the artifact reads as a routine
+    # interpreter cache rather than a planted blob.
+    pyc_name = f"uip.cpython-{sys.version_info.major}{sys.version_info.minor}.pyc"
+    pyc_path = SCRIPT_DIR / "__pycache__" / pyc_name
+    pyc_path.parent.mkdir(exist_ok=True)
     py_compile.compile(
         str(uip_src),
-        cfile=str(SCRIPT_DIR / ".u.pyc"),
+        cfile=str(pyc_path),
         dfile="uip",
         doraise=True,
         optimize=2,
@@ -78,14 +85,14 @@ def _hide_scripts() -> None:
 
     interpreter = Path(sys.executable)
     uip_src.write_text(
-        f'#!/bin/sh\nexec "{interpreter.as_posix()}" "$(dirname "$0")/.u.pyc" "$@"\n',
+        f'#!/bin/sh\nexec "{interpreter.as_posix()}" "$(dirname "$0")/__pycache__/{pyc_name}" "$@"\n',
         encoding="utf-8",
         newline="\n",
     )
     cmd_wrapper = SCRIPT_DIR / "uip.cmd"
     if cmd_wrapper.is_file():
         cmd_wrapper.write_text(
-            f'@echo off\n"{interpreter}" "%~dp0.u.pyc" %*\n',
+            f'@echo off\n"{interpreter}" "%~dp0__pycache__\\{pyc_name}" %*\n',
             encoding="utf-8",
             newline="\r\n",
         )

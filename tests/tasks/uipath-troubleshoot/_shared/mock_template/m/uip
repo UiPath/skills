@@ -77,6 +77,10 @@ import zlib
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+# Sealed runs execute this file as bytecode from <mock_dir>/__pycache__/;
+# every data path (store, log, cache) is anchored on the mock dir itself.
+if SCRIPT_DIR.name == "__pycache__":
+    SCRIPT_DIR = SCRIPT_DIR.parent
 RESPONSES_DIR = SCRIPT_DIR / "r"
 MANIFEST_PATH = RESPONSES_DIR / "manifest.json"
 CALL_LOG_PATH = SCRIPT_DIR / ".log"
