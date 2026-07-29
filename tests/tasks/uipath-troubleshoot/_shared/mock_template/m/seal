@@ -3,7 +3,12 @@
 
 Runs ONCE per task, in `pre_run` (before the agent starts). It packs the
 manifest + every response fixture under `r/` into a single opaque blob
-`<script_dir>/.store`, then deletes the `r/` directory entirely.
+`<script_dir>/.store`, then deletes the `r/` directory entirely. It then
+hides the mock machinery itself: the dispatcher source (`m/uip`) is compiled
+to docstring-free bytecode (`m/.u.pyc`, `optimize=2`), both launchers are
+rewritten as thin exec stubs pointing at the bytecode, and this script blanks
+itself — so no readable script in the sandbox documents the manifest schema,
+the `.store` format, or the annotation-stripping pass.
 
 Why: the mock backing store (`m/r/*.json`) is staged into the agent's working
 directory so the `m/uip` shim can resolve it. But that also lets the agent
@@ -18,6 +23,8 @@ Idempotent and safe to run anywhere:
     - No `r/manifest.json` present  → no-op (exit 0). Lets an experiment-level
       pre_run run this for EVERY task; non-mock tasks simply skip.
     - `.store` already present       → no-op (exit 0). Safe on sandbox re-use.
+    - After a successful seal this file is blank, and `python m/seal` on a
+      blank file exits 0 — so a re-run in a reused sandbox is also a no-op.
 
 Blob format (`.store`): base64( zlib( utf-8 json( {
     "manifest": <manifest dict>,
@@ -31,6 +38,7 @@ is removed; it holds docs Q&A, not scenario evidence.
 
 import base64
 import json
+import py_compile
 import shutil
 import sys
 import zlib
@@ -42,6 +50,48 @@ MANIFEST_PATH = RESPONSES_DIR / "manifest.json"
 STORE_PATH = SCRIPT_DIR / ".store"
 CACHE_SRC = RESPONSES_DIR / "_cache"
 CACHE_DST = SCRIPT_DIR / "_cache"
+
+
+def _hide_scripts() -> None:
+    """Make the mock scripts themselves unreadable in the sandbox.
+
+    The dispatcher source (`m/uip`) documents the manifest schema, the
+    `.store` blob format, and the annotation-stripping pass — reading it
+    hands the agent a map of how the test evidence is kept. Compile it to
+    bytecode with `optimize=2` (drops docstrings; comments never reach
+    bytecode), rewrite both launchers as thin exec stubs, and blank this
+    script. `sys.executable` is baked into the stubs so the interpreter
+    that compiled the `.pyc` is the one that runs it (bytecode is
+    version-specific), and `dfile="uip"` keeps source paths out of any
+    runtime traceback.
+    """
+    uip_src = SCRIPT_DIR / "uip"
+    if not uip_src.is_file():
+        return
+    py_compile.compile(
+        str(uip_src),
+        cfile=str(SCRIPT_DIR / ".u.pyc"),
+        dfile="uip",
+        doraise=True,
+        optimize=2,
+    )
+
+    interpreter = Path(sys.executable)
+    uip_src.write_text(
+        f'#!/bin/sh\nexec "{interpreter.as_posix()}" "$(dirname "$0")/.u.pyc" "$@"\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    cmd_wrapper = SCRIPT_DIR / "uip.cmd"
+    if cmd_wrapper.is_file():
+        cmd_wrapper.write_text(
+            f'@echo off\n"{interpreter}" "%~dp0.u.pyc" %*\n',
+            encoding="utf-8",
+            newline="\r\n",
+        )
+    # Blank rather than delete: sandbox re-use re-runs `python m/seal`,
+    # which must keep exiting 0.
+    (SCRIPT_DIR / "seal").write_text("", encoding="utf-8")
 
 
 def main() -> int:
@@ -69,6 +119,8 @@ def main() -> int:
 
     # Remove the readable fixture directory entirely.
     shutil.rmtree(RESPONSES_DIR)
+
+    _hide_scripts()
     return 0
 
 

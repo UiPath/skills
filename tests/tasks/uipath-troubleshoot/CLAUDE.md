@@ -246,7 +246,9 @@ pre_run:
 
 `data/m/r/` is staged into the agent's working directory so the `m/uip` shim can resolve it — which also lets the agent `cat ./m/r/*.json` and read the recorded `uip` outputs, reaching the root cause without invoking `uip` or the skill at all. `m/seal` packs the manifest + every fixture into an opaque `m/.store` (zlib+base64) and deletes `r/`; the shim reads `.store` transparently. After sealing there is no readable fixture in the sandbox.
 
-`fail_on_error: true` is deliberate — a silent seal failure restores the leak. `m/seal` is idempotent and no-ops when there is no `r/manifest.json` or a `.store` already exists.
+Sealing also hides the mock machinery itself — the scripts' source would otherwise tell the agent how the test evidence is kept (`m/uip`'s docstring documents the manifest schema, the `.store` format, and the annotation-stripping pass; `m/seal`'s says what it hides and why). After packing the store, `seal` compiles `m/uip` to docstring-free bytecode (`m/.u.pyc`, `optimize=2`), rewrites `m/uip` and `m/uip.cmd` as thin exec stubs pointing at the bytecode, and blanks itself.
+
+`fail_on_error: true` is deliberate — a silent seal failure restores the leak. `m/seal` is idempotent and no-ops when there is no `r/manifest.json` or a `.store` already exists; after sealing it is a blank file, so a re-run in a reused sandbox still exits 0.
 
 The passthrough cache moves to `m/_cache` (beside the shim) so `docsai` proxying keeps working after `r/` is gone.
 
