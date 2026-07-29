@@ -45,9 +45,18 @@ success_criteria:
   llm_judge:
     weight: 3.0
     pass_threshold: 0.7
+    # include_dialog is what keeps a correct investigation from scoring 0.00.
+    # The simulated user keeps talking after the diagnosis lands, so the agent's
+    # final turn is usually an acknowledgement ("Will do."). A judge given
+    # include_agent_output alone receives only that turn and never sees the root
+    # cause, which sits earlier in the dialog. Six troubleshoot tasks failed
+    # exactly this way in the 2026-07-28 nightly, each with a correct root cause
+    # in turn 1. include_dialog hands the judge the whole user<->agent exchange,
+    # so the diagnosis is graded wherever it landed.
     require_true:
       - include_reference
       - include_agent_output
+      - include_dialog
     # The judge grades the presented diagnosis, not internal artifacts.
     forbidden_keys:
       - files

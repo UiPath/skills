@@ -37,6 +37,16 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SUITE_ROOT = REPO_ROOT / "tests" / "tasks" / "uipath-troubleshoot"
 CONTRACT_PATH = SUITE_ROOT / "_shared" / "scenario-contract.yaml"
 
+# What each required llm_judge flag buys, quoted back to the author on failure.
+JUDGE_FLAG_HINTS = {
+    "include_reference": "the judge grades against RESOLUTION.md",
+    "include_agent_output": "the judge needs the agent's final response",
+    "include_dialog": (
+        "without it the judge sees only the final turn, which is usually an "
+        "acknowledgement, and scores a correct investigation 0.00"
+    ),
+}
+
 # Dummy substitutions that render the generator's TASK_YAML_TEMPLATE into a
 # parseable scenario. Values only need to keep the YAML valid.
 TEMPLATE_FILLERS = {
@@ -154,7 +164,8 @@ def _check(doc: dict, text: str, path: Path, contract: dict) -> list[Violation]:
         jc = sc["llm_judge"]
         for key in jc["require_true"]:
             if judge.get(key) is not True:
-                fail(rf"{key}:", f"`llm_judge.{key}` must be true", f"Set `{key}: true` — the judge needs RESOLUTION.md and the agent's answer.")
+                # A missing key has no line of its own — anchor on the criterion.
+                fail(rf"{key}:|-\s*type:\s*llm_judge", f"`llm_judge.{key}` must be true", f"Set `{key}: true` — {JUDGE_FLAG_HINTS.get(key, 'required by the contract')}.")
         for key in jc["forbidden_keys"]:
             if judge.get(key):
                 fail(rf"^\s+{key}:", f"`llm_judge.{key}` is forbidden", "The judge grades the presented diagnosis, not internal artifacts.")
