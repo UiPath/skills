@@ -10,8 +10,11 @@ description: >
   BOTH groups), and `groups delete`/`groups add` (destroys every other field
   in the group).
 
-  Harness is unauthenticated; CLI calls fail with auth errors.
-  Grades command shape, not wire effect.
+  The overlaid uip mock serves the fixture taxonomy and succeeds on the two
+  `fields` mutations. Both are required for the graded shape to be reachable:
+  a failing `get-taxonomy` leaves nothing to carry into `fields add`, and a
+  failing `fields add` makes withholding the `fields delete` the correct call
+  (add-before-delete). Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:execute]
 
 run_limits:
@@ -21,6 +24,7 @@ sandbox:
   mock_path_dirs: [mocks]
   template_sources:
     - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_taxonomy}
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, the field "Total Amount"
@@ -28,9 +32,9 @@ initial_prompt: |
   items instead — move it into the existing "Line Items" group.
 
   Important:
-  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
-    this environment. Commands will fail with auth errors — that is expected.
-    Run each command once and move on. Do NOT retry or attempt to login.
+  - The `uip` CLI in this environment is not connected to a live tenant;
+    some commands fail. Run each command once and move on. Do NOT retry or
+    attempt to login.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
@@ -42,11 +46,15 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # --type asserts the value, not just the flag: "Monetary Quantity" is only
+  # knowable from the taxonomy read, via the moon_form entry's field_type_id.
+  # --instructions stays presence-only — carrying them over is the graded
+  # behavior; rewording them is not a failure.
   - type: file_matches_regex
-    description: "Agent recreated \"Total Amount\" in the target group via `fields add` (with --type and --instructions carried over)"
+    description: "Agent recreated \"Total Amount\" in the target group via `fields add`, carrying over its type and instructions"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+fields\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["']?Line Items)(?=.*--field\s+["']?Total Amount)(?=.*--type)(?=.*--instructions).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+fields\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["']?Line Items)(?=.*--field\s+["']?Total Amount)(?=.*--type\s+["']?Monetary Quantity)(?=.*--instructions).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 

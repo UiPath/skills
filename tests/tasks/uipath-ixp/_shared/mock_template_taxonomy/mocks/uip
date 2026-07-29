@@ -1,0 +1,88 @@
+#!/bin/sh
+# Taxonomy-serving `uip` mock for uipath-ixp smoke tasks whose correct path
+# STARTS with a read. Overlays the base mock_template (list it SECOND in
+# template_sources so this file wins).
+#
+# The base mock fails every invocation. That makes any task unwinnable whose
+# graded command must carry values read from the taxonomy: the read returns
+# nothing, and an agent that declines to invent a field's type and instructions
+# correctly stops instead. Same for a graded `fields delete` after a `fields
+# add` — the skill teaches add-before-delete precisely so a failed add leaves
+# the field where it was, so a failing add makes the delete wrong to issue.
+#
+# Fixture — project my_invoices-f1afa9ef-ixp:
+#   "Invoice Header": Invoice Number, Invoice Date, Total Amount
+#   "Line Items":     Description
+# "Total Amount" is Monetary Quantity. Its moon_form `field_id` is the field's
+# own identity and matches no entity_def — the type resolves through
+# `field_type_id`, the distinction the move-a-field recipe calls out.
+#
+# get-taxonomy is stateful, so an agent that re-reads to verify a move sees its
+# own writes rather than stale canned state and retries a mutation it already
+# made: after `fields add` the field is in BOTH groups, after `fields delete`
+# only in the target, and the recreated entry carries a NEW field_id (the real
+# backend mints one, which is why confirmed labels do not follow a move).
+#
+# Response shapes follow the skill's cli-reference: {Result, Data} envelope;
+# `projects list` Data is the paged { Projects, Total, Offset, Limit }; and
+# get-taxonomy Data is { status, dataset: { entity_defs, label_groups } } with
+# label_groups[0].label_defs[] as the field groups and moon_form[] as fields.
+#
+# Logging matches the base mock exactly — same `uip ` prefix, same newline
+# normalization — so anchored `^uip\s+ixp …` criteria keep matching.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+ADDED="$(dirname "$0")/.total-amount-added"
+DELETED="$(dirname "$0")/.total-amount-deleted"
+
+ENTITY_DEFS='{"id":"b3a63e6483adaaba","name":"Exact Text","title":"","inherits_from":[],"trainable":true,"color":2,"instructions":""},{"id":"c128ad65bd8af3f8","name":"Date","title":"","inherits_from":["0000000000000007"],"trainable":true,"color":1,"instructions":""},{"id":"e5d7402ba91c6f38","name":"Monetary Quantity","title":"","inherits_from":["0000000000000005"],"trainable":true,"color":4,"instructions":""}'
+
+F_INVOICE_NUMBER='{"field_id":"9a3f5d2c81b7e604","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Invoice Number","instructions":"The unique invoice identifier printed in the document header.","rule_set":null}'
+F_INVOICE_DATE='{"field_id":"1d8e42b7c3a95f60","id":"c128ad65bd8af3f8","field_type_id":"c128ad65bd8af3f8","kind":"Date","name":"Invoice Date","instructions":"The issue date of the invoice.","rule_set":null}'
+F_DESCRIPTION='{"field_id":"c47a91e05d2b3f68","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Description","instructions":"The line item description as printed on the row.","rule_set":null}'
+F_TOTAL_AMOUNT='{"field_id":"6e0b74a1f83c2d95","id":"e5d7402ba91c6f38","field_type_id":"e5d7402ba91c6f38","kind":"Monetary Quantity","name":"Total Amount","instructions":"The grand total payable on the invoice, including tax.","rule_set":null}'
+F_TOTAL_AMOUNT_RECREATED='{"field_id":"04c9be71a2f5d380","id":"e5d7402ba91c6f38","field_type_id":"e5d7402ba91c6f38","kind":"Monetary Quantity","name":"Total Amount","instructions":"The grand total payable on the invoice, including tax.","rule_set":null}'
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Data":{"Projects":[{"Id":"f1afa9ef-1c4d-4b70-9e02-6d3b8a5c7e11","Name":"my_invoices-f1afa9ef-ixp","Title":"My_Invoices","CreatedAt":"2026-06-11T08:42:19Z"}],"Total":1,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Data":{"Name":"my_invoices-f1afa9ef-ixp","Title":"My_Invoices","Description":"Supplier invoices","CreatedTime":"2026-06-11T08:42:19Z"}}
+EOF
+exit 0
+;;
+"ixp projects get-taxonomy")
+    header_fields="$F_INVOICE_NUMBER,$F_INVOICE_DATE"
+    line_item_fields="$F_DESCRIPTION"
+    if [ -f "$ADDED" ]; then
+        line_item_fields="$line_item_fields,$F_TOTAL_AMOUNT_RECREATED"
+        [ -f "$DELETED" ] || header_fields="$header_fields,$F_TOTAL_AMOUNT"
+    else
+        header_fields="$header_fields,$F_TOTAL_AMOUNT"
+    fi
+    printf '{"Result":"Success","Data":{"status":"ready","dataset":{"entity_defs":[%s],"label_groups":[{"name":"default","label_defs":[{"name":"Invoice Header","id":"5f21c88ab90d4e17","instructions":"Header-level fields of the supplier invoice.","moon_form":[%s]},{"name":"Line Items","id":"7be409c2d15fa833","instructions":"One entry per line item row on the invoice.","moon_form":[%s]}]}]}}}\n' \
+        "$ENTITY_DEFS" "$header_fields" "$line_item_fields"
+    exit 0
+;;
+"ixp fields add")
+    case "$*" in *"Line Items"*) case "$*" in *"Total Amount"*) : > "$ADDED" ;; esac ;; esac
+    echo '{"Result":"Success"}'
+    exit 0
+;;
+"ixp fields delete")
+    case "$*" in *"Invoice Header"*) case "$*" in *"Total Amount"*) : > "$DELETED" ;; esac ;; esac
+    echo '{"Result":"Success"}'
+    exit 0
+;;
+esac
+
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1
