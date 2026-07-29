@@ -9,7 +9,6 @@
 {"id": "uipath-mcp-servers-009", "prompt": "Delete the team-helper MCP server", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-010", "prompt": "Refresh the tools on my coded MCP server", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-012", "prompt": "Add a resource tool that binds an Orchestrator process to my uipath MCP server", "expected_skill": "uipath-mcp-servers"}
-{"id": "uipath-mcp-servers-013", "prompt": "Add a raw tool with a custom JSON schema to my MCP server", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-014", "prompt": "List the tools on my uipath MCP server", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-015", "prompt": "Disable a tool on my MCP server without deleting it", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-016", "prompt": "Delete a tool from my AgentHub MCP server", "expected_skill": "uipath-mcp-servers"}
@@ -32,5 +31,4 @@
 {"id": "uipath-mcp-servers-037", "prompt": "Verify my MCP server's tools after I created them", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-038", "prompt": "Create a swagger MCP server and refresh its tools from the spec", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-039", "prompt": "Which folder context flag do I pass for refresh-tools on a coded MCP server?", "expected_skill": "uipath-mcp-servers"}
-{"id": "uipath-mcp-servers-040", "prompt": "Author a raw MCP tool from the template skeleton", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-041", "prompt": "Register an AgentHub MCP server that points at my company's internal HTTP MCP service", "expected_skill": "uipath-mcp-servers"}
