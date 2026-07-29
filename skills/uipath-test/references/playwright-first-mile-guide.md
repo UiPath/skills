@@ -72,17 +72,25 @@ uip tm testcases list --project-key <PROJECT_KEY> --output json
 - Poll every ~10 seconds, up to ~3 minutes. If nothing appears by then, STOP and report — the likely causes are the Playwright feature flag being off for the tenant or a wrong `--project-key`; both need the user, not retries.
 - Spot-check the labels landed: `uip tm objectlabel list --project-key <PROJECT_KEY> --object-type TestCase --filter PW_ --output json` (returns distinct label *names* only — enough to confirm ingestion labeled things, not which test case carries which label).
 
-## Step 4 — Create a test set and fill it by label
+## Step 4 — Set the default folder, create a test set, fill it by label
+
+Set the project's default Orchestrator folder FIRST — both the Step 5 probe and the Step 6 run resolve packages through it (Critical Rule #10):
+
+```bash
+uip or folders list -n <folder-name> --all --output json   # Key field = folder key
+uip tm project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY> --output json
+```
 
 ```bash
 uip tm testsets create --project-key <PROJECT_KEY> --name "PW Smoke" --output json
-uip tm testcases add --test-set-key <TEST_SET_KEY> --labels PW_Tag_smoke PW_Project_chromium --output json
+uip tm testcases add --test-set-key <TEST_SET_KEY> --labels "PW_Suite_<name>" --output json
 ```
 
 - Capture `TestSetKey` from the create output (e.g. `DEMO:10`).
 - `--labels` is variadic and space-separated (quote names that contain spaces). Matching is **OR across labels, exact, and case-sensitive** — discover the real names first with `uip tm objectlabel list` rather than guessing.
 - `--labels` works with any object label; the `PW_*` labels are simply what ingestion applies.
 - Mutually exclusive with `--test-case-keys`; pass exactly one of the two.
+- To run the whole suite on one browser: fill by a suite/file label (`PW_Suite_*` or `PW_File_*`) and pass the browser to `--playwright-projects` in Step 6. Filling by `PW_Project_<name>` is for selecting the subset of tests that participate in that project — it does not restrict which browsers run.
 - **Labels select *tests*; `--playwright-projects` selects *browsers*.** Filling by `PW_Project_firefox` picks every test that runs in the firefox project (often all of them); it does not make the run firefox-only — that is what the run flag in Step 6 does. To "run only <project>", label-fill by whatever identifies the tests you want (tag, suite, file) and pass the project name to `--playwright-projects`.
 - **Keep one test set = one Playwright package.** Per-project selection (Step 6) requires every test case in the set to come from a single Playwright package; label-filling across packages produces a set that cannot be project-scoped.
 
@@ -97,10 +105,9 @@ uip tm testsets playwright-context --test-set-key <TEST_SET_KEY> --output json
 - `Data.IsPlaywright: true` → the set resolves to one Playwright package; `AvailablePlaywrightProjects` holds the only valid `--playwright-projects` values, and `SelectedPlaywrightProjects` shows any selection already stored on the test set. Both are **comma-joined strings** (`"chromium, firefox"`), not arrays — split on `", "` when scripting; no stored selection is `""`.
 - `Data.IsPlaywright: false` → RPA, mixed, manual, or multi-package test set — run it **without** `--playwright-projects`.
 - The server never errors on type here, so this is the safe discriminator for automation: probe first, branch on `IsPlaywright`.
+- **False negative without a folder:** the probe resolves the package through the project's default folder — if that isn't set (Step 4), a genuine Playwright test set reports `IsPlaywright: false`. Set the default folder before trusting a `false`.
 
 ## Step 6 — Run, optionally per Playwright project
-
-The project needs a default Orchestrator folder before any run (Critical Rule #10): `uip tm project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY> --output json` (folder keys via `uip or folders list -n <folder-name> --all --output json`).
 
 ```bash
 uip tm testsets run --test-set-key <TEST_SET_KEY> \
@@ -121,7 +128,7 @@ With `--wait`, the execution id is printed **early, in a progress log line** (`S
 ## Step 7 — Results
 
 - `--wait` on the run blocks until terminal; without it, use `uip tm wait --execution-id <EXECUTION_ID> --output json`.
-- Summary: `uip tm report get --execution-id <EXECUTION_ID> --output json`.
+- Summary: `uip tm report get --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json` (`--project-key` or `--test-set-key` is required — bare `--execution-id` exits with "Provide --project-key or --test-set-key").
 - Per-test detail: `uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json`.
 - JUnit export: `uip tm result download --execution-id <EXECUTION_ID> --result-path <dir> --output json`.
 
