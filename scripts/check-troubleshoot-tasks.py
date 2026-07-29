@@ -142,7 +142,8 @@ def _check(doc: dict, text: str, path: Path, contract: dict, locate: bool = True
         if sim.get("enabled") is not True:
             fail(r"^simulation:", "`simulation.enabled` is not true", "Set `enabled: true`.")
         mt = sim.get("max_turns")
-        if not (isinstance(mt, int) and mt > 0):
+        # bool is an int subclass: YAML `max_turns: true` would otherwise pass as 1.
+        if not (isinstance(mt, int) and not isinstance(mt, bool) and mt > 0):
             fail([r"max_turns:", r"^simulation:"], f"`simulation.max_turns` must be a positive int (found {mt!r})", "Set `max_turns: 6`.", section=r"^simulation:")
 
     constraints = sim.get("constraints")
