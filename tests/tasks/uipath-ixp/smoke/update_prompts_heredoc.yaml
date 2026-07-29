@@ -43,10 +43,15 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
+  # Quote runs are `(?:\\?["'])*`, not `["']?`: this criterion reads raw Bash
+  # text, and an agent harness that wraps commands in `/bin/bash -lc "…"`
+  # backslash-escapes the inner quotes, so `--updates "$(cat …)"` is recorded as
+  # `--updates \""'$(cat …)"`. Matching one bare optional quote passed under
+  # claude-code and failed under codex for the same correct command.
   - type: command_executed
     description: "Agent passed the heredoc file to `fields update-prompts --updates`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+fields\s+update-prompts\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+.*--updates\s+["'']?\$\(cat\s+/tmp/ixp/my_invoices-f1afa9ef-ixp/prompts/[^\s]+\.json\)'
+    command_pattern: 'uip\s+ixp\s+fields\s+update-prompts\s+(?:\\?["''])*my_invoices-f1afa9ef-ixp(?:\\?["''])*\s+.*--updates\s+(?:\\?["''])*\$\(cat\s+/tmp/ixp/my_invoices-f1afa9ef-ixp/prompts/[^\s]+\.json\)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
