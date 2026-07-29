@@ -79,7 +79,7 @@
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
 
 # Flow skill
-/skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
+/skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo @chandusailella @mukundbayyaram
 # Flow test tasks (general) — more specific subfolder rules below override this
 /tests/tasks/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
 
@@ -117,7 +117,7 @@
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden @DevMomo
 /skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden @DevMomo
 /skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/ @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
-/tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh
+/tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh @chandusailella @mukundbayyaram
 
 # IXP
 /skills/uipath-maestro-flow/references/author/references/plugins/ixp/ @jcalero @constantinmuraru @scallaway-uipath @tommilligan @joe-prosser @vlad-crisan @richsilv @AWilcke
