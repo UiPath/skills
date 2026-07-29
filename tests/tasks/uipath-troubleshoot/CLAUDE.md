@@ -176,6 +176,12 @@ Test runs require valid `uip` auth on the host (set via `.env` or environment) f
 
 Every new scenario's `task.yaml` MUST satisfy the following.
 
+The machine-checkable subset lives in [`_shared/scenario-contract.yaml`](./_shared/scenario-contract.yaml) — required simulation constraints, required/forbidden success-criteria types, the canonical `llm_judge` shape, structural keys. `scripts/check-troubleshoot-tasks.py` enforces it against every scenario AND against the generator template (CI gate: `troubleshoot-task-contract.yml`). Run it before opening a PR:
+
+```bash
+python3 scripts/check-troubleshoot-tasks.py
+```
+
 ### `run_limits`
 
 ```yaml
