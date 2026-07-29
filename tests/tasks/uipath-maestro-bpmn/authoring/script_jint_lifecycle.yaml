@@ -3,7 +3,7 @@ description: >
   Author a complete Maestro BPMN script-task project, covering the full
   live Alpha lifecycle for the Jint-backed script path: validate locally, then
   debug against Studio Web and prove the run completed.
-tags: [uipath-maestro-bpmn, e2e, "mode:operate", lifecycle:setup, "node:script", "feature:jint", path-to-ga]
+tags: [uipath-maestro-bpmn, e2e, "mode:operate", lifecycle:setup, "node:script", "feature:jint"]
 
 run_limits:
   expected_turns: 22
