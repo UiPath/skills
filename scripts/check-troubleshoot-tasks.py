@@ -1,0 +1,250 @@
+#!/usr/bin/env python3
+"""Validate every uipath-troubleshoot scenario task YAML against the suite contract.
+
+The troubleshoot suite is ~300 near-identical faithful-replay scenarios grown
+from one generator template. Nothing stopped a scenario (or the generator) from
+drifting out of the shared shape, and a drifted simulation block is expensive
+rather than loud: the 2026-07-28 nightly spent 126 extra minutes because 39
+scenarios let the simulated user approve fix application, sending runs into an
+edit + validate/build/pack loop that no criterion grades.
+
+The contract lives in ``tests/tasks/uipath-troubleshoot/_shared/scenario-contract.yaml``
+(required simulation constraints, required/forbidden criteria types, canonical
+llm_judge shape, structural keys). This script enforces it against every
+scenario AND against the generator template, so the two cannot diverge.
+
+Usage:
+    python3 scripts/check-troubleshoot-tasks.py                    # default suite root
+    python3 scripts/check-troubleshoot-tasks.py <path> ...         # scan given roots/files
+
+Exit codes:
+    0 — every scenario and the generator template satisfy the contract
+    1 — one or more violations (paths + fix hints printed, annotated in CI)
+"""
+
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+try:
+    import yaml
+except ImportError:  # pragma: no cover
+    sys.exit("PyYAML is required. Install with: pip install pyyaml")
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SUITE_ROOT = REPO_ROOT / "tests" / "tasks" / "uipath-troubleshoot"
+CONTRACT_PATH = SUITE_ROOT / "_shared" / "scenario-contract.yaml"
+
+# Dummy substitutions that render the generator's TASK_YAML_TEMPLATE into a
+# parseable scenario. Values only need to keep the YAML valid.
+TEMPLATE_FILLERS = {
+    "slug": "placeholder",
+    "domain_tags": "rpa, ",
+    "shared_prefix": "../../",
+    "process_source_block": "",
+    "initial_prompt_indented": "  Placeholder prompt.",
+}
+
+
+class Violation:
+    def __init__(self, path: Path, line: int, message: str, hint: str) -> None:
+        self.path = path
+        self.line = line
+        self.message = message
+        self.hint = hint
+
+
+def _rel(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(REPO_ROOT)).replace("\\", "/")
+    except ValueError:
+        return str(path)
+
+
+def _line_of(text: str, pattern: str) -> int:
+    """1-indexed line of the first match of `pattern`, or 0 when absent."""
+    rx = re.compile(pattern)
+    for n, line in enumerate(text.splitlines(), start=1):
+        if rx.search(line):
+            return n
+    return 0
+
+
+def _iter_scenarios(args: list[str], exempt: list[str]) -> list[Path]:
+    roots = [Path(a) for a in args] if args else [SUITE_ROOT]
+    files: list[Path] = []
+    for root in roots:
+        if root.is_file():
+            files.append(root)
+        else:
+            files.extend(sorted(root.rglob("task.yaml")))
+    exempt_suffixes = tuple(e.replace("\\", "/") for e in exempt)
+    return [f for f in files if not _rel(f).endswith(exempt_suffixes)]
+
+
+def _criterion(doc: dict, ctype: str) -> dict | None:
+    for c in doc.get("success_criteria") or []:
+        if isinstance(c, dict) and c.get("type") == ctype:
+            return c
+    return None
+
+
+def _check(doc: dict, text: str, path: Path, contract: dict) -> list[Violation]:
+    """Validate one parsed scenario against the contract."""
+    out: list[Violation] = []
+
+    def fail(pattern: str, message: str, hint: str) -> None:
+        out.append(Violation(path, _line_of(text, pattern), message, hint))
+
+    # --- simulation ---------------------------------------------------------
+    sim = doc.get("simulation")
+    if not isinstance(sim, dict):
+        fail(r"^task_id:", "no `simulation:` block", "Add the simulation block from the generator template.")
+        sim = {}
+    else:
+        if sim.get("enabled") is not True:
+            fail(r"^simulation:", "`simulation.enabled` is not true", "Set `enabled: true`.")
+        mt = sim.get("max_turns")
+        if not (isinstance(mt, int) and mt > 0):
+            fail(r"max_turns:", f"`simulation.max_turns` must be a positive int (found {mt!r})", "Set `max_turns: 6`.")
+
+    constraints = sim.get("constraints")
+    if not isinstance(constraints, list) or not constraints:
+        fail(r"^simulation:", "`simulation.constraints` is missing or empty", "Copy the constraints list from the generator template.")
+        constraints = []
+    joined = "\n".join(str(c) for c in constraints)
+    for req in contract["simulation"]["required_constraints"]:
+        if req["contains"] not in joined:
+            fail(
+                r"constraints:",
+                f"missing required simulation constraint '{req['id']}'",
+                f"Add a constraint containing: {req['contains']!r}\n    Why: {' '.join(req['why'].split())}",
+            )
+
+    # --- success_criteria ---------------------------------------------------
+    crit = doc.get("success_criteria")
+    if not isinstance(crit, list) or not crit:
+        fail(r"^task_id:", "no `success_criteria`", "Add the skill_triggered + llm_judge criteria.")
+        crit = []
+    sc = contract["success_criteria"]
+    types = [c.get("type") for c in crit if isinstance(c, dict)]
+
+    for req in sc["required_types"]:
+        if req not in types:
+            fail(r"success_criteria:", f"missing required criterion `type: {req}`", f"Add the canonical `{req}` criterion.")
+    for forb in sc["forbidden_types"]:
+        if forb in types:
+            fail(
+                rf"type:\s*{forb}",
+                f"forbidden criterion `type: {forb}`",
+                "Scenarios grade the presented diagnosis, not the investigation path.\n"
+                "    Move the requirement into RESOLUTION.md and let the judge grade it.",
+            )
+
+    st = _criterion(doc, "skill_triggered")
+    if st is not None:
+        want = sc["skill_triggered"]["expected_skill"]
+        if st.get("expected_skill") != want:
+            fail(r"expected_skill:", f"`skill_triggered.expected_skill` must be {want!r} (found {st.get('expected_skill')!r})", f"Set `expected_skill: \"{want}\"`.")
+
+    judge = _criterion(doc, "llm_judge")
+    if judge is not None:
+        jc = sc["llm_judge"]
+        for key in jc["require_true"]:
+            if judge.get(key) is not True:
+                fail(rf"{key}:", f"`llm_judge.{key}` must be true", f"Set `{key}: true` — the judge needs RESOLUTION.md and the agent's answer.")
+        for key in jc["forbidden_keys"]:
+            if judge.get(key):
+                fail(rf"^\s+{key}:", f"`llm_judge.{key}` is forbidden", "The judge grades the presented diagnosis, not internal artifacts.")
+        for key in ("weight", "pass_threshold"):
+            if judge.get(key) != jc[key]:
+                fail(rf"{key}:", f"`llm_judge.{key}` must be {jc[key]} (found {judge.get(key)!r})", f"Set `{key}: {jc[key]}` — the judge shape is uniform across the suite.")
+
+    # --- structure ----------------------------------------------------------
+    stc = contract["structure"]
+    tags = doc.get("tags") or []
+    for tag in stc["required_tags"]:
+        if tag not in tags:
+            fail(r"^tags:", f"missing required tag `{tag}`", f"Add `{tag}` to tags.")
+
+    ref = doc.get("reference")
+    ref_file = ref.get("file") if isinstance(ref, dict) else None
+    if ref_file != stc["reference_file"]:
+        fail(r"^reference:|^task_id:", f"`reference.file` must be {stc['reference_file']!r} (found {ref_file!r})", f"Point `reference.file` at {stc['reference_file']} — the judge reads it.")
+
+    sandbox = doc.get("sandbox")
+    mpd = sandbox.get("mock_path_dirs") if isinstance(sandbox, dict) else None
+    if mpd != stc["mock_path_dirs"]:
+        fail(r"mock_path_dirs:|^sandbox:", f"`sandbox.mock_path_dirs` must be {stc['mock_path_dirs']} (found {mpd!r})", "Without it bare `uip` resolves to the real CLI and the run tries to authenticate.")
+
+    if stc["require_run_limits"] and not isinstance(doc.get("run_limits"), dict):
+        fail(r"^task_id:", "no `run_limits:` block", "Add run_limits (task_timeout / max_turns / turn_timeout).")
+
+    return out
+
+
+def _render_generator_template(contract: dict) -> tuple[str, Path] | None:
+    """Extract + render the generator's task template. None when unavailable."""
+    gt = contract.get("generator_template") or {}
+    path = REPO_ROOT / gt["path"]
+    if not path.is_file():
+        return None
+    namespace: dict = {}
+    source = path.read_text(encoding="utf-8")
+    # Execute only the template assignment, not the whole generator.
+    match = re.search(rf'^{re.escape(gt["symbol"])}\s*=\s*("""|\'\'\')(.*?)\1', source, re.S | re.M)
+    if not match:
+        return None
+    exec(f'{gt["symbol"]} = {match.group(1)}{match.group(2)}{match.group(1)}', namespace)  # noqa: S102
+    return namespace[gt["symbol"]].format(**TEMPLATE_FILLERS), path
+
+
+def main(argv: list[str]) -> int:
+    contract = yaml.safe_load(CONTRACT_PATH.read_text(encoding="utf-8"))
+    violations: list[Violation] = []
+
+    scenarios = _iter_scenarios(argv, contract.get("exempt") or [])
+    for path in scenarios:
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        try:
+            doc = yaml.safe_load(text)
+        except yaml.YAMLError as exc:
+            violations.append(Violation(path, 0, f"invalid YAML: {exc.__class__.__name__}", "Fix the YAML syntax."))
+            continue
+        if not isinstance(doc, dict):
+            violations.append(Violation(path, 0, "task YAML is not a mapping", "Fix the file structure."))
+            continue
+        violations.extend(_check(doc, text, path, contract))
+
+    checked_template = False
+    rendered = _render_generator_template(contract)
+    if rendered is not None:
+        text, gen_path = rendered
+        try:
+            doc = yaml.safe_load(text)
+            checked_template = True
+            violations.extend(_check(doc, text, gen_path, contract))
+        except yaml.YAMLError as exc:
+            violations.append(
+                Violation(gen_path, 0, f"generator template does not render to valid YAML: {exc.__class__.__name__}", "Fix the template or update TEMPLATE_FILLERS in this script.")
+            )
+
+    scope = f"{len(scenarios)} scenario(s)" + (" + the generator template" if checked_template else "")
+    if not violations:
+        print(f"OK — {scope} satisfy the troubleshoot scenario contract.")
+        return 0
+
+    print(f"FAIL — {len(violations)} contract violation(s) across {scope}:\n")
+    for v in violations:
+        rel = _rel(v.path)
+        loc = f"{rel}:{v.line}" if v.line else rel
+        print(f"::error file={rel},line={v.line}::{v.message}")
+        print(f"  {loc}\n    {v.message}\n    Fix: {v.hint}")
+    print(f"\nContract: {_rel(CONTRACT_PATH)}")
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))
