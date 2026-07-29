@@ -29,7 +29,6 @@ reference:
 
 initial_prompt: |
   My MailerAgent failed with trace ID cccccccccccccccccccccccccccccccc.
-  The local source is under process/MailerSolution.
   Diagnose why it failed and recommend the agent.json and lifecycle changes. Do not run live debug or edit files.
 
 success_criteria:

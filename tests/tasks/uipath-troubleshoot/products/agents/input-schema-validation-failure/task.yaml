@@ -29,7 +29,6 @@ reference:
 
 initial_prompt: |
   My IntakeAgent invocation failed with trace ID bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
-  The local source is under process/IntakeSolution.
   Diagnose the failure and show the corrected local debug command. Do not run live debug or change files.
 
 success_criteria:
