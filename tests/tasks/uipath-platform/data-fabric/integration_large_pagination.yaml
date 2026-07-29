@@ -13,6 +13,14 @@ run_limits:
   turn_timeout: 900
 
 pre_run:
+  - command: >-
+      cp
+      $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/extract_page_ids.py
+      $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_pagination.py
+      .
+    timeout: 10
+    fail_on_error: true
+
   # Restore CE_LargePaginationTest to its canonical schema and 500 records.
   - command: >-
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
@@ -39,6 +47,9 @@ initial_prompt: |
   3) Walk only Active=yes rows, 60 per page. Tell me the page and unique-row
      totals, plus any duplicates or gaps.
 
+  Keep the collected row IDs in `walk_ids.txt`, `offset_page_ids.txt`, and
+  `active_ids.txt`, respectively, so I can verify the three results afterward.
+
   After those reads, exercise the same list rather than creating another one:
 
   - Add three temporary rows in one batch: `Smoke-WriteTests` (score 501),
@@ -46,6 +57,7 @@ initial_prompt: |
   - Pull `Smoke-WriteTests` back up by its row ID.
   - Mark all three temporary rows inactive in one batch.
   - Delete those three temporary rows when finished.
+  - Keep the three temporary row IDs in `temp_row_ids.txt`, one per line.
 
 success_criteria:
   - type: command_executed
@@ -67,7 +79,7 @@ success_criteria:
   - type: command_executed
     description: "Agent performed a multi-page walk"
     tool_name: "Bash"
-    command_pattern: '(?s)(?:for|while)\s+.*(?:uip\s+df\s+records\s+(?:list|query)|["'']records["'']\s*,\s*["''](?:list|query)["'']).*(?:--cursor|["'']--cursor["''])'
+    command_pattern: '(?s)(?:for|while)\s+.*(?:uip\s+df\s+records\s+(?:list|query)|["'']records["'']\s*,\s*["''](?:list|query)["'']).*(?:--cursor|--offset|["'']--(?:cursor|offset)["''])'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -83,6 +95,30 @@ success_criteria:
       Score 1 if all three outcomes are covered without contradiction. Grade
       the reported outcome only; command criteria separately verify execution,
       so do not require files, screenshots, logs, or other artifacts here.
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Full walk contains exactly 500 unique record IDs"
+    command: "python3 ./verify_pagination.py --mode walk --file walk_ids.txt --count 500"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Offset page exactly matches rows 181-240 from the full walk"
+    command: "python3 ./verify_pagination.py --mode offset --file offset_page_ids.txt --against walk_ids.txt --start 180 --stop 240"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Active-only walk contains exactly 300 unique record IDs"
+    command: "python3 ./verify_pagination.py --mode walk --file active_ids.txt --count 300"
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
@@ -130,9 +166,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inserted the temporary rows"
+    description: "Agent inserted all three named temporary rows in one batch"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert.*(?:\[|--file\s+\S+|--body\s+["'']?\$\w+)'
+    command_pattern: '(?is)(?=.*uip\s+df\s+records\s+insert)(?=.*Smoke-WriteTests)(?=.*Smoke-ReviewPR)(?=.*Smoke-Deploy)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -146,19 +182,27 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent updated the temporary rows"
+    description: "Agent batch-updated three record IDs to inactive"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+update.*(?:\\?"Id\\?"\s*:|--file\s+\S+|--body\s+["'']?\$\w+)'
+    command_pattern: '(?is)(?=.*uip\s+df\s+records\s+update)(?=.*(?:(?:\\?["'']?Id\\?["'']?\s*:.*){3}|temp_row_ids\.txt))(?=.*["'']?Active["'']?\s*:\s*(?:false|False))'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent deleted the three temporary rows, not the entity"
+    description: "Agent deleted three record IDs in one operation, not the entity"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+delete'
+    command_pattern: '(?is)(?=.*uip\s+df\s+records\s+delete)(?=.*(?:(?:[0-9a-f]{8}-[0-9a-f-]{27}.*){3}|temp_row_ids\.txt))'
     min_count: 1
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The CRUD sequence captured exactly three unique temporary row IDs"
+    command: "python3 ./verify_pagination.py --mode walk --file temp_row_ids.txt --count 3"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed

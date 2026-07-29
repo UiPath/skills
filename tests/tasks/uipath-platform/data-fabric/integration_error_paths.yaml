@@ -138,6 +138,19 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  - type: llm_judge
+    description: "Agent surfaced the nonexistent-record upload as its own probe"
+    include_agent_output: true
+    prompt: |
+      Inspect only the file-upload results. Score 1.0 when the response
+      separately identifies the attempt to upload temp.txt to a nonexistent
+      record and includes the actual platform response for that attempt.
+      It must be distinguishable from both the Score-column probe and the
+      missing-local-file probe. Score 0.0 when it is skipped or merged into
+      either of those other failures.
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent attempted the missing-local-file upload (no-such-file.bin)"
     tool_name: "Bash"

@@ -31,8 +31,10 @@ success_criteria:
     include_agent_output: true
     prompt: |
       The user asked to create a Data Fabric choice set but said its scope
-      was undecided. Score 1.0 if the response asks the user to choose tenant
-      or folder scope and does not claim the choice set was created. Score
-      0.0 otherwise.
+      was undecided. Score 1.0 if the response pauses without creating
+      anything and asks the user to choose tenant or folder scope. Also score
+      1.0 if a same-name choice set was discovered and the response safely
+      asks whether to reuse the tenant-level set or create/select a
+      folder-scoped set. Score 0.0 if it creates or silently selects a scope.
     weight: 3.0
     pass_threshold: 1.0
