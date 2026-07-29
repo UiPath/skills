@@ -76,7 +76,7 @@ simulation:
   goal: |
     Let the agent complete the diagnosis and provide a remediation plan.
   constraints:
-    - "If the agent asks where the source code is, say it is under process/MailerSolution."
+    - "If the agent asks where the source code is, say it is under ./MailerSolution."
     - "If the agent asks whether it can edit files, say no."
     - "If the agent asks whether it can run uip agent debug, say no and ask it to provide the command instead."
     - "If the agent asks whether to expand investigation scope, answer yes."

@@ -78,7 +78,7 @@ simulation:
     Let the agent complete its troubleshooting flow and approve read-only
     investigation steps.
   constraints:
-    - "If the agent asks where the source code is, say it is under process/SupportSolution."
+    - "If the agent asks where the source code is, say it is under ./SupportSolution."
     - "If the agent asks whether it can run mutating repair commands, say no and ask for the commands instead."
     - "If the agent asks whether to expand investigation scope, answer yes."
     - "Keep replies short and do not invent new facts."
