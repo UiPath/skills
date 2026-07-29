@@ -1,0 +1,105 @@
+task_id: skill-ixp-batch-occurrence-confirm-smoke
+description: >
+  Smoke: a repeatable field group returns five line-item extractions, four
+  correct and one the model invented. Confirming the four correct rows must
+  be ONE `--group + --updates` call, not a chain of `--occurrence` calls —
+  a confirm re-orders the group's occurrences on the next read (matched
+  annotation/prediction pairs sort first), so every index in a chain after
+  the first one addresses a row the caller never read. Locks in Critical
+  Rule 18.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
+initial_prompt: |
+  Review the IXP model's `Line Items` predictions for document
+  `doc-freight-11` on project `freight_docs-df33115f-ixp` and confirm only
+  the extractions that are correct.
+
+  `get-predictions` returns five `Line Items` extractions for this
+  document, in extraction order:
+
+  - "Steel bolts", Qty 200, Total $400 — matches a line on the invoice.
+  - "Copper wire", Qty 50, Total $150 — matches a line on the invoice.
+  - "Premium freight surcharge", Qty 1, Total $9,999 — there is NO such
+    line anywhere on the invoice; the model invented this row. Its values
+    are not a garbled reading of a real line.
+  - "Pallet wrap", Qty 12, Total $36 — matches a line on the invoice.
+  - "Shrink film", Qty 8, Total $24 — matches a line on the invoice.
+
+  Confirm the four extractions that match the document and leave the
+  invented one unconfirmed.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once and move on. Do NOT retry or attempt
+    to login. You cannot re-read predictions after a write.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # The four matching rows are extraction-order occurrences 0, 1, 3 and 4
+  # (the invented "Premium freight surcharge" is occurrence 2). All four
+  # must ride in ONE --updates call: the mock logs each invocation on a
+  # single line, so same-line lookaheads assert one call carries them all.
+  # The agent must derive the indices itself — the prompt never states them.
+  - type: file_matches_regex
+    description: "Confirms occurrences 0, 1, 3 and 4 in a single --group + --updates call"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?=.*uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-11["']?)(?=.*--group\s+["']?Line Items["']?)(?=.*--updates)(?=.*"occurrence"\s*:\s*0\b)(?=.*"occurrence"\s*:\s*1\b)(?=.*"occurrence"\s*:\s*3\b)(?=.*"occurrence"\s*:\s*4\b).*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Anti-pattern under test: one --occurrence call per row. Indices are
+  # scoped to the read that produced them, so from the second call on the
+  # agent is targeting rows it never validated.
+  - type: file_matches_regex
+    description: "Agent did NOT chain single-occurrence `--occurrence` confirms"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?=.*uip\s+ixp\s+labellings\s+confirm\b)(?=.*--occurrence\s+\d).*$
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The invented row (occurrence 2) must never be confirmed.
+  - type: file_matches_regex
+    description: "Agent did NOT confirm occurrence 2 (the invented row)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?=.*uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-11["']?)(?=.*("occurrence"\s*:\s*2\b|--occurrence\s+2\b)).*$
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Anti-pattern: plain --fields without --group confirms the field id in
+  # every occurrence — including the invented one.
+  - type: file_matches_regex
+    description: "Agent did NOT use plain `--fields` without --group"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:^(?!.*--group).*uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-11["']?\s+.*--fields)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Anti-pattern: a bare per-document confirm (no --group, no --fields)
+  # confirms every predicted field, invented row included.
+  - type: file_matches_regex
+    description: "Agent did NOT confirm the whole document blind"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?=.*uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-11["']?)(?!.*--group)(?!.*--fields).*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
