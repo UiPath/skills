@@ -12,8 +12,14 @@ CANARIES = (
     "GENERATED_ONLY_CANARY_ALPHA_9F3C",
     "GENERATED_ONLY_CANARY_BETA_7D2A",
 )
-STALE_ENTRY_POINT_TOKENS = ("legacyrequest", "legacyresponse")
-FINDING_TAG = re.compile(r"\[[CWI](?:-[A-Z])?-\d+\]")
+REFRESH_MANAGED_TOKENS = ("entry-points.json", "legacyrequest", "legacyresponse")
+DEFECT_SECTIONS = (
+    "critical finding",
+    "warning",
+    "improvement opportunit",
+    "rule finding",
+)
+HEADING = re.compile(r"^#{2,4}\s+(.+?)\s*$")
 MIN_REPORT_BYTES = 500
 
 
@@ -47,6 +53,26 @@ def check_derived_state() -> None:
         fail("entry-points.json output schema does not match root agent.json")
 
 
+def mentions_refresh_managed(line: str) -> bool:
+    lowered = line.lower()
+    return any(token in lowered for token in REFRESH_MANAGED_TOKENS)
+
+
+def defect_sections(report: str):
+    heading = ""
+    lines: list[str] = []
+    for line in report.splitlines():
+        match = HEADING.match(line)
+        if not match:
+            lines.append(line)
+            continue
+        if any(name in heading.lower() for name in DEFECT_SECTIONS):
+            yield heading, lines
+        heading, lines = match.group(1), []
+    if any(name in heading.lower() for name in DEFECT_SECTIONS):
+        yield heading, lines
+
+
 def check_report() -> None:
     if not REPORT.is_file():
         fail(f"missing review report {REPORT}")
@@ -70,22 +96,14 @@ def check_report() -> None:
     surfaced_canaries = [canary for canary in CANARIES if canary in report]
     if surfaced_canaries:
         fail(f"report surfaced generated-only canaries: {surfaced_canaries}")
-    stale_tokens = [token for token in STALE_ENTRY_POINT_TOKENS if token in normalized]
-    if stale_tokens:
-        fail(
-            f"report cites pre-refresh entry-points.json fields {stale_tokens} — "
-            "refresh regenerates that file from agent.json, so a stale mismatch is not a defect"
-        )
-    cited_findings = [
-        line.strip()
-        for line in report.splitlines()
-        if "entry-points.json" in line and FINDING_TAG.search(line)
-    ]
-    if cited_findings:
-        fail(
-            "report files a finding against refresh-managed entry-points.json: "
-            f"{cited_findings[:2]}"
-        )
+    for heading, lines in defect_sections(report):
+        cited = [line.strip() for line in lines if mentions_refresh_managed(line)]
+        if cited:
+            fail(
+                f"report files refresh-managed entry-points.json state as a defect "
+                f"under '{heading}': {cited[:2]} — refresh regenerates that file from "
+                "agent.json, so a pre-refresh mismatch is stale by construction"
+            )
 
 
 def main() -> None:
