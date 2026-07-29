@@ -285,6 +285,64 @@ def test_scalar_tags_is_caught(tmp_path):
     assert "`tags` must be a list" in out
 
 
+# --- pre_run: the mock-store seal must be present and must abort on failure -
+
+def _drop_pre_run(text):
+    """Remove the whole pre_run block (header through the next blank line)."""
+    lines = text.splitlines(keepends=True)
+    start = next(i for i, line in enumerate(lines) if line.startswith("pre_run:"))
+    end = start + 1
+    while end < len(lines) and lines[end].strip():
+        end += 1
+    return "".join(lines[:start] + lines[end:])
+
+
+def test_missing_pre_run_is_caught(tmp_path):
+    """An unsealed scenario leaks the recorded uip outputs to the agent."""
+    directory = _scenario(tmp_path, _drop_pre_run)
+    code, out = _run(directory)
+    assert code == 1
+    assert "seal-mock-store" in out
+
+
+def test_pre_run_without_the_seal_command_is_caught(tmp_path):
+    directory = _scenario(
+        tmp_path, lambda t: t.replace('- command: "python m/seal"', '- command: "echo noop"', 1)
+    )
+    code, out = _run(directory)
+    assert code == 1
+    assert "seal-mock-store" in out
+
+
+@pytest.mark.parametrize("mutation", [
+    lambda t: t.replace("\n    fail_on_error: true", "", 1),
+    lambda t: t.replace("    fail_on_error: true", "    fail_on_error: false", 1),
+])
+def test_seal_not_aborting_on_failure_is_caught(tmp_path, mutation):
+    """fail_on_error false or missing lets a failed seal restore the leak silently."""
+    directory = _scenario(tmp_path, mutation)
+    code, out = _run(directory)
+    assert code == 1
+    assert "fail_on_error" in out
+
+
+def test_duplicate_seal_step_carrying_violations_is_caught(tmp_path):
+    """Every copy of the seal step is validated, not just the first."""
+    dupe = '  - command: "python m/seal"\n    timeout: 60\n    fail_on_error: false\n'
+    directory = _scenario(tmp_path, lambda t: t.replace("\nreference:", "\n" + dupe + "\nreference:", 1))
+    code, out = _run(directory)
+    assert code == 1
+    assert "fail_on_error" in out
+
+
+def test_extra_pre_run_step_passes(tmp_path):
+    """The contract requires the seal; it does not ban other staging steps."""
+    extra = '  - command: "echo warmup"\n    timeout: 10\n'
+    directory = _scenario(tmp_path, lambda t: t.replace("\nreference:", "\n" + extra + "\nreference:", 1))
+    code, out = _run(directory)
+    assert code == 0, out
+
+
 # --- Unit-level: pattern ordering in the annotation locator -----------------
 
 def test_line_of_prefers_the_first_pattern_that_matches():

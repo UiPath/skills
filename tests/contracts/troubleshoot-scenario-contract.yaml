@@ -75,6 +75,25 @@ success_criteria:
     forbidden_keys:
       - files
 
+pre_run:
+  # Steps that must run before the agent starts. Each fingerprint below must
+  # appear as a pre_run step with the exact `command`; extra staging steps are
+  # allowed.
+  required_steps:
+    - id: seal-mock-store
+      command: "python m/seal"
+      # Presence is not enough: with fail_on_error false or missing, a failed
+      # seal leaves r/ readable and the run silently regrades the leak. The
+      # task must abort instead.
+      fail_on_error: true
+      why: >
+        data/m/r/ is staged into the sandbox so the m/uip shim can resolve the
+        recorded fixtures. Unsealed, the agent can read m/r/*.json directly
+        and reach the diagnosis without invoking uip or the skill - the
+        dominant skill_triggered failure mode before sealing. m/seal packs the
+        manifest plus every fixture into an opaque m/.store and removes the
+        readable r/ directory; the shim reads .store transparently.
+
 structure:
   required_tags:
     - uipath-troubleshoot

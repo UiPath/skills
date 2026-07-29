@@ -256,7 +256,7 @@ pre_run:
 
 The passthrough cache moves to `m/_cache` (beside the shim) so `docsai` proxying keeps working after `r/` is gone.
 
-`_build_task_yaml` in `generate_scenario.py` emits this block, so generated scenarios get it automatically. Hand-written scenarios MUST add it.
+`_build_task_yaml` in `generate_scenario.py` emits this block, so generated scenarios get it automatically. Hand-written scenarios MUST add it. The seal step (with `fail_on_error: true`) is a required rule in [`tests/contracts/troubleshoot-scenario-contract.yaml`](../../contracts/troubleshoot-scenario-contract.yaml), so `scripts/check-troubleshoot-tasks.py` (CI: `troubleshoot-task-contract.yml`) blocks a PR that drops it.
 
 Sealing also removes the scenario's `README.md`, which lives at `data/m/r/README.md` for exactly that reason — `seal` deletes the whole `r/` directory, so the write-up describing the root cause never reaches the agent even though `data/` is staged. Keep it there; a README at the task root sits in the task dir that coder-eval bind-mounts read-only into the container (`$TASK_DIR`), and one at `data/` root lands in the agent's working directory unsealed.
 

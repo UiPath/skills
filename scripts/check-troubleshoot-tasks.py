@@ -233,6 +233,29 @@ def _check(doc: dict, text: str, path: Path, contract: dict, locate: bool = True
     if stc["require_run_limits"] and not isinstance(doc.get("run_limits"), dict):
         fail(r"^task_id:", "no `run_limits:` block", "Add run_limits (task_timeout / max_turns / turn_timeout).")
 
+    # --- pre_run --------------------------------------------------------------
+    steps = doc.get("pre_run")
+    steps = [s for s in steps if isinstance(s, dict)] if isinstance(steps, list) else []
+    for req in contract["pre_run"]["required_steps"]:
+        matches = [s for s in steps if s.get("command") == req["command"]]
+        if not matches:
+            fail(
+                [r"^pre_run:", r"^task_id:"],
+                f"missing required pre_run step '{req['id']}' (`command: \"{req['command']}\"`)",
+                f"Add the step from the generator template.\n    Why: {' '.join(req['why'].split())}",
+            )
+        for step in matches:
+            # EVERY copy of the step must abort on failure, like the duplicate
+            # criteria above: one compliant copy does not neutralize a second
+            # that fails open.
+            if req.get("fail_on_error") and step.get("fail_on_error") is not True:
+                fail(
+                    [r"fail_on_error:", r"command:", r"^pre_run:"],
+                    f"pre_run step '{req['id']}' must set `fail_on_error: true` (found {step.get('fail_on_error')!r})",
+                    "A seal that fails silently restores the fixture leak - the task must abort instead.",
+                    section=r"^pre_run:",
+                )
+
     return out
 
 
