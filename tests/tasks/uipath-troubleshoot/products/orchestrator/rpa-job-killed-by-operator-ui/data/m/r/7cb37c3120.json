@@ -1,6 +1,7 @@
 {
   "Result": "Success",
   "Code": "JobHistory",
+  "_doc": "State transitions for the failing job. The presence of 'Stopping' is the signal that the kill was operator-initiated from Orchestrator. Host-side terminations (logoff, OOM, service restart) would go Running → Faulted directly with no Stopping/Killing.",
   "Data": [
     {
       "State": "Pending",

@@ -1,6 +1,7 @@
 {
   "Result": "Success",
   "Code": "AuditTenantEvents",
+  "_doc": "Audit query returns the Job.Stop event matching the failing job key. The actor is 'System' (no human/service account identity) — eventDetails references the auto-cancel trigger name and the time budget that was exceeded. clientInfo is absent (system action).",
   "Data": {
     "auditEvents": [
       {

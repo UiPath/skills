@@ -1,6 +1,7 @@
 {
   "Result": "Success",
   "Code": "JobList",
+  "_doc": "Recent jobs in ForegroundDemo. The failing job (c0a1b2c3) was created while the earlier AttendedReportJob run (b0a1b2c3) was still Running — overlap is the key evidence for the foreground-already-running playbook.",
   "Data": [
     {
       "Key": "c0a1b2c3-d4e5-4678-9012-3456789abcde",

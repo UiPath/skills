@@ -1,6 +1,7 @@
 {
   "Result": "Success",
   "Code": "JobGet",
+  "_doc": "Legitimately-foreground AttendedReportJob job that was holding the slot when ExpenseValidation tried to start. By the time the agent fetches this, the job has completed normally.",
   "Data": {
     "Key": "e1f2a3b4-c5d6-4789-abcd-ef0123456789",
     "StartTime": "2026-05-13T14:20:30.000Z",

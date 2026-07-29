@@ -1,6 +1,7 @@
 {
   "Result": "Success",
   "Code": "JobList",
+  "_doc": "Recent Faulted jobs in UnattendedDemo. Three failures on RobotUser1 with identical 'Logon failed' error (0x0000052E) within ~25 minutes — same-user persistent failure pattern, classic branch 3 fingerprint.",
   "Data": [
     {
       "Key": "aabb1122-3344-5566-7788-99aabbccdd00",

@@ -167,14 +167,42 @@ def _err(payload: dict, code: int) -> int:
     return code
 
 
+def _has_doc_key(node: object) -> bool:
+    """True when any dict anywhere in `node` carries an `_`-prefixed key."""
+    if isinstance(node, dict):
+        if any(isinstance(k, str) and k.startswith("_") for k in node):
+            return True
+        return any(_has_doc_key(v) for v in node.values())
+    if isinstance(node, list):
+        return any(_has_doc_key(v) for v in node)
+    return False
+
+
+def _prune_doc_keys(node: object) -> object:
+    """Return `node` with every `_`-prefixed dict key removed, at any depth."""
+    if isinstance(node, dict):
+        return {
+            k: _prune_doc_keys(v)
+            for k, v in node.items()
+            if not (isinstance(k, str) and k.startswith("_"))
+        }
+    if isinstance(node, list):
+        return [_prune_doc_keys(v) for v in node]
+    return node
+
+
 def _strip_doc_keys(text: str) -> str:
-    """Drop top-level `_`-prefixed annotation keys (e.g. `_doc`, `_comment`) from a
+    """Drop `_`-prefixed annotation keys (e.g. `_doc`, `_comment`, `_meta`) from a
     JSON fixture before it is emitted as `uip` stdout.
 
     Fixtures carry maintainer annotations that often state the scenario's root
     cause. The real CLI never emits such keys, and returning them verbatim would
     leak the answer into the agent's evidence. Strip them so the mocked stdout
     matches the shape of a real response.
+
+    Recursive on purpose: annotations also appear nested inside the payload (a
+    `_meta` block hung off `Data`, for instance), which a top-level-only pass
+    would emit verbatim.
 
     Only re-serialize when such a key is actually present, so every other fixture
     (and any non-JSON body) passes through byte-for-byte unchanged.
@@ -183,13 +211,10 @@ def _strip_doc_keys(text: str) -> str:
         doc = json.loads(text)
     except (ValueError, TypeError):
         return text
-    if not isinstance(doc, dict) or not any(
-        isinstance(k, str) and k.startswith("_") for k in doc
-    ):
+    if not _has_doc_key(doc):
         return text
-    cleaned = {k: v for k, v in doc.items() if not (isinstance(k, str) and k.startswith("_"))}
     trailing = "\n" if text.endswith("\n") else ""
-    return json.dumps(cleaned, indent=2, ensure_ascii=False) + trailing
+    return json.dumps(_prune_doc_keys(doc), indent=2, ensure_ascii=False) + trailing
 
 
 def _cache_key(args: str) -> str:
@@ -313,7 +338,7 @@ def main(argv: list[str]) -> int:
     # 2. Unmocked default.
     default = manifest.get("unmocked_default")
     if isinstance(default, dict):
-        body = default.get("response", "")
+        body = _strip_doc_keys(default.get("response", ""))
         exit_code = int(default.get("exit_code", 0))
         sys.stdout.write(body)
         _log_call(args, None, exit_code, error="unmocked_default")

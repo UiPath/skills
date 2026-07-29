@@ -1,6 +1,7 @@
 {
   "Result": "Success",
   "Code": "JobLogs",
+  "_doc": "Execution logs end abruptly mid-Delay after exactly 10 minutes — no Job Completed line. Robot Service logs the auto-cancel trigger fire and the abrupt exit. The kill source is recorded as the trigger name.",
   "Data": [
     {
       "Level": "Error",
