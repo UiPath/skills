@@ -31,7 +31,7 @@ defaults:
     max_turns: 3
     stop_early: true
     # Scaled with max_turns: a row that legitimately uses all 3 turns (a true
-    # negative, or an unarmed codex/antigravity run) must have wall-clock room
+    # negative, or any unarmed run) must have wall-clock room
     # for them — a task_timeout below max_turns x turn_timeout silently drops
     # the row from every criterion denominator instead of grading it.
     task_timeout: 360
