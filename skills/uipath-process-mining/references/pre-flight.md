@@ -42,13 +42,66 @@ Rules:
   (`.nnn` for milliseconds).
 - **`IsNotNull` / `IsUnique` now default** per field (the CLI fills
   `{ Enabled: false, Severity: "warning" }` when omitted) — you no longer need to
-  hand-write them on every field.
+  hand-write them on every field. `data-mapping update` applies the same defaults,
+  so one mapping file works in both commands. Set them explicitly
+  (`{ Enabled: true, Severity: "error" }`) on `Case_ID`/`Activity`/`Event_end` when
+  you want a null there to fail the load rather than warn.
 - **Map risky columns as `text` and parse in SQL** (dates with odd formats,
   decimal-comma numbers). Only `Event_end` must be a real `datetime`. Unmapped
   columns still load under their raw source names and are usable as attributes.
 - **Multi-table apps**: add more `Tables[]` entries (Incidents, Interactions,
   Changes, …). All load; the template models only reference `Event_log`; your
   custom models `source('sources', '<Table>')` the rest and join on a shared key.
+
+## Fixing the mapping after the app exists
+
+A mapping mistake is **not** a reason to delete the app and start over. `apps
+data-mapping` reads and replaces the mapping of an existing app:
+
+```bash
+uip pm apps data-mapping get <app> --destination ./mapping.json   # download the current mapping
+#   ...edit: fix the DateTimeFormatString, move a column to the right TargetName, map one more column...
+uip pm apps data-mapping update <app> --file ./mapping.json       # ETag-guarded replace
+uip pm files upload <app> ./data.csv --input-table Event_log      # ONLY if the source columns changed
+uip pm ingestions create <app> --wait                             # the mapping applies to the NEXT ingestion
+```
+
+`get` without `--destination` inlines the mapping in the envelope as `Data.Mapping`
+(useful with `--output-filter`, e.g.
+`--output-filter "Mapping.Tables[0].Fields[].{Src:SourceName,Tgt:TargetName}"`).
+
+Facts worth not re-learning:
+
+- **A mapping change needs a re-ingest, not `transformations apply`.** `apply`
+  re-runs SQL over already-parsed data; the mapping governs *parsing*. Editing the
+  mapping and then running `apply` looks successful and changes nothing.
+- **`dev` only.** The backend allows `PUT` on the dev stage; `published` is
+  read-only, and the CLI restricts `update --stage` to `dev` up front.
+- **Concurrency is ETag-guarded.** `update` reads the current ETag and sends it as
+  `If-Match`, so you never pass one — but a concurrent edit (someone in the UI's
+  mapping editor) between read and write is rejected `409
+  UserError_ETagFileConflict`. Just re-run. `update` reports `Tables` (the mapped
+  table names) and `IngestionNeeded: true`, not an ETag; to confirm a write landed,
+  `get` again and diff — the `get` ETag is a **content checksum**, so re-pushing an
+  identical mapping leaves it unchanged.
+- **A table-less mapping is refused locally.** `{ "Tables": [] }` (or any file with
+  no usable table) fails `No tables found in …` before any API call, so a bad file
+  cannot overwrite and wipe the stored mapping.
+- **Either key casing works** — PascalCase (`{"Tables":[…]}`, what the recipe above
+  and `apps create --data-mapping` use) and the camelCase the API returns. Note
+  `get --destination` writes the API's response **verbatim**, so the downloaded file
+  is camelCase (`{"tables":[…]}`) while the envelope's `Data.Mapping` is PascalCased
+  like every other envelope — same document, two casings. Either can be fed back to
+  `update --file` or to `apps create --data-mapping` on another app.
+- **A structurally invalid mapping fails safe**: `400
+  UserError_DatapipelineBadRequest` / `INVALID_DATASOURCE_ARGUMENT`, and the stored
+  mapping is left untouched.
+- **An app id you can't see answers `403 UserError_NotAuthorized`, not `404`** —
+  don't read that as a permissions problem on the mapping itself; check the id with
+  `apps list`.
+- Reading the `published` stage of an app that was **never published** still
+  succeeds — you get the *template's* mapping with `ETag: W/"0"` and
+  `UseInLoad: false`. Don't mistake it for the app's real mapping.
 
 ## Other app types
 

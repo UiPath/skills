@@ -1,7 +1,7 @@
 ---
 name: uipath-process-mining
-description: "UiPath Process Mining via `uip pm` — build and operate a process app end-to-end from a CSV / event log: discover app templates, create an app with a data mapping, upload files, ingest, author the dbt (Snowflake) transformation layer, and query the result (aggregate group-by/metrics, details, percentiles, RCA, insights). Covers the `uipath.custom` event-log template, the `Cases.sql` optional-column gotcha, exposing custom analytical tables as Case-linked data-model tables (the add-table pattern + re-ingest; case-centric model; Tags/Due_dates for per-case labels/SLAs), the `query run --group-by/--metric` sugar, `--wait` on async ingest/transform, and the apply-not-reingest fix loop. For Orchestrator / Data Fabric / Integration Service→uipath-platform. For `.flow`/Maestro→uipath-maestro-flow. For IXP document models→uipath-ixp."
-when_to_use: "User mentions process mining, a process app, an event log, `uip pm`, mining a CSV/log, data ingestion into a process app, dbt/SQL transformations of a process app, steps-to-resolution / throughput / variant / rework analysis, or wants to query a process app (aggregate, details, percentile, root-cause, insights). Also 'build a process app from this data', 'ingest this log', 'fix my Cases.sql', 'why can't I query my custom table', 'add a table to the data model', 'group by X average Y in process mining'. For Orchestrator/queues/Data Fabric→uipath-platform; for a `.flow`→uipath-maestro-flow; for IXP/Document Understanding→uipath-ixp."
+description: "UiPath Process Mining via `uip pm` — build and operate a process app end-to-end from a CSV / event log: discover app templates, create an app with a data mapping, upload files, ingest, author the dbt (Snowflake) transformation layer, and query the result (aggregate group-by/metrics, details, percentiles, RCA, insights). Covers the `uipath.custom` event-log template, the `Cases.sql` optional-column gotcha, exposing custom analytical tables as Case-linked data-model tables (the add-table pattern + re-ingest; case-centric model; Tags/Due_dates for per-case labels/SLAs), the `query run --group-by/--metric` sugar, `--wait` on async ingest/transform, the apply-not-reingest fix loop, and fixing a wrong mapping in place with `apps data-mapping get|update` + re-ingest (no app rebuild). For Orchestrator / Data Fabric / Integration Service→uipath-platform. For `.flow`/Maestro→uipath-maestro-flow. For IXP document models→uipath-ixp."
+when_to_use: "User mentions process mining, a process app, an event log, `uip pm`, mining a CSV/log, data ingestion into a process app, dbt/SQL transformations of a process app, steps-to-resolution / throughput / variant / rework analysis, or wants to query a process app (aggregate, details, percentile, root-cause, insights). Also 'build a process app from this data', 'ingest this log', 'fix my Cases.sql', 'why can't I query my custom table', 'add a table to the data model', 'group by X average Y in process mining', 'fix/change/read my data mapping', 'wrong date format in the mapping', 'do I have to recreate the app to change the mapping'. For Orchestrator/queues/Data Fabric→uipath-platform; for a `.flow`→uipath-maestro-flow; for IXP/Document Understanding→uipath-ixp."
 allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
@@ -11,7 +11,7 @@ Build and operate a UiPath Process Mining process app end-to-end from the termin
 
 **This works for every app type**, not just `uipath.custom`: the pipeline (mapping → upload → ingest → transform → data model → query) is identical across the `uipath.custom` event-log template and the source-system templates (P2P / O2C / IM / AP / … on SAP, Oracle, NetSuite, ServiceNow, Salesforce, …). Only **what the data mapping / extract must contain** differs. See [`references/app-types.md`](references/app-types.md).
 
-The command groups: `uip pm app-types` (templates), `apps` (create/list/delete), `files` (upload), `ingestions` (create/logs), `transformations` (list/get/create/update/apply/run/status/logs — the dbt dev loop), and `query` (run/details/percentile/rca/insights/info/layout).
+The command groups: `uip pm app-types` (templates), `apps` (create/list/delete + `data-mapping get|update` — read/replace the input mapping of an existing app), `files` (upload), `ingestions` (create/logs), `transformations` (list/get/create/update/apply/run/status/logs — the dbt dev loop), and `query` (run/details/percentile/rca/insights/info/layout).
 
 ## When to Use This Skill
 
@@ -47,13 +47,15 @@ The **ELT editor** is the `transformations` command group operating on the dbt (
 
 4. **After a transform-only failure, `apply` — don't re-ingest.** The data is already loaded. Fix SQL (`transformations get` → edit → `transformations update`/`create`) then `transformations apply` (re-transforms loaded data). Re-ingest only when the raw data or the mapping/parse settings change.
 
-5. **Use `--wait` on async commands.** `ingestions create --wait` and `transformations apply --wait` block to a terminal state, print the dbt/loader error on failure, and exit non-zero — no hand-rolled `apps list` poll loop.
+5. **A wrong data mapping does NOT mean recreating the app — fix it in place with `apps data-mapping`.** The mapping is not create-only: `uip pm apps data-mapping get <app> --destination ./mapping.json` → edit → `uip pm apps data-mapping update <app> --file ./mapping.json` replaces it on an existing app (ETag-guarded; the command reads the ETag itself, and refuses a table-less file rather than wiping the stored mapping). Unlike a SQL fix (Rule 4), a **mapping** change is a parse-setting change, so it takes effect only on the **next ingestion** — re-`files upload` if the source columns changed, then `ingestions create`. Only `dev` is writable (`published` is read-only). Facts + failure modes in [`references/pre-flight.md`](references/pre-flight.md).
 
-6. **Query field ids come from `query info`, not column names.** `query run`/`percentile` bodies take the hashed `F__<Table>__<Col>__<hash>` ids. Prefer the sugar: `query run <app> --group-by <col> --metric <col>:<fn>` resolves human names for you (fn ∈ `average|count|sum|min|max`).
+6. **Use `--wait` on async commands.** `ingestions create --wait` and `transformations apply --wait` block to a terminal state, print the dbt/loader error on failure, and exit non-zero — no hand-rolled `apps list` poll loop.
 
-7. **Develop on `dev` with a data subset; publish the full dataset.** The `dev` stage is for iterating on the mapping and transformations — keep it fast by loading a **small representative subset** of the data. Once the model is right, **publish** so the **published** stage carries the **full** dataset for real analysis and sharing. Query/transform against `--stage dev` while developing; point consumers at `--stage published`.
+7. **Query field ids come from `query info`, not column names.** `query run`/`percentile` bodies take the hashed `F__<Table>__<Col>__<hash>` ids. Prefer the sugar: `query run <app> --group-by <col> --metric <col>:<fn>` resolves human names for you (fn ∈ `average|count|sum|min|max`).
 
-8. **RBAC is folder/role-based at the platform layer, not the process app itself.** A process app lives in a folder; who can view vs. edit vs. publish is governed by Orchestrator/Identity roles and folder assignments — configure it with [`uipath-admin`](/uipath:uipath-admin) (roles, role assignments, effective-access) and [`uipath-platform`](/uipath:uipath-platform) (folders). See [`references/lifecycle-and-rbac.md`](references/lifecycle-and-rbac.md). `uip pm` itself does not grant access.
+8. **Develop on `dev` with a data subset; publish the full dataset.** The `dev` stage is for iterating on the mapping and transformations — keep it fast by loading a **small representative subset** of the data. Once the model is right, **publish** so the **published** stage carries the **full** dataset for real analysis and sharing. Query/transform against `--stage dev` while developing; point consumers at `--stage published`.
+
+9. **RBAC is folder/role-based at the platform layer, not the process app itself.** A process app lives in a folder; who can view vs. edit vs. publish is governed by Orchestrator/Identity roles and folder assignments — configure it with [`uipath-admin`](/uipath:uipath-admin) (roles, role assignments, effective-access) and [`uipath-platform`](/uipath:uipath-platform) (folders). See [`references/lifecycle-and-rbac.md`](references/lifecycle-and-rbac.md). `uip pm` itself does not grant access.
 
 ## Quick Start — CSV → queryable process app
 
@@ -77,6 +79,13 @@ uip pm transformations get <appId> models/Cases.sql --destination Cases.sql
 uip pm transformations update <appId> models/Cases.sql --file Cases.sql
 uip pm transformations apply <appId> --wait
 
+# 4b. If the MAPPING was wrong instead (bad date format, column on the wrong
+#     target field) — fix it in place, do NOT recreate the app (Rule 5)
+uip pm apps data-mapping get <appId> --destination mapping.json
+#   ...edit...
+uip pm apps data-mapping update <appId> --file mapping.json
+uip pm ingestions create <appId> --wait          # a mapping change needs a re-ingest
+
 # 5. Query it
 uip pm query info <appId>                                   # discover fields/metrics
 uip pm query run  <appId> --group-by Service_Component --metric Event_count:average --output table
@@ -91,7 +100,7 @@ The killer use case is your own SQL. Add analytical dbt models with `transformat
 | File | Read when |
 |------|-----------|
 | [`references/app-types.md`](references/app-types.md) | choosing/targeting a template — custom vs source-system, why the pipeline is the same for all, what the mapping/extract must contain per family |
-| [`references/pre-flight.md`](references/pre-flight.md) | before any upload — encoding/delimiter/date-format/empty-row checks and the minimal `mapping.json` recipe |
+| [`references/pre-flight.md`](references/pre-flight.md) | before any upload — encoding/delimiter/date-format/empty-row checks and the minimal `mapping.json` recipe; **also** the post-create mapping fix loop (`apps data-mapping get`/`update`) and its failure modes |
 | [`references/transformations.md`](references/transformations.md) | authoring/fixing dbt models — the `Cases.sql` patch, apply-vs-run, pm_utils macros, Snowflake identifier quoting |
 | [`references/data-model.md`](references/data-model.md) | exposing a custom table to `query`/dashboards — the case-centric add-table pattern (DataModelDto + re-ingest) and the Tags/Due_dates decision table |
 | [`references/querying.md`](references/querying.md) | pulling numbers out — the aggregate body AST, the `--group-by/--metric` sugar, the `AggregationFunction` enum, and the event-table restriction |
@@ -103,8 +112,10 @@ The killer use case is your own SQL. Add analytical dbt models with `transformat
 - **Adding a data-model table with no link to `Cases`** — it registers but every query fails `UserError_TableIsDeleted`. Give a standalone table a surrogate PK + nullable `Case_ID` FK to `Cases` (Rule 1).
 - **Forgetting to re-ingest after `add-table`.** The data-model edit is inert until the next `ingestions create` re-materializes the tables (Rule 1).
 - **Re-uploading + re-ingesting after a transform-only failure.** The data is loaded; fix the SQL and `transformations apply`. Re-ingest only when raw data or parse settings change (Rule 4).
-- **Hand-rolling an `apps list` poll loop.** Use `--wait` on `ingestions create` / `transformations apply` (Rule 5).
-- **Passing column names in a raw `query run` body**, or hand-writing the aggregate AST. Bodies take hashed field ids from `query info`; use the `--group-by/--metric` sugar (Rule 6).
+- **Deleting and recreating an app to fix a mapping mistake** (or telling the user that's the only option). The mapping is editable after creation — `apps data-mapping get`/`update` (Rule 5). Recreating also throws away the transformations you already patched.
+- **`transformations apply` after a mapping change.** `apply` only re-runs SQL over *already-parsed* data; a new mapping changes how the raw file is parsed, so it needs `ingestions create` (Rule 5). This is the mirror of Rule 4 — get the direction wrong and the edit silently appears to do nothing.
+- **Hand-rolling an `apps list` poll loop.** Use `--wait` on `ingestions create` / `transformations apply` (Rule 6).
+- **Passing column names in a raw `query run` body**, or hand-writing the aggregate AST. Bodies take hashed field ids from `query info`; use the `--group-by/--metric` sugar (Rule 7).
 - **Patching `Cases.sql` on a source-system template.** That gotcha is `uipath.custom`-only; source templates ship correct transformations — feed the expected extract and extend, don't rewrite (Rule 3).
 - **Using a source template for a single flat log** (or `uipath.custom` for a full multi-table extract). Match the template to the data shape (Rule 2).
-- **Iterating on the full dataset.** Develop on `dev` with a small subset; publish the full data (Rule 7).
+- **Iterating on the full dataset.** Develop on `dev` with a small subset; publish the full data (Rule 8).
