@@ -70,7 +70,7 @@ uip tm testcases list --project-key <PROJECT_KEY> --output json
 - Expect exactly `TestCount` new test cases (from Step 1), typically within 1–2 minutes. `TestCount` is one per Playwright **test**, NOT multiplied by the number of Playwright projects (2 tests × 2 projects → 2 test cases).
 - Ingested test cases show `IsAutomated: false` in list output — that is normal and does not mean ingestion failed; the package linkage is real (their execution logs carry `HasLinkedAutomation: true` and Orchestrator job keys).
 - Poll every ~10 seconds, up to ~3 minutes. If nothing appears by then, STOP and report — the likely causes are the Playwright feature flag being off for the tenant or a wrong `--project-key`; both need the user, not retries.
-- Verify the labels landed: `uip tm objectlabel list --project-key <PROJECT_KEY> --object-type TestCase --filter PW_ --output json`.
+- Spot-check the labels landed: `uip tm objectlabel list --project-key <PROJECT_KEY> --object-type TestCase --filter PW_ --output json` (returns distinct label *names* only — enough to confirm ingestion labeled things, not which test case carries which label).
 
 ## Step 4 — Create a test set and fill it by label
 
@@ -83,6 +83,7 @@ uip tm testcases add --test-set-key <TEST_SET_KEY> --labels PW_Tag_smoke PW_Proj
 - `--labels` is variadic and space-separated (quote names that contain spaces). Matching is **OR across labels, exact, and case-sensitive** — discover the real names first with `uip tm objectlabel list` rather than guessing.
 - `--labels` works with any object label; the `PW_*` labels are simply what ingestion applies.
 - Mutually exclusive with `--test-case-keys`; pass exactly one of the two.
+- **Labels select *tests*; `--playwright-projects` selects *browsers*.** Filling by `PW_Project_firefox` picks every test that runs in the firefox project (often all of them); it does not make the run firefox-only — that is what the run flag in Step 6 does. To "run only <project>", label-fill by whatever identifies the tests you want (tag, suite, file) and pass the project name to `--playwright-projects`.
 - **Keep one test set = one Playwright package.** Per-project selection (Step 6) requires every test case in the set to come from a single Playwright package; label-filling across packages produces a set that cannot be project-scoped.
 
 ## Step 5 — Probe the Playwright context (recommended)
@@ -131,7 +132,9 @@ Execution happens on UiPath serverless cloud runtimes — no robot, machine, or 
 A run that never leaves `Pending` almost always means dispatch worked but nothing is executing the jobs — the tenant has no serverless Playwright runtime (or no capacity). Triage before waiting out the full 30-minute timeout:
 
 1. `uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json` — test case logs carrying Orchestrator `JobKey` values prove dispatch happened; the problem is downstream of Test Manager.
-2. Still all-`Pending` with JobKeys after ~5 minutes → STOP and report that the tenant lacks a serverless Playwright runtime. This needs the user/platform team; retrying, re-running, or re-uploading will not help.
+2. Check the dispatched jobs themselves: `uip or jobs list --folder-key <FOLDER_KEY> --output json` (a folder flag or `--all-folders` is required). Jobs `Faulted` with an empty `HostMachineName`/`MachineKey` = nothing can execute them — the tenant lacks a serverless Playwright runtime (or capacity).
+3. **A faulted job may never sync back** — Test Manager can stay `Pending` indefinitely even though the jobs are already dead, so do not sit out the 30-minute `--wait`; run the two checks above after ~5 minutes of `Pending`.
+4. Faulted/missing-runtime → STOP and report to the user/platform team. Retrying, re-running, or re-uploading will not help. There is no CLI cancel verb for a Test Manager execution — leave the execution as-is and note it in your report (`uip or jobs stop` can stop *pending/running* Orchestrator jobs, but does nothing for already-faulted ones).
 
 ## Iterating on the suite
 
