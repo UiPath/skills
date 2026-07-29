@@ -194,7 +194,7 @@ ORG_ID=$(grep '^UIPATH_ORGANIZATION_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
 uip gov compliance-packs state coverage tenant $TENANT_ID <packId> --output json
 uip gov compliance-packs state enable  tenant $TENANT_ID <packId> --output json
 uip gov compliance-packs state disable tenant $TENANT_ID <packId> --output json
-uip gov compliance-packs state restore tenant $TENANT_ID <packId> --output json
+uip gov compliance-packs state restore tenant $TENANT_ID <packId> --output json  # overwrites live policies — confirm with user first (restore/impl.md)
 uip gov compliance-packs state get    tenant $TENANT_ID <packId> --output json
 uip gov compliance-packs state list   tenant $TENANT_ID          --output json
 

@@ -18,7 +18,7 @@ uip gov compliance-packs state get tenant $TENANT_ID <packId> --output json
 Decide from the `state get` result:
 - **Not active** — a successful response with `Data.active == false`, or a 404: the standard isn't configured, so there is nothing to restore. Reply "<packName> is not currently configured on this tenant — enable it first with `state enable`." and stop.
 - **Active** — `Data.active == true`: proceed.
-- **State could not be read** — `state get` failed with an auth/connection error (401 / 5xx) so `active` is unknown: do NOT claim a state. Proceed to the restore step and report whatever error that call surfaces. (A **403** → preview gate: see [preview-gate.md](../preview-gate.md).)
+- **State could not be read** — `state get` failed with an auth/connection error (401 / 5xx) so `active` is unknown: do NOT claim a state. Proceed to Confirmation, then the restore step, and report whatever error the restore call surfaces. (A **403** → preview gate: see [preview-gate.md](../preview-gate.md).)
 
 ## Confirmation
 
@@ -28,7 +28,7 @@ This will reset all <packName> recommended settings on <tenantName> back to the 
 Are you sure? (y/n)
 ```
 
-Require `y`. Halt on anything else.
+Ask, then STOP — end your reply. Never run `state restore` in the same response as this question. Proceed only on an explicit `y` in the user's next message; halt on anything else. The user's original request ("reset my settings") is intent, not consent. Sole exception: the user explicitly waived confirmation in advance (e.g., "don't ask for confirmation") — treat the waiver as `y`.
 
 ## Restore
 
