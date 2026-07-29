@@ -18,8 +18,8 @@ Usage:
     python3 scripts/check-troubleshoot-tasks.py <path> ...         # scan given roots/files
 
 Exit codes:
-    0 — every scenario and the generator template satisfy the contract
-    1 — one or more violations (paths + fix hints printed, annotated in CI)
+    0 - every scenario and the generator template satisfy the contract
+    1 - one or more violations (paths + fix hints printed, annotated in CI)
 """
 
 from __future__ import annotations
@@ -69,17 +69,32 @@ class Violation:
 
 def _rel(path: Path) -> str:
     try:
-        return str(path.resolve().relative_to(REPO_ROOT)).replace("\\", "/")
+        return path.resolve().relative_to(REPO_ROOT).as_posix()
     except ValueError:
-        return str(path)
+        # Still POSIX: the GitHub annotation format requires forward slashes.
+        return path.as_posix()
 
 
-def _line_of(text: str, pattern: str) -> int:
-    """1-indexed line of the first match of `pattern`, or 0 when absent."""
-    rx = re.compile(pattern)
-    for n, line in enumerate(text.splitlines(), start=1):
-        if rx.search(line):
-            return n
+def _line_of(text: str, patterns: str | list[str], section: str | None = None) -> int:
+    """1-indexed line for an annotation, or 0 when nothing matches.
+
+    `patterns` is tried in order, so a specific anchor beats a generic fallback -
+    a single alternated regex cannot do this, because a top-down line scan
+    returns whichever alternative appears first in the file.
+
+    `section` restricts the search to lines at or after that anchor, so
+    `max_turns:` under `simulation:` is not reported at the `run_limits:` one.
+    """
+    lines = text.splitlines()
+    start = 0
+    if section:
+        rx = re.compile(section)
+        start = next((n for n, line in enumerate(lines) if rx.search(line)), 0)
+    for pattern in [patterns] if isinstance(patterns, str) else patterns:
+        rx = re.compile(pattern)
+        for offset, line in enumerate(lines[start:]):
+            if rx.search(line):
+                return start + offset + 1
     return 0
 
 
@@ -105,12 +120,18 @@ def _criteria(doc: dict, ctype: str) -> list[dict]:
     ]
 
 
-def _check(doc: dict, text: str, path: Path, contract: dict) -> list[Violation]:
-    """Validate one parsed scenario against the contract."""
+def _check(doc: dict, text: str, path: Path, contract: dict, locate: bool = True) -> list[Violation]:
+    """Validate one parsed scenario against the contract.
+
+    `locate=False` suppresses line lookup: for the rendered generator template,
+    a line number would refer to the rendered YAML while the annotation points at
+    the .py file, so no number is better than a wrong one.
+    """
     out: list[Violation] = []
 
-    def fail(pattern: str, message: str, hint: str) -> None:
-        out.append(Violation(path, _line_of(text, pattern), message, hint))
+    def fail(pattern: str | list[str], message: str, hint: str, section: str | None = None) -> None:
+        line = _line_of(text, pattern, section) if locate else 0
+        out.append(Violation(path, line, message, hint))
 
     # --- simulation ---------------------------------------------------------
     sim = doc.get("simulation")
@@ -122,7 +143,7 @@ def _check(doc: dict, text: str, path: Path, contract: dict) -> list[Violation]:
             fail(r"^simulation:", "`simulation.enabled` is not true", "Set `enabled: true`.")
         mt = sim.get("max_turns")
         if not (isinstance(mt, int) and mt > 0):
-            fail(r"max_turns:", f"`simulation.max_turns` must be a positive int (found {mt!r})", "Set `max_turns: 6`.")
+            fail([r"max_turns:", r"^simulation:"], f"`simulation.max_turns` must be a positive int (found {mt!r})", "Set `max_turns: 6`.", section=r"^simulation:")
 
     constraints = sim.get("constraints")
     if not isinstance(constraints, list) or not constraints:
@@ -153,7 +174,7 @@ def _check(doc: dict, text: str, path: Path, contract: dict) -> list[Violation]:
             fail(
                 rf"type:\s*{req}",
                 f"criterion `type: {req}` appears {count} times, must appear exactly once",
-                "Every copy is graded by the harness. Delete the duplicate — keep one canonical criterion.",
+                "Every copy is graded by the harness. Delete the duplicate - keep one canonical criterion.",
             )
     for extra in dict.fromkeys(t for t in types if t not in sc["allowed_types"]):
         if extra in sc["forbidden_types"]:
@@ -177,16 +198,16 @@ def _check(doc: dict, text: str, path: Path, contract: dict) -> list[Violation]:
     for judge in _criteria(doc, "llm_judge"):
         for key in jc["require_true"]:
             if judge.get(key) is not True:
-                # A missing key has no line of its own — anchor on the criterion.
-                fail(rf"{key}:|-\s*type:\s*llm_judge", f"`llm_judge.{key}` must be true", f"Set `{key}: true` — {JUDGE_FLAG_HINTS.get(key, 'required by the contract')}.")
+                # A missing key has no line of its own - anchor on the criterion.
+                fail([rf"^\s+{key}:", r"-\s*type:\s*llm_judge"], f"`llm_judge.{key}` must be true", f"Set `{key}: true` - {JUDGE_FLAG_HINTS.get(key, 'required by the contract')}.", section=r"-\s*type:\s*llm_judge")
         for key in jc["forbidden_keys"]:
             # Presence, not truthiness: `files: []` and `files: null` are still
             # the forbidden key.
             if key in judge:
-                fail(rf"^\s+{key}:", f"`llm_judge.{key}` is forbidden", "The judge grades the presented diagnosis, not internal artifacts.")
+                fail(rf"^\s+{key}:", f"`llm_judge.{key}` is forbidden", "The judge grades the presented diagnosis, not internal artifacts.", section=r"-\s*type:\s*llm_judge")
         for key in ("weight", "pass_threshold"):
             if judge.get(key) != jc[key]:
-                fail(rf"{key}:", f"`llm_judge.{key}` must be {jc[key]} (found {judge.get(key)!r})", f"Set `{key}: {jc[key]}` — the judge shape is uniform across the suite.")
+                fail([rf"^\s+{key}:", r"-\s*type:\s*llm_judge"], f"`llm_judge.{key}` must be {jc[key]} (found {judge.get(key)!r})", f"Set `{key}: {jc[key]}` - the judge shape is uniform across the suite.", section=r"-\s*type:\s*llm_judge")
 
     # --- structure ----------------------------------------------------------
     stc = contract["structure"]
@@ -198,19 +219,20 @@ def _check(doc: dict, text: str, path: Path, contract: dict) -> list[Violation]:
     ref = doc.get("reference")
     ref_file = ref.get("file") if isinstance(ref, dict) else None
     if ref_file != stc["reference_file"]:
-        fail(r"^reference:|^task_id:", f"`reference.file` must be {stc['reference_file']!r} (found {ref_file!r})", f"Point `reference.file` at {stc['reference_file']} — the judge reads it.")
+        fail([r"^reference:", r"^task_id:"], f"`reference.file` must be {stc['reference_file']!r} (found {ref_file!r})", f"Point `reference.file` at {stc['reference_file']} - the judge reads it.")
 
     sandbox = doc.get("sandbox")
     mpd = sandbox.get("mock_path_dirs") if isinstance(sandbox, dict) else None
     if mpd != stc["mock_path_dirs"]:
-        fail(r"mock_path_dirs:|^sandbox:", f"`sandbox.mock_path_dirs` must be {stc['mock_path_dirs']} (found {mpd!r})", "Without it bare `uip` resolves to the real CLI and the run tries to authenticate.")
+        fail([r"mock_path_dirs:", r"^sandbox:"], f"`sandbox.mock_path_dirs` must be {stc['mock_path_dirs']} (found {mpd!r})", "Without it bare `uip` resolves to the real CLI and the run tries to authenticate.")
 
     for key in stc.get("forbidden_sandbox_keys") or []:
         if isinstance(sandbox, dict) and key in sandbox:
             fail(
                 rf"^\s+{key}:",
                 f"`sandbox.{key}` is forbidden (found {sandbox[key]!r})",
-                f"Delete the `{key}` line — the run environment decides it, not the task.",
+                f"Delete the `{key}` line - the run environment decides it, not the task.",
+                section=r"^sandbox:",
             )
 
     if stc["require_run_limits"] and not isinstance(doc.get("run_limits"), dict):
@@ -232,7 +254,7 @@ def _render_generator_template(contract: dict) -> tuple[str, Path] | Violation:
     hint = (
         f"The contract points `generator_template` at {gt['path']}:{symbol}.\n"
         "    Update the contract if the generator moved, or keep the template a plain\n"
-        "    string literal — the generator must stay contract-validated."
+        "    string literal - the generator must stay contract-validated."
     )
     if not path.is_file():
         return Violation(path, 0, f"generator template file not found: {gt['path']}", hint)
@@ -315,7 +337,7 @@ def main(argv: list[str]) -> int:
         try:
             doc = yaml.safe_load(text)
             checked_template = True
-            violations.extend(_check(doc, text, gen_path, contract))
+            violations.extend(_check(doc, text, gen_path, contract, locate=False))
         except yaml.YAMLError as exc:
             violations.append(
                 Violation(gen_path, 0, f"generator template does not render to valid YAML: {exc.__class__.__name__}", "Fix the template or update TEMPLATE_FILLERS in this script.")
@@ -323,14 +345,16 @@ def main(argv: list[str]) -> int:
 
     scope = f"{len(scenarios)} scenario(s)" + (" + the generator template" if checked_template else "")
     if not violations:
-        print(f"OK — {scope} satisfy the troubleshoot scenario contract.")
+        print(f"OK - {scope} satisfy the troubleshoot scenario contract.")
         return 0
 
-    print(f"FAIL — {len(violations)} contract violation(s) across {scope}:\n")
+    print(f"FAIL - {len(violations)} contract violation(s) across {scope}:\n")
     for v in violations:
         rel = _rel(v.path)
         loc = f"{rel}:{v.line}" if v.line else rel
-        print(f"::error file={rel},line={v.line}::{v.message}")
+        # GitHub annotations are 1-based; omit the key rather than emit line=0.
+        anchor = f",line={v.line}" if v.line else ""
+        print(f"::error file={rel}{anchor}::{v.message}")
         print(f"  {loc}\n    {v.message}\n    Fix: {v.hint}")
     print(f"\nContract: {_rel(CONTRACT_PATH)}")
     return 1

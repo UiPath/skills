@@ -37,7 +37,7 @@ success_criteria:
   required_types:
     - skill_triggered
     - llm_judge
-  # Whitelist — anything outside this list is a violation, so a criterion type
+  # Whitelist - anything outside this list is a violation, so a criterion type
   # nobody has vetted (run_command, json_check, ...) cannot slip in.
   # command_not_executed is allowed because one scenario asserts the agent
   # performed no mutation under a read-only instruction: that grades a
