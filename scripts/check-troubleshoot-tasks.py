@@ -205,6 +205,14 @@ def _check(doc: dict, text: str, path: Path, contract: dict) -> list[Violation]:
     if mpd != stc["mock_path_dirs"]:
         fail(r"mock_path_dirs:|^sandbox:", f"`sandbox.mock_path_dirs` must be {stc['mock_path_dirs']} (found {mpd!r})", "Without it bare `uip` resolves to the real CLI and the run tries to authenticate.")
 
+    for key in stc.get("forbidden_sandbox_keys") or []:
+        if isinstance(sandbox, dict) and key in sandbox:
+            fail(
+                rf"^\s+{key}:",
+                f"`sandbox.{key}` is forbidden (found {sandbox[key]!r})",
+                f"Delete the `{key}` line — the run environment decides it, not the task.",
+            )
+
     if stc["require_run_limits"] and not isinstance(doc.get("run_limits"), dict):
         fail(r"^task_id:", "no `run_limits:` block", "Add run_limits (task_timeout / max_turns / turn_timeout).")
 
