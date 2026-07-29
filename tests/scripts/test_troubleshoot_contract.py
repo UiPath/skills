@@ -317,13 +317,34 @@ def test_pre_run_without_the_seal_command_is_caught(tmp_path):
 @pytest.mark.parametrize("mutation", [
     lambda t: t.replace("\n    fail_on_error: true", "", 1),
     lambda t: t.replace("    fail_on_error: true", "    fail_on_error: false", 1),
+    # A YAML string, not a bool: the harness's truthiness for it is
+    # unspecified, so the checker's `is not True` must reject it.
+    lambda t: t.replace("    fail_on_error: true", '    fail_on_error: "true"', 1),
 ])
 def test_seal_not_aborting_on_failure_is_caught(tmp_path, mutation):
-    """fail_on_error false or missing lets a failed seal restore the leak silently."""
+    """fail_on_error false, missing, or string-typed lets a failed seal restore
+    the leak silently."""
     directory = _scenario(tmp_path, mutation)
     code, out = _run(directory)
     assert code == 1
     assert "fail_on_error" in out
+
+
+SEAL_ITEM = '  - command: "python m/seal"\n    timeout: 60\n    fail_on_error: true'
+
+
+@pytest.mark.parametrize("replacement", [
+    # pre_run as a mapping instead of a list of steps.
+    '  command: "python m/seal"\n  timeout: 60\n  fail_on_error: true',
+    # The step as a plain string entry instead of a mapping.
+    '  - "python m/seal"',
+])
+def test_malformed_pre_run_shape_is_caught(tmp_path, replacement):
+    """A shape the harness would not run as the seal step must read as missing."""
+    directory = _scenario(tmp_path, lambda t: t.replace(SEAL_ITEM, replacement, 1))
+    code, out = _run(directory)
+    assert code == 1
+    assert "seal-mock-store" in out
 
 
 def test_duplicate_seal_step_carrying_violations_is_caught(tmp_path):
@@ -341,6 +362,18 @@ def test_extra_pre_run_step_passes(tmp_path):
     directory = _scenario(tmp_path, lambda t: t.replace("\nreference:", "\n" + extra + "\nreference:", 1))
     code, out = _run(directory)
     assert code == 0, out
+
+
+def test_generator_template_without_the_seal_is_caught(tmp_path):
+    """The template half of the gate: a generator that stops emitting the seal
+    step must fail, annotated on the generator file. The TEMPLATE_MUTATIONS
+    above only exercise render-machinery failures; this one renders fine and
+    violates the contract."""
+    source = GENERATOR_SOURCE.replace('- command: "python m/seal"', '- command: "echo noop"', 1)
+    code, out = _run_in(_fake_repo(tmp_path, source))
+    assert code == 1
+    assert "seal-mock-store" in out
+    assert "generate_scenario.py" in out
 
 
 # --- Unit-level: pattern ordering in the annotation locator -----------------
