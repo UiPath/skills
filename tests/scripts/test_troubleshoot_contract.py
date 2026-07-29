@@ -280,6 +280,31 @@ def test_judge_weight_is_annotated_on_the_judge_weight_line(tmp_path):
 
 # --- Low: a scalar tags value satisfied the membership test by substring ----
 
+def test_missing_mode_tag_is_caught(tmp_path):
+    """`mode:*` is what --tags mode:diagnose runs select on; without it a
+    scenario is silently absent from those runs."""
+    directory = _scenario(
+        tmp_path,
+        lambda t: t.replace(
+            "tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]",
+            "tags: [uipath-troubleshoot, rpa, e2e]",
+            1,
+        ),
+    )
+    code, out = _run(directory)
+    assert code == 1
+    assert "missing required tag `mode:diagnose`" in out
+
+
+def test_generator_template_emits_the_mode_tag(tmp_path):
+    """The generator omitted mode:* for the suite's whole history - humans added
+    it by hand to all 297 scenarios."""
+    source = GENERATOR_SOURCE.replace(", mode:diagnose, faithful-replay]", ", faithful-replay]", 1)
+    code, out = _run_in(_fake_repo(tmp_path, source))
+    assert code == 1
+    assert "missing required tag `mode:diagnose`" in out
+
+
 def test_scalar_tags_is_caught(tmp_path):
     directory = _scenario(
         tmp_path,

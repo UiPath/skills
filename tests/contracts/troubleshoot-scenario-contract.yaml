@@ -76,8 +76,12 @@ success_criteria:
       - files
 
 structure:
+  # mode:* is required on every coder-eval task (.claude/rules/test-writing.md);
+  # every scenario is a diagnosis. It is also what `--tags mode:diagnose` runs
+  # select on, so a scenario missing it is silently absent from those runs.
   required_tags:
     - uipath-troubleshoot
+    - mode:diagnose
   reference_file: RESOLUTION.md
   # Prepends ./m to PATH so bare `uip` resolves to the mock dispatcher instead
   # of the real CLI (which would try to authenticate).
