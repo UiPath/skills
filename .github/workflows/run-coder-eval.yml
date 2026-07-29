@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       task_globs:
-        description: 'REQUIRED. Space-separated globs under tests/. E.g. tasks/uipath-agents/**/*.yaml. WARNING: serialize dispatches touching uipath-test customfield_*, organize_testcases_into_testsets, or link_automation_and_run — concurrent dispatches sweep each other''s shared-tenant fixtures (see caveat below).'
+        description: 'REQUIRED. Space-separated globs under tests/. E.g. tasks/uipath-agents/**/*.yaml'
         type: string
         required: true
       # Host-level concurrency for the Linux job's `coder-eval -j`. Default 4:
@@ -65,15 +65,6 @@ on:
 
 # No concurrency group: this is a manual, on-demand workflow — allow any number
 # of runs (e.g. the same task across claude / codex / antigravity) at once.
-# CAVEAT — serialize dispatches of uipath-test tasks with name-scoped sweeps:
-# customfield_definition_crud_smoke, customfield_population_integration,
-# organize_testcases_into_testsets, and link_automation_and_run delete shared
-# HEALTH/CLAIM fixtures BY FIXED NAME in pre_run/post_run, so two concurrent
-# dispatches of the same task delete each other's in-flight fixtures
-# (duplicate/not-found failures that corrupt comparisons). Run multi-agent
-# comparisons of these tasks one dispatch at a time. (requirement_crud_smoke
-# is concurrency-safe — UUID-scoped ops; flaky_tests_analysis at worst
-# double-seeds surplus executions, which stays flaky and harmless.)
 jobs:
   partition:
     runs-on: ubuntu-latest
