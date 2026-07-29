@@ -1,6 +1,6 @@
 ---
 name: uipath-mcp-servers
-description: "UiPath AgentHub MCP server registration + tool authoring via `uip agenthub mcp` (six server types: uipath / coded / command / remote / platform / swagger) and `uip agenthub mcp-tools` (two tool kinds: resource / raw on `uipath`-type servers). For Python MCP servers / coded-agent integration→uipath-agents. For raw IS CLI→uipath-platform."
+description: "UiPath AgentHub MCP server registration + resource-tool authoring via `uip agenthub mcp` (six server types: uipath / coded / command / remote / platform / swagger) and `uip agenthub mcp-tools` on `uipath`-type servers. For Python MCP servers / coded-agent integration→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -13,8 +13,8 @@ Register AgentHub MCP servers via `uip agenthub mcp`. Author tools on `uipath`-t
 ## When to Use This Skill
 
 - Create / update / delete / refresh / list / get an AgentHub MCP server (any of: `uipath`, `coded`, `command`, `remote`, `swagger`, `platform`).
-- Author / list / get / enable / disable / delete tools on a `uipath`-type server (`resource`, `raw`).
-- Skip: Python MCP server implementation (FastMCP / `@uipath/mcp`) → `uipath-agents`. Raw IS CLI outside MCP tooling → `uipath-platform`.
+- Author resource tools on a `uipath`-type server; list / get / enable / disable / delete its tools.
+- Skip: Python MCP server implementation (FastMCP / `@uipath/mcp`) → `uipath-agents`.
 
 ## Trust the CLI
 
@@ -22,7 +22,7 @@ The CLI is the source of truth for shapes and flags. Use it instead of guessing:
 
 - `uip agenthub mcp create <type> --print-schema --output json` — payload shape for any server type.
 - `uip agenthub mcp template <type> --output json` — ready-to-edit `--file` skeleton.
-- `uip agenthub mcp-tools template <kind> --output json` — tool payload skeleton (`resource` / `raw`).
+- `uip agenthub mcp-tools template resource --output json` — resource-tool payload skeleton.
 - `uip agenthub mcp-tools candidates --category <kind> --output json` — discover bindable targets. `<kind>` ∈ `automation | agent | agentic-process | api-workflow`.
 - `--output-filter <JMESPath>` on every command — extract specific fields without walking JSON by hand (e.g. `--output-filter "Data.items[].slug" --output plain`).
 - `--dry-run` on every mutating call — resolve and inspect the body before POST. Note: `--dry-run` skips some server-side validation, so a clean dry-run is not a guaranteed real POST.
@@ -40,7 +40,7 @@ These are the things the CLI does not advertise in `--help`.
 4. **`refresh-tools` behavior depends on server type.**
    - `coded` / `command` — async, returns HTTP 202 + runtime id. Surface the runtime id; never claim refreshed before a follow-up `mcp-tools list --mcp <slug>` confirms.
    - `remote` / `platform` / `swagger` — sync, returns 200 after a synchronous fetch+upsert.
-   - `uipath` / `selfhosted` — rejected locally; tools are manually authored via `mcp-tools create-*`. CLI emits a `NextCommand` hint to author instead.
+   - `uipath` / `selfhosted` — rejected locally; resource tools are manually authored via `mcp-tools create-resource`. CLI emits a `NextCommand` hint to author instead.
 
 5. **`mcp delete` looks up by slug, not GUID.** Passing a GUID returns 404.
 
@@ -50,7 +50,7 @@ These are the things the CLI does not advertise in `--help`.
 
 | Type | Differentiating flag | When to use | Tool surface |
 |------|---------------------|-------------|--------------|
-| `uipath`   | _(none)_              | AgentHub-hosted server you'll fill with `mcp-tools create-*`. | Authored via `uip agenthub mcp-tools create-*`. `refresh-tools` rejected. <!-- uip-check-skip --> |
+| `uipath`   | _(none)_              | AgentHub-hosted server you'll fill with resource tools. | Authored via `uip agenthub mcp-tools create-resource`. `refresh-tools` rejected. |
 | `coded`    | `--process-key <key>` (+ `--folder-key` for the process) | Wrap an existing coded-agent process (published to Orchestrator) as an MCP server. | Discovered via `refresh-tools` (async 202). |
 | `command`  | `--command <cmd>` + `--arg <arg>` (repeatable) + `--env <k=v>` (repeatable) | Spawn a local subprocess as an MCP server. | Discovered via `refresh-tools` (async 202). |
 | `remote`   | `--uri <url>` + `--header <k=v>` (repeatable) + `--use-relay` | Point at an existing HTTP MCP server. Bearer/header values can be Orchestrator asset references; `AssetReferenceSubstitutor` resolves them at runtime via the caller's token + folder context. Do NOT invent a credential-store syntax. | Discovered via `refresh-tools` (sync 200). |
@@ -63,14 +63,13 @@ Headers/auth on `remote` and `swagger` are payload fields, not scalar flags. Rea
 
 `mcp template <type>` also accepts `process-assistant` and `selfhosted` — these have templates but NO `create` subcommand (backend enum only; skip).
 
-## Tool Kinds (`uipath`-type servers only)
+## Resource Tools (`uipath`-type servers only)
 
-`uip agenthub mcp-tools create-{resource | raw}`. Shared flags: `--mcp <slug>` (parent server), `--name`, `--description`, `--target-identifier <guid>` / `--target-name <name>` (resolve target via RCS), `--folder-key <guid>` / `--folder-path <name>` (MCP server folder context), `--target-folder-key <guid>` / `--target-folder-path <name>` (any kind — the target's folder — Orchestrator resource / raw payload target — when it differs from the server's; resolves to the tool's `targetFolderKey`; never both; omit to default to the candidate's folder (`--target-name`) or the server folder; the explicit flag wins, including over a `--file`/`--body` payload field), `--category`, `--input-schema`, `--output-schema`, `--metadata`, `--continue-on-error` (default) / `--fail-fast`, `--file`/`--body`, `--dry-run`. Differ in metadata shape, discovery path, and validation strictness.
+Run `uip agenthub mcp-tools create-resource`. Flags: `--mcp <slug>` (parent server), `--name`, `--description`, `--target-identifier <guid>` / `--target-name <name>` (resolve target via RCS), `--folder-key <guid>` / `--folder-path <name>` (MCP server folder context), `--target-folder-key <guid>` / `--target-folder-path <name>` (the Orchestrator resource's folder when it differs from the server's; resolves to the tool's `targetFolderKey`; never both; omit to default to the candidate's folder (`--target-name`) or the server folder; the explicit flag wins, including over a `--file`/`--body` payload field), `--category`, `--input-schema`, `--output-schema`, `--metadata`, `--continue-on-error` (default) / `--fail-fast`, `--file`/`--body`, `--dry-run`.
 
 | Kind | Discovery | Validation | When to use |
 |------|-----------|------------|-------------|
 | `resource`    | `mcp-tools candidates --category <kind>` (kind ∈ `automation` / `agent` / `agentic-process` / `api-workflow`) | Resource schema | Bind an Orchestrator resource. Pass `--target-identifier <resource-id>`. Read metadata shape from `mcp-tools template resource --output json`. `candidates` is tenant-wide — each item carries its `folder {key, name}`; present the folder alongside the name when the user picks. `--target-name` lookup searches the server folder by default; resource in a different folder → pass `--target-folder-path` / `--target-folder-key` (scopes the lookup AND sets the tool's `targetFolderKey`); with `--target-identifier`, pass the same flags when the resource's folder differs from the server's. |
-| `raw`         | None | None | Free-form JSON tool — caller owns correctness end-to-end. No discovery, no schema validation, no reference-value labeling. Read the skeleton from `mcp-tools template raw --output json`. |
 
 Stringify `--metadata` / `--input-schema` / `--output-schema` as scalars (not `--file`). Build each JSON in a file and pass it as `--metadata "$(jq -c . metadata.json)"` (likewise input/output schema) — do **not** assemble multi-KB JSON inline in the command. Pass `--output-schema "{}"` when the underlying target has no response fields — empty string is rejected with `Unexpected end of JSON input`.
 
