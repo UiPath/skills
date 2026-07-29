@@ -217,6 +217,8 @@ Defines what `sdd.md` Section 1 (Case Definition) must contain.
 
 These are blocking authoring errors, not optional style warnings. Preserve the user's wording when repairing a name, but ask for a replacement when uniqueness or a reserved delimiter is violated; never silently suffix or truncate it.
 
+The same rule governs **numeric** violations: never silently clamp, round, or substitute an out-of-range value to satisfy validation. A minute-based SLA authored below 15 or above 1000 is not repaired to the nearest legal bound — surface the violation and Ask for a replacement duration (or a different `unit`), naming the original value. This applies whether the value came from the interview or from an SDD supplied on disk: rewriting a user-authored duration to pass validation is a silent requirements change, not a fix.
+
 ### 1.2 Case-level SLA escalation
 
 Required when Case SLA is set. Always renders with both rows; no `—` allowed in any cell.

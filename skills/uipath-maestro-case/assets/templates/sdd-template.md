@@ -163,8 +163,7 @@ The generated SDD must start with:
 | Case Name | {PascalCase name} |
 | Case Description | {2-3 sentence description of what the case manages} |
 | Case Identifier | Type: {constant \| external}. Constant → Prefix: {2-4 char UPPER prefix}. External → Source: {=vars.<In/InOut variable> \| =js:`expression`} |
-| Priority | Choiceset: {comma-separated values} — Default: {value} |
-| Case-Level SLA | {count} {unit: h/d/w/m} |
+| Case-Level SLA | {count} {unit: min/h/d/w/m} |
 | SLA Type | {time-based \| condition-based} |
 | Case App | {Enabled \| Disabled} — whether the in-product Case App UI is on (`caseAppEnabled`; default Disabled) |
 | Task-output passing | {Direct \| Shared} — `caseDirectlyPassTaskOutputs` (Direct = a task's outputs flow straight to downstream tasks; default Direct) |
