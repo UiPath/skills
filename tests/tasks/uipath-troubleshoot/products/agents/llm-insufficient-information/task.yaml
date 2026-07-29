@@ -20,16 +20,25 @@ sandbox:
     - type: template_dir
       path: ../../../_shared/mock_template
     - type: template_dir
+      path: process
+    - type: template_dir
       path: data
   mock_path_dirs:
     - m
+
+pre_run:
+  # Seal the mock store before the agent starts: packs m/r/ into an opaque
+  # m/.store and removes m/r/, so the agent cannot read the recorded uip
+  # outputs and reach the diagnosis without investigating.
+  - command: "python m/seal"
+    timeout: 60
+    fail_on_error: true
 
 reference:
   file: RESOLUTION.md
 
 initial_prompt: |
   My MailerAgent failed with trace ID cccccccccccccccccccccccccccccccc.
-  The local source is under process/MailerSolution.
   Diagnose why it failed and recommend the agent.json and lifecycle changes. Do not run live debug or edit files.
 
 success_criteria:

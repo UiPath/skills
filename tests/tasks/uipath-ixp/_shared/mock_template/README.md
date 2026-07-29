@@ -34,3 +34,8 @@ disobedient agent cannot reach the cloud with the harness-injected token.
 
 Integration/e2e tasks use `live_calls_template`; its wrapper records the same log
 format and delegates unchanged to the real CLI.
+
+A task whose correct path reads before it writes cannot be graded on this mock
+alone — the read fails, so there is nothing to carry into the graded write, and
+an agent that declines to invent the values correctly stops. Overlay
+`mock_template_taxonomy` (listed second) to serve that read.

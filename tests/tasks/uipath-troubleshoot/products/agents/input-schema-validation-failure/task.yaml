@@ -20,16 +20,25 @@ sandbox:
     - type: template_dir
       path: ../../../_shared/mock_template
     - type: template_dir
+      path: process
+    - type: template_dir
       path: data
   mock_path_dirs:
     - m
+
+pre_run:
+  # Seal the mock store before the agent starts: packs m/r/ into an opaque
+  # m/.store and removes m/r/, so the agent cannot read the recorded uip
+  # outputs and reach the diagnosis without investigating.
+  - command: "python m/seal"
+    timeout: 60
+    fail_on_error: true
 
 reference:
   file: RESOLUTION.md
 
 initial_prompt: |
   My IntakeAgent invocation failed with trace ID bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
-  The local source is under process/IntakeSolution.
   Diagnose the failure and show the corrected local debug command. Do not run live debug or change files.
 
 success_criteria:
