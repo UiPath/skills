@@ -666,7 +666,7 @@ A flow with input, state, and output variables:
       "outputs": {
         "output": {
           "type": "object",
-          "description": "The return value of the trigger.",
+          "description": "Data passed when the flow is triggered manually.",
           "source": "null",
           "var": "output"
         }
