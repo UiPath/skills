@@ -3,7 +3,7 @@ description: >
   Author a complete Maestro BPMN script-task project, covering the full
   live Alpha lifecycle for the Jint-backed script path: validate locally, then
   debug against Studio Web and prove the run completed.
-tags: [uipath-maestro-bpmn, e2e, "mode:operate", lifecycle:setup, "node:script", "feature:jint"]
+tags: [uipath-maestro-bpmn, e2e, "mode:operate", lifecycle:setup, "node:script"]
 
 run_limits:
   expected_turns: 22
@@ -19,14 +19,16 @@ initial_prompt: |
     ScriptNormalizer/ScriptNormalizer/ScriptNormalizer.bpmn
 
   Model a public-safe request normalizer:
-  - Manual start with a rawRequest JSON/string input.
+  - Manual start with an optional rawRequest JSON/string input.
   - A `bpmn:scriptTask` named "Normalize Request".
   - Set `scriptFormat="JavaScript"` and include `uipath:scriptVersion`
     value `v3`.
   - Use deterministic Jint-compatible JavaScript only: no Node.js packages,
     filesystem, network, browser globals, or long-running async behavior.
   - Map input into the script and map the returned normalized response to a
-    declared output variable.
+    declared output variable. For the live run, normalize a deterministic
+    in-script sample when rawRequest is absent; `bpmn debug --inputs` does not
+    currently reach manual-start inputs on Alpha.
   - End with a success end event and include BPMN DI for visible elements.
 
   Also create the standard local package files next to the BPMN:
@@ -75,9 +77,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "Offline BPMN validation succeeds before live execution"
+    command: "python3 $TASK_DIR/check_validate_script_jint.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "Live Alpha debug evidence reports finalStatus Completed"
     command: "python3 $TASK_DIR/check_live_debug_completed.py"
-    timeout: 30
+    timeout: 900
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0

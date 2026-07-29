@@ -38,7 +38,8 @@ runtime contracts through live debug.
 - `operate-diagnose/` covers diagnostic inspection and operate-action guidance
   using mocked CLI responses, matching the operate and diagnose capabilities the
   skill retains.
-- `_shared/` contains small Python helpers for durable XML shape assertions.
+- `_shared/` contains Python helpers for durable XML shape assertions and
+  post-run cleanup hooks.
 
 These tasks validate with `uip maestro bpmn validate <file>`, which runs the
 full PO.Frontend canvas rule set offline (added in UiPath/cli#3135). If the CLI
