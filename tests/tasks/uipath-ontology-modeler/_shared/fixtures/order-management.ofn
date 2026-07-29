@@ -1,0 +1,111 @@
+Prefix(:=<https://ontology.uipath.com/order-management#>)
+Prefix(owl:=<http://www.w3.org/2002/07/owl#>)
+Prefix(rdf:=<http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
+Prefix(xml:=<http://www.w3.org/XML/1998/namespace>)
+Prefix(xsd:=<http://www.w3.org/2001/XMLSchema#>)
+Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
+
+Ontology(<https://ontology.uipath.com/order-management>
+
+Declaration(Class(:Customer))
+Declaration(Class(:Order))
+Declaration(Class(:Product))
+
+Declaration(ObjectProperty(:placedBy))
+Declaration(ObjectProperty(:hasOrder))
+Declaration(ObjectProperty(:contains))
+Declaration(ObjectProperty(:isContainedIn))
+
+Declaration(DataProperty(:Customer.firstName))
+Declaration(DataProperty(:Customer.lastName))
+Declaration(DataProperty(:Customer.email))
+Declaration(DataProperty(:Order.status))
+Declaration(DataProperty(:Order.orderDate))
+Declaration(DataProperty(:Order.totalAmount))
+Declaration(DataProperty(:Product.name))
+Declaration(DataProperty(:Product.price))
+Declaration(DataProperty(:Product.category))
+
+#### Object Properties ####
+
+AnnotationAssertion(rdfs:label :placedBy "placed by")
+AnnotationAssertion(rdfs:comment :placedBy "Each Order is placed by exactly one Customer. FK: Order.customerId -> Customer.Id. 'Exactly one' is QL-inexpressible as an axiom; recorded here.")
+ObjectPropertyDomain(:placedBy :Order)
+ObjectPropertyRange(:placedBy :Customer)
+
+AnnotationAssertion(rdfs:label :hasOrder "has order")
+AnnotationAssertion(rdfs:comment :hasOrder "Inverse of :placedBy. Each Customer has zero or more Orders.")
+ObjectPropertyDomain(:hasOrder :Customer)
+ObjectPropertyRange(:hasOrder :Order)
+InverseObjectProperties(:placedBy :hasOrder)
+
+AnnotationAssertion(rdfs:label :contains "contains")
+AnnotationAssertion(rdfs:comment :contains "Each Order contains exactly one Product. FK: Order.productId -> Product.Id. 'Exactly one' is QL-inexpressible as an axiom; recorded here.")
+ObjectPropertyDomain(:contains :Order)
+ObjectPropertyRange(:contains :Product)
+
+AnnotationAssertion(rdfs:label :isContainedIn "is contained in")
+AnnotationAssertion(rdfs:comment :isContainedIn "Inverse of :contains. Each Product can appear in zero or more Orders.")
+ObjectPropertyDomain(:isContainedIn :Product)
+ObjectPropertyRange(:isContainedIn :Order)
+InverseObjectProperties(:contains :isContainedIn)
+
+#### Data Properties ####
+
+AnnotationAssertion(rdfs:label :Customer.firstName "first name")
+AnnotationAssertion(rdfs:comment :Customer.firstName "The customer's given name.")
+DataPropertyDomain(:Customer.firstName :Customer)
+DataPropertyRange(:Customer.firstName xsd:string)
+
+AnnotationAssertion(rdfs:label :Customer.lastName "last name")
+AnnotationAssertion(rdfs:comment :Customer.lastName "The customer's family name.")
+DataPropertyDomain(:Customer.lastName :Customer)
+DataPropertyRange(:Customer.lastName xsd:string)
+
+AnnotationAssertion(rdfs:label :Customer.email "email address")
+AnnotationAssertion(rdfs:comment :Customer.email "The customer's contact email address. Unique per customer.")
+DataPropertyDomain(:Customer.email :Customer)
+DataPropertyRange(:Customer.email xsd:string)
+
+AnnotationAssertion(rdfs:label :Order.status "order status")
+AnnotationAssertion(rdfs:comment :Order.status "Values: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled' (case-sensitive; copy exactly).")
+DataPropertyDomain(:Order.status :Order)
+DataPropertyRange(:Order.status xsd:string)
+
+AnnotationAssertion(rdfs:label :Order.orderDate "order date")
+AnnotationAssertion(rdfs:comment :Order.orderDate "The date and time the order was placed.")
+DataPropertyDomain(:Order.orderDate :Order)
+DataPropertyRange(:Order.orderDate xsd:dateTime)
+
+AnnotationAssertion(rdfs:label :Order.totalAmount "total amount")
+AnnotationAssertion(rdfs:comment :Order.totalAmount "The total monetary value of the order in the tenant currency.")
+DataPropertyDomain(:Order.totalAmount :Order)
+DataPropertyRange(:Order.totalAmount xsd:decimal)
+
+AnnotationAssertion(rdfs:label :Product.name "product name")
+AnnotationAssertion(rdfs:comment :Product.name "The product's display name.")
+DataPropertyDomain(:Product.name :Product)
+DataPropertyRange(:Product.name xsd:string)
+
+AnnotationAssertion(rdfs:label :Product.price "unit price")
+AnnotationAssertion(rdfs:comment :Product.price "The product's unit price in the tenant currency.")
+DataPropertyDomain(:Product.price :Product)
+DataPropertyRange(:Product.price xsd:decimal)
+
+AnnotationAssertion(rdfs:label :Product.category "product category")
+AnnotationAssertion(rdfs:comment :Product.category "The product's merchandising category, free text.")
+DataPropertyDomain(:Product.category :Product)
+DataPropertyRange(:Product.category xsd:string)
+
+#### Classes ####
+
+AnnotationAssertion(rdfs:label :Customer "Customer")
+AnnotationAssertion(rdfs:comment :Customer "ONE row per customer, keyed by Id. Maps Data Fabric entity 'EvalGoldCustomer'.")
+
+AnnotationAssertion(rdfs:label :Order "Order")
+AnnotationAssertion(rdfs:comment :Order "ONE row per order, keyed by Id. Maps Data Fabric entity 'EvalGoldOrder'.")
+
+AnnotationAssertion(rdfs:label :Product "Product")
+AnnotationAssertion(rdfs:comment :Product "ONE row per product, keyed by Id. Maps Data Fabric entity 'EvalGoldProduct'.")
+
+)

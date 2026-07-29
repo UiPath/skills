@@ -257,6 +257,14 @@ AnnotationAssertion(rdfs:comment :{ClassName} "TIME SERIES: ~{N} dated rows per 
 
 ---
 
+## Every class must be backed by data — no annotation-only classes
+
+Every `Declaration(Class(...))` must be (a) the domain of ≥1 `DataPropertyDomain`/`ObjectPropertyDomain`, and (b) instantiated in `{name}-mapping.yarrrml.yml`. A class that fails either — typically a "role"/"actor" concept (approving manager, external system name, job title) with zero properties and no Data Fabric entity — parses as valid OWL and passes individual `validate`/`check` calls, but silently blocks the whole ontology from `DEPLOYED`. If the concept is narrative-only, fold it into the relevant property's `rdfs:comment` instead (e.g. `Payment.approvedBy`'s comment) rather than declaring a class. See Gate 4b, SKILL.md.
+
+**Real properties don't mean relationships are modeled.** A `DataProperty` whose value equals another class's PK (e.g. `SupplierInvoice.poReference` matching `PurchaseOrder.poId`) is two matching columns, not a relationship, until it's an `ObjectProperty` (with `ObjectPropertyDomain`/`ObjectPropertyRange`) wired into the mapping as a join (see `mapping-yarrrml.md`'s Object property pattern). Every FK-shaped `DataProperty` needs either a real `ObjectProperty` or an explicit exemption in the mapping's `# JOIN GRAPH` comment (the only legitimate case: a multi-valued FK packed into one comma-separated column). See Gate 4c, SKILL.md.
+
+---
+
 ## Many-to-many relationships
 
 When two classes have a mutual "can have many" relationship (e.g. a Patient can have many InsurancePlans, and an InsurancePlan covers many Patients), OWL 2 QL cannot directly express this as two ObjectProperties — each ObjectProperty has a single domain and range. Model it with a **junction class**.

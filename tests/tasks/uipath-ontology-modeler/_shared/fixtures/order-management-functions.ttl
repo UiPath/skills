@@ -1,0 +1,85 @@
+#############################
+#   USAGE POLICY
+#   ROUTING:
+#     countOrdersByStatus → single-number-per-group answers ("how many orders are pending?")
+#     listOrdersByCustomer → row-level answers ("show me Alice's orders")
+#   OUTPUT:
+#     Never add LIMIT unless user says "top N"
+#     Never add DISTINCT — no target class is time-series
+#   PARAMETERS:
+#     Equality lookups: bind as unbound triple variable
+#############################
+
+@prefix fno:   <https://w3id.org/function/ontology#> .
+@prefix ont:   <https://ontology.uipath.com/order-management#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+ont:listOrdersByCustomer
+        a              fno:Function ;
+        rdfs:label     "List orders by customer" ;
+        rdfs:comment   "Returns every order placed by the customer with the given email, with status, date, and total. Use for row-level order listings for one customer; use ont:countOrdersByStatus for counts." ;
+        ont:kind       "FUNCTION" ;
+        ont:language   "SPARQL" ;
+        ont:statement  """PREFIX ont: <https://ontology.uipath.com/order-management#>
+SELECT ?order ?status ?orderDate ?totalAmount WHERE {
+  ?order a ont:Order ;
+         ont:Order.status ?status ;
+         ont:Order.orderDate ?orderDate ;
+         ont:Order.totalAmount ?totalAmount ;
+         ont:placedBy ?customer .
+  ?customer a ont:Customer ;
+            ont:Customer.email ?customerEmail .
+}""" ;
+        fno:expects    ( ont:param.listOrdersByCustomer.customerEmail ) ;
+        fno:returns    ( ont:output.listOrdersByCustomer.order ont:output.listOrdersByCustomer.status ont:output.listOrdersByCustomer.orderDate ont:output.listOrdersByCustomer.totalAmount ) .
+
+ont:param.listOrdersByCustomer.customerEmail
+        a              fno:Parameter ;
+        fno:name       "customerEmail" ;
+        fno:type       "xsd:string" ;
+        fno:required   true .
+
+ont:output.listOrdersByCustomer.order
+        a              fno:Output ;
+        rdfs:comment   "Subject IRI of the matching order." ;
+        fno:name       "order" ;
+        fno:type       "xsd:anyURI" .
+
+ont:output.listOrdersByCustomer.status
+        a              fno:Output ;
+        rdfs:comment   "Order status: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled'." ;
+        fno:name       "status" ;
+        fno:type       "xsd:string" .
+
+ont:output.listOrdersByCustomer.orderDate
+        a              fno:Output ;
+        rdfs:comment   "Date and time the order was placed." ;
+        fno:name       "orderDate" ;
+        fno:type       "xsd:dateTime" .
+
+ont:output.listOrdersByCustomer.totalAmount
+        a              fno:Output ;
+        rdfs:comment   "Total monetary value of the order." ;
+        fno:name       "totalAmount" ;
+        fno:type       "xsd:decimal" .
+
+ont:countOrdersByStatus
+        a              fno:Function ;
+        rdfs:label     "Count orders by status" ;
+        rdfs:comment   "Returns one row per status value with the number of orders in that status. Use for aggregate counts; use ont:listOrdersByCustomer for row-level listings." ;
+        ont:kind       "FUNCTION" ;
+        ont:language   "SPARQL" ;
+        ont:statement  "PREFIX ont: <https://ontology.uipath.com/order-management#> SELECT ?status (COUNT(?order) AS ?orderCount) WHERE { ?order a ont:Order ; ont:Order.status ?status } GROUP BY ?status" ;
+        fno:returns    ( ont:output.countOrdersByStatus.status ont:output.countOrdersByStatus.orderCount ) .
+
+ont:output.countOrdersByStatus.status
+        a              fno:Output ;
+        rdfs:comment   "The status value this row aggregates." ;
+        fno:name       "status" ;
+        fno:type       "xsd:string" .
+
+ont:output.countOrdersByStatus.orderCount
+        a              fno:Output ;
+        rdfs:comment   "Number of orders currently in this status." ;
+        fno:name       "orderCount" ;
+        fno:type       "xsd:integer" .

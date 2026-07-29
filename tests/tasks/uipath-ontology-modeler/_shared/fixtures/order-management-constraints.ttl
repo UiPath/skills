@@ -1,0 +1,49 @@
+@prefix ont:   <https://ontology.uipath.com/order-management#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix shape: <https://ontology.uipath.com/shapes#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+
+shape:CustomerMustHaveEmail
+    a               sh:NodeShape ;
+    rdfs:label      "Customer must have an email address" ;
+    sh:message      "Every customer record requires exactly one email address." ;
+    sh:targetClass  ont:Customer ;
+    sh:property     [ sh:path     ont:Customer.email ;
+                      sh:datatype xsd:string ;
+                      sh:minCount 1 ;
+                      sh:maxCount 1
+                    ] .
+
+shape:OrderMustHaveStatus
+    a               sh:NodeShape ;
+    rdfs:label      "Order must have a status" ;
+    sh:message      "Every order requires exactly one status value." ;
+    sh:targetClass  ont:Order ;
+    sh:property     [ sh:path     ont:Order.status ;
+                      sh:datatype xsd:string ;
+                      sh:minCount 1 ;
+                      sh:maxCount 1
+                    ] .
+
+shape:OrderMustBePlacedByCustomer
+    a               sh:NodeShape ;
+    rdfs:label      "Order must be placed by a customer" ;
+    sh:message      "Every order must reference exactly one customer." ;
+    sh:targetClass  ont:Order ;
+    sh:property     [ sh:path     ont:placedBy ;
+                      sh:class    ont:Customer ;
+                      sh:minCount 1 ;
+                      sh:maxCount 1
+                    ] .
+
+shape:ProductMustHaveNonNegativePrice
+    a               sh:NodeShape ;
+    rdfs:label      "Product price must be zero or positive" ;
+    sh:message      "Product unit price cannot be negative." ;
+    sh:targetClass  ont:Product ;
+    sh:property     [ sh:path         ont:Product.price ;
+                      sh:datatype     xsd:decimal ;
+                      sh:minCount     1 ;
+                      sh:minInclusive 0
+                    ] .

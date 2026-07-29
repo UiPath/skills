@@ -8,9 +8,14 @@ IRI convention: `https://ontology.uipath.com/{name}#` — same slug used in sche
 
 ## Functions — SPARQL read queries
 
-Artifact: `functions.ttl` | CLI type: `functions` | Media type: `text/turtle`
+Artifact: `{name}-functions.ttl` (combined) or `{name}-functions-{ClassName}.ttl` (per class) | CLI type: `functions` | Media type: `text/turtle`
 
-Multiple function files per ontology are valid — the example ontology splits functions across domain areas (e.g. `functions.ttl`, `functions-contract.ttl`). All files use the same namespace. Functions are governed SPARQL SELECT queries — the runtime reformulates each into a flat FQS SQL at invocation time. Parameters bind as typed literals **before** Ontop reformulates — so the injected value never touches SQL string interpolation. Functions are freely add/removable from a deployed ontology without breaking it.
+Functions are governed SPARQL SELECT queries — the runtime reformulates each into a flat FQS SQL at invocation time. Parameters bind as typed literals **before** Ontop reformulates — so the injected value never touches SQL string interpolation. Functions are freely add/removable from a deployed ontology without breaking it.
+
+**File segregation — combined or per class:** both are valid; pick one for the whole ontology, don't mix.
+- **Combined** (default): all functions in one `{name}-functions.ttl`. Simplest for small domains or a handful of functions.
+- **Per class**: one file per class that has at least one function — `{name}-functions-{ClassName}.ttl` — containing only the functions whose primary SPARQL subject is that class (join functions belong to the class the question is "about", e.g. a function answering "prescriptions per doctor" belongs under `Doctor` if that's the grouping subject, `Prescription` if it's the counted subject — pick by what the function returns one row per). Mirrors the one-file-per-action convention for actions. Prefer this when the domain has functions across many classes (rule of thumb: more than ~2-3 classes involved) — it keeps each file focused and lets an agent re-read just the relevant class's functions instead of the whole set.
+- Every function file — combined or per-class — opens with its own USAGE POLICY block (routing rules scoped to that file's functions) and uses the same namespace.
 
 ### File header + USAGE POLICY
 
@@ -18,11 +23,13 @@ The file opens with a USAGE POLICY block. This is where **rules** live — not i
 
 ```turtle
 @prefix fno:   <https://w3id.org/function/ontology#> .
-@prefix ont:   <https://ontology.uipath.com/ont#> .
+@prefix ont:   <https://ontology.uipath.com/{name}#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 ```
 
-`ont:` is the **global platform namespace** (`ont#`) — same as action files. This means `ont:paramName`, `ont:paramType`, and `ont:required` are the correct property names on both `fno:Parameter` and `fno:Output` nodes. The SPARQL `PREFIX ont:` inside `ont:statement` strings must also use `<https://ontology.uipath.com/ont#>`.
+`ont:` is the **ontology's own namespace** — same IRI base as `{name}.ofn` — NOT a generic platform `ont#`. Use `fno:name`, `fno:type`, and `fno:required` (never `ont:paramName`/`ont:paramType`/`ont:required`) on both `fno:Parameter` and `fno:Output` nodes — the backend rejects functions using `ont:paramName`/`ont:paramType` with "function declares no outputs — every function must declare at least one output", since those tokens resolve against the ontology-specific namespace and aren't recognized there. `ont:kind`, `ont:language`, and `ont:statement` on the function node stay `ont:`-prefixed regardless — the backend resolves these three by local name. The SPARQL `PREFIX ont:` inside `ont:statement` strings must also use `<https://ontology.uipath.com/{name}#>` — this is required so `ont:{Class}`/`ont:{Class}.{propName}` inside the SPARQL body resolve against the same schema declarations as everywhere else.
+
+> **Verified 2026-07-29:** this convention (ontology-specific `ont:` + `fno:name`/`fno:type`/`fno:required`) passed `uip ont artifact validate` cleanly across 6 function files and 19 functions in the `s2p-source-to-pay` ontology. The alternative (generic `ont#` + `ont:paramName`/`ont:paramType`) is what caused the "function declares no outputs" failure this fix addresses — do not revert to it.
 
 
 #############################
@@ -60,20 +67,20 @@ ont:{functionName}
         rdfs:comment   "{What it returns and when to use it. Be specific — used by AI to select the right function.}" ;
         ont:kind       "FUNCTION" ;
         ont:language   "SPARQL" ;
-        ont:statement  "PREFIX ont: <https://ontology.uipath.com/ont#> SELECT ?var1 ?var2 WHERE { ... }" ;
+        ont:statement  "PREFIX ont: <https://ontology.uipath.com/{name}#> SELECT ?var1 ?var2 WHERE { ... }" ;
         fno:returns    ( ont:output.{functionName}.{var1} ont:output.{functionName}.{var2} ) .
 
 ont:output.{functionName}.{var1}
         a              fno:Output ;
         rdfs:comment   "{What this output field contains.}" ;
-        ont:paramName  "{var1}" ;
-        ont:paramType  "xsd:{type}" .
+        fno:name       "{var1}" ;
+        fno:type       "xsd:{type}" .
 
 ont:output.{functionName}.{var2}
         a              fno:Output ;
         rdfs:comment   "{What this output field contains.}" ;
-        ont:paramName  "{var2}" ;
-        ont:paramType  "xsd:{type}" .
+        fno:name       "{var2}" ;
+        fno:type       "xsd:{type}" .
 ```
 
 No `fno:expects` when the function takes no parameters — omit it entirely.
@@ -89,21 +96,21 @@ ont:{functionName}
         rdfs:comment   "{What it does. Describe params, result rows, when to use it vs other functions.}" ;
         ont:kind       "FUNCTION" ;
         ont:language   "SPARQL" ;
-        ont:statement  "PREFIX ont: <https://ontology.uipath.com/ont#> SELECT ?var1 WHERE { ... ?param1 ... }" ;
+        ont:statement  "PREFIX ont: <https://ontology.uipath.com/{name}#> SELECT ?var1 WHERE { ... ?param1 ... }" ;
         fno:expects    ( ont:param.{functionName}.{param1} ) ;
         fno:returns    ( ont:output.{functionName}.{var1} ) .
 
 ont:param.{functionName}.{param1}
         a              fno:Parameter ;
-        ont:paramName  "{param1}" ;
-        ont:paramType  "xsd:{type}" ;
-        ont:required   true .
+        fno:name       "{param1}" ;
+        fno:type       "xsd:{type}" ;
+        fno:required   true .
 
 ont:output.{functionName}.{var1}
         a              fno:Output ;
         rdfs:comment   "{What this output field contains.}" ;
-        ont:paramName  "{var1}" ;
-        ont:paramType  "xsd:{type}" .
+        fno:name       "{var1}" ;
+        fno:type       "xsd:{type}" .
 ```
 
 Multiple parameters: list them in `fno:expects ( p1 p2 p3 )` and define each `ont:param.*` block immediately after. List all projected variables in `fno:returns ( r1 r2 r3 )` and define each `ont:output.*` block immediately after.
@@ -115,9 +122,9 @@ Multiple parameters: list them in `fno:expects ( p1 p2 p3 )` and define each `on
 ```turtle
 ont:param.{functionName}.{param1}
         a              fno:Parameter ;
-        ont:paramName  "{param1}" ;
-        ont:paramType  "xsd:{type}" ;
-        ont:required   false .
+        fno:name       "{param1}" ;
+        fno:type       "xsd:{type}" ;
+        fno:required   false .
 ```
 
 ---
@@ -128,15 +135,15 @@ Every function must declare its outputs via `fno:returns`. Each `fno:Output` nod
 
 **Output node conventions:**
 - Prefix: `ont:output.{functionName}.{varName}` (not `ont:ret.*`)
-- Properties: `ont:paramName` and `ont:paramType` on both `fno:Output` and `fno:Parameter` nodes
+- Properties: `fno:name` and `fno:type` on both `fno:Output` and `fno:Parameter` nodes
 - Each output node must have `rdfs:comment` describing what the field contains
 - Format: multi-line one property per line (not single-line)
 
 **The mapping is bidirectional and must be exact:**
-- Every variable projected in `SELECT ?x ?y …` must have a matching `ont:output.*` block where `ont:paramName = "x"` (the variable name without `?`).
-- Every `ont:paramName` value on an output node must correspond to a variable actually projected in the SELECT — no orphaned output nodes.
+- Every variable projected in `SELECT ?x ?y …` must have a matching `ont:output.*` block where `fno:name = "x"` (the variable name without `?`).
+- Every `fno:name` value on an output node must correspond to a variable actually projected in the SELECT — no orphaned output nodes.
 
-| `ont:paramType` value | Use for |
+| `fno:type` value | Use for |
 |---|---|
 | `"xsd:string"` | Text values |
 | `"xsd:integer"` | Integer counts or IDs |
@@ -150,17 +157,17 @@ Every function must declare its outputs via `fno:returns`. Each `fno:Output` nod
 
 ## SPARQL patterns
 
-Every SPARQL statement goes on `ont:statement`. Begin with the `PREFIX` declaration using `PREFIX ont: <https://ontology.uipath.com/ont#>`. For short queries, use a single inline string. For complex multi-join queries with `OPTIONAL`, `UNION`, or `HAVING`, use a triple-quoted string.
+Every SPARQL statement goes on `ont:statement`. Begin with the `PREFIX` declaration using `PREFIX ont: <https://ontology.uipath.com/{name}#>`. For short queries, use a single inline string. For complex multi-join queries with `OPTIONAL`, `UNION`, or `HAVING`, use a triple-quoted string.
 
 **Inline (simple queries):**
 ```turtle
-ont:statement  "PREFIX ont: <https://ontology.uipath.com/ont#> SELECT ?x WHERE { ?x a ont:Class ; ont:Class.field ?field }" .
+ont:statement  "PREFIX ont: <https://ontology.uipath.com/{name}#> SELECT ?x WHERE { ?x a ont:Class ; ont:Class.field ?field }" .
 ```
 
 **Triple-quoted (complex queries):**
 ```turtle
 ont:statement  """
-  PREFIX ont: <https://ontology.uipath.com/ont#>
+  PREFIX ont: <https://ontology.uipath.com/{name}#>
   SELECT ?var1 ?var2 WHERE {
     ...
   }""" .
@@ -172,15 +179,15 @@ ont:statement  """
 For equality lookups, bind the parameter directly in a triple pattern — the unbound variable `?status` is matched against the parameter value at runtime.
 
 ```sparql
-PREFIX ont: <https://ontology.uipath.com/ont#>
+PREFIX ont: <https://ontology.uipath.com/{name}#>
 SELECT (COUNT(*) AS ?n) WHERE { ?p a ont:{Class} ; ont:{Class}.{field} ?status }
 ```
 
 ### Count with comparison parameter (FILTER binding)
-For `<`, `>`, `!=`, and range checks, bind via `FILTER`. The parameter variable appears unbound in the WHERE clause and is coerced to the declared `ont:paramType` before Ontop reformulates.
+For `<`, `>`, `!=`, and range checks, bind via `FILTER`. The parameter variable appears unbound in the WHERE clause and is coerced to the declared `fno:type` before Ontop reformulates.
 
 ```sparql
-PREFIX ont: <https://ontology.uipath.com/ont#>
+PREFIX ont: <https://ontology.uipath.com/{name}#>
 SELECT ?invoice ?dueDate WHERE {
   ?invoice a ont:Invoice ; ont:Invoice.dueDate ?dueDate ; ont:Invoice.status ?status .
   FILTER (?status != "paid")
@@ -190,7 +197,7 @@ SELECT ?invoice ?dueDate WHERE {
 
 ### Aggregate per group (no params)
 ```sparql
-PREFIX ont: <https://ontology.uipath.com/ont#>
+PREFIX ont: <https://ontology.uipath.com/{name}#>
 SELECT ?groupVar (COUNT(?x) AS ?n) WHERE {
   ?x a ont:{Class} ; ont:{Class}.{groupField} ?groupVar
 } GROUP BY ?groupVar
@@ -198,7 +205,7 @@ SELECT ?groupVar (COUNT(?x) AS ?n) WHERE {
 
 ### Join across two classes
 ```sparql
-PREFIX ont: <https://ontology.uipath.com/ont#>
+PREFIX ont: <https://ontology.uipath.com/{name}#>
 SELECT ?fieldA ?fieldB WHERE {
   ?x a ont:{ClassA} ; ont:{ClassA}.{fieldA} ?fieldA ; ont:{objectProperty} ?y .
   ?y a ont:{ClassB} ; ont:{ClassB}.{fieldB} ?fieldB
@@ -209,7 +216,7 @@ SELECT ?fieldA ?fieldB WHERE {
 Use `OPTIONAL` when a related entity may not exist for every row (e.g. a goods receipt that hasn't arrived yet). Use `COALESCE` to substitute a default when the optional value is absent.
 
 ```sparql
-PREFIX ont: <https://ontology.uipath.com/ont#>
+PREFIX ont: <https://ontology.uipath.com/{name}#>
 SELECT ?invoice ?orderedAmount ?receivedAmount WHERE {
   ?invoice a ont:Invoice ; ont:againstPO ?po .
   ?po a ont:PurchaseOrder ; ont:orderedAmount ?orderedAmount .
@@ -230,7 +237,7 @@ BIND (IF(?poVariance > ?grVariance, ?poVariance, ?grVariance) AS ?maxVariance)
 Use `UNION` to combine results from two different triple patterns. Variables shared across branches are projected; variables unique to one branch are unbound (`UNDEF`) in the other.
 
 ```sparql
-PREFIX ont: <https://ontology.uipath.com/ont#>
+PREFIX ont: <https://ontology.uipath.com/{name}#>
 SELECT ?entity ?amount WHERE {
   { ?entity a ont:ClassA ; ont:amount ?amount }
   UNION
@@ -242,7 +249,7 @@ SELECT ?entity ?amount WHERE {
 Use `HAVING` to filter on an aggregate result — analogous to SQL `HAVING`. Parameters can appear in `HAVING` expressions.
 
 ```sparql
-PREFIX ont: <https://ontology.uipath.com/ont#>
+PREFIX ont: <https://ontology.uipath.com/{name}#>
 SELECT ?supplier (SUM(?amount) AS ?total) (COUNT(DISTINCT ?invoice) AS ?invoiceCount) WHERE {
   ?supplier a ont:Supplier ; ont:Supplier.name ?name .
   ?invoice a ont:Invoice ; ont:invoiceSupplier ?supplier ; ont:invoicedAmount ?amount .
@@ -362,142 +369,9 @@ Multiple statements go in the same list: `ont:statements ( "stmt1" "stmt2" )`.
 
 ---
 
-## Full examples
+## Full worked examples
 
-### functions.ttl (Clinic)
-
-```turtle
-@prefix fno:   <https://w3id.org/function/ontology#> .
-@prefix ont:   <https://ontology.uipath.com/ont#> .
-@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
-
-#############################
-#   Functions (read) — a 'functions' definition artifact (W3C FnO).
-#   Uploaded separately from schema/constraints and freely add/removable on a
-#   deployed ontology without breaking it. Each is a governed SPARQL SELECT the
-#   runtime reformulates to one FQS SQL.
-#
-#   USAGE POLICY  (routing rules; per-function facts live in rdfs:comment)
-#   ROUTING:
-#     count...  functions → single-number answers ("how many X are Y")
-#     list...   functions → row-level answers ("which doctor prescribed what")
-#   DISAMBIGUATION:
-#     "prescriptions per doctor"    → countPrescriptionsPerDoctor (grouped, no params)
-#     "prescriptions in a status"   → countPrescriptionsByStatus (single count, requires status)
-#   OUTPUT:
-#     Never add LIMIT unless the user explicitly says "top N" or "first N".
-#     Never add DISTINCT unless the target class is a time-series.
-#   PARAMETERS:
-#     Equality lookups: bind as unbound triple variable — ?p ; ont:Prop ?param
-#     Comparisons (< > !=): bind via FILTER — FILTER (?field < ?param)
-#############################
-
-ont:countPrescriptionsByStatus
-        a              fno:Function ;
-        rdfs:label     "Count prescriptions in a given status" ;
-        rdfs:comment   "Returns the number of prescriptions that currently have the given status (for example 'active', 'dispensed', or 'cancelled'). Use this to answer 'how many prescriptions are <status>'. Requires a status parameter and returns a single count row." ;
-        ont:kind       "FUNCTION" ;
-        ont:language   "SPARQL" ;
-        ont:statement  "PREFIX ont: <https://ontology.uipath.com/ont#> SELECT (COUNT(*) AS ?n) WHERE { ?p a ont:Prescription ; ont:Prescription.status ?status }" ;
-        fno:expects    ( ont:param.countPrescriptionsByStatus.status ) ;
-        fno:returns    ( ont:output.countPrescriptionsByStatus.n ) .
-
-ont:param.countPrescriptionsByStatus.status
-        a              fno:Parameter ;
-        ont:paramName  "status" ;
-        ont:paramType  "xsd:string" ;
-        ont:required   true .
-
-ont:output.countPrescriptionsByStatus.n
-        a              fno:Output ;
-        rdfs:comment   "Number of prescriptions with the given status." ;
-        ont:paramName  "n" ;
-        ont:paramType  "xsd:integer" .
-
-ont:countPrescriptionsPerDoctor
-        a              fno:Function ;
-        rdfs:label     "Count prescriptions per doctor" ;
-        rdfs:comment   "Returns one row per doctor with that doctor's name and the total number of prescriptions they have prescribed. Use this to answer 'how many prescriptions did each doctor write' or to find the most prescribing doctors. Takes no parameters." ;
-        ont:kind       "FUNCTION" ;
-        ont:language   "SPARQL" ;
-        ont:statement  "PREFIX ont: <https://ontology.uipath.com/ont#> SELECT ?doctor (COUNT(?p) AS ?n) WHERE { ?p a ont:Prescription ; ont:prescribedBy ?d . ?d a ont:Doctor ; ont:Doctor.name ?doctor } GROUP BY ?doctor" ;
-        fno:returns    ( ont:output.countPrescriptionsPerDoctor.doctor ont:output.countPrescriptionsPerDoctor.n ) .
-
-ont:output.countPrescriptionsPerDoctor.doctor
-        a              fno:Output ;
-        rdfs:comment   "Name of the doctor." ;
-        ont:paramName  "doctor" ;
-        ont:paramType  "xsd:string" .
-
-ont:output.countPrescriptionsPerDoctor.n
-        a              fno:Output ;
-        rdfs:comment   "Total number of prescriptions issued by this doctor." ;
-        ont:paramName  "n" ;
-        ont:paramType  "xsd:integer" .
-
-ont:listPrescriptionsWithDoctorAndPatient
-        a              fno:Function ;
-        rdfs:label     "List prescriptions with their doctor and patient" ;
-        rdfs:comment   "Returns one row per prescription joined to the doctor who prescribed it and the patient it was prescribed for. Each row has the medication name, the prescription status, the prescribing doctor's name, and the patient's name. Use this to answer questions like 'which doctor prescribed what medication to which patient'. Returns raw rows, not counts. Takes no parameters." ;
-        ont:kind       "FUNCTION" ;
-        ont:language   "SPARQL" ;
-        ont:statement  "PREFIX ont: <https://ontology.uipath.com/ont#> SELECT ?medication ?status ?doctorName ?patientName WHERE { ?p a ont:Prescription ; ont:Prescription.medication ?medication ; ont:Prescription.status ?status ; ont:prescribedBy ?d ; ont:prescriptionFor ?pat . ?d a ont:Doctor ; ont:Doctor.name ?doctorName . ?pat a ont:Patient ; ont:Patient.name ?patientName }" ;
-        fno:returns    ( ont:output.listPrescriptions.medication ont:output.listPrescriptions.status ont:output.listPrescriptions.doctorName ont:output.listPrescriptions.patientName ) .
-
-ont:output.listPrescriptions.medication
-        a              fno:Output ;
-        rdfs:comment   "Name of the medication prescribed." ;
-        ont:paramName  "medication" ;
-        ont:paramType  "xsd:string" .
-
-ont:output.listPrescriptions.status
-        a              fno:Output ;
-        rdfs:comment   "Current status of the prescription." ;
-        ont:paramName  "status" ;
-        ont:paramType  "xsd:string" .
-
-ont:output.listPrescriptions.doctorName
-        a              fno:Output ;
-        rdfs:comment   "Name of the prescribing doctor." ;
-        ont:paramName  "doctorName" ;
-        ont:paramType  "xsd:string" .
-
-ont:output.listPrescriptions.patientName
-        a              fno:Output ;
-        rdfs:comment   "Name of the patient the prescription is for." ;
-        ont:paramName  "patientName" ;
-        ont:paramType  "xsd:string" .
-```
-
-### clinic-updatePrescriptionStatus.ttl (Clinic)
-
-```turtle
-@prefix fno:   <https://w3id.org/function/ontology#> .
-@prefix ont:   <https://ontology.uipath.com/ont#> .
-@prefix cl:    <https://ontology.uipath.com/clinic#> .
-@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
-
-cl:updatePrescriptionStatus
-        a               fno:Function ;
-        rdfs:label      "Update the status of a prescription" ;
-        rdfs:comment    "Changes the status of a single prescription, identified by its id, to a new status value (for example 'dispensed' or 'cancelled'). Modifies one row. Requires the prescription id and the new status." ;
-        ont:kind        "ACTION" ;
-        ont:language    "SQL" ;
-        ont:statements  ( "UPDATE {{Prescription}} SET {{Prescription.status}} = :newStatus WHERE {{Prescription.id}} = :id" ) ;
-        fno:expects     ( cl:param.updatePrescriptionStatus.id cl:param.updatePrescriptionStatus.newStatus ) .
-
-cl:param.updatePrescriptionStatus.id
-        a              fno:Parameter ;
-        ont:paramName  "id" ;
-        ont:paramType  "xsd:integer" ;
-        ont:required   true .
-
-cl:param.updatePrescriptionStatus.newStatus
-        a              fno:Parameter ;
-        ont:paramName  "newStatus" ;
-        ont:paramType  "xsd:string" ;
-        ont:required   true .
-```
+A complete worked `functions.ttl` (Clinic, 3 functions) and a complete worked action file (`clinic-updatePrescriptionStatus.ttl`) are in [`functions-patterns-example.md`](functions-patterns-example.md). Read it only if a gate/consistency check fails and you need a concrete reference to self-correct, or you judge the templates above aren't enough to proceed confidently for this request.
 
 ---
 
@@ -508,10 +382,11 @@ cl:param.updatePrescriptionStatus.newStatus
 | Missing `fno:returns` on a function | Every function must declare `fno:returns` with typed `fno:Output` nodes |
 | `fno:returns` without parentheses (comma-separated) | Use RDF list syntax: `fno:returns ( node1 node2 )` — parentheses are required |
 | Output node prefix `ont:ret.` | Use `ont:output.` — correct form is `ont:output.{functionName}.{varName}` |
-| `ont:returnName` / `ont:returnType` on output nodes | Use `ont:paramName` / `ont:paramType` on both `fno:Output` and `fno:Parameter` nodes |
-| `fno:name` / `fno:type` on output or param nodes | Use `ont:paramName` / `ont:paramType` — functions use the global platform `ont#` namespace where these are the recognised property names |
-| `fno:required true` on parameter nodes | Use `ont:required true` — functions use the global platform `ont#` namespace |
-| `@prefix ont: <https://ontology.uipath.com/{name}#>` in functions | Use `@prefix ont: <https://ontology.uipath.com/ont#>` — the global platform namespace; SPARQL PREFIX inside `ont:statement` must match |
+| `ont:returnName` / `ont:returnType` on output nodes (functions) | Use `fno:name` / `fno:type` on both `fno:Output` and `fno:Parameter` nodes |
+| `ont:paramName` / `ont:paramType` on output or param nodes (functions) | Use `fno:name` / `fno:type` — functions use the ontology-specific `ont:` namespace (same as schema.ofn), where `ont:paramName`/`ont:paramType` are NOT recognized and cause "function declares no outputs" |
+| `ont:required true` on parameter nodes (functions) | Use `fno:required true` for functions — same reason as above |
+| `@prefix ont: <https://ontology.uipath.com/ont#>` in functions | Use `@prefix ont: <https://ontology.uipath.com/{name}#>` — the ontology-specific namespace, same IRI base as schema.ofn; SPARQL `PREFIX ont:` inside `ont:statement` must match |
+| *(Actions files are unaffected by the above — actions keep `ont:paramName`/`ont:paramType`/`ont:required` on the generic platform `ont#` namespace per the Actions section below.)* | |
 | Single-line output node | Output nodes must be multi-line with `rdfs:comment` describing the returned value |
 | Missing `rdfs:comment` on output nodes | Every `fno:Output` node requires `rdfs:comment` explaining what the column contains |
 | `http://w3id.org/function/ontology#` for fno: prefix | Use `https://w3id.org/function/ontology#` (https) — backend looks up `https://` FnO resources |

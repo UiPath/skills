@@ -92,6 +92,7 @@ If the user wants to create a new ontology, do not proceed with this skill. Invo
 |---|---|
 | An SDD, PDD, or design document | **`uipath-ontology-authoring`** |
 | A domain described in a prompt ("I have Orders, Customers, Products…") | **`uipath-ontology-modeler`** |
+| Already-generated artifact files — cloned from another ontology, or authored outside the guided flow — ready to deploy | **`uipath-ontology-authoring`** — see its "Entry point B" section. Do not upsert the files directly via this skill's `artifact upsert` command; that skips every gate that catches an unmapped class or a missing relationship. |
 
 Do not ask clarifying questions, do not run any commands, do not outline a plan. Switch skills first.
 
@@ -122,6 +123,8 @@ Every ontology response includes a `state` field. State is informational — an 
 | `BROKEN` | A previously stable ontology has had an artifact change that left it inconsistent |
 
 State transitions are driven automatically by artifact changes — not by any user action.
+
+**Persistent `DRAFT` with no other symptom:** if every artifact individually passes `uip ont artifact validate`/`check`, cross-file terms line up, and re-uploading the mapping still doesn't flip to `DEPLOYED`, suspect a class in the schema with zero properties and/or no instantiation in the mapping (typically an actor/role/system class added for narrative context only). Fix: every `Declaration(Class(...))` must be (a) the domain of ≥1 `DataPropertyDomain`/`ObjectPropertyDomain`, and (b) instantiated as `a ont:{ClassName}` in the mapping (see Gate 4b, `uipath-ontology-modeler` Step 10). `DEPLOYED` itself also doesn't mean relationships were modeled — a schema can deploy fine with every FK left as a plain string column instead of an `ObjectProperty` (see Gate 4c, same skill).
 
 ### Artifact Types
 
@@ -176,6 +179,7 @@ uip ont artifact delete <idOrName> <fileName> --yes --reason <reason>
 | `"Not Found"` | `datafabric_` service not running on target env | Start the Ontologies / Data Fabric service |
 | HTTP 404 on `mapping` upsert | Missing Data Fabric entities or other API error | Inspect the response body, ensure all referenced Data Fabric entities exist, then retry |
 | `"unknown command 'onto'"` | Wrong prefix | Use `uip ont`, not `uip onto` or `uip ontologies` |
+| State stuck at `DRAFT` despite all artifacts validating individually and the mapping being re-uploaded | A schema class has zero properties and/or no instantiation in the mapping | See "Persistent `DRAFT`" note above the state table |
 
 Service URL pattern: `https://<baseUrl>/<org>/<tenant>/datafabric_/api/ontology`
 

@@ -1,0 +1,96 @@
+# ============================================================================
+# USAGE POLICY  (how to use the constructs; facts live in order-management.ofn)
+# ============================================================================
+# JOIN GRAPH (join only what the question needs):
+#   Order → Customer via Order.customerId = Customer.Id  (ont:placedBy)
+#   Order → Product  via Order.productId  = Product.Id   (ont:contains)
+# ROUTING (canonical property for ambiguous phrases):
+#   "customer name" → Customer.firstName + Customer.lastName
+#   "order value" / "order total" → Order.totalAmount
+# GRAIN DISCIPLINE:
+#   Customer: ONE row per customer — no dedup needed
+#   Order:    ONE row per order — no dedup needed
+#   Product:  ONE row per product — no dedup needed
+# OUTPUT DISCIPLINE:
+#   Return ALL matching rows for list questions; LIMIT 1 only for single-answer superlatives.
+#   No default LIMIT. No DISTINCT unless uniqueness was asked.
+# LITERALS are case- and format-sensitive — copy exactly as annotated in order-management.ofn.
+# ============================================================================
+
+prefixes:
+  ont: https://ontology.uipath.com/order-management#
+
+mappings:
+  Customer:
+    sources:
+      - access: datafabric
+        table: EvalGoldCustomer
+        entityId: 6edef410-e589-f111-b337-0022482a908b
+        folderId: b537e6d2-4358-496f-a0fc-b94db620825b
+        referenceFormulation: rr:SQL2008
+    s: ont:Customer/$(Id)
+    po:
+      - - a
+        - ont:Customer
+      - - ont:Customer.firstName
+        - $(firstName)
+      - - ont:Customer.lastName
+        - $(lastName)
+      - - ont:Customer.email
+        - $(email)
+
+  Order:
+    sources:
+      - access: datafabric
+        table: EvalGoldOrder
+        entityId: 8f4cb942-e589-f111-b337-0022482a908b
+        folderId: b537e6d2-4358-496f-a0fc-b94db620825b
+        referenceFormulation: rr:SQL2008
+    s: ont:Order/$(Id)
+    po:
+      - - a
+        - ont:Order
+      - - ont:Order.status
+        - $(status)
+      - - ont:Order.orderDate
+        - $(orderDate)
+      - - ont:Order.totalAmount
+        - $(totalAmount)
+      - p: ont:placedBy
+        o:
+          mapping: Customer
+          condition:
+            function: equal
+            parameters:
+              - - str1
+                - $(customerId)
+              - - str2
+                - $(Id)
+      - p: ont:contains
+        o:
+          mapping: Product
+          condition:
+            function: equal
+            parameters:
+              - - str1
+                - $(productId)
+              - - str2
+                - $(Id)
+
+  Product:
+    sources:
+      - access: datafabric
+        table: EvalGoldProduct
+        entityId: 01cac11d-e589-f111-b337-0022482a908b
+        folderId: b537e6d2-4358-496f-a0fc-b94db620825b
+        referenceFormulation: rr:SQL2008
+    s: ont:Product/$(Id)
+    po:
+      - - a
+        - ont:Product
+      - - ont:Product.name
+        - $(name)
+      - - ont:Product.price
+        - $(price)
+      - - ont:Product.category
+        - $(category)

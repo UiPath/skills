@@ -8,13 +8,29 @@ user-invocable: true
 
 # UiPath Ontology Authoring — SDD to Deployed Ontology
 
-Scope: SDD → silent login check → folder selection → entity matching + creation → domain definition (4 phases) → create ontology stub → invoke `uipath-ontology-modeler` (generates artifacts following canonical pattern files: `owl-patterns.md`, `shacl-patterns.md`, `mapping-yarrrml.md`, `functions-patterns.md`, `action-table-contract.md`) → upload mapping as deploy trigger.
+Two entry points — pick based on what the user has:
 
-**Separation of Concerns** — enforce this throughout: facts go in `{name}.ofn`, rules go in USAGE POLICY blocks (mapping + functions), bindings go in `{name}-mapping.yarrrml.yml`. Never let domain facts drift into USAGE POLICY, and never let query routing rules drift into `rdfs:comment`. See the modeler's SoC table for the full breakdown.
+| User has | Entry point |
+|---|---|
+| An SDD/PDD or domain spec | **A — Step 1 below.** Scope: SDD → silent login check → folder selection → entity matching + creation → domain definition (4 phases) → create ontology stub → invoke `uipath-ontology-modeler` (generates artifacts following canonical pattern files: `owl-patterns.md`, `shacl-patterns.md`, `mapping-yarrrml.md`, `functions-patterns.md`, `action-table-contract.md`) → upload mapping as deploy trigger. |
+| Already-generated artifact files — cloned from a different ontology, or authored outside this skill — to deploy | **B — "Entry point B" section below.** No SDD, no domain-definition phases — the domain model already exists in the files. Every gate in modeler `SKILL.md` Step 10 still applies. |
+
+**Separation of Concerns** — enforce this throughout (both entry points): facts go in `{name}.ofn`, rules go in USAGE POLICY blocks (mapping + functions), bindings go in `{name}-mapping.yarrrml.yml`. Never let domain facts drift into USAGE POLICY, and never let query routing rules drift into `rdfs:comment`. See the modeler's SoC table for the full breakdown.
 
 > **Functions (SPARQL reads):** if the SDD describes query operations, the modeler generates one `.ttl` per functional area following `functions-patterns.md`.
 > **Actions (SQL writes):** if the SDD describes write operations, the modeler generates one `{name}-{actionName}.ttl` per action following `action-table-contract.md`.
 
+---
+
+## Entry point B — cloning or deploying already-generated artifacts (no SDD/PDD)
+
+Trigger: user points to a folder of already-generated artifact files (`{oldName}.ofn`, `{oldName}-constraints.ttl`, `{oldName}-functions.ttl`, `{oldName}-mapping.yarrrml.yml`, optionally `{oldName}-{actionName}.ttl`) — either cloned from a different ontology under a new name, or authored outside the guided flow and never gated — and wants them deployed. The domain model already exists in the files — skip Step 1 (SDD reading) and Phases 3–6 (domain definition) entirely. "The files already exist" is not a reason to skip any gate: a file that already parses and validates gives no other signal that it's missing a mapped class or a relationship. Do this instead:
+
+1. Confirm the new `{name}` slug (same IRI-derivation rule as Step 1) and the target folder (Phase 1, including its cross-folder name-collision check).
+2. If cloning from a different ontology: copy each file into `{workdir}`, renaming `{oldName}` → `{name}` in the filename and, inside every file, every occurrence of the old slug — schema/constraints/functions/mapping IRIs, SPARQL `PREFIX ont:` lines, and (for `functions`/`actions`) the `ont:statement`/`ont:statements` bodies. If deploying files as originally authored, skip straight to step 3.
+3. **A rename (or "it already exists") is not sufficient.** `uip ont artifact validate` only checks per-file syntax — it does not catch `functions`/`actions` SPARQL or SQL bodies whose object/data property names don't match what's declared in the schema, an unmapped class, or a missing relationship. Run Gates 1, 2, 3, 4, 4b, and 4c from the modeler `SKILL.md`'s Step 10 against the files exactly as written — same bash commands, no exceptions — before uploading anything. Do this even though a cloned source ontology may already be `DEPLOYED` elsewhere, since schema and functions can silently drift out of sync over that ontology's own lifetime. Fix anything flagged (edit the local files, don't just note the issue).
+4. Check `{name}-constraints.ttl`'s `@prefix shape:` is the global `<https://ontology.uipath.com/shapes#>` (see `shacl-patterns.md`), not a per-ontology path — a common leftover from an older authoring pass.
+5. Create the ontology stub (Phase 2's `uip ont create`). No modeler invocation needed — artifacts already exist. Run the same validate → upsert sequence Step 2/3 uses for freshly-generated artifacts: schema first, then constraints/functions/actions (parallel), then mapping last (triggers `DRAFT → DEPLOYED`). Use `uip ont get {name}` to confirm `DEPLOYED` — and remember `DEPLOYED` only means internally consistent, not "relationships modeled" (Gate 4c is what guarantees that).
 
 ---
 
@@ -28,7 +44,7 @@ Ask the user for all of the following **in one message**:
 | **Ontology name** | Slug: max 64 chars, no `/` (e.g. `clinic`, `ecommerce`) |
 | **Display name** | Human label (defaults to `<name>`) |
 | **Description** | One sentence |
-| **Working directory** | Where to write generated artifact files (defaults to the SDD file's directory, or current directory) |
+| **Base directory** | Parent location to create the ontology's own folder under (defaults to the SDD file's directory, or current directory) |
 
 Read the SDD immediately (Read tool for file paths). Extract only the **class names** from it — just enough to drive entity matching in Phase 2. Do not build the full domain model yet.
 
@@ -46,15 +62,30 @@ As soon as the ontology name is confirmed, derive the IRI:
 
 ```
 ONTOLOGY_IRI = https://ontology.uipath.com/{name}#
+{workdir}     = {base directory}/{name}/
 ```
 
 `{name}` is the exact slug — verbatim, no transformation. Show it to the user and confirm before generating any files. This value must be **identical** in all artifact files (`{name}.ofn`, `{name}-constraints.ttl`, `{name}-mapping.yarrrml.yml`, functions, and actions). It is immutable — renaming the ontology later does not change the IRI.
 
+**Every artifact file for this ontology goes inside its own dedicated `{name}/` subfolder — never loose at the base directory's top level.** Create it before generating anything:
+```bash
+mkdir -p {workdir}
+```
+Pass this resolved `{workdir}` (not the base directory) to `uipath-ontology-modeler` as its working directory in Step 2 — the modeler writes every `{workdir}/...` path it generates directly into this same subfolder, and skips deriving its own since it's supplied here.
+
 ---
 
-## Phase 0 — Login and session gate (blocking)
+## Phase 0 — Login and session gate (parallel with SDD reading, required before Phase 1)
 
-Run before anything else — including SDD reading. Do not proceed past this gate until all checks pass.
+Run this phase **in parallel with SDD reading** — they are independent. Do not wait for SDD reading to complete before checking login.
+
+Two tracks run simultaneously after inputs are received:
+- **Track A**: Read SDD → extract class names
+- **Track B**: Phase 0 (login check) → Phase 1 (folder selection, depends on login passing)
+
+Phase 1 cannot start until Phase 0 passes — folder listing requires a valid session.
+
+Do not proceed to Phase 2 until Track A and Track B are both complete.
 
 ```bash
 uip login status --output json
@@ -124,6 +155,10 @@ Scan the result for any ontology whose name matches `{name}` (case-insensitive):
 - **Different folder match** → warn explicitly and wait for confirmation before continuing:
 
 > ⚠ An ontology named `{name}` already exists in folder `{otherFolderKey}` (ID: `{otherOntologyId}`). Creating another with the same name in a different folder means both will share the IRI `https://ontology.uipath.com/{name}#`. Any tool or reasoner that reads both will see the same term IRIs pointing to different data. Confirm you want to proceed, or choose a different name.
+
+**Convergence gate — do not move to Phase 2 until both tracks are complete:**
+- Track A: SDD reading done and class names extracted
+- Track B: Login verified → `PRIMARY_FOLDER_KEY` confirmed (not `"default"`, not `00000000-0000-0000-0000-000000000000`)
 
 ---
 
@@ -209,6 +244,8 @@ Extract all classes from the SDD. Show this table and wait for confirmation:
 | "a/an X", "each X", "X is a" | New class |
 | "also known as / aka / alias" | `skos:altLabel` on the class |
 | "Y is a type of / subtype of Z" | `SubClassOf(:Y :Z)` |
+
+**Not every noun is a class.** SDDs frequently mention actors, roles, or external systems for narrative context only — "the AP Clerk captures the invoice," "posted to the ERP system" — with no properties of their own and no backing Data Fabric entity. Modeling these as OWL classes produces a class the modeler will never give a `DataProperty` or a mapping entry to, which passes every syntax/annotation check but silently blocks `DEPLOYED` (see `uipath-ontology-modeler`'s Gate 4b). If a concept has no property beyond a name and won't appear in the mapping, leave it out of this table and fold it into the relevant property's `rdfs:comment` instead (e.g. `Payment.approvedBy`: "The Accounts Payable Manager who approved this payment.").
 
 > **Wait for explicit user confirmation before moving to Phase 4.**
 
@@ -336,7 +373,7 @@ Update any Phase 5 annotation that differs from what the actual data shows. Reco
 - Confirmed annotations from Phase 5, updated with verified facts from Phase 6
 - `ONTOLOGY_IRI` from Step 1
 - `CLASS_MAP` from Phase 2 (entityId + folderId per class)
-- Working directory for output (from Step 1)
+- `{workdir}` from Step 1 (the ontology's own `{name}/` subfolder, already created) as the working directory for output
 
 > If the `uipath-ontology-modeler` skill is not available, stop and tell the user: "The uipath-ontology-modeler skill is required for artifact generation. Please activate it and try again."
 
@@ -358,7 +395,7 @@ All six gates the modeler runs:
 |---|---|---|---|
 | G1 — QL blacklist | Modeler Step 3c | No forbidden OWL 2 QL constructs in `{name}.ofn` | Zero hits |
 | G2 — Naming | Modeler Step 3c | No `has{Prop}` DataProperty names | Zero hits |
-| G3 — Cross-file | Modeler Step 5c | Every `ont:` term in mapping + constraints declared in schema | All found |
+| G3 — Cross-file | Modeler Step 5c | Every `ont:` term in mapping + constraints + functions/actions SPARQL/SQL bodies declared in schema | All found |
 | G4 — Annotation | Modeler Step 3c | Every declared class and property has `rdfs:label` and `rdfs:comment` | All covered |
 | G5 — Backend validate + tiered upsert | Modeler Step 8 | All artifacts validated in parallel; upserted in tiers (schema first, then constraints/functions/actions simultaneously, mapping held) | `Data.valid: true` + `ArtifactUpserted` each |
 | G6 — Semantic consistency | Modeler Steps 9–10 | LLM judge: domain completeness, constraint coverage, column alignment, USAGE POLICY coherence | All checks `✓` |
@@ -423,4 +460,5 @@ uip ont get {name}
 | `409` on create | Ontology name taken | `uip ont get {name}` to check; rename or delete first |
 | `BROKEN` after deploy | Mapping references undeclared property | Check every `ont:` term in mapping exists in `{name}.ofn` |
 | `DRAFT` after mapping upload | schema or constraints not uploaded first | Upload schema and rules, then re-upload mapping |
+| `DRAFT` persists though schema/constraints/mapping are all uploaded and every artifact individually validates fine | A class in `{name}.ofn` has zero properties and/or no instantiation in the mapping — no error surfaces, only Gate 4b catches this | Run Gate 4b (`uipath-ontology-modeler` Step 10): every class must be the domain of ≥1 property AND appear as `a ont:{ClassName}` in the mapping. Remove or properly back any class that fails either check, then re-upload schema/mapping |
 | `Not Found` on any `uip ont` command | Datafabric service not reachable | Backend not deployed on this environment |
