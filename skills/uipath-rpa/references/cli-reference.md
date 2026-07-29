@@ -409,7 +409,7 @@ uip rpa pack "<PROJECT_DIR>" "<OUTPUT_DIR>" --output json
 | Argument | Position | Notes |
 |---|---|---|
 | `<PROJECT_DIR>` | Positional 1 | Path to the project (folder containing `project.json`). |
-| `<OUTPUT_DIR>` | Positional 2 | Directory the `.nupkg` is written to. Must exist. |
+| `<OUTPUT_DIR>` | Positional 2 | Directory the `.nupkg` is written to. Must exist and be OUTSIDE the project directory tree — `pack` refuses an output path inside the project. Use a sibling directory (e.g. `dist/`). |
 
 Common optional flags (run `uip rpa pack --help` for the full set):
 - `--package-version <SEMVER>` — pin the version. Defaults to the project version.

@@ -350,6 +350,25 @@ Or attribute form with explicit literal:
 
 Or omit `Default` entirely if the variable is assigned before its first read.
 
+## InvokeCode Code Property — Attribute Form Only
+
+Author `Code` as an XML **attribute** (XML-escaped; `&#xA;` for newlines). A bare text or CDATA child element (`<ui:InvokeCode.Code>…</ui:InvokeCode.Code>`) passes `validate` AND `build` but deserializes as empty code — the activity runs as a silent no-op (`hasErrors: false`, none of the code's effects happen).
+
+**Correct:**
+```xml
+<ui:InvokeCode Language="CSharp" DisplayName="Process rows"
+               Code="var total = 0m;&#xA;ProcessRows(total);" />
+```
+
+**Silent no-op (passes validate + build):**
+```xml
+<ui:InvokeCode Language="CSharp" DisplayName="Process rows">
+  <ui:InvokeCode.Code><![CDATA[var total = 0m; ProcessRows(total);]]></ui:InvokeCode.Code>
+</ui:InvokeCode>
+```
+
+**Detection:** run reports success but the code's outputs are absent (0 rows processed, no files written). No validate/build diagnostic catches it — verify effects after the first run.
+
 ## InvokeCode Language Property
 
 The `Language` property on `InvokeCode` uses the `UiPath.Core.Activities.NetLanguage` enum, which has **only two valid values**: `VBNet` and `CSharp`.
@@ -363,6 +382,18 @@ System.FormatException: VisualBasic is not a valid value for NetLanguage.
 ```
 
 **Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` or `"CSharp"`.
+
+## XAML Expressions Cannot Reference Coded Source File Types
+
+XAML expressions (C# or VB) cannot call types defined in the project's coded source files (`.cs`) — the expression compiler does not reference the coded-workflows assembly. `validate` and `build` fail with `CS0103` / `BC30451` on the type name.
+
+**Fix:** inline the logic in `InvokeCode`, or invoke a coded workflow via `InvokeWorkflowFile`. Helpers shared across projects belong in a library ([../library-authoring-guide.md](../library-authoring-guide.md)).
+
+## WriteTextFile Emits a UTF-8 BOM When Encoding Is Set
+
+`WriteTextFile` with `Encoding="utf-8"` maps to .NET `Encoding.UTF8` **with preamble** — output starts with a BOM, which strict JSON parsers reject. Omitting the `Encoding` property writes BOM-less UTF-8.
+
+**Rule:** for machine-consumed output (JSON, or CSV for downstream parsers), omit `Encoding`. If explicit encoding control is required, write via `InvokeCode`: `File.WriteAllText(path, content, new UTF8Encoding(false))`.
 
 ## `Chr()` / `Asc()` Break at Runtime in Modern Projects — Use `ChrW()` / `AscW()`
 

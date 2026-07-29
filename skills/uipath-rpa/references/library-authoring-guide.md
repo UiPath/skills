@@ -167,6 +167,7 @@ uip or libraries upload --file "<OUTPUT_DIR>/<LIBRARY_NAME>.<VERSION>.nupkg" --o
 ```
 
 - Libraries upload to the tenant-scoped **libraries feed** — not the per-folder processes feed that [cli-reference.md § Pack & Publish to Orchestrator](cli-reference.md#pack--publish-to-orchestrator) covers with `uip or packages upload`. There is no `uip rpa publish`.
+- `<OUTPUT_DIR>` must be OUTSIDE the project directory tree — `pack` refuses an output path inside the project. Use a sibling directory (e.g. `dist/`).
 - `--feed-id <FEED_ID>` targets a non-default feed.
 - Verify the publish:
 
