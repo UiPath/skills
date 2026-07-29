@@ -212,6 +212,10 @@ def _check(doc: dict, text: str, path: Path, contract: dict, locate: bool = True
     # --- structure ----------------------------------------------------------
     stc = contract["structure"]
     tags = doc.get("tags") or []
+    if not isinstance(tags, list):
+        # A scalar would satisfy the membership test below by substring.
+        fail(r"^tags:", f"`tags` must be a list (found {type(tags).__name__})", "Use `tags: [uipath-troubleshoot, ...]`.")
+        tags = []
     for tag in stc["required_tags"]:
         if tag not in tags:
             fail(r"^tags:", f"missing required tag `{tag}`", f"Add `{tag}` to tags.")
