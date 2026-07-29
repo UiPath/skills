@@ -284,6 +284,16 @@ def main(argv: list[str]) -> int:
     violations: list[Violation] = []
 
     scenarios = _iter_scenarios(argv, contract.get("exempt") or [])
+    if not scenarios:
+        # A gate that scans nothing reports OK, so an empty result must fail:
+        # one folder move or path typo would otherwise turn a ~300-scenario
+        # required check into a green no-op.
+        target = " ".join(argv) if argv else _rel(SUITE_ROOT)
+        print(f"FAIL - found no scenario task.yaml under {target} - the gate is scanning nothing.")
+        print("  Fix: check the path. If the suite moved, update SUITE_ROOT in this script.")
+        print(f"::error file={_rel(Path(__file__))},line=0::gate scanned 0 scenarios")
+        return 1
+
     for path in scenarios:
         text = path.read_text(encoding="utf-8", errors="ignore")
         try:
