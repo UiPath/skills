@@ -24,6 +24,7 @@ Exit codes:
 
 from __future__ import annotations
 
+import ast
 import re
 import sys
 from pathlib import Path
@@ -210,20 +211,64 @@ def _check(doc: dict, text: str, path: Path, contract: dict) -> list[Violation]:
     return out
 
 
-def _render_generator_template(contract: dict) -> tuple[str, Path] | None:
-    """Extract + render the generator's task template. None when unavailable."""
+def _render_generator_template(contract: dict) -> tuple[str, Path] | Violation:
+    """Render the generator's task template so it can be validated as a scenario.
+
+    Returns a Violation rather than None when the template cannot be reached:
+    an unreachable template silently disables half of this gate, and a rename or
+    refactor must fail the build instead of quietly narrowing the scan.
+    """
     gt = contract.get("generator_template") or {}
     path = REPO_ROOT / gt["path"]
+    symbol = gt["symbol"]
+    hint = (
+        f"The contract points `generator_template` at {gt['path']}:{symbol}.\n"
+        "    Update the contract if the generator moved, or keep the template a plain\n"
+        "    string literal — the generator must stay contract-validated."
+    )
     if not path.is_file():
-        return None
-    namespace: dict = {}
+        return Violation(path, 0, f"generator template file not found: {gt['path']}", hint)
+
     source = path.read_text(encoding="utf-8")
-    # Execute only the template assignment, not the whole generator.
-    match = re.search(rf'^{re.escape(gt["symbol"])}\s*=\s*("""|\'\'\')(.*?)\1', source, re.S | re.M)
-    if not match:
-        return None
-    exec(f'{gt["symbol"]} = {match.group(1)}{match.group(2)}{match.group(1)}', namespace)  # noqa: S102
-    return namespace[gt["symbol"]].format(**TEMPLATE_FILLERS), path
+    # AST, not regex + exec: robust to indentation, string prefixes and rebinding,
+    # and it never executes generator code.
+    try:
+        tree = ast.parse(source)
+    except SyntaxError as exc:
+        return Violation(path, exc.lineno or 0, f"generator is not parseable Python: {exc.msg}", hint)
+
+    node = next(
+        (
+            n.value
+            for n in ast.walk(tree)
+            if isinstance(n, ast.Assign)
+            and any(getattr(t, "id", None) == symbol for t in n.targets)
+        ),
+        None,
+    )
+    if node is None:
+        return Violation(path, 0, f"could not find assignment `{symbol}` in the generator", hint)
+    try:
+        template = ast.literal_eval(node)
+    except ValueError:
+        return Violation(
+            path,
+            getattr(node, "lineno", 0),
+            f"`{symbol}` is not a plain string literal, so the template cannot be rendered",
+            hint,
+        )
+    if not isinstance(template, str):
+        return Violation(path, getattr(node, "lineno", 0), f"`{symbol}` is not a string", hint)
+
+    try:
+        return template.format(**TEMPLATE_FILLERS), path
+    except KeyError as exc:
+        return Violation(
+            path,
+            getattr(node, "lineno", 0),
+            f"template placeholder {exc} has no filler",
+            "Add it to TEMPLATE_FILLERS in scripts/check-troubleshoot-tasks.py.",
+        )
 
 
 def main(argv: list[str]) -> int:
@@ -245,7 +290,9 @@ def main(argv: list[str]) -> int:
 
     checked_template = False
     rendered = _render_generator_template(contract)
-    if rendered is not None:
+    if isinstance(rendered, Violation):
+        violations.append(rendered)
+    else:
         text, gen_path = rendered
         try:
             doc = yaml.safe_load(text)
