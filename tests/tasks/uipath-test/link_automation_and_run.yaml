@@ -72,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran the testcase successfully with --test-case-id (UUID), --execution-type automated, and the required --name (not --test-case-key)"
     tool_name: "Bash"
-    command_pattern: '(?=[^&;]*--test-case-id\s+\S+)(?=[^&;]*--execution-type\s+automated)(?=[^&;]*--name\s+\S)(uip|\$UIP)\s+tm\s+(testcases?\s+run|testcase\s+execute)\b'
+    command_pattern: '(?=[^&;\r\n]*--test-case-id\s+\S+)(?=[^&;\r\n]*--execution-type\s+automated)(?=[^&;\r\n]*--name\s+\S)(uip|\$UIP)\s+tm\s+(testcases?\s+run|testcase\s+execute)\b'
     require_success: true
     min_count: 1
     weight: 3.0

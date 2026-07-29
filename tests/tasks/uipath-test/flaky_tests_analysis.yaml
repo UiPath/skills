@@ -10,17 +10,46 @@ description: >
   skill — not the prompt — must teach the multi-execution analysis pattern
   and the --output json flag.
   Fixture dependency: CLAIM's 'UAT Smoke Suite' (CLAIM:23) must hold >=3
-  FINISHED executions with intermittent per-testcase results. Seeded
-  2026-07-27 via `uip tm testsets run --execution-type manual` + `uip tm
-  testcaselog finish --result Passed|Failed --has-error <bool>
-  --executed-by <email>` per testcase (CLAIM:13 and CLAIM:19 flip results
-  across runs). If executions list --status finished returns <3, re-seed
-  the same way.
+  FINISHED executions with intermittent per-testcase results — verified
+  and reseeded automatically by pre_run (manual executions via `testsets
+  run --execution-type manual` + `testcaselog finish`, with CLAIM:13 and
+  CLAIM:19 flipping results across runs to guarantee flakiness).
 tags: [uipath-test, integration, mode:operate, lifecycle:triage, feature:execution]
 
 run_limits:
   expected_turns: 17
   max_turns: 35
+
+# Self-healing fixture: ensure >=3 FINISHED executions with flaky results on
+# 'UAT Smoke Suite' before the agent starts. No-ops when the fixture is
+# intact; reseeds the deficit via manual executions otherwise (CLAIM:13 and
+# CLAIM:19 flip pass/fail by execution parity so flakiness is guaranteed).
+pre_run:
+  - command: |
+      TSID=$(uip tm testsets list --project-key CLAIM --filter "UAT Smoke Suite" --output json 2>/dev/null | python3 -c "import json,sys;s=sys.stdin.read();d=json.loads(s[s.index('{'):]);print([t['Id'] for t in d['Data'] if t['Name']=='UAT Smoke Suite'][0])" 2>/dev/null) || exit 0
+      count_finished() {
+        uip tm executions list --project-key CLAIM --test-set-id "$TSID" --status finished --output json 2>/dev/null | python3 -c "import json,sys;s=sys.stdin.read();d=json.loads(s[s.index('{'):]);print(len(d['Data']))" 2>/dev/null || echo 0
+      }
+      N=$(count_finished)
+      i=0
+      while [ "$N" -lt 3 ] && [ "$i" -lt 4 ]; do
+        i=$((i+1))
+        EXEC=$(uip tm testsets run --test-set-key CLAIM:23 --execution-type manual --output json 2>/dev/null | python3 -c "import json,sys;s=sys.stdin.read();print(json.loads(s[s.index('{'):])['Data']['ExecutionId'])" 2>/dev/null) || break
+        uip tm executions testcaselogs list --project-key CLAIM --execution-id "$EXEC" --output json 2>/dev/null \
+          | python3 -c "import json,sys;s=sys.stdin.read();d=json.loads(s[s.index('{'):]);print('\n'.join(l['TestCaseId']+' '+l['TestCase']['ObjKey'] for l in d['Data']))" 2>/dev/null \
+          | while read -r TCID KEY; do
+              R=Passed
+              case "$KEY" in
+                CLAIM:13) [ $((i % 2)) -eq 0 ] && R=Failed ;;
+                CLAIM:19) [ $((i % 2)) -eq 1 ] && R=Failed ;;
+              esac
+              HE=false; [ "$R" = "Failed" ] && HE=true
+              uip tm testcaselog finish --project-key CLAIM --execution-id "$EXEC" --test-case-id "$TCID" --result "$R" --has-error "$HE" --executed-by eval-fixture@uipath.com --output json >/dev/null 2>&1 || true
+            done
+        N=$(count_finished)
+      done
+      exit 0
+    timeout: 300
 
 initial_prompt: |
   Analyse the top 3 executions with a finished executionStatus of a test
