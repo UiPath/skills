@@ -11,6 +11,9 @@ description: >
   The prompt pre-authorizes the delete — the uipath-test skill mandates
   user confirmation before any `delete`, and a single-turn run has no
   second turn to grant it.
+  Serialize across workflow dispatches: fixture names are fixed (exact-name
+  criteria; the runner cannot template names into patterns/pre_run), so
+  concurrent dispatches of this task sweep each other's in-flight fields.
 tags: [uipath-test, smoke, mode:operate, lifecycle:manage, feature:customfield]
 
 run_limits:

@@ -14,7 +14,9 @@ description: >
   The "Eval Reviewer"/"Eval Risk" field definitions are deleted in `pre_run`
   (clean slate so the `customfield create` step always runs) and again in
   `post_run` (leaves no state), keeping the task deterministic on the shared
-  HEALTH project across runs.
+  HEALTH project across runs. Serialize across workflow dispatches — fixed
+  fixture names + name-scoped pre/post_run sweeps race between concurrent
+  dispatches of this task.
 tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:customfield]
 
 run_limits:
