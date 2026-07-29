@@ -55,6 +55,12 @@ success_criteria:
     - file_contains
     - command_executed
   skill_triggered:
+    # BOTH fields must name the skill: the harness detects engagement of
+    # `skill_name` and expects it iff skill_name == expected_skill. A drifted
+    # skill_name alone flips the criterion into a negative row ("passes when
+    # that other skill is NOT engaged") that scores 1.0 without the
+    # troubleshoot skill ever running.
+    skill_name: uipath-troubleshoot
     expected_skill: uipath-troubleshoot
   llm_judge:
     weight: 3.0

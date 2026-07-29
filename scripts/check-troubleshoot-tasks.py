@@ -189,10 +189,17 @@ def _check(doc: dict, text: str, path: Path, contract: dict, locate: bool = True
             )
         fail(rf"type:\s*{extra}", f"criterion `type: {extra}` is not allowed", hint)
 
-    want = sc["skill_triggered"]["expected_skill"]
     for st in _criteria(doc, "skill_triggered"):
-        if st.get("expected_skill") != want:
-            fail(r"expected_skill:", f"`skill_triggered.expected_skill` must be {want!r} (found {st.get('expected_skill')!r})", f"Set `expected_skill: \"{want}\"`.")
+        # BOTH fields: the harness detects engagement of skill_name and expects
+        # it iff skill_name == expected_skill, so a drifted skill_name flips the
+        # criterion into a negative row that passes without the skill running.
+        for key, want in sc["skill_triggered"].items():
+            if st.get(key) != want:
+                fail(
+                    [rf"{key}:", r"type:\s*skill_triggered"],
+                    f"`skill_triggered.{key}` must be {want!r} (found {st.get(key)!r})",
+                    f'Set `{key}: "{want}"` - the criterion asserts the skill ran only when skill_name and expected_skill both name it.',
+                )
 
     jc = sc["llm_judge"]
     for judge in _criteria(doc, "llm_judge"):

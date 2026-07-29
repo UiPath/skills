@@ -112,6 +112,19 @@ def test_duplicate_skill_triggered_with_wrong_skill_is_caught(tmp_path):
     assert "expected_skill" in out
 
 
+def test_skill_name_drift_is_caught(tmp_path):
+    """The harness detects engagement of skill_name and expects it iff
+    skill_name == expected_skill. Drifting skill_name alone flips the criterion
+    into a negative row that passes without the troubleshoot skill running."""
+    directory = _scenario(
+        tmp_path,
+        lambda t: t.replace('skill_name: "uipath-troubleshoot"', 'skill_name: "uipath-platform"', 1),
+    )
+    code, out = _run(directory)
+    assert code == 1
+    assert "skill_triggered.skill_name" in out
+
+
 def test_unvetted_criterion_type_is_caught(tmp_path):
     extra = '  - type: run_command\n    description: "x"\n    command: "true"\n    weight: 1.0\n\n'
     directory = _scenario(tmp_path, lambda t: t.replace("success_criteria:\n", "success_criteria:\n" + extra, 1))
