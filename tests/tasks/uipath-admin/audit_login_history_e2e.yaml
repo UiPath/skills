@@ -14,7 +14,11 @@ description: >
       investigation needs, rather than a summarized copy;
     - the saved events are genuinely ORG-scope (org-level events carry no
       TenantId — an intrinsic property the old `audit org events` regex could not
-      check) and fall inside the requested window;
+      check) and fall inside the requested window. The prompt pins that window to a
+      ROLLING 30 days on purpose: "the last month" also reads as the last CALENDAR
+      month, and an agent that picked June 1-July 1 was being reasonable while
+      failing a rolling-window floor — the task grades scope and boundedness, not
+      calendar semantics;
     - the conclusion is honest about a user who cannot be resolved.
 
   The referenced user does not exist on the test org, so the documented fallback
@@ -28,7 +32,8 @@ max_iterations: 2
 
 initial_prompt: |
   Using the organization Admin audit trail (sign-in history), show me login
-  attempts for jane.doe@example.com over the last month.
+  attempts for jane.doe@example.com over the last 30 days (a rolling window ending
+  today, not last calendar month).
 
   Save the complete JSON result of the org sources call to ./sources-org.json and
   the complete JSON result of your org events query to ./events-org.json.
@@ -51,7 +56,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "events-org.json holds genuinely ORG-scope events (no TenantId) bounded to the 1-month window"
+    description: "events-org.json holds genuinely ORG-scope events (no TenantId) bounded to the rolling 30-day window"
     command: 'AUDIT_FILE=events-org.json AUDIT_SCOPE=org AUDIT_WINDOW_DAYS=31 AUDIT_CORROBORATE_EMPTY=0 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_events.py''))"'
     timeout: 320
     expected_exit_code: 0
@@ -66,7 +71,7 @@ success_criteria:
     pass_threshold: 1.0
     prompt: |
       The user asked for login history for jane.doe@example.com over the last
-      month, from the ORGANIZATION-scope Admin audit trail. On this test org that
+      30 days, from the ORGANIZATION-scope Admin audit trail. On this test org that
       user does not exist, so the agent cannot resolve them to an actor id. The
       skill's documented fallback is to query the User Login event type over the
       date window and report that the result is approximate / not user-filtered.
