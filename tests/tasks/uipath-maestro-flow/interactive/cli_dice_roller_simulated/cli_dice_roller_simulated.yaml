@@ -5,7 +5,9 @@ description: >
   clarify ambiguous asks before building.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, simulation]
 run_limits:
-  # max_turns = simulation rounds x ~5 (~4 build turns/round + headroom)
+  # Ceiling on agent turns across the whole dialog, with generous headroom so a
+  # long build is never truncated mid-flow. The dialog length itself is bounded
+  # by simulation.max_turns below.
   max_turns: 60
   task_timeout: 2400
   turn_timeout: 1200
@@ -30,32 +32,34 @@ simulation:
     "I trust you, just make it work."
 
   goal: |
-    You ultimately want a UiPath Flow project that rolls a single six-sided die
-    and prints the result (a random integer 1-6). You also want the project
-    built via the uip CLI (uip maestro flow node add / edge add), not by hand-editing
-    JSON, and you want it validated with uip maestro flow validate before you accept it.
+    You want a UiPath Flow that rolls a single six-sided die and shows you the
+    number that came up.
 
-    CRITICAL: do NOT volunteer these details up front. Reveal each fact ONLY if
-    the agent explicitly asks about it:
+    OPENING MESSAGE: open the way you would to a colleague — a couple of short
+    sentences covering the outcome you want plus the rules that matter: one
+    die, six sides, numbers 1 through 6, and you want the rolled number shown
+    as the result rather than buried somewhere nobody looks. Say that it has
+    to be built as a UiPath Maestro Flow — not an API workflow, not a
+    standalone script — and that you want it validated before you sign off. Do
+    not name files or paths and do not use technical wording. How the agent
+    builds it is its own business — you have no opinion on CLI commands vs
+    editing files. Close by inviting the agent to ask you anything it needs
+    before it starts building. Keep the withheld items below to yourself until
+    it asks.
+
+    WITHHELD — reveal each of these ONLY if the agent asks about it:
       - The project name should be "DiceRoller".
-      - It should roll a SIX-sided die (1-6), just one die.
-      - It should print / output the rolled number.
-      - You want it built with the uip CLI commands, not by writing JSON.
       - You want "uip maestro flow validate" to pass before you sign off.
       - You do not require the project to execute before signing off.
 
-    If the agent asks a clarifying question that covers several of these at
-    once, answer only what they asked — do not pre-empt the rest.
-
   constraints:
     - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
-    - "Do not mention 'CLI', 'uip', 'validate', 'node', or 'edge' unless the agent brings them up first."
-    - "Do not reveal the die has six sides unless asked about the number of sides or range."
+    - "Do not mention 'CLI', 'uip', 'node', or 'edge' unless the agent brings them up first."
     - "Do not reveal the project name 'DiceRoller' unless asked what to name it."
-    - "You expect a UiPath Maestro Flow — i.e. a `.flow` file in the workspace. If the agent builds anything else (e.g. an API workflow), tell it you specifically want a Maestro Flow and are not satisfied until there is a `.flow` file."
-    - "When you are satisfied that the flow is built and validated, reply with exactly <<<END>>> on its own line."
-
-  max_turns: 12
+    - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro Flow at all (e.g. an API workflow), tell it you specifically want a Maestro Flow — i.e. a `.flow` file in the workspace — and are not satisfied until there is one."
+    - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
+    - "The moment the agent reports it has built the flow, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
+  max_turns: 8
   stop_token: "<<<END>>>"
   stop_on_criteria_pass: false
   check_criteria: end_of_dialog
@@ -79,7 +83,11 @@ success_criteria:
   - type: run_command
     description: "Flow debug runs; Script node executed and output is an integer in [1,6]"
     command: "python3 $TASK_DIR/check_dice_runs.py"
-    timeout: 300
+    # Cloud `flow debug` on this task regularly exceeds the old 240s inner
+    # budget (measured: 2 of 3 codex runs raised subprocess.TimeoutExpired), so
+    # the criterion was scoring 0 on runner latency rather than on the flow.
+    # 660 leaves headroom over the checker's own 600s run_debug timeout.
+    timeout: 660
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

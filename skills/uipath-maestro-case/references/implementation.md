@@ -122,7 +122,7 @@ No edge-building step (Rule 20) — stage transitions are entry/exit conditions,
 
 **Phase A — gather.** For each non-connector task in `tasks.md §4.6`, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` and collect the input schema in reasoning. Connector tasks (`connector-activity`, `connector-trigger`) skip the gather — `case spec` defers to Phase 3 Step 9.7. Unresolved tasks skip too — they become placeholders per Step 9.1. **Inline-built siblings (agent / api-workflow, Rule 17 Create) also skip the gather** — they were resolved + bound in Phase 1 with I/O read from the sibling's on-disk `entry-points.json`; their `taskTypeId` is a local audit-only key with no tenant resource, so tenant `tasks describe` does not apply. See the per-type Built-inline notes: [`plugins/tasks/agent/impl-json.md`](plugins/tasks/agent/impl-json.md), [`plugins/tasks/api-workflow/impl-json.md`](plugins/tasks/api-workflow/impl-json.md).
 
-**Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per task in §4.6 order, appending the task node to its stage's `data.tasks` lane per the matching plugin's `impl-json.md`. **Capture each `TaskId`** — cross-task references and conditions in Phase 3 need it. Skip the re-Read between sibling Edits. One validate at section end.
+**Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per task in §4.6 order, appending the task node to its stage's `data.tasks` structure per the matching plugin's `impl-json.md` and the placement contract below. **Capture each `TaskId`** — cross-task references and conditions in Phase 3 need it. Skip the re-Read between sibling Edits. One validate at section end.
 
 Per-class shape inside each Edit:
 
@@ -136,7 +136,13 @@ Per-class shape inside each Edit:
 
 On context-compaction mid-gather: re-Read `caseplan.json`, scan for §4.6 tasks not yet appended, re-run Phase A for those only.
 
-**Pass `lane: <n>` on every task** only when required by the artifact contract. Default: increment per task within a stage starting at 0; lane is structural/layout state. Sequencing comes from the task's `entryConditions` and the task's order in `data.tasks`, not from lane-sharing.
+**Task placement contract.** Placement is determined by `activation-mode` + `entry-rule` from `tasks.md`; `lane` is only the planned task-set index after the mode decision. If the values conflict, task mode wins and the completion report must mention the lane correction.
+
+- `activation-mode: sequential` or `entry-rule: runs-sequentially` → append as a new single-task inner array in declaration order (`[[A], [B], [C]]`), even if a reused `lane` value appears.
+- `activation-mode: adhoc`, `event-triggered`, `fan-in`, `conditional-gate`, or any standalone non-parallel task → append as its own single-task inner array.
+- Only `activation-mode: parallel` with an explicit same-lane intent and rationale may share an inner array (`[[A, B], [C]]`). This is the only case where appending to an existing `data.tasks[laneIndex][]` is valid.
+
+**Pass `lane: <n>` on every task** only when required by the artifact contract. Default: increment per task within a stage starting at 0; lane is a `data.tasks` task-set index. A strict sequential chain is represented as consecutive single-task sets (`[[A], [B], [C]]`) plus `runs-sequentially` on each task. Reuse the same lane only for intentionally parallel siblings (`[[A, B], [C]]`). Sequencing comes from the task's `entryConditions` and the order of task sets in `data.tasks`, not from lane-sharing.
 
 ### Step 9.1 — Placeholder tasks for unresolved resources
 
@@ -226,6 +232,19 @@ Per-task composition (in reasoning, before that task's Edit) per [`plugins/varia
 If a cross-task reference points to a task that does not exist in the just-Read `caseplan.json`, halt — `tasks.md` ordering is wrong; report to the user.
 
 One validate at section end.
+
+## Step 9.9 — Preallocate SLA and escalation IDs
+
+Before writing conditions, read `tasks.md §4.8`, `caseplan.json`, and `id-map.json`. Preallocate stable IDs for every SLA rule and escalation so a Step 10 `sla-status-change` stage-entry condition can reference objects that Step 11 writes later:
+
+1. Resolve each SLA target: `root`, or the stage ID for the named stage.
+2. Allocate `sla_` + 8 chars for every default/conditional SLA T-entry not already in `id-map.json`.
+3. If a target has escalation T-entries but no explicit default SLA T-entry, allocate one synthetic default SLA ID for that target.
+4. Allocate `esc_` + 6 chars for every escalation T-entry not already in `id-map.json`.
+5. Record target, display name, parent SLA T-number/default, and ID using the shapes in [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Reject duplicate display names within a target.
+6. Check all new IDs against existing caseplan IDs and `id-map.json`; regenerate collisions before continuing.
+
+This step changes only `id-map.json`; Step 11 emits the objects and MUST reuse these IDs. A condition T-entry resolves its `sla-display-name` and `escalation-display-name` within the declared target, never by array index.
 
 ## Step 10 — Add conditions (per (scope, target) Edit batch)
 
