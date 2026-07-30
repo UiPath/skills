@@ -202,7 +202,7 @@ CI (`validate-skill-status.yml`) fails if a skill is missing from the manifest, 
 
 ### 5. Register the skills.sh Grouping
 
-Add the skill to a section in [`skills.sh.json`](skills.sh.json). This controls how the skill is grouped on the repository's [skills.sh page](https://skills.sh/UiPath/skills) — it does **not** affect what `uip skills install` or the `skills` CLI installs.
+Add the skill to a section in [`skills.sh.json`](skills.sh.json). This controls how the skill is grouped on the repository's [skills.sh page](https://www.skills.sh/uipath/skills) — it does **not** affect what `uip skills install` or the `skills` CLI installs.
 
 ```json
 {

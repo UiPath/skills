@@ -1,6 +1,6 @@
 # UiPath Agent Skills
 
-[![skills.sh](https://skills.sh/b/UiPath/skills)](https://skills.sh/UiPath/skills)
+[![skills.sh](https://www.skills.sh/b/uipath/skills)](https://www.skills.sh/uipath/skills)
 
 > [!NOTE]
 > **Work in Progress** — This repository is under active development. Skills are being added and refined. Contributions, feedback, and ideas are welcome! See [Contributing](#contributing) below.
@@ -44,7 +44,7 @@ After installing, verify with `node -v` and then run the quick start command abo
 
 ### Try a skill without installing anything
 
-To evaluate a single skill before adopting the whole set, use the [`skills` CLI](https://skills.sh) — no UiPath CLI and no project changes required:
+To evaluate a single skill before adopting the whole set, use the [`skills` CLI](https://www.skills.sh) — no UiPath CLI and no project changes required:
 
 ```bash
 npx skills add UiPath/skills --list              # browse the catalog
