@@ -140,13 +140,16 @@ simulation:
     attachments must be processed one at a time in input order through a
     sequential multi-instance subprocess. Inside that subprocess, one
     data-only ScriptTask must receive iterator[0].item through a typed named
-    argument and read that argument, then one Google Drive connector activity
-    must copy that item's driveFileId into the supplied destination with a
-    name containing correlationId and the attachment name.
+    argument whose object schema explicitly requires string name and
+    driveFileId properties, and read that argument. Then one Google Drive
+    connector activity must copy that item's driveFileId into the supplied
+    destination with a name containing correlationId and the attachment name.
     The per-item ScriptTask result must declare a typed schema for every
-    property consumed by the Drive activity. The subprocess must also expose
-    each typed itemName as a custom string marker output aggregated into a
-    scoped Collection{string}; this makes completion and order observable.
+    property consumed by the Drive activity and explicitly require string
+    itemName, copyName, and driveFileId properties. The subprocess must also
+    expose each typed itemName as a custom string marker output aggregated
+    into a scoped Collection{string}; this makes completion and order
+    observable.
     Because a per-iteration result is not itself a scalar process output, a
     separate post-loop ScriptTask must reduce that completed ordered marker
     collection to lastAttachmentName. Otherwise lastAttachmentName is the
@@ -204,9 +207,11 @@ success_criteria:
   - type: agent_judge
     description: "Agent conducted a progressive requirements interview and incorporated the late correction before implementation"
     prompt: |
-      Grade only the observable interaction trajectory in DIALOG. Do not inspect
-      files or artifacts and do not grade artifact correctness or agent
-      self-reports. Read through the DESIGN APPROVED exchange, then make
+      Grade only the observable interaction trajectory in DIALOG and TOOL CALLS.
+      Do not inspect artifact contents and do not grade artifact correctness or
+      agent self-reports. Use tool chronology only to verify that no Write,
+      Edit, or artifact-producing Bash command occurred before DESIGN APPROVED.
+      Read through the DESIGN APPROVED exchange, then make
       submit_verdict your first and only tool call. Return score 1.0 only when
       1. Before creating or editing project artifacts, the agent completed at
          least three substantive question rounds covering the typed contract
@@ -237,7 +242,7 @@ success_criteria:
       condition.
     include_dialog: true
     include_agent_output: false
-    include_tool_calls: false
+    include_tool_calls: true
     include_reference: false
     # This dialog is deliberately long. Keep the corrected playback, late
     # stakeholder change, and approval rather than grading only the rejection.
