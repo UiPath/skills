@@ -59,16 +59,27 @@ Two halves make a valid Maestro `.bpmn`:
 
 ## Workflow
 
-Work the four steps quickly, but keep the path matched to the user's ask. Treat
-requests to discover before authoring, save raw registry JSON/evidence, or "do
-not author yet" as discovery-only even if they describe an eventual BPMN. In
-that mode, immediately create `registry-evidence/`, run and save `registry pull
---output json`, `registry list --output json` or `registry search ... --output
-json`, and `registry get <type> --output json` for each requested type; do not
-read deep authoring references or scaffold a project. For authoring asks, author
-early: do not pre-read every reference before writing. Read a reference only
-when you reach the structure it covers, get the needed templates, then write the
-first complete draft before further spelunking. If
+Work the four steps quickly, but keep the path matched to the user's ask.
+
+**An explicit approval gate overrides both "create evidence immediately" and
+"author early."** Until the requested approval arrives, run only read-only
+discovery CLI commands and leave their results on stdout. Apart from the CLI's
+own registry/activity cache, do not create a project or evidence directory,
+write a file, use shell redirection or `tee`, or invoke a helper that writes.
+After approval, create the requested artifacts and rerun each exact successful
+JSON discovery command except `registry pull` into its evidence file. Preserve
+the first pull result from stdout rather than invoking it again: the session
+gets one pull, and all later discovery uses that cache.
+
+Treat requests to discover before authoring, save raw registry JSON/evidence,
+or "do not author yet" as discovery-only even if they describe an eventual
+BPMN. In that mode, immediately create `registry-evidence/`, run and save
+`registry pull --output json`, `registry list --output json` or `registry search
+... --output json`, and `registry get <type> --output json` for each requested
+type; do not read deep authoring references or scaffold a project. For authoring
+asks, author early: do not pre-read every reference before writing. Read a
+reference only when you reach the structure it covers, get the needed templates,
+then write the first complete draft before further spelunking. If
 [references/structural-bpmn.md](references/structural-bpmn.md) or
 [references/expression-authoring.md](references/expression-authoring.md)
 directly covers the requested construct, write a first complete draft before
@@ -88,12 +99,12 @@ For registry-evidence-only tasks, be command-first and time-boxed:
   message discovery, use `uip maestro bpmn registry list --limit -1 --output
   json`, `uip maestro bpmn registry get Orchestrator.StartJob --output json`,
   and `uip maestro bpmn registry get Maestro.ReceiveMessageEvent --output json`.
-- If `uip` is unavailable in a temp/smoke sandbox, or if it writes a valid JSON
-  failure object such as `"Result": "Failure"` instead of registry content, do
-  not search the repo for a replacement CLI or inspect test fixtures. Still
-  issue the required `list` and `get` command forms once each with output
-  redirected to their evidence files (allowing failure with `|| true`), so the
-  transcript shows the discovery loop:
+- If a discovery-only request is limited to login-free, non-live built-in
+  templates and `uip` is unavailable in a temp/smoke sandbox (or returns a
+  valid `"Result": "Failure"` envelope), do not search the repo for another CLI
+  or inspect test fixtures. Still issue the required `list` and `get` command
+  forms once each with output redirected to their evidence files (allowing
+  failure with `|| true`), so the transcript shows the discovery loop:
   `uip maestro bpmn registry list --limit -1 --output json` and
   `uip maestro bpmn registry get <type> --output json`. Record the failed CLI
   attempts in `registry-evidence/cli-error.txt`, then overwrite any failure JSON
@@ -101,7 +112,9 @@ For registry-evidence-only tasks, be command-first and time-boxed:
   `skills/uipath-maestro-bpmn/validator/bpmn-spec.json` containing the same
   extension types and stop. The final evidence files must literally contain the
   discovered type names, for example `Orchestrator.StartJob` and
-  `Maestro.ReceiveMessageEvent`.
+  `Maestro.ReceiveMessageEvent`. Never use this fallback for `Intsvc.*`,
+  connector or connection discovery, activity/object selection, enrichment, or
+  any node claimed to be live/runnable; stop those tasks as blocked.
 
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
@@ -114,12 +127,14 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    See [references/registry-workflow.md](references/registry-workflow.md).
 2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
    each chosen registry-owned node only. Enrich `Intsvc.*` connector nodes with
-   `--connection-id`/`--object-name`. Do not call `registry get` for structural
-   gaps the registry never owns: sequence flows, gateways, events, boundary
-   events, multi-instance/loop markers, `errorMapping`/retry structure, or
-   diagrams. If a registry template's BPMN host tag is PascalCase (for example
-   `<bpmn:SendTask>` or `<bpmn:ReceiveTask>`), normalize the host tag to the
-   serializer's lower-camel BPMN element (`<bpmn:sendTask>`,
+   `--connection-id` and the exact `ObjectName` selected from `uip is activities
+   list <connector-key> --output json`; accept it only when the enriched
+   response identifies that same object and connector. Do not call `registry
+   get` for structural gaps the registry never owns: sequence flows, gateways,
+   events, boundary events, multi-instance/loop markers, `errorMapping`/retry
+   structure, or diagrams. If a registry template's BPMN host tag is PascalCase
+   (for example `<bpmn:SendTask>` or `<bpmn:ReceiveTask>`), normalize the host
+   tag to the serializer's lower-camel BPMN element (`<bpmn:sendTask>`,
    `<bpmn:receiveTask>`) while preserving the `uipath:*` payload exactly.
 
    **Small local fast path (overrides the generic Discover and Assemble

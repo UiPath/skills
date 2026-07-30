@@ -394,8 +394,8 @@ Do not put business routing/classification policy in a normalization script.
 
 ### Connector activities and connection resources
 
-Discover the connector, connection, object, and activity through a fresh
-authenticated registry pull. Save the exact enriched
+Discover the connector, connection, object, and activity through the session's
+single authenticated registry pull. Save the exact enriched
 `registry get Intsvc.ActivityExecution --connection-id ... --object-name ...`
 response when evidence is requested. Do not invent operation names, fields, or
 targets.

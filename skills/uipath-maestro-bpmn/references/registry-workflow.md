@@ -11,6 +11,7 @@ uip maestro bpmn registry pull            # sync + cache (login for connectors/p
 uip maestro bpmn registry list --limit -1 --output json   # all extension types
 uip maestro bpmn registry search <keyword> --output json  # find a type by intent
 uip is connections list --all-folders --output json   # live IS connections (all folders)
+uip is activities list <connector-key> --output json   # exact connector operations/objects
 ```
 
 Map the user's intent to an extension type from the list. Confirm the choice
@@ -34,12 +35,14 @@ queue, connection — before the node is runnable).
 
 In temp/smoke sandboxes, a CLI/tooling mismatch can produce valid JSON that is
 only a failure envelope (for example `"Result": "Failure"`) instead of registry
-content. For discovery-only tasks, keep that failed output in the transcript or
-`registry-evidence/cli-error.txt`, then replace the final raw evidence JSON with
-the matching entries from `validator/bpmn-spec.json`. The final saved evidence
-must literally contain the requested extension type strings, such as
-`Orchestrator.StartJob` and `Maestro.ReceiveMessageEvent`, not just the failure
-envelope.
+content. The `validator/bpmn-spec.json` fallback is allowed only for
+login-free, non-live built-in template evidence. It must never stand in for an
+`Intsvc.*` activity, connector or connection discovery, activity/object
+selection, or enrichment, and it must never support a claim that a node is
+runnable. For the allowed built-in-only case, keep the failed output in the
+transcript or `registry-evidence/cli-error.txt`, then replace the final evidence
+JSON with the matching spec entry. For any live-resource failure, stop and
+report the node as blocked.
 
 ## 2. Get the template for each chosen type
 
@@ -74,15 +77,30 @@ resolve a live connection and object, then enrich:
 
 ```bash
 uip is connections list --all-folders --output json   # pick a connection id + its connector (search all folders)
+uip is activities list <connector-key> --output json   # select the requested operation's exact ObjectName
 uip maestro bpmn registry get Intsvc.ActivityExecution \
-    --connection-id <id> --object-name <object> --output json
+    --connection-id <id> --object-name <exact-ObjectName> --output json
 ```
 
-The response adds an `ISEnrichment` block with the live field metadata. Write
-the activity's `body` input (`target="body"`) and `context` (`connectorKey`,
-`objectName`) from that enrichment — do not hand-author connector schemas. The
-connection is referenced through a connection binding, `=bindings.<bindingId>`
-(see §4).
+Choose the row that represents the requested operation, then pass its
+case-sensitive `ObjectName` exactly; do not substitute its display label,
+`Name`, or a guessed provider operation. Accept the enrichment only when the
+response has `Result: "Success"`, a populated `Data.IsEnrichment`, and
+`Data.IsEnrichment.Name` exactly equals that selected `ObjectName` while
+`Data.IsEnrichment.ElementKey` exactly equals the connector key. Those identity
+checks prevent stale metadata for another object or connector from becoming a
+runnable node.
+
+If enrichment is absent or either identity mismatches, run
+`uip is activities list <connector-key> --refresh --output json` once, resolve
+the operation row again, and retry `registry get` once with the refreshed exact
+`ObjectName`. If the retry still fails these checks, stop and report the node as
+blocked; do not guess, keep retrying, or fall back to the validator spec.
+
+Write the activity's `body` input (`target="body"`) and `context`
+(`connectorKey`, `objectName`) from the accepted enrichment — do not hand-author
+connector schemas. The connection is referenced through a connection binding,
+`=bindings.<bindingId>` (see §4).
 
 ## 4. Bindings — from `bindingInfo`, never invented
 

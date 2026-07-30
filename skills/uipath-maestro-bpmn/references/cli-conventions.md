@@ -18,11 +18,19 @@ All commands below are discovery/read-only. None mutate cloud state.
 | `uip maestro bpmn registry search <keyword>` | Find entries by keyword across extension type, label, connector name, process name. |
 | `uip maestro bpmn registry get <extensionType> [--connection-id <id>] [--object-name <name>]` | Get the full spec for one extension type: `xmlTemplate`, `contextFields`, `bindingInfo`, input/output patterns. `--connection-id`/`--object-name` add live Integration Service field metadata for `Intsvc.*` connector types. |
 | `uip is connections list --all-folders` | List live Integration Service connections (id + state) across all folders. Always pass `--all-folders`; a folder-scoped list silently misses connections. |
+| `uip is activities list <connector-key> [--refresh]` | List a connector's operations and their exact `ObjectName`. Use `--refresh` only for the single bounded retry after missing or mismatched enrichment. |
 
 These are the registry/discovery commands the skill verifies against the CLI
 source (`packages/maestro-tool/src/commands/registry.ts`). Do not invent flags.
 Validation uses `uip maestro bpmn validate <file>` — see
 [Validation](structural-bpmn.md#validation).
+
+For a live `Intsvc.*` node, select the requested operation from `uip is
+activities list`, pass that row's exact `ObjectName` to `registry get`, and
+accept only `Result: "Success"` with a populated `Data.IsEnrichment` whose
+`Name` and `ElementKey` match the selected object and connector. On absence or
+mismatch, refresh the activity list once, resolve the row again, and retry the
+get once. A second failure is blocked, not permission to guess or loop.
 
 The `validate` command runs the full PO.Frontend canvas rule set offline (it was
 added to the CLI in UiPath/cli#3135). If your CLI reports `validate` as an
