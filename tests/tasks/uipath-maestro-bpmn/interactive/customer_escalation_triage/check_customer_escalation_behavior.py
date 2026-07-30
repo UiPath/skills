@@ -28,6 +28,11 @@ BPMN_FILE = PROJECT / "CustomerEscalationTriage.bpmn"
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 UIPATH_NS = "http://uipath.org/schema/bpmn"
 CONNECTION_FOLDER_KEY = "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+EXPECTED_LIVE_TARGET = {
+    "BaseUrl": "https://alpha.uipath.com",
+    "Organization": "codereval",
+    "Tenant": "DefaultTenant",
+}
 
 INPUT_TYPES = {
     "customerTier": "string",
@@ -380,6 +385,7 @@ class RuntimeContract:
     parallel_split_id: str
     parallel_join_id: str
     marker_id: str
+    marker_collection_id: str
     error_end_id: str
     error_boundary_id: str
     jira_create_id: str
@@ -548,6 +554,33 @@ def load_runtime_contract(path: Path = BPMN_FILE) -> RuntimeContract:
         raise CheckFailure(
             "expected one sequential multi-instance attachment subprocess"
         )
+    marker_outputs = markers[0].findall(
+        f"./{q(BPMN_NS, 'extensionElements')}/"
+        f"{q(UIPATH_NS, 'mapping')}/{q(UIPATH_NS, 'output')}"
+    )
+    marker_collection_ids = {
+        item.attrib["var"]
+        for item in marker_outputs
+        if item.attrib.get("custom") == "true"
+        and item.attrib.get("type") == "string"
+        and item.attrib.get("var")
+    }
+    if len(marker_collection_ids) != 1:
+        raise CheckFailure(
+            "attachment subprocess must expose one custom marker collection"
+        )
+    marker_collection_id = next(iter(marker_collection_ids))
+    collection_declarations = [
+        variable
+        for variable in variables
+        if variable.attrib.get("id") == marker_collection_id
+        and variable.attrib.get("type") == "Collection{string}"
+        and variable.attrib.get("elementId") == markers[0].attrib["id"]
+    ]
+    if len(collection_declarations) != 1:
+        raise CheckFailure(
+            "attachment marker must target its scoped Collection{string}"
+        )
 
     connectors: dict[tuple[str, str], str] = {}
     for node in process.findall(f".//{q(BPMN_NS, 'sendTask')}"):
@@ -609,6 +642,7 @@ def load_runtime_contract(path: Path = BPMN_FILE) -> RuntimeContract:
         parallel_split_id=splits[0].attrib["id"],
         parallel_join_id=joins[0].attrib["id"],
         marker_id=markers[0].attrib["id"],
+        marker_collection_id=marker_collection_id,
         error_end_id=error_ends[0].attrib["id"],
         error_boundary_id=boundaries[0].attrib["id"],
         jira_create_id=connectors[
@@ -670,6 +704,28 @@ def payload_data(
             f"{message} {instructions}".strip()
         )
     return payload, get_ci(payload, "Data")
+
+
+def assert_live_target() -> dict[str, str]:
+    completed = run_cli(["uip", "login", "status"], timeout=60)
+    _payload, data = payload_data(completed, "read active UiPath login")
+    if not isinstance(data, dict):
+        raise CheckFailure("UiPath login status returned no data object")
+    if str(get_ci(data, "Status", "")).casefold() != "logged in":
+        raise CheckFailure("UiPath CLI is not logged in")
+    actual = {
+        key: str(get_ci(data, key, "")).rstrip("/")
+        for key in EXPECTED_LIVE_TARGET
+    }
+    expected = {
+        key: value.rstrip("/")
+        for key, value in EXPECTED_LIVE_TARGET.items()
+    }
+    if actual != expected:
+        raise CheckFailure(
+            f"live grader must target {expected}, active profile is {actual}"
+        )
+    return expected
 
 
 class AlphaSolutionLease:
@@ -943,8 +999,8 @@ def create_seed_jira_issue(
             "project": {"key": environment.jira_project_key},
             "issuetype": {"id": environment.jira_issue_type_id},
             "reporter": {"id": environment.jira_reporter_account_id},
-            "summary": f"Seed for {case.inputs['correlationId']}",
-            "description": "Awaiting live BPMN update",
+            "summary": f"Live update seed for {case.name}",
+            "description": "Awaiting exact BPMN correlation write-back",
         }
     }
     created = run_cli(
@@ -1032,6 +1088,25 @@ def element_output_records(
     return records
 
 
+def runtime_variable_values(
+    variables_data: Any,
+    variable_id: str,
+) -> list[Any]:
+    values: list[Any] = []
+    wanted = normalized_identifier(variable_id)
+    scopes = get_ci(variables_data, "Variables", [])
+    if not isinstance(scopes, list):
+        return values
+    for scope in scopes:
+        globals_map = get_ci(scope, "Globals", {})
+        if not isinstance(globals_map, dict):
+            continue
+        for key, value in globals_map.items():
+            if normalized_identifier(key) == wanted:
+                values.append(value)
+    return values
+
+
 def connector_response_values(outputs: list[Any], name: str) -> list[Any]:
     """Read only top-level response fields, never same-named nested metadata."""
     values: list[Any] = []
@@ -1084,11 +1159,10 @@ def capture_connector_outputs_for_cleanup(
     )
 
 
-def assert_jira_contains_correlation(
+def read_jira_issue_fields(
     issue_key: str,
-    correlation: str,
     environment: LiveEnvironment,
-) -> None:
+) -> dict[str, Any]:
     fetched = run_cli(
         [
             "uip",
@@ -1106,10 +1180,204 @@ def assert_jira_contains_correlation(
         timeout=120,
     )
     _payload, data = payload_data(fetched, f"read Jira issue {issue_key}")
-    if not any(correlation in value for value in recursive_strings(data)):
+    if not isinstance(data, dict):
+        raise CheckFailure(f"Jira issue {issue_key} returned no object")
+    returned_key = get_ci(data, "key")
+    if returned_key != issue_key:
         raise CheckFailure(
-            f"Jira issue {issue_key} does not contain correlation "
-            f"{correlation!r}"
+            f"Jira read returned key {returned_key!r}, expected {issue_key!r}"
+        )
+    fields = get_ci(data, "fields")
+    if not isinstance(fields, dict):
+        raise CheckFailure(f"Jira issue {issue_key} returned no fields object")
+    return fields
+
+
+def assert_jira_issue_contract(
+    issue_key: str,
+    correlation: str,
+    environment: LiveEnvironment,
+    *,
+    require_summary: bool,
+) -> None:
+    fields = read_jira_issue_fields(issue_key, environment)
+    required_correlation_fields = ["description"]
+    if require_summary:
+        required_correlation_fields.append("summary")
+    for field_name in required_correlation_fields:
+        value = get_ci(fields, field_name)
+        if not any(
+            correlation in item for item in recursive_strings(value)
+        ):
+            raise CheckFailure(
+                f"Jira issue {issue_key} field {field_name!r} does not "
+                f"contain correlation {correlation!r}"
+            )
+
+    project = get_ci(fields, "project", {})
+    issue_type = get_ci(fields, "issuetype", {})
+    reporter = get_ci(fields, "reporter", {})
+    expected_fields = {
+        "project.key": (
+            get_ci(project, "key"),
+            environment.jira_project_key,
+        ),
+        "issuetype.id": (
+            get_ci(issue_type, "id"),
+            environment.jira_issue_type_id,
+        ),
+        "reporter.accountId": (
+            get_ci(reporter, "accountId"),
+            environment.jira_reporter_account_id,
+        ),
+    }
+    mismatches = {
+        name: {"actual": actual, "expected": expected}
+        for name, (actual, expected) in expected_fields.items()
+        if actual != expected
+    }
+    if mismatches:
+        raise CheckFailure(
+            f"Jira issue {issue_key} has incorrect remote fields: "
+            f"{mismatches}"
+        )
+
+
+def read_drive_file(
+    file_id: str,
+    environment: LiveEnvironment,
+) -> dict[str, Any]:
+    fetched = run_cli(
+        [
+            "uip",
+            "is",
+            "resources",
+            "run",
+            "get",
+            "uipath-google-drive",
+            "File",
+            "--connection-id",
+            environment.drive_connection_id,
+            "--query",
+            json.dumps({"filesId": file_id}, separators=(",", ":")),
+        ],
+        timeout=120,
+    )
+    _payload, data = payload_data(fetched, f"read Drive file {file_id}")
+    if not isinstance(data, dict) or get_ci(data, "id") != file_id:
+        raise CheckFailure(
+            f"Drive read did not return exact file {file_id}: {data!r}"
+        )
+    return data
+
+
+def assert_ordered_drive_copies(
+    case: Scenario,
+    outputs: list[Any],
+    environment: LiveEnvironment,
+    side_effects: ConnectorSideEffectLease,
+) -> None:
+    if len(outputs) != len(case.attachment_iterations):
+        raise CheckFailure(
+            f"{case.name}: Drive copy returned {len(outputs)} records for "
+            f"{len(case.attachment_iterations)} attachments: {outputs!r}"
+        )
+    source_file = read_drive_file(
+        environment.drive_source_file_id, environment
+    )
+    source_checksum = get_ci(source_file, "md5Checksum")
+    if not isinstance(source_checksum, str) or not source_checksum:
+        raise CheckFailure("Drive source file returned no MD5 checksum")
+    correlation = case.inputs["correlationId"]
+    for output, attachment_name in zip(
+        outputs,
+        case.attachment_iterations,
+        strict=True,
+    ):
+        response = get_ci(output, "response")
+        file_id = get_ci(response, "id")
+        if not isinstance(file_id, str):
+            raise CheckFailure(
+                f"{case.name}: Drive iteration for {attachment_name!r} "
+                f"returned no file id: {output!r}"
+            )
+        side_effects.drive_file_ids.add(file_id)
+        response_strings = recursive_strings(response)
+        if not any(
+            correlation in value and attachment_name in value
+            for value in response_strings
+        ):
+            raise CheckFailure(
+                f"{case.name}: ordered Drive iteration does not prove a "
+                f"correlated copy for {attachment_name!r}: {output!r}"
+            )
+        remote = read_drive_file(file_id, environment)
+        remote_name = get_ci(remote, "name")
+        parents = get_ci(remote, "parents", [])
+        if (
+            not isinstance(remote_name, str)
+            or correlation not in remote_name
+            or attachment_name not in remote_name
+            or not isinstance(parents, list)
+            or environment.drive_destination_folder_id not in parents
+            or get_ci(remote, "md5Checksum") != source_checksum
+        ):
+            raise CheckFailure(
+                f"{case.name}: remote Drive copy {file_id} does not prove "
+                f"ordered name, destination, and source content for "
+                f"{attachment_name!r}: {remote!r}"
+            )
+
+
+def assert_slack_send(
+    case: Scenario,
+    outputs: list[Any],
+    environment: LiveEnvironment,
+    side_effects: ConnectorSideEffectLease,
+) -> None:
+    timestamps = [
+        value
+        for value in connector_response_values(outputs, "ts")
+        if isinstance(value, str)
+    ]
+    if len(timestamps) != 1:
+        raise CheckFailure(
+            f"{case.name}: Slack send returned no unique timestamp: "
+            f"{outputs!r}"
+        )
+    side_effects.slack_messages.add(
+        (environment.slack_channel_id, timestamps[0])
+    )
+    channels = [
+        value
+        for value in connector_response_values(outputs, "channel")
+        if isinstance(value, str)
+    ]
+    messages = [
+        value
+        for value in connector_response_values(outputs, "message")
+        if isinstance(value, dict)
+    ]
+    if channels != [environment.slack_channel_id] or len(messages) != 1:
+        raise CheckFailure(
+            f"{case.name}: Slack response does not prove the exact "
+            f"destination and message: {outputs!r}"
+        )
+    message_text = get_ci(messages[0], "text")
+    message_timestamp = get_ci(messages[0], "ts")
+    required_tokens = (
+        case.inputs["correlationId"],
+        case.outputs["route"],
+        case.outputs["severity"],
+    )
+    if (
+        not isinstance(message_text, str)
+        or any(token not in message_text for token in required_tokens)
+        or message_timestamp != timestamps[0]
+    ):
+        raise CheckFailure(
+            f"{case.name}: Slack API response does not contain the exact "
+            f"correlation, route, severity, and timestamp: {messages[0]!r}"
         )
 
 
@@ -1235,57 +1503,43 @@ def assert_scenario(
                 f"{case.name}: Jira create returned no issue key: {outputs!r}"
             )
         side_effects.jira_issue_ids.add(ids[0] if ids else keys[0])
-        assert_jira_contains_correlation(keys[0], correlation, environment)
+        assert_jira_issue_contract(
+            keys[0],
+            correlation,
+            environment,
+            require_summary=True,
+        )
     elif case.outputs["jiraAction"] == "UpdateExisting":
         if not update_issue_key:
             raise CheckFailure(f"{case.name}: update scenario has no seed issue")
-        assert_jira_contains_correlation(
-            update_issue_key, correlation, environment
+        assert_jira_issue_contract(
+            update_issue_key,
+            correlation,
+            environment,
+            require_summary=False,
         )
 
     if case.outputs["attachmentAction"] == "SaveToDrive":
+        marker_values = runtime_variable_values(
+            variables_data, contract.marker_collection_id
+        )
+        if marker_values != [list(case.attachment_iterations)]:
+            raise CheckFailure(
+                f"{case.name}: live attachment marker collection expected "
+                f"{list(case.attachment_iterations)!r}, got {marker_values!r}"
+            )
         outputs = element_output_records(
             variables_data, contract.drive_copy_id
         )
-        ids = [
-            value
-            for value in connector_response_values(outputs, "id")
-            if isinstance(value, str)
-        ]
-        if len(ids) != len(case.attachment_iterations):
-            raise CheckFailure(
-                f"{case.name}: Drive copy returned {len(ids)} ids for "
-                f"{len(case.attachment_iterations)} attachments: {outputs!r}"
-            )
-        side_effects.drive_file_ids.update(ids)
-        flattened = recursive_strings(outputs)
-        for attachment_name in case.attachment_iterations:
-            if not any(
-                correlation in value and attachment_name in value
-                for value in flattened
-            ):
-                raise CheckFailure(
-                    f"{case.name}: Drive output does not prove a correlated "
-                    f"copy for {attachment_name!r}: {outputs!r}"
-                )
+        assert_ordered_drive_copies(
+            case, outputs, environment, side_effects
+        )
 
     if case.outputs["slackAction"] == "PostAlert":
         outputs = element_output_records(
             variables_data, contract.slack_send_id
         )
-        timestamps = [
-            value
-            for value in connector_response_values(outputs, "ts")
-            if isinstance(value, str)
-        ]
-        if len(timestamps) != 1:
-            raise CheckFailure(
-                f"{case.name}: Slack send returned no unique timestamp: "
-                f"{outputs!r}"
-            )
-        side_effects.slack_messages.add(
-            (environment.slack_channel_id, timestamps[0])
-        )
+        assert_slack_send(case, outputs, environment, side_effects)
 
 
 def tail_log(path: Path, limit: int = 5000) -> str:
@@ -1301,6 +1555,14 @@ def main() -> int:
         raise CheckFailure(f"missing {BPMN_FILE}")
     contract = load_runtime_contract()
     original_hash = sha256(BPMN_FILE)
+    checker_hash = sha256(Path(__file__).resolve())
+    target = assert_live_target()
+    print(
+        "LIVE EVIDENCE: "
+        f"target={target['BaseUrl']}/{target['Organization']}/"
+        f"{target['Tenant']} checker_sha256={checker_hash} "
+        f"bpmn_sha256={original_hash}"
+    )
 
     validate = run_cli(
         ["uip", "maestro", "bpmn", "validate", str(BPMN_FILE)],
@@ -1367,7 +1629,11 @@ def main() -> int:
                 inputs = scenario_inputs(
                     case,
                     environment,
-                    duplicate_key=update_issue_key,
+                    duplicate_key=(
+                        f"  {update_issue_key}\t "
+                        if update_issue_key is not None
+                        else None
+                    ),
                 )
                 debug = run_cli(
                     [

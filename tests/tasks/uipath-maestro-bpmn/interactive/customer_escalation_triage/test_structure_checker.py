@@ -201,7 +201,26 @@ def attachment_fixture(
                 "custom": "true",
             },
         ),
+        "attachmentPrepResult": ET.Element(
+            checker.q(checker.UIPATH_NS, "inputOutput"),
+            {
+                "name": "attachmentPrepResult",
+                "id": "iteration-response",
+                "type": "jsonSchema",
+            },
+        ),
     }
+    variables["attachmentPrepResult"].text = json.dumps(
+        {
+            "type": "object",
+            "properties": {
+                "itemName": {"type": "string"},
+                "copyName": {"type": "string"},
+                "driveFileId": {"type": "string"},
+            },
+            "required": ["itemName", "copyName", "driveFileId"],
+        }
+    )
     ids_to_names = {
         item.attrib["id"]: name for name, item in variables.items()
     }
@@ -240,7 +259,14 @@ def attachment_fixture(
                     "properties":{{
                       "vars":{{"type":"object"}},
                       "metadata":{{"type":"object"}},
-                      "currentItem":{{"type":"object"}}
+                      "currentItem":{{
+                        "type":"object",
+                        "properties":{{
+                          "name":{{"type":"string"}},
+                          "driveFileId":{{"type":"string"}}
+                        }},
+                        "required":["name","driveFileId"]
+                      }}
                     }}
                   }}</uipath:inputSchema>
                 </uipath:context>
@@ -816,6 +842,51 @@ def test_attachment_loop_rejects_wrong_subprocess_input_element() -> None:
 
 
 class StructureCheckerTests(unittest.TestCase):
+    def test_connector_values_must_reference_exact_runtime_variables(
+        self,
+    ) -> None:
+        declaration = variable(
+            "correlationId", "runtime-correlation-a19"
+        )
+        checker.require_variable_reference(
+            "=js:'Case ' + vars.runtime-correlation-a19",
+            declaration,
+            "message",
+        )
+        with raises(SystemExit, match=r"must reference vars\.runtime"):
+            checker.require_variable_reference(
+                "=js:'hardcoded'",
+                declaration,
+                "message",
+            )
+
+    def test_connector_semantic_values_cannot_be_literals(self) -> None:
+        checker.require_semantic_reference(
+            "=vars.prepared.driveFileId",
+            {"drive", "file", "id"},
+            "fileId",
+        )
+        with raises(SystemExit, match="must be a dynamic expression"):
+            checker.require_semantic_reference(
+                "1YlblU34Vd6RvCkamYw5BWejdX8ES-Zzy",
+                {"drive", "file", "id"},
+                "fileId",
+            )
+
+    def test_attachment_argument_schema_requires_both_properties(self) -> None:
+        elements, variables, ids_to_names = attachment_fixture()
+        schema_node = elements[0].find(
+            f".//{checker.q(checker.UIPATH_NS, 'inputSchema')}"
+        )
+        assert schema_node is not None
+        schema = json.loads(schema_node.text or "{}")
+        del schema["properties"]["currentItem"]["required"]
+        schema_node.text = json.dumps(schema)
+        with raises(SystemExit, match="must require string name"):
+            checker.require_sequential_attachment_loop(
+                elements, variables, ids_to_names
+            )
+
     def test_registry_filename_is_not_prescribed(self) -> None:
         test_registry_evidence_is_discovered_by_content_not_filename()
 
