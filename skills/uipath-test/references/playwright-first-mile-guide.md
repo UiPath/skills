@@ -145,24 +145,20 @@ With `--wait`, the execution id is printed **early, in a progress log line** —
 
 Execution happens on UiPath serverless cloud runtimes — no robot or package deployment into the folder is needed beyond the upload in Step 2, but the folder does need its serverless machine assignment (Step 4).
 
-### If the execution Finishes with `Passed: 0 / Failed: 0 / None: N`
+### When a run produces no results
 
-`None` means the run terminated without per-test results reaching Test Manager. Read the test case logs' Info for the actual cause — seen in the wild: "pod terminated before results could be uploaded" (runner→TM upload leg: storage/network) and `Serverless.Runtime.CannotIssueUserTokenDueToUserNotPartOfOrg` (tenant identity fault — the job never really started). Don't rely on `HostMachineName` to distinguish these. Two warnings:
-- `report get` counts `None` results as **`Skipped`** — a 0% pass rate here means "results lost", not "tests skipped".
-- Retrying re-runs the tests but will keep faulting until the upload path is fixed. Apply the retry cap (Critical Rule #4), then stop and report to the platform team.
+Three shapes, one rule: diagnose with the two commands below, then stop — retrying doesn't fix any of them.
 
-### If the execution is instantly `Cancelled`
+- **`Cancelled` within seconds**, logs pointing at `CreateTestAutomationJobs` / `InternalServerError` → the default folder has no serverless machine assigned (Step 4).
+- **`Finished` with `Passed: 0 / Failed: 0 / None: N`** → the run ended without per-test results reaching Test Manager; the test case log's `Info` carries the reason (results upload failed, or the job never started). Note `report get` counts `None` as **`Skipped`**, so 0% here means "results lost", not "tests skipped".
+- **Stuck `Pending`** → dispatch worked but nothing is executing. A faulted job may never sync back, so don't sit out the 30-minute wait; check after ~5 minutes.
 
-A run that dies within seconds with the test case logs pointing at `CreateTestAutomationJobs` / `InternalServerError` almost always means the default folder has **no serverless machine assigned** (Step 4) — fix the machine assignment and re-run.
+```bash
+uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json
+uip or jobs list --folder-key <FOLDER_KEY> --output json
+```
 
-### If the execution stays `Pending`
-
-A run that never leaves `Pending` almost always means dispatch worked but nothing is executing the jobs — the tenant has no serverless Playwright runtime (or no capacity). Triage before waiting out the full 30-minute timeout:
-
-1. `uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json` — test case logs carrying Orchestrator `JobKey` values prove dispatch happened; the problem is downstream of Test Manager.
-2. Check the dispatched jobs themselves: `uip or jobs list --folder-key <FOLDER_KEY> --output json` (a folder flag or `--all-folders` is required). Jobs `Faulted` with an empty `HostMachineName`/`MachineKey` = nothing can execute them — the tenant lacks a serverless Playwright runtime (or capacity).
-3. **A faulted job may never sync back** — Test Manager can stay `Pending` indefinitely even though the jobs are already dead, so do not sit out the 30-minute `--wait`; run the two checks above after ~5 minutes of `Pending`.
-4. Faulted/missing-runtime → STOP and report to the user/platform team. Retrying, re-running, or re-uploading will not help. There is no CLI cancel verb for a Test Manager execution — leave the execution as-is and note it in your report (`uip or jobs stop` can stop *pending/running* Orchestrator jobs, but does nothing for already-faulted ones).
+`JobKey` values on the logs prove Test Manager dispatched; jobs `Faulted` with no host machine mean the tenant can't run them. Either way it needs the platform team — report it rather than re-running (there is no CLI verb to cancel a Test Manager execution).
 
 ## Iterating on the suite
 
