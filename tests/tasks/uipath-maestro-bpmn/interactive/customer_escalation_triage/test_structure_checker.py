@@ -1245,6 +1245,40 @@ def test_attachment_loop_accepts_unconditional_template_copy_name() -> None:
     )
 
 
+def test_attachment_loop_accepts_stable_item_name_alias_in_copy_name() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            "const itemName = currentItem.name; "
+            "const copyName = vars.input-correlation-c81 + '-' + itemName; "
+            "return { itemName: itemName, copyName: copyName, "
+            "driveFileId: currentItem.driveFileId };"
+        ),
+    )
+    checker.require_sequential_attachment_loop(
+        elements,
+        variables,
+        ids_to_names,
+    )
+
+
+def test_attachment_loop_rejects_reassigned_item_name_alias() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            "let itemName = currentItem.name; "
+            "itemName = vars.attachments[0].name; "
+            "const copyName = vars.input-correlation-c81 + '-' + itemName; "
+            "return { itemName: itemName, copyName: copyName, "
+            "driveFileId: currentItem.driveFileId };"
+        ),
+    )
+    with raises(SystemExit, match="itemName must derive exactly"):
+        checker.require_sequential_attachment_loop(
+            elements,
+            variables,
+            ids_to_names,
+        )
+
+
 def test_attachment_loop_rejects_conditional_copy_name_parts() -> None:
     expressions = (
         "false ? currentItem.name : vars.input-correlation-c81",
