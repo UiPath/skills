@@ -89,6 +89,13 @@ jobs:
           # --min-verbs 1000 is a deliberate hard tripwire — it caught the
           # orchestrator-tool drop (#1203 follow-up). The build must clear it;
           # a stuck refresh is louder than a silently shrunk catalog.
+          # A third guard needs no flag and is always on: the build refuses to
+          # write if a group walked in the committed snapshot comes back
+          # unwalkable. Losing one command group is far too small a fraction of
+          # a ~1380-verb catalog for --max-drop-frac to notice (`rpa debug` +
+          # 2 others = 0.5% on 2026-07-30), and the group node survives, so the
+          # subtree vanishes silently. Failed `--help` walks are also retried
+          # first — see scripts/build-uip-catalog.py.
           python3 scripts/build-uip-catalog.py --install-tools \
             --min-verbs 1000 --max-drop-frac 0.2
 
