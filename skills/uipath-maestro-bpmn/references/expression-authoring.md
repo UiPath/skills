@@ -13,11 +13,11 @@ them with expressions only after the variables and scopes exist.
 - Do not use bare variable names such as `=requestId` in generated runtime XML.
 - Context bindings use `=bindings.<bindingId>`.
 - Current element outputs use `result` only in output mappings for that
-  element. For new v3 ScriptTasks, return the intended scalar or object
-  directly and map the standard response variable from
-  `source="=result.response"`. Do not wrap the direct return in another
-  `{ response: ... }` object. Downstream mappings read the declared response
-  variable as `vars.<script-response-id>`.
+  element. For a new ScriptTask using the bundled compatibility contract,
+  return the intended scalar or object directly and map the standard response
+  variable from `source="=result.response"`. Do not wrap the direct return in
+  another `{ response: ... }` object. Downstream mappings read the declared
+  response variable as `vars.<script-response-id>`.
 - Multi-instance task bodies read the current item from `iterator.item`.
 - Multi-instance subprocess bodies read the current item from
   `iterator[0].item`. Use `iterator[1].item` (and so on) inside nested

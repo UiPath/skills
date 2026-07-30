@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assert current v3 ScriptTask serialization and public I/O behavior."""
+"""Assert the supported ScriptTask serialization and public I/O behavior."""
 
 from __future__ import annotations
 
@@ -263,7 +263,7 @@ def main() -> None:
     if process is None:
         fail("missing bpmn:process")
     if process.attrib.get("isExecutable") not in (None, "false"):
-        fail("new projects must preserve the CLI/Studio executable default")
+        fail("new projects must preserve the supported executable default")
 
     start = exactly_one(elements(root, "startEvent"), "root start event")
     end = exactly_one(elements(root, "endEvent"), "root end event")
@@ -369,8 +369,9 @@ def main() -> None:
         ),
         "scriptVersion",
     )
-    if script_version.attrib.get("value") != "v3":
-        fail('script task must declare uipath:scriptVersion value="v3"')
+    version_match = re.fullmatch(r"v(\d+)", script_version.attrib.get("value", ""))
+    if version_match is None or int(version_match.group(1)) < 3:
+        fail("script task must use a supported vars/metadata script version")
     # These calls also enforce the StartEvent and EndEvent mapping contracts.
     variables_mapping(start)
     task_mapping = variables_mapping(task)
@@ -495,7 +496,7 @@ def main() -> None:
         "ScriptTask inputSchema",
     )
     if input_schema.attrib.get("type") != "jsonSchema":
-        fail("v3 ScriptTask must declare a jsonSchema inputSchema")
+        fail("ScriptTask must declare a jsonSchema inputSchema")
     exactly_one(
         task_mapping.findall("uipath:context", NS),
         "ScriptTask mapping context",
@@ -530,15 +531,15 @@ def main() -> None:
         "ScriptTask args input",
     )
     if len(task_inputs) != 1:
-        fail("v3 ScriptTask mapping must contain exactly one args input")
+        fail("ScriptTask mapping must contain exactly one args input")
     if args.attrib.get("type") != "json" or args.attrib.get("target") != "bodyField":
-        fail("v3 ScriptTask must declare args targeting bodyField")
+        fail("ScriptTask must declare args targeting bodyField")
     try:
         args_value = json.loads(input_body(args))
     except json.JSONDecodeError as exc:
         fail(f"ScriptTask args is not valid JSON: {exc}")
     if args_value != {"vars": "=vars", "metadata": "=metadata"}:
-        fail("v3 ScriptTask args must pass exactly vars and metadata")
+        fail("ScriptTask args must pass exactly vars and metadata")
 
     script = task.find("bpmn:script", NS)
     if script is None or not text_content(script).strip():
@@ -548,7 +549,7 @@ def main() -> None:
     if forbidden:
         fail(f"script uses APIs outside the Jint boundary: {forbidden}")
     if re.search(r"return\s*\{\s*response\s*:", body):
-        fail("v3 ScriptTask must return the intended value without a response wrapper")
+        fail("ScriptTask must return the intended value without a response wrapper")
     if not re.search(r"(^|[;{}]\s*)return\b", body, re.MULTILINE):
         fail("script must contain an executable return statement")
     for variable_id in (internal_amount_id, internal_days_id):
@@ -612,7 +613,7 @@ def main() -> None:
 
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)
-    print(f"OK: {path} uses the current v3 ScriptTask contract")
+    print(f"OK: {path} uses the supported ScriptTask contract")
 
 
 if __name__ == "__main__":
