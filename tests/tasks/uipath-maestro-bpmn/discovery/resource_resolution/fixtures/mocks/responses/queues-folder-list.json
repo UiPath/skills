@@ -1,0 +1,15 @@
+{
+  "Result": "Success",
+  "Data": [
+    {
+      "Name": "ReviewItems",
+      "Key": "queue-review-001",
+      "Id": 1206001
+    },
+    {
+      "Name": "ArchiveItems",
+      "Key": "queue-archive-001",
+      "Id": 1206002
+    }
+  ]
+}
