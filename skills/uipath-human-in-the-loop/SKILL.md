@@ -83,7 +83,7 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 |---|---|---|
 | `.flow` file | **Flow** | Write node JSON directly — see reference docs |
 | `agent.json` | **Low Code Agent** | Escalation CLI in-flight — guide manually for now |
-| `.bpmn` (Maestro) | **Maestro** | Not yet — guide user manually |
+| `.bpmn` (Maestro) | **Maestro** | Write the `UserTask` XML directly — see Step 5 Surface: Maestro |
 
 **If the user mentioned a specific file path**, use that directly.
 
@@ -296,7 +296,9 @@ response = interrupt(CreateTask(
 
 ### Surface: Maestro
 
-The Maestro HITL CLI is not yet available. Guide the user to add the HITL node manually in the Maestro process designer using the schema from Step 5. In Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
+QuickForm and coded-action-app HITL nodes are both supported on Maestro BPMN processes — `uipath.human-in-the-loop.quick-form` and `uipath.human-in-the-loop.coded-action-app` are registered element types in the BPMN validator ([bpmn-spec.json](../uipath-maestro-bpmn/validator/bpmn-spec.json)), same node-type strings as the Flow surface. Write the node directly into the `.bpmn` XML as a `bpmn:UserTask` with a `uipath:activity` extension element (see the `Actions.HITL` extension type in the validator spec for the app-based/coded-action-app XML shape and context fields — `appId`, `appVersion`, `actions`, `key`, `taskTitle`).
+
+Design the schema per Step 4b, confirm it with the user, then validate frequently (`uip maestro bpmn validate <file>.bpmn --output json`) while wiring the node so any shape mistakes surface immediately rather than at deploy time. In Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
 
 ---
 
