@@ -1,5 +1,7 @@
 # UiPath Agent Skills
 
+[![skills.sh](https://skills.sh/b/UiPath/skills)](https://skills.sh/UiPath/skills)
+
 > [!NOTE]
 > **Work in Progress** — This repository is under active development. Skills are being added and refined. Contributions, feedback, and ideas are welcome! See [Contributing](#contributing) below.
 
@@ -39,6 +41,18 @@ See [Installing Node.js via package manager](https://nodejs.org/en/download/pack
 After installing, verify with `node -v` and then run the quick start command above.
 
 </details>
+
+### Try a skill without installing anything
+
+To evaluate a single skill before adopting the whole set, use the [`skills` CLI](https://skills.sh) — no UiPath CLI and no project changes required:
+
+```bash
+npx skills add UiPath/skills --list              # browse the catalog
+npx skills use UiPath/skills@uipath-rpa | claude # run one skill; nothing is written to your project
+npx skills add UiPath/skills --skill uipath-rpa  # install just that one skill
+```
+
+> **For ongoing use, prefer `uip skills install` above.** It detects every coding agent on your machine and keeps skills updated as they change; `npx skills add` installs a point-in-time copy that you must update yourself with `npx skills update`.
 
 ## Skill Catalog
 
