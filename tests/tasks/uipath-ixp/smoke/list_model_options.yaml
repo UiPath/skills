@@ -1,32 +1,22 @@
 task_id: skill-ixp-list-model-options-smoke
 description: >
-  Smoke: "list available model options" is answered from the skill's documented
-  catalog of `configure-model --model` identifiers (gemini_2_5_flash,
-  gemini_2_5_pro, gpt_4o_2024_05_13). No CLI verb returns that catalog — the CLI
-  validates `--model` server-side — so the answer comes from the skill, not from
-  discovery. The trap is the near-name `projects list-models`, which lists a
-  project's TRAINED VERSIONS rather than the selectable models: an agent keying
-  on "list" + "model" reaches for it (and must invent a project name, since the
-  ask names none), while one that knows the distinction answers from the skill.
+  Smoke: the `configure-model --model` catalog (gemini_2_5_flash, gemini_2_5_pro,
+  gpt_4o_2024_05_13) is skill knowledge — no `uip` verb returns it, as the CLI
+  validates `--model` server-side. Trap: the near-name `projects list-models`
+  returns a project's TRAINED VERSIONS, not the selectable models, so an agent
+  keying on "list" + "model" runs it (inventing a project name, since the ask
+  names none) while one that knows the distinction answers from the skill.
 
-  The catalog is graded as an artifact (`model_options.md`), not as agent
-  monologue — the list IS the deliverable the ask requests, not a claim about
-  work performed. The guard reads the mock's calls.log instead of
-  command_not_executed over Bash text, because a correct answer legitimately
-  QUOTES `configure-model --model <id>` and may cite `list-models` to contrast
-  it, which a text regex would false-match. A correct run needs no `uip` call at
-  all, so there is no guaranteed log line to use as the positive control the mock
-  template README requires; the excludes guard therefore pairs with that README's
-  documented fallback — a harness-integrity assertion on the mock's log sink. The
-  `includes:` on the seeded line only proves the log exists and is readable.
-  The three identifiers wrap public model names, so a base model could plausibly
-  guess them without loading the skill — hence the un-fakeable skill_triggered
-  control alongside the content check.
+  `model_options.md` is not a self-report — it carries ground truth the agent must
+  retrieve, not a claim about work performed. The guard reads the mock's calls.log
+  rather than Bash text because a correct answer quotes `configure-model --model
+  <id>` and may cite `list-models` to contrast it, which a text regex false-matches.
+  A correct run makes no `uip` call, so no guaranteed log line exists for the
+  positive control the mock README requires — hence its documented fallback, a
+  harness-integrity assertion on the log sink.
 
-  Distinct from pick_capable_model (capability-based choice) and
-  change_model_variant (colloquial→canonical mapping): both mutate a named
-  project via configure-model, this one enumerates the catalog and mutates
-  nothing.
+  Distinct from pick_capable_model / change_model_variant: both mutate a project
+  via configure-model; this enumerates the catalog and mutates nothing.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:discover]
@@ -50,8 +40,7 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # Un-fakeable (inspects turn_records.commands): proves the catalog came from
-  # the skill rather than the model's own recall of public model names.
+  # The identifiers wrap public model names, so recall alone could produce them.
   - type: skill_triggered
     description: "Agent invoked the uipath-ixp skill"
     skill_name: "uipath-ixp"
@@ -65,9 +54,7 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # The crux: all three canonical identifiers, spelled as the CLI accepts them
-  # (snake_case). A hallucinated vendor-marketing form (gpt-4o, gemini-1.5-pro)
-  # or a project's version numbers instead of the model catalog fails this.
+  # snake_case as the CLI accepts them — a vendor-marketing form (gpt-4o) fails.
   - type: file_contains
     description: "Catalog lists the three documented model identifiers"
     path: "model_options.md"
@@ -85,10 +72,8 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # `projects list-models` returns a project's trained versions + tags, not the
-  # selectable model catalog — and the ask names no project. Graded on the
-  # mock's log of ACTUAL executions, so quoting the verb in the answer to
-  # contrast it is fine; running it is not.
+  # Log of ACTUAL executions: quoting the verb to contrast it is fine, running it
+  # is not. `includes:` only proves the log exists and is readable.
   - type: file_contains
     description: "Agent did NOT mistake the catalog for version listing: mock call log has no executed `projects list-models`"
     path: "mocks/calls.log"
@@ -97,10 +82,8 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # Harness integrity: a correct run makes no `uip` call, so the guard above has
-  # no positive control available (mock_template/README.md). Assert the mock
-  # still appends to the graded log — otherwise a re-pointed sink would leave
-  # the seeded file clean and pass the guard vacuously.
+  # Without this, re-pointing the mock's sink leaves the seeded log clean and the
+  # guard above passes vacuously.
   - type: file_contains
     description: "Mock still records invocations to the graded calls.log (guard is not vacuous)"
     path: "mocks/uip"
