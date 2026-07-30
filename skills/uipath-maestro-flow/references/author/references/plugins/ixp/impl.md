@@ -135,8 +135,8 @@ Then assemble the instance by copying these paths verbatim:
 | `inputs.versionTag` | `""` (empty string unless pinning a version) | YES |
 | `inputs.pageRange` | `""` (empty string for full document) | YES |
 | `inputs.fileRef` | `"=js:$vars.<upstream>.output.<field>"` (author this) | YES |
-| `outputs.output` (full object) | `Data.Node.outputDefinition.output` | **YES** — missing → `$vars.<id>.output` fails |
-| `outputs.error` (full object) | `Data.Node.outputDefinition.error` | **YES** — missing → `$vars.<id>.error` fails |
+| `outputs.output` | the four-field literal below (no `registry get` lookup needed) | **YES** — missing → `flow validate` fails |
+| `outputs.error` | the four-field literal below (no `registry get` lookup needed) | **YES** — missing → `flow validate` fails |
 
 **Forbidden in `inputs`** (legacy schema, removed from current standalone node — including any of these is a defect even if `flow validate` passes):
 
@@ -176,19 +176,35 @@ If you find yourself typing any of those five field names while authoring an IxP
     "pageRange": ""
   },
   "outputs": {
-    "output": { /* copy verbatim from definition.outputDefinition.output */ },
-    "error":  { /* copy verbatim from definition.outputDefinition.error */ }
+    "output": {
+      "name": "output",
+      "type": "object",
+      "source": "=this",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the node fails",
+      "source": "=Error",
+      "var": "error"
+    }
   }
 }
 ```
 
+**`outputs` is a fixed literal — copy the block above as-is.** It is the same for
+every IxP node regardless of model; nothing in it is derived from `registry get`.
+Copying `outputDefinition.output` verbatim instead also validates, but that drags
+in an ~18KB `schema` blob the runtime does not need — the four fields above are
+sufficient. There is no version of this node where omitting `outputs` is correct.
+
 ### Authoring rules
 
-1. **`inputs.model` MUST be present and MUST be copied from `Data.Node.inputDefaults.model`.** Copy the blob verbatim — do not abbreviate, do not omit fields, do not invent fields that aren't there. The current deployment-node blob is `{ id, modelName, modelDisplayName, folderKey, folderName, folderPath, description }`; source every field from the actual `registry get` response, not from memory (older docs showed `fullyQualifiedName` / `kind` / `type` / `detailsUrl` / `async*` fields — these are NOT present on deployment nodes; do not add them). The `schema-definition` form section binds `inputs.model` to the `ixp-model-taxonomy` custom component, which destructures `modelName` and `folderKey` out of it. If `inputs.model` is undefined, clicking the node in Studio Web crashes the property panel with `Cannot destructure property 'modelName' of 't' as it is undefined` — and `flow validate` does not catch it.
+1. **`inputs.model` MUST be present and MUST be copied from `Data.Node.inputDefaults.model`.** Copy the blob verbatim — do not abbreviate, do not omit fields, do not invent fields that aren't there. The current deployment-node blob is `{ id, modelName, modelDisplayName, folderKey, folderName, folderPath, description }`; source every field from the actual `registry get` response, not from memory (older docs showed `fullyQualifiedName` / `kind` / `type` / `detailsUrl` / `async*` fields — these are NOT present on deployment nodes; do not add them). The `schema-definition` form section binds `inputs.model` to the `ixp-model-taxonomy` custom component, which destructures `modelName` and `folderKey` out of it. If `inputs.model` is undefined, clicking the node in Studio Web crashes the property panel with `Cannot destructure property 'modelName' of 't' as it is undefined` — and `flow validate` fails on it too (`ixp-node`: `inputs.model must be an object with non-empty string modelName and folderKey`).
    - **`inputs.model.modelName` MUST be a non-empty string.** For many published/OOB deployments `inputDefaults.model.modelName` comes back `null`, with the name carried in `inputDefaults.model.modelDisplayName` instead. When `modelName` is `null`/empty, set `inputs.model.modelName` to `modelDisplayName`. This is NOT synthesis — `modelDisplayName` is the model's own name from the same blob (and matches the flat `inputDefaults.modelName`). The `ixp-node` validator rejects a `null`/empty `inputs.model.modelName` (`flow validate` fails), and Studio Web crashes on it.
 2. **Flat mirrors stay alongside `inputs.model`.** `modelName`, `projectName`, `folderKey`, `folderName` are surfaced as disabled text fields in the `ixp-model` form section and are read directly from `inputs.*`, not from `inputs.model.*`.
 3. **`fileRef` is the only schema-required input** (`inputDefinition.required: ["fileRef"]`). Use `=js:$vars.<upstream>.output.<field>` per Critical Rule #13.
-4. **`outputs.output` AND `outputs.error` MUST both be present**, copied verbatim from `Data.Node.outputDefinition.output` and `Data.Node.outputDefinition.error`. Omitting either breaks downstream `$vars.<nodeId>.output` / `.error` resolution and hides the field in Studio Web's variable picker. `flow validate` does not catch the omission.
+4. **`outputs.output` AND `outputs.error` MUST both be present** — copy the fixed four-field literals from [Final shape](#final-shape); they are identical for every IxP node and need no `registry get` lookup. Omitting either breaks downstream `$vars.<nodeId>.output` / `.error` resolution and hides the field in Studio Web's variable picker. **`flow validate` hard-fails on the omission** — `ixp-node` emits `[nodes[<nodeId>].outputs.output] outputs.output must be present on the instance`, and the matching error for `outputs.error`.
 5. **No top-level `model` on the instance.** Studio Web–authored .flow files never carry one; the BPMN-format `model` envelope (with `context`, `version`, `inputs`, `outputs`) is emitted at serialize time only.
 6. **`inputs` MUST NOT contain `digitizationMode`, `documentTaxonomy`, `attachmentId`, `fileName`, or `mimeType`.** These five fields were on a prior schema and have been removed from the standalone IxP node. Including them is the most common training-data-recall mistake. The serializer defaults `digitizationMode` to `fileUpload` internally — there is no scenario where you should set it on the instance.
 

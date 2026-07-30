@@ -9,14 +9,19 @@ description: >
   deployment which CI does not have; this verifies offline structural
   correctness only.
 
+  The prompt names the document domain, not a model: resolving the domain to a
+  published model via `registry search` is the behaviour under test (same as
+  e2e_02_project_selection.yaml). Naming an unpublished model instead makes the
+  agent stop and ask which to bind — correct behaviour, but it builds nothing.
+
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:ixp]
 initial_prompt: |
   Create a new Maestro Flow project called "Smoke" with a manual trigger, an
   extract node, and a script node that just logs "ok". Wire the extracted
   handle to the script and validate the flow.
 
-  Document is in the storage bucket named: InvoiceBucket
-  Model used: Invoice Model
+  Document: a PDF vendor invoice, supplied to the extract node as the flow's
+  document input.
   Script node: contains a JavaScript that logs OK when it receives the
   extraction result.
 
@@ -68,11 +73,15 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  # Locate the .flow rather than hardcoding `Smoke/Smoke/Smoke.flow` — see
+  # integration_handle_routing.yaml for the `<Name>Solution/` wrapper rationale.
+  - type: run_command
     description: "Script node consumes the extraction output via $vars expression"
-    path: "Smoke/Smoke/Smoke.flow"
-    includes:
-      - "$vars."
+    command: |
+      set -e
+      flow=$(find . -name '*.flow' -print -quit)
+      grep -qF '$vars.' "$flow"
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
