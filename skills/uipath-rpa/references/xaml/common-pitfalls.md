@@ -383,6 +383,16 @@ System.FormatException: VisualBasic is not a valid value for NetLanguage.
 
 **Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` or `"CSharp"`.
 
+## C# XAML Expressions Compile as Expression Trees
+
+Each C# expression in a XAML workflow compiles as a lambda expression tree, which forbids constructs a normal method body allows:
+
+- **No optional-argument overloads** — `line.Split(',', StringSplitOptions.None)` fails with `CS0854: An expression tree may not contain a call ... that uses optional arguments`. Pass every argument explicitly: `line.Split(new char[]{ ',' })`.
+- **No `out` variables** — `int.TryParse(s, out var n)` cannot appear in an expression. Validate with a format guard short-circuited before `int.Parse(s, CultureInfo.InvariantCulture)`, or move the logic into `Invoke Code`.
+- **No statements** — no assignments, loops, or multi-statement blocks inside one expression.
+
+When a transform hits these limits, use `Invoke Code` — see [data-manipulation-guide.md](../data-manipulation-guide.md) for the escalation path.
+
 ## XAML Expressions Cannot Reference Coded Source File Types
 
 XAML expressions (C# or VB) cannot call types defined in the project's coded source files (`.cs`) — the expression compiler does not reference the coded-workflows assembly. `validate` and `build` fail with `CS0103` / `BC30451` on the type name.
