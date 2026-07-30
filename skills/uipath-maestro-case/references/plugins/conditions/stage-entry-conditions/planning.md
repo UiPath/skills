@@ -22,9 +22,9 @@ Every stage with an **Entry Condition** declared in sdd.md gets its own stage-en
 | `rationale` | sdd.md Design Rationale | Required reviewer context for why this rule/interrupt is used. Not emitted into caseplan JSON. |
 | `rule-type` | Pick from the catalog below | See §Rule-type catalog |
 | `selected-stage-id` | Required for `selected-stage-*` rule-types | ID of the referenced stage |
-| `sla-target` | Required for `sla-status-change` | `"root"` or the SLA-owning stage name |
-| `sla-display-name` | Required for `sla-status-change` | Target-unique SLA rule title; resolves to the SLA rule ID preallocated from §4.8 |
-| `escalation-display-name` | Required for `sla-status-change` | Target-unique at-risk/breached escalation title; resolves to its escalation ID |
+| `sla-target` | `sla-status-change` arg 1 | `"root"` (case-level SLA) or the SLA-owning stage name. Scopes both lookups below to that one SLA table. Required for `sla-status-change` |
+| `sla-display-name` | `sla-status-change` arg 2 — the target's SDD `SLA Title` (or a Variable SLA Rules `Display Name`) | Target-unique SLA rule title; resolves to the SLA rule ID preallocated from §4.8. Required |
+| `escalation-display-name` | `sla-status-change` arg 3 — a `Display Name` from that target's SDD escalation table | Target-unique at-risk/breached escalation title; resolves to its escalation ID. Required |
 | `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — resolved via [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline) |
 | `condition-expression` | Optional on any rule-type | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
 | `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning). |
@@ -40,7 +40,7 @@ Allowed `ruleType` values and when to pick each:
 | `selected-stage-exited` | Fires when a specific upstream stage exits (even without completing) | `selectedStageId` |
 | `user-selected-stage` | Fires when an upstream stage exits via a `wait-for-user` exit condition and the user selects this stage as the next one. Only stages carrying this rule appear in the picker. | — |
 | `wait-for-connector` | Waits for a connector event (binds an IS connector trigger under `uipath`) | connector fields (above); `conditionExpression` optional |
-| `sla-status-change` | Fires when the referenced case/stage SLA reaches the referenced at-risk or breached escalation. | `sla-target`, `sla-display-name`, `escalation-display-name` |
+| `sla-status-change` | Fires when the referenced case/stage SLA reaches the referenced at-risk or breached escalation. Read all three from the SDD cell `sla-status-change("<SLA target>","<SLA Title>","<Escalation Display Name>")`. | `sla-target`, `sla-display-name`, `escalation-display-name` |
 
 `is-interrupting: true` means the condition can fire **while another stage is active** and will interrupt it. Use it on every secondary-stage entry row. If a candidate secondary stage would use `is-interrupting: false`, it is misclassified: use a regular stage/path or an `adhoc` task instead.
 
