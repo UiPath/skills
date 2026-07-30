@@ -17,7 +17,7 @@ uip ixp projects get-taxonomy <project-name> --output json
 
 Save the taxonomy to `/tmp/ixp/<project-name>/taxonomies/v1.json` (increment the version on each re-fetch).
 
-From the taxonomy (raw snake_case: field groups/fields under `Data.dataset.label_groups`, types under `Data.dataset.entity_defs`), review the field groups and field types so you understand what each predicted field represents.
+From the taxonomy (raw snake_case: field groups/fields under `Data.dataset.label_groups`, types under `Data.dataset.entity_defs`), review the field groups and field types so you understand what each predicted field represents. You need the types to judge equivalence in 2c — a value normalized by its data type need not match the page's literal formatting.
 
 ## Step 2 — Process Each Document
 
@@ -48,10 +48,21 @@ Use the **Read tool** to view the document file (read the whole document in one 
 
 1. **Look at the document** to understand the layout and where field values appear.
 2. **For each predicted field**, assign one of four verdicts:
-   - **CONFIRMED** — the predicted value matches what is in the document. Minor OCR-level differences (capitalization, whitespace) are acceptable.
-   - **CORRECTED** — **OCR-mangled values only.** The prediction found the right field in the right location, the bytes-on-page are correct, but the text was garbled in transcription (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`, `lNGRAM` instead of `INGRAM`). The reference is correct, only the literal characters need fixing. Do NOT use CORRECTED for booleans that came back with the wrong answer, inferred/computed values that came back wrong, or any case where IXP picked the wrong source on the page — those are NOT CONFIRMED.
+   - **CONFIRMED** — the predicted value matches what is in the document, literally or after the field type's normalization (table below). Minor OCR-level differences (capitalization, whitespace) are acceptable.
+   - **CORRECTED** — **OCR-mangled values only.** The prediction found the right field in the right location, the bytes-on-page are correct, but the text was garbled in transcription (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`, `lNGRAM` instead of `INGRAM`, or `1S.00 RON` instead of `15.00 RON`). The reference is correct, only the literal characters need fixing. Do NOT use CORRECTED to undo type normalization (trailing zeros, separators, currency notation). Do NOT use CORRECTED for booleans that came back with the wrong answer, inferred/computed values that came back wrong, or any case where IXP picked the wrong source on the page — those are NOT CONFIRMED.
    - **MISSING** — IXP predicted **no value** (empty `FormattedValue`) AND the field is genuinely absent from the document. Both conditions must hold. If IXP predicted a value but the field isn't actually in the document, that's NOT CONFIRMED, not MISSING — Critical Rule 12 forbids overriding a non-empty prediction with "missing".
    - **NOT CONFIRMED** — the prediction is wrong for any reason other than OCR mangling. Covers: wrong literal value on the right field, wrong-source extraction, hallucinated value, boolean came back with the wrong answer, inferred/computed value came back wrong, predicted a value the document doesn't contain. Left unannotated. Do NOT try to "fix" these with `--corrections` — `--corrections` is OCR-only (see Critical Rule 8). Improve the prompt instead.
+
+   **Monetary Quantity** — the type where normalization is most often mistaken for garble:
+
+   | Prediction | Document | Verdict | Reason |
+   |---|---|---|---|
+   | `15.00 RON` | `15 LEI` | CONFIRMED | Same amount; trailing zeros and canonical currency are normalization. |
+   | `1,234.50 EUR` | `1.234,50 EUR` | CONFIRMED | Same amount under the document's locale. |
+   | `1S.00 RON` | `15.00 RON` | CORRECTED | OCR read `S` for `5` at the right location. |
+   | `15.00 USD` | `15.00 RON` | NOT CONFIRMED | Currency differs. |
+   | `15.00 RON` | `15.00`, no currency on the page | NOT CONFIRMED | Currency was guessed, not read. |
+
 3. **Report your verdict for every field.** Print a table per document:
 
 ```text
