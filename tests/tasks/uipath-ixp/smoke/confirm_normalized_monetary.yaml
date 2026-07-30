@@ -1,0 +1,96 @@
+task_id: skill-ixp-confirm-normalized-monetary-smoke
+description: >
+  Smoke: type-aware equivalence. Two Monetary Quantity predictions differ
+  from the page only in normalization (canonical currency, locale
+  separators, currency placement) — both are CONFIRMED as predicted.
+  Reaching for `--corrections` to reproduce the page's literal formatting
+  is the failure this guards (Critical Rule 8). Fixture values are not
+  copied from the skill's worked-examples table, so verbatim recall of
+  those rows does not pass.
+
+  Distinct from confirm_predictions.yaml, which grades verdict routing
+  across four field kinds (correct / OCR-garbled / wrong-source): here
+  every field is correct and the test is whether the agent recognises
+  normalization instead of mistaking it for garble.
+
+  The `--corrections` guard reads the mock's calls.log rather than a
+  `command_not_executed` regex — a correct run may legitimately QUOTE the
+  flag in prose while explaining why it does not apply. The confirm
+  `includes:` is its positive control: a correct run always lands a
+  confirm in the log, so re-pointing the mock's sink fails the test
+  instead of passing the excludes vacuously.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
+initial_prompt: |
+  Review the IXP model's predictions for document `doc-ron-001` on project
+  `my_invoices-f1afa9ef-ixp` and record your verdict in the labelling
+  system. The taxonomy types both fields as Monetary Quantity.
+
+  Document content (verbatim from the invoice totals block, Romanian
+  locale):
+
+      Total:       15 LEI
+      Net amount:  EUR 2.500,00
+
+  IXP model predictions:
+  - Total (field id `f-101`): `15.00 RON`
+  - Net Amount (field id `f-102`): `2,500.00 EUR`
+
+  Neither prediction is a character-for-character copy of the page. Decide
+  what each one warrants and record it.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip ixp labellings confirm <project> <document>` with --fields"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+["'']?doc-ron-001["'']?\s+.*--fields'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # exclude_pattern drops corrections-bearing confirms from the match set, so
+  # submitting f-101 via --corrections earns nothing here. The calls.log guard
+  # below covers this axis's blind spot (a clean confirm masking a dirty one).
+  - type: command_executed
+    description: "f-101 confirmed as predicted (`15 LEI` → `15.00 RON` is canonical-currency normalization, not garble)"
+    tool_name: "Bash"
+    command_pattern: '--fields\s+[^|;&]*f-101'
+    exclude_pattern: '--corrections'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "f-102 confirmed as predicted (locale separators and currency placement are normalization, not garble)"
+    tool_name: "Bash"
+    command_pattern: '--fields\s+[^|;&]*f-102'
+    exclude_pattern: '--corrections'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent executed NO --corrections: normalized values are confirmed as predicted, never rewritten to the page's formatting (Critical Rule 8)"
+    path: "mocks/calls.log"
+    includes: ["ixp labellings confirm"]
+    excludes: ["--corrections"]
+    weight: 3.0
+    pass_threshold: 1.0
