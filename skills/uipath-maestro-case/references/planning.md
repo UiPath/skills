@@ -304,9 +304,6 @@ The skill does not author edges (Rule 20). Emit no edge T-entries. Stage transit
 
 Title format: `Add <type> task "<name>" to "<stage>"`
 
-Each task title is an H2 T-entry: `## T<n>: Add <type> task "<name>" to
-"<stage>"`.
-
 One task per task from the sdd.md — do NOT group multiple tasks under a single T-number. Read both the task-type plugin (`plugins/tasks/<type>/planning.md`) and the shared I/O-binding plugin (`plugins/variables/io-binding/planning.md`) before writing the entry. The task plugin owns resource-specific fields; the I/O-binding plugin is the single source of truth for the common output-row grammar.
 
 Every task entry includes at least:
@@ -384,12 +381,9 @@ Treat the generated `tasks.md` as approved and proceed directly to Phase 2 by de
 
 Re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](implementation.md)); context may have compacted during planning. `tasks.md` is complete handoff artifact — all resolved IDs, inputs, outputs, and references captured there.
 
-**Plan-shape gate.** Before Phase 2, verify every task declaration has its own
-`## T<n>:` heading with a quoted task display name, plus exactly one
-`activation-mode:` and one `entry-rule:` field, and that the pair matches the
-allowed combination for that mode — checked for **all six** modes (§4.6's
-`activation-mode` bullet lists them), not just `sequential`. The allowed
-pairings and the mismatch/rewrite rule are the table in
-[task-entry-conditions/planning.md § Phase 1 Plan Presentation Contract](plugins/conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract).
-Correct the plan before building; validation of `caseplan.json` cannot detect
-a malformed Phase 1 handoff.
+**Plan-shape gate.** Before Phase 2, verify every task declaration carries
+**exactly one** `activation-mode:` and **exactly one** `entry-rule:` field, and
+that the pair is legal for that mode — re-run the §4.6 Activation-mode audit
+over the finished plan, covering all six modes, not just `sequential`. Correct
+the plan before building; validation of `caseplan.json` cannot detect a
+malformed Phase 1 handoff.
