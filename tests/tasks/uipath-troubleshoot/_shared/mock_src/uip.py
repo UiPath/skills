@@ -76,10 +76,10 @@ import time
 import zlib
 from pathlib import Path
 
-# Sandboxes execute this file as bytecode (`m/.uip.<ver>.bin`, loaded by the
-# `m/uip` stub) whose __file__ sits directly in the mock dir, so every data path
-# (store, log, cache) anchors correctly both there and when running this
-# source directly.
+# Sandboxes execute this file as a compressed docstring-stripped blob
+# (`m/.uip.bin`, decoded and exec'd by the `m/uip` stub with __file__ set to
+# the blob's path in the mock dir), so every data path (store, log, cache)
+# anchors correctly both there and when running this source directly.
 SCRIPT_DIR = Path(__file__).resolve().parent
 RESPONSES_DIR = SCRIPT_DIR / "r"
 MANIFEST_PATH = RESPONSES_DIR / "manifest.json"

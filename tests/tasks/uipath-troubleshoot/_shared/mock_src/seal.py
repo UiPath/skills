@@ -14,10 +14,10 @@ failure mode). After sealing there is no readable fixture in the sandbox: the
 `r/` directory is gone and `.store` is opaque (zlib+base64). The shim
 (`m/uip`) transparently reads `.store` instead of `r/`.
 
-This script ships to the sandbox only as bytecode (`m/seal` is a thin loader
-for `m/.seal.<ver>.bin`, compiled by `_shared/scripts/compile_mocks.py`), so
-nothing readable in the sandbox documents the manifest schema or the
-`.store` format.
+This script ships to the sandbox only as a compressed docstring-stripped
+blob (`m/seal` is a thin loader for `m/.seal.bin`, packed by
+`_shared/scripts/compile_mocks.py`), so nothing readable in the sandbox
+documents the manifest schema or the `.store` format.
 
 Idempotent and safe to run anywhere:
     - No `r/manifest.json` present  → no-op (exit 0). Lets an experiment-level
@@ -46,9 +46,10 @@ import sys
 import zlib
 from pathlib import Path
 
-# Sandboxes execute this file as bytecode (`m/.seal.<ver>.bin`, loaded by the
-# `m/seal` stub) whose __file__ sits directly in the mock dir, so every data
-# path anchors correctly there and when running this source directly.
+# Sandboxes execute this file as a compressed blob (`m/.seal.bin`, decoded
+# and exec'd by the `m/seal` stub with __file__ set to the blob's path in the
+# mock dir), so every data path anchors correctly there and when running this
+# source directly.
 SCRIPT_DIR = Path(__file__).resolve().parent
 RESPONSES_DIR = SCRIPT_DIR / "r"
 MANIFEST_PATH = RESPONSES_DIR / "manifest.json"

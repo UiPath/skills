@@ -1,98 +1,86 @@
 #!/usr/bin/env python3
-"""Compile the mock scripts in `_shared/mock_src/` into the staged template.
+"""Pack the mock scripts in `_shared/mock_src/` into the staged template.
 
-Each `mock_src/<name>.py` is compiled per supported interpreter to
-`_shared/mock_template/m/.<name>.<maj><min>.bin` (pyc-format bytecode under
-neutral filenames — `__pycache__/` and `*.pyc` are stripped by the sandbox
-template copy's default ignore patterns AND by this repo's .gitignore, so
-the idiomatic names can neither be committed nor staged) with:
+Each `mock_src/<name>.py` becomes `_shared/mock_template/m/.<name>.bin`:
+docstrings are stripped from the AST (comments never survive
+`ast.unparse`), the stripped source is zlib-compressed and base64-encoded.
+The thin loaders at `mock_template/m/uip` and `m/seal` decode and exec the
+blob in memory, so the staged sandbox copy documents nothing about the mock
+system — a blob shows a single base64 run to `cat`/`strings` (unlike
+bytecode, which keeps every string literal readable) and runs on ANY host
+CPython >= 3.10 (the sources' syntax floor; the sandbox resolves `python`
+from the host PATH, so the artifact must not care which minor runs it).
 
-    - `optimize=2` — docstrings dropped (comments never reach bytecode), so
-      the staged sandbox copy documents nothing about the mock system.
-    - `invalidation_mode=UNCHECKED_HASH` — the header embeds the source hash
-      instead of an mtime, so output is deterministic: recompiling unchanged
-      sources is byte-identical and produces no git diff.
-    - `dfile=<name>` — bare name in tracebacks, no contributor paths.
+Deterministic given the same source and packing interpreter: `ast.unparse`
+output is stable within a CPython minor, zlib level 9 and base64 are
+deterministic. The canonical committed blobs are produced with CPython
+3.13 (the version pinned across the repo's workflows and tests/.venv) so
+regenerating unchanged sources is byte-identical and produces no git diff;
+the script refuses other minors unless --allow-any-version is passed.
 
-CPython bytecode loads only on the minor version that compiled it, and the
-sandbox resolves `python` from the host PATH — so the template ships one
-`.bin` per supported version (3.10–3.14; the floor is the sources' syntax,
-`dict | None` signature annotations). The thin loaders at
-`mock_template/m/uip` and `m/seal` pick the `.bin` matching the running
-interpreter via `SourcelessFileLoader` (accepts pyc-format bytecode under
-any filename; rejects a magic mismatch) and exit 1 with a clear error
-outside the range. When a new CPython minor ships, add it to
-SUPPORTED_VERSIONS here and in the loaders' error text, then recompile.
+Run after any edit to `mock_src/*.py`:
 
-Run after any edit to `mock_src/*.py` (uv fetches missing interpreters):
-
-    python tests/tasks/uipath-troubleshoot/_shared/scripts/compile_mocks.py --all
-
-Or compile just the running interpreter's slice: run without flags on any
-supported version.
+    uv run --python 3.13 tests/tasks/uipath-troubleshoot/_shared/scripts/compile_mocks.py
 """
 
 import argparse
-import py_compile
-import subprocess
+import ast
+import base64
 import sys
+import zlib
 from pathlib import Path
 
 SHARED_DIR = Path(__file__).resolve().parent.parent
 SRC_DIR = SHARED_DIR / "mock_src"
 OUT_DIR = SHARED_DIR / "mock_template" / "m"
-SUPPORTED_VERSIONS = ["3.10", "3.11", "3.12", "3.13", "3.14"]
+PACKING_VERSION = (3, 13)
 
 
-def compile_for_running_interpreter() -> int:
-    running = f"{sys.version_info[0]}.{sys.version_info[1]}"
-    sources = sorted(SRC_DIR.glob("*.py"))
-    if not sources:
-        return f"compile_mocks: no sources found under {SRC_DIR}"
-    for src in sources:
-        out = OUT_DIR / f".{src.stem}.{running.replace('.', '')}.bin"
-        py_compile.compile(
-            str(src),
-            cfile=str(out),
-            dfile=src.stem,
-            doraise=True,
-            optimize=2,
-            invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH,
-        )
-        print(f"compiled {src.name} -> {out.relative_to(SHARED_DIR)}")
-    return 0
+def _strip_docstrings(tree: ast.Module) -> ast.Module:
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            continue
+        body = node.body
+        if (
+            body
+            and isinstance(body[0], ast.Expr)
+            and isinstance(body[0].value, ast.Constant)
+            and isinstance(body[0].value.value, str)
+        ):
+            body.pop(0)
+            if not body:
+                body.append(ast.Pass())
+    return tree
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
-        "--all",
-        action="store_true",
-        help="compile every supported version via `uv run --python <ver>`",
-    )
-    parser.add_argument(
         "--allow-any-version",
         action="store_true",
-        help="compile for the running interpreter even outside the supported range",
+        help="pack with the running interpreter even if it is not the canonical 3.13",
     )
     args = parser.parse_args()
 
-    if args.all:
-        for version in SUPPORTED_VERSIONS:
-            subprocess.run(
-                ["uv", "run", "--no-project", "--python", version, __file__],
-                check=True,
-            )
-        return 0
-
-    running = f"{sys.version_info[0]}.{sys.version_info[1]}"
-    if running not in SUPPORTED_VERSIONS and not args.allow_any_version:
+    if sys.version_info[:2] != PACKING_VERSION and not args.allow_any_version:
         return (
-            f"compile_mocks: Python {sys.version.split()[0]} is outside the supported "
-            f"range ({', '.join(SUPPORTED_VERSIONS)}); shipping its bytecode would break "
-            "the sandboxes. Use --allow-any-version to override."
+            f"compile_mocks: pack with CPython {'.'.join(map(str, PACKING_VERSION))} for "
+            f"byte-stable output (running {sys.version.split()[0]}); e.g. "
+            "`uv run --python 3.13 ...`, or pass --allow-any-version."
         )
-    return compile_for_running_interpreter()
+
+    sources = sorted(SRC_DIR.glob("*.py"))
+    if not sources:
+        return f"compile_mocks: no sources found under {SRC_DIR}"
+
+    for src in sources:
+        tree = _strip_docstrings(ast.parse(src.read_text(encoding="utf-8")))
+        stripped = ast.unparse(tree)
+        blob = base64.b64encode(zlib.compress(stripped.encode("utf-8"), 9))
+        out = OUT_DIR / f".{src.stem}.bin"
+        out.write_bytes(blob)
+        print(f"packed {src.name} -> {out.relative_to(SHARED_DIR)}")
+    return 0
 
 
 if __name__ == "__main__":
