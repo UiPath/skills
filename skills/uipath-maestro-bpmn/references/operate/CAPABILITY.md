@@ -32,8 +32,10 @@ These actions may contact UiPath services or external systems.
    migrate, and cursor movement require a clear user decision for that action.
 3. **Validate before operate** - do not upload, publish, debug, or run until Author validation is complete or the user
    explicitly accepts known draft warnings.
-4. **Refresh or regenerate package metadata before cloud actions** - stale `bindings_v2.json`, `entry-points.json`,
-   `operate.json`, or `package-descriptor.json` can break import or runtime even when the BPMN source is correct.
+4. **Refresh package metadata before cloud actions** - after source validation,
+   run the local BPMN `refresh` command; stale `bindings_v2.json`,
+   `entry-points.json`, `operate.json`, or `package-descriptor.json` can break
+   import or runtime even when the BPMN source is correct.
 5. **Keep source and package ownership clear** - fix process structure, variables, mappings, events, and documented non-IS
    extensions in `.bpmn`; rerun CLI generation/enrichment for generated package JSON and Integration Service metadata.
 6. **Default publish wording to Studio Web upload unless the user explicitly asks for Orchestrator deployment** - keep deploy semantics explicit.
