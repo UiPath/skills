@@ -1,0 +1,37 @@
+{
+  "Result": "Success",
+  "Data": [
+    {
+      "Id": "conn-enabled-a",
+      "Name": "Records Primary",
+      "ConnectorKey": "uipath-neutral-records",
+      "State": "Enabled",
+      "FolderPath": "Shared/IntegrationsA",
+      "FolderKey": "folder-integrations-a"
+    },
+    {
+      "Id": "conn-enabled-b",
+      "Name": "Records Secondary",
+      "ConnectorKey": "uipath-neutral-records",
+      "State": "Enabled",
+      "FolderPath": "Shared/IntegrationsB",
+      "FolderKey": "folder-integrations-b"
+    },
+    {
+      "Id": "conn-disabled",
+      "Name": "Records Disabled",
+      "ConnectorKey": "uipath-neutral-records",
+      "State": "Disabled",
+      "FolderPath": "Shared/IntegrationsA",
+      "FolderKey": "folder-integrations-a"
+    },
+    {
+      "Id": "conn-other-connector",
+      "Name": "Archive Primary",
+      "ConnectorKey": "uipath-archive-records",
+      "State": "Enabled",
+      "FolderPath": "Shared/IntegrationsA",
+      "FolderKey": "folder-integrations-a"
+    }
+  ]
+}

@@ -92,31 +92,53 @@ Two halves make a valid Maestro `.bpmn`:
 Work the four steps quickly, but keep the path matched to the user's ask. Treat
 requests to discover before authoring, save raw registry JSON/evidence, or "do
 not author yet" as discovery-only even if they describe an eventual BPMN. In
-that mode, immediately create `registry-evidence/`, run and save `registry pull
---output json`, `registry list --output json` or `registry search ... --output
-json`, and `registry get <type> --output json` for each requested type; do not
-read deep authoring references or scaffold a project. For authoring asks, author
-early: do not pre-read every reference before writing. Read a reference only
-when you reach the structure it covers, get the needed templates, then write the
-first complete draft before further spelunking. If
+that mode, immediately create `registry-evidence/`, but run only the discovery
+commands the user requested or the selected mode requires. By default, a known
+portable built-in needs only `registry get <type> --output json`; do not add an
+authenticated pull, list/search, or tenant-resource inventory on your own. If
+the user explicitly requests `registry pull`, `list`, or `search`—including as
+raw command evidence—run those requested read-only forms without a profile.
+That evidence request does not authorize tenant-resource inventory. Do not read
+deep authoring references or scaffold a project. For authoring asks, author early:
+do not pre-read every reference before writing. Read a reference only when you
+reach the structure it covers, get the needed templates, then write the first
+complete draft before further spelunking. If
 [references/structural-bpmn.md](references/structural-bpmn.md) or
 [references/expression-authoring.md](references/expression-authoring.md)
 directly covers the requested construct, write a first complete draft before
 further spelunking.
 
+Resolve live resources only when the user asks for a real, current,
+tenant-bound, or runnable node, or supplies a concrete resource to verify.
+`RequiresDiscovery` describes runnable-node completeness; it is not permission
+to inventory a tenant. For portable, synthetic, local-only, or structural
+drafts, keep placeholders unresolved and label the node non-runnable. If the
+mode is unclear and live discovery would materially change the result, ask
+first. In live mode, verify the active CLI context and follow
+[references/live-resource-resolution-guide.md](references/live-resource-resolution-guide.md).
+Use the default CLI context when the user selected it. Named-profile selection
+is per command: `login status --profile <name>` verifies that context but does
+not make later commands inherit it, so repeat the same `--profile <name>` on
+every tenant-dependent registry, queue, and connection command. Portable
+built-in lookups deliberately omit it.
+
 For registry-evidence-only tasks, be command-first and time-boxed:
 
 - Create `registry-evidence/` before anything else.
-- Run the registry command forms the user asked for. For RPA job + internal
-  message discovery, use `uip maestro bpmn registry list --limit -1 --output
-  json`, `uip maestro bpmn registry get Orchestrator.StartJob --output json`,
-  and `uip maestro bpmn registry get Maestro.ReceiveMessageEvent --output json`.
-- If `uip` is unavailable in a temp/smoke sandbox, or if it writes a valid JSON
+- Run every registry command form the user asked for. If the request names or
+  exemplifies `registry pull`, preserve its raw output too. For RPA job +
+  internal message discovery, use `uip maestro bpmn registry list --limit -1
+  --output json`, `uip maestro bpmn registry get Orchestrator.StartJob --output
+  json`, and `uip maestro bpmn registry get Maestro.ReceiveMessageEvent
+  --output json`.
+- If a discovery-only request is limited to login-free built-in templates and
+  `uip` is unavailable in a temp/smoke sandbox, or if it writes a valid JSON
   failure object such as `"Result": "Failure"` instead of registry content, do
   not search the repo for a replacement CLI or inspect test fixtures. Still
-  issue the required `list` and `get` command forms once each with output
-  redirected to their evidence files (allowing failure with `|| true`), so the
-  transcript shows the discovery loop:
+  issue every explicitly requested registry form and the required `list` and
+  `get` forms once each with output redirected to their evidence files
+  (allowing failure with `|| true`), so the transcript shows the requested
+  discovery loop:
   `uip maestro bpmn registry list --limit -1 --output json` and
   `uip maestro bpmn registry get <type> --output json`. Record the failed CLI
   attempts in `registry-evidence/cli-error.txt`, then overwrite any failure JSON
@@ -124,17 +146,31 @@ For registry-evidence-only tasks, be command-first and time-boxed:
   `skills/uipath-maestro-bpmn/validator/bpmn-spec.json` containing the same
   extension types and stop. The final evidence files must literally contain the
   discovered type names, for example `Orchestrator.StartJob` and
-  `Maestro.ReceiveMessageEvent`.
+  `Maestro.ReceiveMessageEvent`. Never use this fallback for a live process,
+  queue, connector, connection, operation, object, schema, or runnable-node
+  claim; stop that path as blocked.
 
-1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
-   session — do not re-pull), then `list` / `search` to map intent to extension
-   types; `uip is connections list --all-folders` for live connections (always
-   `--all-folders` — a folder-scoped list silently misses connections). Confirm
-   every selection with the user (use AskUserQuestion). Never fabricate an identifier.
-   See [references/registry-workflow.md](references/registry-workflow.md).
-2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
-   each chosen registry-owned node only. Enrich `Intsvc.*` connector nodes with
-   `--connection-id`/`--object-name`. Do not call `registry get` for structural
+1. **Discover.** Choose portable-draft or live mode from the request. For a
+   known built-in type in portable mode, get that template without an
+   authenticated pull or tenant-resource listing. If portable intent cannot be
+   mapped without the live catalog, ask before crossing that boundary. In live
+   mode, run `uip maestro bpmn registry pull --output json` once initially
+   (cached for the session) in the selected CLI context. When that context is a
+   named profile, add `--profile <name>` to the pull and repeat it on
+   `registry list`, `registry search`, and every downstream discovery command;
+   omit it only for an explicitly selected default context. Resolve bindings
+   only from the retrieved full contract, using the adapter, exact-identity,
+   ambiguity, and bounded-refresh rules in
+   [references/live-resource-resolution-guide.md](references/live-resource-resolution-guide.md).
+   Never fabricate an identifier or select the first list row implicitly.
+2. **Get templates.** Get each chosen registry-owned node only. In live mode,
+   use `uip maestro bpmn registry get <type> --output json` in the selected
+   context, adding the same `--profile <name>` when that context is named; in
+   portable mode, use it without a profile. When live authoritative binding
+   metadata requires a resource, resolve it with the adapter selected in step 1
+   before claiming the node is runnable. In draft mode, preserve the unresolved
+   fields. Do not call
+   `registry get` for structural
    gaps the registry never owns: sequence flows, gateways, events, boundary
    events, multi-instance/loop markers, `errorMapping`/retry structure, or
    diagrams. If a registry template's BPMN host tag is PascalCase (for example
@@ -293,8 +329,10 @@ and honestly surfaced to the user as gaps when asked.
    as `<bpmn:startEvent>`, `<bpmn:intermediateCatchEvent>`,
    `<bpmn:scriptTask>`, and `<bpmn:endEvent>`. Do not write PascalCase tags
    like `<bpmn:IntermediateCatchEvent>`.
-4. **Confirm before authoring.** Confirm the chosen connector/connection/process
-   and the process structure with the user (AskUserQuestion).
+4. **Resolve ambiguity before authoring.** Confirm the chosen resource and the
+   process structure when the request did not already provide an unambiguous
+   identity or approve a deterministic selection policy. Never select the first
+   list row implicitly.
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
 6. **Node type is a child element, never an attribute.** Every `uipath:activity`
