@@ -211,6 +211,13 @@ Procedure:
 3. **Inventory finalize.** After last T-entry, Edit the inventory section with class-by-class counts (per §4.0 cross-check table).
 4. **`registry-resolved.json`.** Same section-batched discipline — one Read per section, N Edit-appends, no re-Read between siblings.
 
+**T-entry heading contract.** Every declaration is its own level-two heading in
+the exact form `## T<n>: <action>`. Do not use level-three-or-deeper headings
+for T-entries, and do not nest a task beneath a stage's T-entry. A task
+heading must quote its display name, for example
+`## T08: Add wait-for-timer task "First Step" to "Process"`. This keeps the
+plan independently addressable by Phase 2 and by plan validators.
+
 Why: section-batched round-trips keep tool-call transcript reviewable, preserve rollback granularity at section boundary, allow mid-run interruption recovery via re-Read + resume from next un-applied T-entry, and surface omissions before they propagate — without paying a per-T-entry Read tax that inflates inference latency by ~5s per turn.
 
 **Hard cap on tasks.md write size.** After the §4.0a Step 1 Seed Write (Inventory placeholder, <1KB), the only legal mutation of `tasks.md` is **Edit-append** per the section-batched contract above. A single Write replacing the whole `tasks.md` is **forbidden** regardless of size. A single Edit-append payload >30KB is also forbidden — split into per-section Edit-appends even when consecutive Edits would total >30KB combined. Rationale: a single 96KB Write of tasks.md emits ~40K output tokens in one turn = ~360s inference latency = ~20% of total session in one tool call. Section-batched Edit-appends spread that cost across ~7 turns of ~50s each, recovers reviewability, and matches the recovery contract (re-Read + resume from next un-applied T-entry).
@@ -297,6 +304,9 @@ The skill does not author edges (Rule 20). Emit no edge T-entries. Stage transit
 
 Title format: `Add <type> task "<name>" to "<stage>"`
 
+Each task title is an H2 T-entry: `## T<n>: Add <type> task "<name>" to
+"<stage>"`.
+
 One task per task from the sdd.md — do NOT group multiple tasks under a single T-number. Read both the task-type plugin (`plugins/tasks/<type>/planning.md`) and the shared I/O-binding plugin (`plugins/variables/io-binding/planning.md`) before writing the entry. The task plugin owns resource-specific fields; the I/O-binding plugin is the single source of truth for the common output-row grammar.
 
 Every task entry includes at least:
@@ -373,3 +383,10 @@ Treat the generated `tasks.md` as approved and proceed directly to Phase 2 by de
 **Stop-after-plan exception (the virtual gate).** When the request explicitly scoped the work to planning only (e.g. "just build tasks.md", "Phase 1 only", "stop after the plan for review", "don't build the case yet"), stop here: report the finished plan and do NOT create a solution or caseplan. This is the only condition that halts the auto-proceed.
 
 Re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](implementation.md)); context may have compacted during planning. `tasks.md` is complete handoff artifact — all resolved IDs, inputs, outputs, and references captured there.
+
+**Plan-shape gate.** Before Phase 2, verify every task declaration has its own
+`## T<n>:` heading with a quoted task display name, plus exactly one
+`activation-mode:` and one `entry-rule:` field. For sequential work, the
+values must be `activation-mode: sequential` and
+`entry-rule: runs-sequentially`. Correct the plan before building; validation
+of `caseplan.json` cannot detect a malformed Phase 1 handoff.
