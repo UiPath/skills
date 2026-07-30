@@ -1,0 +1,4 @@
+@prefix shape: <https://ontology.uipath.com/shapes#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ont: <https://ontology.uipath.com/old-demo#> .
+shape:OrderShape a sh:NodeShape ; sh:targetClass ont:Order .

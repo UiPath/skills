@@ -1,12 +1,20 @@
 ---
 name: uipath-ontologies
-description: "Use when managing existing UiPath Ontologies and their artifacts via the `uip ont` CLI or `Ontologies` from `@uipath/uipath-typescript` in a Coded App. Covers ontology and artifact CRUD, upsert/validate/bulk-upload, file type→ArtifactType mappings, pagination, and common errors. For creating a new ontology from an SDD use uipath-ontology-authoring; from a domain prompt use uipath-ontology-modeler."
+description: "Use when managing an existing UiPath Ontology or its artifacts with list, get, update, delete, export, validate, upsert, bulk upload, API, or SDK operations. Do not use when creating, cloning, validating, mapping, or deploying a new ontology from an SDD, PDD, design document, or artifact folder."
 when_to_use: "User wants to manage existing ontologies via `uip ont` CLI (list, get, update, delete, export) or manage artifacts (upsert, validate, delete, upload-bulk). Also use for `OntologyService` / `Ontologies` SDK service in Coded Apps, `datafabric_/api/ontology` API errors, or questions about ontology state, artifact types, and CLI command syntax."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 user-invocable: true
 ---
 
 # UiPath Ontologies
+
+## Routing boundary
+
+- New ontology from an SDD, PDD, design document, or artifact folder → `uipath-ontology-authoring`.
+- Plain-language domain description with no files → `uipath-ontology-modeler`.
+- Existing ontology CRUD, API, SDK, state, or artifact maintenance → this skill.
+
+Never treat a new-ontology deployment or clone as ordinary artifact upsert; route it to authoring so mapping and deployment gates run first.
 
 Manage UiPath Ontologies and their artifacts via the `uip ont` CLI or the `Ontologies` SDK service.
 
@@ -84,7 +92,7 @@ uip ont create <name> --folder-key $UIPATH_FOLDER_KEY
 
 ## Creating an Ontology
 
-**STOP — this skill does not handle ontology creation. You MUST switch skills immediately.**
+**STOP — this skill does not author ontology artifacts. Route creation immediately.**
 
 If the user wants to create a new ontology, do not proceed with this skill. Invoke the correct skill right now before doing anything else:
 
@@ -95,6 +103,8 @@ If the user wants to create a new ontology, do not proceed with this skill. Invo
 | Already-generated artifact files — cloned from another ontology, or authored outside the guided flow — ready to deploy | **`uipath-ontology-authoring`** — see its "Entry point B" section. Do not upsert the files directly via this skill's `artifact upsert` command; that skips every gate that catches an unmapped class or a missing relationship. |
 
 Do not ask clarifying questions, do not run any commands, do not outline a plan. Switch skills first.
+
+This routing boundary is strict: `uipath-ontologies` never authors, generates, repairs, preflights, or deploys a new ontology. The authoring/modeler owner must run the neutral preflight utility before ontology creation or artifact upload and must perform the tiered upload with mapping last. Existing-ontology artifact operations remain CRUD operations here; do not bypass those gates by treating a new ontology as an ordinary upsert.
 
 This skill covers **operations on existing ontologies only**: list, get, update, delete, export, and artifact management.
 
@@ -124,7 +134,7 @@ Every ontology response includes a `state` field. State is informational — an 
 
 State transitions are driven automatically by artifact changes — not by any user action.
 
-**Persistent `DRAFT` with no other symptom:** if every artifact individually passes `uip ont artifact validate`/`check`, cross-file terms line up, and re-uploading the mapping still doesn't flip to `DEPLOYED`, suspect a class in the schema with zero properties and/or no instantiation in the mapping (typically an actor/role/system class added for narrative context only). Fix: every `Declaration(Class(...))` must be (a) the domain of ≥1 `DataPropertyDomain`/`ObjectPropertyDomain`, and (b) instantiated as `a ont:{ClassName}` in the mapping (see Gate 4b, `uipath-ontology-modeler` Step 10). `DEPLOYED` itself also doesn't mean relationships were modeled — a schema can deploy fine with every FK left as a plain string column instead of an `ObjectProperty` (see Gate 4c, same skill).
+**Persistent `DRAFT` with no other symptom:** if every artifact individually passes validation, cross-file terms line up, and re-uploading the mapping still doesn't flip to `DEPLOYED`, suspect a class with zero properties and/or no mapping instantiation. Every class must be the domain of at least one property and appear as `a ont:{ClassName}` in the mapping. `DEPLOYED` itself does not prove relationships were modeled; FK-shaped fields must be represented as object properties with mapping joins.
 
 ### Artifact Types
 
@@ -185,7 +195,7 @@ Service URL pattern: `https://<baseUrl>/<org>/<tenant>/datafabric_/api/ontology`
 
 ### SDK — `Ontologies` in Coded Apps
 
-For full SDK reference including types, bound methods, and gotchas, see [references/sdk/ontologies.md](../uipath-coded-apps/references/sdk/ontologies.md) in the `uipath-coded-apps` skill.
+The SDK summary below is the local source of truth for the supported `Ontologies` service shape; do not depend on another skill's files.
 
 ```typescript
 import { Ontologies, ArtifactType } from '@uipath/uipath-typescript/ontologies';

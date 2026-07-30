@@ -1,0 +1,3 @@
+@prefix ont: <https://ontology.uipath.com/demo#> .
+@prefix fno: <https://w3id.org/function/ontology#> .
+ont:approveOrder a fno:Function ; ont:kind "ACTION" .

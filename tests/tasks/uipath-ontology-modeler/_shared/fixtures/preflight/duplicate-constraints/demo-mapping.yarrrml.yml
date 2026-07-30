@@ -1,0 +1,7 @@
+prefixes:
+  ont: https://ontology.uipath.com/demo#
+mappings:
+  Order:
+    sources: [{table: Orders, entityId: order-id, folderId: folder-id}]
+    s: ont:Order/$(id)
+    po: [[a, ont:Order]]

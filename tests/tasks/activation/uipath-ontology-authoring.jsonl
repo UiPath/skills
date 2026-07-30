@@ -1,0 +1,9 @@
+{"id":"uipath-ontology-authoring-001","prompt":"Create and deploy an ontology from docs/order-management-sdd.md","expected_skill":"uipath-ontology-authoring"}
+{"id":"uipath-ontology-authoring-002","prompt":"Read this PDD and wire its domain to Data Fabric entities for an ontology","expected_skill":"uipath-ontology-authoring"}
+{"id":"uipath-ontology-authoring-003","prompt":"I have generated OFN, SHACL, and YARRRML files; validate and deploy them as a new ontology","expected_skill":"uipath-ontology-authoring"}
+{"id":"uipath-ontology-authoring-004","prompt":"Clone these ontology artifacts under a new name and publish them safely","expected_skill":"uipath-ontology-authoring"}
+{"id":"uipath-ontology-authoring-005","prompt":"Use this design document to create the ontology, entities, mappings, and deployment","expected_skill":"uipath-ontology-authoring"}
+{"id":"uipath-ontology-authoring-006","prompt":"Generate an ontology from the attached domain specification and deploy it to the selected folder","expected_skill":"uipath-ontology-authoring"}
+{"id":"uipath-ontology-authoring-007","prompt":"Deploy these OFN, constraints, functions, and actions files; the mapping is missing, so generate it from the schema and Data Fabric entity metadata before uploading","expected_skill":"uipath-ontology-authoring"}
+{"id":"uipath-ontology-authoring-008","prompt":"Create and deploy an ontology from an SDD, but stop before deployment if mapping generation has unresolved class, field, or relationship ambiguity","expected_skill":"uipath-ontology-authoring"}
+{"id":"uipath-ontology-authoring-009","prompt":"Preflight the exact ontology upload set, validate every artifact, upload schema and tier-2 artifacts before mapping, then verify the final state and inventory","expected_skill":"uipath-ontology-authoring"}

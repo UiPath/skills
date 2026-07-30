@@ -1,0 +1,9 @@
+{"id":"uipath-ontology-modeler-001","prompt":"I have Orders, Customers, and Products with their fields and relationships. Generate the ontology artifacts.","expected_skill":"uipath-ontology-modeler"}
+{"id":"uipath-ontology-modeler-002","prompt":"Model a clinic ontology from this plain-language domain description","expected_skill":"uipath-ontology-modeler"}
+{"id":"uipath-ontology-modeler-003","prompt":"Regenerate the SHACL constraints artifact from my confirmed ontology model","expected_skill":"uipath-ontology-modeler"}
+{"id":"uipath-ontology-modeler-004","prompt":"Create the OWL schema, mapping, and functions for a supplier management domain I described here","expected_skill":"uipath-ontology-modeler"}
+{"id":"uipath-ontology-modeler-005","prompt":"Generate SQL action TTL files for the write operations in this confirmed ontology model","expected_skill":"uipath-ontology-modeler"}
+{"id":"uipath-ontology-modeler-006","prompt":"The authoring phase has supplied a CLASS_MAP and workdir; generate and validate the ontology artifacts","expected_skill":"uipath-ontology-modeler"}
+{"id":"uipath-ontology-modeler-007","prompt":"The authoring handoff has no mapping file but includes CLASS_MAP, OFN classes and properties, entity IDs, folder ID, and field metadata; generate and validate the mapping","expected_skill":"uipath-ontology-modeler"}
+{"id":"uipath-ontology-modeler-008","prompt":"Generate a plain-domain ontology and classify the mapping as supplied or generated before returning artifacts","expected_skill":"uipath-ontology-modeler"}
+{"id":"uipath-ontology-modeler-009","prompt":"The ontology model has an ambiguous class-to-entity mapping; stop with BLOCKED_AMBIGUITY and list the decision needed","expected_skill":"uipath-ontology-modeler"}

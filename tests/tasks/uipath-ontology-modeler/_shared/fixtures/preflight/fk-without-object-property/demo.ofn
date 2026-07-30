@@ -1,0 +1,10 @@
+Prefix(:=<https://ontology.uipath.com/demo#>)
+Prefix(owl:=<http://www.w3.org/2002/07/owl#>)
+Prefix(xsd:=<http://www.w3.org/2001/XMLSchema#>)
+Ontology(<https://ontology.uipath.com/demo>
+Declaration(Class(:Order))
+Declaration(Class(:Customer))
+Declaration(DataProperty(:Order.customerId))
+DataPropertyDomain(:Order.customerId :Order)
+DataPropertyRange(:Order.customerId xsd:string)
+)

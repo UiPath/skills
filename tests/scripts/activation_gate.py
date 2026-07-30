@@ -46,6 +46,9 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-maestro-case": 90,
     "uipath-api-workflow": 90,
     "uipath-functions": 95,
+    "uipath-ontologies": 90,
+    "uipath-ontology-authoring": 90,
+    "uipath-ontology-modeler": 90,
 }
 
 DROP_PP = 10

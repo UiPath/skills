@@ -1,0 +1,13 @@
+# RELATIONSHIP_EXEMPT: ont:legacyPackedIds
+prefixes:
+  ont: https://ontology.uipath.com/demo#
+mappings:
+  Order:
+    sources: [{table: Orders, entityId: order-id, folderId: folder-id}]
+    s: ont:Order/$(id)
+    po:
+      - [a, ont:Order]
+      - p: ont:customer
+        o:
+          mapping: Customer
+          condition: {function: equal}

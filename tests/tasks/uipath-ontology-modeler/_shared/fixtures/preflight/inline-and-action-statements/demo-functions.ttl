@@ -1,0 +1,4 @@
+@prefix ont: <https://ontology.uipath.com/demo#> .
+@prefix fno: <https://w3id.org/function/ontology#> .
+ont:findOrder a fno:Function ; ont:statement "SELECT ?x WHERE { ?x a ont:UnknownFunctionClass }" ; fno:returns ( ont:out ) .
+ont:out a fno:Output .

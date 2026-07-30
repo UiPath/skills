@@ -1,0 +1,13 @@
+Prefix(:=<https://ontology.uipath.com/demo#>)
+Prefix(owl:=<http://www.w3.org/2002/07/owl#>)
+Prefix(xsd:=<http://www.w3.org/2001/XMLSchema#>)
+Ontology(<https://ontology.uipath.com/demo>
+Declaration(Class(:Order))
+Declaration(DataProperty(:Order.id))
+AnnotationAssertion(rdfs:label :Order "Order")
+AnnotationAssertion(rdfs:comment :Order "An order.")
+AnnotationAssertion(rdfs:label :Order.id "Order identifier")
+AnnotationAssertion(rdfs:comment :Order.id "The stable order identifier.")
+DataPropertyDomain(:Order.id :Order)
+DataPropertyRange(:Order.id xsd:string)
+)

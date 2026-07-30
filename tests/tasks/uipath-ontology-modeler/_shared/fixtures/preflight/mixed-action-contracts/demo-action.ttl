@@ -1,0 +1,5 @@
+@prefix ont: <https://ontology.uipath.com/demo#> .
+@prefix fno: <https://w3id.org/function/ontology#> .
+ont:firstAction a fno:Function ; ont:kind "ACTION" ; fno:returns ( ont:firstOut ) .
+ont:firstOut a fno:Output .
+ont:secondAction a fno:Function ; ont:kind "ACTION" .

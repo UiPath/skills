@@ -1,0 +1,4 @@
+Prefix(:=<https://ontology.uipath.com/demo#>)
+Ontology(<https://ontology.uipath.com/demo>
+Declaration(Class(:Order))
+)

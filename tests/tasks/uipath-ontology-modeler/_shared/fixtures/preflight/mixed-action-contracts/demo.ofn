@@ -1,0 +1,5 @@
+Prefix(:=<https://ontology.uipath.com/demo#>)
+Prefix(owl:=<http://www.w3.org/2002/07/owl#>)
+Ontology(<https://ontology.uipath.com/demo>
+Declaration(Class(:Order))
+)

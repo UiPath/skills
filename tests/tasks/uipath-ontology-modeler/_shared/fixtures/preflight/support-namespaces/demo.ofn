@@ -1,0 +1,11 @@
+Prefix(:=<https://ontology.uipath.com/demo#>)
+Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
+Ontology(<https://ontology.uipath.com/demo>
+Declaration(Class(:Order))
+Declaration(DataProperty(:Order.id))
+DataPropertyDomain(:Order.id :Order)
+AnnotationAssertion(rdfs:label :Order "Order")
+AnnotationAssertion(rdfs:comment :Order "Maps Data Fabric entity 'Orders'.")
+AnnotationAssertion(rdfs:label :Order.id "Order identifier")
+AnnotationAssertion(rdfs:comment :Order.id "The stable order identifier.")
+)

@@ -1,6 +1,6 @@
 ---
 name: uipath-ontology-authoring
-description: "Use when a user provides an SDD (Software Design Document / domain spec) and wants to create a fully deployed UiPath Ontology: read the SDD, select or create Data Fabric entities, generate OWL 2 QL schema (.ofn) + SHACL constraints ({name}-constraints.ttl) + YARRRML mapping ({name}-mapping.yarrrml.yml), validate all artifacts via the backend, and push the ontology."
+description: "Use when a user provides an SDD, PDD, domain specification, or ontology artifact files and asks to create, validate, clone, map, wire the domain to Data Fabric entities, or deploy a new UiPath Ontology. Use for missing mapping generation, unresolved class/field/relationship ambiguity, and deployment sequencing. Do not use for plain domain prompts or CRUD operations on an existing ontology."
 when_to_use: "User provides an SDD or domain spec and wants to author/publish an ontology end-to-end; user says 'create an ontology from this SDD', 'generate ontology artifacts', 'deploy ontology', 'wire ontology to Data Fabric', 'generate mapping'."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 user-invocable: true
@@ -8,17 +8,59 @@ user-invocable: true
 
 # UiPath Ontology Authoring — SDD to Deployed Ontology
 
+## Routing boundary
+
+- SDD, PDD, design document, or domain specification → this skill.
+- Artifact folder intended for a new deployment or clone → this skill.
+- Plain-language domain description with no files → `uipath-ontology-modeler`.
+- Existing ontology CRUD, API, SDK, or artifact operations → `uipath-ontologies`.
+
+The words **new**, **clone**, **publish**, **deploy**, **mapping missing**, or **artifact folder** indicate authoring when the request concerns a new ontology. Do not hand such requests to existing-ontology CRUD.
+
 Two entry points — pick based on what the user has:
 
 | User has | Entry point |
 |---|---|
-| An SDD/PDD or domain spec | **A — Step 1 below.** Scope: SDD → silent login check → folder selection → entity matching + creation → domain definition (4 phases) → create ontology stub → invoke `uipath-ontology-modeler` (generates artifacts following canonical pattern files: `owl-patterns.md`, `shacl-patterns.md`, `mapping-yarrrml.md`, `functions-patterns.md`, `action-table-contract.md`) → upload mapping as deploy trigger. |
-| Already-generated artifact files — cloned from a different ontology, or authored outside this skill — to deploy | **B — "Entry point B" section below.** No SDD, no domain-definition phases — the domain model already exists in the files. Every gate in modeler `SKILL.md` Step 10 still applies. |
+| An SDD/PDD or domain spec | **A — Step 1 below.** Scope: SDD → silent login check → folder selection → entity matching + creation → domain definition → delegate artifact generation → preflight → create ontology stub → upload mapping as deploy trigger. |
+| Already-generated artifact files — cloned from a different ontology, or authored outside this skill — to deploy | **B — "Entry point B" section below.** No SDD, no domain-definition phases — the domain model already exists in the files. The complete preflight contract still applies. |
 
-**Separation of Concerns** — enforce this throughout (both entry points): facts go in `{name}.ofn`, rules go in USAGE POLICY blocks (mapping + functions), bindings go in `{name}-mapping.yarrrml.yml`. Never let domain facts drift into USAGE POLICY, and never let query routing rules drift into `rdfs:comment`. See the modeler's SoC table for the full breakdown.
+**Separation of Concerns** — enforce this throughout (both entry points): facts go in `{name}.ofn`, rules go in USAGE POLICY blocks (mapping + functions), bindings go in `{name}-mapping.yarrrml.yml`. Never let domain facts drift into USAGE POLICY, and never let query routing rules drift into `rdfs:comment`.
 
-> **Functions (SPARQL reads):** if the SDD describes query operations, the modeler generates one `.ttl` per functional area following `functions-patterns.md`.
-> **Actions (SQL writes):** if the SDD describes write operations, the modeler generates one `{name}-{actionName}.ttl` per action following `action-table-contract.md`.
+> **Functions (SPARQL reads):** if the SDD describes query operations, delegate one `.ttl` per functional area.
+> **Actions (SQL writes):** if the SDD describes write operations, delegate one `{name}-{actionName}.ttl` per action.
+
+## Delegated modeler contract
+
+Runtime delegation to `uipath-ontology-modeler` is intentional and is the only sibling relationship in this workflow. Do not read or import the modeler's files. Pass one complete handoff containing:
+
+```text
+ONTOLOGY_NAME: exact slug
+ONTOLOGY_IRI: https://ontology.uipath.com/{name}#
+WORKDIR: dedicated {name}/ output directory
+CLASS_MAP: class -> entityName, entityId, folderId, readOnly (federated only)
+MAPPING_STATUS: supplied | generate
+DOMAIN_MODEL: confirmed classes, properties, relationships, rules
+ANNOTATIONS: confirmed labels, comments, synonyms, value domains, and grain
+OPERATIONS: grouped query operations and structured write actions, if any
+DEPLOYMENT_MODE: delegated; modeler returns local-preflighted artifacts; authoring validates and uploads the inventory, with mapping as the final deploy trigger
+PREFLIGHT_HANDOFF_JSON: machine-readable JSON with CLASS_MAP, FIELD_METADATA, and explicit RELATIONSHIPS ([] when none)
+```
+
+`MAPPING_STATUS: supplied` means validate the provided mapping. `MAPPING_STATUS: generate` means generate it from handoff metadata; it is valid only with a machine-readable handoff JSON containing confirmed OFN classes/properties, `CLASS_MAP` entityName/entityId/folderId values, field metadata with exactly one identifier for every class, and explicit `RELATIONSHIPS` metadata (`[]` when none). The modeler must return `MAPPING_PATH`, `MAPPING_STATUS`, `MAPPING_GATE`, `UNRESOLVED_AMBIGUITIES`, and the exact preflight `artifact_inventory`. If a class, field, identifier, or relationship cannot be inferred uniquely, require a user decision and stop as `BLOCKED_AMBIGUITY`.
+
+If the modeler is unavailable or returns an incomplete handoff, stop before deployment and return the prepared model and an actionable error. Never upload a mapping marked `PRESENT_INVALID`, `BLOCKED_AMBIGUITY`, or with `MAPPING_GATE: FAIL`.
+
+### Authoring preflight contract
+
+First validate the provided mapping when `MAPPING_STATUS: supplied`, or generate it from handoff metadata when `MAPPING_STATUS: generate`; then run local preflight. Do not create the ontology stub or upload an artifact before this succeeds. Run the neutral validator against the exact workdir and intended upload set:
+
+```bash
+python3 tools/ontology_preflight.py \
+  --workdir {workdir} --ontology-name {name} --mapping-mode auto \
+  --handoff '{"CLASS_MAP": {...}, "FIELD_METADATA": {...}, "RELATIONSHIPS": []}'
+```
+
+Require JSON `status: PASS`, no failed `gate_results`, and mapping status `PRESENT_VALID` after the mapping file exists; consume its exact `artifact_inventory` as the only upload set. If the mapping is missing and metadata is sufficient, pass `MAPPING_STATUS: generate` plus the handoff JSON to the modeler and rerun preflight after generation. Repair every failure and rerun preflight after each repair; do not merely report a failed gate. Only after this local gate passes may authoring create the ontology stub and call backend artifact validation.
 
 ---
 
@@ -27,10 +69,10 @@ Two entry points — pick based on what the user has:
 Trigger: user points to a folder of already-generated artifact files (`{oldName}.ofn`, `{oldName}-constraints.ttl`, `{oldName}-functions.ttl`, `{oldName}-mapping.yarrrml.yml`, optionally `{oldName}-{actionName}.ttl`) — either cloned from a different ontology under a new name, or authored outside the guided flow and never gated — and wants them deployed. The domain model already exists in the files — skip Step 1 (SDD reading) and Phases 3–6 (domain definition) entirely. "The files already exist" is not a reason to skip any gate: a file that already parses and validates gives no other signal that it's missing a mapped class or a relationship. Do this instead:
 
 1. Confirm the new `{name}` slug (same IRI-derivation rule as Step 1) and the target folder (Phase 1, including its cross-folder name-collision check).
-2. If cloning from a different ontology: copy each file into `{workdir}`, renaming `{oldName}` → `{name}` in the filename and, inside every file, every occurrence of the old slug — schema/constraints/functions/mapping IRIs, SPARQL `PREFIX ont:` lines, and (for `functions`/`actions`) the `ont:statement`/`ont:statements` bodies. If deploying files as originally authored, skip straight to step 3.
-3. **A rename (or "it already exists") is not sufficient.** `uip ont artifact validate` only checks per-file syntax — it does not catch `functions`/`actions` SPARQL or SQL bodies whose object/data property names don't match what's declared in the schema, an unmapped class, or a missing relationship. Run Gates 1, 2, 3, 4, 4b, and 4c from the modeler `SKILL.md`'s Step 10 against the files exactly as written — same bash commands, no exceptions — before uploading anything. Do this even though a cloned source ontology may already be `DEPLOYED` elsewhere, since schema and functions can silently drift out of sync over that ontology's own lifetime. Fix anything flagged (edit the local files, don't just note the issue).
-4. Check `{name}-constraints.ttl`'s `@prefix shape:` is the global `<https://ontology.uipath.com/shapes#>` (see `shacl-patterns.md`), not a per-ontology path — a common leftover from an older authoring pass.
-5. Create the ontology stub (Phase 2's `uip ont create`). No modeler invocation needed — artifacts already exist. Run the same validate → upsert sequence Step 2/3 uses for freshly-generated artifacts: schema first, then constraints/functions/actions (parallel), then mapping last (triggers `DRAFT → DEPLOYED`). Use `uip ont get {name}` to confirm `DEPLOYED` — and remember `DEPLOYED` only means internally consistent, not "relationships modeled" (Gate 4c is what guarantees that).
+2. If cloning from a different ontology: copy each file into `{workdir}`, renaming `{oldName}` → `{name}` in the filename and, inside every file, every occurrence of the old slug — schema/constraints/functions/mapping IRIs, SPARQL `PREFIX ont:` lines, and (for `functions`/`actions`) the `ont:statement`/`ont:statements` bodies. If mapping is absent, set `MAPPING_STATUS: generate` and provide the modeler with the schema/entity metadata needed to create it. If deploying files as originally authored, use `MAPPING_STATUS: supplied` when present.
+3. **A rename (or "it already exists") is not sufficient.** Run the preflight command above against the exact files before uploading anything. It catches IRI drift, undeclared terms, missing object properties for FK joins, action output-contract failures, and non-global namespaces. Fix every failed gate locally and rerun preflight. Do this even though a cloned source ontology may already be `DEPLOYED` elsewhere.
+4. Check `{name}-constraints.ttl`'s `@prefix shape:` is the global `<https://ontology.uipath.com/shapes#>`, not a per-ontology path.
+5. After preflight passes, create the ontology stub using Step 3a's `uip ont create`. Run backend validation for every artifact and require `Data.valid: true`; then upsert schema first, constraints/functions/actions in parallel, and mapping last (triggers `DRAFT → DEPLOYED`). Verify `uip ont get {name}` is `DEPLOYED` and `uip ont artifact list {name}` matches the exact upload set. `DEPLOYED` only means internally consistent, not "relationships modeled"; the preflight relationship gate guarantees that.
 
 ---
 
@@ -50,9 +92,9 @@ Read the SDD immediately (Read tool for file paths). Extract only the **class na
 
 While reading the SDD, also scan for:
 
-**Query operations (functions — zero or more files):** natural-language questions the SDD says the system or an AI agent should answer (e.g. "how many X in state Y", "list X with their Y", dashboards, summaries, counts). If found, record the described operations and identify natural groupings by functional area (querying, analytics, validation, etc.). The modeler generates one `.ttl` file per functional area following `functions-patterns.md` — there is no limit on the number of function files.
+**Query operations (functions — zero or more files):** natural-language questions the SDD says the system or an AI agent should answer (e.g. "how many X in state Y", "list X with their Y", dashboards, summaries, counts). If found, record the described operations and identify natural groupings by functional area (querying, analytics, validation, etc.). Pass one `.ttl` file per functional area to the delegated modeler — there is no limit on the number of function files.
 
-**Write operations (actions — zero or more files, one per action):** mutations the SDD describes (e.g. "update status", "create record", "delete entry"). For each, record: action name, target entity, SQL operation (UPDATE / INSERT / DELETE), fields affected, identifier field, and input parameters. The modeler generates one `{name}-{actionName}.ttl` per action following `action-table-contract.md` — there is no limit on the number of action files.
+**Write operations (actions — zero or more files, one per action):** mutations the SDD describes (e.g. "update status", "create record", "delete entry"). For each, record: action name, target entity, SQL operation (UPDATE / INSERT / DELETE), fields affected, identifier field, and input parameters. Pass one `{name}-{actionName}.ttl` per action to the delegated modeler — there is no limit on the number of action files.
 
 If neither is present in the SDD, note that explicitly — no functions or action files will be generated.
 
@@ -211,20 +253,7 @@ CLASS_MAP:
 
 > **Wait for CLASS_MAP confirmation before moving to Phase 3.**
 
-**Ontology creation (enables inline validation in the modeler):**
-
-Once CLASS_MAP is confirmed, create the ontology stub so the modeler can validate each artifact against the backend inline during artifact generation:
-
-```bash
-uip ont create {name} \
-  --display-name "{Display Name}" \
-  --description "{description}" \
-  --folder-key {PRIMARY_FOLDER_KEY} \
-  --output json
-```
-
-- `"Code": "OntologyCreated"` → record the returned `id`, proceed to Phase 3.
-- `409 Conflict` → name already taken; run `uip ont get {name}` to inspect; stop for user guidance.
+**Stub deferral:** do not create the ontology stub here. Complete the domain review, generate the mapping, and pass local preflight first. Step 3 creates the stub immediately before backend validation and tiered upload.
 
 ---
 
@@ -245,7 +274,7 @@ Extract all classes from the SDD. Show this table and wait for confirmation:
 | "also known as / aka / alias" | `skos:altLabel` on the class |
 | "Y is a type of / subtype of Z" | `SubClassOf(:Y :Z)` |
 
-**Not every noun is a class.** SDDs frequently mention actors, roles, or external systems for narrative context only — "the AP Clerk captures the invoice," "posted to the ERP system" — with no properties of their own and no backing Data Fabric entity. Modeling these as OWL classes produces a class the modeler will never give a `DataProperty` or a mapping entry to, which passes every syntax/annotation check but silently blocks `DEPLOYED` (see `uipath-ontology-modeler`'s Gate 4b). If a concept has no property beyond a name and won't appear in the mapping, leave it out of this table and fold it into the relevant property's `rdfs:comment` instead (e.g. `Payment.approvedBy`: "The Accounts Payable Manager who approved this payment.").
+**Not every noun is a class.** SDDs frequently mention actors, roles, or external systems for narrative context only — "the AP Clerk captures the invoice," "posted to the ERP system" — with no properties of their own and no backing Data Fabric entity. Modeling these as OWL classes produces a class with no property or mapping entry, which passes syntax checks but silently blocks `DEPLOYED`. If a concept has no property beyond a name and won't appear in the mapping, leave it out and fold it into the relevant property's `rdfs:comment` instead (e.g. `Payment.approvedBy`: "The Accounts Payable Manager who approved this payment.").
 
 > **Wait for explicit user confirmation before moving to Phase 4.**
 
@@ -366,56 +395,106 @@ Update any Phase 5 annotation that differs from what the actual data shows. Reco
 
 ---
 
-## Step 2 — Generate all artifact files (invoke `uipath-ontology-modeler`)
+## Step 2 — Generate all artifact files (delegate to `uipath-ontology-modeler`)
 
-**Invoke the `uipath-ontology-modeler` skill** and pass it:
+**Delegate to the `uipath-ontology-modeler` skill** using the handoff contract above and pass it:
 - Confirmed domain model from Phases 3–4 (classes, data props, object props, business rules)
 - Confirmed annotations from Phase 5, updated with verified facts from Phase 6
 - `ONTOLOGY_IRI` from Step 1
 - `CLASS_MAP` from Phase 2 (entityId + folderId per class)
 - `{workdir}` from Step 1 (the ontology's own `{name}/` subfolder, already created) as the working directory for output
 
-> If the `uipath-ontology-modeler` skill is not available, stop and tell the user: "The uipath-ontology-modeler skill is required for artifact generation. Please activate it and try again."
+> If the `uipath-ontology-modeler` skill is not available, stop before deployment and return: "Artifact generation requires the uipath-ontology-modeler sibling skill. The domain model and setup are prepared; activate that skill and retry the delegation."
 
-The modeler skips its own Steps 1 and 2 — it uses the confirmed domain model from Phases 3–4 directly (the ontology was already created at the end of Phase 2). It generates each artifact through a build → preview → check → confirm → write → **backend validate → upsert** flow. Each artifact is upserted to the backend immediately after it passes Gate 5, except `{name}-mapping.yarrrml.yml` which is held (uploading it triggers deploy). The modeler returns once all artifacts are confirmed, validated, and uploaded — only the mapping remains.
+The modeler skips its standalone setup and domain-gathering phases. It uses the confirmed handoff directly, validates the provided mapping when `MAPPING_STATUS: supplied` or generates it from handoff metadata when `MAPPING_STATUS: generate`, and runs local preflight with `--handoff` before any backend call. It returns the exact `artifact_inventory`; authoring alone creates the stub, validates, and uploads the inventory in tiers, holding `{name}-mapping.yarrrml.yml` until last.
 
 The modeler generates each artifact following its canonical pattern file:
 
-| Artifact | Pattern file | Count | Uploaded when |
+| Artifact | Pattern file | Count | Authoring upload tier |
 |---|---|---|---|
-| `{name}.ofn` | `owl-patterns.md` | 1 (always) | Tier 1 (first — schema is context for all others) |
-| `{name}-constraints.ttl` | `shacl-patterns.md` | 1 (always) | Tier 2 (parallel with functions + actions) |
-| `{name}-[area-]functions.ttl` | `functions-patterns.md` | 0 or more — one per functional area | Tier 2 (each file uploaded in parallel) |
-| `{name}-{actionName}.ttl` | `action-table-contract.md` | 0 or more — one per write action | Tier 2 (each file uploaded in parallel) |
-| `{name}-mapping.yarrrml.yml` | `mapping-yarrrml.md` | 1 (always) | Held — uploaded by authoring's Step 3 as deploy trigger |
+| `{name}.ofn` | Modeler's OWL guide | 1 (always) | Tier 1 (first — schema is context for all others) |
+| `{name}-constraints.ttl` | Modeler's SHACL guide | 1 (always) | Tier 2 (parallel with functions + actions) |
+| `{name}-[area-]functions.ttl` | Modeler's functions guide | 0 or more — one per functional area | Tier 2 (each file uploaded in parallel) |
+| `{name}-{actionName}.ttl` | Modeler's action guide | 0 or more — one per write action | Tier 2 (each file uploaded in parallel) |
+| `{name}-mapping.yarrrml.yml` | Modeler's mapping guide | 1 (always) | Tier 3 — upload last as deploy trigger |
 
-All six gates the modeler runs:
+Gate ownership and execution:
 
 | Gate | Run by | Checks | Pass condition |
 |---|---|---|---|
-| G1 — QL blacklist | Modeler Step 3c | No forbidden OWL 2 QL constructs in `{name}.ofn` | Zero hits |
-| G2 — Naming | Modeler Step 3c | No `has{Prop}` DataProperty names | Zero hits |
-| G3 — Cross-file | Modeler Step 5c | Every `ont:` term in mapping + constraints + functions/actions SPARQL/SQL bodies declared in schema | All found |
-| G4 — Annotation | Modeler Step 3c | Every declared class and property has `rdfs:label` and `rdfs:comment` | All covered |
-| G5 — Backend validate + tiered upsert | Modeler Step 8 | All artifacts validated in parallel; upserted in tiers (schema first, then constraints/functions/actions simultaneously, mapping held) | `Data.valid: true` + `ArtifactUpserted` each |
-| G6 — Semantic consistency | Modeler Steps 9–10 | LLM judge: domain completeness, constraint coverage, column alignment, USAGE POLICY coherence | All checks `✓` |
+| G1 — QL blacklist | Modeler — local QL/naming/cross-file/annotation/semantic/preflight gates | No forbidden OWL 2 QL constructs in `{name}.ofn` | Zero hits |
+| G2 — Naming | Modeler — local QL/naming/cross-file/annotation/semantic/preflight gates | No `has{Prop}` DataProperty names | Zero hits |
+| G3 — Cross-file | Modeler — local QL/naming/cross-file/annotation/semantic/preflight gates | Every `ont:` term in mapping + constraints + functions/actions SPARQL/SQL bodies declared in schema | All found |
+| G4 — Annotation | Modeler — local QL/naming/cross-file/annotation/semantic/preflight gates | Every declared class and property has `rdfs:label` and `rdfs:comment` | All covered |
+| G5 — Preflight | Modeler — local QL/naming/cross-file/annotation/semantic/preflight gates | Local preflight passes and returns exact `artifact_inventory` | preflight pass |
+| G6 — Backend validate + tiered upsert | Authoring — backend validation and tiered upsert | Authoring validates and uploads inventory in tiers (schema first, then constraints/functions/actions); mapping is held until authoring uploads it last | `Data.valid: true` + `ArtifactUpserted` each |
+| G7 — Semantic consistency | Modeler — local QL/naming/cross-file/annotation/semantic/preflight gates | LLM judge: domain completeness, constraint coverage, column alignment, USAGE POLICY coherence | All checks `✓` |
 
-**Do not proceed to Step 3 until the modeler confirms all artifacts validated and uploaded (except mapping):**
+**Do not proceed to Step 3 until the modeler confirms preflight passed and returns every generated artifact in its exact `artifact_inventory`:**
 ```
-{workdir}/{name}.ofn           ✓ validated + uploaded
-{workdir}/{name}-constraints.ttl            ✓ validated + uploaded
-{workdir}/{name}-functions.ttl        ✓ validated + uploaded  (if generated)
-{workdir}/{name}-{actionName}.ttl     ✓ validated + uploaded  (if generated)
-{workdir}/{name}-mapping.yarrrml.yml  ✓ validated — awaiting deploy upload
+{workdir}/{name}.ofn           ✓ local preflighted; authoring uploads Tier 1
+{workdir}/{name}-constraints.ttl            ✓ local preflighted; authoring uploads Tier 2
+{workdir}/{name}-functions.ttl        ✓ local preflighted; authoring uploads Tier 2 (if generated)
+{workdir}/{name}-{actionName}.ttl     ✓ local preflighted; authoring uploads Tier 2 (if generated)
+{workdir}/{name}-mapping.yarrrml.yml  ✓ local preflighted; authoring uploads Tier 3 last
+MAPPING_GATE: PASS
+UNRESOLVED_AMBIGUITIES: none
 ```
 
 ---
 
-## Step 3 — Deploy (mapping upload)
+## Step 3 — Validate and deploy
 
-> **Trigger:** All artifacts are uploaded except the mapping. Upload mapping last — it transitions the ontology from `DRAFT` to `DEPLOYED`.
+> **Trigger:** The modeler returned a passing preflight inventory. Authoring creates the stub, validates every inventory artifact, uploads schema first, uploads constraints/functions/actions next. Upload mapping last — it transitions `DRAFT → DEPLOYED`.
 
-### 3a — Upload mapping (deploy trigger)
+### 3a — Create the ontology stub
+
+```bash
+uip ont create {name} \
+  --display-name "{Display Name}" \
+  --description "{description}" \
+  --folder-key {PRIMARY_FOLDER_KEY} \
+  --output json
+```
+
+Proceed only on `Code: OntologyCreated`. The modeler has not called the backend and has not uploaded any artifact.
+
+### 3b — Backend-validate the exact inventory
+
+Authoring backend-validates every artifact in `artifact_inventory` and requires `Data.valid: true` for each response before uploading anything:
+
+```bash
+uip ont artifact validate {name} \
+  --type {schema|constraints|functions|actions|mapping} \
+  --file {absolute-path-from-artifact_inventory} \
+  --output json
+```
+
+Run the command once per returned inventory entry. If any `Data.valid` is not `true` (including a `422`), authoring owns the recovery: read `Data.violations`, repair the identified local artifact, rerun preflight, and repeat all inventory validation; do not upload a partial tier. Authoring may re-delegate only local artifact regeneration to the modeler, which returns a new local-preflighted inventory and makes no backend calls. Authoring then resumes this backend-validation and upload sequence.
+
+### 3c — Upload Tier 1 and Tier 2
+
+Tier 1 — schema first:
+
+```bash
+uip ont artifact upsert {name} {name}.ofn \
+  --type schema --media-type text/owl-functional \
+  --file {workdir}/{name}.ofn --output json
+```
+
+Tier 2 — constraints, functions, and actions (parallel where present):
+
+```bash
+uip ont artifact upsert {name} {artifact-name} \
+  --type {constraints|functions|actions} --media-type text/turtle \
+  --file {absolute-path-from-artifact_inventory} --output json
+```
+
+Require `Code: ArtifactUpserted` for every Tier 1 and Tier 2 artifact. Do not upload the mapping in either tier.
+
+### 3d — Tier 3 — mapping only, last (deploy trigger)
+
+After every schema, constraints, function, and action upload succeeds, upload the one mapping inventory entry last:
 
 ```bash
 uip ont artifact upsert {name} {name}-mapping.yarrrml.yml \
@@ -424,9 +503,9 @@ uip ont artifact upsert {name} {name}-mapping.yarrrml.yml \
   --file {workdir}/{name}-mapping.yarrrml.yml \
   --output json
 ```
-Check response: `"Code": "ArtifactUpserted"` → mapping upload triggers `DRAFT → DEPLOYED`.
+Require `Code: ArtifactUpserted`. This mapping upload is the deploy trigger and must be the final artifact upload; it transitions `DRAFT → DEPLOYED`.
 
-### 3b — Verify deployment
+### 3e — Verify deployment
 
 ```bash
 uip ont get {name}
@@ -436,7 +515,11 @@ uip ont get {name}
 |---|---|---|
 | `DEPLOYED` | All artifacts accepted, ontology live | Done |
 | `BROKEN` | Mapping references a term not in schema | Run `uip ont artifact list {name}` — find the mismatched `ont:` term, fix `{name}-mapping.yarrrml.yml`, re-upload mapping |
-| `DRAFT` | Mapping not uploaded yet, or uploaded before schema/rules | Check Steps 3e and 4e in the modeler completed; re-upload mapping |
+| `DRAFT` | Mapping not uploaded yet, or uploaded before schema/rules | Follow this skill's recovery sequence: inspect `uip ont artifact list {name}`, backend-validate the exact preflight inventory again (3b), upsert schema (Tier 1) and rules (Tier 2), then re-upload mapping last (3d). |
+
+### 3f — Final inventory gate
+
+After `DEPLOYED`, run `uip ont artifact list {name} --output json`. Confirm that every file in the preflight upload set is present and no unintended artifact was uploaded. If the state or inventory is wrong, stop and report the exact mismatch; do not claim deployment success.
 
 ---
 
@@ -444,11 +527,11 @@ uip ont get {name}
 
 | File | `--type` | Media type | Pattern file | Count | Required for deploy |
 |---|---|---|---|---|---|
-| `{name}.ofn` | `schema` | `text/owl-functional` | `owl-patterns.md` | 1 | Yes |
-| `{name}-constraints.ttl` | `constraints` | `text/turtle` | `shacl-patterns.md` | 1 | Yes |
-| `{name}-[area-]functions.ttl` | `functions` | `text/turtle` | `functions-patterns.md` | 0 or more — one per functional area | No — freely add/removable without breaking a deployed ontology |
-| `{name}-{actionName}.ttl` | `actions` | `text/turtle` | `action-table-contract.md` | 0 or more — one per write action | No — freely add/removable |
-| `{name}-mapping.yarrrml.yml` | `mapping` | `application/yaml` | `mapping-yarrrml.md` | 1 | Yes — upload last, triggers `DRAFT → DEPLOYED` |
+| `{name}.ofn` | `schema` | `text/owl-functional` | delegated modeler | 1 | Yes |
+| `{name}-constraints.ttl` | `constraints` | `text/turtle` | delegated modeler | 1 | Yes |
+| `{name}-[area-]functions.ttl` | `functions` | `text/turtle` | delegated modeler | 0 or more — one per functional area | No — freely add/removable without breaking a deployed ontology |
+| `{name}-{actionName}.ttl` | `actions` | `text/turtle` | delegated modeler | 0 or more — one per write action | No — freely add/removable |
+| `{name}-mapping.yarrrml.yml` | `mapping` | `application/yaml` | delegated modeler | 1 | Yes — upload last, triggers `DRAFT → DEPLOYED` |
 
 ---
 
@@ -456,9 +539,9 @@ uip ont get {name}
 
 | Error | Cause | Fix |
 |---|---|---|
-| `422` on validate or upload | Malformed OWL or Turtle | Read `Data.violations`; the modeler's inline fix loop handles this automatically — re-run the relevant modeler step if bypassed |
+| `422` on validate or upload | Backend validation rejected an artifact | Authoring reads `Data.violations`, repairs the local artifact, reruns preflight, then repeats authoring Step 3b backend validation and the tiered upload sequence. It may re-delegate local regeneration to the modeler, but the delegated modeler makes no backend calls. |
 | `409` on create | Ontology name taken | `uip ont get {name}` to check; rename or delete first |
 | `BROKEN` after deploy | Mapping references undeclared property | Check every `ont:` term in mapping exists in `{name}.ofn` |
 | `DRAFT` after mapping upload | schema or constraints not uploaded first | Upload schema and rules, then re-upload mapping |
-| `DRAFT` persists though schema/constraints/mapping are all uploaded and every artifact individually validates fine | A class in `{name}.ofn` has zero properties and/or no instantiation in the mapping — no error surfaces, only Gate 4b catches this | Run Gate 4b (`uipath-ontology-modeler` Step 10): every class must be the domain of ≥1 property AND appear as `a ont:{ClassName}` in the mapping. Remove or properly back any class that fails either check, then re-upload schema/mapping |
+| `DRAFT` persists though schema/constraints/mapping are all uploaded and every artifact individually validates fine | A class in `{name}.ofn` has zero properties and/or no instantiation in the mapping | Require every class to be the domain of ≥1 property AND appear as `a ont:{ClassName}` in the mapping. Remove or properly back any class that fails either check, then re-upload schema/mapping |
 | `Not Found` on any `uip ont` command | Datafabric service not reachable | Backend not deployed on this environment |

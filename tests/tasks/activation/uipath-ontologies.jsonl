@@ -1,0 +1,6 @@
+{"id":"uipath-ontologies-001","prompt":"List the existing ontologies in the Finance folder","expected_skill":"uipath-ontologies"}
+{"id":"uipath-ontologies-002","prompt":"Validate the mapping artifact for ontology claims","expected_skill":"uipath-ontologies"}
+{"id":"uipath-ontologies-003","prompt":"Export ontology customer360 as a zip","expected_skill":"uipath-ontologies"}
+{"id":"uipath-ontologies-004","prompt":"Why is my UiPath ontology stuck in DRAFT?","expected_skill":"uipath-ontologies"}
+{"id":"uipath-ontologies-005","prompt":"Use the Ontologies SDK service to paginate through all ontologies","expected_skill":"uipath-ontologies"}
+{"id":"uipath-ontologies-006","prompt":"Delete this ontology and require a reason","expected_skill":"uipath-ontologies"}
