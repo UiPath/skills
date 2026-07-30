@@ -57,8 +57,8 @@ def main() -> int:
     process = root.find(f"{{{BPMN_NS}}}process")
     if process is None:
         fail("BPMN process is missing")
-    if process.attrib.get("isExecutable") != "true":
-        fail("BPMN process must be executable")
+    if process.attrib.get("isExecutable") != "false":
+        fail("BPMN process must use the Studio Web serializer contract isExecutable=\"false\"")
 
     elements = list(process)
     element_types = {local(elem.tag) for elem in elements}

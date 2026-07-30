@@ -111,12 +111,58 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    `<bpmn:SendTask>` or `<bpmn:ReceiveTask>`), normalize the host tag to the
    serializer's lower-camel BPMN element (`<bpmn:sendTask>`,
    `<bpmn:receiveTask>`) while preserving the `uipath:*` payload exactly.
+
+   **Small local fast path (overrides the generic Discover and Assemble
+   guidance).** Use this path only for a new intent-only graph with at most
+   twelve visible nodes and no connector, subprocess, loop, or boundary event.
+   Pull the registry once. If the request names the exact registry-owned types,
+   do not run `registry list` or `registry search`; otherwise stop listing or
+   searching as soon as those types are resolved. Run `registry get` exactly
+   once per **distinct** registry-owned type and reuse its template for every
+   node of that type.
+
+   Read only the
+   [complete minimal file](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
+   and the directly relevant subsection for each requested node. Then write
+   exactly `<Project>/<Project>.bpmn` and `<Project>/project.uiproj`; the latter
+   is exactly:
+
+   ```json
+   {"projectVersion":"1.0.0","ProjectType":"ProcessOrchestration","Name":"<Project>","main":"<Project>.bpmn"}
+   ```
+
+   Author the XML directly from that minimal structure plus the retrieved
+   templates and validate exactly once. Do not run `uip maestro bpmn init`, the
+   declarative renderer, `pack`, or any solution scaffold/package command. Do
+   not create a solution, `.uipx`, metadata, renderer spec, evidence directory,
+   fixture, implementation source, or test. Manual start/end events, exclusive
+   or parallel gateways, sequence flows, conditions, defaults, and DI are
+   structural: do not search the registry or validator spec for them. A graph
+   using only those elements plus `BPMN.Variables` tasks needs only one
+   `registry get BPMN.Variables`. Copy the minimal file's namespace declarations
+   verbatim; every `di:waypoint` requires the `xmlns:di` declaration. The first
+   post-template action must write the requested project.
+
+   **Intent-only `Actions.HITL`.** Use its retrieved registry template; `.flow`
+   QuickForm JSON does not apply. Without a confirmed live app, use visibly
+   synthetic literals for `appId`, `key`, and `taskTitle`; keep `appVersion`
+   numeric; serialize the requested outcome labels in the template's string
+   `actions` field (for example `Approve,Reject`); and put the fields the
+   reviewer must see in the `HitlTaskArguments` JSON body. Declare the
+   template's output variable with type `Actions.HITL`. If the process only
+   records completion, wire the user task directly to a registry-derived
+   `BPMN.Variables` task and then to the end event—do not introduce a gateway or
+   ScriptTask. Report the result as a portable, non-runnable draft until a real
+   app identity replaces the synthetic values.
 3. **Assemble.** Author directly from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton already
    shows variables, the entry point, a branch, and the diagram. **Do not
-   reverse-engineer authoring patterns from task fixtures or generated package
-   files** — fixture spelunking is the top reason authoring runs out of time.
+   reverse-engineer authoring patterns from task fixtures, generated package
+   files, or the declarative renderer's implementation/tests.** The
+   declarative-builder guide and `--example` output are its public contract;
+   fixture and implementation spelunking is the top reason authoring runs out
+   of time.
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
    expression/error mappings, retry attributes), then generate one
@@ -155,6 +201,26 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    metadata shape in
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
    Do not copy CLI scaffold metadata shapes into a synthetic local project.
+
+   For a large new graph whose executable work uses only the renderer's
+   documented Variables and ScriptTask mapping forms, use the generic
+   structural renderer described in
+   [references/declarative-builder.md](references/declarative-builder.md).
+   Do not use this path for connectors, HITL, RPA, agents, send/receive tasks,
+   or another registry template the renderer contract does not explicitly
+   cover; assemble those payloads from their registry XML templates. Author the
+   renderer's JSON spec instead of precomposing repetitive XML. The spec must
+   state every variable, node, condition, scope, loop, error, and flow; the
+   renderer derives references, DI, and local metadata, but does not generate
+   business policy. Start from:
+
+   ```bash
+   python3 scripts/build-bpmn.py --example
+   ```
+
+   Direct XML editing remains appropriate for a small graph. Do not use the
+   renderer to regenerate an existing/imported BPMN whose unknown content must
+   be preserved.
 4. **Validate.** Run the CLI validator — it runs the full PO.Frontend canvas
    rule set (structural rules plus variable, method-call, input-type, and
    event-object checks) offline, plus deploy-readiness checks:
@@ -213,8 +279,11 @@ and honestly surfaced to the user as gaps when asked.
 
 1. **Registry owns every `uipath:*` payload.** Author from
    `registry get` templates; never hand-write `uipath:` XML from prose.
-2. **Never fabricate an identifier.** Connection IDs, process/queue/connector
-   keys, app IDs, folder ids/paths come from discovery or the user.
+2. **Never fabricate a live identifier.** Connection IDs,
+   process/queue/connector keys, app IDs, and folder ids/paths selected for live
+   use come from discovery or the user. Use visibly synthetic intent-only
+   placeholders only where this skill explicitly allows them, and report the
+   resulting draft as non-runnable.
 3. **Structural BPMN is authored, not invented.** Follow the spec/canvas
    contract in [references/structural-bpmn.md](references/structural-bpmn.md);
    flag honestly what the registry does not expose.
@@ -252,6 +321,7 @@ and honestly surfaced to the user as gaps when asked.
 | Discover → template → bind → assemble loop | [references/registry-workflow.md](references/registry-workflow.md) |
 | Structural BPMN, event matrix, boundary events, containers, multi-instance, diagram, validation | [references/structural-bpmn.md](references/structural-bpmn.md) |
 | Runtime expressions, `vars.`/`bindings.`/`iterator.`, `=js:` (Jint) syntax | [references/expression-authoring.md](references/expression-authoring.md) |
+| Declarative renderer for large new BPMN graphs | [references/declarative-builder.md](references/declarative-builder.md) |
 | CLI conventions and the side-effect boundary | [references/cli-conventions.md](references/cli-conventions.md) |
 | Keeping content public-safe | [references/public-safety.md](references/public-safety.md) |
 | Package, upload, publish, run, or manage instances | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md) |

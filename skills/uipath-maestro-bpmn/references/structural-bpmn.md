@@ -42,7 +42,7 @@ namespace, at least one `<bpmn:process>`, and (to render) a
     xmlns:uipath="http://uipath.org/schema/bpmn"
     id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
     exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
-  <bpmn:process id="Process_1" isExecutable="true">
+  <bpmn:process id="Process_1" isExecutable="false">
     <!-- variables, flow nodes, sequence flows -->
   </bpmn:process>
   <bpmndi:BPMNDiagram id="Diagram_1">
@@ -85,9 +85,9 @@ need.
     xmlns:uipath="http://uipath.org/schema/bpmn"
     id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
     exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
-  <bpmn:process id="Process_1" isExecutable="true">
+  <bpmn:process id="Process_1" isExecutable="false">
     <bpmn:extensionElements>
-      <uipath:migrationVersion version="11.5" />
+      <uipath:migrationVersion version="15" />
       <uipath:variables version="v1">
         <uipath:inputOutput id="Var_Amount" name="Amount" type="number" />
         <uipath:inputOutput id="Var_Tier" name="Tier" type="string" />
