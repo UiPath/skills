@@ -174,6 +174,22 @@ jobs:
       - name: Run ScriptTask contract guard
         run: pytest tests/scripts/test_bpmn_script_task_contract.py -v
 
+  bpmn-metadata-refresh-contract-guard:
+    runs-on: ubuntu-latest
+    name: maestro-bpmn metadata refresh contract guard
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run metadata refresh contract guard
+        run: pytest tests/scripts/test_bpmn_metadata_refresh_contract.py -v
+
   catalog-build-guards:
     runs-on: uipath-ubuntu-latest
     name: catalog build integrity guards
