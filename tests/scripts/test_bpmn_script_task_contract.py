@@ -1,4 +1,4 @@
-"""Guard the bundled current-v3 ScriptTask registry contract.
+"""Guard the bundled ScriptTask compatibility contract.
 
 Run with:
     pytest tests/scripts/test_bpmn_script_task_contract.py
@@ -7,6 +7,7 @@ Run with:
 from __future__ import annotations
 
 import json
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -41,7 +42,7 @@ def _template_root() -> ET.Element:
     return ET.fromstring(wrapper)[0]
 
 
-def test_script_task_registry_entry_uses_current_v3_shape() -> None:
+def test_script_task_registry_entry_uses_supported_shape() -> None:
     entry = _script_task_entry()
     assert entry["bpmnElement"] == "bpmn:ScriptTask"
     assert entry["extensionTag"] == "uipath:mapping"
@@ -84,7 +85,7 @@ def test_script_task_registry_entry_uses_current_v3_shape() -> None:
     assert outputs == {
         "scriptResponse": {
             "name": "scriptResponse",
-            "type": "jsonSchema",
+            "type": "{scriptResponseType}",
             "source": "=result.response",
             "var": "{scriptResponseVarId}",
         },
@@ -98,7 +99,9 @@ def test_script_task_registry_entry_uses_current_v3_shape() -> None:
 
     version = task.find("bpmn:extensionElements/uipath:scriptVersion", NS)
     assert version is not None
-    assert version.attrib["value"] == "v3"
+    match = re.fullmatch(r"v(\d+)", version.attrib["value"])
+    assert match is not None
+    assert int(match.group(1)) >= 3
     script = task.find("bpmn:script", NS)
     assert script is not None
     assert (script.text or "").strip() == "return null;"

@@ -215,7 +215,7 @@ null outputs.
 See [expression-authoring.md](expression-authoring.md) for expression rules.
 Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
 
-## Script tasks — current v3 Jint contract
+## Script tasks — Jint authoring contract
 
 `bpmn:scriptTask scriptFormat="JavaScript"` runs under **Jint**, not Node.js or
 a browser. The mapping payload comes from the `BPMN.ScriptTask` registry
@@ -569,8 +569,8 @@ unsupported for generation until current tooling confirms them.
     actual lowercase `uipath:caseManagement` element with synthetic content. A
     typed `Orchestrator.StartCaseMgmtProcess*` activity shell is not the same
     payload and does not satisfy that preserve-only case-management shape.
-  - `<uipath:scriptVersion value="v2" />` is legacy: author `v3` for new scripts,
-    preserve `v2` where it already exists.
+  - Preserve existing `uipath:scriptVersion` markers. For a new ScriptTask, use
+    the marker supplied by the selected live or compatibility template.
 
 ## Diagram interchange — `bpmndi` (REGISTRY GAP — always generated)
 
