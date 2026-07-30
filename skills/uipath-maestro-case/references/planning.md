@@ -386,7 +386,10 @@ Re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](impleme
 
 **Plan-shape gate.** Before Phase 2, verify every task declaration has its own
 `## T<n>:` heading with a quoted task display name, plus exactly one
-`activation-mode:` and one `entry-rule:` field. For sequential work, the
-values must be `activation-mode: sequential` and
-`entry-rule: runs-sequentially`. Correct the plan before building; validation
-of `caseplan.json` cannot detect a malformed Phase 1 handoff.
+`activation-mode:` and one `entry-rule:` field, and that the pair matches the
+allowed combination for that mode — checked for **all six** modes (§4.6's
+`activation-mode` bullet lists them), not just `sequential`. The allowed
+pairings and the mismatch/rewrite rule are the table in
+[task-entry-conditions/planning.md § Phase 1 Plan Presentation Contract](plugins/conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract).
+Correct the plan before building; validation of `caseplan.json` cannot detect
+a malformed Phase 1 handoff.
