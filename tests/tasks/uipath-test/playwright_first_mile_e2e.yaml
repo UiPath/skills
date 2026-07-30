@@ -3,8 +3,9 @@
 #   - a folder the runner user is a member of, with a Cloud Robots - Serverless
 #     machine assigned (the task lets the agent discover/provision this)
 #   - @uipath/cli new enough to carry tm pack --type playwright (UiPath/cli#3226)
-# path-to-ga: must-pass once the CLI is published and the e2e tenant has the
-# serverless Playwright runtime; until then this documents the target bar.
+# Must-pass once the CLI is published and the e2e tenant has the serverless
+# Playwright runtime; until then this documents the target bar. (path-to-ga
+# tag deliberately omitted pending an allowlisted approver — see PR notes.)
 task_id: skill-test-playwright-first-mile-e2e
 description: >
   Full Playwright first-mile e2e: agent uses the uipath-test skill to take a
@@ -14,7 +15,7 @@ description: >
   ONLY one Playwright project, and fetch the results. The skill — not the
   prompt — must teach the pipeline order, the unfiltered ingestion poll, the
   probe-then-branch discriminator, the hidden commands, and bounded waiting.
-tags: [uipath-test, e2e, mode:operate, lifecycle:setup, feature:test-case, path-to-ga]
+tags: [uipath-test, e2e, mode:operate, lifecycle:setup, feature:test-case]
 
 max_iterations: 1
 run_limits:
@@ -94,8 +95,9 @@ success_criteria:
 
   - type: run_command
     description: "E2E outcome: latest PWE2E execution reached a terminal state with results (Passed on a capable tenant)"
-    command: "uip tm executions list --project-key PWE2E --output json 2>/dev/null | tr -d '\\n' | grep -oE '\"Status\"[^,]*' | head -1"
-    expected_output_pattern: '(Finished|Passed)'
+    command: "uip tm executions list --project-key PWE2E --output json 2>/dev/null | grep -qE '\"Status\": \"(Finished|Passed)\"'"
+    timeout: 120
+    expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 

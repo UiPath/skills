@@ -40,15 +40,17 @@ success_criteria:
 
   - type: run_command
     description: "Package embeds testcases.json test metadata (the ingestion contract)"
-    command: "unzip -l out/PwPackCheck.1.0.0.nupkg | grep -ci testcases.json"
-    expected_output_pattern: '[1-9]'
+    command: "unzip -l out/PwPackCheck.1.0.0.nupkg | grep -qi testcases.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Project satisfies pack prerequisites: lockfile committed next to package.json"
-    command: "ls pw-suite/ | grep -cE 'package-lock.json|yarn.lock|pnpm-lock.yaml|bun.lock'"
-    expected_output_pattern: '[1-9]'
+    command: "ls pw-suite/ | grep -qE 'package-lock.json|yarn.lock|pnpm-lock.yaml|bun.lock'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
