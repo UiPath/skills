@@ -11,7 +11,7 @@ defaults:
     # Activation is a recognition decision, not a work loop. We give the agent a
     # small turn budget (3) rather than a hard 1-turn cap, then arm early-stop on
     # the stacked skill_triggered criteria (stop_when: auto, see the task file).
-    # Under coder_eval >= 0.8.10 `auto` arms each instance's own decidable
+    # Under coder_eval >= 0.9.1 `auto` arms each instance's own decidable
     # polarity: the row's positive criterion (skill_name == expected_skill) arms
     # pass, the distractors arm fail. A positive row pass-stops the moment the
     # expected skill is engaged — turn 1, with the exact verdict a max_turns:1
@@ -21,7 +21,7 @@ defaults:
     # wrong-skill engagement alone does NOT stop it (fail-stop is deferred
     # while the row's positive criterion is undecided), so misfire-only and
     # no-engagement rows run to the cap — keep it small. (`decided` is invalid
-    # here: >= 0.8.10's any-engagement latch narrows each instance to ONE
+    # here: the any-engagement latch narrows each instance to ONE
     # decidable polarity.) See coder_eval "early stop on criterion".
     #
     # Note: unarmed runs (`-D run_limits.stop_early=false`) are the
