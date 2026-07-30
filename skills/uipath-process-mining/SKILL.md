@@ -11,7 +11,7 @@ Build and operate a UiPath Process Mining process app end-to-end from the termin
 
 **This works for every app type**, not just `uipath.custom`: the pipeline (mapping → upload → ingest → transform → data model → query) is identical across the `uipath.custom` event-log template and the source-system templates (P2P / O2C / IM / AP / … on SAP, Oracle, NetSuite, ServiceNow, Salesforce, …). Only **what the data mapping / extract must contain** differs. See [`references/app-types.md`](references/app-types.md).
 
-The command groups: `uip pm app-types` (templates), `apps` (create/list/delete + `data-mapping get|update` — read/replace the input mapping of an existing app), `files` (upload), `ingestions` (create/logs), `transformations` (list/get/create/update/apply/run/status/logs — the dbt dev loop), and `query` (run/details/percentile/rca/insights/info/layout).
+The command groups: `uip pm app-types` (list/get — templates), `apps` (list/create/delete/publish, `model get|add-table`, `data-mapping get|update`), `files` (upload), `ingestions` (create/logs), `transformations` (list/get/create/update/apply/run/status/logs — the dbt dev loop), and `query` (run/details/percentile/rca/insights/info/layout).
 
 ## When to Use This Skill
 

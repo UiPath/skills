@@ -16,12 +16,25 @@ query commands (default `dev`):
 Typical loop: develop and validate on `--stage dev` with a subset → publish →
 run the real analysis / share on `--stage published` with everything.
 
-> **Publishing** promotes the validated dev app (mapping + transformations + data
-> model) to the published stage and loads the full data there. Confirm the current
-> `uip pm` surface for this (`uip pm apps --help` / `uip pm --help`); if there is
-> no publish verb yet, publishing is done from the Process Mining app UI. Either
-> way, the mental model above (develop-on-dev-subset, publish-full) holds, and
-> `--stage published` targets the published data once it exists.
+## Publishing
+
+**`uip pm apps publish <app-id>`** promotes the validated dev app (mapping +
+transformations + data model) to the published stage, so dashboards and the query
+layer see it.
+
+The command reads the app's current model version off the data-model ETag and
+sends it as the publish precondition, so a stale caller fails instead of
+clobbering a newer model. The result envelope carries:
+
+- **`Changes`** — what the publish moved.
+- **`IngestionNeeded`** — when `true`, the published stage still needs a
+  re-ingestion before the change reaches the **data**. Dev transformation *or*
+  data-model changes (including `apps model add-table`) only become queryable
+  after a re-ingest; publishing alone promotes the definition, not the rows.
+
+So the full promote loop is: validate on `dev` → `uip pm apps publish <app>` →
+`uip pm ingestions create <app> --wait` when `IngestionNeeded` → analyse on
+`--stage published`.
 
 ## RBAC — configured at the platform layer, not in `uip pm`
 
