@@ -67,6 +67,8 @@ executable and metadata contract before packing: the BPMN root process includes
 BPMN file and generated JSON. `uip maestro bpmn update-metadata <file.bpmn>`
 produces that shape; for the exact JSON, see
 [local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
+Prefer the files produced by `uip maestro bpmn init`, and do not translate a
+descriptor shape from another UiPath project type.
 
 A Process Orchestration package content folder contains:
 
