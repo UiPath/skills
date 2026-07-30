@@ -24,6 +24,7 @@ from _shared.bpmn_check import (  # noqa: E402
     require_di_for_visible_elements,
     require_no_private_connector_values,
     require_sequence_integrity,
+    text_content,
 )
 
 
@@ -40,15 +41,36 @@ def main() -> None:
 
     parallel = [m for m in markers if m.attrib.get("isSequential") == "false"]
     if not parallel:
-        fail("multi-instance marker must be parallel (isSequential=\"false\") for per-city fan-out")
+        fail(
+            "multi-instance marker must be parallel "
+            '(isSequential="false") for per-city fan-out'
+        )
 
     bound = False
-    for m in parallel:
-        lc = m.find(".//uipath:loopCharacteristics", NS)
-        if lc is not None and lc.attrib.get("inputCollection") and lc.attrib.get("inputElement"):
-            bound = True
+    for script in root.findall(".//bpmn:scriptTask", NS):
+        marker = script.find("bpmn:multiInstanceLoopCharacteristics", NS)
+        if marker is None or marker.attrib.get("isSequential") != "false":
+            continue
+        lc = marker.find(".//uipath:loopCharacteristics", NS)
+        if lc is None or not lc.attrib.get("inputCollection"):
+            continue
+        if lc.attrib.get("inputElement"):
+            fail(
+                "task-level parallel marker must omit inputElement so the "
+                "runtime iterator object remains available"
+            )
+        inputs = " ".join(
+            " ".join(inp.attrib.values()) + " " + (inp.text or "")
+            for inp in script.findall(".//uipath:input", NS)
+        )
+        body = script.find("bpmn:script", NS)
+        if "=iterator" not in inputs:
+            fail("multi-instance ScriptTask args must pass the iterator object")
+        if body is None or "iterator.item" not in text_content(body):
+            fail("task-level multi-instance script must read the current item as iterator.item")
+        bound = True
     if not bound:
-        fail("parallel multi-instance marker missing uipath:loopCharacteristics inputCollection/inputElement binding")
+        fail("parallel task marker missing uipath:loopCharacteristics inputCollection binding")
 
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)

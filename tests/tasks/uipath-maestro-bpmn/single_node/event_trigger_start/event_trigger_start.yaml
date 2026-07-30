@@ -71,16 +71,9 @@ success_criteria:
     weight: 5.0
     pass_threshold: 1.0
 
-  - type: llm_judge
+  - type: command_not_executed
     description: "Agent kept the connector trigger local and avoided cloud-side operations"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+bpmn\s+(debug(\s|$)|process\s+run|run(\s|$)|upload|publish|deploy|pack)|solution\s+(upload|publish|deploy|pack))'
     weight: 2.0
-    pass_threshold: 0.7
-    include_agent_output: true
-    include_tool_calls: true
-    prompt: >
-      Pass if the agent only authored a local BPMN draft and read-only registry
-      output, and did not run or request approval for any cloud-side mutation
-      (upload, publish, deploy, debug, run, pack) and did not invent concrete
-      connection IDs, tenant URLs, or connector resource keys. Fail if tool calls
-      or the final answer show any cloud-side lifecycle mutation, a request to
-      perform one, or fabricated private connector metadata.
+    pass_threshold: 1.0

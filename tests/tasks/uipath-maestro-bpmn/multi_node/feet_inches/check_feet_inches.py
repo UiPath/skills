@@ -43,6 +43,9 @@ def _input_text(script) -> str:
     for inp in script.findall(".//uipath:input", NS):
         parts.append(text_content(inp))
         parts.append(" ".join(inp.attrib.values()))
+    body = script.find("bpmn:script", NS)
+    if body is not None:
+        parts.append(text_content(body))
     return " ".join(parts)
 
 
@@ -56,21 +59,41 @@ def main() -> None:
     if len(scripts) < 3:
         fail(f"expected a pipeline of at least 3 script tasks, found {len(scripts)}")
 
-    # Variable passing: some script's input references a variable id that another
-    # script declares as an output.
-    outputs = [(_output_var_ids(s), _input_text(s)) for s in scripts]
-    passed = False
-    for i, (_, in_text) in enumerate(outputs):
-        for j, (out_ids, _) in enumerate(outputs):
-            if i == j:
+    # Current v3 ScriptTasks pass the complete vars object through args and read
+    # specific ids in the script body. Follow sequence-flow reachability so a
+    # self-reference or a read from a later/disconnected task cannot pass.
+    script_by_id = {s.attrib.get("id", ""): s for s in scripts}
+    predecessors = {script_id: set() for script_id in script_by_id}
+    adjacency: dict[str, set[str]] = {}
+    for seq in elements(root, "sequenceFlow"):
+        source = seq.attrib.get("sourceRef", "")
+        target = seq.attrib.get("targetRef", "")
+        adjacency.setdefault(source, set()).add(target)
+
+    for upstream_id in script_by_id:
+        pending = list(adjacency.get(upstream_id, ()))
+        seen: set[str] = set()
+        while pending:
+            candidate = pending.pop()
+            if candidate in seen:
                 continue
-            if any(vid and vid in in_text for vid in out_ids):
-                passed = True
-                break
-        if passed:
-            break
-    if not passed:
-        fail("no downstream script task reads a variable produced by an upstream script task")
+            seen.add(candidate)
+            if candidate in script_by_id:
+                predecessors[candidate].add(upstream_id)
+            pending.extend(adjacency.get(candidate, ()))
+
+    for script_id, script in script_by_id.items():
+        upstream_ids = predecessors[script_id]
+        if not upstream_ids:
+            continue
+        upstream_outputs = set().union(
+            *(_output_var_ids(script_by_id[upstream_id]) for upstream_id in upstream_ids)
+        )
+        if not any(var_id in _input_text(script) for var_id in upstream_outputs):
+            fail(
+                f"downstream script task {script_id!r} does not read a variable "
+                "produced by an upstream script task"
+            )
 
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)

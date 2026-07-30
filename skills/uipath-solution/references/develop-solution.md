@@ -64,7 +64,7 @@ The `.uipx` is auto-discovered by walking up from the project path if not specif
 Copy a project from outside the solution tree into the solution directory and register it.
 
 ```bash
-uip solution projects import --source /path/to/ExternalProject --output json
+uip solution projects import /path/to/ExternalProject --output json
 ```
 
 Unlike `add`, `import` copies source files into the solution directory first, then registers the copy.
@@ -573,7 +573,7 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 |---|---|---|
 | Create a fresh solution | `uip solution init <name>` | Accepts an existing empty directory; drops `.uipx` inside |
 | Add a project already in the solution dir | `uip solution projects add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
-| Pull in an external project | `uip solution projects import --source <path>` | Rename source folder first to avoid 3-name divergence |
+| Pull in an external project | `uip solution projects import <path>` | Rename source folder first to avoid 3-name divergence |
 | Remove a project | `uip solution projects remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |
 | Sync resource bindings | `uip solution resources refresh --solution-folder <solution-dir>` | **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
 | Add a virtual queue / asset / bucket | `uip solution resources add --source local --kind <kind> --name <name>` | Offline-friendly; idempotent (re-run returns `Status: "Unchanged"`) |

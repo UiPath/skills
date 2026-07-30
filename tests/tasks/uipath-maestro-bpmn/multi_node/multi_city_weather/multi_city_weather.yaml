@@ -34,9 +34,11 @@ initial_prompt: |
     connector — keep it local and self-contained).
   - Apply `bpmn:multiInstanceLoopCharacteristics` with `isSequential="false"` to
     the script task, and bind the collection through the
-    `uipath:loopCharacteristics` extension (`inputCollection` and `inputElement`)
-    per the skill's structural reference — the registry serves no template for
-    this, author it from the canvas contract.
+    `uipath:loopCharacteristics` extension's `inputCollection`. Because the
+    marker is on a task, omit `inputElement`, pass `iterator` through the v3
+    ScriptTask args, and read the current city as `iterator.item` per the
+    skill's structural reference. The registry serves no template for this, so
+    author it from the canvas contract.
   - Declare variables and author the script-task payload per the skill's
     structural reference; do not hand-author uipath:* XML from prose.
   - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
@@ -62,7 +64,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "BPMN has a parallel multi-instance marker with a bound cities collection and valid DI"
+    description: "BPMN has a runtime-safe parallel task marker, iterator.item access, and valid DI"
     command: "python3 $TASK_DIR/check_multi_city_weather.py"
     timeout: 30
     expected_exit_code: 0

@@ -843,6 +843,282 @@ class BuildBpmnTests(unittest.TestCase):
             node.find(".//uipath:scriptVersion", build_bpmn.NS)
         )
 
+    def test_renders_connector_activity_and_connection_resource(self) -> None:
+        spec = build_bpmn.example()
+        spec["process"]["bindings"] = [
+            {
+                "id": "Binding_Connection",
+                "name": "Slack connection",
+                "displayName": "Slack eval account",
+                "type": "string",
+                "elementId": "Task_Set",
+                "default": "connection-id",
+                "resource": "Connection",
+                "resourceKey": "connection-id",
+                "propertyAttribute": "ConnectionId",
+            },
+            {
+                "id": "Binding_Folder",
+                "name": "FolderKey",
+                "type": "string",
+                "elementId": "Task_Set",
+                "default": "folder-key",
+                "resource": "Connection",
+                "resourceKey": "connection-id",
+                "propertyAttribute": "folderKey",
+            },
+        ]
+        spec["process"]["nodes"][1] = {
+            "kind": "sendTask",
+            "id": "Task_Set",
+            "name": "Send Slack message",
+            "mapping": {
+                "extensionTag": "activity",
+                "serviceType": "Intsvc.ActivityExecution",
+                "context": [
+                    {
+                        "element": "input",
+                        "name": "activity",
+                        "type": "string",
+                        "value": "SendMessage",
+                    },
+                    {
+                        "element": "input",
+                        "name": "connection",
+                        "type": "string",
+                        "value": "=bindings.Binding_Connection",
+                    },
+                    {
+                        "element": "input",
+                        "name": "connectorKey",
+                        "type": "string",
+                        "value": "uipath-salesforce-slack",
+                    },
+                    {
+                        "element": "input",
+                        "name": "folderKey",
+                        "type": "string",
+                        "value": "=bindings.Binding_Folder",
+                    },
+                    {
+                        "element": "input",
+                        "name": "operation",
+                        "type": "string",
+                        "value": "SendMessage",
+                    },
+                    {
+                        "element": "input",
+                        "name": "objectName",
+                        "type": "string",
+                        "value": "send_message_to_channel_v2",
+                    },
+                    {
+                        "element": "input",
+                        "name": "method",
+                        "type": "string",
+                        "value": "POST",
+                    },
+                    {
+                        "element": "input",
+                        "name": "path",
+                        "type": "string",
+                        "value": "/send_message_to_channel_v2",
+                    },
+                ],
+                "inputs": [
+                    {
+                        "name": "send_as",
+                        "type": "string",
+                        "target": "query",
+                        "value": "bot",
+                    },
+                    {
+                        "name": "body",
+                        "type": "json",
+                        "target": "body",
+                        "body": {
+                            "channel": "channel-id",
+                            "messageToSend": "hello",
+                        },
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "result",
+                        "type": "custom",
+                        "var": "result",
+                        "source": ".",
+                    }
+                ],
+            },
+        }
+
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory) / "Connector"
+            bpmn_path = build_bpmn.build(spec, project)
+            root = ET.parse(bpmn_path).getroot()
+            ns = build_bpmn.NS
+
+            activity = root.find(
+                ".//bpmn:sendTask[@id='Task_Set']"
+                "/bpmn:extensionElements/uipath:activity",
+                ns,
+            )
+            self.assertIsNotNone(activity)
+            activity_context = activity.findall(
+                "./uipath:context/uipath:input",
+                ns,
+            )
+            self.assertEqual(
+                [item.attrib["name"] for item in activity_context],
+                [
+                    "activity",
+                    "connection",
+                    "connectorKey",
+                    "folderKey",
+                    "operation",
+                    "objectName",
+                    "method",
+                    "path",
+                ],
+            )
+            bindings = root.findall(
+                ".//bpmn:process/bpmn:extensionElements"
+                "/uipath:bindings/uipath:binding",
+                ns,
+            )
+            self.assertEqual(len(bindings), 2)
+            self.assertNotIn("displayName", bindings[0].attrib)
+
+            resources = json.loads(
+                (project / "bindings_v2.json").read_text(encoding="utf-8")
+            )["resources"]
+            self.assertEqual(len(resources), 1)
+            self.assertEqual(resources[0]["key"], "connection-id")
+            self.assertEqual(
+                resources[0]["value"]["ConnectionId"]["displayName"],
+                "Slack eval account",
+            )
+
+    def test_rejects_connector_without_runtime_object_name(self) -> None:
+        node = ET.Element(build_bpmn.q("bpmn", "sendTask"))
+        with self.assertRaisesRegex(
+            ValueError,
+            "missing required fields.*objectName",
+        ):
+            build_bpmn.add_mapping(
+                node,
+                {
+                    "extensionTag": "activity",
+                    "serviceType": "Intsvc.ActivityExecution",
+                    "context": [
+                        {
+                            "element": "input",
+                            "name": name,
+                            "value": value,
+                        }
+                        for name, value in (
+                            ("activity", "SendMessage"),
+                            (
+                                "connectorKey",
+                                "uipath-salesforce-slack",
+                            ),
+                            ("connection", "=bindings.Connection"),
+                            ("folderKey", "=bindings.Folder"),
+                            ("operation", "SendMessage"),
+                            ("method", "POST"),
+                            (
+                                "path",
+                                "/send_message_to_channel_v2",
+                            ),
+                        )
+                    ],
+                    "inputs": [
+                        {
+                            "name": "body",
+                            "target": "body",
+                            "body": {},
+                        }
+                    ],
+                },
+            )
+
+    def test_rejects_dynamic_connector_context_path(self) -> None:
+        node = ET.Element(build_bpmn.q("bpmn", "sendTask"))
+        with self.assertRaisesRegex(
+            ValueError,
+            "connector context path must be a static registry route",
+        ):
+            build_bpmn.add_mapping(
+                node,
+                {
+                    "extensionTag": "activity",
+                    "serviceType": "Intsvc.ActivityExecution",
+                    "context": [
+                        {
+                            "element": "input",
+                            "name": name,
+                            "value": value,
+                        }
+                        for name, value in (
+                            ("activity", "CopyFile"),
+                            ("connectorKey", "uipath-google-drive"),
+                            ("connection", "=bindings.Connection"),
+                            ("folderKey", "=bindings.Folder"),
+                            ("operation", "CopyFile"),
+                            ("objectName", "copyFile"),
+                            ("method", "POST"),
+                            ("path", "=js:`/copyFile?fileId=${vars.fileId}`"),
+                        )
+                    ],
+                    "inputs": [
+                        {
+                            "name": "body",
+                            "target": "body",
+                            "body": {},
+                        }
+                    ],
+                },
+            )
+
+    def test_rejects_unmatched_connector_path_input(self) -> None:
+        node = ET.Element(build_bpmn.q("bpmn", "sendTask"))
+        with self.assertRaisesRegex(
+            ValueError,
+            "path input 'issueIdOrKey' needs a matching",
+        ):
+            build_bpmn.add_mapping(
+                node,
+                {
+                    "extensionTag": "activity",
+                    "serviceType": "Intsvc.ActivityExecution",
+                    "context": [
+                        {
+                            "element": "input",
+                            "name": name,
+                            "value": value,
+                        }
+                        for name, value in (
+                            ("activity", "UpsertIssue"),
+                            ("connectorKey", "uipath-atlassian-jira"),
+                            ("connection", "=bindings.Connection"),
+                            ("folderKey", "=bindings.Folder"),
+                            ("operation", "UpsertIssue"),
+                            ("objectName", "curated_edit_issue"),
+                            ("method", "PUT"),
+                            ("path", "/curated_edit_issue"),
+                        )
+                    ],
+                    "inputs": [
+                        {
+                            "name": "issueIdOrKey",
+                            "target": "path",
+                            "value": "=vars.issueKey",
+                        }
+                    ],
+                },
+            )
+
     def test_loop_item_is_optional_for_root_marker(self) -> None:
         node = ET.Element(build_bpmn.q("bpmn", "scriptTask"))
         build_bpmn.add_loop(
@@ -904,6 +1180,129 @@ class BuildBpmnTests(unittest.TestCase):
         )
         self.assertIsNotNone(loop)
         self.assertEqual(loop.attrib["inputElement"], "iterator[0]")
+
+    def test_accepts_scoped_multi_instance_subprocess_output(self) -> None:
+        build_bpmn.validate_multi_instance_subprocess_outputs(
+            [
+                {
+                    "kind": "subProcess",
+                    "id": "Sub_CopyItems",
+                    "loop": {
+                        "sequential": True,
+                        "collection": "=vars.Var_Items",
+                        "item": "iterator[0]",
+                    },
+                    "mapping": {
+                        "serviceType": "BPMN.Variables",
+                        "outputs": [
+                            {
+                                "name": "itemName",
+                                "type": "string",
+                                "var": "Var_ProcessedNames",
+                                "source": "=vars.Var_ItemResult.itemName",
+                                "custom": True,
+                            }
+                        ],
+                    },
+                }
+            ],
+            [
+                {
+                    "direction": "internal",
+                    "id": "Var_ProcessedNames",
+                    "name": "processedNames",
+                    "type": "Collection{string}",
+                    "elementId": "Sub_CopyItems",
+                    "custom": True,
+                }
+            ],
+        )
+
+    def test_rejects_plain_array_multi_instance_subprocess_output(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "output 'itemName' must declare custom=true",
+        ):
+            build_bpmn.validate_multi_instance_subprocess_outputs(
+                [
+                    {
+                        "kind": "subProcess",
+                        "id": "Sub_CopyItems",
+                        "loop": {
+                            "sequential": True,
+                            "collection": "=vars.Var_Items",
+                            "item": "iterator[0]",
+                        },
+                        "mapping": {
+                            "serviceType": "BPMN.Variables",
+                            "outputs": [
+                                {
+                                    "name": "itemName",
+                                    "type": "string",
+                                    "var": "Var_ProcessedNames",
+                                    "source": (
+                                        "=vars.Var_ItemResult.itemName"
+                                    ),
+                                }
+                            ],
+                        },
+                    }
+                ],
+                [
+                    {
+                        "direction": "internal",
+                        "id": "Var_ProcessedNames",
+                        "name": "processedNames",
+                        "type": "array",
+                        "schema": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                    }
+                ],
+            )
+
+    def test_rejects_unscoped_multi_instance_collection_output(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "custom, marker-scoped Collection\\{string\\}",
+        ):
+            build_bpmn.validate_multi_instance_subprocess_outputs(
+                [
+                    {
+                        "kind": "subProcess",
+                        "id": "Sub_CopyItems",
+                        "loop": {
+                            "sequential": True,
+                            "collection": "=vars.Var_Items",
+                            "item": "iterator[0]",
+                        },
+                        "mapping": {
+                            "serviceType": "BPMN.Variables",
+                            "outputs": [
+                                {
+                                    "name": "itemName",
+                                    "type": "string",
+                                    "var": "Var_ProcessedNames",
+                                    "source": (
+                                        "=vars.Var_ItemResult.itemName"
+                                    ),
+                                    "custom": True,
+                                }
+                            ],
+                        },
+                    }
+                ],
+                [
+                    {
+                        "direction": "internal",
+                        "id": "Var_ProcessedNames",
+                        "name": "processedNames",
+                        "type": "Collection{string}",
+                        "custom": True,
+                    }
+                ],
+            )
 
     def test_nested_error_loop_mapping_and_metadata(self) -> None:
         spec = {
