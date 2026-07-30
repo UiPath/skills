@@ -89,7 +89,7 @@ Two halves make a valid Maestro `.bpmn`:
 
 ## Workflow
 
-Work the four steps quickly, but keep the path matched to the user's ask. Treat
+Work the five steps quickly, but keep the path matched to the user's ask. Treat
 requests to discover before authoring, save raw registry JSON/evidence, or "do
 not author yet" as discovery-only even if they describe an eventual BPMN. In
 that mode, immediately create `registry-evidence/`, but run only the discovery
@@ -283,6 +283,31 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    If `validate` reports "unknown command" or clearly skips the
    structural rules, the installed CLI predates them — update it (see
    [references/cli-conventions.md](references/cli-conventions.md)).
+5. **Refresh derived metadata when package-ready output is required.** After
+   source validation passes, regenerate the four CLI-owned package files from
+   the authored BPMN:
+
+   ```bash
+   uip maestro bpmn \
+     refresh <project-path> --output json
+   ```
+
+   This is the authoritative local source-to-derived-state boundary for
+   `entry-points.json`, `bindings_v2.json`, `operate.json`, and
+   `package-descriptor.json`. It is offline and provider-neutral: it does not
+   log in, discover tenant resources, invoke a connector, or replace
+   `uip solution resources refresh`. It derives entry points and supported V1
+   Connection declarations from identities already authored into the BPMN,
+   deduplicates shared connection resources, preserves a stable project ID,
+   and writes the generated set atomically. A second unchanged run is
+   idempotent.
+
+   Treat a nonzero result as a source/precondition failure. Fix the BPMN or
+   `project.uiproj`, rerun validation, and refresh again; never repair the four
+   generated JSON files by hand. If the installed CLI does not expose
+   `maestro bpmn refresh`, report package generation as blocked rather than
+   inventing metadata. Refresh is needed only for a package-ready, upload,
+   debug, publish, or deploy deliverable—not for a source-only draft.
 
 ## Operate and diagnose
 
