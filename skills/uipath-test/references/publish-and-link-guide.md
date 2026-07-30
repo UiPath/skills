@@ -80,7 +80,7 @@ Two run modes — pick one:
 **Single test case** — uses `--test-case-id <UUID>`, NOT `--test-case-key`. Get the UUID from `uip tm testcases list --output json` (`Id` field):
 
 ```bash
-uip tm testcases run --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_UUID> --execution-type automated --output json
+uip tm testcases run --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_UUID> --name <EXECUTION_NAME> --execution-type automated --output json
 ```
 
 **Whole test set** — uses `--test-set-key`:
