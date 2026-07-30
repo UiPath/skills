@@ -68,14 +68,15 @@ file will fail to parse. Never paste CLI commands or flags
 
 ## A complete minimal file (author from this, not from examples)
 
-This is a minimal CLI-compatible authoring scaffold with a stable manual entry
-point, one structural task, and complete diagram interchange. The CLI
-initializer omits `isExecutable`; preserve that shape. If existing source
-includes the equivalent default `isExecutable="false"`, preserve it. Do not
-force `isExecutable="true"`. Author from this skeleton plus the registry
-templates for the nodes your process needs. **Do not
-reverse-engineer the pattern from full example BPMN files** — it is the main
-reason authoring runs out of time.
+This is a minimal CLI-compatible authoring scaffold with a runnable
+entry-point contract: one public input, mutable process variables, one
+registry-derived `BPMN.Variables` task, one public output, and complete diagram
+interchange. The CLI initializer omits `isExecutable`; preserve that shape. If
+existing source includes the equivalent default `isExecutable="false"`,
+preserve it. Do not force `isExecutable="true"`. Author structural nodes from
+this skeleton and replace the middle task with retrieved templates for the
+nodes the process needs. **Do not reverse-engineer the pattern from full example
+BPMN files** — it is the main reason authoring runs out of time.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -89,29 +90,50 @@ reason authoring runs out of time.
     exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
   <bpmn:process id="Process_1">
     <bpmn:extensionElements>
-      <uipath:variables version="v1" />
+      <uipath:variables version="v1">
+        <uipath:input id="input_Var_Amount" name="Amount" type="double" elementId="Start_1" />
+        <uipath:inputOutput id="Var_Amount" name="Amount" type="double" />
+        <uipath:output id="output_Var_Echo" name="Echo" type="double" elementId="End_1" />
+        <uipath:inputOutput id="Var_Echo" name="Echo" type="double" />
+      </uipath:variables>
       <uipath:bindings version="v1" />
     </bpmn:extensionElements>
     <bpmn:startEvent id="Start_1" name="Start">
       <bpmn:extensionElements>
         <uipath:entryPointId value="00000000-0000-4000-8000-000000000001" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="Amount" type="double" var="Var_Amount" source="=vars.input_Var_Amount" />
+        </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:task id="Task_1" name="Work">
+    <bpmn:task id="Task_Copy" name="Copy amount">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="Echo" type="double" var="Var_Echo" source="=vars.Var_Amount" custom="true" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_1</bpmn:incoming>
       <bpmn:outgoing>Flow_2</bpmn:outgoing>
     </bpmn:task>
     <bpmn:endEvent id="End_1" name="Complete">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="Echo" type="double" var="output_Var_Echo" source="=vars.Var_Echo" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_2</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Task_1" />
-    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_1" targetRef="End_1" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Task_Copy" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Copy" targetRef="End_1" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="Diagram_1">
     <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
       <bpmndi:BPMNShape id="S_Start" bpmnElement="Start_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="S_Task" bpmnElement="Task_1"><dc:Bounds x="250" y="78" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task" bpmnElement="Task_Copy"><dc:Bounds x="250" y="78" width="100" height="80" /></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="S_End" bpmnElement="End_1"><dc:Bounds x="430" y="100" width="36" height="36" /></bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="E_1" bpmnElement="Flow_1"><di:waypoint x="196" y="118" /><di:waypoint x="250" y="118" /></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="E_2" bpmnElement="Flow_2"><di:waypoint x="350" y="118" /><di:waypoint x="430" y="118" /></bpmndi:BPMNEdge>
@@ -141,8 +163,28 @@ If a migration marker is present, its supported shape is
 `<uipath:migrationVersion version="11.5" />`; the attribute is `version`, not
 `value`. The CLI initializer may omit that optional marker.
 
+Public entry-point variables have a two-layer runtime contract:
+
+- Give each root StartEvent used as an entry point a stable unique UUID in
+  `uipath:entryPointId` (generate a fresh value; do not reuse the example UUID).
+  Declare each public `uipath:input` with `elementId` bound to its intended
+  StartEvent and a mutable internal `uipath:inputOutput` with the stable id used
+  by process expressions. Map `=vars.<public-input-id>` to the internal id on
+  that StartEvent.
+- Declare a mutable internal `uipath:inputOutput`, plus a public
+  `uipath:output` bound with `elementId` to the root EndEvent that returns it.
+  Map the internal value to the public output id on that EndEvent. If one
+  public result must be returned on several normal routes, converge those
+  routes on that completion event.
+
+Do not route directly on a public input declaration or assume an internal
+variable automatically becomes an entry-point output. A deployment can
+complete while downstream decisions see empty values or the caller receives
+null outputs.
+
 See [expression-authoring.md](expression-authoring.md) for expression rules.
-Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
+Sub-process-scoped variables go in that sub-process's own
+`<uipath:variables>`.
 
 ## Script tasks (`BPMN.ScriptTask`) — Jint runtime contract
 
@@ -512,9 +554,12 @@ Safe, surgical edits on an existing `.bpmn` (preserve content you did not author
 - **Move logic into a subprocess**: move only elements that share a valid scope,
   re-scope their variables, recreate legal subprocess flow boundaries, and add a
   second diagram plane for the subprocess so nested content renders.
-- **Add an entry point**: use a root-level start event and generate a stable,
-  unique UUID for its serializer-owned `uipath:entryPointId`. Do not copy the
-  example UUID; this scaffold field is not a registry-owned node payload.
+- **Add an entry point**: use a root-level start event, generate a stable unique
+  UUID for its serializer-owned `uipath:entryPointId`, and bind that entry
+  point's public inputs to it. Bind each public output to its intended root end
+  event; converge routes only when they must return the same result. Bridge
+  both sides through mutable process variables. Do not copy the example UUID;
+  this scaffold field is not a registry-owned node payload.
 
 Do not patch generated JSON to fix source behavior — change the `.bpmn` and
 regenerate. For `Intsvc.*` activities/triggers, hand editing to CLI enrichment.

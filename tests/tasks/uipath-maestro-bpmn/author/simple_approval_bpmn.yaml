@@ -2,9 +2,9 @@ task_id: skill-bpmn-simple-approval-bpmn
 description: >
   Authoring eval: agent composes a model-authored simple approval BPMN that
   combines StartAgentJob, an exclusive gateway, CreateQueueItem, a script task,
-  declared root variables, the supported local project scaffold, numeric
-  migration metadata, and BPMN DI. Mirrors the manual smoke "simple approval"
-  scenario.
+  the supported local project scaffold, public entry/exit variable bridges,
+  numeric migration metadata, and BPMN DI. Mirrors the manual smoke
+  "simple approval" scenario.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", resource]
 
 run_limits:
@@ -28,13 +28,13 @@ initial_prompt: |
   - Use synthetic placeholder resource names only. Do not include tenant URLs,
     folder keys, connection IDs, real queue names, real agent identifiers, or
     user names.
-  - Declare root `uipath:variables version="v1"` entries for `expenseId`,
-    `amount`, and `decision` with documented types.
-  - Include a numeric `uipath:migrationVersion` element (for example `version`
-    `11` or `11.5`) on the process.
-  - Use `bpmn:scriptTask` with `scriptFormat="JavaScript"`, include
-    `uipath:scriptVersion`, prefer `v3`, and keep the script compatible with
-    the Jint runtime (no Node.js, browser, filesystem, or network APIs).
+  - Declare `expenseId` and `amount` as caller inputs and `decision` as the
+    returned output. Use the skill's documented mutable-state bridges at the
+    manual entry and completion events.
+  - Include the current numeric serializer migration metadata.
+  - Use a registry-derived JavaScript ScriptTask, map its result to the mutable
+    decision variable, and keep its code compatible with the Jint runtime (no
+    Node.js, browser, filesystem, or network APIs).
   - Include BPMN DI shapes for every visible node and BPMN DI edges with
     waypoints for every sequence flow.
   - Do not upload, publish, deploy, debug, or run the process.
@@ -53,7 +53,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Simple approval BPMN has the requested nodes, supported local project scaffold, migration metadata, and complete DI"
+    description: "Simple approval BPMN has the requested nodes, supported local scaffold, public input/output bridges, migration metadata, and complete DI"
     command: "python3 $TASK_DIR/check_simple_approval_bpmn.py"
     timeout: 30
     expected_exit_code: 0

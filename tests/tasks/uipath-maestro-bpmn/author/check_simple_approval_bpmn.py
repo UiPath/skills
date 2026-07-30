@@ -3,6 +3,7 @@
 import json
 import os
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from uuid import UUID
 
@@ -19,6 +20,69 @@ from _shared.bpmn_check import (  # noqa: E402
     require_no_private_connector_values,
     require_sequence_integrity,
 )
+
+
+def local_name(element: ET.Element) -> str:
+    return element.tag.rsplit("}", 1)[-1]
+
+
+def variable(
+    variables: list[ET.Element],
+    *,
+    name: str,
+    kind: str,
+    element_id: str | None = None,
+) -> ET.Element:
+    matches = [
+        item
+        for item in variables
+        if local_name(item) == kind
+        and item.attrib.get("name") == name
+        and (
+            element_id is None
+            or item.attrib.get("elementId") == element_id
+        )
+    ]
+    if len(matches) != 1:
+        scope = f" on {element_id!r}" if element_id else ""
+        fail(
+            f"expected one {kind} variable named {name!r}{scope}, "
+            f"found {len(matches)}"
+        )
+    return matches[0]
+
+
+def variable_by_id(
+    variables: list[ET.Element],
+    variable_id: str,
+) -> ET.Element:
+    matches = [
+        item
+        for item in variables
+        if item.attrib.get("id") == variable_id
+    ]
+    if len(matches) != 1:
+        fail(
+            f"expected one declared variable with id={variable_id!r}, "
+            f"found {len(matches)}"
+        )
+    return matches[0]
+
+
+def variables_mapping(element: ET.Element) -> ET.Element:
+    mapping = element.find(
+        "bpmn:extensionElements/uipath:mapping",
+        NS,
+    )
+    if mapping is None:
+        fail(f"{attr(element, 'id')!r} is missing a uipath:mapping")
+    mapping_type = mapping.find("uipath:type", NS)
+    if (
+        mapping_type is None
+        or mapping_type.attrib.get("value") != "BPMN.Variables"
+    ):
+        fail(f"{attr(element, 'id')!r} must use a BPMN.Variables mapping")
+    return mapping
 
 
 def main() -> None:
@@ -81,9 +145,13 @@ def main() -> None:
     # style, not behaviour -- see .claude/rules/test-writing.md.
 
     starts = process.findall("bpmn:startEvent", NS)
-    if len(starts) != 1:
-        fail("expected exactly one root start event")
-    entry_point = starts[0].find(
+    ends = process.findall("bpmn:endEvent", NS)
+    if len(starts) != 1 or len(ends) != 1:
+        fail("expected exactly one root start event and one root completion end event")
+    start, end = starts[0], ends[0]
+    start_id, end_id = attr(start, "id"), attr(end, "id")
+
+    entry_point = start.find(
         "bpmn:extensionElements/uipath:entryPointId",
         NS,
     )
@@ -150,14 +218,61 @@ def main() -> None:
     if missing:
         fail(f"package-descriptor.json files map is missing entries: {missing}")
 
-    variable_names = {
-        var.attrib.get("name")
-        for var in process.findall("bpmn:extensionElements/uipath:variables/*", NS)
-        if var.attrib.get("name")
-    }
-    for required in ("expenseId", "amount", "decision"):
-        if required not in variable_names:
-            fail(f"missing root variable named {required!r}")
+    variables = process.findall(
+        "bpmn:extensionElements/uipath:variables/*",
+        NS,
+    )
+    start_mapping = variables_mapping(start)
+    for input_name in ("expenseId", "amount"):
+        public_input = variable(
+            variables,
+            name=input_name,
+            kind="input",
+            element_id=start_id,
+        )
+        bridges = [
+            output
+            for output in start_mapping.findall("uipath:output", NS)
+            if output.attrib.get("source")
+            == f"=vars.{attr(public_input, 'id')}"
+            and output.attrib.get("type") == public_input.attrib.get("type")
+            and output.attrib.get("var")
+        ]
+        if len(bridges) != 1:
+            fail(
+                f"start event must bridge public {input_name!r} "
+                "to its mutable process variable"
+            )
+        internal_input = variable_by_id(variables, attr(bridges[0], "var"))
+        if local_name(internal_input) != "inputOutput":
+            fail(f"{input_name!r} start bridge must target uipath:inputOutput")
+        if public_input.attrib.get("type") != internal_input.attrib.get("type"):
+            fail(f"{input_name!r} public and mutable variable types must match")
+        if input_name == "amount" and public_input.attrib.get("type") != "double":
+            fail("numeric public and mutable amount variables must use type='double'")
+
+    public_output = variable(
+        variables,
+        name="decision",
+        kind="output",
+        element_id=end_id,
+    )
+    end_mapping = variables_mapping(end)
+    output_bridges = [
+        output
+        for output in end_mapping.findall("uipath:output", NS)
+        if output.attrib.get("var") == attr(public_output, "id")
+        and output.attrib.get("type") == public_output.attrib.get("type")
+        and (output.attrib.get("source") or "").startswith("=vars.")
+    ]
+    if len(output_bridges) != 1:
+        fail("completion end must bridge mutable 'decision' to the public output")
+    internal_output_id = output_bridges[0].attrib["source"].removeprefix("=vars.")
+    internal_output = variable_by_id(variables, internal_output_id)
+    if local_name(internal_output) != "inputOutput":
+        fail("'decision' end bridge must read from uipath:inputOutput")
+    if public_output.attrib.get("type") != internal_output.attrib.get("type"):
+        fail("'decision' public and mutable variable types must match")
 
     migration_versions = {
         elem.attrib.get("version") for elem in root.findall(".//uipath:migrationVersion", NS)
