@@ -31,13 +31,28 @@ initial_prompt: |
   Do NOT ask for approval or confirmation.
 
 success_criteria:
+  # Gate on "the runner was used at all". Do NOT gate on min_count: 2 — the
+  # checker counts matching TOOL CALLS, not command occurrences, so an agent
+  # that batches both runs into one Bash call scores 1/2 and fails despite
+  # correct behavior. Per-input evidence is carried by the file_exists +
+  # run_command criteria below, which cannot be satisfied without both runs.
   - type: command_executed
-    description: "Agent executed the workflow with the local runner, once per input (the operate action)"
+    description: "Agent executed the workflow with the local runner (the operate action)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Advisory: records the "one invocation per input" convention without docking
+  # agents that batch. Weight 0 so it never moves the score.
+  - type: command_executed
+    description: "Convention: one runner invocation per input (advisory, batching is not penalized)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
     min_count: 2
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 0
+    pass_threshold: 0
 
   - type: file_exists
     description: "Agent captured the score-85 run output (proves it ran, did not just report)"
@@ -51,17 +66,22 @@ success_criteria:
     weight: 0.5
     pass_threshold: 1.0
 
+  # Assert the runner's own envelope (Code: WorkflowRun) alongside the grade, not
+  # just the grade substring. "PASS"/"FAIL" are stated in the initial_prompt, so a
+  # bare grade grep is satisfiable by transcription; the envelope is not — it only
+  # appears in real `api-workflow run` output. Key is matched case-insensitively
+  # because the runner title-cases the workflow's `grade` output to `Grade`.
   - type: run_command
-    description: "Behavioral: the captured score-85 run output grades PASS"
-    command: 'grep -q ''"PASS"'' run_85.json'
+    description: "Behavioral: the captured score-85 run output is real runner output grading PASS"
+    command: 'grep -q ''"WorkflowRun"'' run_85.json && grep -qi ''"grade"[[:space:]]*:[[:space:]]*"PASS"'' run_85.json'
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Behavioral: the captured score-40 run output grades FAIL"
-    command: 'grep -q ''"FAIL"'' run_40.json'
+    description: "Behavioral: the captured score-40 run output is real runner output grading FAIL"
+    command: 'grep -q ''"WorkflowRun"'' run_40.json && grep -qi ''"grade"[[:space:]]*:[[:space:]]*"FAIL"'' run_40.json'
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
@@ -78,5 +98,9 @@ success_criteria:
     pass_threshold: 0
 
 run_limits:
-  expected_turns: 6
+  # 6 was understated: a clean passing run (claude-code / claude-sonnet-5, score
+  # 1.000) used 8 visible turns and tripped the advisory overage warning. 10
+  # leaves headroom over that observed baseline while staying well under the
+  # max_turns hard cap. Advisory only — expected_turns never affects the score.
+  expected_turns: 10
   max_turns: 20
