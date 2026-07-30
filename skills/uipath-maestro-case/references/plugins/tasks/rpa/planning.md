@@ -20,7 +20,7 @@ Same shape as [process/planning.md](../process/planning.md):
 | `task-type-id` | from registry (`entityKey` in `process-index.json`) |
 | `inputs` | see [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
 | `outputs` | follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list) |
-| `runOnlyOnce`, `isRequired` | from sdd.md |
+| `runOnlyOnce`, `isRequired` | from sdd.md (`runOnlyOnce` defaults false if omitted; do not infer true from task type) |
 
 ## Registry Resolution
 
@@ -47,7 +47,7 @@ Mark `<UNRESOLVED: rpa "<name>" in folder "<folder>" not found in registry>`. Om
   - <input_name> = "<value>"
 - outputs:
   - <SDD output row, copied verbatim>
-- runOnlyOnce: true
+- runOnlyOnce: false
 - isRequired: true
 - order: after T<m>
 - lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.

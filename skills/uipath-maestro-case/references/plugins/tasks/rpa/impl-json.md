@@ -11,7 +11,7 @@
   "displayName": "Extract Invoice Data",
   "elementId": "Stage_aB3kL9-tQ2pVx7Lm",
   "isRequired": true,
-  "shouldRunOnlyOnce": true,
+  "shouldRunOnlyOnce": false,
   "data": {
     "name": "=bindings.bG0SraLpg",
     "folderPath": "=bindings.bH1iJK2lm",
@@ -22,6 +22,7 @@
 ```
 
 - `id`: `t` + 8 alphanumeric chars. `elementId`: `${stageId}-${taskId}`.
+- `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope via `tasks.md`; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from task type.
 - `data.name` / `data.folderPath` MUST be `=bindings.<id>` references — never literals.
 - **Do not flip to `type: "process"`** based on registry. The `rpa` vs `process` distinction comes from sdd.md intent.
 

@@ -42,6 +42,8 @@ Allowed `ruleType` values and when to pick each:
 | `wait-for-connector` | Waits for a connector event (binds an IS connector trigger under `uipath`) | connector fields (above); `conditionExpression` optional |
 | `sla-status-change` | Fires when the referenced case/stage SLA reaches the referenced at-risk or breached escalation. Read all three from the SDD cell `sla-status-change("<SLA target>","<SLA Title>","<Escalation Display Name>")`. | `sla-target`, `sla-display-name`, `escalation-display-name` |
 
+> **Producer/reference audit.** `user-selected-stage` is valid only when a separate upstream stage has a `wait-for-user` exit that exposes this stage to the picker. Deterministic rejection, approval, send-back, cancellation, and SLA routes use decision facts plus guarded `selected-stage-*` or exit rules instead.
+
 `is-interrupting: true` means the condition can fire **while another stage is active** and will interrupt it. Use it on every secondary-stage entry row. If a candidate secondary stage would use `is-interrupting: false`, it is misclassified: use a regular stage/path or an `adhoc` task instead.
 
 > **Global-event rule.** A connector event or SLA status change that can happen during any primary stage and requires case work/routing is declared once on the destination secondary stage with `is-interrupting: true`. Do not generate the same task or stage-exit rule on every primary stage. `wait-for-connector` covers the external event; `sla-status-change` covers at-risk/breached SLA events. A warning-only SLA escalation remains a notification and needs no stage entry.

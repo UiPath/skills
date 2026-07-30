@@ -23,6 +23,7 @@ Distinguish from:
 | Either `timeDuration` (`--every`) OR `timeCycle` OR `timeDate` (`--at`) | sdd.md timer semantics | At least one required |
 | `repeat` | sdd.md (optional) | Number of repetitions — omit for infinite |
 | `isRequired` | sdd.md (default `true`) | |
+| `runOnlyOnce` | sdd.md (default `false`) | Re-entry behavior comes from the SDD, not the task type. |
 
 ## Registry Resolution
 
@@ -64,6 +65,7 @@ Ambiguous phrasing → **AskUserQuestion** with 2–3 candidate interpretations 
 - repeat: 5                       # optional
 - time-cycle: R/PT1H              # optional (overrides above)
 - isRequired: true
+- runOnlyOnce: false
 - order: after T<m>
 - lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
 - verify: Confirm Result: Success, capture TaskId

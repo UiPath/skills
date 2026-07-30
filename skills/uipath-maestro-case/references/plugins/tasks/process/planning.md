@@ -22,7 +22,7 @@ For RPA robot tasks specifically, prefer [rpa](../rpa/planning.md). For Coded wo
 | `task-type-id` | Registry resolution (see below) | Enables auto-enrichment via `tasks describe`. |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
 | `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
-| `runOnlyOnce` | sdd.md (default `true`) |  |
+| `runOnlyOnce` | sdd.md (default `false`) | Re-entry behavior comes from the SDD, not the task type.  |
 | `isRequired` | sdd.md (default `true`) |  |
 
 ## Registry Resolution
@@ -56,7 +56,7 @@ If no match is found across both cache files after `registry pull`:
   - <input_name> <- "<Stage>"."<Task>".<output>
 - outputs:
   - <SDD output row, copied verbatim>
-- runOnlyOnce: true
+- runOnlyOnce: false
 - isRequired: true
 - order: after T<m>
 - lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.

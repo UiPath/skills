@@ -16,7 +16,7 @@ Pick this plugin when the sdd.md labels a task as `API_WORKFLOW` — typically a
 | `task-type-id` | Registry resolution (below) | `entityKey` in `api-index.json` |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
 | `outputs` | sdd.md task Outputs + resolved schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
-| `runOnlyOnce` | sdd.md (default `true`) | |
+| `runOnlyOnce` | sdd.md (default `false`) | Re-entry behavior comes from the SDD, not the task type. |
 | `isRequired` | sdd.md (default `true`) | |
 
 ## Registry Resolution
@@ -127,7 +127,7 @@ Shared contract — [create-inline-common.md § Failure](../create-inline-common
   - <input_name> = "<value>"
 - outputs:
   - <SDD output row, copied verbatim>
-- runOnlyOnce: true
+- runOnlyOnce: false
 - isRequired: true
 - order: after T<m>
 - lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
