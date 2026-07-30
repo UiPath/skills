@@ -7,6 +7,7 @@ Activate deployed solutions, uninstall deployments, and manage published solutio
 ## When to Use
 
 - Activating a deployment that was not auto-activated
+- Upgrading an existing deployment to a newer package version in place (when a redeploy is blocked because the deployment already exists)
 - Cleaning up old or failed deployments
 - Managing published package versions in the solution feed
 - Removing solutions from Studio Web
@@ -61,6 +62,27 @@ uip solution deploy status <pipeline-deployment-id> --output json
 # Or list all deployments and inspect
 uip solution deploy list --output json
 ```
+
+## Upgrade a Deployment In Place
+
+> **Preview command.** Available only on prerelease (preview/alpha) CLI builds.
+
+`deploy run` fails with HTTP 400 when a deployment for the solution **already exists** — you can't redeploy over it, you have to upgrade it in place (the same as the Orchestrator UI's "Upgrade" button). `deploy upgrade` does that from the CLI, so you don't have to open the UI:
+
+```bash
+# Upgrade to the newest published version (default)
+uip solution deploy upgrade <deployment-key> --output json
+
+# A deployment in your Personal Workspace feed
+uip solution deploy upgrade <deployment-key> --personal-workspace --output json
+```
+
+Find `<deployment-key>` with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status: "UpgradeInitiated", DeploymentName, FromVersion, ToVersion }`.
+
+**Behavior and limits:**
+- It **initiates** the upgrade — the deployment's version moves to the target, but the operation lands in a `Draft`/in-progress state. Track completion with `uip solution deploy list` (the deployment shows the new version and its operation state).
+- Only the **latest** published version is a valid target today. Omit `--version` to take the newest; passing an older `--version` is rejected.
+- The deployment must be a healthy, successfully-installed one. A deployment that never installed cleanly is rejected by the server.
 
 ## Step 3: Uninstall a Deployment
 
