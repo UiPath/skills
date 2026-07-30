@@ -58,8 +58,11 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # pack/publish below grade the verb only — `--output json` may precede the
+  # subcommand as a global flag (`uip --output json codedapp pack`), so the
+  # pattern must not require it after the verb. Outcomes are graded separately.
   - type: command_executed
-    description: "Agent ran `uip codedapp pack` (grade the verb, not flag position — `--output json` is a global flag that may precede the subcommand, e.g. `uip --output json codedapp pack`)"
+    description: "Agent ran `uip codedapp pack`"
     tool_name: "Bash"
     command_pattern: 'uip\s+codedapp\s+pack\b'
     min_count: 1
@@ -67,7 +70,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran `uip codedapp publish` (grade the verb, not flag position — `--output json` is a global flag that may precede the subcommand, e.g. `uip --output json codedapp publish`)"
+    description: "Agent ran `uip codedapp publish`"
     tool_name: "Bash"
     command_pattern: 'uip\s+codedapp\s+publish\b'
     min_count: 1
