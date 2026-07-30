@@ -1,0 +1,24 @@
+{
+  "Result": "Success",
+  "Code": "ResourceList",
+  "Data": [
+    {
+      "Name": "ledger_entries",
+      "DisplayName": "Ledger entries",
+      "Path": "/v2/tenants/{tenantId}/ledger-entries",
+      "Type": "standard",
+      "SubType": "standard",
+      "Custom": "no",
+      "ElementKey": "uipath-synthetic-records"
+    },
+    {
+      "Name": "audit_entries",
+      "DisplayName": "Audit entries",
+      "Path": "/v2/tenants/{tenantId}/audit-entries",
+      "Type": "standard",
+      "SubType": "standard",
+      "Custom": "no",
+      "ElementKey": "uipath-synthetic-records"
+    }
+  ]
+}

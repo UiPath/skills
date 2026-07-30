@@ -1,0 +1,56 @@
+{
+  "Result": "Success",
+  "Code": "ResourceMetadata",
+  "Data": {
+    "name": "ledger_entries",
+    "displayName": "Ledger entries",
+    "elementKey": "uipath-synthetic-records",
+    "operation": {
+      "method": "GET",
+      "name": "List",
+      "description": "List ledger entries",
+      "path": "/v2/tenants/{tenantId}/ledger-entries"
+    },
+    "parameters": [
+      {
+        "name": "tenantId",
+        "type": "path",
+        "dataType": "string",
+        "required": true,
+        "displayName": "Tenant ID"
+      },
+      {
+        "name": "limit",
+        "type": "query",
+        "dataType": "integer",
+        "required": true,
+        "displayName": "Maximum records"
+      },
+      {
+        "name": "cursor",
+        "type": "query",
+        "dataType": "string",
+        "required": false,
+        "displayName": "Cursor"
+      }
+    ],
+    "requestFields": [],
+    "responseFields": [
+      {
+        "name": "items",
+        "type": "array",
+        "displayName": "Items"
+      },
+      {
+        "name": "next.token",
+        "type": "string",
+        "displayName": "Next token"
+      },
+      {
+        "name": "count",
+        "type": "integer",
+        "displayName": "Count"
+      }
+    ]
+  }
+}

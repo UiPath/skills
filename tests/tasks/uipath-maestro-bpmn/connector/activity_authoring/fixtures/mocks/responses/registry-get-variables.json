@@ -1,0 +1,24 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "BPMN.Variables",
+      "Label": "BPMN Variables",
+      "BpmnElement": "bpmn:Task",
+      "Placements": {},
+      "ExtensionTag": "uipath:mapping",
+      "ContextFields": [],
+      "InputPattern": "none",
+      "OutputSource": null,
+      "OutputType": null,
+      "BindingPattern": "none",
+      "RequiresDiscovery": false,
+      "IsDynamic": false,
+      "XmlTemplate": "<bpmn:Task id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:mapping version=\"v1\">\n      <uipath:type value=\"BPMN.Variables\" version=\"v1\" />\n    </uipath:mapping>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:Task>",
+      "InputNotes": "Variable mappings use uipath:mapping with direct input/output elements, not a jsonBody pattern",
+      "BpmnElementNotes": "Also used on bpmn:StartEvent and bpmn:EndEvent for variable mappings. On bpmn:Task with no serviceType, defaults to BPMN.Variables.",
+      "ExtensionTagNotes": "Uses uipath:mapping (not uipath:activity)."
+    }
+  }
+}

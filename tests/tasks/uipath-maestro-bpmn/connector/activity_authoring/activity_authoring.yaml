@@ -1,0 +1,97 @@
+task_id: skill-bpmn-is-activity-authoring
+description: >
+  Provider-neutral mocked Integration Service authoring eval: from one exact
+  enabled connection, the agent must resolve and author both a curated activity
+  and a generic CRUD activity. It exercises catalog identity, object and
+  operation schema discovery, parent-dependent request fields, distinct source
+  resource ownership, operation-specific direct request inputs and targets,
+  response schemas,
+  registry-template preservation, and a strict read-only boundary.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", connector, "feature:registry", "feature:connections", "feature:activities"]
+
+run_limits:
+  expected_turns: 65
+  max_turns: 75
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+initial_prompt: |
+  Use the `uipath-maestro-bpmn` skill to build
+  a plain local Maestro project at `ConnectorContract/` from
+  `activity-request.json`. Include both `project.uiproj` and
+  `ConnectorContract.bpmn`; do not generate package metadata.
+  Author both requested Integration Service activities in their listed order,
+  using the exact named connection and named profile.
+
+  Discover the current registry, catalog, object, operation, request, and
+  response contracts through the installed `uip` CLI rather than guessing.
+  Preserve the supplied root-binding resource ownership and make the resulting
+  source complete under the current V1 contract.
+
+  This is read-only authoring: do not invoke an external connector operation,
+  mutate a connection, package the project, or inspect `mocks/` or canned
+  response files directly.
+
+success_criteria:
+  - type: run_command
+    description: "Curated and generic activities preserve the current V1 source contracts"
+    command: "python3 $TASK_DIR/check_activity_authoring.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 7.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered the connector's curated and generic activity catalog"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+activities\s+list\s+uipath-synthetic-records'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent resolved a concrete object only for the generic List activity"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+resources\s+list\s+uipath-synthetic-records[\s\S]*--operation(?:=|\s+)List'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent completed available, operation, and parent-dependent schema discovery"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+resources\s+describe\s+uipath-synthetic-records'
+    min_count: 5
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified both selected connector objects through enriched registry lookups"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution[\s\S]*--object-name'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not invoke connector operations, mutate connections, or package/deploy"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(?:is\s+resources\s+run|is\s+connections\s+(?:create|edit|update|delete)|maestro\s+bpmn\s+(?:pack|publish|deploy|debug)|solution\s+(?:pack|publish|deploy|activate))'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not bypass discovery by reading mocked responses"
+    tool_name: "Bash"
+    command_pattern: 'mocks(?:/|\b)'
+    weight: 1.0
+    pass_threshold: 1.0
