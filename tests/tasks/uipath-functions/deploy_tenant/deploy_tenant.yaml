@@ -28,7 +28,7 @@ success_criteria:
   - type: command_executed
     description: "Agent scaffolded the project"
     tool_name: "Bash"
-    command_pattern: 'uip\s+function\s+new'
+    command_pattern: 'uip\s+functions?\s+new'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -36,7 +36,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran uip function init"
     tool_name: "Bash"
-    command_pattern: 'uip\s+function\s+init'
+    command_pattern: 'uip\s+functions?\s+init'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -44,7 +44,7 @@ success_criteria:
   - type: command_executed
     description: "Agent packed the project to a .nupkg"
     tool_name: "Bash"
-    command_pattern: 'uip\s+function\s+pack\b'
+    command_pattern: 'uip\s+functions?\s+pack\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

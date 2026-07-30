@@ -1,44 +1,47 @@
 task_id: skill-admin-audit-org-export-smoke
 description: >
-  Skill-guided evaluation: agent uses the uipath-admin skill to run
-  `export` at ORG scope (not tenant). Mirrors the tenant-export basic
-  smoke. Org-scope exports cover admin events (memberships, license,
-  tenant lifecycle) that don't live under any single tenant — picking
-  the wrong scope returns the wrong data silently.
+  Smoke test (outcome-graded): agent exports a single day of ORG-level audit
+  events as JSON into the folder the user named. Graded on the artifact, not the
+  command string.
 
-  Platform note: runs without an authenticated tenant — commands will
-  fail with auth errors. That is acceptable; what matters is correct
-  command invocation with correct flags.
-tags: [uipath-admin, smoke, mode:operate, audit, export, scope-org]
+  Org scope is graded from the exported records rather than from the word `org`
+  appearing in the command: org-level audit events are not attached to any tenant
+  and export with an empty `TenantId`, while tenant-scope records always populate
+  it. An agent that exports the wrong surface therefore fails on its own output.
+  When the window exports nothing there is no evidence either way, so the
+  assertion is skipped and logged rather than guessed at.
+
+  The destination must hold the CLI-generated
+  `audit_<from>_<to>_<generatedAt>` output. `--output-path` already takes a base
+  directory, so passing the folder the user named is the natural way to satisfy
+  this; the old criterion's `mv` allowance is not carried over, because a
+  freely-named layout is indistinguishable from a hand-written one and nothing in
+  this tier re-queries the tenant.
+
+  Org-level activity is sparse and the long-term store lags by up to ~48h, so an
+  empty export is a real outcome; all assertions are structural.
+tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, audit, export, scope-org]
 
 run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  Can you export yesterday's full organization-level Admin audit trail as
+  Can you export yesterday's full organization-level audit trail as
   JSON files for compliance archival? I want the whole day of org-scope
   activity (memberships, license changes, tenant lifecycle, and everything
   else at org level) — a straight export, not a category-filtered slice.
   Save them in a folder called audit-org-yesterday.
 
-success_criteria:
-  - type: command_executed
-    description: "Agent invoked `uip admin audit org export` (org scope) with --from-date, --to-date, AND --output-path"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b.*--from-date\s+\S+.*--to-date\s+\S+.*--output-path\s+\S+'
-    min_count: 1
-    weight: 2.5
-    pass_threshold: 1.0
+  Do NOT prompt the user for confirmation — this is an automated test.
 
-  - type: command_executed
-    description: "Agent delivered the export into the requested ./audit-org-yesterday folder — passed it as --output-path, or renamed the CLI-generated export folder to it (json default; no .zip/.csv extension)"
-    tool_name: "Bash"
-    # The user named a destination folder. Two equally-valid ways honor it, and both count:
-    #   1) pass it straight to --output-path (the CLI nests an audit_<from>_<to>_<ts> subfolder inside), or
-    #   2) export to a base dir, then `mv` the generated audit_<from>_<to>_<ts> folder to the name
-    #      (flatter layout — the per-day json lands directly in audit-org-yesterday/).
-    # The negative lookahead rejects a .zip/.csv target (retired ZIP shape), confirming the json default.
-    command_pattern: '(?:uip\s+admin\s+audit\s+org\s+export\b.*--output-path\s+\S*audit-org-yesterday(?![\w.]))|(?:\bmv\b\s+\S+\s+\S*audit-org-yesterday(?![\w.]))'
-    min_count: 1
-    weight: 1.5
+  Run the export in the foreground and wait for it to finish before you reply —
+  do not run it as a background task.
+
+success_criteria:
+  - type: run_command
+    description: "./audit-org-yesterday holds a CLI-generated day-wise JSON export whose records are ORG-scope (no TenantId)"
+    command: 'AUDIT_BASE_DIR=audit-org-yesterday AUDIT_FORMAT=json AUDIT_MIN_DAYS=1 AUDIT_EXPECT_SCOPE=org python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0

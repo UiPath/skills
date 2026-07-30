@@ -23,7 +23,7 @@ success_criteria:
   - type: command_executed
     description: "Agent scaffolded the project with uip function new"
     tool_name: "Bash"
-    command_pattern: 'uip\s+function\s+new'
+    command_pattern: 'uip\s+functions?\s+new'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -31,7 +31,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran uip function init to generate entry-points.json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+function\s+init'
+    command_pattern: 'uip\s+functions?\s+init'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

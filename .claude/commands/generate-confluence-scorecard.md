@@ -317,7 +317,7 @@ RULES = [(r'^uip (maestro )?flow\b','Flow'),(r'^uip (maestro )?bpmn\b','BPMN'),
  (r'^uip api-workflow\b','API Workflow'),(r'^uip codedapp\b','Coded Apps'),
  (r'^uip (or|orchestrator|resource)\b','Orchestrator'),(r'^uip context-grounding\b','ECS'),
  (r'^uip tm\b','Test Manager'),(r'^uip solution\b','Solutions'),(r'^uip (gov|governance)\b','Governance'),
- (r'^uip platform\b','Licensing'),(r'^uip traces\b','LLMOPS/Traces'),(r'^uip function\b','Serverless'),
+ (r'^uip platform\b','Licensing'),(r'^uip traces\b','LLMOPS/Traces'),(r'^uip functions?\b','Serverless'),
  (r'^uip llm-configuration\b','LLM GW'),(r'^uip admin\b','Identity & Auth Z'),(r'^uip tasks\b','Action Center Tasks')]
 def norm(p):
     p = p.replace('\\\\','\\').replace('(?s)','')
