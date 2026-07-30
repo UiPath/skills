@@ -52,6 +52,16 @@ Three failure modes observed in agent-generated `.flow` files:
 
 ---
 
+## Know the Field Path Before You Reference It
+
+`=js:$vars.<node>.output.<field>` is only correct if `<field>` matches the producing node's **actual output shape**. Read that shape from the producer before referencing it — never guess it from an external API's documented response, from the inputs you passed that node, or from intuition.
+
+Guessing is silently dangerous: producer outputs are usually **open** schemas, so a wrong `<field>` passes `flow validate` and faults only at `flow debug` — often at a *downstream* node, as `Cannot read property '<x>' of undefined` (see [failure-modes.md](../diagnose/references/failure-modes.md#flow-validate-passes-flow-debug-faults)).
+
+To find the real shape: **CLI-owned nodes** (connector activities, `core.action.http.v2`) expose it via `uip maestro flow registry get <node-type> --connection-id <id>` — read `outputDefinition.fields`, not just the input fields. **User-owned nodes** document their output in the node's plugin `impl.md` (a script's shape is just the object it `return`s). If the declared schema is thin/open, confirm against a real response — a `flow debug` run's runtime `variables`, or a read-only `uip is resources run …`.
+
+---
+
 ## Where the Rule Applies
 
 `=js:` is **required** in every field below when the value references `$vars`, `$metadata`, or `$self`:
