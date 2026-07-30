@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Intsvc.ActivityExecution",
+      "RequiresDiscovery": true,
+      "BindingPattern": "connection",
+      "BindingInfo": null,
+      "DiscoveryNotes": "Resolve the exact connector and list its connections.",
+      "ContextFields": [
+        {
+          "Name": "connection",
+          "BindingInfo": null
+        }
+      ]
+    }
+  }
+}
