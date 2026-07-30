@@ -24,7 +24,7 @@ The key difference from the RPA pipeline: there is **no link step**. Uploading t
 
 > **Do NOT run `uip tm testcases link-automation` on Playwright test cases.** They are linked by ingestion; manual linking is the RPA pipeline and will corrupt the association.
 
-> **Hidden commands.** `uip tm testsets playwright-context` and the `--playwright-projects` flag on `uip tm testsets run` are intentionally hidden from `--help` until the capability is broadly available — they are functional. Do not conclude they don't exist because help doesn't list them; trust this guide and probe by running them.
+> **Availability gate — check this first.** The external-package commands are newer than most installed CLIs. Run `uip tm pack --help --output json`: if it exposes no `--type` option, this pipeline is not available on this CLI — tell the user and stop rather than improvising. Project-scoped runs (Steps 5–6) additionally need `testsets playwright-context` / `run --playwright-projects`; if either answers `unknown command` / `unknown option`, the capability is not in this build — run the test set without project scoping instead of retrying.
 
 ## Prerequisites
 
@@ -103,7 +103,7 @@ uip tm testcases add --test-set-key <TEST_SET_KEY> --labels "PW_Suite_<name>" --
 - **Labels select *tests*; `--playwright-projects` selects *browsers*.** Filling by `PW_Project_firefox` picks every test that runs in the firefox project (often all of them); it does not make the run firefox-only — that is what the run flag in Step 6 does. To "run only <project>", label-fill by whatever identifies the tests you want (tag, suite, file) and pass the project name to `--playwright-projects`.
 - **Keep one test set = one Playwright package.** Per-project selection (Step 6) requires every test case in the set to come from a single Playwright package; label-filling across packages produces a set that cannot be project-scoped. Labels are NOT package-qualified — in a project holding several Playwright packages, a generic label like `PW_Tag_smoke` matches tests from all of them. There, fill by a package-unique label (`PW_File_<path>`, or a suite name unique to the package) or by explicit `--test-case-keys` from the current ingestion.
 
-## Step 5 — Probe the Playwright context (recommended)
+## Step 5 — Probe the Playwright context (when available)
 
 Before deciding whether `--playwright-projects` applies, ask the server:
 

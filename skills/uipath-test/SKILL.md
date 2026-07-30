@@ -1,6 +1,6 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, cases, sets, executions; generate reports; pack and run Playwright suites on serverless (tm pack, PW_* labels, --playwright-projects). For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
+description: "UiPath Test Manager — manage test projects, cases, sets, executions; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
@@ -29,7 +29,7 @@ UiPath Test Manager is a web application that manages the testing lifecycle of p
 - **Test case logs** - Logs of a **test case** in an execution. A **testcase** can be navigated from **testcaselogs**.
 - **Test step logs** — Step-level logs within a **test case log**.
 - **Test case log assertions** - Assertion steps of a test case log in an execution.
-- **External (Playwright) test packages** - A Playwright suite packed with `uip tm pack --type playwright` and uploaded to Orchestrator. Ingestion then auto-creates one test case per Playwright test (no link step) and labels each with `PW_Tag_*`, `PW_Project_*`, `PW_Suite_*`, `PW_File_*`. These run on serverless cloud runtimes — see [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
+- **External (Playwright) test packages** - A Playwright suite packaged as an external test package and uploaded to Orchestrator. Ingestion auto-creates one test case per Playwright test (no link step) and labels each with `PW_Tag_*`, `PW_Project_*`, `PW_Suite_*`, `PW_File_*`. These run on serverless cloud runtimes — see [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
 
 CLI tool for UiPath Test Manager (`uip tm`). Use `uip tm --help` and `uip tm <command> <subcommand> --help` to discover commands and options. **Always pass `--output json`** on every `uip` command.
 
@@ -86,7 +86,7 @@ Common `uip tm` commands organized by resource type.
 | `uip tm testcases steps delete --project-key <PROJECT_KEY> --step-id <UUID> --yes` | Delete a step. |
 | `uip tm testcases list-result-history --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List test case log result history for a specific test case. Optional `--only-failed`, `--filter`, `--limit`, `--offset`. |
 | `uip tm testcases run --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID> --name <EXECUTION_NAME> --execution-type <manual\|automated\|none\|mixed>` | Start a new execution for one or more test cases. **Uses `--test-case-id <UUID>` (space-separated for multiple).** Optional `--async`, `--folder-key`, `--robot-user-key`, `--machine-key`. |
-| `uip tm testcases add --test-set-key <TEST_SET_KEY> (--test-case-keys <KEY1,KEY2,...> \| --labels <name...>)` | Add test cases to a test set — by explicit keys, OR every test case carrying at least one of the given labels (variadic, space-separated; quote names containing spaces; OR-match, exact, case-sensitive). Pass exactly one of the two selectors. |
+| `uip tm testcases add --test-set-key <TEST_SET_KEY> (--test-case-keys <KEY1,KEY2,...> \| --labels <name...>)` | Add test cases to a test set — by explicit keys, OR every test case carrying at least one of the given labels (variadic, space-separated; quote names containing spaces; OR-match, exact, case-sensitive). The two selectors are mutually exclusive. |
 | `uip tm testcases remove --test-set-key <TEST_SET_KEY> --test-case-keys <KEY1,KEY2,...>` | Remove test cases from a test set (comma-separated keys). |
 
 > **Flag shapes for test case and step identifiers — do not interchange:**
@@ -104,12 +104,10 @@ Common `uip tm` commands organized by resource type.
 | `uip tm testsets update --test-set-key <TEST_SET_KEY> --name <TEST_SET_NAME>` | Update a test set name or description. |
 | `uip tm testsets delete --test-set-key <TEST_SET_KEY>` | Delete a test set by its key. |
 | `uip tm testsets list-testcases --project-key <PROJECT_KEY> --test-set-key <TEST_SET_KEY>` | List test cases assigned to a test set. |
-| `uip tm testsets run --test-set-key <TEST_SET_KEY>` | Run a test set and return the execution ID. Optional `--execution-type <automated\|manual\|mixed\|none>` (default `automated`), `--input-path <FILE>` for parameter overrides, `--wait` to block until terminal. For Playwright test sets, optional `--playwright-projects <names...>` (hidden from `--help`; see below). |
-| `uip tm testsets playwright-context --test-set-key <TEST_SET_KEY>` | Probe whether a test set is a Playwright test set: returns `IsPlaywright` plus the available/selected Playwright project names. Hidden from `--help` but functional. See [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md). |
+| `uip tm testsets run --test-set-key <TEST_SET_KEY>` | Run a test set and return the execution ID. Optional `--execution-type <automated\|manual\|mixed\|none>` (default `automated`), `--input-path <FILE>` for parameter overrides. |
 
 > Keys use the format `PROJECT_KEY:NUMBER` (e.g., `INV:42`). To add or remove test cases in a test set, use `uip tm testcases add` / `uip tm testcases remove` — those verbs live under the `testcases` group, not under `testsets`.
 
-> **Playwright test sets:** `--playwright-projects <names...>` (space-separated, case-sensitive `playwright.config` project names) runs only the selected projects and persists the selection on the test set. It requires every test case in the set to come from one single Playwright package; unknown names fail fast listing the valid ones. Probe first with `uip tm testsets playwright-context` and branch on `IsPlaywright`. Full pipeline: [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
 
 ### Executions Commands
 
@@ -145,7 +143,7 @@ Common `uip tm` commands organized by resource type.
 
 | Command | Purpose |
 |---|---|
-| `uip tm report get --execution-id <EXECUTION_ID> (--project-key <KEY> \| --test-set-key <KEY>)` | Get a summary report for a completed test execution. One of `--project-key`/`--test-set-key` is required to identify the project. Optional `--query`. |
+| `uip tm report get --execution-id <EXECUTION_ID> (--project-key <KEY> \| --test-set-key <KEY>)` | Get a summary report for a completed test execution. One of `--project-key`/`--test-set-key` is required to identify the project (verified: passing only `--execution-id` exits with "Provide --project-key or --test-set-key"). |
 
 ### Attachment Commands
 
@@ -159,14 +157,6 @@ Common `uip tm` commands organized by resource type.
 | Command | Purpose |
 |---|---|
 | `uip tm result download --execution-id <EXECUTION_ID>` | Download test execution results as JUnit XML. Optional `--project-key`, `--test-set-key`, `--result-path <DIR>`. |
-
-### Pack Commands (Playwright)
-
-| Command | Purpose |
-|---|---|
-| `uip tm pack --project-path <dir> --type playwright --project-key <PROJECT_KEY> --name <PackageName> --package-version <ver> -o <out-dir>` | Pack a Playwright suite into a `.nupkg` external test package. Requires a lockfile and `@playwright/test` in the project. `--project-key` targets the TM project where ingestion auto-creates the test cases; `--no-create-test-cases` skips that; `--dry-run` previews. Upload with `uip or packages upload <nupkg>`. |
-
-> Packing is offline (no auth needed). The upload → ingestion → label-fill → run pipeline is in [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
 
 ### Wait Commands
 
@@ -231,11 +221,11 @@ Object labels are tag-style metadata applied to Requirement, TestCase, TestSet, 
 
 1. **Always check login first** — run `uip login status --output json` before any Test Manager operation. If not authenticated, run `uip login` to sign in.
 2. **Probe the CLI surface once per session, before the first `uip tm` command.** Run `uip tm testcases --help --output json` (any flags accepted). Result `Success` → post-rename CLI; use the command tables above as-is. `unknown command` / non-zero exit → pre-rename CLI; translate via the [Pre-rename fallbacks](#pre-rename-fallbacks) table before each call. Re-probe on any later `unknown command` error.
-3. **Always pass `--output json`** to every `uip` command — no exceptions. Structured JSON output is what you need to reason about results reliably, even when you only plan to summarize them back to the user. Note: stdout may carry human progress lines *before* the JSON envelope (e.g. `Resolved project …`, run/wait progress) — when parsing, extract the JSON object rather than parsing stdout wholesale.
+3. **Always pass `--output json`** to every `uip` command — no exceptions. Structured JSON output is what you need to reason about results reliably, even when you only plan to summarize them back to the user.
 4. **Cap retries at 3** for any failing `uip` CLI command. After 3 failures, stop and report the error to the user (see Rule — never fall back to direct REST APIs).
 5. **Handle empty results** — if a list command returns an empty array, stop and inform the user rather than proceeding with a null key. Exception: a zero-result `tm testcases list --filter` call may be a prefix miss rather than a truly empty dataset — apply Rule 9's prefix fallback to disambiguate; stop only when the fallback also finds nothing. Filtered lookups on other resources (project, customfield) returning empty are real empty results — stop as usual.
 6. **Confirm before delete** — always confirm the target resource key with the user before running any `delete` command. All delete commands require `--yes` (or `-y`) to proceed; omitting it exits without deleting.
-7. **For operations requiring folder key** — when the user named a folder, look it up with `uip or folders list -n <folder-name> --all --output json`; when *choosing* a folder yourself, use the unflagged `uip or folders list --output json` (memberships only — `--all` includes folders you cannot actually use). Run `/uipath-platform` for folder management details.
+7. **For operations requiring folder key** — use `uip or folders list -n <folder-name> --all --output json` when the user named a folder; when picking one yourself, list without `--all` so you only get folders you are a member of (run `/uipath-platform` for folder management details).
 8. **Discover before assuming** — never guess automation names, folder keys, project IDs, or test case keys. Always run the matching `list` command first (e.g., `uip tm testcases list-automations`, `uip or folders list -n <folder-name> --all`).
 9. **Narrow `list` calls server-side when the user names an entity.** When the user provides a name, key, label, or tag, check `uip tm <resource> list --help` (or `uip or <resource> list --help`) for the narrowing flag the command exposes and pass it on the `list` call. Never list all results and filter client-side — it wastes tokens and misses paginated entries. Applies to every entity across `uip tm` and `uip or`. Exception: `tm testcases list --filter` matches by prefix. A mid-name term returns zero — retry `--filter` with a broader name prefix from context; re-list without `--filter` only when no workable prefix exists, paging through ALL results (`--limit`/`--offset`) before concluding the target is absent.
 10. **Set default folder before any `run` command** — `uip tm testcases run` and `uip tm testsets run` both require a default Orchestrator folder on the project. Run `uip tm project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY> --output json` first. Get folder keys with `uip or folders list -n <folder-name> --all --output json`.
@@ -273,7 +263,7 @@ If the probe in Rule #2 shows singular subjects, the CLI predates the closed-ver
   For more authentication details, run `/uipath-platform`.
 
 ### Confirm project scope
-  Ask the user for the project name or key before any Test Manager call (unless the task already names one or authorizes creating a new project). For multi-project scenarios, collect ALL names or keys in one prompt. Resolve each to a `PROJECT_KEY`:
+  Ask the user for the project name or key before any Test Manager call. For multi-project scenarios, collect ALL names or keys in one prompt. Resolve each to a `PROJECT_KEY`:
   ```bash
   uip tm project list --filter <NAME_OR_KEY> --output json
   ```
@@ -321,12 +311,9 @@ If the probe in Rule #2 shows singular subjects, the CLI predates the closed-ver
 | **Pack, ingest, and run a Playwright suite on serverless** (pack → upload → labels → run) | [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md) |
 
 
-> **Known CLI quirks:** a command can emit its JSON envelope and then sit before exiting (`[Telemetry] flush timed out`) — if you have the JSON, it succeeded. Auto-updater lines ("Checking for updates…") can precede the envelope, same hazard as progress lines (Rule #3). And `login status` can report "Logged in" (even with a stale `ExpirationDate`) while calls 401 — the non-interactive fix is `uip login refresh`; only fall back to interactive `uip login` if refresh fails.
-
 ## Anti-patterns
 
 - **Do NOT proceed if authentication fails** — all Test Manager API calls require a valid bearer token. Fail fast rather than surfacing confusing 401 errors later.
 - **Do NOT skip the surface probe** (Critical Rule #2). On a pre-rename CLI, post-rename commands fail with `unknown command`; on a post-rename CLI, pre-rename commands fail the same way. The skill targets the post-rename surface and falls back per the [Pre-rename fallbacks](#pre-rename-fallbacks) table. Picking the wrong shape without probing burns a retry on every call.
 - **Do NOT guess command names — verb-noun composites are required.** The CLI uses explicit verb-noun forms; bare verbs do not exist. Confirm with `uip tm <resource> --help --output json`.
 - **Do NOT `link-automation` Playwright test cases.** Playwright ingestion links them to the package automatically; the manual link step belongs to the Studio/RPA pipeline only.
-- **Do NOT conclude the Playwright commands are missing because `--help` omits them.** `uip tm testsets playwright-context` and `run --playwright-projects` are intentionally hidden until the capability is broadly available — they are functional. Probe by running them; on a Test Manager or CLI without the capability they fail with explicit instructions.
