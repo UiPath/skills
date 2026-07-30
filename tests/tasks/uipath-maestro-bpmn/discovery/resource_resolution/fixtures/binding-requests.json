@@ -1,0 +1,55 @@
+{
+  "context": {
+    "profile": "resource-review",
+    "expectedBaseUrl": "https://cloud.example.invalid",
+    "expectedOrganization": "automation-lab",
+    "expectedTenant": "operations",
+    "actual": null
+  },
+  "requests": [
+    {
+      "requestId": "process-risk-classifier",
+      "mode": "live",
+      "kind": "process",
+      "extensionType": "Orchestrator.StartJob",
+      "name": "RiskClassifier",
+      "processType": "Function",
+      "folderPath": "Shared/Automation",
+      "status": "pending",
+      "selected": null,
+      "viableCandidates": []
+    },
+    {
+      "requestId": "queue-review-items",
+      "mode": "live",
+      "kind": "queue",
+      "extensionType": "Orchestrator.CreateQueueItem",
+      "name": "ReviewItems",
+      "folderPath": "Shared/Operations",
+      "status": "pending",
+      "selected": null,
+      "viableCandidates": []
+    },
+    {
+      "requestId": "connection-neutral-records",
+      "mode": "live",
+      "kind": "connection",
+      "extensionType": "Intsvc.ActivityExecution",
+      "connectorLabel": "Neutral Records",
+      "currentId": "connection-stale-000",
+      "status": "pending",
+      "selected": null,
+      "viableCandidates": []
+    },
+    {
+      "requestId": "draft-hitl-shell",
+      "mode": "portable-draft",
+      "kind": "app",
+      "extensionType": "Actions.HITL",
+      "name": "PortableApproval",
+      "status": "pending",
+      "selected": null,
+      "viableCandidates": []
+    }
+  ]
+}

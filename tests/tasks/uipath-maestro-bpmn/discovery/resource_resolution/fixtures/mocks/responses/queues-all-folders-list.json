@@ -1,0 +1,15 @@
+{
+  "Result": "Success",
+  "Data": [
+    {
+      "Name": "ReviewItems",
+      "Key": "queue-review-001",
+      "FoldersCount": 2
+    },
+    {
+      "Name": "ArchiveItems",
+      "Key": "queue-archive-001",
+      "FoldersCount": 1
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "Result": "Success",
+  "Data": {
+    "ExtensionTypes": [
+      {
+        "ExtensionType": "Orchestrator.StartJob",
+        "Label": "Run process",
+        "RequiresDiscovery": "Yes",
+        "BindingPattern": "process"
+      },
+      {
+        "ExtensionType": "Orchestrator.CreateQueueItem",
+        "Label": "Create queue item",
+        "RequiresDiscovery": "Yes",
+        "BindingPattern": "queue"
+      },
+      {
+        "ExtensionType": "Intsvc.ActivityExecution",
+        "Label": "Run connector activity",
+        "RequiresDiscovery": "Yes",
+        "BindingPattern": "connection"
+      }
+    ],
+    "Connectors": [
+      {
+        "Name": "Neutral Records",
+        "ElementKey": "uipath-neutral-records"
+      },
+      {
+        "Name": "Archive Records",
+        "ElementKey": "uipath-archive-records"
+      }
+    ],
+    "Processes": [
+      {
+        "Name": "RiskClassifier",
+        "ProcessKey": "risk-classifier-function",
+        "ProcessVersion": "3",
+        "PackageProcessKey": "risk-classifier-function-package",
+        "ReleaseKey": "release-function-001",
+        "Type": "Function",
+        "Folder": "Shared/Automation",
+        "FolderKey": "folder-automation-001",
+        "FeedId": "feed-001"
+      },
+      {
+        "Name": "RiskClassifier",
+        "ProcessKey": "risk-classifier-process",
+        "ProcessVersion": "3",
+        "PackageProcessKey": "risk-classifier-process-package",
+        "ReleaseKey": "release-process-001",
+        "Type": "Process",
+        "Folder": "Shared/Automation",
+        "FolderKey": "folder-automation-001",
+        "FeedId": "feed-001"
+      },
+      {
+        "Name": "RiskClassifier",
+        "ProcessKey": "risk-classifier-other",
+        "ProcessVersion": "2",
+        "PackageProcessKey": "risk-classifier-other-package",
+        "ReleaseKey": "release-function-other-folder",
+        "Type": "Function",
+        "Folder": "Shared/Other",
+        "FolderKey": "folder-other-001",
+        "FeedId": "feed-002"
+      }
+    ]
+  }
+}
