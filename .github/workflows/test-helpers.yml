@@ -9,6 +9,10 @@ on:
       - 'tests/tasks/uipath-agents/**'
       - 'tests/tasks/uipath-admin/**'
       - 'tests/scripts/**'
+      - 'skills/uipath-maestro-bpmn/SKILL.md'
+      - 'skills/uipath-maestro-bpmn/references/structural-bpmn.md'
+      - 'skills/uipath-maestro-bpmn/references/shared/project-layout.md'
+      - 'skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md'
       - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
       - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
       - '.github/workflows/test-helpers.yml'
@@ -120,6 +124,22 @@ jobs:
       # case-insensitive _get_ci accessor — the CLI #2266 PascalCase break.
       - name: Run contract guard
         run: pytest tests/scripts/test_runtime_payload_key_casing.py -v
+
+  bpmn-project-scaffold-contract-guard:
+    runs-on: ubuntu-latest
+    name: maestro-bpmn project scaffold contract guard
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run project scaffold contract guard
+        run: pytest tests/scripts/test_bpmn_project_scaffold_contract.py -v
 
   catalog-build-guards:
     runs-on: uipath-ubuntu-latest

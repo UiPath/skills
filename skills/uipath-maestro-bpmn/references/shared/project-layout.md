@@ -59,13 +59,20 @@ For the regeneration and drift-check contract, see [local-metadata-regeneration-
 
 ## Package content
 
-A synthetic local project authored without a CLI generator must still match the
-executable and metadata contract before packing: the BPMN root process includes
-`isExecutable="true"`, `project.uiproj` has lowercase `"main"`,
-`operate.json` has `"main"` plus `"contentType": "ProcessOrchestration"`, and
-`package-descriptor.json` has top-level `"content"` entries under `content/`.
-For the exact minimal JSON, see
-[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
+Prefer the files produced by `uip maestro bpmn init`; do not translate a
+descriptor shape from another UiPath project type. The current BPMN scaffold
+stores only exact-cased `Name` and `ProjectType: "ProcessOrchestration"` in
+`project.uiproj`. Its runnable file/start-event path is
+`operate.json.main` (`/content/<project>.bpmn#<start-event-id>`), and
+`package-descriptor.json` owns the generated file map. The CLI scaffold omits
+`bpmn:process@isExecutable`; Studio may round-trip the equivalent default as
+`isExecutable="false"`.
+
+If initialization or metadata regeneration is unavailable, a source-only local
+project may contain the BPMN plus that minimal `project.uiproj`, but it is not
+package-ready. Report packaging or operation as blocked instead of inventing
+`operate.json`, `entry-points.json`, or `package-descriptor.json`. See
+[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
 
 A Process Orchestration package content folder contains:
 
@@ -75,7 +82,10 @@ A Process Orchestration package content folder contains:
 - `operate.json`.
 - `package-descriptor.json`.
 
-The package descriptor maps BPMN and generated JSON files under `content/`. The entry point file path references the BPMN file and start event, using the root start event's unique entry point ID.
+The package descriptor's root `files` object maps the BPMN and generated JSON
+files. Entry-point and operate paths use `/content/<file>.bpmn#<start-event-id>`
+to identify the packaged BPMN entry point, using the root start event's unique
+entry-point ID.
 
 ## Authoring boundary
 
