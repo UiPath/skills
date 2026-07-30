@@ -1,0 +1,106 @@
+# Check Integration Service Scorecard Accuracy
+
+Audit the published IS Product Capability Enumeration — the source feeding the org Coding-Agents Scorecard's Integration Service row — against live repo state on fresh `main`. Read-only by default; offers an opt-in fix on any mismatch.
+
+**Input:** `$ARGUMENTS` (all optional)
+- `--scorecard <pageId>` — also reconcile against a published org scorecard's IS row.
+- `--doc <pageId>` — override the enumeration page id (default below).
+
+**Output:** A per-check PASS/FAIL/WARN table printed to chat, with specific mismatches cited. No file writes unless the user explicitly opts into a fix at the end.
+
+This command is the source of truth for the IS scorecard accuracy rubric. Clone it for another cross-cutting row (e.g. ECS / context-grounding) by copying this file and swapping the six parameters below.
+
+---
+
+## Parameters
+
+| Param | IS default |
+|---|---|
+| `CONFLUENCE_PAGE_ID` | `90898825832` |
+| `TAGS` | `integration-service`, `ipe` |
+| `PLAYBOOK_DIR` | `skills/uipath-troubleshoot/references/products/integration-service/playbooks/` |
+| `REPO_DOC` | `tests/reports/integration-service-capability-enumeration.md` |
+| `COVERAGE_KEY` | `uipath-integration-service` |
+| `SCORECARD_ROW` | `Integration Service (uip is)` |
+
+## Phase 0 — Staleness guard (run FIRST, before any check)
+
+Verify the tree is current before comparing anything — a stale checkout is the failure this command exists to prevent.
+
+1. Run `git fetch origin main`.
+2. Run `git rev-list --count HEAD..origin/main`.
+3. If the count is `> 0`: **hard-fail**. Print `CHECK 0 staleness  FAIL — local main is <N> commits behind origin/main`, instruct `git pull --ff-only origin main`, and STOP. Do not run Phases 1–4 against a stale tree.
+4. If `0`: print `CHECK 0 staleness  PASS (HEAD == origin/main)` and continue.
+
+## Phase 1 — Fetch and parse the enumeration doc (source of truth)
+
+1. Resolve the page id: `--doc` if given, else `CONFLUENCE_PAGE_ID`.
+2. Fetch it: `getConfluencePage(cloudId="uipath.atlassian.net", pageId=<id>, contentFormat="html")`. If auth fails, STOP and tell the user to authenticate the Atlassian MCP.
+3. From the returned HTML, extract into named sets:
+   - **`DOC_TASK_IDS`** — every backtick-wrapped `task_id` in the feature-table "Coded Test Tasks" cells (values matching `skill-[a-z0-9-]+` or `-connector-*`, `-rpa-is-*` shorthands). Record the mode section (Build/Operate/Diagnose) each appears under. **Brace expansion:** cells may use shorthand like `prefix-{a,b,c}` — expand each group into its concrete ids (`prefix-a`, `prefix-b`, `prefix-c`) before recording. If a cell cannot be parsed into concrete ids (malformed brace syntax), record it as "unparseable", surface it in Check 1 as a parse warning, and do NOT treat it as a stale citation.
+   - **`DOC_PLAYBOOKS`** — every playbook basename cited (values matching `[a-z-]+` that appear in "Playbook(s)" cells, e.g. `connection-invalid`, `cs-permission-denied`).
+   - **`DOC_TALLY`** — the Coverage Summary table: per-mode `Capabilities`, `Direct eval`, and `Eval %` (Build/Operate/Diagnose/Total).
+4. Print a one-line summary: `Parsed doc: <n> task_ids, <n> playbooks, tally B/O/D = …`. If any set is empty, WARN (doc may have been reformatted) but continue.
+
+## Phase 2 — Checks 1 & 2 (structural reconciliation)
+
+### Check 1 — Doc ↔ repo evals
+
+1. Build `REPO_TASK_IDS`: for each alias in `TAGS`, run
+   `grep -rlw "<alias>" tests/tasks --include='*.yaml' | grep -v _shared`,
+   then for each file read its `task_id:` and `mode:*` tag. (The `-w` flag makes the hyphenated tag a whole-token match, so the `integration` tier tag does not collide — no extra filtering needed.)
+2. **Stale citations:** every id in `DOC_TASK_IDS` not in `REPO_TASK_IDS` → FAIL, list them.
+3. **Mode mismatch:** any id whose repo `mode:*` differs from the doc's mode section → FAIL, list `id (doc=<mode>, repo=<mode>)`.
+4. **Un-listed evals:** every id in `REPO_TASK_IDS` not in `DOC_TASK_IDS` → FAIL, list them (doc is missing a real eval).
+5. `CHECK1_RESULT` = PASS iff no stale, no mismatch, no un-listed.
+
+### Check 2 — Doc ↔ playbooks
+
+1. Build `REPO_PLAYBOOKS` = basenames (no `.md`) of `*.md` in `PLAYBOOK_DIR`.
+2. **Missing:** every file in `REPO_PLAYBOOKS` not in `DOC_PLAYBOOKS` → FAIL, list them (doc omits a real playbook — neither covered nor gap-listed).
+3. **Phantom:** every name in `DOC_PLAYBOOKS` not in `REPO_PLAYBOOKS` → FAIL, list them (doc cites a playbook that does not exist).
+4. `CHECK2_RESULT` = PASS iff no missing, no phantom. Report `<covered>/<total>` represented.
+
+## Phase 3 — Checks 3 & 4 (numeric reconciliation)
+
+### Check 3 — Doc ↔ scorecard numbers
+
+1. If `tests/reports/coverage.json` exists AND has a `skills.<COVERAGE_KEY>` entry: compare its `mode_coverage.{build,operate,diagnose}.pct` and `overall_pct` against `DOC_TALLY`. Any divergence → FAIL, cite `mode: coverage.json=<x>% vs doc=<y>%`.
+2. If the entry is ABSENT → WARN (not FAIL): `IS not yet registered as a cross-cutting capability in the coverage report (tests/reports/coverage.json); scorecard uses platform-aggregate floor`. Point at the open registry task.
+3. If `--scorecard <id>` given: fetch that page, find the `SCORECARD_ROW` row, and compare its Build/Operate/Diagnose Eval % cells against `DOC_TALLY`. Divergence → FAIL, cite the cell.
+4. `CHECK3_RESULT` = PASS iff all present comparisons agree; WARN if only the missing-entry condition fired; FAIL on any divergence.
+
+### Check 4 — Internal consistency (within the doc)
+
+**Important:** Do NOT count Build/Operate feature-table rows against the tally `Capabilities` column. The tally is a curated milestone capability count, not a feature-row count — they legitimately differ (e.g. Build has 16 feature rows but 30 tally Capabilities). Comparing row counts to tally cells will always produce false FAILs.
+
+1. **Tally arithmetic:** verify the `Total` row = sum of the three per-mode rows for both the `Capabilities` column and the `Direct eval` column. Mismatch → FAIL, cite the column and the arithmetic discrepancy.
+2. **Diagnose Capabilities anchor:** verify `DOC_TALLY` Diagnose `Capabilities` == `REPO_PLAYBOOKS` count from Check 2. The tally's Diagnose Capabilities cell is explicitly the count of troubleshoot playbooks. Mismatch → FAIL, cite `Diagnose Capabilities tally=<a> but REPO_PLAYBOOKS=<b>`.
+3. **Diagnose Direct eval anchor:** verify `DOC_TALLY` Diagnose `Direct eval` == the count of dedicated diagnose `task_id`s from `REPO_TASK_IDS` (mode:diagnose, from `PLAYBOOK_DIR`-related tasks) as counted in Check 1. If the tally cell and the task_id count differ because fault families bundle multiple task_ids, that is EXPECTED — reconcile against the task_id count (currently 12), not the covered-family row count (currently 11 families). Mismatch → FAIL, cite `Diagnose Direct eval tally=<a> but dedicated diagnose task_ids=<b>`.
+4. **🟡 rows:** for each mode, count IN-PROGRESS (🟡) rows in the feature tables separately and report as "partial". Never silently drop 🟡 rows — they are neither ✅-covered nor 🔴-uncovered and must not be conflated with either.
+5. `CHECK4_RESULT` = PASS iff the tally arithmetic reconciles (step 1) and both repo-count anchors match their tally cells (steps 2–3).
+
+## Phase 4 — Verdict
+
+Print a fixed-width table, one row per check, exactly:
+
+```
+CHECK 0 staleness      <PASS|FAIL>  <detail>
+CHECK 1 doc↔evals      <PASS|FAIL>  <n stale, n mismatch, n un-listed>
+CHECK 2 doc↔playbooks  <PASS|FAIL>  <covered>/<total> represented
+CHECK 3 doc↔scorecard  <PASS|WARN|FAIL>  <detail>
+CHECK 4 internal       <PASS|FAIL>  <detail>
+```
+
+Below the table, under each non-PASS check, list the specific mismatches (one per line: the task_id / playbook / cell and what disagreed). Overall verdict = worst status across checks.
+
+## Phase 5 — Opt-in fix (only if any FAIL/WARN)
+
+Do NOT mutate anything automatically. Ask ONE question with `AskUserQuestion`:
+
+> "Reconcile the discrepancies?"
+> - **Patch repo doc** — update `REPO_DOC` markdown to match fresh repo state (then user commits).
+> - **Republish Confluence** — push the corrected body to `CONFLUENCE_PAGE_ID` via `updateConfluencePage`.
+> - **Do nothing** — leave everything; report only.
+
+Act only on the chosen option. For "Patch repo doc", edit `REPO_DOC` and show a diff — do not commit or push (leave that to the user). For "Republish", call `updateConfluencePage` passing the corrected page body as the `body` parameter, `includeBody: false` (so the response stays small), and a `versionMessage` naming the reconciled checks. The `body` must be re-fetched/serialized as Confluence storage HTML (`contentFormat: "html"`) — the same format Phase 1 fetched — and only the changed cells should be edited, not a hand-rewritten page, to avoid a malformed body. Never edit the org scorecard page itself.
