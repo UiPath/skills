@@ -68,12 +68,12 @@ file will fail to parse. Never paste CLI commands or flags
 
 ## A complete minimal file (author from this, not from examples)
 
-This is a minimal CLI/Studio-compatible authoring scaffold with a stable manual
-entry point, one structural task, and complete diagram interchange. The CLI
-initializer omits `isExecutable`; Studio may serialize the equivalent default
-as `isExecutable="false"`. Preserve either shape and do not force
-`isExecutable="true"`. Author from this skeleton plus the registry templates
-for the nodes your process needs. **Do not
+This is a minimal CLI-compatible authoring scaffold with a stable manual entry
+point, one structural task, and complete diagram interchange. The CLI
+initializer omits `isExecutable`; preserve that shape. If existing source
+includes the equivalent default `isExecutable="false"`, preserve it. Do not
+force `isExecutable="true"`. Author from this skeleton plus the registry
+templates for the nodes your process needs. **Do not
 reverse-engineer the pattern from full example BPMN files** — it is the main
 reason authoring runs out of time.
 
@@ -137,9 +137,9 @@ schema bodies are JSON text or CDATA.
 </uipath:variables>
 ```
 
-If a Studio migration marker is required, its serializer-owned shape is
+If a migration marker is present, its supported shape is
 `<uipath:migrationVersion version="11.5" />`; the attribute is `version`, not
-`value`. The CLI's minimal initializer may omit that optional marker.
+`value`. The CLI initializer may omit that optional marker.
 
 See [expression-authoring.md](expression-authoring.md) for expression rules.
 Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
