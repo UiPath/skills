@@ -51,7 +51,7 @@ success_criteria:
   - type: command_executed
     description: "Agent checked the CLI's packaging capability instead of assuming it"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+pack(\s+.*)?\s+--help|uip\s+tm\s+pack\s'
+    command_pattern: 'uip\s+tm\s+pack\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
