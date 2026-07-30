@@ -47,6 +47,47 @@ class raises:
         return True
 
 
+def task_command_guard_pattern() -> re.Pattern[str]:
+    task_text = Path(__file__).with_name(
+        "customer_escalation_triage.yaml"
+    ).read_text(encoding="utf-8")
+    match = re.search(
+        r'Agent left BPMN cloud execution and mutation to the grader".*?'
+        r"command_pattern: '([^']+)'",
+        task_text,
+        flags=re.DOTALL,
+    )
+    assert match is not None
+    return re.compile(match.group(1))
+
+
+def test_command_guard_covers_executable_shell_prefixes() -> None:
+    pattern = task_command_guard_pattern()
+    blocked = (
+        "FOO=bar uip solution upload Eval.uipx",
+        "FOO='bar baz' exec uip solution upload Eval.uipx",
+        "exec uip maestro bpmn debug Project",
+        "(uip solution upload Eval.uipx)",
+        "{ uip solution upload Eval.uipx; }",
+        "! uip solution upload Eval.uipx",
+        "time -p uip solution upload Eval.uipx",
+        "/usr/bin/env -u FOO uip solution upload Eval.uipx",
+        "if true; then uip solution upload Eval.uipx; fi",
+        "while true; do uip maestro bpmn debug Project; done",
+        "$(which uip) solution upload Eval.uipx",
+    )
+    allowed = (
+        'echo "uip solution upload Eval.uipx"',
+        "printf '%s' 'uip maestro bpmn debug Project'",
+        "uip maestro bpmn registry list --output json",
+        "uip is resources run get connector operation --output json",
+    )
+    for command in blocked:
+        assert pattern.search(command), command
+    for command in allowed:
+        assert pattern.search(command) is None, command
+
+
 def variable(name: str, variable_id: str, variable_type: str = "string") -> ET.Element:
     return ET.Element(
         checker.q(checker.UIPATH_NS, "inputOutput"),
@@ -65,8 +106,8 @@ def normalization_fixture() -> tuple[
         "caseKey": variable("caseKey", "output-case-e55"),
         "tierNormalized": variable("tierNormalized", "internal-tier-f46"),
         "stateNormalized": variable("stateNormalized", "internal-state-g37"),
-        "duplicateNormalized": variable(
-            "duplicateNormalized", "internal-duplicate-h28"
+        "duplicateIssueKeyNormalized": variable(
+            "duplicateIssueKeyNormalized", "internal-duplicate-h28"
         ),
         "scriptResponse": variable(
             "scriptResponse", "normalize-response-r11", "jsonSchema"
@@ -76,6 +117,23 @@ def normalization_fixture() -> tuple[
     ids_to_names = {
         item.attrib["id"]: name for name, item in variables.items()
     }
+    variables["scriptResponse"].text = json.dumps(
+        {
+            "type": "object",
+            "properties": {
+                "tier": {"type": "string"},
+                "serviceState": {"type": "string"},
+                "duplicateIssueKey": {"type": "string"},
+                "caseKey": {"type": "string"},
+            },
+            "required": [
+                "tier",
+                "serviceState",
+                "duplicateIssueKey",
+                "caseKey",
+            ],
+        }
+    )
     script = ET.fromstring(
         f"""
         <bpmn:scriptTask xmlns:bpmn="{checker.BPMN_NS}"
@@ -104,10 +162,10 @@ def normalization_fixture() -> tuple[
                  source="=vars.normalize-response-r11.tier" custom="true" />
               <uipath:output name="stateNormalized" type="string"
                  var="internal-state-g37"
-                 source="=vars.normalize-response-r11.state" custom="true" />
-              <uipath:output name="duplicateNormalized" type="string"
+                 source="=vars.normalize-response-r11.serviceState" custom="true" />
+              <uipath:output name="duplicateIssueKeyNormalized" type="string"
                  var="internal-duplicate-h28"
-                 source="=vars.normalize-response-r11.duplicate" custom="true" />
+                 source="=vars.normalize-response-r11.duplicateIssueKey" custom="true" />
               <uipath:output name="caseKey" type="string"
                  var="output-case-e55"
                  source="=vars.normalize-response-r11.caseKey" custom="true" />
@@ -117,8 +175,8 @@ def normalization_fixture() -> tuple[
           <bpmn:script><![CDATA[
             return {{
               tier: (vars.input-tier-a91 || "").toLowerCase(),
-              state: (vars.input-state-b82 || "").toLowerCase(),
-              duplicate: (vars.input-duplicate-c73 || "").trim(),
+              serviceState: (vars.input-state-b82 || "").toLowerCase(),
+              duplicateIssueKey: (vars.input-duplicate-c73 || "").trim(),
               caseKey: vars.input-correlation-d64
             }};
           ]]></bpmn:script>
@@ -153,6 +211,31 @@ def add_decision_variable(
     )
 
 
+def jira_update_process(path_value: str) -> ET.Element:
+    return ET.fromstring(
+        f"""
+        <bpmn:process xmlns:bpmn="{checker.BPMN_NS}"
+                      xmlns:uipath="{checker.UIPATH_NS}">
+          <bpmn:sendTask id="jira-update">
+            <bpmn:extensionElements>
+              <uipath:activity version="v1">
+                <uipath:type value="Intsvc.ActivityExecution" version="v1" />
+                <uipath:context>
+                  <uipath:input name="connectorKey"
+                     value="uipath-atlassian-jira" />
+                  <uipath:input name="path"
+                     value="/curated_edit_issue/{{issueIdOrKey}}" />
+                </uipath:context>
+                <uipath:input name="issueIdOrKey" type="string" target="path"
+                   value="{path_value}" />
+              </uipath:activity>
+            </bpmn:extensionElements>
+          </bpmn:sendTask>
+        </bpmn:process>
+        """
+    )
+
+
 def gateway_scope(condition: str) -> tuple[ET.Element, dict[str, ET.Element]]:
     scope = ET.fromstring(
         f"""
@@ -182,12 +265,22 @@ def gateway_scope(condition: str) -> tuple[ET.Element, dict[str, ET.Element]]:
 
 
 def attachment_fixture(
-    marker_script: str = "return { itemName: currentItem.name };",
+    marker_script: str = (
+        "var copyName = vars.input-correlation-c81 + '-' + "
+        "currentItem.name; "
+        "return { itemName: currentItem.name, copyName: copyName, "
+        "driveFileId: currentItem.driveFileId };"
+    ),
+    drive_file_id: str = "=vars.iteration-response.driveFileId",
+    drive_copy_name: str = "=vars.iteration-response.copyName",
 ) -> tuple[
     list[ET.Element], dict[str, ET.Element], dict[str, str]
 ]:
     variables = {
         "attachments": variable("attachments", "input-attachments-z19", "array"),
+        "correlationId": variable(
+            "correlationId", "input-correlation-c81"
+        ),
         "lastAttachmentName": variable(
             "lastAttachmentName", "output-last-y28"
         ),
@@ -292,6 +385,10 @@ def attachment_fixture(
                      value="uipath-google-drive" />
                   <uipath:input name="path" value="/copyFile" />
                 </uipath:context>
+                <uipath:input name="fileId" type="string" target="query"
+                   value="{drive_file_id}" />
+                <uipath:input name="body" type="json" target="body"
+                   value="{{&quot;destinationFolder&quot;:&quot;=vars.destination-folder&quot;,&quot;name&quot;:&quot;{drive_copy_name}&quot;}}" />
               </uipath:activity>
             </bpmn:extensionElements>
             <bpmn:incoming>attachment-script-drive</bpmn:incoming>
@@ -349,6 +446,179 @@ def test_normalization_accepts_semantic_mapping_with_arbitrary_ids() -> None:
         "internal-duplicate-h28",
         "output-case-e55",
     }
+
+
+def test_jira_update_accepts_exact_normalized_duplicate() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    checker.require_jira_update_uses_normalized_duplicate(
+        jira_update_process("=vars.internal-duplicate-h28"),
+        script,
+        variables,
+        ids_to_names,
+        [],
+    )
+
+
+def test_jira_update_accepts_equivalent_js_normalized_duplicate() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    checker.require_jira_update_uses_normalized_duplicate(
+        jira_update_process(
+            "=js: ((vars.internal-duplicate-h28))"
+        ),
+        script,
+        variables,
+        ids_to_names,
+        [],
+    )
+
+
+def test_jira_update_accepts_js_prefix_on_each_normalized_link() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    output = script.find(
+        f".//{checker.q(checker.UIPATH_NS, 'output')}"
+        "[@name='duplicateIssueKeyNormalized']"
+    )
+    assert output is not None
+    output.set(
+        "source",
+        "=js: vars.normalize-response-r11.duplicateIssueKey",
+    )
+    checker.require_jira_update_uses_normalized_duplicate(
+        jira_update_process("=js: vars.internal-duplicate-h28"),
+        script,
+        variables,
+        ids_to_names,
+        [],
+    )
+
+
+def test_jira_update_rejects_raw_duplicate_input() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    with raises(SystemExit, match="normalized duplicate"):
+        checker.require_jira_update_uses_normalized_duplicate(
+            jira_update_process("=vars.input-duplicate-c73"),
+            script,
+            variables,
+            ids_to_names,
+            [],
+        )
+
+
+def test_jira_update_rejects_reassigned_normalization_alias() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    body = script.find(f"./{checker.q(checker.BPMN_NS, 'script')}")
+    assert body is not None
+    body.text = """
+      let duplicate = (vars.input-duplicate-c73 || "").trim();
+      duplicate = "SHARED-1";
+      return {
+        tier: (vars.input-tier-a91 || "").toLowerCase(),
+        serviceState: (vars.input-state-b82 || "").toLowerCase(),
+        duplicateIssueKey: duplicate,
+        caseKey: vars.input-correlation-d64
+      };
+    """
+    with raises(SystemExit, match="normalized duplicate"):
+        checker.require_jira_update_uses_normalized_duplicate(
+            jira_update_process("=vars.internal-duplicate-h28"),
+            script,
+            variables,
+            ids_to_names,
+            [],
+        )
+
+
+def test_jira_update_rejects_duplicate_returned_key() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    body = script.find(f"./{checker.q(checker.BPMN_NS, 'script')}")
+    assert body is not None
+    body.text = """
+      const duplicate = (vars.input-duplicate-c73 || "").trim();
+      return {
+        tier: (vars.input-tier-a91 || "").toLowerCase(),
+        serviceState: (vars.input-state-b82 || "").toLowerCase(),
+        duplicateIssueKey: duplicate,
+        duplicateIssueKey: "SHARED-1",
+        caseKey: vars.input-correlation-d64
+      };
+    """
+    with raises(SystemExit, match="exactly once"):
+        checker.require_jira_update_uses_normalized_duplicate(
+            jira_update_process("=vars.internal-duplicate-h28"),
+            script,
+            variables,
+            ids_to_names,
+            [],
+        )
+
+
+def test_jira_update_rejects_trailing_comma_return_object() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    body = script.find(f"./{checker.q(checker.BPMN_NS, 'script')}")
+    assert body is not None
+    body.text = """
+      return {
+        tier: (vars.input-tier-a91 || "").toLowerCase(),
+        serviceState: (vars.input-state-b82 || "").toLowerCase(),
+        duplicateIssueKey: (vars.input-duplicate-c73 || "").trim(),
+        caseKey: vars.input-correlation-d64
+      }, {
+        duplicateIssueKey: vars.input-duplicate-c73
+      };
+    """
+    with raises(SystemExit, match="trailing comma expression"):
+        checker.require_jira_update_uses_normalized_duplicate(
+            jira_update_process("=vars.internal-duplicate-h28"),
+            script,
+            variables,
+            ids_to_names,
+            [],
+        )
+
+
+def test_jira_update_rejects_non_object_response_schema_root() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    schema = json.loads(variables["scriptResponse"].text or "{}")
+    schema["type"] = "string"
+    variables["scriptResponse"].text = json.dumps(schema)
+    with raises(SystemExit, match="normalized duplicate"):
+        checker.require_jira_update_uses_normalized_duplicate(
+            jira_update_process("=vars.internal-duplicate-h28"),
+            script,
+            variables,
+            ids_to_names,
+            [],
+        )
+
+
+def test_return_scanner_ignores_comments_and_string_literals() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    body = script.find(f"./{checker.q(checker.BPMN_NS, 'script')}")
+    assert body is not None
+    body.text = (
+        'const note = "return { ignored: true }";\n'
+        "// return an exact normalized object below\n"
+        f"{body.text}\n"
+        "/* return { alsoIgnored: true }; */"
+    )
+    checker.require_jira_update_uses_normalized_duplicate(
+        jira_update_process("=vars.internal-duplicate-h28"),
+        script,
+        variables,
+        ids_to_names,
+        [],
+    )
+
+
+def test_javascript_mask_hides_regex_and_exposes_template_code() -> None:
+    source = (
+        r"/\/\/ const forged = currentItem;/; "
+        r"`${Object.assign(currentItem, {name: 'WRONG'})}`;"
+    )
+    masked = checker.javascript_code_mask(source)
+    assert "const forged" not in masked
+    assert "Object.assign" in masked
+    assert "currentItem" in masked
 
 
 def test_registry_evidence_is_discovered_by_content_not_filename() -> None:
@@ -429,10 +699,10 @@ def test_normalization_accepts_following_variables_extraction() -> None:
                  source="=vars.normalize-response-r11.tier" />
               <uipath:output name="stateNormalized" type="string"
                  var="internal-state-g37"
-                 source="=vars.normalize-response-r11.state" />
+                 source="=vars.normalize-response-r11.serviceState" />
               <uipath:output name="duplicateNormalized" type="string"
                  var="internal-duplicate-h28"
-                 source="=vars.normalize-response-r11.duplicate" />
+                 source="=vars.normalize-response-r11.duplicateIssueKey" />
               <uipath:output name="caseKey" type="string"
                  var="output-case-e55"
                  source="=vars.normalize-response-r11.caseKey" />
@@ -472,8 +742,8 @@ def variables_extraction_with_direct_case_copy(
     body.text = """
       return {
         tier: (vars.input-tier-a91 || "").toLowerCase(),
-        state: (vars.input-state-b82 || "").toLowerCase(),
-        duplicate: (vars.input-duplicate-c73 || "").trim()
+        serviceState: (vars.input-state-b82 || "").toLowerCase(),
+        duplicateIssueKey: (vars.input-duplicate-c73 || "").trim()
       };
     """
     extraction = ET.fromstring(
@@ -489,10 +759,10 @@ def variables_extraction_with_direct_case_copy(
                  source="=vars.normalize-response-r11.tier" />
               <uipath:output name="stateNormalized" type="string"
                  var="internal-state-g37"
-                 source="=vars.normalize-response-r11.state" />
+                 source="=vars.normalize-response-r11.serviceState" />
               <uipath:output name="duplicateNormalized" type="string"
                  var="internal-duplicate-h28"
-                 source="=vars.normalize-response-r11.duplicate" />
+                 source="=vars.normalize-response-r11.duplicateIssueKey" />
               <uipath:output name="caseKey" type="string"
                  var="output-case-e55" source="{case_source}" />
             </uipath:mapping>
@@ -561,6 +831,12 @@ def test_normalization_accepts_typed_structured_result_consumed_by_gateways() ->
                 "normalizedDuplicateKey": {"type": "string"},
                 "caseKey": {"type": "string"},
             },
+            "required": [
+                "normalizedTier",
+                "normalizedServiceState",
+                "normalizedDuplicateKey",
+                "caseKey",
+            ],
         }
     )
 
@@ -576,6 +852,23 @@ def test_normalization_accepts_typed_structured_result_consumed_by_gateways() ->
     assert checker.structured_normalization_roles_in_conditions(
         "normalize-response-r11", conditions
     ) == {"tier", "serviceState", "duplicateIssueKey"}
+
+
+def test_normalization_rejects_untyped_dereferenced_response_fields() -> None:
+    script, variables, ids_to_names = normalization_fixture()
+    schema = json.loads(variables["scriptResponse"].text or "{}")
+    schema["properties"]["tier"] = {"type": "boolean"}
+    schema["properties"]["serviceState"] = {}
+    schema["required"].remove("serviceState")
+    variables["scriptResponse"].text = json.dumps(schema)
+
+    with raises(SystemExit, match="not required strings"):
+        checker.require_normalization_script(
+            script,
+            variables,
+            ids_to_names,
+            [],
+        )
 
 
 def test_normalization_accepts_exact_correlation_through_local_alias() -> None:
@@ -600,8 +893,8 @@ def test_normalization_accepts_exact_correlation_through_local_alias() -> None:
       var caseKey = vars.input-correlation-d64;
       return {
         tier: (vars.input-tier-a91 || "").toLowerCase(),
-        state: (vars.input-state-b82 || "").toLowerCase(),
-        duplicate: (vars.input-duplicate-c73 || "").trim(),
+        serviceState: (vars.input-state-b82 || "").toLowerCase(),
+        duplicateIssueKey: (vars.input-duplicate-c73 || "").trim(),
         caseKey: caseKey
       };
     """
@@ -631,6 +924,10 @@ def test_normalization_accepts_semantic_correlation_result_property() -> None:
         "caseKey: vars.input-correlation-d64",
         "preservedCorrelation: vars.input-correlation-d64",
     )
+    schema = json.loads(variables["scriptResponse"].text or "{}")
+    schema["properties"]["preservedCorrelation"] = {"type": "string"}
+    schema["required"].append("preservedCorrelation")
+    variables["scriptResponse"].text = json.dumps(schema)
 
     targets = checker.require_normalization_script(
         script, variables, ids_to_names, []
@@ -805,6 +1102,368 @@ def test_attachment_loop_accepts_arbitrary_variable_ids() -> None:
     checker.require_sequential_attachment_loop(elements, variables, ids_to_names)
 
 
+def test_attachment_loop_accepts_drive_lineage_from_script_response() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        drive_file_id="=vars.iteration-response.driveFileId",
+        drive_copy_name="=vars.iteration-response.copyName",
+    )
+    checker.require_sequential_attachment_loop(elements, variables, ids_to_names)
+
+
+def test_attachment_loop_accepts_js_prefixed_script_response() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        drive_file_id="=js: vars.iteration-response.driveFileId",
+        drive_copy_name="=js:(vars.iteration-response.copyName)",
+    )
+    checker.require_sequential_attachment_loop(elements, variables, ids_to_names)
+
+
+def test_attachment_loop_rejects_drive_lineage_from_iterator() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        drive_file_id="=iterator[0].item.driveFileId",
+    )
+    with raises(SystemExit, match="exact ScriptTask response field"):
+        checker.require_sequential_attachment_loop(
+            elements, variables, ids_to_names
+        )
+
+
+def test_attachment_loop_rejects_drive_lineage_from_unrelated_variable() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        drive_copy_name="=vars.unrelated-copy-result.copyName",
+    )
+    with raises(SystemExit, match="exact ScriptTask response field"):
+        checker.require_sequential_attachment_loop(
+            elements, variables, ids_to_names
+        )
+
+
+def test_attachment_loop_rejects_script_result_from_another_item() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            "return { itemName: currentItem.name, "
+            "copyName: vars.attachments[0].name, "
+            "driveFileId: vars.attachments[0].driveFileId };"
+        ),
+    )
+    with raises(SystemExit, match="must derive.*currentItem"):
+        checker.require_sequential_attachment_loop(
+            elements, variables, ids_to_names
+        )
+
+
+def test_attachment_loop_requires_correlation_in_copy_name() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            "return { itemName: currentItem.name, "
+            "copyName: currentItem.name, "
+            "driveFileId: currentItem.driveFileId };"
+        ),
+    )
+    with raises(SystemExit, match="plus vars.input-correlation-c81"):
+        checker.require_sequential_attachment_loop(
+            elements, variables, ids_to_names
+        )
+
+
+def test_attachment_loop_rejects_comma_operator_lineage() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            "return { itemName: currentItem.name, "
+            "copyName: vars.input-correlation-c81 + '-' + "
+            "currentItem.name, "
+            "driveFileId: (currentItem.driveFileId, "
+            "vars.attachments[0].driveFileId) };"
+        ),
+    )
+    with raises(SystemExit, match="driveFileId must derive exactly"):
+        checker.require_sequential_attachment_loop(
+            elements, variables, ids_to_names
+        )
+
+
+def test_attachment_loop_rejects_trailing_comma_return_object() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            "return { itemName: currentItem.name, "
+            "copyName: vars.input-correlation-c81 + '-' + "
+            "currentItem.name, "
+            "driveFileId: currentItem.driveFileId }, "
+            "{ itemName: vars.attachments[0].name, "
+            "copyName: 'wrong', "
+            "driveFileId: vars.attachments[0].driveFileId };"
+        ),
+    )
+    with raises(SystemExit, match="trailing comma expression"):
+        checker.require_sequential_attachment_loop(
+            elements, variables, ids_to_names
+        )
+
+
+def test_attachment_loop_rejects_non_object_response_schema_root() -> None:
+    elements, variables, ids_to_names = attachment_fixture()
+    schema = json.loads(variables["attachmentPrepResult"].text or "{}")
+    schema["type"] = "string"
+    variables["attachmentPrepResult"].text = json.dumps(schema)
+    with raises(SystemExit, match="response schema must require"):
+        checker.require_sequential_attachment_loop(
+            elements,
+            variables,
+            ids_to_names,
+        )
+
+
+def test_attachment_loop_accepts_comma_inside_copy_name_literal() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            "return { itemName: currentItem.name, "
+            "copyName: vars.input-correlation-c81 + ', ' + "
+            "currentItem.name, "
+            "driveFileId: currentItem.driveFileId };"
+        ),
+    )
+    checker.require_sequential_attachment_loop(
+        elements,
+        variables,
+        ids_to_names,
+    )
+
+
+def test_attachment_loop_accepts_unconditional_template_copy_name() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            "return { itemName: currentItem.name, "
+            "copyName: `${vars.input-correlation-c81}, "
+            "${currentItem.name}`, "
+            "driveFileId: currentItem.driveFileId };"
+        ),
+    )
+    checker.require_sequential_attachment_loop(
+        elements,
+        variables,
+        ids_to_names,
+    )
+
+
+def test_attachment_loop_rejects_conditional_copy_name_parts() -> None:
+    expressions = (
+        "false ? currentItem.name : vars.input-correlation-c81",
+        "true ? currentItem.name : vars.input-correlation-c81",
+    )
+    for copy_name in expressions:
+        elements, variables, ids_to_names = attachment_fixture(
+            marker_script=(
+                "return { itemName: currentItem.name, "
+                f"copyName: {copy_name}, "
+                "driveFileId: currentItem.driveFileId };"
+            ),
+        )
+        with raises(SystemExit, match="copyName must derive only"):
+            checker.require_sequential_attachment_loop(
+                elements,
+                variables,
+                ids_to_names,
+            )
+
+
+def test_attachment_loop_rejects_alias_forged_only_in_comment() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            'const { item } = { item: { name: "WRONG", '
+            'driveFileId: "WRONG" } }; '
+            "// const item = currentItem;\n"
+            "return { itemName: item.name, "
+            "copyName: vars.input-correlation-c81 + '-' + item.name, "
+            "driveFileId: item.driveFileId };"
+        ),
+    )
+    with raises(
+        SystemExit,
+        match="mapped current item|itemName must derive exactly",
+    ):
+        checker.require_sequential_attachment_loop(
+            elements,
+            variables,
+            ids_to_names,
+        )
+
+
+def test_attachment_loop_rejects_alias_forged_in_regex_literal() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            'const { item } = { item: { name: "WRONG", '
+            'driveFileId: "WRONG" } }; '
+            r"/\/\/ const item = currentItem;/; "
+            "return { itemName: item.name, "
+            "copyName: vars.input-correlation-c81 + '-' + item.name, "
+            "driveFileId: item.driveFileId };"
+        ),
+    )
+    with raises(
+        SystemExit,
+        match="mapped current item|itemName must derive exactly",
+    ):
+        checker.require_sequential_attachment_loop(
+            elements,
+            variables,
+            ids_to_names,
+        )
+
+
+def test_attachment_loop_rejects_mutation_in_template_interpolation() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            '`${Object.assign(currentItem, {name: "WRONG", '
+            'driveFileId: "WRONG"})}`; '
+            "return { itemName: currentItem.name, "
+            "copyName: vars.input-correlation-c81 + '-' + "
+            "currentItem.name, "
+            "driveFileId: currentItem.driveFileId };"
+        ),
+    )
+    with raises(SystemExit, match="must not reassign or mutate"):
+        checker.require_sequential_attachment_loop(
+            elements,
+            variables,
+            ids_to_names,
+        )
+
+
+def test_attachment_loop_rejects_escaped_template_placeholders() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            "return { itemName: currentItem.name, "
+            r"copyName: `\${vars.input-correlation-c81}-"
+            r"\${currentItem.name}`, "
+            "driveFileId: currentItem.driveFileId };"
+        ),
+    )
+    with raises(SystemExit, match="copyName must derive only"):
+        checker.require_sequential_attachment_loop(
+            elements,
+            variables,
+            ids_to_names,
+        )
+
+
+def test_attachment_loop_rejects_first_item_reducer() -> None:
+    elements, variables, ids_to_names = attachment_fixture()
+    reducer_script = elements[1].find(
+        f"./{checker.q(checker.BPMN_NS, 'script')}"
+    )
+    assert reducer_script is not None
+    reducer_script.text = (
+        "vars.iteration-names-q37.length; "
+        "return vars.iteration-names-q37[0];"
+    )
+    with raises(SystemExit, match="actually return the final attachment"):
+        checker.require_sequential_attachment_loop(
+            elements,
+            variables,
+            ids_to_names,
+        )
+
+
+def test_attachment_loop_accepts_at_negative_one_reducer() -> None:
+    elements, variables, ids_to_names = attachment_fixture()
+    reducer_script = elements[1].find(
+        f"./{checker.q(checker.BPMN_NS, 'script')}"
+    )
+    assert reducer_script is not None
+    reducer_script.text = "return vars.iteration-names-q37.at(-1);"
+    checker.require_sequential_attachment_loop(
+        elements,
+        variables,
+        ids_to_names,
+    )
+
+
+def test_parallel_outputs_require_exclusive_ownership() -> None:
+    assert checker.parallel_output_ownership_order(
+        [
+            {"jiraAction", "jiraInternal"},
+            {
+                "attachmentAction",
+                "lastAttachmentName",
+                "attachmentInternal",
+            },
+            {"slackAction", "responseMode", "communicationInternal"},
+        ]
+    ) == (0, 1, 2)
+    with raises(SystemExit, match="exclusively own"):
+        checker.parallel_output_ownership_order(
+            [
+                {"jiraAction", "slackAction"},
+                {"attachmentAction", "lastAttachmentName"},
+                {"slackAction", "responseMode"},
+            ]
+        )
+
+
+def test_return_newline_before_object_is_rejected() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            "return\n"
+            "{ itemName: currentItem.name, "
+            "copyName: vars.input-correlation-c81 + '-' + "
+            "currentItem.name, "
+            "driveFileId: currentItem.driveFileId };"
+        ),
+    )
+    with raises(SystemExit, match="must return one object"):
+        checker.require_sequential_attachment_loop(
+            elements,
+            variables,
+            ids_to_names,
+        )
+
+
+def test_attachment_loop_rejects_reassigned_item_alias() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            "let selected = currentItem; "
+            "selected = vars.attachments[0]; "
+            "return { itemName: selected.name, "
+            "copyName: vars.input-correlation-c81 + '-' + selected.name, "
+            "driveFileId: selected.driveFileId };"
+        ),
+    )
+    with raises(SystemExit, match="itemName must derive exactly"):
+        checker.require_sequential_attachment_loop(
+            elements, variables, ids_to_names
+        )
+
+
+def test_attachment_loop_rejects_duplicate_returned_field() -> None:
+    elements, variables, ids_to_names = attachment_fixture(
+        marker_script=(
+            "return { itemName: currentItem.name, "
+            "copyName: vars.input-correlation-c81 + '-' + "
+            "currentItem.name, "
+            "driveFileId: currentItem.driveFileId, "
+            "driveFileId: vars.attachments[0].driveFileId };"
+        ),
+    )
+    with raises(SystemExit, match="exactly once"):
+        checker.require_sequential_attachment_loop(
+            elements, variables, ids_to_names
+        )
+
+
+def test_attachment_loop_requires_runtime_script_response_mapping() -> None:
+    elements, variables, ids_to_names = attachment_fixture()
+    output = elements[0].find(
+        f".//{checker.q(checker.UIPATH_NS, 'output')}"
+        "[@name='scriptResponse']"
+    )
+    assert output is not None
+    output.attrib["source"] = "=vars.unrelated"
+    with raises(SystemExit, match="map one declared response"):
+        checker.require_sequential_attachment_loop(
+            elements, variables, ids_to_names
+        )
+
+
 def test_attachment_loop_rejects_unmapped_iterator_global() -> None:
     elements, variables, ids_to_names = attachment_fixture(
         "return { name: iterator[0].item.name };"
@@ -842,6 +1501,9 @@ def test_attachment_loop_rejects_wrong_subprocess_input_element() -> None:
 
 
 class StructureCheckerTests(unittest.TestCase):
+    def test_command_guard_handles_executable_prefixes(self) -> None:
+        test_command_guard_covers_executable_shell_prefixes()
+
     def test_connector_values_must_reference_exact_runtime_variables(
         self,
     ) -> None:
@@ -914,11 +1576,44 @@ class StructureCheckerTests(unittest.TestCase):
     def test_semantic_correlation_result_property_is_valid(self) -> None:
         test_normalization_accepts_semantic_correlation_result_property()
 
+    def test_normalization_response_dereferences_are_typed(self) -> None:
+        test_normalization_rejects_untyped_dereferenced_response_fields()
+
     def test_string_identity_empty_fallback_is_valid(self) -> None:
         test_normalization_accepts_string_identity_empty_fallback()
 
     def test_arbitrary_normalization_ids(self) -> None:
         test_normalization_accepts_semantic_mapping_with_arbitrary_ids()
+
+    def test_jira_update_uses_normalized_duplicate(self) -> None:
+        test_jira_update_accepts_exact_normalized_duplicate()
+
+    def test_jira_update_accepts_equivalent_js_reference(self) -> None:
+        test_jira_update_accepts_equivalent_js_normalized_duplicate()
+
+    def test_jira_update_accepts_js_prefix_on_each_link(self) -> None:
+        test_jira_update_accepts_js_prefix_on_each_normalized_link()
+
+    def test_jira_update_cannot_use_raw_duplicate(self) -> None:
+        test_jira_update_rejects_raw_duplicate_input()
+
+    def test_jira_update_cannot_use_reassigned_alias(self) -> None:
+        test_jira_update_rejects_reassigned_normalization_alias()
+
+    def test_jira_update_cannot_repeat_returned_key(self) -> None:
+        test_jira_update_rejects_duplicate_returned_key()
+
+    def test_jira_update_cannot_swap_return_with_comma_operator(self) -> None:
+        test_jira_update_rejects_trailing_comma_return_object()
+
+    def test_jira_response_schema_must_be_an_object(self) -> None:
+        test_jira_update_rejects_non_object_response_schema_root()
+
+    def test_return_scanner_ignores_inert_return_text(self) -> None:
+        test_return_scanner_ignores_comments_and_string_literals()
+
+    def test_javascript_mask_tracks_executable_template_code(self) -> None:
+        test_javascript_mask_hides_regex_and_exposes_template_code()
 
     def test_hidden_routing_rejected(self) -> None:
         test_normalization_rejects_business_routing_hidden_in_script()
@@ -955,6 +1650,79 @@ class StructureCheckerTests(unittest.TestCase):
 
     def test_arbitrary_attachment_ids(self) -> None:
         test_attachment_loop_accepts_arbitrary_variable_ids()
+
+    def test_drive_inputs_follow_per_item_script_response(self) -> None:
+        test_attachment_loop_accepts_drive_lineage_from_script_response()
+
+    def test_drive_inputs_allow_js_expression_prefix(self) -> None:
+        test_attachment_loop_accepts_js_prefixed_script_response()
+
+    def test_drive_file_id_cannot_bypass_script_response(self) -> None:
+        test_attachment_loop_rejects_drive_lineage_from_iterator()
+
+    def test_drive_copy_name_cannot_use_unrelated_variable(self) -> None:
+        test_attachment_loop_rejects_drive_lineage_from_unrelated_variable()
+
+    def test_script_result_cannot_swap_in_another_attachment(self) -> None:
+        test_attachment_loop_rejects_script_result_from_another_item()
+
+    def test_copy_name_must_include_correlation(self) -> None:
+        test_attachment_loop_requires_correlation_in_copy_name()
+
+    def test_script_result_cannot_use_comma_operator(self) -> None:
+        test_attachment_loop_rejects_comma_operator_lineage()
+
+    def test_script_result_cannot_swap_return_with_comma_operator(
+        self,
+    ) -> None:
+        test_attachment_loop_rejects_trailing_comma_return_object()
+
+    def test_attachment_response_schema_must_be_an_object(self) -> None:
+        test_attachment_loop_rejects_non_object_response_schema_root()
+
+    def test_copy_name_can_contain_literal_comma(self) -> None:
+        test_attachment_loop_accepts_comma_inside_copy_name_literal()
+
+    def test_copy_name_can_use_unconditional_template(self) -> None:
+        test_attachment_loop_accepts_unconditional_template_copy_name()
+
+    def test_copy_name_cannot_conditionally_omit_required_parts(
+        self,
+    ) -> None:
+        test_attachment_loop_rejects_conditional_copy_name_parts()
+
+    def test_item_alias_cannot_be_forged_in_comment(self) -> None:
+        test_attachment_loop_rejects_alias_forged_only_in_comment()
+
+    def test_item_alias_cannot_be_forged_in_regex(self) -> None:
+        test_attachment_loop_rejects_alias_forged_in_regex_literal()
+
+    def test_template_interpolation_mutation_is_executable(self) -> None:
+        test_attachment_loop_rejects_mutation_in_template_interpolation()
+
+    def test_escaped_template_placeholders_do_not_count(self) -> None:
+        test_attachment_loop_rejects_escaped_template_placeholders()
+
+    def test_reducer_cannot_return_first_item(self) -> None:
+        test_attachment_loop_rejects_first_item_reducer()
+
+    def test_reducer_can_use_negative_one_at(self) -> None:
+        test_attachment_loop_accepts_at_negative_one_reducer()
+
+    def test_parallel_output_ownership_is_exclusive(self) -> None:
+        test_parallel_outputs_require_exclusive_ownership()
+
+    def test_return_object_cannot_start_after_line_terminator(self) -> None:
+        test_return_newline_before_object_is_rejected()
+
+    def test_script_result_cannot_reassign_item_alias(self) -> None:
+        test_attachment_loop_rejects_reassigned_item_alias()
+
+    def test_script_result_cannot_repeat_returned_field(self) -> None:
+        test_attachment_loop_rejects_duplicate_returned_field()
+
+    def test_script_response_must_use_runtime_result_mapping(self) -> None:
+        test_attachment_loop_requires_runtime_script_response_mapping()
 
     def test_non_iterator_script_rejected(self) -> None:
         test_attachment_loop_rejects_unmapped_iterator_global()
