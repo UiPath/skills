@@ -1,8 +1,9 @@
 task_id: skill-bpmn-edit-update-node
 description: >
   Brownfield edit: change one script task's logic (a threshold constant) in an
-  existing, valid Maestro BPMN without restructuring the process or touching any
-  sibling node, ids, or preserve-only payloads.
+  existing, valid Maestro BPMN without migrating its older ScriptTask contract,
+  restructuring the process, or touching sibling nodes, ids, or preserve-only
+  payloads.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node"]
 
 run_limits:
@@ -51,7 +52,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Score threshold updated to 1000, siblings untouched, file still structurally sound"
+    description: "Score threshold updated; older ScriptTask contract and siblings preserved"
     command: "python3 $TASK_DIR/check_update_node.py"
     timeout: 30
     expected_exit_code: 0

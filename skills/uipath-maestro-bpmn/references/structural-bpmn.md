@@ -186,47 +186,55 @@ See [expression-authoring.md](expression-authoring.md) for expression rules.
 Sub-process-scoped variables go in that sub-process's own
 `<uipath:variables>`.
 
-## Script tasks — current v3 Jint contract
+## Script tasks — Jint authoring contract
 
 `bpmn:scriptTask scriptFormat="JavaScript"` runs under **Jint**, not Node.js or
-a browser. Discover it with registry key `BPMN.ScriptTask`, but current Studio
-v3 serialization uses a `BPMN.Variables` mapping on the task. Preserve the
-retrieved registry result as evidence. If its built-in template contains the
-legacy `<uipath:type value="BPMN.ScriptTask">` mapping, author this node from
-the versioned `extensionTypes["BPMN.ScriptTask"].xmlTemplate` in
-`validator/bpmn-spec.json`; do not wait for an unavailable CLI upgrade or use
-the legacy shell. This override is only for the built-in ScriptTask and is not
-evidence for live resources.
+a browser. Discover it with registry key `BPMN.ScriptTask` and preserve the
+retrieved result as evidence. When that result contains the recognized older
+`<uipath:type value="BPMN.ScriptTask">` mapping, author the new node from the
+bundled `extensionTypes["BPMN.ScriptTask"].xmlTemplate` in
+`validator/bpmn-spec.json`. That compatibility fallback is only for the known
+older built-in shape; do not use it to override an unfamiliar newer registry
+template or to rewrite an existing ScriptTask.
 
-**The lookup key and serialized discriminator are intentionally different.**
-Use `BPMN.ScriptTask` only to retrieve the node; every new ScriptTask's
-`uipath:mapping` must contain
-`<uipath:type value="BPMN.Variables" version="v1" />`. A serialized
-`value="BPMN.ScriptTask"` is the legacy shell and is invalid for this v3
-contract even when local validation returns success.
+When applying the compatibility template, keep its lookup key and serialized
+discriminator distinct: retrieve `BPMN.ScriptTask`, but serialize
+`<uipath:type value="BPMN.Variables" version="v1" />`. Local validation can
+accept the older discriminator, so it does not prove this new-node mapping is
+correct.
 
-- Set `<uipath:scriptVersion value="v3" />` for new ScriptTasks. Preserve
-  imported legacy versions unless the user asks to migrate them.
+The following rules describe newly authored tasks using that compatibility
+template. In brownfield BPMN, preserve the existing mapping discriminator and
+`uipath:scriptVersion`. Preserve arguments and outputs except where the
+requested edit requires a surgical change, and make that change using the
+node's existing contract. Migration to a different contract requires explicit
+confirmation. If runtime evidence establishes an incompatibility, present that
+evidence and obtain confirmation before migrating it.
+
+- Keep the selected template's `uipath:scriptVersion` marker on a new task.
+  Treat it as a serialized field, not as the name of the overall authoring
+  contract or a reason to migrate existing tasks.
 - Declare a task-scoped mutable `scriptResponse` variable and a task-scoped
   mutable `Error` variable. `Error` uses `type="jsonSchema"`, the standard
   error schema, and `elementId="<script-task-id>"`.
 - Add a `uipath:context/uipath:inputSchema` of type `jsonSchema` that declares
   `vars` and `metadata` as objects.
 - Add `uipath:input name="args" type="json" target="bodyField"` with
-  `{"vars":"=vars","metadata":"=metadata"}` in CDATA, matching Studio's
-  canonical serializer.
+  `{"vars":"=vars","metadata":"=metadata"}` in CDATA.
 - Read process data in JavaScript through `vars.<stable-variable-id>`.
 - Return the intended scalar or object directly. Map the standard
   `scriptResponse` output from `=result.response` and `Error` from `=Error`.
+  Fill `{scriptResponseType}` with the declared response variable's exact BPMN
+  type so the mapping and returned value agree.
   Downstream nodes and the completion EndEvent can read the declared
   `scriptResponse` variable directly. Only when a distinct business variable
   is needed, add a custom output that reads `=vars.<script-response-id>` and
   writes that variable.
-- Studio maps JavaScript/JSON Schema `number` to BPMN primitive
-  `type="double"` and JSON Schema `integer` to BPMN primitive
-  `type="integer"`. Keep the JSON Schema names inside schema bodies; on
-  `uipath:variables` and mapping attributes use `double` or `integer`
-  respectively, not `number` or `long`.
+- In BPMN variable and mapping attributes, a JSON Schema `number` result uses
+  `type="double"` and an `integer` result uses `type="integer"`. Keep JSON
+  Schema names inside schema bodies; structured object or array results use a
+  declared `jsonSchema`. Do not use `number` or `long` as BPMN primitive
+  mapping types.
 - Do not add an extra `{ response: ... }` wrapper around the script return; the
   runtime already exposes the direct return beneath `result.response`.
 - Do not mutate `Globals.*`, `vars.*`, or process variables in the script.
@@ -512,8 +520,8 @@ unsupported for generation until current tooling confirms them.
     actual lowercase `uipath:caseManagement` element with synthetic content. A
     typed `Orchestrator.StartCaseMgmtProcess*` activity shell is not the same
     payload and does not satisfy that preserve-only case-management shape.
-  - `<uipath:scriptVersion value="v2" />` is legacy: author `v3` for new scripts,
-    preserve `v2` where it already exists.
+  - Preserve existing `uipath:scriptVersion` markers. For a new ScriptTask, use
+    the marker supplied by the selected live or compatibility template.
 
 ## Diagram interchange — `bpmndi` (REGISTRY GAP — always generated)
 
