@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-start-transaction-provider-migration
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath diagnostic agent must diagnose a Start Transaction failure that
   faults on every Orchestrator run, starting right after the project was
